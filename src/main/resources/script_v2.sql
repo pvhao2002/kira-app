@@ -64,24 +64,31 @@ create table if not exists odd_analyst
     primary key (event_id, odd_type)
 );
 
+
 drop table if exists odd_event;
 create table odd_event
 (
-    odd_id     bigint primary key auto_increment,
-    event_id   int,
+    event_id   bigint,
     odd_type   enum ('1x2', 'ou', 'hdc', 'corner'),
     odd_date   datetime,
     line       varchar(25),
+    home_line  decimal(10, 8),
+    away_line  decimal(10, 8),
     home_odds  decimal(6, 2),
     draw_odds  decimal(6, 2),
     away_odds  decimal(6, 2),
     over_odds  decimal(6, 2),
     under_odds decimal(6, 2),
-    constraint unique_event unique (event_id, odd_type)
+    open_odd   boolean  default false,
+    created_at datetime default current_timestamp,
+    updated_at datetime default current_timestamp on update current_timestamp,
+    primary key (event_id, odd_type, odd_date),
+    index idx_odd_line (event_id, odd_type, line, open_odd)
 );
 
 alter table odd_analyst
     add column status enum ('done', 'in_progress', 'pending', 'fail') default 'pending';
+
 alter table event_analyst
     add column link text;
 ALTER TABLE event_crawl
@@ -93,10 +100,7 @@ alter table event_analyst
     add column ft_total_goal int default 0,
     add column ht_total_goal int default 0,
     add column total_corner  int default 0;
-alter table odd_event
-    add column open_odd boolean default false;
-alter table odd_event
-    add index idx_odd_line (event_id, odd_type, line, open_odd, odd_date);
+
 
 drop table if exists kira_league;
 create table if not exists kira_league
@@ -117,10 +121,7 @@ create table if not exists line
     line_float float
 );
 
-alter table odd_event
-    add column home_line decimal(10, 8) null after line;
-alter table odd_event
-    add column away_line decimal(10, 8) null after home_line;
+
 alter table event_analyst
     add index idx_home_away_league (league_name, home_team, away_team);
 alter table event_analyst

@@ -31,4 +31,12 @@ public class EventDTO {
         this.oddValue = rs.getString("odd_value");
         this.detailLink = rs.getString("link");
     }
+
+    public static EventDTO fromResultSet(ResultSet rs) throws SQLException {
+        return EventDTO.builder()
+                .eventId(rs.getLong("event_id"))
+                .oddType(rs.getString("odd_type"))
+                .oddValue(rs.getString("odd_value"))
+                .build();
+    }
 }

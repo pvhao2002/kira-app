@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 public class OddAnalyst {
     private Integer oddId;
-    private Integer eventId;
+    private Long eventId;
     private String oddType;
     private String isLive;
     private LocalDateTime oddDate;
