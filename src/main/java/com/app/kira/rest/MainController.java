@@ -82,20 +82,15 @@ public class MainController {
             Reasoning:
             """;
 
-    @GetMapping("switch-headless")
-    public Object updateHeadless(@RequestParam(required = false, defaultValue = "false") Boolean isHeadless) {
-        return "Playwright headless mode updated to: " + PlaywrightUtil.updateHeadless(isHeadless);
-    }
-
     @GetMapping("check-playwright")
-    public Object checkPlayWright() {
+    public Object checkPlayWright(@RequestParam String url) {
         log.info("Checking Playwright...");
         AtomicReference<String> doc = new AtomicReference<>();
-        PlaywrightUtil.withPlaywright(Collections.emptyList(), (page, list) -> {
-            page.navigate("https://gologin.com/vi/free-proxy/", new Page.NavigateOptions().setTimeout(30_000));
+        PlaywrightUtil.withPlaywright(Collections.emptyList(), true, (page, list) -> {
+            page.navigate(url, new Page.NavigateOptions().setTimeout(30_000));
             page.waitForTimeout(2_000);
             var pageSource = page.content();
-            var document = Jsoup.parse(pageSource, "https://gologin.com");
+            var document = Jsoup.parse(pageSource, url);
             // remove script tags
             document.select("script").remove();
             doc.set(document.html());

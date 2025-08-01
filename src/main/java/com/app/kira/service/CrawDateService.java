@@ -154,7 +154,6 @@ public class CrawDateService {
                 var paramsDate = new MapSqlParameterSource("date", date);
                 var result = new ArrayList<EventHtml>();
                 try {
-                    jdbcTemplate.update(SQL_CRAWL_DATE, paramsDate.addValue(STATUS, "in_progress"));
                     page.navigate(Constants.AI_SCORE_URL + "%s".formatted(date));
                     page.waitForSelector(
                             MATCH_BOX_SELECTOR,

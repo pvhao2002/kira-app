@@ -179,6 +179,8 @@ create table schedule_manager
 (
     schedule_name varchar(255),
     host_name     varchar(255),
+    use_proxy     boolean                     default false,
+    run_headless  boolean                     default true,
     status        enum ('active', 'inactive') default 'inactive',
     last_update   timestamp                   default current_timestamp on update current_timestamp,
     primary key (schedule_name, host_name)
@@ -194,7 +196,9 @@ create table if not exists proxy
     password   varchar(50),
     status     varchar(20) default 'active',
     created_at timestamp   default current_timestamp,
-    updated_at timestamp   default current_timestamp on update current_timestamp
+    updated_at timestamp   default current_timestamp on update current_timestamp,
+    message text,
+    unique unique_proxy_name(address, port)
 );
 
 drop table if exists app_logs;
@@ -209,3 +213,8 @@ create table if not exists app_logs
     created_at timestamp default now(),
     index idx_host_name (host_name)
 );
+CREATE INDEX idx_odd_event_type_event_date
+    ON odd_event (odd_type, event_id, odd_date);
+create index idx_odd_line_odd_event on odd_event(line, odd_type);
+alter table odd_event
+    add column is_valid_line tinyint(1) default 1;

@@ -3,13 +3,17 @@ package com.app.kira.rest;
 import com.app.kira.model.CorrectDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.springframework.cglib.core.CollectionUtils;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Arrays;
 
 @Log
 @RestController
@@ -35,7 +39,6 @@ public class CorrectController {
                        REPLACE(corner_str, ' ', '')     as corner_str
                 from event_analyst ea
                          inner join data d on d.event_id = ea.event_id
-                for update skip locked
                 """;
         var datas = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(CorrectDTO.class));
         datas.forEach(e -> {
@@ -57,26 +60,28 @@ public class CorrectController {
             e.setHtTotalGoal(e.getHtHomeScore() + e.getHtAwayScore());
             e.setTotalCorner(e.getCornerHome() + e.getCornerAway());
         });
+        var sqlUpdate = """
+                UPDATE event_analyst
+                SET ft_home_score  = :ftHomeScore,
+                    ft_away_score  = :ftAwayScore,
+                    ht_home_score  = :htHomeScore,
+                    ht_away_score  = :htAwayScore,
+                    home_corner    = :cornerHome,
+                    away_corner    = :cornerAway,
+                    ft_total_goal  = :ftTotalGoal,
+                    ht_total_goal  = :htTotalGoal,
+                    total_corner   = :totalCorner
+                WHERE event_id = :eventId
+                """;
         var params = datas.stream()
                 .map(CorrectDTO::toParam)
-                .toArray(MapSqlParameterSource[]::new);
-        log.log(java.util.logging.Level.INFO, "CorrectController >> correct: {0}", params.length);
-        jdbcTemplate.batchUpdate("""
-                update event_analyst
-                set ft_home_score = :ftHomeScore,
-                    ft_away_score = :ftAwayScore,
-                
-                    ht_home_score = :htHomeScore,
-                    ht_away_score = :htAwayScore,
-                    
-                    home_corner = :cornerHome,
-                    away_corner = :cornerAway,
-                    
-                    ft_total_goal = :ftTotalGoal,
-                    ht_total_goal = :htTotalGoal,
-                    total_corner = :totalCorner
-                where event_id = :eventId
-                """, params);
+                .toList();
+        log.log(java.util.logging.Level.INFO, "CorrectController >> correct: {0}", params.size());
+        params.forEach(e -> {
+            log.log(java.util.logging.Level.INFO, "CorrectController >> correct: {0}", e);
+            jdbcTemplate.update(sqlUpdate, e);
+            log.log(java.util.logging.Level.INFO, "CorrectController >> correct updated: {0}", e.getValue("eventId"));
+        });
         return "OK";
     }
 }

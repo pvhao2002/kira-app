@@ -48,28 +48,11 @@ public class EventController {
                      , corner_str
                      , link
                                 
-                     , odd_hdc.odd_type      as odd_type_hdc
-                     , odd_hdc.line          as line_hdc
-                     , odd_hdc.home_line     as home_line_hdc
-                     , odd_hdc.away_line     as away_line_hdc
-                     , odd_hdc.home_odds     as home_odds_hdc
-                     , odd_hdc.away_odds     as away_odds_hdc
-                                
                      , ea.home_line_movement
                      , ea.away_line_movement
                                 
-                     , odd_ou.odd_type       as odd_type_ou
-                     , odd_ou.line           as line_ou
-                     , odd_ou.over_odds      as over_ou
-                     , odd_ou.under_odds     as under_ou
-                                
-                     , over_line_movement
-                     , under_line_movement
-                                
-                     , odd_corner.odd_type   as odd_type_corner
-                     , odd_corner.line       as line_corner
-                     , odd_corner.over_odds  as over_corner
-                     , odd_corner.under_odds as under_corner
+                     , ea.over_line_movement
+                     , ea.under_line_movement
                      
                      , first_home_odds
                      , last_home_odds
@@ -86,12 +69,6 @@ public class EventController {
                      , last_ou
                                 
                 from event_analyst ea
-                         inner join odd_event odd_hdc
-                                    on odd_hdc.event_id = ea.event_id and odd_hdc.odd_type = 'hdc' and odd_hdc.open_odd = 1
-                         inner join odd_event odd_ou
-                                    on odd_ou.event_id = ea.event_id and odd_ou.odd_type = 'ou' and odd_ou.open_odd = 1
-                         left join odd_event odd_corner
-                                   on odd_corner.event_id = ea.event_id and odd_corner.odd_type = 'corner' and odd_corner.open_odd = 1
                          left join kira_league kl on kl.league_id = ea.league_id
                 where true
                       and ea.first_ou = :f_ou_line

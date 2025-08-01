@@ -26,7 +26,7 @@ public class TodayEventController {
                  , event_name
                  , event_date
                  , l.league_name
-                 , detail_link
+                 , detail_link as link
                  , odd_type
                  , odd_value
             from events e

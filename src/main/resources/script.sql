@@ -50,3 +50,25 @@ create table h2h
     result      text,
     index idx_h2h (event_id, h2h_date, league_name)
 );
+
+alter table events
+    add column first_home_odds     float
+        comment 'Tỷ lệ kèo chấp HDC của đội nhà tại thời điểm đầu trận',
+    add column last_home_odds      float
+        comment 'Tỷ lệ kèo chấp HDC của đội nhà tại thời điểm cuối trận',
+    add column first_away_odds     float
+        comment 'Tỷ lệ kèo chấp HDC của đội khách tại thời điểm đầu trận',
+    add column last_away_odds      float
+        comment 'Tỷ lệ kèo chấp HDC của đội khách tại thời điểm cuối trận',
+    add column first_over_odds     float
+        comment 'Tỷ lệ kèo Tài tại thời điểm đầu trận',
+    add column last_over_odds      float
+        comment 'Tỷ lệ kèo Tài tại thời điểm cuối trận',
+    add column first_under_odds    float
+        comment 'Tỷ lệ kèo Xỉu tại thời điểm đầu trận',
+    add column last_under_odds     float
+        comment 'Tỷ lệ kèo Xỉu tại thời điểm cuối trận',
+    add column first_hdc           varchar(25),
+    add column last_hdc            varchar(25),
+    add column first_ou            varchar(25),
+    add column last_ou             varchar(25);

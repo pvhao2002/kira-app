@@ -1,5 +1,5 @@
-DELIMITER $$
-DROP EVENT IF EXISTS delete_old_events $$
+DELIMITER //
+DROP EVENT IF EXISTS delete_old_events //
 CREATE EVENT IF NOT EXISTS delete_old_events
     ON SCHEDULE EVERY 1 DAY
         STARTS TIMESTAMP(CURRENT_DATE + INTERVAL 1 DAY)
@@ -18,4 +18,4 @@ CREATE EVENT IF NOT EXISTS delete_old_events
         DELETE FROM events
         WHERE DATE(CONVERT_TZ(event_date, '+00:00', '+07:00')) < vn_now;
 
-    END $$
+    END //

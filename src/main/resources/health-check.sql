@@ -24,4 +24,11 @@ SELECT object_schema, object_name, COUNT(*) as lock_count
 FROM performance_schema.data_locks
 GROUP BY object_schema, object_name;
 
+SELECT trx_id,
+       trx_state,
+       trx_started,
+       trx_mysql_thread_id,
+       trx_query
+FROM information_schema.innodb_trx;
+
 -- 705472

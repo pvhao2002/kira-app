@@ -1,7 +1,9 @@
 package com.app.kira.rest;
 
+import com.app.kira.dto.RawEventAnalyst;
 import com.app.kira.dto.predict.PredictDTO;
 import com.app.kira.dto.predict.RawPredict;
+import com.app.kira.model.PredictV1;
 import com.app.kira.server.ServerInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -54,6 +56,37 @@ public class PredictController {
                 "url", serverInfoService.getUrl(),
                 "active", serverInfoService.isActive()
         );
+    }
+
+    @PostMapping("v1")
+    public Object predictV1(@RequestBody PredictV1 predictV1) {
+        var sql = """
+                select event_name,
+                    ft_score_str,
+                    FORMAT(last_home_odds, 1)   as last_home_odds,
+                    FORMAT(last_away_odds, 1)   as last_away_odds,
+                    FORMAT(last_over_odds, 1)   as last_over_odds,
+                    FORMAT(last_under_odds, 1)  as last_under_odds,
+                    
+                    FORMAT(first_home_odds, 1)  as first_home_odds,
+                    FORMAT(first_away_odds, 1)  as first_away_odds,
+                    FORMAT(first_over_odds, 1)  as first_over_odds,
+                    FORMAT(first_under_odds, 1) as first_under_odds
+                from event_analyst
+                where TRUE
+                  and last_hdc = :pLastHdc
+                  and first_hdc = :pFirstHdc
+                  and first_ou = :pFirstOu
+                  and last_ou = :pLastOu
+                         """;
+        var param = Map.of(
+                "pFirstHdc", predictV1.getFirstHdc(),
+                "pLastHdc", predictV1.getLastHdc(),
+                "pFirstOu", predictV1.getFirstOu(),
+                "pLastOu", predictV1.getLastOu()
+        );
+        var result = jdbcTemplate.queryForObject(sql, param, BeanPropertyRowMapper.newInstance(RawEventAnalyst.class));
+        return Map.of("data", result);
     }
 
     @PostMapping

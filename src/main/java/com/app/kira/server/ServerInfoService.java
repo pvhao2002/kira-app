@@ -2,7 +2,6 @@ package com.app.kira.server;
 
 import com.app.kira.dto.predict.ProxyDTO;
 import com.app.kira.spring.ApplicationContextProvider;
-import com.microsoft.playwright.options.Proxy;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
@@ -16,6 +15,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -47,22 +47,36 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
 
     @PreDestroy
     void stopInstance() {
+        log.info("Stopping instance: " + hostName);
+        var sql = "update router_setting set is_active = false where node = :node";
+        var params = Map.of("node", hostName);
+        db.update(sql, params);
+        log.info("Instance stopped: " + hostName);
     }
 
-    public Proxy getProxy() {
+    public ProxyDTO getProxy() {
         var sql = """
                 select *
                 from proxy
                 where status = 'active'
                 """;
-        return db.query(sql, (rs, i) -> new ProxyDTO(rs)).stream().findFirst().map(ProxyDTO::toProxyPlayWright).orElse(null);
+        return db.query(sql, (rs, i) -> new ProxyDTO(rs)).stream().findFirst().orElse(null);
+    }
+
+    @Transactional
+    public void inactiveProxy(ProxyDTO dto, String message) {
+        if (dto == null) return;
+        var sql = "update proxy set status = 'inactive', message = :mess where proxy_id = :proxy_id";
+        var params = Map.of("proxy_id", dto.getProxyId(), "mess", message);
+        db.update(sql, params);
+        log.info("Proxy " + dto.getServer() + " is inactive");
     }
 
     @Override
     public void onApplicationEvent(@NonNull WebServerInitializedEvent event) {
         this.url = "http://" + ipAddress + ":" + event.getWebServer().getPort() + module;
         saveServerInfo();
-        listScheduledMethods();
+        saveScheduledMethods();
     }
 
     void saveServerInfo() {
@@ -83,6 +97,32 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
         );
     }
 
+    public boolean useProxy(String jobName) {
+        return db.query(
+                """
+                               select use_proxy
+                               from schedule_manager
+                               where host_name = :node
+                                 and schedule_name like :name
+                        """,
+                Map.of("node", hostName, "name", jobName),
+                (rs, rn) -> rs.getBoolean("use_proxy")
+        ).stream().findFirst().orElse(false);
+    }
+
+    public boolean runHeadless(String jobName) {
+        return db.query(
+                """
+                               select run_headless
+                               from schedule_manager
+                               where host_name = :node
+                                 and schedule_name like :name
+                        """,
+                Map.of("node", hostName, "name", jobName),
+                (rs, rn) -> rs.getBoolean("use_proxy")
+        ).stream().findFirst().orElse(false);
+    }
+
     public boolean isScheduledMethodActive(String methodName) {
         var sql = "select status from schedule_manager where schedule_name = :schedule_name and host_name = :host_name";
         var params = Map.of(
@@ -94,7 +134,7 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
                 .orElse(false);
     }
 
-    public void listScheduledMethods() {
+    public void saveScheduledMethods() {
         String[] beanNames = ApplicationContextProvider.getBeanDefinitionNames();
         for (String beanName : beanNames) {
             Object bean = ApplicationContextProvider.getBean(beanName);

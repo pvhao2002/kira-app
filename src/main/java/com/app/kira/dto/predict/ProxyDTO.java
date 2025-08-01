@@ -12,6 +12,7 @@ import java.sql.SQLException;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProxyDTO {
+    private int proxyId;
     private String server;
     private int port;
     private String secret;
@@ -19,15 +20,18 @@ public class ProxyDTO {
     private String password;
 
     public ProxyDTO(ResultSet rs) throws SQLException {
+        this.proxyId = rs.getInt("proxy_id");
         this.server = rs.getString("address");
         this.port = rs.getInt("port");
         this.username = rs.getString("username");
         this.password = rs.getString("password");
     }
 
-    public static Proxy toProxyPlayWright(ProxyDTO dto) {
-        return new Proxy(dto.getServer() + ":" + dto.getPort())
-                .setUsername(dto.getUsername())
-                .setPassword(dto.getPassword());
+    public Proxy toProxyPlayWright() {
+        var p = new Proxy(getServer() + ":" + getPort());
+        if (getUsername() != null && !getUsername().isEmpty()) {
+            p = p.setUsername(getUsername()).setPassword(getPassword());
+        }
+        return p;
     }
 }
