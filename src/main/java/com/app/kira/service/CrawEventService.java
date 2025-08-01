@@ -86,6 +86,14 @@ public class CrawEventService {
             List<MapSqlParameterSource> result = new ArrayList<>();
             try {
                 page.navigate(event.getDetailLink());
+                page.waitForTimeout(3000);
+                // find tag have class icon-404
+                var error404 = page.querySelector(".icon-404");
+                if (error404 != null) {
+                    log.log(Level.WARNING, "Crawl Event {0}-{1}-{2} Not Found", new Object[]{event.getEventId(), event.getEventName(), event.getDetailLink()});
+                    jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource("eventId", event.getEventId()));
+                    return;
+                }
                 page.waitForSelector(".lookBox", new Page.WaitForSelectorOptions().setTimeout(30_000));
                 page.waitForTimeout(2000);
                 var tabs = page.querySelectorAll(".content-box .child");
@@ -172,12 +180,20 @@ public class CrawEventService {
             var baseParam = new MapSqlParameterSource("event_id", event.getId());
             var paramWithHost = baseParam.addValue("os", serverInfoService.getHostName());
             try {
+                jdbcTemplate.update("update event_crawl set status = 'in_progress' where id = :event_id", baseParam);
                 log.log(Level.INFO, "Crawl Event {0}-{1}-{2} Start", new Object[]{event.getId(), event.getEventName(), event.getDetailLink()});
-                jdbcTemplate.update(
-                        "update event_crawl set status = 'in_progress' where id = :event_id",
-                        baseParam
-                );
                 page.navigate(event.getDetailLink() + "/odds");
+                page.waitForTimeout(3000);
+                // find tag have class icon-404
+                var error404 = page.querySelector(".icon-404");
+                if (error404 != null) {
+                    log.log(Level.WARNING, "Crawl Event {0}-{1}-{2} Not Found", new Object[]{event.getId(), event.getEventName(), event.getDetailLink()});
+                    jdbcTemplate.update("""
+                            insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', '401 GONE')
+                            """, paramWithHost);
+                    return;
+                }
+
                 page.waitForSelector(".lookBox", new Page.WaitForSelectorOptions().setTimeout(30_000));
                 page.waitForTimeout(2000);
                 var tabs = page.querySelectorAll(".content-box .child");
@@ -185,8 +201,10 @@ public class CrawEventService {
                     var checkHaveTabOdd = tabs.stream()
                             .anyMatch(it -> it.textContent().trim().toLowerCase().contains("odds"));
                     if (!checkHaveTabOdd) {
-                        jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource("eventId", event.getId()));
-                        log.log(Level.INFO, "Crawl Odd For Upcoming Event End - Event {0} not have odd tab", event.getId());
+                        log.log(Level.INFO, "Crawl Odd For Event End - Event {0} - {1} not have odd tab", new Object[]{event.getEventName(), event.getDetailLink()});
+                        jdbcTemplate.update("""
+                                insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', 'NO TAB ODD')
+                                """, paramWithHost);
                         return;
                     }
                 }
@@ -235,7 +253,7 @@ public class CrawEventService {
                         insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', :message)
                           """, paramWithHost.addValue("message", ex.getMessage()));
             } finally {
-                var sqlDel = "DELETE FROM event_crawl  WHERE id=:event_id AND status = 'in_progress'";
+                var sqlDel = "DELETE FROM event_crawl  WHERE id=:event_id AND status <> 'failed'";
                 jdbcTemplate.update(sqlDel, baseParam);
                 log.log(Level.INFO, "Crawl Event {0}-{1}-{2} End", new Object[]{event.getId(), event.getEventName(), event.getDetailLink()});
             }

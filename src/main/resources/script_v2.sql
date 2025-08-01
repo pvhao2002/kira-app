@@ -218,3 +218,10 @@ CREATE INDEX idx_odd_event_type_event_date
 create index idx_odd_line_odd_event on odd_event(line, odd_type);
 alter table odd_event
     add column is_valid_line tinyint(1) default 1;
+drop table if exists invalid_line;
+create table if not exists invalid_line
+(
+    line       varchar(25) primary key,
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp on update current_timestamp
+);
