@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 public class DateSchedule {
     private final CrawDateService crawDateService;
 
-    @Scheduled(cron = "0 0 19 * * ?", zone = "Asia/Ho_Chi_Minh")
+    @Scheduled(cron = "0 0 5,12,19 * * ?", zone = "Asia/Ho_Chi_Minh")
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 60_000, multiplier = 2))
     public void crawlTomorrowEvent() {
         crawDateService.crawlTomorrowEventToPredict();

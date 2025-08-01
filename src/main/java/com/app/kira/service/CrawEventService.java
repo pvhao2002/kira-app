@@ -75,6 +75,12 @@ public class CrawEventService {
                             ON DUPLICATE KEY UPDATE
                                 odd_value = VALUES(odd_value)
             """;
+    private static final String SQL_CLEAN_EVENT = """
+            delete
+            from event_analyst
+            where event_name = :event_name
+              and event_date = :event_date
+             """;
 
     @Transactional
     public void processOddForUpcomingEvent() {
@@ -192,6 +198,9 @@ public class CrawEventService {
                     jdbcTemplate.update("""
                             insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', '401 GONE')
                             """, paramWithHost);
+                    jdbcTemplate.update(SQL_CLEAN_EVENT, new MapSqlParameterSource()
+                            .addValue("event_name", event.getEventName())
+                            .addValue("event_date", event.getTime()));
                     return;
                 }
 
@@ -206,6 +215,9 @@ public class CrawEventService {
                         jdbcTemplate.update("""
                                 insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', 'NO TAB ODD')
                                 """, paramWithHost);
+                        jdbcTemplate.update(SQL_CLEAN_EVENT, new MapSqlParameterSource()
+                                .addValue("event_name", event.getEventName())
+                                .addValue("event_date", event.getTime()));
                         return;
                     }
                 }
