@@ -58,12 +58,13 @@ public class CrawEventService {
             from events e
                      left join odds o on o.event_id = e.event_id
             where true
+              and event_date >= CONVERT_TZ(NOW(), 'SYSTEM', '+07:00')
               and (
-                (event_date BETWEEN CONVERT_TZ(NOW(), '+00:00', '+07:00') AND CONVERT_TZ(NOW(), '+00:00', '+07:00') + INTERVAL 3 HOUR)
+                (event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + INTERVAL 3 HOUR)
                     OR
                 (o.event_id IS NULL)
-            )
-            GROUP BY e.event_id
+                )
+            GROUP BY e.event_id;
             """;
     private static final String SQL_DELETE_EVENT_UPCOMING = """
             delete from events where event_id = :eventId

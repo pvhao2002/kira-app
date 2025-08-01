@@ -16,8 +16,12 @@ import java.util.function.Predicate;
 public class SummaryOddEventAnalyst {
     private Integer homeGreaterAway;
     private Integer awayGreaterHome;
+    private Integer homeEqualAway;
+
     private Integer overGreaterUnder;
     private Integer underGreaterOver;
+    private Integer overEqualUnder;
+
     private Integer homeAndOverGreater;
     private Integer homeAndUnderGreater;
     private Integer awayAndOverGreater;
@@ -76,6 +80,15 @@ public class SummaryOddEventAnalyst {
                         && i.getLastUnderOdds() != null
                         && i.getLastAwayOdds() > i.getLastHomeOdds()
                         && i.getLastUnderOdds() > i.getLastOverOdds());
+        this.homeEqualAway = countWhere(items,
+                i -> i.getLastHomeOdds() != null
+                        && i.getLastAwayOdds() != null
+                        && equalsFirstDecimalPlace(i.getLastHomeOdds(), i.getLastAwayOdds()));
+        this.overEqualUnder = countWhere(items,
+                i -> i.getLastOverOdds() != null
+                        && i.getLastUnderOdds() != null
+                        && equalsFirstDecimalPlace(i.getLastOverOdds(), i.getLastUnderOdds()));
+
         Double homeOddRequest = null;
         Double awayOddRequest = null;
         Double overOddRequest = null;

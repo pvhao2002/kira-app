@@ -14,12 +14,18 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 public class ScoreSummary {
     private static final String FORMAT_SCORE_SUMMARY = "H: %.2f/ A: %.2f / O: %.2f/ U: %.2f";
+    private static final String FORMAT_H2A = "H: %.2f/ A: %.2f";
+    private static final String FORMAT_O2U = "O: %.2f/ U: %.2f";
+
     private String score;
     private int cnt;
     private String minOdd;
     private String maxOdd;
-
     private String regularOdd;
+    private String h2a;
+    private String o2u;
+    private String h2aOdd;
+    private String o2uOdd;
 
     public ScoreSummary(Map.Entry<String, List<EventFilterAnalystDTO>> items) {
         this.score = items.getKey();
@@ -72,7 +78,32 @@ public class ScoreSummary {
                 .collect(Collectors.groupingBy(String::toString, Collectors.counting()))
                 .entrySet().stream()
                 .max(Map.Entry.comparingByValue())
-                .map(it -> it.getKey() + " (" + it.getValue() + ")")
+                .map(Map.Entry::getKey)
                 .orElse(null);
+        if (this.regularOdd != null) {
+            try {
+                String[] parts = this.regularOdd.split("[/:]");
+                double home = Double.parseDouble(parts[1].trim());
+                double away = Double.parseDouble(parts[3].trim());
+                double over = Double.parseDouble(parts[5].trim());
+                double under = Double.parseDouble(parts[7].trim());
+                this.h2aOdd = String.format(FORMAT_H2A, home, away);
+                this.o2uOdd = String.format(FORMAT_O2U, over, under);
+
+                this.h2a = switch (Double.compare(home, away)) {
+                    case 1 -> "H";
+                    case -1 -> "A";
+                    default -> "=";
+                };
+                this.o2u = switch (Double.compare(over, under)) {
+                    case 1 -> "O";
+                    case -1 -> "U";
+                    default -> "=";
+                };
+            } catch (Exception e) {
+                this.h2a = null;
+                this.o2u = null;
+            }
+        }
     }
 }
