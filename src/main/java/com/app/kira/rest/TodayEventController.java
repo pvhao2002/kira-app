@@ -31,9 +31,11 @@ public class TodayEventController {
                  , odd_value
             from events e
                      inner join kira_league l on l.league_id = e.league_id
-                     left join odds o on o.event_id = e.event_id
+                     inner join odds o on o.event_id = e.event_id
             where true
               and event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00')
+                and o.odd_type <> '1x2'
+                and o.odd_value <> '[]'
             order by l.is_main desc, e.event_date
             """;
 
@@ -43,15 +45,21 @@ public class TodayEventController {
         if (events.isEmpty()) {
             return Collections.emptyList();
         }
-        return events
+        var eventResults = events
                 .stream()
                 .collect(Collectors.groupingBy(EventDTO::getEventId, LinkedHashMap::new, Collectors.toList()))
                 .entrySet()
                 .stream()
                 .map(EventResult::new)
+                .toList();
+        var result = eventResults
+                .stream()
                 .collect(Collectors.groupingBy(EventResult::getLeagueName, LinkedHashMap::new, Collectors.toList()))
                 .entrySet()
                 .stream().map(entry -> new TodayEventResponse(entry.getKey(), entry.getValue()))
                 .toList();
+
+
+        return result;
     }
 }

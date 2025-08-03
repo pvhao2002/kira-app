@@ -11,7 +11,7 @@ import java.util.logging.Level;
 @UtilityClass
 public class JsonUtil {
 
-    private static final Gson gson = new Gson();
+    public static final Gson gson = new Gson();
 
     public static <T> T fromJson(String json, Class<T> clazz) {
         try {

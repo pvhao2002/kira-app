@@ -2,14 +2,13 @@ package com.app.kira.model;
 
 import com.app.kira.model.analyst.OddAnalyst;
 import com.app.kira.util.DateUtil;
+import com.app.kira.util.JsonUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -20,7 +19,6 @@ import java.util.*;
 @NoArgsConstructor
 @Builder
 public class EventResult {
-    private static final Gson gson = new Gson();
     private Long eventId;
     private String eventName;
     @JsonIgnore
@@ -137,7 +135,7 @@ public class EventResult {
                 .filter(odd -> type.contains(odd.getOddType()))
                 .flatMap(odd -> {
                     var listType = TypeToken.getParameterized(List.class, clazz).getType();
-                    List<T> parsedList = gson.fromJson(odd.getOddValue(), listType);
+                    List<T> parsedList = JsonUtil.gson.fromJson(odd.getOddValue(), listType);
                     return parsedList.stream();
                 })
                 .toList();
