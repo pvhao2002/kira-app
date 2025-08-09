@@ -19,11 +19,11 @@ public class PlaywrightUtil {
     private static final ServerInfoService SERVER_BEAN = ApplicationContextProvider.getBean(ServerInfoService.class);
 
     public <P> void withPlaywright(List<P> list, BiConsumer<Page, List<P>> logic) {
-        withPlaywright(list, false, true, logic);
+        withPlaywright(list, false, false, logic);
     }
 
     public <P> void withPlaywright(List<P> list, boolean useProxy, BiConsumer<Page, List<P>> logic) {
-        withPlaywright(list, useProxy, true, logic);
+        withPlaywright(list, useProxy, false, logic);
     }
 
     public <P> void withPlaywright(List<P> list, String jobName, BiConsumer<Page, List<P>> logic) {

@@ -18,7 +18,6 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -67,7 +66,7 @@ public class CrawEventService {
             GROUP BY e.event_id;
             """;
     private static final String SQL_DELETE_EVENT_UPCOMING = """
-            delete from events where event_id = :eventId
+            delete from events where event_id = :event_id
             """;
     private static final String SQL_INSERT_ODD = """
             insert into odds(odd_type, odd_value, event_id)
@@ -82,25 +81,26 @@ public class CrawEventService {
               and event_date = :event_date
              """;
 
-    @Transactional
     public void processOddForUpcomingEvent() {
         log.log(Level.INFO, "Crawl Odd For Upcoming Event Start");
         var events = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING, (rs, i) -> new Event(rs));
         if (CollectionUtils.isEmpty(events)) {
             return;
         }
+
         PlaywrightUtil.withPlaywright(events, (page, list) -> list.forEach(event -> {
             List<MapSqlParameterSource> result = new ArrayList<>();
             try {
                 page.navigate(event.getDetailLink());
-                page.waitForTimeout(3000);
+                page.waitForTimeout(3_000);
                 // find tag have class icon-404
                 var error404 = page.querySelector(".icon-404");
                 if (error404 != null) {
                     log.log(Level.WARNING, "Crawl Event {0}-{1}-{2} Not Found", new Object[]{event.getEventId(), event.getEventName(), event.getDetailLink()});
-                    jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource("eventId", event.getEventId()));
+                    jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
                     return;
                 }
+
                 page.waitForSelector(".lookBox", new Page.WaitForSelectorOptions().setTimeout(30_000));
                 page.waitForTimeout(2000);
                 var tabs = page.querySelectorAll(".content-box .child");
@@ -108,11 +108,19 @@ public class CrawEventService {
                     var checkHaveTabOdd = tabs.stream()
                             .anyMatch(it -> it.textContent().trim().toLowerCase().contains("odds"));
                     if (!checkHaveTabOdd) {
-                        jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource("eventId", event.getEventId()));
-                        log.log(Level.INFO, "Crawl Odd For Upcoming Event End - Event {0} not have odd tab", event.getEventId());
+                        jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
+                        log.log(Level.INFO, "processOddForUpcomingEvent - Event {0} not have odd tab", event.getEventId());
+                        return;
+                    }
+                    var noData = page.locator("div.color-999.fs-12.mt-12",
+                            new Page.LocatorOptions().setHasText("No data"));
+                    if (noData.count() > 0 && noData.isVisible()) {
+                        log.log(Level.INFO, "processOddForUpcomingEvent - Event {0} - {1} No data", new Object[]{event.getEventName(), event.getDetailLink()});
+                        jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
                         return;
                     }
                 }
+
                 var lookBoxes = page.querySelectorAll(".lookBox.brb");
                 if (!lookBoxes.isEmpty()) {
                     var bet = getOdd(page, lookBoxes);
@@ -137,6 +145,9 @@ public class CrawEventService {
                             .addValue(ODD_TYPE, "corners"));
 
                     jdbcTemplate.batchUpdate(SQL_INSERT_ODD, result.toArray(new MapSqlParameterSource[0]));
+                } else {
+                    log.log(Level.INFO, "processOddForUpcomingEvent - Event {0} empty provider odd", event.getEventId());
+                    jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
                 }
             } catch (Exception ex) {
                 log.log(Level.SEVERE, "crawlOddForUpcomingEvent >> Crawl Event %s-%s-%s Failed".formatted(event.getEventId(), event.getEventName(), event.getDetailLink()), ex);
@@ -165,7 +176,6 @@ public class CrawEventService {
         return resultBet;
     }
 
-    @Transactional
     public void processCrawEvent() {
         var sqlEvents = """
                 select id,
@@ -184,7 +194,7 @@ public class CrawEventService {
         }
         PlaywrightUtil.withPlaywright(events, (page, list) -> list.forEach(event -> {
             List<MapSqlParameterSource> result = new ArrayList<>();
-            var baseParam = new MapSqlParameterSource("event_id", event.getId());
+            var baseParam = new MapSqlParameterSource(EVENT_ID, event.getId());
             var paramWithHost = baseParam.addValue("os", serverInfoService.getHostName());
             try {
                 jdbcTemplate.update("update event_crawl set status = 'in_progress' where id = :event_id", baseParam);
@@ -199,13 +209,14 @@ public class CrawEventService {
                             insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', '401 GONE')
                             """, paramWithHost);
                     jdbcTemplate.update(SQL_CLEAN_EVENT, new MapSqlParameterSource()
-                            .addValue("event_name", event.getEventName())
-                            .addValue("event_date", event.getTime()));
+                            .addValue(EVENT_NAME, event.getEventName())
+                            .addValue(EVENT_DATE, event.getTime()));
                     return;
                 }
 
                 page.waitForSelector(".lookBox", new Page.WaitForSelectorOptions().setTimeout(30_000));
                 page.waitForTimeout(2000);
+
                 var tabs = page.querySelectorAll(".content-box .child");
                 if (!tabs.isEmpty()) {
                     var checkHaveTabOdd = tabs.stream()
@@ -216,8 +227,20 @@ public class CrawEventService {
                                 insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', 'NO TAB ODD')
                                 """, paramWithHost);
                         jdbcTemplate.update(SQL_CLEAN_EVENT, new MapSqlParameterSource()
-                                .addValue("event_name", event.getEventName())
-                                .addValue("event_date", event.getTime()));
+                                .addValue(EVENT_NAME, event.getEventName())
+                                .addValue(EVENT_DATE, event.getTime()));
+                        return;
+                    }
+                    var noData = page.locator("div.color-999.fs-12.mt-12",
+                            new Page.LocatorOptions().setHasText("No data"));
+                    if (noData.count() > 0 && noData.isVisible()) {
+                        log.log(Level.INFO, "Crawl Odd For Event End - Event {0} - {1} No data", new Object[]{event.getEventName(), event.getDetailLink()});
+                        jdbcTemplate.update("""
+                            insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', 'NO DATA')
+                            """, paramWithHost);
+                        jdbcTemplate.update(SQL_CLEAN_EVENT, new MapSqlParameterSource()
+                                .addValue(EVENT_NAME, event.getEventName())
+                                .addValue(EVENT_DATE, event.getTime()));
                         return;
                     }
                 }
@@ -255,6 +278,10 @@ public class CrawEventService {
                     jdbcTemplate.update("""
                               insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'ok', 'NOT_FOUND_ODD')
                             """, paramWithHost);
+                    log.log(Level.INFO, "Crawl Odd For Event End - Event {0} empty provider odd", event.getEventName());
+                    jdbcTemplate.update(SQL_CLEAN_EVENT, new MapSqlParameterSource()
+                            .addValue(EVENT_NAME, event.getEventName())
+                            .addValue(EVENT_DATE, event.getTime()));
                 }
             } catch (Exception ex) {
                 log.log(Level.SEVERE, "Crawl Event %s-%s-%s Failed".formatted(event.getId(), event.getEventName(), event.getDetailLink()), ex);

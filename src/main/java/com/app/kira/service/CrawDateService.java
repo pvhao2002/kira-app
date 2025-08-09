@@ -14,7 +14,6 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -86,9 +85,7 @@ public class CrawDateService {
             """;
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    @Transactional
-    public void crawlTomorrowEventToPredict() {
-        var date = DateUtil.getTomorrowDate();
+    public void crawlTomorrowEventToPredict(String date) {
         log.info("Crawl tomorrow event for date: " + date);
         PlaywrightUtil.withPlaywright(Collections.emptyList(), (page, list) -> {
             try {
@@ -133,7 +130,6 @@ public class CrawDateService {
         });
     }
 
-    @Transactional
     public void crawlByDateToAnalyst() {
         var sql = """
                 select *
