@@ -43,6 +43,7 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
     void init() {
         this.hostName = ServerUtils.getServerHostName();
         this.ipAddress = ServerUtils.getInstanceName();
+        log.info("Application started on host: " + hostName + ", IP: " + ipAddress);
     }
 
     @PreDestroy
