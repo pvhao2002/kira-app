@@ -59,7 +59,7 @@ public class CrawEventService {
             where true
               and event_date >= CONVERT_TZ(NOW(), 'SYSTEM', '+07:00')
               and (
-                (event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + INTERVAL 3 HOUR)
+                (event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + INTERVAL 5 HOUR)
                     OR
                 (o.event_id IS NULL)
                 )

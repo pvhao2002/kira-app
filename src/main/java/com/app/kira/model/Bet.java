@@ -117,8 +117,8 @@ public class Bet {
         param.addValue("last_over_odds", maxOddGoal.getOverOdd());
         param.addValue("last_under_odds", maxOddGoal.getUnderOdd());
 
-        param.addValue("first_hdc", minOddGoal.getLine());
-        param.addValue("last_hdc", maxOddGoal.getLine());
+        param.addValue("first_hdc", minOddHandicap.getLine());
+        param.addValue("last_hdc", maxOddHandicap.getLine());
 
         param.addValue("first_ou", minOddGoal.getLine());
         param.addValue("last_ou", maxOddGoal.getLine());
