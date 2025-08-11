@@ -79,7 +79,26 @@ public class CrawEventService {
             from event_analyst
             where event_name = :event_name
               and event_date = :event_date
-             """;
+            """;
+
+    private static final String SQL_UPDATE_EVENT_UPCOMING = """
+            update events
+            set first_home_odds  = :first_home_odds,
+                first_away_odds  = :first_away_odds,
+                last_home_odds   = :last_home_odds,
+                last_away_odds   = :last_away_odds,
+            
+                first_over_odds  = :first_over_odds,
+                first_under_odds = :first_under_odds,
+                last_over_odds   = :last_over_odds,
+                last_under_odds  = :last_under_odds,
+            
+                first_hdc        = :first_hdc,
+                last_hdc         = :last_hdc,
+                first_ou         = :first_ou,
+                last_ou          = :last_ou
+            where event_id = :eventId
+            """;
 
     public void processOddForUpcomingEvent() {
         log.log(Level.INFO, "Crawl Odd For Upcoming Event Start");
@@ -89,7 +108,6 @@ public class CrawEventService {
         }
 
         PlaywrightUtil.withPlaywright(events, (page, list) -> list.forEach(event -> {
-            List<MapSqlParameterSource> result = new ArrayList<>();
             try {
                 page.navigate(event.getDetailLink());
                 page.waitForTimeout(3_000);
@@ -124,27 +142,8 @@ public class CrawEventService {
                 var lookBoxes = page.querySelectorAll(".lookBox.brb");
                 if (!lookBoxes.isEmpty()) {
                     var bet = getOdd(page, lookBoxes);
-                    result.add(new MapSqlParameterSource()
-                            .addValue(EVENT_ID, event.getEventId())
-                            .addValue(ODD_VALUE, JsonUtil.toJson(bet.getOdds1x2()))
-                            .addValue(ODD_TYPE, MONEY_LINE_1X2));
-
-                    result.add(new MapSqlParameterSource()
-                            .addValue(EVENT_ID, event.getEventId())
-                            .addValue(ODD_VALUE, JsonUtil.toJson(bet.getOddsHandicap()))
-                            .addValue(ODD_TYPE, HANDICAP));
-
-                    result.add(new MapSqlParameterSource()
-                            .addValue(EVENT_ID, event.getEventId())
-                            .addValue(ODD_VALUE, JsonUtil.toJson(bet.getOddsGoal()))
-                            .addValue(ODD_TYPE, "goals"));
-
-                    result.add(new MapSqlParameterSource()
-                            .addValue(EVENT_ID, event.getEventId())
-                            .addValue(ODD_VALUE, JsonUtil.toJson(bet.getOddsCorner()))
-                            .addValue(ODD_TYPE, "corners"));
-
-                    jdbcTemplate.batchUpdate(SQL_INSERT_ODD, result.toArray(new MapSqlParameterSource[0]));
+                    var paramUpdate = bet.toPram(event.getEventId());
+                    jdbcTemplate.update(SQL_UPDATE_EVENT_UPCOMING, paramUpdate);
                 } else {
                     log.log(Level.INFO, "processOddForUpcomingEvent - Event {0} empty provider odd", event.getEventId());
                     jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
@@ -236,8 +235,8 @@ public class CrawEventService {
                     if (noData.count() > 0 && noData.isVisible()) {
                         log.log(Level.INFO, "Crawl Odd For Event End - Event {0} - {1} No data", new Object[]{event.getEventName(), event.getDetailLink()});
                         jdbcTemplate.update("""
-                            insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', 'NO DATA')
-                            """, paramWithHost);
+                                insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', 'NO DATA')
+                                """, paramWithHost);
                         jdbcTemplate.update(SQL_CLEAN_EVENT, new MapSqlParameterSource()
                                 .addValue(EVENT_NAME, event.getEventName())
                                 .addValue(EVENT_DATE, event.getTime()));
@@ -291,7 +290,7 @@ public class CrawEventService {
                 );
                 jdbcTemplate.update("""
                         insert into pc(pc_name, event_id, status, message) VALUES (:os, :event_id, 'fail', :message)
-                          """, paramWithHost.addValue("message", ex.getMessage()));
+                        """, paramWithHost.addValue("message", ex.getMessage()));
             } finally {
                 var sqlDel = "DELETE FROM event_crawl  WHERE id=:event_id AND status <> 'failed'";
                 jdbcTemplate.update(sqlDel, baseParam);

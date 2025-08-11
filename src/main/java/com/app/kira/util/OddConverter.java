@@ -6,6 +6,14 @@ import org.apache.commons.lang3.StringUtils;
 @UtilityClass
 public class OddConverter {
 
+    public static Double parse(String value) {
+        try {
+            return Double.parseDouble(value);
+        } catch (Exception ex) {
+            return 0.0;
+        }
+    }
+
     /**
      * Chuyển đổi chuỗi kèo kiểu "2.5/3" thành số double (trung bình).
      *

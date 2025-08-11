@@ -1,13 +1,20 @@
 package com.app.kira.model;
 
+import com.app.kira.model.analyst.OddAnalyst;
+import com.app.kira.util.DateUtil;
+import com.app.kira.util.OddConverter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Data
 @AllArgsConstructor
@@ -52,58 +59,69 @@ public class Bet {
                 .toList();
     }
 
-    public String toResult() {
-        var result = new StringBuilder();
+    public MapSqlParameterSource toPram(long eventId) {
+        var param = new MapSqlParameterSource("eventId", eventId);
+        var oddGoal = getOddsGoal().stream()
+                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .toList();
 
-        result.append("Event Name: ").append(eventName).append("\n");
-        result.append("League Name: ").append(leagueName).append("\n");
-        result.append("Event Date: ").append(eventDate).append("\n\n");
+        var oddHdc = getOddsHandicap().stream()
+                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .toList();
 
-        // Helper line
-        String line1x2 = "|" + "-".repeat(42) + "|" + "-".repeat(17) + "|" + "-".repeat(17) + "|" + "-".repeat(17) + "|\n";
-        String lineHandicap = "|" + "-".repeat(42) + "|" + "-".repeat(17) + "|" + "-".repeat(17) + "|\n";
+        OddAnalyst minOddGoal = oddGoal.stream()
+                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .min(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .map(e -> OddAnalyst.builder()
+                        .line(e.getGoals())
+                        .overOdd(OddConverter.parse(e.getOver()))
+                        .underOdd(OddConverter.parse(e.getUnder()))
+                        .build())
+                .orElse(new OddAnalyst());
+        OddAnalyst maxOddGoal = oddGoal.stream()
+                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .map(e -> OddAnalyst.builder()
+                        .line(e.getGoals())
+                        .overOdd(OddConverter.parse(e.getOver()))
+                        .underOdd(OddConverter.parse(e.getUnder()))
+                        .build())
+                .orElse(new OddAnalyst());
 
-        // Odds 1x2
-        result.append("Odds 1x2:\n");
-        result.append(String.format("| %-40s | %-15s | %-15s | %-15s |\n", "Date", "1", "X", "2"));
-        result.append(line1x2);
-        for (Odd1x2 odd : odds1x2) {
-            result.append(String.format("| %-40s | %-15s | %-15s | %-15s |\n",
-                    odd.getOddDate(), odd.get_1(), odd.getX(), odd.get_2()));
-        }
-        result.append(line1x2).append("\n");
+        OddAnalyst minOddHandicap = oddHdc.stream()
+                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .min(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .map(e -> OddAnalyst.builder()
+                        .line(e.getHome().split(" ")[0] + "#" + e.getAway().split(" ")[0])
+                        .homeOdd(OddConverter.parse(e.getHome().split(" ")[1]))
+                        .awayOdd(OddConverter.parse(e.getAway().split(" ")[1]))
+                        .build())
+                .orElse(new OddAnalyst());
+        OddAnalyst maxOddHandicap = oddHdc.stream()
+                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .map(e -> OddAnalyst.builder()
+                        .line(e.getHome().split(" ")[0] + "#" + e.getAway().split(" ")[0])
+                        .homeOdd(OddConverter.parse(e.getHome().split(" ")[1]))
+                        .awayOdd(OddConverter.parse(e.getAway().split(" ")[1]))
+                        .build())
+                .orElse(new OddAnalyst());
 
-        // Odds Goal
-        result.append("Odds Goal:\n");
-        result.append(String.format("| %-40s | %-15s | %-15s | %-15s |\n", "Date", "Goals", "Over", "Under"));
-        result.append(line1x2);
-        for (OddGoal odd : oddsGoal) {
-            result.append(String.format("| %-40s | %-15s | %-15s | %-15s |\n",
-                    odd.getOddDate(), odd.getGoals(), odd.getOver(), odd.getUnder()));
-        }
-        result.append(line1x2).append("\n");
+        param.addValue("first_home_odds", minOddHandicap.getHomeOdd());
+        param.addValue("first_away_odds", minOddHandicap.getAwayOdd());
+        param.addValue("last_home_odds", maxOddHandicap.getHomeOdd());
+        param.addValue("last_away_odds", maxOddHandicap.getAwayOdd());
 
-        // Odds Handicap
-        result.append("Odds Handicap:\n");
-        result.append(String.format("| %-40s | %-15s | %-15s |\n", "Date", "Home", "Away"));
-        result.append(lineHandicap);
-        for (OddHandicap odd : oddsHandicap) {
-            result.append(String.format("| %-40s | %-15s | %-15s |\n",
-                    odd.getOddDate(), odd.getHome(), odd.getAway()));
-        }
-        result.append(lineHandicap).append("\n");
+        param.addValue("first_over_odds", minOddGoal.getOverOdd());
+        param.addValue("first_under_odds", minOddGoal.getUnderOdd());
+        param.addValue("last_over_odds", maxOddGoal.getOverOdd());
+        param.addValue("last_under_odds", maxOddGoal.getUnderOdd());
 
-        // Odds Corner
-        result.append("Odds Corner:\n");
-        result.append(String.format("| %-40s | %-15s | %-15s | %-15s |\n", "Date", "Corner", "Over", "Under"));
-        result.append(line1x2);
-        for (OddCorner odd : oddsCorner) {
-            result.append(String.format("| %-40s | %-15s | %-15s | %-15s |\n",
-                    odd.getOddDate(), odd.getCorner(), odd.getOver(), odd.getUnder()));
-        }
-        result.append(line1x2);
+        param.addValue("first_hdc", minOddGoal.getLine());
+        param.addValue("last_hdc", maxOddGoal.getLine());
 
-        return result.toString();
+        param.addValue("first_ou", minOddGoal.getLine());
+        param.addValue("last_ou", maxOddGoal.getLine());
+        return param;
     }
-
 }

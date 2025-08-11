@@ -17,7 +17,7 @@ import java.util.List;
 public class DateSchedule {
     private final CrawDateService crawDateService;
 
-    @Scheduled(cron = "0 0 4,8,12,15,18,20 * * *", zone = "Asia/Ho_Chi_Minh")
+    @Scheduled(cron = "0 31 4,8,12,15,18,20,1 * * *", zone = "Asia/Ho_Chi_Minh")
     @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 60_000, multiplier = 2))
     public void crawlTomorrowEvent() {
         for (var date : List.of(DateUtil.getTodayDate(), DateUtil.getTomorrowDate())) {
