@@ -1,6 +1,8 @@
 package com.app.kira.rest;
 
-import com.app.kira.model.*;
+import com.app.kira.model.EventDTO;
+import com.app.kira.model.EventResult;
+import com.app.kira.model.OddGoal;
 import com.app.kira.util.DateUtil;
 import com.app.kira.util.PlaywrightUtil;
 import com.google.gson.Gson;
@@ -11,19 +13,16 @@ import com.microsoft.playwright.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -33,12 +32,12 @@ import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -85,81 +84,12 @@ public class MainController {
                         
             Reasoning:
             """;
-    RestTemplate restTemplate = new RestTemplate();
 
     @GetMapping("testss")
     public String test() {
         log.log(Level.INFO, "Last day of month: {0}", "1234");
         return "Test successful";
     }
-
-    @GetMapping("/last-days")
-    public List<LocalDate> getLastDaysOfMonths(
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fromDate) {
-        String TOKEN = "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIyIiwianRpIjoiMiIsImlhdCI6MTc1NDgxMDg4OCwiZXhwIjoxNzU0ODU0MDg4fQ.SAeY6MjsXHIc1wZnqWMC6vLqgkXsAhqN5ZE2YyNPVowxd2y-IR1k_YrizUcoKkQbbJdo1ma9aUHdoj03KMXG2g";
-        List<LocalDate> lastDays = new ArrayList<>();
-
-        // toDate luôn là thời điểm hiện tại
-        LocalDate toDate = LocalDate.now();
-
-        if (fromDate.isAfter(toDate)) {
-            throw new IllegalArgumentException("fromDate phải nhỏ hơn hoặc bằng thời điểm hiện tại");
-        }
-
-        YearMonth start = YearMonth.from(fromDate);
-        YearMonth end = YearMonth.from(toDate);
-
-        YearMonth current = start;
-        while (!current.isAfter(end)) {
-            LocalDate lastDay = current.atEndOfMonth();
-            if (!lastDay.isBefore(fromDate) && !lastDay.isAfter(toDate)) {
-                lastDays.add(lastDay);
-                log.log(Level.INFO, "Last day of month: {0}", lastDay);
-                String API1 = UriComponentsBuilder.fromHttpUrl("https://sb11.safari77.com/aqs-agent-service/test/record-balance")
-                        .queryParam("requestDate", lastDay)
-                        .toUriString();
-                String API2 = UriComponentsBuilder.fromUriString("https://sb11.safari77.com/aqs-scheduler/journal/ct-cje")
-                        .queryParam("companyId", "1")
-                        .queryParam("date", lastDay)
-                        .toUriString();
-                String API3 = UriComponentsBuilder.fromUriString("https://sb11.safari77.com/aqs-scheduler/journal/ct-cje")
-                        .queryParam("companyId", "4")
-                        .queryParam("date", lastDay)
-                        .toUriString();
-                String API4 = UriComponentsBuilder.fromUriString("https://sb11.safari77.com/aqs-scheduler/journal/closing-journal-ignore-gen")
-                        .queryParam("date", lastDay)
-                        .toUriString();
-
-                var listApi = List.of(API1, API2, API3, API4);
-                for (String api : listApi) {
-                    try {
-                        log.log(Level.INFO, "API: {0}", api);
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.set("Authorization", TOKEN);
-                        headers.setContentType(MediaType.APPLICATION_JSON);
-                        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-                        ResponseEntity<?> response = restTemplate.exchange(
-                                api,
-                                HttpMethod.GET,
-                                entity,
-                                Object.class
-                        );
-
-                        var bd = response.getBody();
-                        log.log(Level.INFO, "Response: {0}", bd);
-                        Thread.sleep(3000);
-                    } catch (Exception e) {
-                        log.log(Level.WARNING, "Error calling API: ", e);
-                    }
-                }
-            }
-            current = current.plusMonths(1);
-        }
-
-        return lastDays;
-    }
-
 
     @GetMapping("check-playwright")
     public Object checkPlayWright(@RequestParam String url) {

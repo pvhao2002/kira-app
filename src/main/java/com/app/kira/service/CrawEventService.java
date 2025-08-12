@@ -19,9 +19,11 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -59,11 +61,13 @@ public class CrawEventService {
             where true
               and event_date >= CONVERT_TZ(NOW(), 'SYSTEM', '+07:00')
               and (
-                (event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + INTERVAL 5 HOUR)
-                    OR
-                (e.first_hdc IS NULL)
+                (event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + interval 5 hour)
+                    or
+                (e.first_hdc is null)
                 )
-            GROUP BY e.event_id
+            group by e.event_id
+            limit 1
+            for update skip locked
             """;
     private static final String SQL_DELETE_EVENT_UPCOMING = """
             delete from events where event_id = :event_id
@@ -90,7 +94,10 @@ public class CrawEventService {
                 first_hdc        = :first_hdc,
                 last_hdc         = :last_hdc,
                 first_ou         = :first_ou,
-                last_ou          = :last_ou
+                last_ou          = :last_ou,
+            
+                home_logo        = :home_logo,
+                away_logo        = :away_logo
             where event_id = :eventId
             """;
 
@@ -110,6 +117,7 @@ public class CrawEventService {
                                     under_odds = values(under_odds)
             """;
 
+    @Transactional
     public void processOddForUpcomingEvent() {
         log.log(Level.INFO, "Crawl Odd For Upcoming Event Start");
         var events = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING, (rs, i) -> new Event(rs));
@@ -152,8 +160,25 @@ public class CrawEventService {
                 var lookBoxes = page.querySelectorAll(".lookBox.brb");
                 if (!lookBoxes.isEmpty()) {
                     var bet = getOdd(page, lookBoxes);
+                    var doc = Jsoup.parse(page.content());
+                    var logoElement = doc.select("[itemprop=logo]");
+
                     var paramUpdate = bet.toPram(event.getEventId());
                     var paramPredict = bet.toParamPredict(event);
+                    AtomicReference<String> homeLogo = new AtomicReference<>();
+                    AtomicReference<String> awayLogo = new AtomicReference<>();
+                    Optional.ofNullable(logoElement.getFirst())
+                            .map(it -> it.absUrl("src"))
+                            .ifPresent(src -> {
+                                homeLogo.set(src);
+                                awayLogo.set(src); // Default to home logo if away logo is not found
+                            });
+                    // Default to home logo if away logo is not found
+                    Optional.ofNullable(logoElement.get(1))
+                            .map(it -> it.absUrl("src"))
+                            .ifPresent(awayLogo::set);
+                    paramUpdate.addValue("home_logo", homeLogo.get())
+                            .addValue("away_logo", awayLogo.get());
                     jdbcTemplate.update(SQL_UPDATE_EVENT_UPCOMING, paramUpdate);
                     jdbcTemplate.update(SQL_UPDATE_PREDICT, paramPredict);
                 } else {

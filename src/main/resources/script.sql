@@ -20,6 +20,8 @@ create table events
     last_hdc         varchar(25),
     first_ou         varchar(25),
     last_ou          varchar(25),
+    home_logo        text,
+    away_logo        text,
     last_update      timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
     index idx_event (event_date, league_name, event_name),
     index idx_event_league (league_id),
