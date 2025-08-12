@@ -107,16 +107,13 @@ public class CrawDateService {
                                 .addValue("event_date", DateUtil.parseDate(it.getTime())))
                         .toArray(MapSqlParameterSource[]::new);
                 var sql = """
-                        insert into events(detail_link, event_name, event_date, league_name)
+                        insert ignore into events(detail_link, event_name, event_date, league_name)
                         values (:event_link, :event_name, :event_date, :league_name)
-                        ON DUPLICATE KEY UPDATE
-                            league_name = values(league_name)
                         """;
                 jdbcTemplate.batchUpdate(sql, params);
                 var sqlPredict = """
-                        insert into predict(event_link, event_name, event_date, league_name)
+                        insert ignore into predict(event_link, event_name, event_date, league_name)
                         values (:event_link, :event_name, :event_date, :league_name)
-                        on duplicate key update league_name = values(league_name)
                         """;
                 jdbcTemplate.batchUpdate(sqlPredict, params);
             } catch (Exception ex) {
