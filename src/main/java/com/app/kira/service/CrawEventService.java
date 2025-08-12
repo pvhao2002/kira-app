@@ -66,8 +66,6 @@ public class CrawEventService {
                 (e.first_hdc is null)
                 )
             group by e.event_id
-            limit 500
-            for update skip locked
             """;
     private static final String SQL_DELETE_EVENT_UPCOMING = """
             delete from events where event_id = :event_id
@@ -117,7 +115,6 @@ public class CrawEventService {
                                     under_odds = values(under_odds)
             """;
 
-    @Transactional
     public void processOddForUpcomingEvent() {
         log.log(Level.INFO, "Crawl Odd For Upcoming Event Start");
         var events = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING, (rs, i) -> new Event(rs));
