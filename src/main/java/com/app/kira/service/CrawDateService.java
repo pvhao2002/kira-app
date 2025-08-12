@@ -2,6 +2,7 @@ package com.app.kira.service;
 
 import com.app.kira.model.EventHtml;
 import com.app.kira.model.analyst.CrawlDate;
+import com.app.kira.schedule.DateSchedule;
 import com.app.kira.util.Constants;
 import com.app.kira.util.DateUtil;
 import com.app.kira.util.PlaywrightUtil;
@@ -14,6 +15,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -87,7 +89,7 @@ public class CrawDateService {
 
     public void crawlTomorrowEventToPredict(String date) {
         log.info("Crawl tomorrow event for date: " + date);
-        PlaywrightUtil.withPlaywright(Collections.emptyList(), (page, list) -> {
+        PlaywrightUtil.withPlaywright(Collections.emptyList(), DateSchedule.CRAWL_TOMORROW_METHOD, (page, list) -> {
             try {
                 var result = new ArrayList<EventHtml>();
                 page.navigate(Constants.AI_SCORE_URL + "%s".formatted(date));
@@ -111,6 +113,12 @@ public class CrawDateService {
                             league_name = values(league_name)
                         """;
                 jdbcTemplate.batchUpdate(sql, params);
+                var sqlPredict = """
+                        insert into predict(event_link, event_name, event_date, league_name)
+                        values (:event_link, :event_name, :event_date, :league_name)
+                        on duplicate key update league_name = values(league_name)
+                        """;
+                jdbcTemplate.batchUpdate(sqlPredict, params);
             } catch (Exception ex) {
                 log.log(Level.WARNING, "Error during crawlTomorrowEvent", ex);
             } finally {
@@ -126,10 +134,17 @@ public class CrawDateService {
                         set ea.league_id = kl.league_id
                         where ea.league_id is null
                         """, Map.of());
+                jdbcTemplate.update("""
+                        update predict ea
+                            inner join kira_league kl on kl.league_name = ea.league_name
+                        set ea.league_id = kl.league_id
+                        where ea.league_id is null
+                        """, Map.of());
             }
         });
     }
 
+    @Transactional
     public void crawlByDateToAnalyst() {
         var sql = """
                 select *
@@ -143,7 +158,7 @@ public class CrawDateService {
         if (list.isEmpty()) {
             return;
         }
-        PlaywrightUtil.withPlaywright(list, (page, dates) -> {
+        PlaywrightUtil.withPlaywright(list, DateSchedule.CRAWL_BY_DATE_METHOD, (page, dates) -> {
             for (var it : dates) {
                 var date = it.getDate();
                 log.info(" crawlByDate for date: " + date);

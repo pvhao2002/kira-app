@@ -59,6 +59,41 @@ public class Bet {
                 .toList();
     }
 
+    public MapSqlParameterSource toParamPredict(Event evt) {
+        var param = new MapSqlParameterSource();
+        param.addValue("event_name", evt.getEventName());
+        param.addValue("event_date", evt.getEventDate());
+        param.addValue("league_name", evt.getLeagueName());
+        param.addValue("event_link", evt.getDetailLink());
+
+        getOddsGoal().stream()
+                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .ifPresentOrElse(oddGoal -> {
+                    param.addValue("over_odds", oddGoal.getOver());
+                    param.addValue("under_odds", oddGoal.getUnder());
+                    param.addValue("ou_line", oddGoal.getGoals());
+                }, () -> {
+                    param.addValue("over_odds", null);
+                    param.addValue("under_odds", null);
+                    param.addValue("ou_line", null);
+                });
+
+        getOddsHandicap().stream()
+                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .ifPresentOrElse(e -> {
+                    param.addValue("home_odds", e.getHome().split(" ")[1]);
+                    param.addValue("away_odds", e.getAway().split(" ")[1]);
+                    param.addValue("hdc_line", e.getHome().split(" ")[0] + "#" + e.getAway().split(" ")[0]);
+                }, () -> {
+                    param.addValue("home_odds", null);
+                    param.addValue("away_odds", null);
+                    param.addValue("hdc_line", null);
+                });
+        return param;
+    }
+
     public MapSqlParameterSource toPram(long eventId) {
         var param = new MapSqlParameterSource("eventId", eventId);
         var oddGoal = getOddsGoal().stream()
@@ -70,7 +105,6 @@ public class Bet {
                 .toList();
 
         OddAnalyst minOddGoal = oddGoal.stream()
-                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
                 .min(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
                 .map(e -> OddAnalyst.builder()
                         .line(e.getGoals())
@@ -79,7 +113,6 @@ public class Bet {
                         .build())
                 .orElse(new OddAnalyst());
         OddAnalyst maxOddGoal = oddGoal.stream()
-                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
                 .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
                 .map(e -> OddAnalyst.builder()
                         .line(e.getGoals())
@@ -89,7 +122,6 @@ public class Bet {
                 .orElse(new OddAnalyst());
 
         OddAnalyst minOddHandicap = oddHdc.stream()
-                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
                 .min(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
                 .map(e -> OddAnalyst.builder()
                         .line(e.getHome().split(" ")[0] + "#" + e.getAway().split(" ")[0])
@@ -98,7 +130,6 @@ public class Bet {
                         .build())
                 .orElse(new OddAnalyst());
         OddAnalyst maxOddHandicap = oddHdc.stream()
-                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
                 .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
                 .map(e -> OddAnalyst.builder()
                         .line(e.getHome().split(" ")[0] + "#" + e.getAway().split(" ")[0])

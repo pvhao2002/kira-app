@@ -28,7 +28,7 @@ public class CorrectDataSchedule {
     }
 
 
-    @Scheduled(cron = "0 0 7 * * *", zone = "Asia/Ho_Chi_Minh") // Every day at 7 AM
+    @Scheduled(cron = "0 0 5,7 * * *", zone = "Asia/Ho_Chi_Minh") // Every day at 7 AM
     @Transactional
     public void correctLeague() {
         correctService.correctLeagueForEventAnalyst();

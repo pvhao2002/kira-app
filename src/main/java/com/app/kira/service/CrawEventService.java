@@ -2,6 +2,7 @@ package com.app.kira.service;
 
 import com.app.kira.model.*;
 import com.app.kira.model.task.OddsConfig;
+import com.app.kira.schedule.EventSchedule;
 import com.app.kira.server.ServerInfoService;
 import com.app.kira.util.DateUtil;
 import com.app.kira.util.JsonUtil;
@@ -55,24 +56,17 @@ public class CrawEventService {
     private static final String SQL_GET_EVENT_UPCOMING = """
             select e.event_id, event_name, event_date, league_name, detail_link
             from events e
-                     left join odds o on o.event_id = e.event_id
             where true
               and event_date >= CONVERT_TZ(NOW(), 'SYSTEM', '+07:00')
               and (
                 (event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + INTERVAL 5 HOUR)
                     OR
-                (o.event_id IS NULL)
+                (e.first_hdc IS NULL)
                 )
-            GROUP BY e.event_id;
+            GROUP BY e.event_id
             """;
     private static final String SQL_DELETE_EVENT_UPCOMING = """
             delete from events where event_id = :event_id
-            """;
-    private static final String SQL_INSERT_ODD = """
-            insert into odds(odd_type, odd_value, event_id)
-                            values (:odd_type, :odd_value, :event_id)
-                            ON DUPLICATE KEY UPDATE
-                                odd_value = VALUES(odd_value)
             """;
     private static final String SQL_CLEAN_EVENT = """
             delete
@@ -100,6 +94,22 @@ public class CrawEventService {
             where event_id = :eventId
             """;
 
+    private static final String SQL_UPDATE_PREDICT = """
+            insert into predict(event_name, event_date, league_name, event_link,
+                                hdc_line, home_odds, away_odds,
+                                ou_line, over_odds, under_odds)
+            values (:event_name, :event_date, :league_name, :event_link,
+                    :hdc_line, :home_odds, :away_odds,
+                    :ou_line, :over_odds, :under_odds)
+            on duplicate key update hdc_line   = values(hdc_line),
+                                    home_odds  = values(home_odds),
+                                    away_odds  = values(away_odds),
+            
+                                    ou_line    = values(ou_line),
+                                    over_odds  = values(over_odds),
+                                    under_odds = values(under_odds)
+            """;
+
     public void processOddForUpcomingEvent() {
         log.log(Level.INFO, "Crawl Odd For Upcoming Event Start");
         var events = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING, (rs, i) -> new Event(rs));
@@ -107,7 +117,7 @@ public class CrawEventService {
             return;
         }
 
-        PlaywrightUtil.withPlaywright(events, (page, list) -> list.forEach(event -> {
+        PlaywrightUtil.withPlaywright(events, EventSchedule.CRAWL_ODD_FOR_UPCOMING_EVENT_METHOD, (page, list) -> list.forEach(event -> {
             try {
                 page.navigate(event.getDetailLink());
                 page.waitForTimeout(3_000);
@@ -143,7 +153,9 @@ public class CrawEventService {
                 if (!lookBoxes.isEmpty()) {
                     var bet = getOdd(page, lookBoxes);
                     var paramUpdate = bet.toPram(event.getEventId());
+                    var paramPredict = bet.toParamPredict(event);
                     jdbcTemplate.update(SQL_UPDATE_EVENT_UPCOMING, paramUpdate);
+                    jdbcTemplate.update(SQL_UPDATE_PREDICT, paramPredict);
                 } else {
                     log.log(Level.INFO, "processOddForUpcomingEvent - Event {0} empty provider odd", event.getEventId());
                     jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
@@ -191,7 +203,7 @@ public class CrawEventService {
         if (events.isEmpty()) {
             return;
         }
-        PlaywrightUtil.withPlaywright(events, (page, list) -> list.forEach(event -> {
+        PlaywrightUtil.withPlaywright(events, EventSchedule.EVENT_METHOD, (page, list) -> list.forEach(event -> {
             List<MapSqlParameterSource> result = new ArrayList<>();
             var baseParam = new MapSqlParameterSource(EVENT_ID, event.getId());
             var paramWithHost = baseParam.addValue("os", serverInfoService.getHostName());

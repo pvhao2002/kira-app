@@ -1,21 +1,16 @@
 DELIMITER //
 DROP EVENT IF EXISTS delete_old_events //
 CREATE EVENT IF NOT EXISTS delete_old_events
-    ON SCHEDULE EVERY 1 DAY
-        STARTS now()
+    ON SCHEDULE EVERY 1 HOUR
+        STARTS NOW()
     DO
     BEGIN
-        DECLARE vn_now DATE;
-        SET vn_now = DATE(CONVERT_TZ(CURDATE(), '+00:00', '+07:00'));
-
-        DELETE
-        FROM odds
-        WHERE event_id IN (SELECT event_id
-                           FROM events
-                           WHERE DATE(CONVERT_TZ(event_date, '+00:00', '+07:00')) < vn_now);
-
+        DECLARE vn_now DATETIME;
+        SET vn_now = CONVERT_TZ(NOW(), '+00:00', '+07:00');
+        -- Xóa event cũ hơn 3 tiếng
         DELETE
         FROM events
-        WHERE DATE(CONVERT_TZ(event_date, '+00:00', '+07:00')) < vn_now;
+        WHERE event_date < DATE_SUB(vn_now, INTERVAL 3 HOUR);
 
     END //
+

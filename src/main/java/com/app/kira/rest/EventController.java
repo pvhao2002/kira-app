@@ -47,12 +47,6 @@ public class EventController {
                      , ft_score_str
                      , corner_str
                      , link
-                                
-                     , ea.home_line_movement
-                     , ea.away_line_movement
-                                
-                     , ea.over_line_movement
-                     , ea.under_line_movement
                      
                      , first_home_odds
                      , last_home_odds
@@ -138,9 +132,6 @@ public class EventController {
                      , ht_score_str as ht_score
                      , ft_score_str as ft_score
                      , corner_str   as corner_score
-                     , is_clear_hdc
-                     , is_clear_ou
-                     , is_clear_corner
                      , is_main      AS is_main_league
                      , link
                       , ft_home_score

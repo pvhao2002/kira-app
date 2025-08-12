@@ -28,5 +28,11 @@ public class CorrectService {
                 set ea.league_id = kl.league_id
                 where ea.league_id is null
                 """, Map.of());
+        jdbcTemplate.update("""
+                update predict ea
+                    inner join kira_league kl on kl.league_name = ea.league_name
+                set ea.league_id = kl.league_id
+                where ea.league_id is null
+                """, Map.of());
     }
 }

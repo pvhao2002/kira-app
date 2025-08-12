@@ -49,9 +49,6 @@ public class EventDTO {
         this.setHtScore(rs.getString("ht_score"));
         this.setFtScore(rs.getString("ft_score"));
         this.setCornerScore(rs.getString("corner_score"));
-        this.setIsClearHdc(rs.getString("is_clear_hdc"));
-        this.setIsClearOu(rs.getString("is_clear_ou"));
-        this.setIsClearCorner(rs.getString("is_clear_corner"));
         this.setIsMainLeague(rs.getBoolean("is_main_league"));
         this.setLink(rs.getString("link"));
         this.setFtHomeScore(rs.getInt("ft_home_score"));

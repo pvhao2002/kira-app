@@ -47,62 +47,6 @@ public class OddService {
                 over_odds = VALUES(over_odds),
                 under_odds = VALUES(under_odds)
             """;
-    private static final String CORRECT_HOME_AWAY_LINE = """
-            UPDATE event_analyst ea
-                JOIN (SELECT event_id,
-                             GROUP_CONCAT(home_line_movement SEPARATOR ', ') AS home_line_movement,
-                             GROUP_CONCAT(away_line_movement SEPARATOR ', ') AS away_line_movement
-                      FROM (SELECT event_id,
-                                   CONCAT(FORMAT(home_line, 2), ' ', FORMAT(home_odds, 2), ' ',
-                                          CASE
-                                              WHEN home_odds > LAG(home_odds) OVER (PARTITION BY event_id ORDER BY odd_date)
-                                                  THEN '↑'
-                                              WHEN home_odds < LAG(home_odds) OVER (PARTITION BY event_id ORDER BY odd_date)
-                                                  THEN '↓'
-                                              ELSE ''
-                                              END) AS home_line_movement,
-                                   CONCAT(FORMAT(away_line, 2), ' ', FORMAT(away_odds, 2), ' ',
-                                          CASE
-                                              WHEN away_odds > LAG(away_odds) OVER (PARTITION BY event_id ORDER BY odd_date)
-                                                  THEN '↑'
-                                              WHEN away_odds < LAG(away_odds) OVER (PARTITION BY event_id ORDER BY odd_date)
-                                                  THEN '↓'
-                                              ELSE ''
-                                              END) AS away_line_movement
-                            FROM odd_event
-                            WHERE odd_type = 'hdc') ranked
-                      GROUP BY event_id) t ON t.event_id = ea.event_id
-            SET ea.home_line_movement = t.home_line_movement,
-                ea.away_line_movement = t.away_line_movement
-            """;
-    private static final String CORRECT_OVER_UNDER_LINE = """
-            UPDATE event_analyst ea
-                JOIN (SELECT event_id,
-                             GROUP_CONCAT(ou_trend SEPARATOR ', ')    AS ou_trend,
-                             GROUP_CONCAT(under_trend SEPARATOR ', ') AS under_trend
-                      FROM (SELECT event_id,
-                                   CONCAT(line, ' ', FORMAT(over_odds, 2), ' ',
-                                          CASE
-                                              WHEN over_odds > LAG(over_odds) OVER (PARTITION BY event_id ORDER BY odd_date)
-                                                  THEN '↑'
-                                              WHEN over_odds < LAG(over_odds) OVER (PARTITION BY event_id ORDER BY odd_date)
-                                                  THEN '↓'
-                                              ELSE ''
-                                              END) AS ou_trend,
-                                   CONCAT(line, ' ', FORMAT(under_odds, 2), ' ',
-                                          CASE
-                                              WHEN under_odds > LAG(under_odds) OVER (PARTITION BY event_id ORDER BY odd_date)
-                                                  THEN '↑'
-                                              WHEN under_odds < LAG(under_odds) OVER (PARTITION BY event_id ORDER BY odd_date)
-                                                  THEN '↓'
-                                              ELSE ''
-                                              END) AS under_trend
-                            FROM odd_event
-                            WHERE odd_type = 'ou') ranked
-                      GROUP BY event_id) t ON t.event_id = ea.event_id
-            SET ea.over_line_movement  = t.ou_trend,
-                ea.under_line_movement = t.under_trend
-            """;
 
     private static final String OPEN_PREMATCH_ODD = """
             update event_analyst ea
@@ -228,10 +172,6 @@ public class OddService {
 
     @Transactional
     public void correctOddMovement() {
-        log.info("Correcting home/away line movements...");
-        jdbcTemplate.update(CORRECT_HOME_AWAY_LINE, new java.util.HashMap<>());
-        log.info("Correcting over/under line movements...");
-        jdbcTemplate.update(CORRECT_OVER_UNDER_LINE, new java.util.HashMap<>());
         log.info("Opening prematch odds...");
         jdbcTemplate.update(OPEN_PREMATCH_ODD, new java.util.HashMap<>());
         log.info("Data correction completed.");

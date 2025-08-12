@@ -23,43 +23,42 @@ public class TodayEventController {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private static final String SQL_GET_TODAY_EVENT = """
             select e.event_id
-                 , event_name
-                 , event_date
-                 , l.league_name
-                 , detail_link as link
-                 , odd_type
-                 , odd_value
-            from events e
-                     inner join kira_league l on l.league_id = e.league_id
-                     inner join odds o on o.event_id = e.event_id
-            where true
-              and event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00')
-                and o.odd_type <> '1x2'
-                and o.odd_value <> '[]'
-            order by l.is_main desc, e.event_date
+                  , event_name
+                  , event_date
+                  , l.league_name
+                  , detail_link as       link
+            
+                  , first_hdc
+                  , first_home_odds
+                  , first_away_odds
+            
+                  , last_hdc
+                  , last_home_odds
+                  , last_away_odds
+            
+                  , first_ou
+                  , first_over_odds
+                  , first_under_odds
+            
+                  , last_ou
+                  , last_over_odds
+                  , last_under_odds
+             from events e
+                      inner join kira_league l on l.league_id = e.league_id
+             where true
+               and event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00')
+             order by l.is_main desc, e.event_date
+             LIMIT 100;
             """;
 
     @GetMapping
     public Object getTodayEvent() {
-        var events = jdbcTemplate.query(SQL_GET_TODAY_EVENT, (rs, i) -> new EventDTO(rs));
+        var events = jdbcTemplate.query(SQL_GET_TODAY_EVENT, BeanPropertyRowMapper.newInstance(TodayEventResponse.TodayEvent.class));
         if (events.isEmpty()) {
             return Collections.emptyList();
         }
-        var eventResults = events
-                .stream()
-                .collect(Collectors.groupingBy(EventDTO::getEventId, LinkedHashMap::new, Collectors.toList()))
-                .entrySet()
-                .stream()
-                .map(EventResult::new)
-                .toList();
-        var result = eventResults
-                .stream()
-                .collect(Collectors.groupingBy(EventResult::getLeagueName, LinkedHashMap::new, Collectors.toList()))
-                .entrySet()
-                .stream().map(entry -> new TodayEventResponse(entry.getKey(), entry.getValue()))
-                .toList();
 
 
-        return result;
+        return events;
     }
 }

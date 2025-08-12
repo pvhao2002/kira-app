@@ -1,0 +1,123 @@
+{
+  "tables": [
+    {
+      "name": "users",
+      "columns": [
+        {"name": "user_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "full_name", "type": "VARCHAR(100)", "not_null": true},
+        {"name": "email", "type": "VARCHAR(100)", "not_null": true, "unique": true},
+        {"name": "password_hash", "type": "VARCHAR(255)", "not_null": true},
+        {"name": "phone", "type": "VARCHAR(20)"},
+        {"name": "address", "type": "TEXT"},
+        {"name": "role", "type": "ENUM('customer','admin','staff')", "default": "customer"},
+        {"name": "created_at", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP"}
+      ]
+    },
+    {
+      "name": "categories",
+      "columns": [
+        {"name": "category_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "category_name", "type": "VARCHAR(100)", "not_null": true},
+        {"name": "description", "type": "TEXT"}
+      ]
+    },
+    {
+      "name": "products",
+      "columns": [
+        {"name": "product_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "category_id", "type": "INT", "fk": {"table": "categories", "column": "category_id"}},
+        {"name": "name", "type": "VARCHAR(200)", "not_null": true},
+        {"name": "description", "type": "TEXT"},
+        {"name": "price", "type": "DECIMAL(10,2)", "not_null": true},
+        {"name": "stock", "type": "INT", "default": 0},
+        {"name": "created_at", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP"},
+        {"name": "updated_at", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"}
+      ]
+    },
+    {
+      "name": "product_images",
+      "columns": [
+        {"name": "image_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "product_id", "type": "INT", "fk": {"table": "products", "column": "product_id", "on_delete": "CASCADE"}},
+        {"name": "image_url", "type": "VARCHAR(255)", "not_null": true},
+        {"name": "is_main", "type": "BOOLEAN", "default": false}
+      ]
+    },
+    {
+      "name": "product_variants",
+      "columns": [
+        {"name": "variant_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "product_id", "type": "INT", "fk": {"table": "products", "column": "product_id", "on_delete": "CASCADE"}},
+        {"name": "size", "type": "VARCHAR(10)"},
+        {"name": "color", "type": "VARCHAR(50)"},
+        {"name": "additional_price", "type": "DECIMAL(10,2)", "default": 0},
+        {"name": "stock", "type": "INT", "default": 0}
+      ]
+    },
+    {
+      "name": "orders",
+      "columns": [
+        {"name": "order_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "user_id", "type": "INT", "fk": {"table": "users", "column": "user_id"}},
+        {"name": "order_status", "type": "ENUM('pending','processing','shipped','delivered','cancelled')", "default": "pending"},
+        {"name": "payment_status", "type": "ENUM('unpaid','paid')", "default": "unpaid"},
+        {"name": "total_amount", "type": "DECIMAL(10,2)", "not_null": true},
+        {"name": "shipping_address", "type": "TEXT", "not_null": true},
+        {"name": "created_at", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP"}
+      ]
+    },
+    {
+      "name": "order_items",
+      "columns": [
+        {"name": "order_item_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "order_id", "type": "INT", "fk": {"table": "orders", "column": "order_id", "on_delete": "CASCADE"}},
+        {"name": "product_id", "type": "INT", "fk": {"table": "products", "column": "product_id"}},
+        {"name": "variant_id", "type": "INT", "fk": {"table": "product_variants", "column": "variant_id"}},
+        {"name": "quantity", "type": "INT", "not_null": true},
+        {"name": "price", "type": "DECIMAL(10,2)", "not_null": true}
+      ]
+    },
+    {
+      "name": "reviews",
+      "columns": [
+        {"name": "review_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "product_id", "type": "INT", "fk": {"table": "products", "column": "product_id", "on_delete": "CASCADE"}},
+        {"name": "user_id", "type": "INT", "fk": {"table": "users", "column": "user_id", "on_delete": "CASCADE"}},
+        {"name": "rating", "type": "INT", "check": "rating BETWEEN 1 AND 5"},
+        {"name": "comment", "type": "TEXT"},
+        {"name": "created_at", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP"}
+      ]
+    },
+    {
+      "name": "cart",
+      "columns": [
+        {"name": "cart_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "user_id", "type": "INT", "fk": {"table": "users", "column": "user_id", "on_delete": "CASCADE"}},
+        {"name": "created_at", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP"},
+        {"name": "updated_at", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"}
+      ]
+    },
+    {
+      "name": "cart_items",
+      "columns": [
+        {"name": "cart_item_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "cart_id", "type": "INT", "fk": {"table": "cart", "column": "cart_id", "on_delete": "CASCADE"}},
+        {"name": "product_id", "type": "INT", "fk": {"table": "products", "column": "product_id"}},
+        {"name": "variant_id", "type": "INT", "fk": {"table": "product_variants", "column": "variant_id"}},
+        {"name": "quantity", "type": "INT", "not_null": true, "check": "quantity > 0"},
+        {"name": "price", "type": "DECIMAL(10,2)", "not_null": true}
+      ]
+    },
+    {
+      "name": "product_comments",
+      "columns": [
+        {"name": "comment_id", "type": "INT", "pk": true, "ai": true},
+        {"name": "product_id", "type": "INT", "fk": {"table": "products", "column": "product_id", "on_delete": "CASCADE"}},
+        {"name": "user_id", "type": "INT", "fk": {"table": "users", "column": "user_id", "on_delete": "CASCADE"}},
+        {"name": "parent_id", "type": "INT", "fk": {"table": "product_comments", "column": "comment_id", "on_delete": "CASCADE"}},
+        {"name": "content", "type": "TEXT", "not_null": true},
+        {"name": "created_at", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP"}
+      ]
+    }
+  ]
+}
