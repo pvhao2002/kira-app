@@ -66,7 +66,7 @@ public class CrawEventService {
                 (e.first_hdc is null)
                 )
             group by e.event_id
-            limit 1
+            limit 500
             for update skip locked
             """;
     private static final String SQL_DELETE_EVENT_UPCOMING = """
@@ -185,6 +185,7 @@ public class CrawEventService {
                     log.log(Level.INFO, "processOddForUpcomingEvent - Event {0} empty provider odd", event.getEventId());
                     jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
                 }
+                page.waitForTimeout(5_000);
             } catch (Exception ex) {
                 log.log(Level.SEVERE, "crawlOddForUpcomingEvent >> Crawl Event %s-%s-%s Failed".formatted(event.getEventId(), event.getEventName(), event.getDetailLink()), ex);
             }

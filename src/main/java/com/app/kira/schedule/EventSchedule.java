@@ -18,7 +18,7 @@ public class EventSchedule {
 
     private final CrawEventService crawEventService;
 
-    @Scheduled(fixedDelay = 50000, timeUnit = TimeUnit.SECONDS, initialDelay = 10)
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlOddForUpcomingEvent() {
         crawEventService.processOddForUpcomingEvent();
     }
