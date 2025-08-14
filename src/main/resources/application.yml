@@ -5,9 +5,9 @@ application:
       username: "${DB_USERNAME:root}"
       password: "${DB_PASSWORD:1234}"
       driver-class-name: com.mysql.cj.jdbc.Driver
-      maximum-pool-size: 15
-      max-lifetime: 300000
-      keepalive-time: 30000
+      maximum-pool-size: 40
+      max-lifetime: 1800000
+      keepalive-time: 300000
 spring:
   r2dbc:
     url: "r2dbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:kira}?useUnicode=true"

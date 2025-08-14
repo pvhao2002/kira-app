@@ -1,6 +1,15 @@
 SHOW STATUS LIKE 'Threads_connected';
 SHOW VARIABLES LIKE 'max_connections';
 SHOW STATUS LIKE 'Connections';
+
+SELECT @@innodb_buffer_pool_size / 1024 / 1024 / 1024 AS size_in_GB;
+SELECT @@innodb_log_file_size / 1024 / 1024 / 1024 AS size_in_GB;
+
+SHOW VARIABLES WHERE Variable_name IN (
+                                       'innodb_flush_log_at_trx_commit',
+                                       'innodb_buffer_pool_size',
+                                       'innodb_log_file_size'
+    );
 SHOW FULL PROCESSLIST;
 
 SELECT SUBSTRING_INDEX(host, ':', 1) AS ip_address, COUNT(*) AS connections
@@ -8,12 +17,12 @@ FROM information_schema.PROCESSLIST
 GROUP BY ip_address
 ORDER BY connections DESC;
 
-SELECT r.trx_id AS waiting_trx_id,
+SELECT r.trx_id              AS waiting_trx_id,
        r.trx_mysql_thread_id AS waiting_thread,
-       r.trx_query AS waiting_query,
-       b.trx_id AS blocking_trx_id,
+       r.trx_query           AS waiting_query,
+       b.trx_id              AS blocking_trx_id,
        b.trx_mysql_thread_id AS blocking_thread,
-       b.trx_query AS blocking_query
+       b.trx_query           AS blocking_query
 FROM performance_schema.data_lock_waits dw
          JOIN performance_schema.threads wt ON dw.REQUESTING_THREAD_ID = wt.THREAD_ID
          JOIN performance_schema.threads bt ON dw.BLOCKING_THREAD_ID = bt.THREAD_ID

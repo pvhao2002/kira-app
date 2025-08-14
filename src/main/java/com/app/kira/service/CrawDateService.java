@@ -1,5 +1,6 @@
 package com.app.kira.service;
 
+import com.app.kira.dto.predict.ProxyDTO;
 import com.app.kira.model.EventHtml;
 import com.app.kira.model.analyst.CrawlDate;
 import com.app.kira.schedule.DateSchedule;
@@ -15,6 +16,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -141,13 +143,25 @@ public class CrawDateService {
         });
     }
 
+//    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void update(ProxyDTO e) {
+        var sql = """
+                update proxy
+                set message = 'TEST 9999'
+                where proxy_id = :id
+                """;
+        var params = new MapSqlParameterSource("id", e.getProxyId());
+        jdbcTemplate.update(sql, params);
+        log.info("Updated proxy: " + e.getProxyId() + " with message: TEST");
+    }
+
     @Transactional
     public void crawlByDateToAnalyst() {
         var sql = """
                 select *
                 from crawl_date
                 where status = 'PENDING' OR status = 'FAILED'
-                LIMIT 10
+                LIMIT 50
                 for update
                 skip locked
                 """;

@@ -20,36 +20,38 @@ import java.util.stream.Collectors;
 public class PredictEventController {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private static final String SQL_GET_TODAY_EVENT = """
-            select p.event_name,
-                   p.event_date,
-                   p.league_name,
-                   p.event_link,
-                   e.home_logo,
-                   e.away_logo,
+             select p.event_name,
+                    p.event_date,
+                    p.league_name,
+                    p.event_link,
+                    e.home_logo,
+                    e.away_logo,
             
-                   e.first_hdc,
-                   e.first_home_odds,
-                   e.first_away_odds,
-                   e.last_hdc,
-                   e.last_home_odds,
-                   e.last_away_odds,
+                    e.first_hdc,
+                    e.first_home_odds,
+                    e.first_away_odds,
+                    e.last_hdc,
+                    e.last_home_odds,
+                    e.last_away_odds,
             
-                   e.first_ou,
-                   e.first_over_odds,
-                   e.first_under_odds,
-                   e.last_ou,
-                   e.last_over_odds,
-                   e.last_under_odds,
+                    e.first_ou,
+                    e.first_over_odds,
+                    e.first_under_odds,
+                    e.last_ou,
+                    e.last_over_odds,
+                    e.last_under_odds,
             
-                   p.predict_score,
-                   p.hdc_pick,
-                   p.ou_pick
-            from predict p
-                     inner join events e on e.event_name = p.event_name and e.event_date = p.event_date
-                     inner join kira_league kl on e.league_id = kl.league_id
-            where p.event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00')
-            order by kl.is_main desc, p.event_date
-            limit 150
+                    p.predict_score,
+                    p.hdc_pick,
+                    p.ou_pick
+             from predict p
+                      inner join events e on e.event_name = p.event_name and e.event_date = p.event_date
+                      inner join kira_league kl on e.league_id = kl.league_id
+             where true
+               and p.event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00')
+               and e.first_hdc is not null
+             order by kl.is_main desc, p.event_date
+             limit 500
             """;
 
     @GetMapping
