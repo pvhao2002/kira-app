@@ -2,8 +2,6 @@ package com.app.kira.rest;
 
 import com.app.kira.dto.*;
 import com.app.kira.model.FilterOdd;
-import com.app.kira.server.ServerInfoService;
-import com.app.kira.util.OddConverter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -20,20 +18,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/events")
 @RequiredArgsConstructor
 public class EventController {
-    private double relativeError = 1.0 / 100; // 0.01% relative error for odds comparison
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
-    private final ServerInfoService serverInfoService;
-
-    @GetMapping("relative-error")
-    public Object getRelativeError() {
-        return Map.of("relativeError", relativeError);
-    }
-
-    @GetMapping("update-relative-error")
-    public Object updateRelativeError(@RequestParam(name = "relativeError", defaultValue = "0.01") double re) {
-        relativeError = re;
-        return Map.of("relativeError", relativeError);
-    }
 
     @PostMapping("filter-odd")
     public Object filterOdd(@RequestBody List<FilterOdd> request) {
@@ -47,7 +32,7 @@ public class EventController {
                      , ft_score_str
                      , corner_str
                      , link
-                     
+                
                      , first_home_odds
                      , last_home_odds
                      , first_away_odds
@@ -56,12 +41,12 @@ public class EventController {
                      , last_over_odds
                      , first_under_odds
                      , last_under_odds
-                     
+                
                      , first_hdc
                      , last_hdc
                      , first_ou
                      , last_ou
-                                
+                
                 from event_analyst ea
                          left join kira_league kl on kl.league_id = ea.league_id
                 where true
@@ -69,12 +54,12 @@ public class EventController {
                       and ea.last_ou = :l_ou_line
                       and ea.first_hdc = :f_hdc_line
                       and ea.last_hdc = :l_hdc_line
-                                
+                
                 order by kl.is_main desc
                        , ea.event_date desc
                        , ea.event_name
                 """;
-        var param = new MapSqlParameterSource("re", relativeError);
+        var param = new MapSqlParameterSource();
         for (var r : request) {
             if ("ou".equalsIgnoreCase(r.getType())) {
                 param.addValue("f_ou_line", r.getFirstLine());
@@ -121,9 +106,6 @@ public class EventController {
                 .addValue("size", size);
 
         var sql = """
-                WITH hdc_odds AS (SELECT * FROM odd_event WHERE open_odd = 1 AND odd_type = 'hdc'),
-                     ou_odds AS (SELECT * FROM odd_event WHERE open_odd = 1 AND odd_type = 'ou'),
-                     corner_odds AS (SELECT * FROM odd_event WHERE open_odd = 1 AND odd_type = 'corner')
                 select ea.event_id
                      , kl.league_name
                      , home_team
@@ -140,31 +122,19 @@ public class EventController {
                       , ft_away_score
                       , ht_away_score
                       , away_corner
-                     , JSON_OBJECT(
+                      , JSON_OBJECT(
                         'hdc', JSON_OBJECT(
-                                'line', IFNULL(hdc.line, ''),
-                                'homeOdds', IFNULL(hdc.home_odds, ''),
-                                'awayOdds', IFNULL(hdc.away_odds, ''),
-                                'isClear', IFNULL(ea.is_clear_hdc, '')
+                                'line', IFNULL(ea.last_hdc, ''),
+                                'homeOdds', IFNULL(ea.last_home_odds, ''),
+                                'awayOdds', IFNULL(ea.last_away_odds, '')
                                ),
                         'ou', JSON_OBJECT(
-                                'line', IFNULL(ou.line, ''),
-                                'overOdds', IFNULL(ou.over_odds, ''),
-                                'underOdds', IFNULL(ou.under_odds, ''),
-                                'isClear', IFNULL(ea.is_clear_ou, '')
-                              ),
-                        'corner', JSON_OBJECT(
-                                'line', IFNULL(corner.line, ''),
-                                'homeOdds', IFNULL(corner.over_odds, ''),
-                                'awayOdds', IFNULL(corner.under_odds, ''),
-                                'isClear', IFNULL(ea.is_clear_corner, '')
-                                  )
-                       )            AS odd_info
+                                'line', IFNULL(ea.last_ou, ''),
+                                'overOdds', IFNULL(ea.last_over_odds, ''),
+                                'underOdds', IFNULL(ea.last_under_odds, '')
+                              ))    AS odd_info
                 from event_analyst ea
                          left join kira_league kl on kl.league_id = ea.league_id
-                         LEFT JOIN hdc_odds hdc ON hdc.event_id = ea.event_id AND hdc.open_odd = 1
-                         LEFT JOIN ou_odds ou ON ou.event_id = ea.event_id AND ou.open_odd = 1
-                         LEFT JOIN corner_odds corner ON corner.event_id = ea.event_id AND corner.open_odd = 1
                 where TRUE
                   AND (
                     :key = ''
@@ -256,88 +226,5 @@ public class EventController {
                 "exact", exact,
                 "detail", detail
         );
-    }
-
-    @GetMapping("correct-clear")
-    public Object correct() {
-        var sql = """
-                select ea.event_id
-                     , ht_home_score
-                     , ht_away_score
-                     , ft_home_score
-                     , ft_away_score
-                     , home_corner
-                     , away_corner
-                     , oe.odd_type
-                     , oe.line
-                     , oe.home_line
-                     , oe.away_line
-                     , oe.odd_date
-                     , IF(oe.odd_type in ('ou', 'corner'), oe.over_odds, oe.home_odds)  AS odd1
-                     , IF(oe.odd_type in ('ou', 'corner'), oe.under_odds, oe.away_odds) AS odd2
-                from event_analyst ea
-                         INNER JOIN odd_event oe ON oe.event_id = ea.event_id and oe.open_odd = 1
-                """;
-        var result = namedParameterJdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(CorrectClearDTO.class));
-        result.stream()
-                .collect(Collectors.groupingBy(CorrectClearDTO::getEventId))
-                .forEach((key, value) -> {
-                    var param = new MapSqlParameterSource("eventId", key);
-                    value.forEach(e -> {
-                        switch (e.getOddType()) {
-                            case "ou" -> {
-                                var line = OddConverter.convertOverUnderOdds(e.getLine());
-                                var ftScore = e.getFtHomeScore() + e.getFtAwayScore();
-                                var isClear = ftScore > line
-                                        ? "yes"
-                                        : (ftScore == line ? "draw" : "no");
-                                param.addValue("clearOU", isClear);
-                                var sqlUpdate = """
-                                        update event_analyst
-                                        set is_clear_ou     = :clearOU
-                                        where event_id = :eventId
-                                        """;
-                                namedParameterJdbcTemplate.update(sqlUpdate, param);
-                            }
-                            case "corner" -> {
-                                var line = OddConverter.convertOverUnderOdds(e.getLine());
-                                var ftCorner = e.getHomeCorner() + e.getAwayCorner();
-                                var isClear = ftCorner > line
-                                        ? "yes"
-                                        : (ftCorner == line ? "draw" : "no");
-                                param.addValue("clearCorner", isClear);
-                                var sqlUpdate = """
-                                        update event_analyst
-                                        set is_clear_corner = :clearCorner
-                                        where event_id = :eventId
-                                        """;
-                                namedParameterJdbcTemplate.update(sqlUpdate, param);
-                            }
-                            case "hdc" -> {
-                                var homeLine = e.getHomeLine();
-                                var awayLine = e.getAwayLine();
-                                String isClear;
-                                if ("0#0".equalsIgnoreCase(e.getLine())) {
-                                    isClear = e.getFtHomeScore() > e.getFtAwayScore() ? "yes" :
-                                            (e.getFtHomeScore().equals(e.getFtAwayScore()) ? "draw" : "no");
-                                } else if (homeLine > awayLine) {
-                                    isClear = e.getFtHomeScore() + homeLine > e.getFtAwayScore() ? "yes" :
-                                            (e.getFtHomeScore() + homeLine == e.getFtAwayScore() ? "draw" : "no");
-                                } else {
-                                    isClear = e.getFtHomeScore() < e.getFtAwayScore() + awayLine ? "yes" :
-                                            (e.getFtHomeScore() == e.getFtAwayScore() + awayLine ? "draw" : "no");
-                                }
-                                param.addValue("clearHDC", isClear);
-                                var sqlUpdate = """
-                                        update event_analyst
-                                        set is_clear_hdc    = :clearHDC
-                                        where event_id = :eventId
-                                        """;
-                                namedParameterJdbcTemplate.update(sqlUpdate, param);
-                            }
-                        }
-                    });
-                });
-        return Map.of("result", "OK");
     }
 }

@@ -23,7 +23,11 @@ public class DBConfiguration {
     @WriteDB
     @ConfigurationProperties(prefix = "application.datasource.write")
     public HikariConfig writeHikariConfig() {
-        return new HikariConfig();
+        var config = new HikariConfig();
+        config.setMaxLifetime(1_800_000);
+        config.setKeepaliveTime(60_000);
+        config.setMaximumPoolSize(35);
+        return config;
     }
 
     @Bean
@@ -64,6 +68,4 @@ public class DBConfiguration {
         txManager.setDataSource(ds);
         return txManager;
     }
-
-
 }

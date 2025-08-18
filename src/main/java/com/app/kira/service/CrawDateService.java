@@ -75,10 +75,9 @@ public class CrawDateService {
                 link = values(link)
             """;
     private static final String SQL_CRAWL_DATE = """
-            insert into crawl_date (date, status)
-                        values (:date, :status)
-                        on duplicate key update status     = values(status),
-                                        created_at = current_timestamp
+              update crawl_date
+              set status = :status
+              where date = :date
             """;
     private static final String SQL_INSERT_EVENT_CRAWL = """
                 INSERT INTO event_crawl(event_name, event_date, detail_link)
@@ -86,6 +85,24 @@ public class CrawDateService {
                             ON DUPLICATE KEY UPDATE
                                 detail_link = VALUES(detail_link),
                                 status      = 'pending'
+            """;
+    private static final String SQL_PREDICT_LEAGUE = """
+            update predict ea
+                inner join kira_league kl on kl.league_name = ea.league_name
+            set ea.league_id = kl.league_id
+            where ea.league_id is null
+            """;
+    private static final String SQL_EVENT_LEAGUE = """
+            update events ea
+                inner join kira_league kl on kl.league_name = ea.league_name
+            set ea.league_id = kl.league_id
+            where ea.league_id is null
+            """;
+    private static final String SQL_INSERT_LEAGUE = """
+            insert ignore into kira_league(league_name)
+            select distinct league_name
+            from events
+            order by league_name
             """;
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -121,29 +138,14 @@ public class CrawDateService {
             } catch (Exception ex) {
                 log.log(Level.WARNING, "Error during crawlTomorrowEvent", ex);
             } finally {
-                jdbcTemplate.update("""
-                        insert ignore into kira_league(league_name)
-                        select distinct league_name
-                        from events
-                        order by league_name
-                        """, Map.of());
-                jdbcTemplate.update("""
-                        update events ea
-                            inner join kira_league kl on kl.league_name = ea.league_name
-                        set ea.league_id = kl.league_id
-                        where ea.league_id is null
-                        """, Map.of());
-                jdbcTemplate.update("""
-                        update predict ea
-                            inner join kira_league kl on kl.league_name = ea.league_name
-                        set ea.league_id = kl.league_id
-                        where ea.league_id is null
-                        """, Map.of());
+                jdbcTemplate.update(SQL_INSERT_LEAGUE, Map.of());
+                jdbcTemplate.update(SQL_EVENT_LEAGUE, Map.of());
+                jdbcTemplate.update(SQL_PREDICT_LEAGUE, Map.of());
             }
         });
     }
 
-//    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    //    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void update(ProxyDTO e) {
         var sql = """
                 update proxy
@@ -155,15 +157,12 @@ public class CrawDateService {
         log.info("Updated proxy: " + e.getProxyId() + " with message: TEST");
     }
 
-    @Transactional
     public void crawlByDateToAnalyst() {
         var sql = """
                 select *
                 from crawl_date
                 where status = 'PENDING' OR status = 'FAILED'
                 LIMIT 50
-                for update
-                skip locked
                 """;
         var list = jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(CrawlDate.class));
         if (list.isEmpty()) {
@@ -197,7 +196,7 @@ public class CrawDateService {
                     jdbcTemplate.update("""
                             delete
                             from crawl_date
-                            where date = :date and status = 'in_progress'
+                            where date = :date and status <> 'failed'
                             """, paramsDate);
                 }
             }

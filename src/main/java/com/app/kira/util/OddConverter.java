@@ -1,7 +1,6 @@
 package com.app.kira.util;
 
 import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.StringUtils;
 
 @UtilityClass
 public class OddConverter {
@@ -14,33 +13,40 @@ public class OddConverter {
         }
     }
 
-    /**
-     * Chuyển đổi chuỗi kèo kiểu "2.5/3" thành số double (trung bình).
-     *
-     * @param oddsStr chuỗi kèo, ví dụ "2.5/3"
-     * @return giá trị trung bình, ví dụ 2.75
-     * @throws IllegalArgumentException nếu đầu vào không hợp lệ
-     */
-    public static double convertOverUnderOdds(String oddsStr) {
-        if (StringUtils.isBlank(oddsStr)) {
-            throw new IllegalArgumentException("Chuỗi odds không được rỗng.");
+    public static double convertLine(String line) {
+        line = line.trim();
+
+        // Xác định dấu (chỉ HDC mới có + hoặc - ở đầu)
+        double sign = 1.0;
+        if (line.startsWith("+")) {
+            line = line.substring(1);
+        } else if (line.startsWith("-")) {
+            sign = -1.0;
+            line = line.substring(1);
         }
 
-        var parts = oddsStr.trim().split("/");
-        if (parts.length == 1) {
-            return Double.parseDouble(parts[0]);
+        // Nếu có dạng phân số a/b
+        if (line.contains("/")) {
+            String[] parts = line.split("/");
+            if (parts.length == 2) {
+                double a = Double.parseDouble(parts[0]);
+                double b = Double.parseDouble(parts[1]);
+                return sign * (a + b) / 2.0;
+            } else {
+                throw new IllegalArgumentException("Sai định dạng line: " + line);
+            }
         }
 
-        if (parts.length != 2) {
-            throw new IllegalArgumentException("Định dạng odds không hợp lệ: " + oddsStr);
-        }
+        // Nếu chỉ là 1 số
+        return sign * Double.parseDouble(line);
+    }
 
-        try {
-            double first = Double.parseDouble(parts[0]);
-            double second = Double.parseDouble(parts[1]);
-            return (first + second) / 2.0;
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Không thể parse số từ: " + oddsStr);
+    public String compareOdds(Double first, Double second) {
+        if (first.equals(second)) {
+            return "=";
+        } else if (first < second) {
+            return "<";
         }
+        return ">";
     }
 }

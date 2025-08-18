@@ -26,8 +26,8 @@ public class DatabaseLogAppender extends AppenderBase<ILoggingEvent> {
             log.setThread(eventObject.getThreadName());
             log.setHostName(hostName);
             namedParameterJdbcTemplate.update(SQL_INSERT_LOG, log.toParam());
-        } catch (Exception e) {
-            System.err.println("Failed to log to database: " + e.getMessage());
+        } catch (Exception ignore) {
+            // Ignore any exceptions that occur while logging to the database
         }
     }
 }

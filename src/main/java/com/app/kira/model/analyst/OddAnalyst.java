@@ -38,4 +38,12 @@ public class OddAnalyst {
                 .addValue("over_odds", dto.getOverOdd())
                 .addValue("under_odds", dto.getUnderOdd());
     }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class PrematchOdd {
+        private String overLine;
+        private String hdcLine;
+    }
 }

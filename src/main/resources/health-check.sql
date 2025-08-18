@@ -2,6 +2,11 @@ SHOW STATUS LIKE 'Threads_connected';
 SHOW VARIABLES LIKE 'max_connections';
 SHOW STATUS LIKE 'Connections';
 
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON kira.*
+    TO 'kira'@'%';
+
+
 SELECT @@innodb_buffer_pool_size / 1024 / 1024 / 1024 AS size_in_GB;
 SELECT @@innodb_log_file_size / 1024 / 1024 / 1024 AS size_in_GB;
 

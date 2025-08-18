@@ -39,11 +39,7 @@ public class PredictEventController {
                     e.first_under_odds,
                     e.last_ou,
                     e.last_over_odds,
-                    e.last_under_odds,
-            
-                    p.predict_score,
-                    p.hdc_pick,
-                    p.ou_pick
+                    e.last_under_odds
              from predict p
                       inner join events e on e.event_name = p.event_name and e.event_date = p.event_date
                       inner join kira_league kl on e.league_id = kl.league_id
@@ -51,7 +47,6 @@ public class PredictEventController {
                and p.event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00')
                and e.first_hdc is not null
              order by kl.is_main desc, p.event_date
-             limit 500
             """;
 
     @GetMapping

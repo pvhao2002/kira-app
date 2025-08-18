@@ -94,6 +94,20 @@ public class Bet {
         return param;
     }
 
+    public OddAnalyst.PrematchOdd getPrematchOdd() {
+        OddAnalyst.PrematchOdd result = new OddAnalyst.PrematchOdd();
+        getOddsHandicap().stream()
+                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .ifPresent(e -> result.setHdcLine(e.getHome().split(" ")[0] + "#" + e.getAway().split(" ")[0]));
+        getOddsGoal().stream()
+                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .ifPresent(e -> result.setOverLine(e.getGoals()));
+        return result;
+    }
+
+
     public MapSqlParameterSource toPram(long eventId) {
         var param = new MapSqlParameterSource("eventId", eventId);
         var oddGoal = getOddsGoal().stream()

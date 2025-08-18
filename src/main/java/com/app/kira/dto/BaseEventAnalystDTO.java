@@ -11,7 +11,8 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PROTECTED)
 public class BaseEventAnalystDTO {
-    Long   eventId;
+    Long eventId;
+    String eventName;
     String homeTeam;
     String awayTeam;
     String leagueName;

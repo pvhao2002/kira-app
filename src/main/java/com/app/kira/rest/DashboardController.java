@@ -17,11 +17,14 @@ public class DashboardController {
     @GetMapping
     public Object dashboard() {
         var sql = """
-                with total_leagues as (select count(1) as cnt from kira_league)
-                select count(1)                                         as total_events
-                     , COUNT(IF(DATE(event_date) = CURDATE(), 1, NULL)) as today_events
-                     , COUNT(IF(event_date > NOW(), 1, NULL))           as upcoming_events -- number event upcoming
-                     , (select cnt from total_leagues)                  as total_leagues
+                with total_leagues as (select count(1) as cnt from kira_league),
+                     events_today as (select count(IF(DATE(event_date) = DATE(CONVERT_TZ(CURDATE(), '+00:00', '+07:00')), 1,NULL)) as today_events
+                                           , COUNT(IF(event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00'), 1, NULL)) as upcoming_events
+                                      from events)
+                select count(1)                                   as total_events
+                     , (select today_events from events_today)    as today_events
+                     , (select upcoming_events from events_today) as upcoming_events\s
+                     , (select cnt from total_leagues)            as total_leagues
                 from event_analyst
                 """;
         return jdbcTemplate.query(sql, BeanPropertyRowMapper.newInstance(DashboardDTO.class))

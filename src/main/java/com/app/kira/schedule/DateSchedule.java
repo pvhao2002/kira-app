@@ -19,7 +19,6 @@ public class DateSchedule {
     public static final String CRAWL_TOMORROW_METHOD = PackageNameUtils.getCanonicalMethodName(DateSchedule.class, "crawlTomorrowEvent");
     public static final String CRAWL_BY_DATE_METHOD = PackageNameUtils.getCanonicalMethodName(DateSchedule.class, "crawlByDate");
     private final CrawDateService crawDateService;
-    private final Test test;
 
 
     @Scheduled(cron = "0 0 1,6,12,15,20,22 * * *", zone = "Asia/Ho_Chi_Minh")
@@ -31,13 +30,9 @@ public class DateSchedule {
         }
     }
 
-    @Scheduled(cron = "0 0 3,6,10 * * *", zone = "Asia/Ho_Chi_Minh")
+//    @Scheduled(cron = "0 0 3,6,10 * * *", zone = "Asia/Ho_Chi_Minh")
+    @Scheduled(fixedDelay = 50000)
     public void crawlByDate() {
         crawDateService.crawlByDateToAnalyst();
-    }
-
-    @Scheduled(fixedDelay = 10000, initialDelay = 1000)
-    public void test() throws InterruptedException {
-        test.process();
     }
 }

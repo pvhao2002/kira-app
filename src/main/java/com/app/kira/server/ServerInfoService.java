@@ -115,7 +115,7 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
             for (Method method : methods) {
                 if (method.isAnnotationPresent(Scheduled.class)) {
                     var name = simplifyMethod(targetClass, method);
-                    var sql = "insert ignore into schedule_manager(schedule_name, host_name) VALUES (:schedule_name, :host_name)";
+                    var sql = "insert ignore into schedule_manager(schedule_name, host_name, run_headless) VALUES (:schedule_name, :host_name, 0)";
                     var params = Map.of(
                             "schedule_name", name,
                             "host_name", hostName

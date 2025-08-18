@@ -19,7 +19,6 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -34,7 +33,6 @@ import java.util.logging.Level;
 public class CrawEventService {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ServerInfoService serverInfoService;
-
     private static final String MONEY_LINE_1X2 = "1x2";
     private static final String HDC = "hdc";
     private static final String HANDICAP = "handicap";
@@ -187,6 +185,15 @@ public class CrawEventService {
                 log.log(Level.SEVERE, "crawlOddForUpcomingEvent >> Crawl Event %s-%s-%s Failed".formatted(event.getEventId(), event.getEventName(), event.getDetailLink()), ex);
             }
         }));
+
+        var sqlDelPredictNoOdd = """
+                delete p
+                from predict p
+                         left join events e on e.event_name = p.event_name and e.event_date = p.event_date
+                where e.event_id is null
+                """;
+        jdbcTemplate.update(sqlDelPredictNoOdd, new MapSqlParameterSource());
+        log.log(Level.INFO, "Crawl Odd For Upcoming Event End");
     }
 
     private Bet getOdd(Page page, List<ElementHandle> lookBoxes) {
@@ -219,8 +226,6 @@ public class CrawEventService {
                 from event_crawl
                 where status = 'pending' or status = 'failed'
                 LIMIT 50
-                for update
-                skip locked
                 """;
         var events = jdbcTemplate.query(sqlEvents, BeanPropertyRowMapper.newInstance(EventHtml.class));
         if (events.isEmpty()) {

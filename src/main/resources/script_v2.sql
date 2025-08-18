@@ -116,14 +116,16 @@ create table router_setting
     constraint node unique (node)
 );
 
+drop table if exists pc;
 create table pc
 (
-    pc_id    int auto_increment
+    pc_id      int auto_increment
         primary key,
-    pc_name  varchar(255) null,
-    event_id int          null,
-    message  text         null,
-    status   varchar(50)  null,
+    pc_name    varchar(255) null,
+    event_id   int          null,
+    message    text         null,
+    status     varchar(50)  null,
+    created_at timestamp default current_timestamp,
     index pc_name (pc_name, event_id)
 );
 

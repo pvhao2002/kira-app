@@ -105,6 +105,7 @@ public class DateUtil {
             try {
                 return LocalDateTime.parse(date, fmt);
             } catch (Exception ignore) {
+                // Ignore and try the next formatter
             }
         }
         log.warning("Failed to parse date: " + date + " with all formatters");
