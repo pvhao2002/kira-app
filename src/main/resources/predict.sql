@@ -36,6 +36,10 @@ create table if not exists predict_detail
     predict_score     varchar(255),
     hdc_pick          enum ('home', 'away', 'none'),
     ou_pick           enum ('over', 'under', 'none'),
+    hdc_count         int       default 0,
+    ou_count          int       default 0,
+    match_count       int       default 0,
+
     result_hdc        enum ('win', 'lose', 'draw', 'cancel', 'void'),
     result_ou         enum ('win', 'lose', 'draw', 'cancel', 'void'),
     result_score      enum ('win', 'lose', 'draw', 'cancel', 'void'),

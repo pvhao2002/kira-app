@@ -19,6 +19,10 @@ public class PredictDetail {
     private PredictResult resultOu;
     private PredictResult resultScore;
 
+    private Integer hdcCount;
+    private Integer ouCount;
+    private Integer matchCount;
+
     public MapSqlParameterSource toParam() {
         MapSqlParameterSource param = new MapSqlParameterSource();
         param.addValue("predict_type", getPredictType().name());

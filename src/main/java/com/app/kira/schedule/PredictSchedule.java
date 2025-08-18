@@ -16,10 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.text.MessageFormat;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -31,6 +28,7 @@ import java.util.stream.Stream;
 public class PredictSchedule {
     private static final String MINUS = "-";
     private static final String HASH = "#";
+    private static final String COMMA = ",";
     private static final String SQL_PREDICT_SIMPLE = """
             SELECT ft_score_str, score_count
             FROM (SELECT ea.ft_score_str,
@@ -145,13 +143,13 @@ public class PredictSchedule {
             hdcCounter.merge(simple.getHdcPick(), 1, Integer::sum);
         }
         if (StringUtils.isNotBlank(simple.getPredictScore())) {
-            for (var s : simple.getPredictScore().split(",")) {
+            for (var s : simple.getPredictScore().split(COMMA)) {
                 scoreCounter.merge(s.trim(), 1, Integer::sum);
             }
         }
 
         if (StringUtils.isNotBlank(complex.getPredictScore())) {
-            for (var s : complex.getPredictScore().split(",")) {
+            for (var s : complex.getPredictScore().split(COMMA)) {
                 scoreCounter.merge(s.trim(), 1, Integer::sum);
             }
         }
@@ -170,6 +168,7 @@ public class PredictSchedule {
                     predict(e, detail, hdcCounter, ouCounter, event);
                 });
         setFinalPick(detail, hdcCounter, ouCounter);
+        limit5Scores(detail);
         return detail;
     }
 
@@ -196,6 +195,7 @@ public class PredictSchedule {
                             .forEach(e -> predict(e, detail, hdcCounter, ouCounter, event));
                 });
         setFinalPick(detail, hdcCounter, ouCounter);
+        limit5Scores(detail);
         return detail;
     }
 
@@ -211,7 +211,7 @@ public class PredictSchedule {
         var totalScore = (double) homeScore + awayScore;
         detail.setPredictScore(StringUtils.isBlank(detail.getPredictScore())
                 ? e.getFtScoreStr()
-                : detail.getPredictScore() + "," + e.getFtScoreStr());
+                : detail.getPredictScore() + COMMA + e.getFtScoreStr());
 
         var ouLine = OddConverter.convertLine(event.getLastOu());
         var ouPick = totalScore > ouLine
@@ -228,6 +228,7 @@ public class PredictSchedule {
                 ? PredictDetail.PredictPick.HOME
                 : PredictDetail.PredictPick.AWAY;
         hdcCounter.merge(hdcPick, 1, Integer::sum);
+        detail.setMatchCount(Math.max(Optional.ofNullable(detail.getMatchCount()).orElse(0), e.getScoreCount()));
     }
 
     private String buildSqlComplexBaseMinStats(PredictStats stats) {
@@ -276,7 +277,7 @@ public class PredictSchedule {
         var result2 = jdbcTemplate.query(SQL_PREDICT_SIMPLE.formatted(SQL_CONDITION_SIMPLE), param, BeanPropertyRowMapper.newInstance(PredictDTO.class));
         var ouCounter = new EnumMap<PredictDetail.PredictPick, Integer>(PredictDetail.PredictPick.class);
         var hdcCounter = new EnumMap<PredictDetail.PredictPick, Integer>(PredictDetail.PredictPick.class);
-        Stream.concat(result1.stream(), result2.stream())
+        var merged = Stream.concat(result1.stream(), result2.stream())
                 .collect(Collectors.toMap(
                         PredictDTO::getFtScoreStr,
                         PredictDTO::getScoreCount,
@@ -285,11 +286,27 @@ public class PredictSchedule {
                 .entrySet()
                 .stream()
                 .map(e -> new PredictDTO(e.getKey(), e.getValue()))
-                .sorted(Comparator.comparing(PredictDTO::getScoreCount).reversed())
-                .limit(3)
+                .toList();
+        int maxCount = merged.stream()
+                .mapToInt(PredictDTO::getScoreCount)
+                .max()
+                .orElse(0);
+        merged.stream()
+                .filter(dto -> dto.getScoreCount() == maxCount)
                 .forEach(e -> predict(e, detail, hdcCounter, ouCounter, event));
         setFinalPick(detail, hdcCounter, ouCounter);
+        // limit to 5 scores
+        limit5Scores(detail);
         return detail;
+    }
+
+    private void limit5Scores(PredictDetail detail) {
+        if (StringUtils.isNotBlank(detail.getPredictScore())) {
+            var scores = detail.getPredictScore().split(COMMA);
+            if (scores.length > 5) {
+                detail.setPredictScore(Stream.of(scores).limit(5).collect(Collectors.joining(COMMA)));
+            }
+        }
     }
 
     private void setFinalPick(
@@ -307,5 +324,7 @@ public class PredictSchedule {
                 .orElse(PredictDetail.PredictPick.NONE);
         detail.setOuPick(finalOuPick);
         detail.setHdcPick(finalHdcPick);
+        detail.setOuCount(ouCounter.getOrDefault(finalOuPick, 0));
+        detail.setHdcCount(hdcCounter.getOrDefault(finalHdcPick, 0));
     }
 }
