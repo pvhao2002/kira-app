@@ -24,9 +24,7 @@ public class DBConfiguration {
     @ConfigurationProperties(prefix = "application.datasource.write")
     public HikariConfig writeHikariConfig() {
         var config = new HikariConfig();
-        config.setMaxLifetime(1_800_000);
-        config.setKeepaliveTime(60_000);
-        config.setMaximumPoolSize(35);
+        config.setMaximumPoolSize(23);
         return config;
     }
 
