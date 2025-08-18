@@ -30,6 +30,10 @@ public class PredictDetail {
         param.addValue("predict_score", getPredictScore());
         param.addValue("hdc_pick", getHdcPick().name());
         param.addValue("ou_pick", getOuPick().name());
+
+        param.addValue("hdc_count", getHdcCount());
+        param.addValue("ou_count", getOuCount());
+        param.addValue("match_count", getMatchCount());
         return param;
     }
 

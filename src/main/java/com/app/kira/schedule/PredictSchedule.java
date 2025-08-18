@@ -99,11 +99,15 @@ public class PredictSchedule {
               and last_ou = :last_ou
             """;
     private static final String SQL_INSERT_PREDICT_DETAIL = """
-            insert into predict_detail(predict_type, predict_id, predict_score, hdc_pick, ou_pick)
-            values (:predict_type, :predict_id, :predict_score, :hdc_pick, :ou_pick)
+            insert into predict_detail(predict_type, predict_id, predict_score, hdc_pick, ou_pick, hdc_count, ou_count, match_count)
+            values (:predict_type, :predict_id, :predict_score, :hdc_pick, :ou_pick, :hdc_count, :ou_count, :match_count)
             on duplicate key update predict_score = values(predict_score)
                                   , hdc_pick      = values(hdc_pick)
                                   , ou_pick       = values(ou_pick)
+            
+                                  , hdc_count     = values(hdc_count)
+                                  , ou_count      = values(ou_count)
+                                  , match_count   = values(match_count)
             """;
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
