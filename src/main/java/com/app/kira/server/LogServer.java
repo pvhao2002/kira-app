@@ -14,7 +14,7 @@ public class LogServer {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ServerInfoService serverInfoService;
 
-    @PostConstruct
+//    @PostConstruct
     public void setup() {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         DatabaseLogAppender dbAppender = new DatabaseLogAppender();
