@@ -46,3 +46,5 @@ SELECT trx_id,
 FROM information_schema.innodb_trx;
 
 -- 705472
+
+mysqldump -h old-host -u olduser -p oldpass mydb --single-transaction --quick --compress | mysql -h new-host.aivencloud.com -P 12345 -u newuser -p newpass mydb
