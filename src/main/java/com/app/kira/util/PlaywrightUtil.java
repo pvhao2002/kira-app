@@ -21,7 +21,7 @@ public class PlaywrightUtil {
     }
 
     public <P> void withPlaywright(List<P> list, String jobName, BiConsumer<Page, List<P>> logic) {
-        var runHeadless = SERVER_BEAN.runHeadless(jobName);
+        var runHeadless = SERVER_BEAN.getRunHeadless(jobName);
         log.log(Level.INFO, "Running Playwright with job: {0}, runHeadless: {1}", new Object[]{jobName, runHeadless});
         withPlaywright(list, runHeadless, logic);
     }

@@ -1,6 +1,9 @@
 package com.app.kira.server;
 
 import com.app.kira.spring.ApplicationContextProvider;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
@@ -16,8 +19,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Method;
+import java.text.MessageFormat;
 import java.util.Map;
-import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 @Service
 @Log
@@ -31,7 +36,21 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
     @Getter
     private String url;
     private final NamedParameterJdbcTemplate db;
+    private static final String HOST_NAME = "host_name";
+    private static final String NODE = "node";
 
+
+    private final LoadingCache<String, Boolean> activeConfigCache = CacheBuilder.newBuilder()
+            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .build(CacheLoader.from(this::getActiveOfNode));
+
+    private final LoadingCache<String, Boolean> scheduleConfigCache = CacheBuilder.newBuilder()
+            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .build(CacheLoader.from(this::isScheduledMethodActive));
+
+    private final LoadingCache<String, Boolean> runHeadlessConfigCache = CacheBuilder.newBuilder()
+            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .build(CacheLoader.from(this::runHeadless));
 
     public ServerInfoService(JdbcTemplate db) {
         this.db = new NamedParameterJdbcTemplate(db);
@@ -48,7 +67,7 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
     void stopInstance() {
         log.info("Stopping instance: " + hostName);
         var sql = "update router_setting set is_active = false where node = :node";
-        var params = Map.of("node", hostName);
+        var params = Map.of(NODE, hostName);
         db.update(sql, params);
         log.info("Instance stopped: " + hostName);
     }
@@ -61,7 +80,7 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
     }
 
     void saveServerInfo() {
-        var params = Map.of("node", hostName, "url", url);
+        var params = Map.of(NODE, hostName, "url", url);
         db.update("""
                 INSERT INTO router_setting(node, url)
                 VALUES (:node, :url)
@@ -70,12 +89,12 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
                 """, params);
     }
 
-    public boolean isActive() {
-        return db.queryForObject(
+    public boolean getActiveOfNode(String node) {
+        return db.query(
                 "select is_active from router_setting where node = :node",
-                Map.of("node", hostName),
-                Boolean.class
-        );
+                Map.of(NODE, node),
+                (rs, i) -> rs.getBoolean("is_active")
+        ).stream().findFirst().orElse(false);
     }
 
     public boolean runHeadless(String jobName) {
@@ -91,20 +110,42 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
         ).stream().findFirst().orElse(false);
     }
 
+    public boolean getRunHeadless(String methodName) {
+        try {
+            return runHeadlessConfigCache.get(methodName);
+        } catch (Exception e) {
+            log.log(Level.WARNING, MessageFormat.format("ServerInfoService >> getRunHeadless >> not found for method {0} because of {1}", methodName, e.getMessage()));
+            return false;
+        }
+    }
+
+
     public boolean isScheduledMethodActive(String methodName) {
         var sql = "select status from schedule_manager where schedule_name = :schedule_name and host_name = :host_name";
         var params = Map.of(
                 "schedule_name", methodName,
-                "host_name", hostName
+                HOST_NAME, hostName
         );
-        return Optional.of(db.queryForObject(sql, params, String.class))
+        return db.query(sql, params, (rs, i) -> rs.getString("status"))
+                .stream()
+                .findFirst()
                 .map("active"::equalsIgnoreCase)
                 .orElse(false);
     }
 
+    public boolean getScheduleActive(String methodName) {
+        try {
+            return scheduleConfigCache.get(methodName);
+        } catch (Exception e) {
+            log.log(Level.WARNING, MessageFormat.format("ServerInfoService >> getScheduleActive >> not found for method {0} because of {1}", methodName, e.getMessage()));
+            return false;
+        }
+    }
+
+
     public void saveScheduledMethods() {
         var sqlDel = "delete from schedule_manager where host_name = :host_name";
-        var paramsDel = Map.of("host_name", hostName);
+        var paramsDel = Map.of(HOST_NAME, hostName);
         db.update(sqlDel, paramsDel);
         String[] beanNames = ApplicationContextProvider.getBeanDefinitionNames();
         for (String beanName : beanNames) {
@@ -118,7 +159,7 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
                     var sql = "insert ignore into schedule_manager(schedule_name, host_name, run_headless) VALUES (:schedule_name, :host_name, 0)";
                     var params = Map.of(
                             "schedule_name", name,
-                            "host_name", hostName
+                            HOST_NAME, hostName
                     );
                     db.update(sql, params);
                 }
@@ -131,7 +172,16 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
         return String.format("%s.%s", targetClass.getCanonicalName(), method.getName());
     }
 
+    public boolean getActiveConfig(String key) {
+        try {
+            return activeConfigCache.get(key);
+        } catch (Exception e) {
+            log.log(Level.WARNING, "SystemConfigService >> getSystemConfig >> not found because of ", e.getMessage());
+            return false;
+        }
+    }
+
     public boolean isNotActive() {
-        return !isActive();
+        return !getActiveConfig(hostName);
     }
 }
