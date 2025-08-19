@@ -307,9 +307,7 @@ public class PredictSchedule {
     private void limit5Scores(PredictDetail detail) {
         if (StringUtils.isNotBlank(detail.getPredictScore())) {
             var scores = detail.getPredictScore().split(COMMA);
-            if (scores.length > 5) {
-                detail.setPredictScore(Stream.of(scores).distinct().limit(5).collect(Collectors.joining(COMMA)));
-            }
+            detail.setPredictScore(Stream.of(scores).distinct().limit(5).collect(Collectors.joining(COMMA)));
         }
     }
 
