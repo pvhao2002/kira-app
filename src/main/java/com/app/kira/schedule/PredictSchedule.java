@@ -178,7 +178,7 @@ public class PredictSchedule {
 
     private PredictDetail predictComplex(RawEventAnalyst event) {
         var detail = new PredictDetail();
-        detail.setPredictType(PredictDetail.PredictType.SIMPLE);
+        detail.setPredictType(PredictDetail.PredictType.COMPLEX);
         detail.setPredictId(event.getPredictId());
         var param = event.toParam();
         var ouCounter = new EnumMap<PredictDetail.PredictPick, Integer>(PredictDetail.PredictPick.class);
