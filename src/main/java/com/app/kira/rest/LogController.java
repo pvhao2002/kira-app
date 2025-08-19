@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
+import reactor.util.retry.Retry;
+import reactor.core.Exceptions.SourceException;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
@@ -30,9 +32,15 @@ public class LogController {
     @GetMapping(value = "/host", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> streamLogsByHost(@RequestParam String h) {
         AtomicLong lastLogId = new AtomicLong(0);
-        return Flux.interval(Duration.ofSeconds(1))
-                .flatMap(tick -> logRepository.findNewLogs(h, lastLogId.get())
-                        .onErrorResume(e -> Flux.empty()))
+        return Flux.interval(Duration.ofSeconds(2))
+                .onBackpressureDrop()
+                .concatMap(tick -> logRepository.findNewLogs(h, lastLogId.get())
+                        .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                                .filter(ex -> ex instanceof SourceException))
+                        .onErrorResume(e -> {
+                            log.warning("DB error: " + e.getMessage());
+                            return Flux.empty();
+                        }))
                 .map(l -> {
                     lastLogId.set(l.getLogId());
                     return ServerSentEvent.<String>builder()

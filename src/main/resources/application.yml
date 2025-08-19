@@ -7,7 +7,7 @@ application:
       driver-class-name: com.mysql.cj.jdbc.Driver
 spring:
   r2dbc:
-    url: "r2dbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:kira}?useUnicode=true"
+    url: "r2dbc:pool:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:kira}?useUnicode=true"
     username: "${DB_USERNAME:root}"
     password: "${DB_PASSWORD:1234}"
 
