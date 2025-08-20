@@ -228,7 +228,7 @@ public class PredictSchedule {
         var hdcAway = OddConverter.convertLine(hdcLine.split(HASH)[1]);
         double adjustedHome = homeScore + hdcHome;
         double adjustedAway = awayScore + hdcAway;
-        var hdcPick = adjustedHome > adjustedAway
+        var hdcPick = adjustedHome >= adjustedAway
                 ? PredictDetail.PredictPick.HOME
                 : PredictDetail.PredictPick.AWAY;
         hdcCounter.merge(hdcPick, 1, Integer::sum);

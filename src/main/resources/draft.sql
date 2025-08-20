@@ -84,5 +84,46 @@ SELECT event_name,
        score_count
 FROM score_counts
 WHERE rn < 3
-ORDER BY event_date, event_name
+ORDER BY event_date, event_name;
+
+
+-- parlay
+WITH score_counts AS (SELECT e.event_id,
+                             ea.ft_score_str,
+                             COUNT(1) AS score_count
+                      FROM event_analyst ea
+                               INNER JOIN events e
+                                          ON e.first_hdc = ea.first_hdc
+                                              AND e.last_hdc = ea.last_hdc
+                                              AND e.first_ou = ea.first_ou
+                                              AND e.last_ou = ea.last_ou
+                                              AND e.first_home_odds = ea.first_home_odds
+                                              AND e.first_over_odds = ea.first_over_odds
+                                              AND e.last_home_odds = ea.last_home_odds
+                                              AND e.last_over_odds = ea.last_over_odds
+                      WHERE e.event_date > '2025-08-19 23:00:00'
+                      GROUP BY e.event_id, ea.ft_score_str),
+     ranked_scores AS (SELECT sc.*,
+                              ROW_NUMBER() OVER (PARTITION BY sc.event_id ORDER BY sc.score_count DESC) AS rn,
+                              MAX(sc.score_count) OVER (PARTITION BY sc.event_id)                       AS max_score_count
+                       FROM score_counts sc)
+SELECT e.event_id,
+       e.league_name,
+       e.event_name,
+       e.event_date,
+       e.last_hdc,
+       e.last_ou,
+       e.home_logo,
+       e.away_logo,
+       rs.ft_score_str,
+       rs.score_count
+FROM ranked_scores rs
+         INNER JOIN events e ON e.event_id = rs.event_id
+         INNER JOIN kira.kira_league kl on e.league_id = kl.league_id
+WHERE rs.rn <= 3
+ORDER BY rs.max_score_count DESC
+       , e.event_date
+       , e.event_name
+       , rs.score_count DESC;
+
 

@@ -13,7 +13,7 @@ import java.util.logging.Level;
 @Log
 @UtilityClass
 public class PlaywrightUtil {
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
+    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
     private static final ServerInfoService SERVER_BEAN = ApplicationContextProvider.getBean(ServerInfoService.class);
 
     public <P> void withPlaywright(List<P> list, BiConsumer<Page, List<P>> logic) {

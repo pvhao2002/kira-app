@@ -23,8 +23,6 @@ RUN rm -rf /ms-playwright/firefox /ms-playwright/webkit
 # Cài lại Chromium (có thể đã cài sẵn, nhưng để chắc)
 RUN sh -c '[ -d /ms-playwright/chromium ] || npx playwright install chromium'
 
-
-
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
