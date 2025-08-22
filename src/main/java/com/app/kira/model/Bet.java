@@ -66,33 +66,71 @@ public class Bet {
         param.addValue("league_name", evt.getLeagueName());
         param.addValue("event_link", evt.getDetailLink());
 
-        getOddsGoal().stream()
+        // ----- OU (Over/Under) -----
+        var oddsGoal = getOddsGoal().stream()
                 .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
-                .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
-                .ifPresentOrElse(oddGoal -> {
-                    param.addValue("over_odds", oddGoal.getOver());
-                    param.addValue("under_odds", oddGoal.getUnder());
-                    param.addValue("ou_line", oddGoal.getGoals());
+                .toList();
+
+        // First OU
+        oddsGoal.stream()
+                .min(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .ifPresentOrElse(odd -> {
+                    param.addValue("first_over_odds", odd.getOver());
+                    param.addValue("first_under_odds", odd.getUnder());
+                    param.addValue("first_ou_line", odd.getGoals());
                 }, () -> {
-                    param.addValue("over_odds", null);
-                    param.addValue("under_odds", null);
-                    param.addValue("ou_line", null);
+                    param.addValue("first_over_odds", null);
+                    param.addValue("first_under_odds", null);
+                    param.addValue("first_ou_line", null);
                 });
 
-        getOddsHandicap().stream()
+        // Last OU
+        oddsGoal.stream()
+                .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .ifPresentOrElse(odd -> {
+                    param.addValue("last_over_odds", odd.getOver());
+                    param.addValue("last_under_odds", odd.getUnder());
+                    param.addValue("last_ou_line", odd.getGoals());
+                }, () -> {
+                    param.addValue("last_over_odds", null);
+                    param.addValue("last_under_odds", null);
+                    param.addValue("last_ou_line", null);
+                });
+
+        // ----- Handicap -----
+        var oddsHandicap = getOddsHandicap().stream()
                 .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
+                .toList();
+
+        // First HDC
+        oddsHandicap.stream()
+                .min(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
+                .ifPresentOrElse(e -> {
+                    param.addValue("first_home_odds", e.getHome().split(" ")[1]);
+                    param.addValue("first_away_odds", e.getAway().split(" ")[1]);
+                    param.addValue("first_hdc_line", e.getHome().split(" ")[0] + "#" + e.getAway().split(" ")[0]);
+                }, () -> {
+                    param.addValue("first_home_odds", null);
+                    param.addValue("first_away_odds", null);
+                    param.addValue("first_hdc_line", null);
+                });
+
+        // Last HDC
+        oddsHandicap.stream()
                 .max(Comparator.comparing(o -> DateUtil.parseOddDate(o.getOddDate(), null)))
                 .ifPresentOrElse(e -> {
-                    param.addValue("home_odds", e.getHome().split(" ")[1]);
-                    param.addValue("away_odds", e.getAway().split(" ")[1]);
-                    param.addValue("hdc_line", e.getHome().split(" ")[0] + "#" + e.getAway().split(" ")[0]);
+                    param.addValue("last_home_odds", e.getHome().split(" ")[1]);
+                    param.addValue("last_away_odds", e.getAway().split(" ")[1]);
+                    param.addValue("last_hdc_line", e.getHome().split(" ")[0] + "#" + e.getAway().split(" ")[0]);
                 }, () -> {
-                    param.addValue("home_odds", null);
-                    param.addValue("away_odds", null);
-                    param.addValue("hdc_line", null);
+                    param.addValue("last_home_odds", null);
+                    param.addValue("last_away_odds", null);
+                    param.addValue("last_hdc_line", null);
                 });
+
         return param;
     }
+
 
     public OddAnalyst.PrematchOdd getPrematchOdd() {
         OddAnalyst.PrematchOdd result = new OddAnalyst.PrematchOdd();

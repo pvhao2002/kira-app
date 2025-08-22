@@ -7,6 +7,8 @@ create table if not exists tecum_account
     balance_holding       decimal(20, 2) default 0,
     balance_left_dividend decimal(20, 2) default 0,
     bonus                 decimal(20, 2) default 0,
+    commission            decimal(20, 2) default 0,
+    investment            decimal(20, 2) default 0,
     tecum_cookie          text,
     tecum_username        varchar(255),
     tecum_password        varchar(255),

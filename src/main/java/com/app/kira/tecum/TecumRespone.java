@@ -4,12 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class TecumRespone {
     private Object json;
-
 
     @Data
     @AllArgsConstructor
@@ -19,5 +20,14 @@ public class TecumRespone {
         private Double bonus;       // Số tiền thưởng đã nhận được từ lúc đăng ký
         private Double amount; // Đang đăng ký mua
         private Double leftDividend;  // Số tiền chờ chia cổ tức
+
+        private List<Order> data;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Order {
+        private Double totalDividend;
     }
 }

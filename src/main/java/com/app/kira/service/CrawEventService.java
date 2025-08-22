@@ -99,18 +99,30 @@ public class CrawEventService {
 
     private static final String SQL_UPDATE_PREDICT = """
             insert into predict(event_name, event_date, league_name, event_link,
-                                hdc_line, home_odds, away_odds,
-                                ou_line, over_odds, under_odds)
+                                first_hdc_line, first_home_odds, first_away_odds,
+                                last_hdc_line, last_home_odds, last_away_odds,
+                                first_ou_line, first_over_odds, first_under_odds,
+                                last_ou_line, last_over_odds, last_under_odds)
             values (:event_name, :event_date, :league_name, :event_link,
-                    :hdc_line, :home_odds, :away_odds,
-                    :ou_line, :over_odds, :under_odds)
-            on duplicate key update hdc_line   = values(hdc_line),
-                                    home_odds  = values(home_odds),
-                                    away_odds  = values(away_odds),
+                    :first_hdc_line, :first_home_odds, :first_away_odds,
+                    :last_hdc_line, :last_home_odds, :last_away_odds,
+                    :first_ou_line, :first_over_odds, :first_under_odds,
+                    :last_ou_line, :last_over_odds, :last_under_odds)
+            on duplicate key update first_hdc_line   = values(first_hdc_line),
+                                    first_home_odds  = values(first_home_odds),
+                                    first_away_odds  = values(first_away_odds),
             
-                                    ou_line    = values(ou_line),
-                                    over_odds  = values(over_odds),
-                                    under_odds = values(under_odds)
+                                    last_hdc_line    = values(last_hdc_line),
+                                    last_home_odds   = values(last_home_odds),
+                                    last_away_odds   = values(last_away_odds),
+            
+                                    first_ou_line    = values(first_ou_line),
+                                    first_over_odds  = values(first_over_odds),
+                                    first_under_odds = values(first_under_odds),
+            
+                                    last_ou_line     = values(last_ou_line),
+                                    last_over_odds   = values(last_over_odds),
+                                    last_under_odds  = values(last_under_odds)
             """;
 
     public void processOddForUpcomingEvent() {

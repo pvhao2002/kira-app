@@ -111,7 +111,7 @@ public class PredictSchedule {
             """;
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    @Scheduled(fixedDelay = 15, initialDelay = 5, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = 1, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
     public void predict() {
         var eventToPredict = jdbcTemplate.query(SQL_GET_EVENT_PREDICT, BeanPropertyRowMapper.newInstance(RawEventAnalyst.class));
         log.log(java.util.logging.Level.INFO, "Predicting for {0} events", eventToPredict.size());
@@ -225,10 +225,8 @@ public class PredictSchedule {
 
         var hdcLine = event.getLastHdc();
         var hdcHome = OddConverter.convertLine(hdcLine.split(HASH)[0]);
-        var hdcAway = OddConverter.convertLine(hdcLine.split(HASH)[1]);
         double adjustedHome = homeScore + hdcHome;
-        double adjustedAway = awayScore + hdcAway;
-        var hdcPick = adjustedHome >= adjustedAway
+        var hdcPick = adjustedHome >= (double) awayScore
                 ? PredictDetail.PredictPick.HOME
                 : PredictDetail.PredictPick.AWAY;
         hdcCounter.merge(hdcPick, 1, Integer::sum);

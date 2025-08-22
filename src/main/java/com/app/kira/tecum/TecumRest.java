@@ -13,6 +13,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.sql.Date;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -32,6 +34,8 @@ public class TecumRest {
                  , ta.balance_holding
                  , ta.balance_left_dividend
                  , ta.bonus
+                 , ta.commission
+                 , ta.investment
                  , CONVERT_TZ(ta.updated_at, '+00:00', '+07:00') as updated_at
                  , ta.note
                  , tat.attendance_date
@@ -49,13 +53,18 @@ public class TecumRest {
 
     @GetMapping
     public Object findAll() {
-        return jdbcTemplate.query(SQL_GET_TECUM_ACCOUNT, BeanPropertyRowMapper.newInstance(TecumDTO.class))
+        var result = new ArrayList<>(jdbcTemplate.query(SQL_GET_TECUM_ACCOUNT, BeanPropertyRowMapper.newInstance(TecumDTO.class))
                 .stream()
                 .collect(Collectors.groupingBy(TecumDTO::getTecumAccountId))
                 .entrySet()
                 .stream()
                 .map(TecumDTO::new)
-                .toList();
+                .sorted(Comparator.comparing(TecumDTO::getBalance, Comparator.reverseOrder()))
+                .toList());
+        // add row total
+        var total = new TecumDTO(result);
+        result.add(total);
+        return result;
     }
 
     @GetMapping("/popup/{accountId}")
@@ -111,8 +120,23 @@ public class TecumRest {
                 callApiTecum(e, "https://tecumfund.com/rpc/app/reward/checkin/get", "{}", "balance");
                 Thread.sleep(2_000);
                 callApiTecum(e, "https://tecumfund.com/rpc/app/user/holdingOrder", "{}", "balance");
+                Thread.sleep(2_000);
+                callApiTecum(e, "https://tecumfund.com/rpc/app/reward/share", "{}", "reward");
+                Thread.sleep(2_000);
+                callApiTecum(e, "https://tecumfund.com/rpc/app/order/list", """
+                        {
+                            "json": {
+                                "filters": {
+                                    "locale": "en"
+                                },
+                                "direction": "NEXT",
+                                "cursor": null
+                            }
+                        }
+                        """, "order");
+                Thread.sleep(2_000);
                 log.info("Auto attendance completed for account: " + e.getTecumName());
-                 // Delay 10 giây giữa các lần gọi API
+                // Delay 10 giây giữa các lần gọi API
             } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
             }
@@ -132,6 +156,7 @@ public class TecumRest {
                     TecumRespone.class
             );
             if (response.getStatusCode() == HttpStatus.OK) {
+                var responseBody = response.getBody();
                 log.info("API call successful for account: " + item.getTecumName());
                 if ("draw".equalsIgnoreCase(type)) {
                     jdbcTemplate.update("""
@@ -140,10 +165,9 @@ public class TecumRest {
                             where tecum_account_id = :tecum_account_id
                               and attendance_date = :date
                             """, Map.of("tecum_account_id", item.getTecumAccountId(), "date", new Date(System.currentTimeMillis())));
-                } else if ("balance".equalsIgnoreCase(type)) {
-                    var responseBody = response.getBody();
-                    if (responseBody != null) {
-                        var balance = JsonUtil.fromJson(JsonUtil.toJson(responseBody.getJson()), TecumRespone.TecumBalance.class);
+                } else if (responseBody != null && List.of("balance", "reward", "order").contains(type)) {
+                    var balance = JsonUtil.fromJson(JsonUtil.toJson(responseBody.getJson()), TecumRespone.TecumBalance.class);
+                    if ("balance".equalsIgnoreCase(type)) {
                         jdbcTemplate.update("""
                                 update tecum_account
                                  set balance               = IFNULL(:balance, balance),
@@ -156,6 +180,21 @@ public class TecumRest {
                                 .addValue("balance_holding", balance.getAmount())
                                 .addValue("balance_left_dividend", balance.getLeftDividend())
                                 .addValue("bonus", balance.getBonus()));
+                    } else if ("reward".equalsIgnoreCase(type)) {
+                        jdbcTemplate.update("""
+                                 update tecum_account
+                                set commission               = IFNULL(:commission, commission)
+                                where tecum_account_id = :tecum_account_id
+                                """, new MapSqlParameterSource("tecum_account_id", item.getTecumAccountId())
+                                .addValue("commission", balance.getAmount()));
+                    } else if ("order".equalsIgnoreCase(type)) {
+                        var orders = balance.getData().stream().map(TecumRespone.Order::getTotalDividend).reduce((double) 0, Double::sum);
+                        jdbcTemplate.update("""
+                                update tecum_account
+                                set investment = IFNULL(:investment, investment)
+                                where tecum_account_id = :tecum_account_id
+                                """, new MapSqlParameterSource("tecum_account_id", item.getTecumAccountId())
+                                .addValue("investment", orders));
                     }
                 }
             }

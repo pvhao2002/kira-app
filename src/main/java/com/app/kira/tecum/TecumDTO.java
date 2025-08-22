@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Data
 @AllArgsConstructor
@@ -19,6 +20,8 @@ public class TecumDTO {
     private BigDecimal balanceHolding;
     private BigDecimal balanceLeftDividend;
     private BigDecimal bonus;
+    private BigDecimal commission;
+    private BigDecimal investment;
     private String updatedAt;
     private String note;
     @JsonIgnore
@@ -29,6 +32,35 @@ public class TecumDTO {
     private String tecumCookie;
     private List<Attendance> attendanceList;
 
+    public TecumDTO(List<TecumDTO> list) {
+        this.tecumName = "Total";
+        this.balance = list.stream()
+                .map(TecumDTO::getBalance)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        this.balanceHolding = list.stream()
+                .map(TecumDTO::getBalanceHolding)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.balanceLeftDividend = list.stream()
+                .map(TecumDTO::getBalanceLeftDividend)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.bonus = list.stream()
+                .map(TecumDTO::getBonus)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.commission = list.stream()
+                .map(TecumDTO::getCommission)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.investment = list.stream()
+                .map(TecumDTO::getInvestment)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     public TecumDTO(Map.Entry<Long, List<TecumDTO>> entry) {
         this.tecumAccountId = entry.getKey();
         this.tecumName = entry.getValue().getFirst().getTecumName();
@@ -38,6 +70,8 @@ public class TecumDTO {
         this.updatedAt = entry.getValue().getFirst().getUpdatedAt();
         this.note = entry.getValue().getFirst().getNote();
         this.bonus = entry.getValue().getFirst().getBonus();
+        this.commission = entry.getValue().getFirst().getCommission();
+        this.investment = entry.getValue().getFirst().getInvestment();
         this.attendanceList = entry.getValue().stream()
                 .filter(dto -> dto.getAttendanceDate() != null)
                 .map(Attendance::new)
