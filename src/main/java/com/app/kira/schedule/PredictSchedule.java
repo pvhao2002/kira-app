@@ -46,10 +46,10 @@ public class PredictSchedule {
             """;
 
     private static final String SQL_CONDITION_SIMPLE = """
-            AND ea.first_home_odds = :first_home_odds
-            AND ea.first_over_odds = :first_over_odds
-            AND ea.last_home_odds = :last_home_odds
-            AND ea.last_over_odds = :last_over_odds
+            --  AND ea.first_home_odds = :first_home_odds
+            --  AND ea.first_over_odds = :first_over_odds
+              AND ea.last_home_odds = :last_home_odds
+              AND ea.last_over_odds = :last_over_odds
             """;
 
     private static final String SQL_GET_EVENT_PREDICT = """
@@ -72,7 +72,7 @@ public class PredictSchedule {
               from events e
                        inner join predict p on p.event_name = e.event_name and p.event_date = e.event_date
               WHERE TRUE
-                AND e.event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00')
+                AND e.event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00') - INTERVAL  30 MINUTE
                 AND e.first_hdc IS NOT NULL
                 AND e.first_ou IS NOT NULL
             """;
@@ -111,7 +111,7 @@ public class PredictSchedule {
             """;
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    @Scheduled(fixedDelay = 1, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = 10, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
     public void predict() {
         var eventToPredict = jdbcTemplate.query(SQL_GET_EVENT_PREDICT, BeanPropertyRowMapper.newInstance(RawEventAnalyst.class));
         log.log(java.util.logging.Level.INFO, "Predicting for {0} events", eventToPredict.size());

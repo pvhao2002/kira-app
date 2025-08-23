@@ -38,7 +38,6 @@ public class PredictEventResponse {
         private Long predictId;
         private String eventName;
         private String eventDate;
-        @JsonIgnore
         private String leagueName;
         @JsonIgnore
         private Boolean isMainLeague;
@@ -64,6 +63,7 @@ public class PredictEventResponse {
         public PredictEvent(Map.Entry<Long, List<PredictEvent>> entry) {
             var evt = entry.getValue().getFirst();
             this.eventName = evt.getEventName();
+            this.leagueName = evt.getLeagueName();
             this.eventDate = evt.getEventDate();
             this.eventLink = evt.getEventLink();
             this.homeLogo = evt.getHomeLogo();
