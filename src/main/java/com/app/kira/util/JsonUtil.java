@@ -1,6 +1,8 @@
 package com.app.kira.util;
 
+import com.app.kira.tecum.CashFlowDTO;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
@@ -11,7 +13,9 @@ import java.util.logging.Level;
 @UtilityClass
 public class JsonUtil {
 
-    public static final Gson gson = new Gson();
+    public static final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(CashFlowDTO.class, new JsonPayloadAdapter())
+            .create();
 
     public static <T> T fromJson(String json, Class<T> clazz) {
         try {

@@ -6,9 +6,11 @@ create table if not exists tecum_account
     balance               decimal(20, 2) default 0,
     balance_holding       decimal(20, 2) default 0,
     balance_left_dividend decimal(20, 2) default 0,
+    withdrawal            decimal(20, 2) default 0,
+    deposit               decimal(20, 2) default 0,
+    profit                decimal(20, 2) default 0,
     bonus                 decimal(20, 2) default 0,
     commission            decimal(20, 2) default 0,
-    investment            decimal(20, 2) default 0,
     tecum_cookie          text,
     tecum_username        varchar(255),
     tecum_password        varchar(255),
@@ -18,13 +20,16 @@ create table if not exists tecum_account
     unique key uq_tecum_account_name (tecum_name)
 );
 
-drop table if exists tecum_attendance;
-create table if not exists tecum_attendance
+drop table if exists tecum_transaction;
+create table if not exists tecum_transaction
 (
-    attendance_id    int auto_increment primary key,
+    cash_flow_id     int auto_increment primary key,
     tecum_account_id int,
-    attendance_date  date,                                         -- ngày điểm danh
-    status           enum ('PRESENT','ABSENT') default 'PRESENT',
-    created_at       datetime                  default current_timestamp,
-    unique key uq_account_date (tecum_account_id, attendance_date) -- 1 account chỉ có 1 record/ngày
+    amount           decimal(20, 2) default 0 comment '-- số tiền giao dịch',
+    balance          decimal(20, 2) default 0 comment '-- số dư sau giao dịch',
+    transaction_date varchar(50),
+    type             varchar(35),
+    note             varchar(255),
+    created_at       datetime       default current_timestamp,
+    updated_at       datetime       default current_timestamp on update current_timestamp
 );

@@ -8,15 +8,13 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.sql.Date;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -35,14 +33,12 @@ public class TecumRest {
                  , ta.balance_left_dividend
                  , ta.bonus
                  , ta.commission
-                 , ta.investment
+                 , ta.withdrawal
+                 , ta.deposit
+                 , ta.profit
                  , CONVERT_TZ(ta.updated_at, '+00:00', '+07:00') as updated_at
                  , ta.note
-                 , tat.attendance_date
-                 , tat.status
-                 , CONVERT_TZ(tat.created_at, '+00:00', '+07:00') as created_at
             from tecum_account ta
-                     left join tecum_attendance tat on tat.tecum_account_id = ta.tecum_account_id
             """;
     private static final String SQL_INSERT_TECUM_ACCOUNT = """
             INSERT INTO tecum_account(tecum_name, tecum_username, tecum_password)
@@ -50,16 +46,21 @@ public class TecumRest {
             ON DUPLICATE KEY UPDATE tecum_username = IFNULL(VALUES(tecum_username), tecum_account.tecum_username),
                                      tecum_password = IFNULL(VALUES(tecum_password), tecum_account.tecum_password)
             """;
+    private static final String SQL_INSERT_TECUM_TRANSACTION = """
+            insert into tecum_transaction(tecum_account_id, amount, balance, transaction_date, type, note)
+            values (:accountId, :amount, :balance, :createdAt, :type, :note)
+            """;
+    private static final String SQL_DELETE_TECUM_TRANSACTION = """
+            delete from tecum_transaction where tecum_account_id = :accountId
+            """;
 
     @GetMapping
     public Object findAll() {
         var result = new ArrayList<>(jdbcTemplate.query(SQL_GET_TECUM_ACCOUNT, BeanPropertyRowMapper.newInstance(TecumDTO.class))
                 .stream()
-                .collect(Collectors.groupingBy(TecumDTO::getTecumAccountId))
-                .entrySet()
-                .stream()
-                .map(TecumDTO::new)
-                .sorted(Comparator.comparing(TecumDTO::getBalance, Comparator.reverseOrder()))
+                .sorted(Comparator.comparing(TecumDTO::getProfit, Comparator.reverseOrder())
+                        .thenComparing(TecumDTO::getCommission, Comparator.reverseOrder())
+                        .thenComparing(TecumDTO::getBalance, Comparator.reverseOrder()))
                 .toList());
         // add row total
         var total = new TecumDTO(result);
@@ -101,6 +102,76 @@ public class TecumRest {
         return Map.of("message", "Auto attendance initiated");
     }
 
+    @GetMapping("auto-transaction")
+    public Object autoTransaction() {
+        getCookie();
+        var result = jdbcTemplate.query("""
+                select *
+                from tecum_account
+                where tecum_cookie is not null
+                """, BeanPropertyRowMapper.newInstance(TecumDTO.class));
+        var body = new CashFlowDTO();
+        result.forEach(item -> {
+            AtomicBoolean hasNext = new AtomicBoolean(true);
+            var first = true;
+            while (hasNext.get()) {
+                try {
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.set(HttpHeaders.COOKIE, item.getTecumCookie());
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                    var bodyStr = first
+                            ? """
+                            {
+                                "json": {
+                                    "filters": {},
+                                    "direction": "NEXT",
+                                    "cursor": null
+                                }
+                            }
+                            """
+                            : JsonUtil.toJson(body);
+                    HttpEntity<String> entity = new HttpEntity<>(bodyStr, headers);
+                    ResponseEntity<TecumRespone> response = restTemplate.exchange(
+                            "https://tecumfund.com/rpc/app/billing/list",
+                            HttpMethod.POST,
+                            entity,
+                            TecumRespone.class
+                    );
+                    first = false;
+                    if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null && response.getBody().getJson() != null) {
+                        var responseBody = response.getBody();
+                        var rs = JsonUtil.fromJson(JsonUtil.toJson(responseBody.getJson()), TecumRespone.TecumBalance.class);
+                        Optional.ofNullable(rs)
+                                .ifPresentOrElse(val -> {
+                                    log.log(Level.INFO, "Processing account: {0}, hasNext: {1}", new Object[]{item.getTecumName(), rs.getHasNext()});
+                                    body.getJson().setCursor(val.getNextCursor());
+                                    hasNext.set(val.getHasNext());
+                                    if (!CollectionUtils.isEmpty(val.getData())) {
+                                        var params = val.getData().stream()
+                                                .map(p -> p.toParamTransaction(item.getTecumAccountId()))
+                                                .toArray(MapSqlParameterSource[]::new);
+                                        jdbcTemplate.batchUpdate(SQL_DELETE_TECUM_TRANSACTION, params);
+                                        jdbcTemplate.batchUpdate(SQL_INSERT_TECUM_TRANSACTION, params);
+                                    } else {
+                                        hasNext.set(false);
+                                    }
+                                }, () -> {
+                                    hasNext.set(false);
+                                    log.info("No data found for account: " + item.getTecumName());
+                                });
+                    } else {
+                        hasNext.set(false);
+                    }
+                    Thread.sleep(2_000);
+                } catch (Exception ex) {
+                    log.log(Level.SEVERE, "Error preparing request for account: " + item.getTecumName() + ", body: " + JsonUtil.toJson(body), ex);
+                    hasNext.set(false);
+                }
+            }
+        });
+        return Map.of("message", "Cash flow started");
+    }
+
     @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Ho_Chi_Minh")
     public void autoAttendance() {
         // Lấy danh sách tài khoản có cookie
@@ -123,20 +194,7 @@ public class TecumRest {
                 Thread.sleep(2_000);
                 callApiTecum(e, "https://tecumfund.com/rpc/app/reward/share", "{}", "reward");
                 Thread.sleep(2_000);
-                callApiTecum(e, "https://tecumfund.com/rpc/app/order/list", """
-                        {
-                            "json": {
-                                "filters": {
-                                    "locale": "en"
-                                },
-                                "direction": "NEXT",
-                                "cursor": null
-                            }
-                        }
-                        """, "order");
-                Thread.sleep(2_000);
                 log.info("Auto attendance completed for account: " + e.getTecumName());
-                // Delay 10 giây giữa các lần gọi API
             } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
             }
@@ -158,14 +216,7 @@ public class TecumRest {
             if (response.getStatusCode() == HttpStatus.OK) {
                 var responseBody = response.getBody();
                 log.info("API call successful for account: " + item.getTecumName());
-                if ("draw".equalsIgnoreCase(type)) {
-                    jdbcTemplate.update("""
-                            update tecum_attendance
-                            set status = 'PRESENT'
-                            where tecum_account_id = :tecum_account_id
-                              and attendance_date = :date
-                            """, Map.of("tecum_account_id", item.getTecumAccountId(), "date", new Date(System.currentTimeMillis())));
-                } else if (responseBody != null && List.of("balance", "reward", "order").contains(type)) {
+                if (responseBody != null && List.of("balance", "reward").contains(type)) {
                     var balance = JsonUtil.fromJson(JsonUtil.toJson(responseBody.getJson()), TecumRespone.TecumBalance.class);
                     if ("balance".equalsIgnoreCase(type)) {
                         jdbcTemplate.update("""
@@ -187,14 +238,6 @@ public class TecumRest {
                                 where tecum_account_id = :tecum_account_id
                                 """, new MapSqlParameterSource("tecum_account_id", item.getTecumAccountId())
                                 .addValue("commission", balance.getAmount()));
-                    } else if ("order".equalsIgnoreCase(type)) {
-                        var orders = balance.getData().stream().map(TecumRespone.Order::getTotalDividend).reduce((double) 0, Double::sum);
-                        jdbcTemplate.update("""
-                                update tecum_account
-                                set investment = IFNULL(:investment, investment)
-                                where tecum_account_id = :tecum_account_id
-                                """, new MapSqlParameterSource("tecum_account_id", item.getTecumAccountId())
-                                .addValue("investment", orders));
                     }
                 }
             }

@@ -21,7 +21,10 @@ public class TecumDTO {
     private BigDecimal balanceLeftDividend;
     private BigDecimal bonus;
     private BigDecimal commission;
-    private BigDecimal investment;
+    private BigDecimal withdrawal;
+    private BigDecimal deposit;
+    private BigDecimal profit;
+
     private String updatedAt;
     private String note;
     @JsonIgnore
@@ -55,8 +58,16 @@ public class TecumDTO {
                 .map(TecumDTO::getCommission)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        this.investment = list.stream()
-                .map(TecumDTO::getInvestment)
+        this.withdrawal = list.stream()
+                .map(TecumDTO::getWithdrawal)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.deposit = list.stream()
+                .map(TecumDTO::getDeposit)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.profit = list.stream()
+                .map(TecumDTO::getProfit)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -71,7 +82,9 @@ public class TecumDTO {
         this.note = entry.getValue().getFirst().getNote();
         this.bonus = entry.getValue().getFirst().getBonus();
         this.commission = entry.getValue().getFirst().getCommission();
-        this.investment = entry.getValue().getFirst().getInvestment();
+        this.withdrawal = entry.getValue().getFirst().getWithdrawal();
+        this.deposit = entry.getValue().getFirst().getDeposit();
+        this.profit = entry.getValue().getFirst().getProfit();
         this.attendanceList = entry.getValue().stream()
                 .filter(dto -> dto.getAttendanceDate() != null)
                 .map(Attendance::new)
