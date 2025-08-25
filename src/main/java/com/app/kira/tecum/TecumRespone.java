@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,10 +19,10 @@ public class TecumRespone {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class TecumBalance {
-        private Double balance;  // Số dư hiện tại
-        private Double bonus;       // Số tiền thưởng đã nhận được từ lúc đăng ký
-        private Double amount; // Đang đăng ký mua
-        private Double leftDividend;  // Số tiền chờ chia cổ tức
+        private BigDecimal balance;  // Số dư hiện tại
+        private BigDecimal bonus;       // Số tiền thưởng đã nhận được từ lúc đăng ký
+        private BigDecimal amount; // Đang đăng ký mua
+        private BigDecimal leftDividend;  // Số tiền chờ chia cổ tức
 
         private List<Order> data;
         private Boolean hasNext;
@@ -32,10 +33,10 @@ public class TecumRespone {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Order {
-        private Double totalDividend;
+        private BigDecimal totalDividend;
 
-        private Double amount;
-        private Double balance;
+        private String amount;
+        private String balance;
         private String createdAt;
         private String type;
         private Extra extra;
@@ -51,12 +52,14 @@ public class TecumRespone {
         }
 
         public String getNote() {
-            return Optional.ofNullable(extra)
-                    .map(e -> "%d - level promotion commission from %s".formatted(
-                            Optional.ofNullable(e.getLevel()).orElse(0),
-                            Optional.ofNullable(e.getUser()).map(ExtraUser::getDisplayName).orElse("unknown user")
+            return "SHARE_REWARD".equalsIgnoreCase(type)
+                    ? Optional.ofNullable(extra)
+                    .map(e -> "%s - level promotion commission from %s".formatted(
+                            Optional.ofNullable(e.getLevel()).map(String::valueOf).orElse(""),
+                            Optional.ofNullable(e.getUser()).map(ExtraUser::getDisplayName).orElse("")
                     ))
-                    .orElse(null);
+                    .orElse(null)
+                    : null;
         }
     }
 

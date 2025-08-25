@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @Data
@@ -24,7 +23,6 @@ public class TecumDTO {
     private BigDecimal withdrawal;
     private BigDecimal deposit;
     private BigDecimal profit;
-
     private String updatedAt;
     private String note;
     @JsonIgnore
@@ -33,7 +31,6 @@ public class TecumDTO {
     private String tecumPassword;
     @JsonIgnore
     private String tecumCookie;
-    private List<Attendance> attendanceList;
 
     public TecumDTO(List<TecumDTO> list) {
         this.tecumName = "Total";
@@ -72,44 +69,14 @@ public class TecumDTO {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public TecumDTO(Map.Entry<Long, List<TecumDTO>> entry) {
-        this.tecumAccountId = entry.getKey();
-        this.tecumName = entry.getValue().getFirst().getTecumName();
-        this.balance = entry.getValue().getFirst().getBalance();
-        this.balanceHolding = entry.getValue().getFirst().getBalanceHolding();
-        this.balanceLeftDividend = entry.getValue().getFirst().getBalanceLeftDividend();
-        this.updatedAt = entry.getValue().getFirst().getUpdatedAt();
-        this.note = entry.getValue().getFirst().getNote();
-        this.bonus = entry.getValue().getFirst().getBonus();
-        this.commission = entry.getValue().getFirst().getCommission();
-        this.withdrawal = entry.getValue().getFirst().getWithdrawal();
-        this.deposit = entry.getValue().getFirst().getDeposit();
-        this.profit = entry.getValue().getFirst().getProfit();
-        this.attendanceList = entry.getValue().stream()
-                .filter(dto -> dto.getAttendanceDate() != null)
-                .map(Attendance::new)
-                .toList();
-    }
-
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Attendance {
-        private String attendanceDate;
-        private String status;
-        private String createdAt;
-
-        public Attendance(TecumDTO dto) {
-            this.attendanceDate = dto.getAttendanceDate();
-            this.status = dto.getStatus();
-            this.createdAt = dto.getCreatedAt();
-        }
+    public static class Transaction {
+        private String transactionDate;
+        private String amount;
+        private String type;
+        private String note;
+        private String updatedAt;
     }
-
-    @JsonIgnore
-    private String attendanceDate;
-    @JsonIgnore
-    private String status;
-    @JsonIgnore
-    private String createdAt;
 }

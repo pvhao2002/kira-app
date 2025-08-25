@@ -124,6 +124,12 @@ public class CrawEventService {
                                     last_over_odds   = values(last_over_odds),
                                     last_under_odds  = values(last_under_odds)
             """;
+    private static final String SQL_PREDICT_NO_ODD = """
+            delete p
+            from predict p
+            where event_date = :event_date
+                and event_name = :event_name
+            """;
 
     public void processOddForUpcomingEvent() {
         log.log(Level.INFO, "Crawl Odd For Upcoming Event Start");
@@ -141,13 +147,7 @@ public class CrawEventService {
                 if (error404 != null) {
                     log.log(Level.WARNING, "Crawl Event {0}-{1}-{2} Not Found", new Object[]{event.getEventId(), event.getEventName(), event.getDetailLink()});
                     jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
-                    var sqlDelPredictNoOdd = """
-                            delete p
-                            from predict p
-                            where event_date = :event_date
-                                and event_name = :event_name
-                            """;
-                    jdbcTemplate.update(sqlDelPredictNoOdd, new MapSqlParameterSource(EVENT_DATE, event.getEventDate())
+                    jdbcTemplate.update(SQL_PREDICT_NO_ODD, new MapSqlParameterSource(EVENT_DATE, event.getEventDate())
                             .addValue(EVENT_NAME, event.getEventName()));
                     return;
                 }
@@ -161,13 +161,7 @@ public class CrawEventService {
                     if (!checkHaveTabOdd) {
                         jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
                         log.log(Level.INFO, "processOddForUpcomingEvent - Event {0} not have odd tab", event.getEventId());
-                        var sqlDelPredictNoOdd = """
-                            delete p
-                            from predict p
-                            where event_date = :event_date
-                                and event_name = :event_name
-                            """;
-                        jdbcTemplate.update(sqlDelPredictNoOdd, new MapSqlParameterSource(EVENT_DATE, event.getEventDate())
+                        jdbcTemplate.update(SQL_PREDICT_NO_ODD, new MapSqlParameterSource(EVENT_DATE, event.getEventDate())
                                 .addValue(EVENT_NAME, event.getEventName()));
                         return;
                     }
@@ -176,13 +170,7 @@ public class CrawEventService {
                     if (noData.count() > 0 && noData.isVisible()) {
                         log.log(Level.INFO, "processOddForUpcomingEvent - Event {0} - {1} No data", new Object[]{event.getEventName(), event.getDetailLink()});
                         jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
-                        var sqlDelPredictNoOdd = """
-                            delete p
-                            from predict p
-                            where event_date = :event_date
-                                and event_name = :event_name
-                            """;
-                        jdbcTemplate.update(sqlDelPredictNoOdd, new MapSqlParameterSource(EVENT_DATE, event.getEventDate())
+                        jdbcTemplate.update(SQL_PREDICT_NO_ODD, new MapSqlParameterSource(EVENT_DATE, event.getEventDate())
                                 .addValue(EVENT_NAME, event.getEventName()));
                         return;
                     }
@@ -215,13 +203,7 @@ public class CrawEventService {
                 } else {
                     log.log(Level.INFO, "processOddForUpcomingEvent - Event {0} empty provider odd", event.getEventId());
                     jdbcTemplate.update(SQL_DELETE_EVENT_UPCOMING, new MapSqlParameterSource(EVENT_ID, event.getEventId()));
-                    var sqlDelPredictNoOdd = """
-                            delete p
-                            from predict p
-                            where event_date = :event_date
-                                and event_name = :event_name
-                            """;
-                    jdbcTemplate.update(sqlDelPredictNoOdd, new MapSqlParameterSource(EVENT_DATE, event.getEventDate())
+                    jdbcTemplate.update(SQL_PREDICT_NO_ODD, new MapSqlParameterSource(EVENT_DATE, event.getEventDate())
                             .addValue(EVENT_NAME, event.getEventName()));
                 }
                 page.waitForTimeout(5_000);

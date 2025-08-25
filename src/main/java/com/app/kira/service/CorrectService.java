@@ -34,5 +34,11 @@ public class CorrectService {
                 set ea.league_id = kl.league_id
                 where ea.league_id is null
                 """, Map.of());
+        jdbcTemplate.update("""
+                delete
+                from predict
+                where event_date < DATE_SUB(CONVERT_TZ(NOW(), '+00:00', '+07:00'), INTERVAL 4 HOUR)
+                  and (first_hdc_line is null or last_hdc_line is null)
+                """, Map.of());
     }
 }

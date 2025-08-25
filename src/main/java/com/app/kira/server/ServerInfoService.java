@@ -39,7 +39,6 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
     private static final String HOST_NAME = "host_name";
     private static final String NODE = "node";
 
-
     private final LoadingCache<String, Boolean> activeConfigCache = CacheBuilder.newBuilder()
             .expireAfterAccess(10, TimeUnit.MINUTES)
             .build(CacheLoader.from(this::getActiveOfNode));
@@ -77,6 +76,12 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
         this.url = "http://" + ipAddress + ":" + event.getWebServer().getPort() + module;
         saveServerInfo();
         saveScheduledMethods();
+    }
+
+    public void clearCache() {
+        activeConfigCache.invalidateAll();
+        scheduleConfigCache.invalidateAll();
+        runHeadlessConfigCache.invalidateAll();
     }
 
     void saveServerInfo() {

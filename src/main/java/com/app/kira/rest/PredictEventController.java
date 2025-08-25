@@ -52,7 +52,7 @@ public class PredictEventController {
                      inner join events e on e.event_name = p.event_name and e.event_date = p.event_date
                      inner join kira_league kl on e.league_id = kl.league_id
             where true
-              and p.event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00') - INTERVAL 1 HOUR
+              and p.event_date >= CONVERT_TZ(NOW(), '+00:00', '+07:00') - INTERVAL 1 HOUR
               and e.first_hdc is not null
             order by p.event_date, kl.is_main desc
             """;

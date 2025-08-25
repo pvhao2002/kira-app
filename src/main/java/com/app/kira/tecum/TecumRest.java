@@ -102,16 +102,35 @@ public class TecumRest {
         return Map.of("message", "Auto attendance initiated");
     }
 
+    @GetMapping("transactions/{accountId}")
+    public Object getTransactions(@PathVariable Long accountId) {
+        var result = jdbcTemplate.query("""
+                select transaction_date
+                     , amount
+                     , type
+                     , note
+                     , updated_at
+                from tecum_transaction
+                where tecum_account_id = :account_id
+                """, Map.of("account_id", accountId), BeanPropertyRowMapper.newInstance(TecumDTO.Transaction.class));
+        var types = result.stream()
+                .map(TecumDTO.Transaction::getType)
+                .distinct()
+                .toList();
+
+        return Map.of("data", result, "type", types);
+    }
+
     @GetMapping("auto-transaction")
     public Object autoTransaction() {
         getCookie();
         var result = jdbcTemplate.query("""
                 select *
                 from tecum_account
-                where tecum_cookie is not null
                 """, BeanPropertyRowMapper.newInstance(TecumDTO.class));
         var body = new CashFlowDTO();
         result.forEach(item -> {
+            jdbcTemplate.update(SQL_DELETE_TECUM_TRANSACTION, new MapSqlParameterSource("accountId", item.getTecumAccountId()));
             AtomicBoolean hasNext = new AtomicBoolean(true);
             var first = true;
             while (hasNext.get()) {
@@ -150,7 +169,7 @@ public class TecumRest {
                                         var params = val.getData().stream()
                                                 .map(p -> p.toParamTransaction(item.getTecumAccountId()))
                                                 .toArray(MapSqlParameterSource[]::new);
-                                        jdbcTemplate.batchUpdate(SQL_DELETE_TECUM_TRANSACTION, params);
+
                                         jdbcTemplate.batchUpdate(SQL_INSERT_TECUM_TRANSACTION, params);
                                     } else {
                                         hasNext.set(false);
@@ -169,6 +188,24 @@ public class TecumRest {
                 }
             }
         });
+
+        jdbcTemplate.update("""
+                UPDATE tecum_account ta
+                    JOIN (SELECT tecum_account_id,
+                                 SUM(IF(type = 'WITHDRAW', amount, 0)) AS total_withdrawal,
+                                 SUM(IF(type = 'DEPOSIT', amount, 0))    AS total_deposit
+                          FROM tecum_transaction
+                          GROUP BY tecum_account_id) t ON ta.tecum_account_id = t.tecum_account_id
+                SET ta.withdrawal = t.total_withdrawal,
+                    ta.deposit    = t.total_deposit
+                WHERE TRUE
+                """, Map.of());
+
+        jdbcTemplate.update("""
+                UPDATE tecum_account
+                SET profit = ABS(withdrawal) + balance - deposit
+                WHERE TRUE
+                """, Map.of());
         return Map.of("message", "Cash flow started");
     }
 
@@ -199,6 +236,8 @@ public class TecumRest {
                 throw new RuntimeException(ex);
             }
         });
+
+        autoTransaction();
     }
 
     private void callApiTecum(TecumDTO item, String url, String body, String type) {

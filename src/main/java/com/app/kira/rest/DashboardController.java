@@ -1,6 +1,7 @@
 package com.app.kira.rest;
 
 import com.app.kira.dto.DashboardDTO;
+import com.app.kira.server.ServerInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -8,11 +9,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/dashboard")
 @RequiredArgsConstructor
 public class DashboardController {
     private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final ServerInfoService serverInfoService;
+
+    @GetMapping("clear-cache")
+    public Object clearCache() {
+        serverInfoService.clearCache();
+        return Map.of("status", "success");
+    }
 
     @GetMapping
     public Object dashboard() {
