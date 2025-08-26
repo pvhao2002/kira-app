@@ -36,6 +36,8 @@ public class TecumRest {
                  , ta.withdrawal
                  , ta.deposit
                  , ta.profit
+                 , ta.balance_left_dividend
+                 , ABS(ta.withdrawal) - ta.deposit as diff
                  , CONVERT_TZ(ta.updated_at, '+00:00', '+07:00') as updated_at
                  , ta.note
             from tecum_account ta
@@ -53,6 +55,39 @@ public class TecumRest {
     private static final String SQL_DELETE_TECUM_TRANSACTION = """
             delete from tecum_transaction where tecum_account_id = :accountId
             """;
+
+    @GetMapping("tracking")
+    public Object tracking(@RequestParam("from") String from, @RequestParam("to") String to) {
+        return jdbcTemplate.query("""
+                          select t1.*
+                              , t1.withdrawal - t1.deposit as diff
+                         from (select ta.tecum_account_id
+                                    , ta.tecum_name
+                                    , ta.balance
+                                    , SUM(IF(tt.type = 'WITHDRAW', ABS(tt.amount), 0)) as withdrawal
+                                    , SUM(IF(tt.type = 'DEPOSIT', tt.amount, 0))       as deposit
+                               from tecum_account ta
+                                        left join tecum_transaction tt on tt.tecum_account_id = ta.tecum_account_id
+                               where true
+                                 and (
+                                   FALSE
+                                       OR tt.transaction_date is null
+                                       OR (tt.type IN ('WITHDRAW', 'DEPOSIT') and date(tt.transaction_date) between :from and :to)
+                                   )
+                               group by ta.tecum_account_id) as t1
+                        """, new MapSqlParameterSource("from", from).addValue("to", to),
+                BeanPropertyRowMapper.newInstance(TecumDTO.class));
+    }
+
+    @GetMapping("account")
+    public Object getAccount() {
+        return jdbcTemplate.query("""
+                select tecum_name
+                     , tecum_username
+                     , tecum_password
+                from tecum_account
+                """, BeanPropertyRowMapper.newInstance(TecumAccountDTO.class));
+    }
 
     @GetMapping
     public Object findAll() {

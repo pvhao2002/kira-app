@@ -23,6 +23,7 @@ public class TecumDTO {
     private BigDecimal withdrawal;
     private BigDecimal deposit;
     private BigDecimal profit;
+    private BigDecimal diff;
     private String updatedAt;
     private String note;
     @JsonIgnore
@@ -65,6 +66,10 @@ public class TecumDTO {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         this.profit = list.stream()
                 .map(TecumDTO::getProfit)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.diff = list.stream()
+                .map(TecumDTO::getDiff)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
