@@ -115,16 +115,6 @@ public class ServerInfoService implements ApplicationListener<WebServerInitializ
         ).stream().findFirst().orElse(false);
     }
 
-    public boolean getRunHeadless(String methodName) {
-        try {
-            return runHeadlessConfigCache.get(methodName);
-        } catch (Exception e) {
-            log.log(Level.WARNING, MessageFormat.format("ServerInfoService >> getRunHeadless >> not found for method {0} because of {1}", methodName, e.getMessage()));
-            return false;
-        }
-    }
-
-
     public boolean isScheduledMethodActive(String methodName) {
         var sql = "select status from schedule_manager where schedule_name = :schedule_name and host_name = :host_name";
         var params = Map.of(

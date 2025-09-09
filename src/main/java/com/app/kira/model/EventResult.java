@@ -1,7 +1,5 @@
 package com.app.kira.model;
 
-import com.app.kira.model.analyst.OddAnalyst;
-import com.app.kira.util.DateUtil;
 import com.app.kira.util.JsonUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.reflect.TypeToken;
@@ -36,67 +34,6 @@ public class EventResult {
 
     @Builder.Default
     private List<OddCorner> oddsCorner = new ArrayList<>();
-
-    public List<OddAnalyst> parseOdd() {
-        List<OddAnalyst> odds = new ArrayList<>();
-
-        getOdds1x2().stream()
-                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
-                .filter(odd -> StringUtils.isNotBlank(odd.get_1()) && StringUtils.isNotBlank(odd.getX()) && StringUtils.isNotBlank(odd.get_2()))
-                .forEach(odd -> odds.add(OddAnalyst.builder()
-                        .eventId(getEventId())
-                        .oddType("1x2")
-                        .oddDate(DateUtil.parseOddDate(odd.getOddDate(), null))
-                        .homeOdd(parse(odd.get_1()))
-                        .awayOdd(parse(odd.get_2()))
-                        .drawOdd(parse(odd.getX()))
-                        .build()));
-
-        getOddsGoal().stream()
-                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
-                .filter(odd -> StringUtils.isNotBlank(odd.getGoals()) && StringUtils.isNotBlank(odd.getOver()) && StringUtils.isNotBlank(odd.getUnder()))
-                .forEach(odd -> odds.add(OddAnalyst.builder()
-                        .eventId(getEventId())
-                        .oddType("ou")
-                        .oddDate(DateUtil.parseOddDate(odd.getOddDate(), null))
-                        .line(odd.getGoals())
-                        .overOdd(parse(odd.getOver()))
-                        .underOdd(parse(odd.getUnder()))
-                        .build()));
-
-        getOddsHandicap().stream()
-                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
-                .filter(odd -> StringUtils.isNotBlank(odd.getHome()) && StringUtils.isNotBlank(odd.getAway()))
-                .forEach(odd -> odds.add(OddAnalyst.builder()
-                        .eventId(getEventId())
-                        .oddType("hdc")
-                        .oddDate(DateUtil.parseOddDate(odd.getOddDate(), null))
-                        .line(odd.getHome().split(" ")[0] + "#" + odd.getAway().split(" ")[0])
-                        .homeOdd(parse(odd.getHome().split(" ")[1]))
-                        .awayOdd(parse(odd.getAway().split(" ")[1]))
-                        .build()));
-
-        getOddsCorner().stream()
-                .filter(odd -> DateUtil.parseOddDate(odd.getOddDate(), null) != null)
-                .filter(odd -> StringUtils.isNotBlank(odd.getCorner()) && StringUtils.isNotBlank(odd.getOver()) && StringUtils.isNotBlank(odd.getUnder()))
-                .forEach(odd -> odds.add(OddAnalyst.builder()
-                        .eventId(getEventId())
-                        .oddType("corner")
-                        .oddDate(DateUtil.parseOddDate(odd.getOddDate(), null))
-                        .line(odd.getCorner())
-                        .overOdd(parse(odd.getOver()))
-                        .underOdd(parse(odd.getUnder()))
-                        .build()));
-        return odds;
-    }
-
-    public static Double parse(String value) {
-        try {
-            return Double.parseDouble(value);
-        } catch (Exception ex) {
-            return 0.0;
-        }
-    }
 
     public EventResult(Map.Entry<Long, List<EventDTO>> entry) {
         this(entry.getValue());
@@ -210,7 +147,7 @@ public class EventResult {
                                                 
                         - Any value or contrarian betting insights based on odds movement analysis
                         \n
-                        """.formatted(getEventName(), getLeagueName(), getEventDate().toString()));
+                        """.formatted(getEventName(), getLeagueName(), getEventDate()));
         Optional.ofNullable(showOdd)
                 .filter(show -> show)
                 .ifPresent(show -> {

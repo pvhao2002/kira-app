@@ -1,38 +1,52 @@
 package com.app.kira.schedule;
 
-import com.app.kira.service.CrawDateService;
+import com.app.kira.producer.DateProducer;
 import com.app.kira.util.DateUtil;
-import com.app.kira.util.PackageNameUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Log
 @Service
 @RequiredArgsConstructor
 public class DateSchedule {
-    public static final String CRAWL_TOMORROW_METHOD = PackageNameUtils.getCanonicalMethodName(DateSchedule.class, "crawlTomorrowEvent");
-    public static final String CRAWL_BY_DATE_METHOD = PackageNameUtils.getCanonicalMethodName(DateSchedule.class, "crawlByDate");
-    private final CrawDateService crawDateService;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final DateProducer dateProducer;
+    private static final String SQL_GET_DATE = """
+            select date
+            from crawl_date
+            where status = 'pending'
+               or status = 'failed'
+            limit 10
+            """;
 
 
-    @Scheduled(cron = "0 0 1,6,12,15,20,22 * * *", zone = "Asia/Ho_Chi_Minh")
-    @Retryable(retryFor = Exception.class, backoff = @Backoff(delay = 60_000, multiplier = 2))
+    @Scheduled(cron = "0 0 3,15,20 * * *", zone = "Asia/Ho_Chi_Minh")
     public void crawlTomorrowEvent() {
         for (var date : List.of(DateUtil.getTodayDate(), DateUtil.getTomorrowDate())) {
-            log.info("Crawling events for date: " + date);
-            crawDateService.crawlTomorrowEventToPredict(date);
+            log.info("DateSchedule >> crawlTomorrowEvent >> date:" + date);
+            dateProducer.sendDateTomorrow(date);
         }
     }
 
-//    @Scheduled(cron = "0 0 3,6,10 * * *", zone = "Asia/Ho_Chi_Minh")
-    @Scheduled(fixedDelay = 50000)
+    @Scheduled(fixedDelay = 2, timeUnit = TimeUnit.MINUTES)
     public void crawlByDate() {
-        crawDateService.crawlByDateToAnalyst();
+        var dates = jdbcTemplate.query(SQL_GET_DATE, (rs, rowNum) -> rs.getString("date"));
+        for (var date : dates) {
+            log.info("DateSchedule >> crawlByDate >> date:" + date);
+            dateProducer.sendDate(date);
+        }
+        jdbcTemplate.batchUpdate(
+                "update crawl_date set status = 'picked' where date = :date",
+                dates.stream()
+                        .map(date -> new MapSqlParameterSource("date", date))
+                        .toArray(MapSqlParameterSource[]::new)
+        );
     }
 }

@@ -4,43 +4,19 @@ import com.app.kira.model.EventDTO;
 import com.app.kira.model.EventResult;
 import com.app.kira.model.OddGoal;
 import com.app.kira.util.DateUtil;
-import com.app.kira.util.PlaywrightUtil;
 import com.google.gson.Gson;
-import com.lowagie.text.Image;
-import com.lowagie.text.PageSize;
-import com.lowagie.text.pdf.PdfWriter;
-import com.microsoft.playwright.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
-import org.jsoup.Jsoup;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageOutputStream;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.net.URL;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -84,28 +60,6 @@ public class MainController {
                         
             Reasoning:
             """;
-
-    @GetMapping("testss")
-    public String test() {
-        log.log(Level.INFO, "Last day of month: {0}", "1234");
-        return "Test successful";
-    }
-
-    @GetMapping("check-playwright")
-    public Object checkPlayWright(@RequestParam String url) {
-        log.info("Checking Playwright...");
-        AtomicReference<String> doc = new AtomicReference<>();
-        PlaywrightUtil.withPlaywright(Collections.emptyList(), true, (page, list) -> {
-            page.navigate(url, new Page.NavigateOptions().setTimeout(30_000));
-            page.waitForTimeout(2_000);
-            var pageSource = page.content();
-            var document = Jsoup.parse(pageSource, url);
-            // remove script tags
-            document.select("script").remove();
-            doc.set(document.html());
-        });
-        return doc.get();
-    }
 
     @GetMapping(value = "under", produces = MediaType.TEXT_PLAIN_VALUE)
     public Object under(@RequestParam(required = false, defaultValue = "1") String mode) {
@@ -214,108 +168,5 @@ public class MainController {
                 param,
                 (rs, i) -> new String[]{rs.getString("league_name"), rs.getString("event_date")}
         );
-    }
-
-    @GetMapping("/generate-pdf")
-    public Object generatePdf(@RequestParam String url) throws Exception {
-        List<String> imageLinks = new CopyOnWriteArrayList<>();
-        try (Playwright playwright = Playwright.create()) {
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
-            BrowserContext context = browser.newContext();
-            Page page = context.newPage();
-
-            // Lắng nghe network request
-            page.onRequestFinished(request -> {
-                String u = request.url();
-                if (u.startsWith("https://drive.google.com/viewerng/img")) {
-                    System.out.println("Found image link: " + u);
-                    imageLinks.add(u);
-                }
-            });
-
-            // Mở trang
-            page.navigate(url);
-            page.waitForTimeout(3000);
-
-            for (int i = 0; i < 430; i++) {
-                if (imageLinks.size() == 192) {
-                    break; // Dừng nếu đã đủ 192 ảnh
-                }
-                System.out.println("Crawl time: " + i + ", number of images: " + imageLinks.size());
-                page.evaluate("""
-                        () => {
-                            const scroller = document.querySelector('.ndfHFb-c4YZDc-cYSp0e-s2gQvd, .ndfHFb-c4YZDc-s2gQvd, .ndfHFb-c4YZDc-s2gQvd-sn54Q') || document.scrollingElement;
-                            if (scroller) {
-                                scroller.scrollBy(0, 800);
-                            }
-                        }
-                        """);
-                page.waitForTimeout(300);
-            }
-            System.out.println("Số ảnh tìm thấy: " + imageLinks.size());
-            // Đóng trình duyệt
-            browser.close();
-        }
-        // Sắp xếp theo param page
-        List<String> sortedLinks = imageLinks.stream()
-                .sorted(Comparator.comparingInt(link -> {
-                    Matcher matcher = Pattern.compile("[?&]page=(\\d+)").matcher(link);
-                    return matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
-                }))
-                .toList();
-        System.out.println("Số ảnh sau khi sắp xếp: " + sortedLinks.size());
-        ImageIO.scanForPlugins();
-        // Tạo PDF
-        String outputPath = "images_output.pdf";
-        try (FileOutputStream fos = new FileOutputStream(outputPath)) {
-            com.lowagie.text.Document document = new com.lowagie.text.Document();
-            PdfWriter.getInstance(document, fos);
-            document.open();
-
-            for (String imgUrl : sortedLinks) {
-                try (InputStream in = new URL(imgUrl).openStream()) {
-                    BufferedImage img = ImageIO.read(in);
-                    if (img != null) {
-                        byte[] compressedBytes = compressJpeg(img, 0.5f); // 50% quality
-                        Image pdfImg = Image.getInstance(compressedBytes);
-                        pdfImg.scaleToFit(PageSize.A4.getWidth(), PageSize.A4.getHeight());
-                        pdfImg.setAlignment(Image.ALIGN_CENTER);
-                        document.add(pdfImg);
-                        document.newPage();
-                    } else {
-                        System.err.println("Image is null: " + imgUrl);
-                    }
-                } catch (Exception e) {
-                    System.err.println("Failed to load image: " + imgUrl);
-                }
-            }
-
-            document.close();
-        }
-
-        // Trả về file
-        File file = new File(outputPath);
-        InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + file.getName())
-                .contentType(MediaType.APPLICATION_PDF)
-                .contentLength(file.length())
-                .body(resource);
-    }
-
-    public byte[] compressJpeg(BufferedImage image, float quality) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-        ImageWriter jpgWriter = ImageIO.getImageWritersByFormatName("jpg").next();
-        ImageWriteParam jpgWriteParam = jpgWriter.getDefaultWriteParam();
-        jpgWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-        jpgWriteParam.setCompressionQuality(quality); // từ 0.0 (thấp nhất) đến 1.0 (cao nhất)
-
-        ImageOutputStream ios = ImageIO.createImageOutputStream(baos);
-        jpgWriter.setOutput(ios);
-        jpgWriter.write(null, new IIOImage(image, null, null), jpgWriteParam);
-
-        jpgWriter.dispose();
-        return baos.toByteArray();
     }
 }

@@ -23,9 +23,7 @@ public class DBConfiguration {
     @WriteDB
     @ConfigurationProperties(prefix = "application.datasource.write")
     public HikariConfig writeHikariConfig() {
-        var config = new HikariConfig();
-        config.setMaximumPoolSize(5);
-        return config;
+        return new HikariConfig();
     }
 
     @Bean

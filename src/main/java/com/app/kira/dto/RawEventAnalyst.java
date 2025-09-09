@@ -42,11 +42,17 @@ public class RawEventAnalyst extends BaseEventAnalystDTO {
     Double lastOverOdds;
     Double firstUnderOdds;
     Double lastUnderOdds;
+    Double firstOverCornerOdds;
+    Double firstUnderCornerOdds;
+    Double lastOverCornerOdds;
+    Double lastUnderCornerOdds;
 
     String firstHdc;
     String lastHdc;
     String firstOu;
     String lastOu;
+    String firstCorner;
+    String lastCorner;
     Long predictId;
 
     public MapSqlParameterSource toParam() {

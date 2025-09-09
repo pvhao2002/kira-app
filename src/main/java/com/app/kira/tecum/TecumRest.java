@@ -165,6 +165,14 @@ public class TecumRest {
                 """, BeanPropertyRowMapper.newInstance(TecumDTO.class));
         var body = new CashFlowDTO();
         result.forEach(item -> {
+            try {
+                callApiTecum(item, "https://tecumfund.com/rpc/app/reward/checkin/get", "{}", "balance");
+                Thread.sleep(2_000);
+                callApiTecum(item, "https://tecumfund.com/rpc/app/user/holdingOrder", "{}", "balance");
+                Thread.sleep(2_000);
+            } catch (InterruptedException e) {
+                log.log(Level.SEVERE, "Tecum Rest >> Auto transaction >> exception:", e);
+            }
             jdbcTemplate.update(SQL_DELETE_TECUM_TRANSACTION, new MapSqlParameterSource("accountId", item.getTecumAccountId()));
             AtomicBoolean hasNext = new AtomicBoolean(true);
             var first = true;

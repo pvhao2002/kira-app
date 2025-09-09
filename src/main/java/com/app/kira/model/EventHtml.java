@@ -6,9 +6,6 @@ import org.jsoup.nodes.Element;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 @Getter
 @Setter
 @AllArgsConstructor
@@ -101,20 +98,5 @@ public class EventHtml {
         } catch (NumberFormatException e) {
             return 0; // Return 0 if parsing fails
         }
-    }
-
-    public String toResult() {
-        return """
-                +----------------------+
-                Event Name: %s
-                League Name: %s
-                Event Time: %s
-                +----------------------+
-                \n
-                """.formatted(
-                this.eventName,
-                this.leagueName,
-                this.time
-        );
     }
 }

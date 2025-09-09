@@ -6,10 +6,29 @@ application:
       password: "${DB_PASSWORD:1234}"
       driver-class-name: com.mysql.cj.jdbc.Driver
 spring:
+  application:
+    name: kira-service
+  profiles:
+    active: composite
+  output:
+    ansi:
+      enabled: NEVER
   servlet:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
+  task:
+    scheduling:
+      pool:
+        size: 12
+    execution:
+      pool:
+        core-size: 12
+  rabbitmq:
+    host: ${DB_HOST:localhost}
+    port: 5672
+    username: guest
+    password: guest
 management:
   endpoints:
     web:
@@ -22,6 +41,9 @@ server:
   port: 2308
   servlet:
     context-path: /api
+  compression:
+    enabled: true
+    min-response-size: 512
 
 logging:
   level:

@@ -1,4 +1,4 @@
-package com.app.kira.model.analyst;
+package com.app.kira.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,13 +37,5 @@ public class OddAnalyst {
                 .addValue("away_odds", dto.getAwayOdd())
                 .addValue("over_odds", dto.getOverOdd())
                 .addValue("under_odds", dto.getUnderOdd());
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class PrematchOdd {
-        private String overLine;
-        private String hdcLine;
     }
 }

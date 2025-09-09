@@ -1,7 +1,7 @@
 SHOW STATUS LIKE 'Threads_connected';
 SHOW VARIABLES LIKE 'max_connections';
 SHOW STATUS LIKE 'Connections';
-
+SET GLOBAL max_connections = 170;
 GRANT SELECT, INSERT, UPDATE, DELETE
     ON kira.*
     TO 'kira'@'%';

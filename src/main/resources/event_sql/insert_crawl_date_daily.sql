@@ -5,7 +5,6 @@ CREATE EVENT IF NOT EXISTS insert_crawl_date_daily
         STARTS CURRENT_DATE + INTERVAL 1 DAY
     DO
 BEGIN
-
     INSERT IGNORE INTO crawl_date(date)
     SELECT DATE_FORMAT(DATE_ADD('2020-06-01', INTERVAL n DAY), '%Y%m%d') AS formatted_date
     FROM (

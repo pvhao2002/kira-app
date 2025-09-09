@@ -32,7 +32,7 @@ public class EventController {
                      , ft_score_str
                      , corner_str
                      , link
-                
+                                
                      , first_home_odds
                      , last_home_odds
                      , first_away_odds
@@ -41,12 +41,12 @@ public class EventController {
                      , last_over_odds
                      , first_under_odds
                      , last_under_odds
-                
+                                
                      , first_hdc
                      , last_hdc
                      , first_ou
                      , last_ou
-                
+                                
                 from event_analyst ea
                          left join kira_league kl on kl.league_id = ea.league_id
                 where true
@@ -54,7 +54,7 @@ public class EventController {
                       and ea.last_ou = :l_ou_line
                       and ea.first_hdc = :f_hdc_line
                       and ea.last_hdc = :l_hdc_line
-                
+                                
                 order by kl.is_main desc
                        , ea.event_date desc
                        , ea.event_name
