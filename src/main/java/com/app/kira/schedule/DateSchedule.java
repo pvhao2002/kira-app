@@ -30,16 +30,15 @@ public class DateSchedule {
     @Scheduled(cron = "0 0 3,15,20 * * *", zone = "Asia/Ho_Chi_Minh")
     public void crawlTomorrowEvent() {
         for (var date : List.of(DateUtil.getTodayDate(), DateUtil.getTomorrowDate())) {
-            log.info("DateSchedule >> crawlTomorrowEvent >> date:" + date);
             dateProducer.sendDateTomorrow(date);
         }
+        log.info("DateSchedule >> Scheduled crawl for today and tomorrow events.");
     }
 
     @Scheduled(fixedDelay = 2, timeUnit = TimeUnit.MINUTES)
     public void crawlByDate() {
         var dates = jdbcTemplate.query(SQL_GET_DATE, (rs, rowNum) -> rs.getString("date"));
         for (var date : dates) {
-            log.info("DateSchedule >> crawlByDate >> date:" + date);
             dateProducer.sendDate(date);
         }
         jdbcTemplate.batchUpdate(
@@ -48,5 +47,6 @@ public class DateSchedule {
                         .map(date -> new MapSqlParameterSource("date", date))
                         .toArray(MapSqlParameterSource[]::new)
         );
+        log.info("DateSchedule >> Scheduled crawl by date, total: " + dates.size());
     }
 }

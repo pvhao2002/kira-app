@@ -19,8 +19,8 @@ public class EventSchedule {
     private static final String SQL_GET_EVENT_ANALYST = """
             select event_id
             from event_analyst
-            where status = 'pending'
-            limit 12
+            where status = 'pending' or status = 'failed'
+            limit 120
             """;
 
     private static final String SQL_GET_EVENT_UPCOMING = """
@@ -37,8 +37,9 @@ public class EventSchedule {
 
     @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlOddForUpcomingEvent() {
-        jdbcTemplate.query(SQL_GET_EVENT_UPCOMING, (rs, rowNum) -> rs.getString("event_id"))
-                .forEach(eventProducer::sendEventUpcoming);
+        var result = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING, (rs, rowNum) -> rs.getString("event_id"));
+        result.forEach(eventProducer::sendEventUpcoming);
+        log.info("Kira Service >> Scheduled crawl odd for upcoming events, total: " + result.size());
     }
 
     @Scheduled(fixedDelay = 30, timeUnit = TimeUnit.SECONDS, initialDelay = 1)
@@ -51,5 +52,6 @@ public class EventSchedule {
                         .map(eid -> new MapSqlParameterSource("eid", eid))
                         .toArray(MapSqlParameterSource[]::new)
         );
+        log.info("Kira Service >> Scheduled crawl odd for event analyst, total: " + result.size());
     }
 }

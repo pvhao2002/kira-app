@@ -13,12 +13,10 @@ public class EventProducer {
     private final RabbitTemplate rabbitTemplate;
 
     public void sendEventAnalyst(String eventId) {
-        log.info("EventProducer >> sendEventAnalyst >> eventId: " + eventId);
         rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY_ODD, eventId);
     }
 
     public void sendEventUpcoming(String eventId) {
-        log.info("EventProducer >> sendEventAnalyst >> eventId: " + eventId);
         rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY_ODD_TOMORROW, eventId);
     }
 }

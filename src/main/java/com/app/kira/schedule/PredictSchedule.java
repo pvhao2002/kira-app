@@ -4,6 +4,7 @@ import com.app.kira.dto.RawEventAnalyst;
 import com.app.kira.dto.predict.PredictDTO;
 import com.app.kira.dto.predict.PredictDetail;
 import com.app.kira.dto.predict.PredictStats;
+import com.app.kira.producer.PredictProducer;
 import com.app.kira.util.OddConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -73,8 +74,10 @@ public class PredictSchedule {
                        inner join predict p on p.event_name = e.event_name and p.event_date = e.event_date
               WHERE TRUE
                 AND e.event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00') - INTERVAL  30 MINUTE
-                AND e.first_hdc IS NOT NULL
-                AND e.first_ou IS NOT NULL
+                AND (e.first_hdc IS NOT NULL OR e.first_hdc <> '')
+                AND (e.first_ou IS NOT NULL OR e.first_ou <> '')
+                AND (e.first_home_odds IS NOT NULL OR e.first_home_odds <> '')
+                AND (e.first_under_odds IS NOT NULL OR e.first_under_odds <> '')
             """;
     private static final String SQL_PREDICT_STATS = """
             select COUNT(1)                                          AS total_count,
@@ -110,6 +113,7 @@ public class PredictSchedule {
                                   , match_count   = values(match_count)
             """;
     private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final PredictProducer predictProducer;
 
     @Scheduled(fixedDelay = 10, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
     public void predict() {
@@ -118,18 +122,7 @@ public class PredictSchedule {
         if (CollectionUtils.isEmpty(eventToPredict)) {
             return;
         }
-        eventToPredict.forEach(event -> {
-            log.log(Level.INFO, "Predicting for event: {0} - {1}", new Object[]{event.getEventId(), event.getEventName()});
-            log.log(Level.INFO, "Predict simple");
-            var simpleDetail = predictSimple(event);
-            log.log(Level.INFO, "Predict complex");
-            var complexDetail = predictComplex(event);
-            log.log(Level.INFO, "Predict combine");
-            var combineDetail = predictCombine(simpleDetail, complexDetail, event);
-            var predictParam = Stream.of(simpleDetail, complexDetail, combineDetail).map(PredictDetail::toParam).toArray(MapSqlParameterSource[]::new);
-            jdbcTemplate.batchUpdate(SQL_INSERT_PREDICT_DETAIL, predictParam);
-            log.log(Level.INFO, "Saving predict details");
-        });
+        eventToPredict.stream().map(RawEventAnalyst::getEventId).map(String::valueOf).toList().forEach(predictProducer::sendPredict);
         log.log(java.util.logging.Level.INFO, "Predict done for {0} events", eventToPredict.size());
     }
 

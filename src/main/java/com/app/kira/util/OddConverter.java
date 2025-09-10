@@ -9,7 +9,7 @@ public class OddConverter {
         try {
             return Double.parseDouble(value);
         } catch (Exception ex) {
-            return 0.0;
+            return null;
         }
     }
 
