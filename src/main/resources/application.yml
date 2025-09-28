@@ -5,6 +5,7 @@ application:
       username: "${DB_USERNAME:root}"
       password: "${DB_PASSWORD:1234}"
       driver-class-name: com.mysql.cj.jdbc.Driver
+      maximum-pool-size: 5
 spring:
   application:
     name: kira-service
@@ -29,6 +30,14 @@ spring:
     port: 5672
     username: guest
     password: guest
+    virtual-host: /
+    connection-timeout: 60000         # timeout 60s khi tạo connection
+    requested-heartbeat: 30           # giữ heartbeat để phát hiện connection chết
+    cache:
+      channel:
+        size: 50                      # cho phép cache 50 channel (hữu ích khi publish nhiều message cùng lúc)
+      connection:
+        mode: CHANNEL                 # 1 TCP connection, nhiều channel để publish song song
 management:
   endpoints:
     web:
@@ -50,3 +59,6 @@ logging:
     root: info
   file:
     name: target/kira.log
+jwt:
+  secret: "${JWT_SECRET:872c871a1ab996919a3e97145ece2418bb837cadbd69387d96cd45eef831f239}"
+  expiration: "${JWT_EXPIRATION:86400}"

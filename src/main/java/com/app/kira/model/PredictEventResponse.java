@@ -14,12 +14,13 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PredictEventResponse {
-    private String leagueName;
+    private String eventDate;
     private Boolean isMainLeague;
     private List<PredictEvent> events;
+    private List<PredictLeague> leagues;
 
     public PredictEventResponse(Map.Entry<String, List<PredictEvent>> entry) {
-        this.leagueName = entry.getKey();
+        this.eventDate = entry.getKey();
         this.isMainLeague = entry.getValue().getFirst().getIsMainLeague();
         this.events = entry.getValue()
                 .stream()
@@ -28,6 +29,7 @@ public class PredictEventResponse {
                 .stream()
                 .map(PredictEvent::new)
                 .toList();
+        this.leagues = entry.getValue().stream().map(it -> new PredictLeague(it.getLeagueName(), it.getIsMainLeague())).distinct().toList();
     }
 
     @Data
@@ -120,6 +122,14 @@ public class PredictEventResponse {
             this.ouCount = event.getOuCount();
             this.matchCount = event.getMatchCount();
         }
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class PredictLeague {
+        private String leagueName;
+        private Boolean isMainLeague;
     }
 
 }

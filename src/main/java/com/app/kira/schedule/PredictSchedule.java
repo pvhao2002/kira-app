@@ -6,6 +6,7 @@ import com.app.kira.dto.predict.PredictDetail;
 import com.app.kira.dto.predict.PredictStats;
 import com.app.kira.producer.PredictProducer;
 import com.app.kira.util.OddConverter;
+import com.app.kira.util.PlaywrightUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
@@ -72,12 +73,17 @@ public class PredictSchedule {
                      p.predict_id
               from events e
                        inner join predict p on p.event_name = e.event_name and p.event_date = e.event_date
+                       left join crawl_predict_queue cpq on cpq.queue_key = e.event_id and cpq.queue_type = :queue_type
               WHERE TRUE
+                AND cpq.queue_key is null
                 AND e.event_date > CONVERT_TZ(NOW(), '+00:00', '+07:00') - INTERVAL  30 MINUTE
-                AND (e.first_hdc IS NOT NULL OR e.first_hdc <> '')
-                AND (e.first_ou IS NOT NULL OR e.first_ou <> '')
-                AND (e.first_home_odds IS NOT NULL OR e.first_home_odds <> '')
-                AND (e.first_under_odds IS NOT NULL OR e.first_under_odds <> '')
+                AND (e.first_hdc IS NOT NULL AND e.first_hdc <> '')
+                AND (e.first_ou IS NOT NULL AND e.first_ou <> '')
+                AND (e.first_home_odds IS NOT NULL AND e.first_home_odds <> '')
+                AND (e.first_under_odds IS NOT NULL AND e.first_under_odds <> '')
+                AND (e.last_hdc IS NOT NULL AND e.last_hdc <> '')
+                AND (e.last_ou IS NOT NULL AND e.last_ou <> '')
+                AND (e.last_home_odds IS NOT NULL AND e.last_home_odds <> '')
             """;
     private static final String SQL_PREDICT_STATS = """
             select COUNT(1)                                          AS total_count,
@@ -112,17 +118,33 @@ public class PredictSchedule {
                                   , ou_count      = values(ou_count)
                                   , match_count   = values(match_count)
             """;
+    private static final String QUEUE_TYPE_KEY = "queue_type";
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final PredictProducer predictProducer;
 
-    @Scheduled(fixedDelay = 10, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = 8, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
     public void predict() {
-        var eventToPredict = jdbcTemplate.query(SQL_GET_EVENT_PREDICT, BeanPropertyRowMapper.newInstance(RawEventAnalyst.class));
+        var eventToPredict = jdbcTemplate.query(SQL_GET_EVENT_PREDICT,
+                Map.of(QUEUE_TYPE_KEY, PlaywrightUtil.PREDICT),
+                BeanPropertyRowMapper.newInstance(RawEventAnalyst.class)
+        );
         log.log(java.util.logging.Level.INFO, "Predicting for {0} events", eventToPredict.size());
         if (CollectionUtils.isEmpty(eventToPredict)) {
             return;
         }
-        eventToPredict.stream().map(RawEventAnalyst::getEventId).map(String::valueOf).toList().forEach(predictProducer::sendPredict);
+        var eventIds = eventToPredict.stream().map(RawEventAnalyst::getEventId).map(String::valueOf).toList();
+        eventIds.forEach(predictProducer::sendPredict);
+        var params = eventIds.stream()
+                .map(it -> new MapSqlParameterSource("queue_key", it)
+                        .addValue(QUEUE_TYPE_KEY, PlaywrightUtil.PREDICT))
+                .toArray(MapSqlParameterSource[]::new);
+        jdbcTemplate.batchUpdate(
+                """
+                        insert ignore into crawl_predict_queue(queue_key, queue_type)
+                        VALUES (:queue_key, :queue_type)
+                        """,
+                params
+        );
         log.log(java.util.logging.Level.INFO, "Predict done for {0} events", eventToPredict.size());
     }
 

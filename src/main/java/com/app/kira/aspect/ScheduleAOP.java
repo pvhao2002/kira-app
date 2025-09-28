@@ -18,10 +18,10 @@ public class ScheduleAOP {
 
     @Around("@annotation(org.springframework.scheduling.annotation.Scheduled)")
     public Object beforeSchedule(ProceedingJoinPoint joinPoint) throws Throwable {
-        var methodName = joinPoint.getTarget().getClass().getCanonicalName() + "." + joinPoint.getSignature().getName();
-        if (serverInfoService.isNotActive() || !serverInfoService.getScheduleActive(methodName)) {
-            return null;
-        }
+//        var methodName = joinPoint.getTarget().getClass().getCanonicalName() + "." + joinPoint.getSignature().getName();
+//        if (serverInfoService.isNotActive() || !serverInfoService.getScheduleActive(methodName)) {
+//            return null;
+//        }
         return joinPoint.proceed();
     }
 }

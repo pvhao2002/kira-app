@@ -1,10 +1,12 @@
 package com.app.kira.rest;
 
 import com.app.kira.producer.DateProducer;
+import com.app.kira.producer.EventProducer;
 import com.app.kira.util.DateUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,6 +19,7 @@ import java.util.Map;
 public class GenController {
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final DateProducer dateProducer;
+    private final EventProducer eventProducer;
 
     @GetMapping("gen-all-date")
     public Object genAllDate() {
@@ -31,7 +34,13 @@ public class GenController {
     @GetMapping("upcoming")
     public Object upcoming() {
         List.of(DateUtil.getTodayDate(), DateUtil.getTomorrowDate()).forEach(dateProducer::sendDateTomorrow);
-        return Map.of("result", "success");
+        return Map.of("result", List.of(DateUtil.getTodayDate(), DateUtil.getTomorrowDate()));
+    }
+
+    @GetMapping("event-upcoming/{eventId}")
+    public Object eventUpcoming(@PathVariable String eventId) {
+        eventProducer.sendEventUpcoming(eventId);
+        return Map.of("status", "done");
     }
 
     @GetMapping("date")

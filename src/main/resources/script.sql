@@ -33,3 +33,14 @@ create table events
     index idx_event_league (league_id),
     constraint event_unique unique (event_date, event_name)
 );
+
+drop table if exists users;
+create table if not exists users
+(
+    user_id  int primary key auto_increment,
+    username varchar(50)  not null unique,
+    password varchar(255) not null,
+    status   varchar(20) default 'active',
+    role     varchar(20) default 'user',
+    created_at timestamp default current_timestamp
+);

@@ -98,9 +98,10 @@ public class RabbitMQConfig {
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
-        factory.setMaxConcurrentConsumers(20);     // số consumer tối đa
-        factory.setPrefetchCount(1);               // mỗi consumer chỉ lấy 1 message
-        factory.setAcknowledgeMode(AcknowledgeMode.AUTO); // AUTO = ack khi xử lý xong
+        factory.setMaxConcurrentConsumers(1);
+        factory.setConcurrentConsumers(1);
+        factory.setPrefetchCount(1);
+        factory.setAcknowledgeMode(AcknowledgeMode.AUTO);
         return factory;
     }
 }

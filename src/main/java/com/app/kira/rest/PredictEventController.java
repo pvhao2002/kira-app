@@ -1,6 +1,9 @@
 package com.app.kira.rest;
 
 import com.app.kira.model.PredictEventResponse;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -39,7 +42,7 @@ public class PredictEventController {
                  , e.last_ou
                  , e.last_over_odds
                  , e.last_under_odds
-            
+                        
                  , pd.predict_type
                  , pd.hdc_pick
                  , pd.ou_pick
@@ -54,7 +57,7 @@ public class PredictEventController {
             where true
               and p.event_date >= CONVERT_TZ(NOW(), '+00:00', '+07:00') - INTERVAL 1 HOUR
               and e.first_hdc is not null
-            order by p.event_date, kl.is_main desc
+            order by kl.is_main desc, p.event_date
             """;
 
     @GetMapping
@@ -70,5 +73,19 @@ public class PredictEventController {
                 .stream()
                 .map(PredictEventResponse::new)
                 .toList();
+    }
+
+    @GetMapping("/league")
+    public Object findAllLeague() {
+        return jdbcTemplate.query("select * from kira_league order by is_main desc, league_name desc", BeanPropertyRowMapper.newInstance(KiraLeague.class));
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class KiraLeague {
+        private Integer leagueId;
+        private String leagueName;
+        private Boolean isMain;
     }
 }

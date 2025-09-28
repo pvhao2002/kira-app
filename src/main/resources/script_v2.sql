@@ -4,7 +4,7 @@ create table crawl_date
     id         int not null auto_increment primary key,
     date       varchar(255),
     status     enum ('pending', 'in_progress', 'completed', 'failed', 'picked') default 'pending',
-    created_at timestamp                                                       default current_timestamp,
+    created_at timestamp                                                        default current_timestamp,
     constraint unique_crawl_date unique (date)
 );
 
@@ -27,9 +27,9 @@ create table event_analyst
     away_corner             int,
     corner_str              varchar(255),
     link                    text,
-    ft_total_goal           int                                                    default 0,
-    ht_total_goal           int                                                    default 0,
-    total_corner            int                                                    default 0,
+    ft_total_goal           int                                                              default 0,
+    ht_total_goal           int                                                              default 0,
+    total_corner            int                                                              default 0,
     league_id               int,
     first_home_odds         float,
     last_home_odds          float,
@@ -94,4 +94,11 @@ create table if not exists invalid_line
     line       varchar(25) primary key,
     created_at timestamp default current_timestamp,
     updated_at timestamp default current_timestamp on update current_timestamp
+);
+drop table if exists `crawl_predict_queue`;
+create table `crawl_predict_queue`
+(
+    queue_key  varchar(50),
+    queue_type varchar(25),
+    primary key (queue_type, queue_key)
 );
