@@ -27,7 +27,7 @@ public class DateSchedule {
             """;
 
 
-    @Scheduled(cron = "0 0 3,15,20 * * *", zone = "Asia/Ho_Chi_Minh")
+    @Scheduled(cron = "0 0 0,3,15,20 * * *", zone = "Asia/Ho_Chi_Minh")
     public void crawlTomorrowEvent() {
         for (var date : List.of(DateUtil.getTodayDate(), DateUtil.getTomorrowDate())) {
             dateProducer.sendDateTomorrow(date);
@@ -35,7 +35,7 @@ public class DateSchedule {
         log.info("DateSchedule >> Scheduled crawl for today and tomorrow events.");
     }
 
-    @Scheduled(fixedDelay = 2, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = 2, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlByDate() {
         var dates = jdbcTemplate.query(SQL_GET_DATE, (rs, rowNum) -> rs.getString("date"));
         for (var date : dates) {

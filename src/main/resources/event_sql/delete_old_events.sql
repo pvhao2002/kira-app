@@ -12,5 +12,11 @@ CREATE EVENT IF NOT EXISTS delete_old_events
         FROM events
         WHERE event_date < DATE_SUB(vn_now, INTERVAL 3 HOUR);
 
-    END //
+        DELETE
+        FROM events
+        WHERE event_date is null;
 
+        DELETE
+        FROM event_analyst
+        WHERE event_date is null;
+    END //
