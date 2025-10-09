@@ -32,12 +32,12 @@ public class EventSchedule {
             where true
               and cpq.queue_key is null
               and event_date >= CONVERT_TZ(NOW(), 'SYSTEM', '+07:00')
-              and event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + interval 12 hour
+              and event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + interval 6 hour
             order by e.event_date
             LIMIT 300
             """;
 
-    @Scheduled(fixedDelay = 15, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlOddForUpcomingEvent() {
         var result = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING,
                 Map.of("queue_type", PlaywrightUtil.CRAWL_UPCOMING_EVENT),

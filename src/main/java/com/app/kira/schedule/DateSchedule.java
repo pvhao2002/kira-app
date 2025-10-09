@@ -23,7 +23,7 @@ public class DateSchedule {
             from crawl_date
             where status = 'pending'
                or status = 'failed'
-            limit 10
+            limit 30
             """;
 
 
@@ -35,7 +35,7 @@ public class DateSchedule {
         log.info("DateSchedule >> Scheduled crawl for today and tomorrow events.");
     }
 
-    @Scheduled(fixedDelay = 2, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlByDate() {
         var dates = jdbcTemplate.query(SQL_GET_DATE, (rs, rowNum) -> rs.getString("date"));
         for (var date : dates) {

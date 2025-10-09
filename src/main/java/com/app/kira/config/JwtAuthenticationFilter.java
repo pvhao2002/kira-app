@@ -47,7 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             var username = jwtUtilities.extractUsername(token);
 
             var userDetails = userDetailsService.loadUserByUsername(username);
-            if (Boolean.TRUE.equals(jwtUtilities.validateToken(token, userDetails))) {
+            if (jwtUtilities.validateToken(token, userDetails)) {
                 var authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,

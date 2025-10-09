@@ -61,4 +61,4 @@ logging:
     name: target/kira.log
 jwt:
   secret: "${JWT_SECRET:f15745bb2fd9b06cce06c1d99bc32908667944325a65373598496e9a45eb367dcbe5fa255cd25a143f9393999e6e2f08ef69fd3ff2b145da7149bbbaacd762e3}"
-  expiration: "${JWT_EXPIRATION:8640}" # 8640 seconds = 144 minutes
+  expiration: "${JWT_EXPIRATION:10800000}"

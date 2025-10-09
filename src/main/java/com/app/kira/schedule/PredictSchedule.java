@@ -122,7 +122,7 @@ public class PredictSchedule {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final PredictProducer predictProducer;
 
-    @Scheduled(fixedDelay = 8, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = 20, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
     public void predict() {
         var eventToPredict = jdbcTemplate.query(SQL_GET_EVENT_PREDICT,
                 Map.of(QUEUE_TYPE_KEY, PlaywrightUtil.PREDICT),

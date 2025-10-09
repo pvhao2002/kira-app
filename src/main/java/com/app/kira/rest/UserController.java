@@ -1,12 +1,15 @@
 package com.app.kira.rest;
 
 import com.app.kira.config.JwtTokenProvider;
+import com.app.kira.config.UserAccount;
 import com.app.kira.dto.UserDTO;
 import com.app.kira.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +24,11 @@ public class UserController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtUtilities;
+
+    @GetMapping("info")
+    public Object info(@AuthenticationPrincipal UserAccount userDTO) {
+        return Map.of("username", userDTO.getUsername(), "role", userDTO.getRole());
+    }
 
     @PostMapping("sign-up")
     public Object signUp(@RequestBody UserDTO request) {
