@@ -22,7 +22,7 @@ public class EventSchedule {
             select event_id
             from event_analyst
             where status = 'pending' or status = 'failed'
-            limit 45
+            limit 100
             """;
 
     private static final String SQL_GET_EVENT_UPCOMING = """
