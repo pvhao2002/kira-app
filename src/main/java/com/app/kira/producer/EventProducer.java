@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 public class EventProducer {
     private final RabbitTemplate rabbitTemplate;
 
-    public void sendEventAnalyst(String eventId) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY_ODD, eventId);
+    public void sendEventAnalyst(String eventIds) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY_ODD, eventIds);
     }
 
     public void sendEventUpcoming(String eventId) {

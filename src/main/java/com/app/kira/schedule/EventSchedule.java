@@ -2,6 +2,7 @@ package com.app.kira.schedule;
 
 import com.app.kira.producer.EventProducer;
 import com.app.kira.util.PlaywrightUtil;
+import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -22,7 +23,7 @@ public class EventSchedule {
             select event_id
             from event_analyst
             where status = 'pending' or status = 'failed'
-            limit 100
+            limit 1000
             """;
 
     private static final String SQL_GET_EVENT_UPCOMING = """
@@ -32,18 +33,21 @@ public class EventSchedule {
             where true
               and cpq.queue_key is null
               and event_date >= CONVERT_TZ(NOW(), 'SYSTEM', '+07:00')
-              and event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + interval 6 hour
+              and event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + interval 12 hour
             order by e.event_date
-            LIMIT 300
             """;
 
-    @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+//    @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlOddForUpcomingEvent() {
         var result = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING,
                 Map.of("queue_type", PlaywrightUtil.CRAWL_UPCOMING_EVENT),
                 (rs, rowNum) -> rs.getString("event_id")
         );
-        result.forEach(eventProducer::sendEventUpcoming);
+        int partSize = (int) Math.ceil(result.size() / 15.0);
+        Lists.partition(result, partSize)
+                .stream()
+                .map(part -> String.join(",", part))
+                .forEach(eventProducer::sendEventUpcoming);
         var params = result.stream()
                 .map(it -> new MapSqlParameterSource("queue_key", it)
                         .addValue("queue_type", PlaywrightUtil.CRAWL_UPCOMING_EVENT)
@@ -59,10 +63,14 @@ public class EventSchedule {
         log.info("Kira Service >> Scheduled crawl odd for upcoming events, total: " + result.size());
     }
 
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Scheduled(fixedDelay = 3, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void event() {
         var result = jdbcTemplate.query(SQL_GET_EVENT_ANALYST, (rs, rowNum) -> rs.getString("event_id"));
-        result.forEach(eventProducer::sendEventAnalyst);
+        Lists.partition(result, 50)
+                .stream()
+                .map(part -> String.join(",", part))
+                .forEach(eventProducer::sendEventAnalyst);
+
         jdbcTemplate.batchUpdate(
                 "update event_analyst set status = 'picked' where event_id = :eid",
                 result.stream()
