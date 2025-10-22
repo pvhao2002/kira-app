@@ -3,6 +3,7 @@ package com.app.kira.rest;
 import com.app.kira.producer.DateProducer;
 import com.app.kira.producer.EventProducer;
 import com.app.kira.util.DateUtil;
+import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +42,20 @@ public class GenController {
     public Object eventUpcoming(@PathVariable String eventId) {
         eventProducer.sendEventUpcoming(eventId);
         return Map.of("status", "done");
+    }
+
+    @GetMapping("gen-all-upcoming")
+    public Object genAllUpcoming() {
+        var eventIds = namedParameterJdbcTemplate.queryForList("""
+                select event_id
+                from events
+                where event_date > CONVERT_TZ(NOW(), 'SYSTEM', '+07:00')
+                """, Map.of(), String.class);
+
+        Lists.partition(eventIds, 100)
+                .stream().map(part -> String.join(",", part))
+                .forEach(eventProducer::sendEventUpcoming);
+        return Map.of("result", List.of(eventIds));
     }
 
     @GetMapping("date")

@@ -48,8 +48,6 @@ public class PredictSchedule {
             """;
 
     private static final String SQL_CONDITION_SIMPLE = """
-            --  AND ea.first_home_odds = :first_home_odds
-            --  AND ea.first_over_odds = :first_over_odds
               AND ea.last_home_odds = :last_home_odds
               AND ea.last_over_odds = :last_over_odds
             """;
@@ -122,7 +120,7 @@ public class PredictSchedule {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final PredictProducer predictProducer;
 
-//    @Scheduled(fixedDelay = 20, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = 20, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
     public void predict() {
         var eventToPredict = jdbcTemplate.query(SQL_GET_EVENT_PREDICT,
                 Map.of(QUEUE_TYPE_KEY, PlaywrightUtil.PREDICT),
@@ -228,9 +226,6 @@ public class PredictSchedule {
         var homeScore = Integer.parseInt(e.getFtScoreStr().split(MINUS)[0].trim());
         var awayScore = Integer.parseInt(e.getFtScoreStr().split(MINUS)[1].trim());
         var totalScore = (double) homeScore + awayScore;
-        detail.setPredictScore(StringUtils.isBlank(detail.getPredictScore())
-                ? e.getFtScoreStr()
-                : detail.getPredictScore() + COMMA + e.getFtScoreStr());
 
         var ouLine = OddConverter.convertLine(event.getLastOu());
         var ouPick = totalScore > ouLine
@@ -291,10 +286,9 @@ public class PredictSchedule {
         detail.setPredictId(event.getPredictId());
         var param = event.toParam();
         var result1 = jdbcTemplate.query(SQL_PREDICT_SIMPLE.formatted(""), param, BeanPropertyRowMapper.newInstance(PredictDTO.class));
-        var result2 = jdbcTemplate.query(SQL_PREDICT_SIMPLE.formatted(SQL_CONDITION_SIMPLE), param, BeanPropertyRowMapper.newInstance(PredictDTO.class));
         var ouCounter = new EnumMap<PredictDetail.PredictPick, Integer>(PredictDetail.PredictPick.class);
         var hdcCounter = new EnumMap<PredictDetail.PredictPick, Integer>(PredictDetail.PredictPick.class);
-        var merged = Stream.concat(result1.stream(), result2.stream())
+        var merged = result1.stream()
                 .collect(Collectors.toMap(
                         PredictDTO::getFtScoreStr,
                         PredictDTO::getScoreCount,
@@ -312,7 +306,6 @@ public class PredictSchedule {
                 .filter(dto -> dto.getScoreCount() == maxCount)
                 .forEach(e -> predict(e, detail, hdcCounter, ouCounter, event));
         setFinalPick(detail, hdcCounter, ouCounter);
-        // limit to 5 scores
         limit5Scores(detail);
         return detail;
     }

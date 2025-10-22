@@ -23,7 +23,7 @@ public class EventSchedule {
             select event_id
             from event_analyst
             where status = 'pending' or status = 'failed'
-            limit 1000
+            limit 10000
             """;
 
     private static final String SQL_GET_EVENT_UPCOMING = """
@@ -37,7 +37,7 @@ public class EventSchedule {
             order by e.event_date
             """;
 
-//    @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlOddForUpcomingEvent() {
         var result = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING,
                 Map.of("queue_type", PlaywrightUtil.CRAWL_UPCOMING_EVENT),
@@ -63,7 +63,7 @@ public class EventSchedule {
         log.info("Kira Service >> Scheduled crawl odd for upcoming events, total: " + result.size());
     }
 
-    @Scheduled(fixedDelay = 3, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void event() {
         var result = jdbcTemplate.query(SQL_GET_EVENT_ANALYST, (rs, rowNum) -> rs.getString("event_id"));
         Lists.partition(result, 50)

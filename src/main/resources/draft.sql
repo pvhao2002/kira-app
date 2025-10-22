@@ -127,3 +127,18 @@ ORDER BY rs.max_score_count DESC
        , rs.score_count DESC;
 
 
+select status, count(1)
+from event_analyst
+where first_ou is not null
+  and last_ou is not null
+  and first_hdc is not null
+  and last_hdc is not null
+group by status;
+
+select status, count(1)
+from event_analyst
+where first_ou is null
+   or last_ou is null
+   or first_hdc is null
+   or last_hdc is null
+group by status;
