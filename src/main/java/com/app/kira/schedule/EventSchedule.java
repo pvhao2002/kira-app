@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +44,9 @@ public class EventSchedule {
                 Map.of("queue_type", PlaywrightUtil.CRAWL_UPCOMING_EVENT),
                 (rs, rowNum) -> rs.getString("event_id")
         );
+        if(CollectionUtils.isEmpty(result)) {
+            return;
+        }
         int partSize = (int) Math.ceil(result.size() / 15.0);
         Lists.partition(result, partSize)
                 .stream()
@@ -66,6 +70,9 @@ public class EventSchedule {
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void event() {
         var result = jdbcTemplate.query(SQL_GET_EVENT_ANALYST, (rs, rowNum) -> rs.getString("event_id"));
+        if(CollectionUtils.isEmpty(result)) {
+            return;
+        }
         Lists.partition(result, 50)
                 .stream()
                 .map(part -> String.join(",", part))

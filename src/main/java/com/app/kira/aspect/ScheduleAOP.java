@@ -1,6 +1,5 @@
 package com.app.kira.aspect;
 
-
 import com.app.kira.server.ServerInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -19,9 +18,9 @@ public class ScheduleAOP {
     @Around("@annotation(org.springframework.scheduling.annotation.Scheduled)")
     public Object beforeSchedule(ProceedingJoinPoint joinPoint) throws Throwable {
         var env = System.getenv("ENV");
-        if ("PROD".equalsIgnoreCase(env) || "1".equals(env)) {
-            return null;
-        }
+//        if ("PROD".equalsIgnoreCase(env) || "1".equals(env)) {
+//            return null;
+//        }
         return joinPoint.proceed();
     }
 }

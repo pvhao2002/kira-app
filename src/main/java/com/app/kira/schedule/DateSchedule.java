@@ -2,12 +2,14 @@ package com.app.kira.schedule;
 
 import com.app.kira.producer.DateProducer;
 import com.app.kira.util.DateUtil;
+import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -38,9 +40,13 @@ public class DateSchedule {
     @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlByDate() {
         var dates = jdbcTemplate.query(SQL_GET_DATE, (rs, rowNum) -> rs.getString("date"));
-        for (var date : dates) {
-            dateProducer.sendDate(date);
+        if(CollectionUtils.isEmpty(dates)) {
+            return;
         }
+        Lists.partition(dates, 50)
+                .stream()
+                .map(part -> String.join(",", part))
+                .forEach(dateProducer::sendDate);
         jdbcTemplate.batchUpdate(
                 "update crawl_date set status = 'picked' where date = :date",
                 dates.stream()
