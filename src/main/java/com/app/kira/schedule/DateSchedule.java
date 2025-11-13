@@ -25,7 +25,7 @@ public class DateSchedule {
             from crawl_date
             where status = 'pending'
                or status = 'failed'
-            limit 30
+            limit 300
             """;
 
 
@@ -43,7 +43,7 @@ public class DateSchedule {
         if(CollectionUtils.isEmpty(dates)) {
             return;
         }
-        Lists.partition(dates, 50)
+        Lists.partition(dates, 30)
                 .stream()
                 .map(part -> String.join(",", part))
                 .forEach(dateProducer::sendDate);
