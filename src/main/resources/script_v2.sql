@@ -102,3 +102,16 @@ create table `crawl_predict_queue`
     queue_type varchar(25),
     primary key (queue_type, queue_key)
 );
+drop table if exists parlay_predict;
+create table if not exists parlay_predict
+(
+    parlay_id           BIGINT PRIMARY KEY AUTO_INCREMENT,
+    event_id            BIGINT NOT NULL UNIQUE,
+    scores              text,
+    total_result_score  int,
+    total_result_over   tinyint comment 'limit 5',
+    total_result_home   tinyint comment 'limit 5',
+    corners             text,
+    total_result_corner int,
+    total_corner_over   tinyint comment 'limit 5'
+);

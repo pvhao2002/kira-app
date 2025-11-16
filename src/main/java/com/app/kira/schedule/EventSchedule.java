@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -40,15 +41,18 @@ public class EventSchedule {
             """;
 
     @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @PostConstruct
     public void crawlOddForUpcomingEvent() {
         var result = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING,
                 Map.of("queue_type", PlaywrightUtil.CRAWL_UPCOMING_EVENT),
                 (rs, rowNum) -> rs.getString("event_id")
         );
+        log.info("Crawling upcoming events: " + result);
         if (CollectionUtils.isEmpty(result)) {
             return;
         }
-        int partSize = (int) Math.ceil(result.size() / 15.0);
+        Collections.shuffle(result);
+        int partSize = (int) Math.ceil(result.size() / 50.0);
         Lists.partition(result, partSize)
                 .stream()
                 .map(part -> String.join(",", part))
