@@ -3,7 +3,6 @@ package com.app.kira.schedule;
 import com.app.kira.producer.EventProducer;
 import com.app.kira.util.PlaywrightUtil;
 import com.google.common.collect.Lists;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -36,12 +35,11 @@ public class EventSchedule {
             where true
               and cpq.queue_key is null
               and event_date >= CONVERT_TZ(NOW(), 'SYSTEM', '+07:00')
-            --  and event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + interval 12 hour
+              and event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + interval 12 hour
             order by e.event_date
             """;
 
     @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
-    @PostConstruct
     public void crawlOddForUpcomingEvent() {
         var result = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING,
                 Map.of("queue_type", PlaywrightUtil.CRAWL_UPCOMING_EVENT),
