@@ -1,7 +1,7 @@
 application:
   datasource:
     write:
-      jdbc-url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
+      jdbc-url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:kira-dev}?useUnicode=true&createDatabaseIfNotExist=true"
       username: "${DB_USERNAME:root}"
       password: "${DB_PASSWORD:1234}"
       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -30,7 +30,7 @@ spring:
     port: ${RABBIT_PORT:5672}
     username: ${RABBIT_USERNAME:guest}
     password: ${RABBIT_PASSWORD:guest}
-    virtual-host: nesdpetn
+    virtual-host: ${nesdpetn:/}
     connection-timeout: 60000         # timeout 60s khi tạo connection
     requested-heartbeat: 30           # giữ heartbeat để phát hiện connection chết
     cache:
