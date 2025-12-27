@@ -115,3 +115,11 @@ create table if not exists parlay_predict
     total_result_corner int,
     total_corner_over   tinyint comment 'limit 5'
 );
+
+create table best_match
+(
+    event_id   bigint primary key,
+    event_name varchar(100),
+    link       text,
+    create_at  datetime default current_timestamp
+);
