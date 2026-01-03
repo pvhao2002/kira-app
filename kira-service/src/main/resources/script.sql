@@ -2,13 +2,7 @@ drop table if exists crawl_date;
 create table crawl_date
 (
     date         varchar(255) primary key,
-    status       enum (
-        'pending'
-        , 'picked'
-        , 'in_progress'
-        , 'done'
-        , 'failed'
-        )                  default 'pending',
+    status       enum ('pending', 'picked', 'in_progress', 'done', 'failed')                  default 'pending',
     total_events int       default 0,
     created_at   timestamp default current_timestamp,
     updated_at   timestamp default current_timestamp on update current_timestamp
@@ -146,16 +140,9 @@ create table event_odds
 (
     odds_id    bigint auto_increment primary key,
     event_id   bigint not null,
-    type       enum (
-        'open'
-        , 'pre-match'
-        , 'half-time'
-        ) comment 'open is the initial odds, pre-match is the latest odds before the match starts, half-time is the odds at second half start',
-    market     enum (
-        'hdc'
-        , 'ou'
-        , 'corner'
-        ),
+    type       enum ('open', 'pre-match', 'half-time')
+        comment 'open is the initial odds, pre-match is the latest odds before the match starts, half-time is the odds at second half start',
+    market     enum ('hdc', 'ou', 'corner'),
     line       varchar(25),
     price_a    decimal(10, 2),
     price_b    decimal(10, 2),
@@ -170,16 +157,9 @@ create table event_odds_timeline
 (
     odds_id      bigint auto_increment primary key,
     event_id     bigint not null,
-    type         enum (
-        'open'
-        , 'pre-match'
-        , 'half-time'
-        ) comment 'open is the initial odds, pre-match is the latest odds before the match starts, half-time is the odds at second half start',
-    market       enum (
-        'hdc'
-        , 'ou'
-        , 'corner'
-        ),
+    type       enum ('open', 'pre-match', 'half-time')
+        comment 'open is the initial odds, pre-match is the latest odds before the match starts, half-time is the odds at second half start',
+    market     enum ('hdc', 'ou', 'corner'),
     line         varchar(25),
     price_a      decimal(10, 2),
     price_b      decimal(10, 2),

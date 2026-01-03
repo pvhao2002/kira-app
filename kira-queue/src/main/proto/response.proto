@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package com.queue.aiscore.response;
+option java_package = "com.queue.aiscore.response";
+option java_outer_classname = "ResponseProto";
+
+message Response {
+  int32 code = 1;
+  bytes data = 15;
+}

@@ -148,9 +148,11 @@ public class PredictService {
                 jdbcTemplate.batchUpdate(SQL_INSERT_PREDICT_DETAIL, predictParam);
                 log.log(Level.INFO, "Saving predict details");
             });
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Error during predicting for event " + eventId, e);
         } finally {
             log.info("Predict for event " + eventId + " finished");
-            jdbcTemplate.update(DELETE_CRAWL_PREDICT_QUEUE, Map.of("queue_key", eventId, "queue_type", Constants.PREDICT));
+//            jdbcTemplate.update(DELETE_CRAWL_PREDICT_QUEUE, Map.of("queue_key", eventId, "queue_type", Constants.PREDICT));
         }
     }
 

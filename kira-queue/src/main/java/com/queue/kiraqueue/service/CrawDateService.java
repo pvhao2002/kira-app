@@ -103,6 +103,30 @@ public class CrawDateService {
             """;
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    public void crawlDate(List<String> dates) {
+        PlaywrightUtil.withPlaywright(dates, (page, mDates) -> mDates.forEach(date -> {
+            var paramsDate = new MapSqlParameterSource("date", date);
+            jdbcTemplate.update(SQL_CRAWL_DATE, paramsDate.addValue(STATUS, "in_progress"));
+            try {
+                var result = new ArrayList<EventHtml>();
+                page.navigate(Constants.AI_SCORE_URL + "%s".formatted(date));
+                page.waitForLoadState(LoadState.NETWORKIDLE);
+                var allBtn = page.locator("span.changeItem", new Page.LocatorOptions().setHasText("All"));
+                allBtn.click();
+                page.locator("span.sortByText", new Page.LocatorOptions().setHasText("Sort by time"))
+                        .click();
+                page.waitForLoadState(LoadState.NETWORKIDLE);
+                crawlEvent(result, page, date);
+                log.info("Total events crawled for date " + date + ": " + result.size());
+            } catch (Exception ex) {
+                log.log(Level.WARNING, "Error during analystDate", ex);
+                jdbcTemplate.update(SQL_CRAWL_DATE, paramsDate.addValue(STATUS, "failed"));
+            } finally {
+                log.info("Crawl analystDate for date: " + date + " done at " + new Date());
+            }
+        }));
+    }
+
     public void crawlTomorrowEventToPredict(String date) {
         PlaywrightUtil.withPlaywright(Collections.emptyList(), (page, list) -> {
             try {
@@ -164,50 +188,62 @@ public class CrawDateService {
     }
 
     private void crawlEvent(List<EventHtml> result, Page page, String date) {
-        page.waitForTimeout(5_000);
-        int previousHeight = 0;
-        int currentHeight;
         int maxTries = 2000;
-        int scrollStep = 500;
-        int tries = 0;
+        int scrollStep = 800;
 
-        while (tries < maxTries) {
-            page.waitForTimeout(1_500);
-            var pageSource = page.content();
-            var doc = Jsoup.parse(pageSource, Constants.AI_SCORE_URL);
+        for (int tries = 0; tries < maxTries; tries++) {
+
+            // 1️⃣ Parse HTML SAU khi DOM đã ổn định
+            var doc = Jsoup.parse(page.content(), Constants.AI_SCORE_URL);
+
             var events = doc.select(".vue-recycle-scroller__item-view")
                     .stream()
-                    .map(l -> {
+                    .flatMap(l -> {
                         var leagueName = "%s %s".formatted(
                                 l.select(".country-name").text(),
                                 l.select(".compe-name").text()
                         );
                         return l.select("a.match-container")
                                 .stream()
-                                .map(e -> new EventHtml(e, leagueName, date))
-                                .filter(e -> e.getEventDate() != null)
-                                .toList();
+                                .map(e -> new EventHtml(e, leagueName, date));
                     })
-                    .flatMap(Collection::stream)
-                    .filter(e -> result.stream()
-                            .filter(item -> item.getEventName().equalsIgnoreCase(e.getEventName())
-                                    &&
-                                    item.getLeagueName().equalsIgnoreCase(e.getLeagueName())
-                                    &&
-                                    item.getTime().equalsIgnoreCase(e.getTime())
-                            )
-                            .findFirst()
-                            .isEmpty())
+                    .filter(e -> e.getEventDate() != null)
+                    .filter(e -> result.stream().noneMatch(item ->
+                            item.getEventName().equalsIgnoreCase(e.getEventName())
+                                    && item.getLeagueName().equalsIgnoreCase(e.getLeagueName())
+                                    && item.getTime().equalsIgnoreCase(e.getTime())))
                     .toList();
-            result.addAll(events);
-            currentHeight = ((Number) page.evaluate("() => document.body.scrollHeight")).intValue();
 
-            if (currentHeight <= previousHeight) {
+            if (!events.isEmpty()) {
+                result.addAll(events);
+            }
+
+            // 2️⃣ Lấy key cuối TRƯỚC scroll
+            String previousKey = getLastKey(page);
+            // Nếu không có key → hết data
+            if (previousKey == null) {
                 break;
             }
+            // 3️⃣ Scroll
             page.evaluate("window.scrollBy(0, %d)".formatted(scrollStep));
-            previousHeight += scrollStep;
-            tries++;
+            page.waitForTimeout(100);
+            // 5️⃣ Nếu không đổi → END
+            String currentKey = getLastKey(page);
+            if (events.isEmpty() && Objects.equals(previousKey, currentKey)) {
+                break;
+            }
         }
+    }
+
+
+    private String getLastKey(Page page) {
+        return (String) page.evaluate("""
+                    () => {
+                        const items = document.querySelectorAll('.vue-recycle-scroller__item-view a.match-container');
+                        if (!items.length) return null;
+                        const last = items[items.length - 1];
+                        return last.innerText;
+                    }
+                """);
     }
 }

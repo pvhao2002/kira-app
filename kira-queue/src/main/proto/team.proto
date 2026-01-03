@@ -1,0 +1,86 @@
+syntax = "proto3";
+import "kira-queue/src/main/proto/competition.proto";
+package com.queue.aiscore.team;
+option java_package = "com.queue.aiscore.team";
+option java_outer_classname = "TeamProto";
+
+/*
+ * ===== External messages (đã / sẽ khai báo ở file khác) =====
+ * message Venue;
+ * message Manager;
+ * message Country;
+ * message Competition;
+ * message Salary;
+ * message TennisExtra;
+ */
+
+/* ===================== Team ===================== */
+
+message Team {
+  string id = 1;
+  uint32 sportId = 2;
+  com.queue.aiscore.competition.Country country = 5;
+  string name = 6;
+  string logo = 7;
+  string position = 8;
+  string rating = 9;
+  int32 national = 10;
+  int32 foreignPlayers = 11;
+  int32 nationalPlayers = 12;
+  int32 foundationTime = 13;
+  string background = 14;
+  int32 hasStats = 15;
+  int32 totalPlayers = 16;
+  string marketValue = 17;
+  .com.queue.aiscore.competition.Competition comp = 18;
+  string slug = 19;
+  bytes extra = 20;
+  string shortName = 21;
+  int32 conferenceId = 23;
+  string intro = 24;
+  int32 tid = 25;
+  string color = 26;
+  string tabColor = 27;
+  int32 users = 28;
+  string shareLink = 29;
+  repeated Team doubleTeams = 30;
+  bool isDouble = 31;
+  int32 intMarketValue = 32;
+  int32 virtual = 33;
+  ExtraData extraData = 35;
+
+  /* -------- nested ExtraData -------- */
+  message ExtraData {
+    float avgAge = 1;
+    int32 avgHeight = 2;
+  }
+}
+
+/* ===================== Collections ===================== */
+
+message Teams {
+  repeated Team teams = 1;
+}
+
+message TeamsMap {
+  map<int32, Team> teams = 1;
+}
+
+/* ===================== Team Honor ===================== */
+
+message TeamHonor {
+  repeated Honor honors = 1;
+
+  message Honor {
+    string id = 1;
+    string name = 2;
+    string logo = 3;
+    int32 level = 4;
+    repeated Item items = 5;
+
+    message Item {
+      string season = 1;
+      bytes extra = 5;
+    }
+  }
+}

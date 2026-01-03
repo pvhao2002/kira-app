@@ -1,11 +1,11 @@
 application:
   datasource:
     write:
-      jdbc-url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:kira-dev}?useUnicode=true&createDatabaseIfNotExist=true"
+      jdbc-url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:app}?useUnicode=true&createDatabaseIfNotExist=true"
       username: "${DB_USERNAME:root}"
       password: "${DB_PASSWORD:1234}"
       driver-class-name: com.mysql.cj.jdbc.Driver
-      maximum-pool-size: 5
+      maximum-pool-size: 500
 spring:
   application:
     name: kira-queue
@@ -21,10 +21,10 @@ spring:
   task:
     scheduling:
       pool:
-        size: 12
+        size: 120
     execution:
       pool:
-        core-size: 12
+        core-size: 120
   rabbitmq:
     host: ${RABBIT_HOST:localhost}
     port: ${RABBIT_PORT:5672}
@@ -39,12 +39,6 @@ spring:
         concurrency: 1                # số consumer thread khởi tạo
         max-concurrency: 1           # scale tối đa 1 thread khi backlog tăng
         prefetch: 1                   # mỗi consumer lấy 1 message -> xử lý xong mới lấy tiếp
-        retry:
-          enabled: true
-          max-attempts: 5             # thử lại tối đa 5 lần nếu consumer ném exception
-          initial-interval: 5000ms    # lần retry đầu cách 5s
-          multiplier: 2.0             # exponential backoff (5s, 10s, 20s…)
-          max-interval: 60000ms       # tối đa delay giữa các lần retry = 60s
 management:
   endpoints:
     web:
@@ -52,7 +46,7 @@ management:
         include: "*"
   endpoint:
     shutdown:
-      enabled: false
+      access: unrestricted
 server:
   port: 2323
   servlet:

@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package com.queue.aiscore.competition;
+option java_package = "com.queue.aiscore.competition";
+option java_outer_classname = "ResponseProto";
+/**
+ * Category message
+ */
+message Category {
+  uint32 id       = 1;
+  uint32 sportId  = 2;
+  string name     = 3;
+  uint32 weight   = 4;
+  string logo     = 5;
+}
+
+/**
+ * Country message
+ */
+message Country {
+  uint32 id                 = 1;
+  string name               = 2;
+  string name2              = 3;
+  string iso                = 4;
+  string logo               = 5;
+  uint32 weight             = 6;
+  uint32 isCategory          = 7;
+  Category category          = 9;
+  uint32 sportId             = 10;
+  bool isCategoryDelegate    = 11;
+  string emoji               = 12;
+  string ioc                 = 13;
+  string squareLogo          = 14;
+}
+
+/**
+ * Competition message
+ */
+message Competition {
+  string id                 = 1;
+  uint32 sportId             = 2;
+  Category category          = 3;
+  Country country            = 4;
+  string name                = 5;
+  string curSeasonId         = 6;
+  string curSeason           = 7;
+  string logo                = 8;
+  int32 level                = 9;
+  int32 weight               = 10;
+  int32 roundCount           = 11;
+  int32 curRound             = 12;
+  int32 curStageId           = 13;
+  string color               = 14;
+  string host                = 15;
+  string primaryColor        = 16;
+  string seasonStart         = 17;
+  string seasonEnd           = 18;
+  int32 type                 = 19;
+  bytes extra                = 20;
+  int32 hasStats             = 21;
+  int32 isHot                = 22;
+  string slug                = 23;
+  string hostCountry         = 24;
+  string hostCity            = 25;
+  bool isTennisTeamEvent     = 26;
+  int32 chapters             = 27;
+  int32 cid                  = 28;
+  int32 menu                 = 29;
+  int32 users                = 30;
+  int32 identification       = 31;
+}

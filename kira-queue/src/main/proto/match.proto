@@ -1,0 +1,181 @@
+syntax = "proto3";
+import "kira-queue/src/main/proto/competition.proto";
+import "kira-queue/src/main/proto/team.proto";
+package com.queue.aiscore.match;
+option java_package = "com.queue.aiscore.match";
+option java_outer_classname = "MatchProto";
+/*
+ * ===== External messages (declare elsewhere) =====
+ * message Competition;
+ * message Season;
+ * message Team;
+ * message Times;
+ * message TennisTimes;
+ * message Stage;
+ * message Venue;
+ * message Referee;
+ * message Ban;
+ * message BallByBall;
+ */
+
+/* ===================== Match ===================== */
+
+message Match {
+
+  /* ---------- oneof Scores ---------- */
+  oneof Scores {
+    CommonScore commonScore = 101;
+    // ckScores
+    // bsScores
+    // esScores
+    // vbScores
+    // afScores
+    // ihScores
+    // ttScores
+    // bmScores
+  }
+
+  string id                   = 1;
+  uint32 sportId               = 2;
+  string key                  = 3;
+  .com.queue.aiscore.competition.Competition competition     = 4;
+  .com.queue.aiscore.team.Team homeTeam               = 6;
+  .com.queue.aiscore.team.Team awayTeam               = 7;
+  Times times                 = 8;
+  repeated string points      = 9;
+  int32 homeScore             = 10;
+  int32 awayScore             = 11;
+  repeated sint32 homeScores  = 12;
+  repeated sint32 awayScores  = 13;
+  int32 matchTime             = 15;
+  int32 statusId              = 16;
+  int32 groupNum              = 17;
+  int32 roundNum              = 18;
+  int32 neutral               = 19;
+  string note                 = 20;
+  int32 menu                  = 21;
+  int32 users                 = 22;
+  int32 serve                 = 23;
+  int32 matchStatus           = 24;
+  repeated .com.queue.aiscore.team.Team homeTeams     = 27;
+  repeated .com.queue.aiscore.team.Team awayTeams     = 28;
+  int32 kind                  = 29;
+  Ext ext                     = 30;
+  bytes extra                 = 31;
+  string intro                = 33;
+  int32 mid                   = 34;
+  int32 isCopyright           = 35;
+  string shareLink            = 36;
+  int32 spMatchStatus         = 37;
+  int32 tabs                  = 38;
+  int32 deleted               = 40;
+
+  /* ================= Ext ================= */
+  message Ext {
+    Environment environment   = 1;
+    string homePosition       = 2;
+    string awayPosition       = 3;
+    int32 extMenu             = 4;
+    MatchOddItems odds        = 7;
+    Ban baned                 = 8;
+    int32 hasPlayerTotal      = 9;
+    bool isTennisDouble       = 10;
+    int32 ground              = 11;
+    int32 hasMedia            = 12;
+    int32 hasH2hTips          = 13;
+
+    message Environment {
+      int32 weather           = 1;
+      string pressure         = 2;
+      string temperature      = 3;
+      string wind             = 4;
+      string humidity         = 5;
+    }
+  }
+}
+
+/* ===================== Maps / Lists ===================== */
+
+message MatchesMap {
+  map<int32, Match> matches = 1;
+}
+
+message MatchItems {
+  repeated Match matches = 1;
+}
+
+/* ===================== Scores ===================== */
+
+message CommonScore {
+  repeated int32 p1 = 1;
+  repeated int32 p2 = 2;
+  repeated int32 p3 = 3;
+  repeated int32 p4 = 4;
+  repeated int32 ft = 8;
+  repeated int32 ot = 9;
+  repeated int32 ap = 10;
+  int32 server       = 15;
+}
+
+/* ===================== Cricket ===================== */
+
+message Over {
+  int32 over        = 1;
+  int32 runs        = 2;
+  int32 wickets     = 3;
+  int32 inning      = 4;
+}
+
+/* ===================== Team Stats ===================== */
+
+message MatchTeamStat {
+  int32 period = 1;
+  map<string, Item> stats = 2;
+
+  message Item {
+    repeated string values = 2;
+    repeated Item values2  = 3;
+  }
+}
+
+message MatchTeamStats {
+  map<uint32, MatchTeamStat> matchStats = 1;
+}
+
+/* ===================== Odds ===================== */
+
+message Odds {
+  repeated Item items = 1;
+
+  message Item {
+    int32 time       = 1;
+    int32 statusId   = 2;
+    int32 homeScore  = 3;
+    int32 awayScore  = 4;
+    float home       = 5;
+    float goal       = 6;
+    float away       = 7;
+    int32 utime      = 8;
+    int32 close      = 9;
+  }
+}
+
+message OddsItem {
+  repeated string odd = 1;
+}
+
+message MatchOddItems {
+  repeated OddsItem oddItems = 1;
+}
+
+// Placeholder definitions for external types missing in this repo to resolve symbols.
+message Times {
+  // minimal fields; replace with real definition if available elsewhere
+  int64 start = 1;
+  int64 end = 2;
+}
+
+message Ban {
+  int32 id = 1;
+  string reason = 2;
+}
