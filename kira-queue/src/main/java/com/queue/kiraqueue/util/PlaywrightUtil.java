@@ -1,8 +1,10 @@
 package com.queue.kiraqueue.util;
 
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
+import org.jsoup.nodes.Element;
 
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
@@ -12,10 +14,6 @@ import java.util.logging.Level;
 public class PlaywrightUtil {
     public static final String USER_AGENT =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
-    public static final String CRAWL_DATE = "CRAWL_DATE";
-    public static final String CRAWL_TOMORROW_DATE = "CRAWL_TOMORROW_DATE";
-    public static final String CRAWL_EVENT = "CRAWL_EVENT";
-    public static final String CRAWL_UPCOMING_EVENT = "CRAWL_UPCOMING_EVENT";
 
     public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic) {
         try (
@@ -35,6 +33,32 @@ public class PlaywrightUtil {
             log.log(Level.WARNING, "Error during Playwright task", e);
         }
     }
+
+    public void waitDomContentLoaded(Page page) {
+        page.waitForLoadState();
+    }
+
+    public String getImageFromStyleBackgroundImage(Page page, String selector) {
+        return (String) page.evaluate("""
+                    (selector) => {
+                        const el = document.querySelector(selector);
+                        if (!el) return null;
+                        const bg = getComputedStyle(el).backgroundImage;
+                        return bg?.replace(/^url\\(["']?/, '').replace(/["']?\\)$/, '');
+                    }
+                """, selector);
+    }
+
+    public String getImageFromImgSrc(org.jsoup.nodes.Element root, String selector) {
+        if (root == null) return null;
+
+        var img = root.selectFirst(selector);
+        if (img == null) return null;
+
+        String src = img.attr("abs:src");
+        return src.isBlank() ? null : src.trim();
+    }
+
 
     public static boolean isRunningProd() {
         try {

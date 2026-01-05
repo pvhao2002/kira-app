@@ -1,10 +1,8 @@
 package com.queue.kiraqueue.dto;
 
 import com.queue.kiraqueue.util.DateUtil;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.queue.kiraqueue.util.PlaywrightUtil;
+import lombok.*;
 import org.jsoup.nodes.Element;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
@@ -17,12 +15,21 @@ import java.util.Optional;
 @Builder
 public class EventHtml {
     private Integer id;
+    private String externalId;
     private String eventName;
     private String homeName;
     private String awayName;
-    private String time;
+    private String homeUrl;
+    private String awayUrl;
     private LocalDateTime eventDate;
+
+    @With
+    private String countryName;
+    @With
     private String leagueName;
+    @With
+    private String leagueUrl;
+
     private String detailLink;
 
     private int ftHomeScore;
@@ -37,12 +44,17 @@ public class EventHtml {
     private int homeCorner;
     private int awayCorner;
 
-    public  EventHtml(Element ele, String leagueName, String date) {
-        this.leagueName = leagueName;
+    private String providerStatus;
+
+    public EventHtml(Element ele) {
+        this.externalId = ele.attr("data-id");
         this.homeName = ele.select("[itemprop=homeTeam]").text();
+        this.homeUrl = PlaywrightUtil.getImageFromImgSrc(ele, ".teamBox.teamHomeBox img");
+
         this.awayName = ele.select("[itemprop=awayTeam]").text();
+        this.awayUrl = PlaywrightUtil.getImageFromImgSrc(ele, ".teamBox.teamAwayBox img");
+
         this.eventName = "%s v %s".formatted(this.homeName, this.awayName);
-        this.time = ele.select(".time").text().concat(" %s".formatted(DateUtil.convertFormater1ToFormater2(date)));
         this.eventDate = Optional.ofNullable(ele.selectFirst("meta[itemprop=startDate]"))
                 .map(e -> e.attr("content"))
                 .map(DateUtil::convertToHCM)

@@ -22,16 +22,19 @@ public class CrawlController {
     private final PredictService predictService;
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    @GetMapping("events")
+    public Object getEvents() {
+        return crawDateService.getAllEvents();
+    }
+
     @GetMapping("dates")
-    public Object getDates(@RequestParam("date") String date) {
-        crawDateService.crawlDate(List.of(date));
+    public Object getDates(@RequestParam("d") List<String> d) {
+        crawDateService.crawlDate(d);
         return Map.of("status", "done");
     }
 
     @GetMapping("upcoming")
     public Object getUpcoming() {
-        crawDateService.crawlTomorrowEventToPredict(DateUtil.getTodayDate());
-        crawDateService.crawlTomorrowEventToPredict(DateUtil.getTomorrowDate());
         return Map.of("status", "done");
     }
 

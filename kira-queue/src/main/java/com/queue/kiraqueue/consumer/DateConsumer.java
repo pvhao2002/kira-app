@@ -18,12 +18,10 @@ public class DateConsumer {
 
     @RabbitListener(queues = QUEUE_DATE_TOMORROW, concurrency = "1")
     public void handleDateTomorrow(String date) {
-        crawDateService.crawlTomorrowEventToPredict(date);
     }
 
     @RabbitListener(queues = QUEUE_DATE, concurrency = "1")
     public void handleDate(String dates) {
         var dateList = Arrays.stream(dates.split(",")).toList();
-        crawDateService.crawlByDateToAnalyst(dateList);
     }
 }
