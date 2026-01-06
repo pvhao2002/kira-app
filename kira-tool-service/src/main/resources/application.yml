@@ -3,4 +3,9 @@ spring:
     name: tool-service
 
 server:
-  port: 2326
+  port: 1406
+  servlet:
+    context-path: /tool-service
+  compression:
+    enabled: true
+    min-response-size: 512

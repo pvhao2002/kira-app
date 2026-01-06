@@ -12,44 +12,62 @@
   <!-- Main Downloader Card -->
   <div class="rounded-2xl bg-[#1e293b] shadow-xl border border-slate-700 overflow-hidden">
     <div class="flex flex-col md:flex-row">
+
       <!-- Left: Visual/Context -->
       <div
         class="hidden md:flex flex-col justify-end p-8 bg-gradient-to-br from-blue-600 to-blue-800 w-1/3 text-white relative overflow-hidden">
         <div
           class="absolute top-0 right-0 p-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
         <div class="relative z-10 flex flex-col gap-4">
           <div
             class="size-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm shadow-inner ring-1 ring-white/10">
-            <span class="material-symbols-outlined text-3xl">cloud_download</span>
+            <span class="material-symbols-outlined text-3xl">picture_as_pdf</span>
           </div>
+
           <div>
-            <h3 class="text-xl font-bold mb-1">An toàn & Nhanh chóng</h3>
-            <p class="text-blue-100 text-sm leading-relaxed">Hệ thống tự động quét virus và chuyển đổi định dạng phù hợp
-              cho báo cáo tài chính.</p>
+            <h3 class="text-xl font-bold mb-1">Tải tài liệu Scribd</h3>
+            <p class="text-blue-100 text-sm leading-relaxed">
+              Chuyển đổi tài liệu Scribd sang PDF để lưu trữ, học tập và tham khảo ngoại tuyến một cách thuận tiện.
+            </p>
           </div>
         </div>
       </div>
 
       <!-- Right: Action Form -->
       <div class="flex-1 p-6 md:p-10 flex flex-col justify-center">
-        <label class="block mb-2 text-sm font-semibold text-slate-200">Đường dẫn tài liệu (URL)</label>
+        <label class="block mb-2 text-sm font-semibold text-slate-200">
+          Liên kết tài liệu Scribd
+        </label>
+
         <div class="flex flex-col sm:flex-row w-full gap-3">
           <div class="relative flex-1 group">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span class="material-symbols-outlined text-slate-500 group-focus-within:text-blue-500 transition-colors">link</span>
+            <span
+              class="material-symbols-outlined text-slate-500 group-focus-within:text-blue-500 transition-colors">
+              link
+            </span>
             </div>
-            <input type="url" placeholder="https://example.com/kira-deptrai.pdf"
-                   class="block w-full pl-10 pr-4 h-12 rounded-lg bg-[#0f172a] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"/>
+
+            <input
+              type="url"
+              placeholder="https://www.scribd.com/document/123456789/ten-tai-lieu"
+              class="block w-full pl-10 pr-4 h-12 rounded-lg bg-[#0f172a] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"/>
           </div>
+
           <button
-            class="flex min-w-[140px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-blue-600 text-white text-base font-bold tracking-wide hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all active:scale-95 gap-2">
+            class="flex min-w-[160px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-blue-600 text-white text-base font-bold tracking-wide hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all active:scale-95 gap-2">
             <span class="material-symbols-outlined text-[20px]">download</span>
-            <span>Tải xuống</span>
+            <span>Tải PDF</span>
           </button>
         </div>
+
         <div class="mt-4 flex items-center gap-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
           <span class="material-symbols-outlined text-blue-400 text-[18px]">info</span>
-          <p class="text-blue-200/70 text-xs">Hỗ trợ các định dạng .pdf, .csv, .xlsx từ các nguồn tin cậy.</p>
+          <p class="text-blue-200/70 text-xs">
+            Hỗ trợ tài liệu công khai trên Scribd hoặc tài liệu mà người dùng có quyền truy cập hợp lệ. Định dạng đầu
+            ra: PDF.
+          </p>
         </div>
       </div>
     </div>
