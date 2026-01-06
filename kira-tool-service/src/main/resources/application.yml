@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: tool-service
+
+server:
+  port: 2326
