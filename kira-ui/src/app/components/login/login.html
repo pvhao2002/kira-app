@@ -1,0 +1,79 @@
+<div class="min-h-screen bg-[#0f172a] flex items-center justify-center p-4 relative overflow-hidden">
+  <!-- Background Effects -->
+  <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+    <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[120px]"></div>
+    <div class="absolute -bottom-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[120px]"></div>
+    <div class="absolute inset-0 opacity-[0.03]"
+         style="background-image: radial-gradient(#2563eb 1px, transparent 1px); background-size: 32px 32px;"></div>
+  </div>
+
+  <div
+    class="w-full max-w-[440px] bg-[#1e293b] border border-slate-700 rounded-2xl shadow-2xl p-8 sm:p-10 flex flex-col gap-6 backdrop-blur-sm relative z-10">
+    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+
+    <div class="flex flex-col items-center gap-2 text-center">
+      <div
+        class="size-16 rounded-full bg-blue-900/30 flex items-center justify-center mb-2 shadow-sm ring-1 ring-blue-800">
+        <span class="material-symbols-outlined text-4xl text-blue-500">sports_soccer</span>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-white">Kira Manager</h1>
+      <p class="text-sm text-slate-400">Đăng nhập để quản lý tài chính</p>
+    </div>
+
+    <form class="flex flex-col gap-5 mt-2" (submit)="$event.preventDefault()">
+      <div class="space-y-1.5">
+        <label class="text-sm font-semibold text-slate-300">Email hoặc Tên đăng nhập</label>
+        <div class="relative group">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span class="material-symbols-outlined text-slate-500 group-focus-within:text-blue-500 transition-colors">mail</span>
+          </div>
+          <input type="text" placeholder="user@example.com"
+                 class="block w-full pl-10 pr-3 py-2.5 border border-slate-600 rounded-lg bg-[#334155] text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200"/>
+        </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-sm font-semibold text-slate-300">Mật khẩu</label>
+        <div class="relative group">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span class="material-symbols-outlined text-slate-500 group-focus-within:text-blue-500 transition-colors">lock</span>
+          </div>
+          <input type="password" placeholder="••••••••"
+                 class="block w-full pl-10 pr-10 py-2.5 border border-slate-600 rounded-lg bg-[#334155] text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200"/>
+          <button type="button"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-300 transition-colors">
+            <span class="material-symbols-outlined">visibility_off</span>
+          </button>
+        </div>
+      </div>
+
+      <a routerLink="/dashboard"
+         class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 flex items-center justify-center gap-2">
+        <span>Đăng nhập</span>
+        <span class="material-symbols-outlined text-lg">arrow_forward</span>
+      </a>
+    </form>
+
+    <div class="relative flex py-2 items-center">
+      <div class="flex-grow border-t border-slate-700"></div>
+      <span
+        class="flex-shrink-0 mx-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Hoặc đăng nhập với</span>
+      <div class="flex-grow border-t border-slate-700"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <button type="button"
+              class="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-600 rounded-lg hover:bg-slate-700/50 transition-colors bg-[#334155]">
+        <span class="font-bold text-white text-lg">G</span>
+        <span class="text-sm font-semibold text-white">Google</span>
+      </button>
+      <button type="button"
+              class="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-600 rounded-lg hover:bg-slate-700/50 transition-colors bg-[#334155]">
+        <span class="material-symbols-outlined text-white">qr_code_scanner</span>
+        <span class="text-sm font-semibold text-white">QR Code</span>
+      </button>
+    </div>
+
+    <p class="mt-4 text-center text-xs text-slate-500">© 2024 Kira Manager. Bảo mật tuyệt đối.</p>
+  </div>
+</div>

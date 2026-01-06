@@ -1,0 +1,190 @@
+<div class="flex-1 max-w-7xl mx-auto w-full p-6 lg:p-8">
+  <div class="mb-8 flex items-center gap-4">
+    <a routerLink="/cards" class="flex items-center gap-2 text-white/50 hover:text-blue-500 transition-colors group">
+      <span class="material-symbols-outlined text-xl group-hover:-translate-x-1 transition-transform">arrow_back</span>
+      <span class="font-medium">Quay lại danh sách thẻ</span>
+    </a>
+  </div>
+
+  <div class="flex flex-col lg:flex-row gap-8 items-center justify-between mb-8">
+    <h1 class="text-2xl lg:text-3xl font-bold text-white">Thêm thẻ tín dụng mới</h1>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+    <!-- Card Preview -->
+    <div class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-28">
+      <div
+        class="relative w-full aspect-[1.586/1] rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-blue-500/20 group perspective-1000">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-900 via-slate-900 to-black z-0"></div>
+        <div
+          class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl"></div>
+
+        <div class="relative z-10 flex flex-col justify-between h-full p-6 sm:p-8 text-white">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-[10px] text-blue-200/60 font-semibold tracking-widest uppercase mb-1">Ngân hàng</p>
+              <p class="text-lg font-bold tracking-wide text-white">VIETCOMBANK</p>
+            </div>
+            <span class="material-symbols-outlined text-3xl text-white/80">contactless</span>
+          </div>
+          <div class="py-1">
+            <div
+              class="w-12 h-9 rounded-md bg-gradient-to-tr from-[#fbbf24] to-[#f59e0b] border border-yellow-600/50 flex items-center justify-center opacity-90 relative overflow-hidden shadow-md">
+              <div class="absolute inset-0 border border-black/20 rounded-md opacity-50"
+                   style="background-image: repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(0,0,0,0.2) 10px, rgba(0,0,0,0.2) 11px);"></div>
+              <div class="absolute inset-0 border border-black/20 rounded-md opacity-50"
+                   style="background-image: repeating-linear-gradient(0deg, transparent, transparent 10px, rgba(0,0,0,0.2) 10px, rgba(0,0,0,0.2) 11px);"></div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-5 mt-auto">
+            <div>
+              <p class="text-[10px] text-blue-200/60 uppercase tracking-widest mb-0.5">Hạn mức</p>
+              <p class="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight drop-shadow-md">50.000.000
+                <span class="text-lg align-top text-blue-500">₫</span></p>
+            </div>
+            <div class="flex justify-between items-end border-t border-white/10 pt-4">
+              <div>
+                <p class="text-[9px] text-blue-200/60 uppercase tracking-widest mb-1">Chủ thẻ</p>
+                <p
+                  class="font-medium tracking-widest uppercase text-sm sm:text-base text-white truncate max-w-[140px] sm:max-w-[200px]">
+                  NGUYEN VAN A</p>
+              </div>
+              <div class="flex gap-4 text-right">
+                <div>
+                  <p class="text-[9px] text-blue-200/60 uppercase mb-0.5">Sao kê</p>
+                  <p class="font-mono text-xs sm:text-sm">Ngày 20</p>
+                </div>
+                <div>
+                  <p class="text-[9px] text-blue-200/60 uppercase mb-0.5">Hạn TT</p>
+                  <p class="font-mono text-xs sm:text-sm text-blue-500 font-bold">Ngày 05</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 text-center backdrop-blur-sm">
+        <p class="text-sm text-blue-200/80">
+          <span class="material-symbols-outlined text-base align-text-bottom mr-1">info</span>
+          Thẻ này sẽ được sử dụng để quản lý ngân sách cá cược và theo dõi chi tiêu cá nhân.
+        </p>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="lg:col-span-7 xl:col-span-8">
+      <form class="space-y-6">
+        <!-- Section 1: Card Info -->
+        <div class="bg-[#0f172a] rounded-2xl p-6 lg:p-8 border border-white/5 shadow-xl">
+          <h3
+            class="text-white font-bold text-lg uppercase tracking-wide border-b border-white/10 pb-4 mb-6 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <span class="material-symbols-outlined text-blue-500 text-lg">credit_card</span>
+            </div>
+            Thông tin thẻ
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Tên ngân hàng</label>
+              <div class="relative group">
+                <input type="text" value="VIETCOMBANK" placeholder="VD: TPBank, Techcombank..."
+                       class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"/>
+                <span
+                  class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-blue-500 transition-colors pointer-events-none">account_balance</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Hạn mức tín dụng</label>
+              <div class="relative group">
+                <input type="text" value="50.000.000" placeholder="0"
+                       class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"/>
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 font-bold text-sm">VND</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Tên chủ thẻ</label>
+              <div class="relative group">
+                <input type="text" value="NGUYEN VAN A" placeholder="NHAP TEN KHONG DAU"
+                       class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all uppercase"/>
+                <span
+                  class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-blue-500 transition-colors pointer-events-none">person</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Payment Schedule -->
+        <div class="bg-[#0f172a] rounded-2xl p-6 lg:p-8 border border-white/5 shadow-xl">
+          <h3
+            class="text-white font-bold text-lg uppercase tracking-wide border-b border-white/10 pb-4 mb-6 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <span class="material-symbols-outlined text-blue-500 text-lg">calendar_month</span>
+            </div>
+            Lịch thanh toán
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Ngày sao kê</label>
+              <div class="relative">
+                <select
+                  class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer">
+                  <option value="" disabled>Chọn ngày</option>
+                  <option value="20" selected>Ngày 20 hàng tháng</option>
+                  <option value="1">Ngày 1</option>
+                  <option value="5">Ngày 5</option>
+                  <option value="10">Ngày 10</option>
+                  <option value="15">Ngày 15</option>
+                  <option value="25">Ngày 25</option>
+                </select>
+                <span
+                  class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none">expand_more</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Ngày thanh toán</label>
+              <div class="relative">
+                <select
+                  class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer">
+                  <option value="" disabled>Chọn ngày</option>
+                  <option value="5" selected>Ngày 05 hàng tháng</option>
+                  <option value="1">Ngày 1</option>
+                  <option value="10">Ngày 10</option>
+                  <option value="15">Ngày 15</option>
+                  <option value="20">Ngày 20</option>
+                  <option value="25">Ngày 25</option>
+                </select>
+                <span
+                  class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none">expand_more</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Giờ nhắc</label>
+              <div class="relative">
+                <input type="time" value="09:00"
+                       class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all [color-scheme:dark]"/>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 flex items-start gap-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <span class="material-symbols-outlined text-blue-500 text-lg mt-0.5">notifications_active</span>
+            <p class="text-sm text-blue-200/80 leading-relaxed">
+              Hệ thống sẽ gửi thông báo nhắc thanh toán vào lúc <span class="font-bold text-white">09:00</span> ngày
+              <span class="font-bold text-white">05</span> hàng tháng để tránh phí phạt trả chậm.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-4">
+          <button type="button"
+                  class="w-full md:w-auto px-10 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
+            <span class="material-symbols-outlined">save</span>
+            Lưu thẻ tín dụng
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,262 @@
+<div class="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+  <!-- Header & Filters -->
+  <div class="flex flex-col gap-6">
+    <div class="flex flex-col md:flex-row justify-between md:items-end gap-4">
+      <div>
+        <h2 class="text-3xl font-black text-white tracking-tight">Sự kiện Bóng đá</h2>
+        <p class="text-slate-400 mt-1">Tỷ lệ cược trực tuyến & Thống kê trận đấu</p>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <div class="relative flex-1 sm:w-64">
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-lg">search</span>
+          <input type="text" placeholder="Tìm kiếm..."
+                 class="block w-full pl-10 pr-3 py-2.5 bg-[#151e32] border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-shadow"/>
+        </div>
+        <div class="relative sm:w-48">
+          <select
+            class="appearance-none block w-full pl-3 pr-10 py-2.5 bg-[#151e32] border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm cursor-pointer">
+            <option>Hôm nay (24/05)</option>
+            <option>Ngày mai (25/05)</option>
+            <option>Cuối tuần này</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 text-lg pointer-events-none">calendar_today</span>
+        </div>
+        <div class="relative sm:w-48">
+          <select
+            class="appearance-none block w-full pl-3 pr-10 py-2.5 bg-[#151e32] border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm cursor-pointer">
+            <option>Tất cả giải đấu</option>
+            <option>Premier League</option>
+            <option>La Liga</option>
+            <option>Serie A</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 text-lg pointer-events-none">filter_list</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-[#151e32] border border-slate-700 rounded-xl overflow-hidden shadow-2xl">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+        <tr class="bg-[#1e293b] border-b border-slate-700 text-slate-300">
+          <th class="p-4 text-xs font-bold uppercase tracking-wider w-[200px]">Thời gian / Giải</th>
+          <th class="p-4 text-xs font-bold uppercase tracking-wider min-w-[250px]">Trận đấu</th>
+          <th class="p-4 text-xs font-bold uppercase tracking-wider w-[160px] bg-white/5">HDC (Chấp)</th>
+          <th class="p-4 text-xs font-bold uppercase tracking-wider w-[160px]">O/U (Tài/Xỉu)</th>
+          <th class="p-4 text-xs font-bold uppercase tracking-wider w-[160px] bg-white/5">Góc (HDC)</th>
+          <th class="p-4 text-xs font-bold uppercase tracking-wider w-[160px]">Góc (O/U)</th>
+        </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-700/50">
+        <!-- Match 1 -->
+        <tr class="hover:bg-white/5 transition-colors group cursor-pointer" routerLink="/match/1">
+          <td class="p-4 align-top">
+            <div class="flex flex-col gap-1">
+              <span class="text-white font-bold text-sm">19:30</span>
+              <span class="text-slate-500 text-xs">24/05/2024</span>
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-900/40 text-indigo-300 w-fit mt-1 border border-indigo-500/30">Premier League</span>
+            </div>
+          </td>
+          <td class="p-4 align-top">
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-7 h-7 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white/10 shadow-sm">
+                  MU
+                </div>
+                <span class="text-white text-sm font-semibold">Man Utd</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white/10 shadow-sm">
+                  CHE
+                </div>
+                <span class="text-white text-sm font-semibold">Chelsea</span>
+              </div>
+            </div>
+          </td>
+          <!-- HDC -->
+          <td class="p-4 align-top bg-white/[0.02]">
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 text-[10px] uppercase font-medium">Gốc</span>
+                <span
+                  class="text-white font-mono bg-slate-800 px-2 py-0.5 rounded border border-white/5 hover:border-blue-500 hover:text-blue-400 transition-colors">-0.5 #
+                  0.90</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-blue-400 text-[10px] uppercase font-bold">Trước</span>
+                <span
+                  class="text-blue-400 font-mono font-bold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">-0.5 #
+                  0.95</span>
+              </div>
+            </div>
+          </td>
+          <!-- O/U -->
+          <td class="p-4 align-top">
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 text-[10px] uppercase font-medium">Gốc</span>
+                <span class="text-white font-mono bg-slate-800 px-2 py-0.5 rounded border border-white/5">2.5 #
+                  0.85</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-blue-400 text-[10px] uppercase font-bold">Trước</span>
+                <span
+                  class="text-blue-400 font-mono font-bold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">2.75 #
+                  0.92</span>
+              </div>
+            </div>
+          </td>
+          <!-- Corners HDC -->
+          <td class="p-4 align-top bg-white/[0.02]">
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 text-[10px] uppercase font-medium">Gốc</span>
+                <span class="text-white font-mono bg-slate-800 px-2 py-0.5 rounded border border-white/5">-1.0 #
+                  0.88</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-blue-400 text-[10px] uppercase font-bold">Trước</span>
+                <span
+                  class="text-blue-400 font-mono font-bold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">-1.0 #
+                  0.90</span>
+              </div>
+            </div>
+          </td>
+          <!-- Corners O/U -->
+          <td class="p-4 align-top">
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 text-[10px] uppercase font-medium">Gốc</span>
+                <span class="text-white font-mono bg-slate-800 px-2 py-0.5 rounded border border-white/5">9.5 #
+                  0.82</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-blue-400 text-[10px] uppercase font-bold">Trước</span>
+                <span
+                  class="text-blue-400 font-mono font-bold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">10.0 #
+                  0.85</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Match 2 (Live) -->
+        <tr class="hover:bg-white/5 transition-colors group relative bg-blue-900/10 cursor-pointer"
+            routerLink="/match/2">
+          <td class="p-4 align-top relative">
+            <div
+              class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 shadow-[0_0_10px_theme('colors.blue.500')]"></div>
+            <div class="flex flex-col gap-1">
+                                    <span class="text-blue-400 font-bold text-sm animate-pulse flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[14px]">fiber_manual_record</span>
+                                        LIVE 32'
+                                    </span>
+              <span class="text-slate-400 text-xs pl-1">Hôm nay</span>
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-900/40 text-blue-300 w-fit mt-1 border border-blue-500/30">Serie A</span>
+            </div>
+          </td>
+          <td class="p-4 align-top">
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-3 justify-between pr-4">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-7 h-7 rounded-full bg-cyan-600 flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white/10 shadow-sm">
+                    NAP
+                  </div>
+                  <span class="text-white text-sm font-semibold">Napoli</span>
+                </div>
+                <span class="text-blue-400 font-bold bg-blue-500/10 px-2 rounded">1</span>
+              </div>
+              <div class="flex items-center gap-3 justify-between pr-4">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-7 h-7 rounded-full bg-slate-600 flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white/10 shadow-sm">
+                    JUV
+                  </div>
+                  <span class="text-white text-sm font-semibold">Juventus</span>
+                </div>
+                <span class="text-blue-400 font-bold bg-blue-500/10 px-2 rounded">0</span>
+              </div>
+            </div>
+          </td>
+          <td class="p-4 align-top bg-white/[0.02]">
+            <div class="flex flex-col gap-2 opacity-50">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 text-[10px] uppercase font-medium">Gốc</span>
+                <span class="text-white font-mono bg-slate-800 px-2 py-0.5 rounded border border-white/5">0 #0.90</span>
+              </div>
+            </div>
+          </td>
+          <td class="p-4 align-top">
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 text-[10px] uppercase font-medium">Gốc</span>
+                <span class="text-white font-mono bg-slate-800 px-2 py-0.5 rounded border border-white/5">2.25 #
+                  0.85</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-blue-400 text-[10px] uppercase font-bold">Live</span>
+                <span
+                  class="text-blue-400 font-mono font-bold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">1.5 #
+                  0.82</span>
+              </div>
+            </div>
+          </td>
+          <td class="p-4 align-top bg-white/[0.02]">
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 text-[10px] uppercase font-medium">Gốc</span>
+                <span class="text-white font-mono bg-slate-800 px-2 py-0.5 rounded border border-white/5">0 #0.88</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-blue-400 text-[10px] uppercase font-bold">Live</span>
+                <span
+                  class="text-blue-400 font-mono font-bold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">+1.5 #
+                  0.90</span>
+              </div>
+            </div>
+          </td>
+          <td class="p-4 align-top">
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 text-[10px] uppercase font-medium">Gốc</span>
+                <span class="text-white font-mono bg-slate-800 px-2 py-0.5 rounded border border-white/5">9.5 #
+                  0.82</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-blue-400 text-[10px] uppercase font-bold">Live</span>
+                <span
+                  class="text-blue-400 font-mono font-bold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">11.5 #
+                  0.85</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between text-slate-400 text-sm pb-8">
+    <p>Hiển thị 2 trong 156 sự kiện</p>
+    <div class="flex gap-2">
+      <button class="px-3 py-1 bg-[#151e32] rounded-md hover:text-white border border-slate-700 transition-colors">
+        Trước
+      </button>
+      <button class="px-3 py-1 bg-blue-600 text-white font-bold rounded-md shadow-md shadow-blue-500/20">1</button>
+      <button class="px-3 py-1 bg-[#151e32] rounded-md hover:text-white border border-slate-700 transition-colors">2
+      </button>
+      <button class="px-3 py-1 bg-[#151e32] rounded-md hover:text-white border border-slate-700 transition-colors">3
+      </button>
+      <span class="px-2 py-1">...</span>
+      <button class="px-3 py-1 bg-[#151e32] rounded-md hover:text-white border border-slate-700 transition-colors">Sau
+      </button>
+    </div>
+  </div>
+</div>
