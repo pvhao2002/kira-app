@@ -8,6 +8,7 @@ import {RouterLink} from '@angular/router';
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
+  standalone: true
 })
 export class Dashboard {
 

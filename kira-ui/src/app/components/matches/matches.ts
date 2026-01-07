@@ -8,6 +8,7 @@ import {RouterLink} from '@angular/router';
   ],
   templateUrl: './matches.html',
   styleUrl: './matches.css',
+  standalone: true
 })
 export class Matches {
 

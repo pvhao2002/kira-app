@@ -10,6 +10,9 @@ import {Results} from './components/results/results';
 import {MatchDetail} from './components/match-detail/match-detail';
 import {Tools} from './components/tools/tools';
 import {AddTransaction} from './components/add-transaction/add-transaction';
+import {Leagues} from './components/leagues/leagues';
+import {Notifications} from './components/notifications/notifications';
+import {Users} from './components/users/users';
 
 export const routes: Routes = [
   {path: '', redirectTo: 'dashboard', pathMatch: 'full'},
@@ -24,4 +27,7 @@ export const routes: Routes = [
   {path: 'transactions', component: Transactions},
   {path: 'tool', component: Tools},
   {path: 'transactions/add', component: AddTransaction},
+  {path: 'leagues', component: Leagues},
+  {path: 'notifications', component: Notifications},
+  {path: 'users', component: Users},
 ];

@@ -71,6 +71,143 @@
         </div>
       </div>
     </div>
+
+    <div class="mt-6 rounded-xl border border-slate-700 bg-[#0f172a] overflow-hidden">
+      <!-- Toggle -->
+      <label
+        for="manual-toggle"
+        class="flex cursor-pointer items-center justify-between p-4 text-slate-200 hover:bg-slate-800/40 transition-colors">
+        <div class="flex items-center gap-2 font-semibold">
+          <span class="material-symbols-outlined text-[18px]">menu_book</span>
+          Manual PDF Download Guide
+        </div>
+        <span
+          class="material-symbols-outlined transition-transform duration-300 peer-checked:rotate-180">
+      expand_more
+    </span>
+      </label>
+
+      <!-- Expanded by default -->
+      <input type="checkbox" id="manual-toggle" class="peer hidden" checked/>
+
+      <!-- Content -->
+      <div
+        class="max-h-0 peer-checked:max-h-[1000px] transition-all duration-300 ease-in-out overflow-hidden px-5">
+        <ol class="list-decimal list-inside space-y-3 py-4 leading-relaxed text-xl text-slate-300">
+          <li>
+            Replace <code class="text-blue-400">document</code> with
+            <code class="text-blue-400">embeds</code>, then replace everything after the
+            last <code>/</code> with <code class="text-blue-400">/content</code>.
+            <div class="mt-1 text-xl text-slate-400">
+              Example:<br/>
+              <span class="block break-all">
+            https://www.scribd.com/document/861746837/ishq-e-aatish
+          </span>
+              <span class="block break-all text-blue-400">
+            → https://www.scribd.com/embeds/861746837/content
+          </span>
+            </div>
+          </li>
+
+          <li>
+            Open the modified link and scroll to the very bottom to make sure all pages
+            are fully loaded.
+          </li>
+
+          <li>
+            Open <strong>Developer Tools</strong> by pressing <code>F12</code> or
+            <code>Ctrl + Shift + I</code>.
+          </li>
+
+          <li>
+            Press <code>Ctrl + F</code> and <strong>clear the class values</strong> for the
+            following CSS classes:
+            <ul class="mt-1 ml-5 list-disc text-slate-400">
+              <li><code>document_scroller</code></li>
+              <li><code>toolbar_drop</code></li>
+              <li><code>mobile_overlay</code></li>
+            </ul>
+          </li>
+
+          <li>
+            Press <code>Ctrl + P</code> (Windows) or
+            <code>Command + P</code> (Mac) to save the document as a PDF file.
+          </li>
+        </ol>
+      </div>
+      <div class="mt-6 rounded-xl border border-slate-700 bg-[#0f172a] p-5">
+        <div class="mb-4 flex items-center gap-2 text-slate-200 font-semibold">
+          <span class="material-symbols-outlined text-[18px]">image</span>
+          Before & After Demo
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- BEFORE -->
+          <div class="rounded-lg border border-slate-700 bg-[#020617] p-3">
+            <div class="mb-2 text-sm font-medium text-slate-300 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px] text-red-400">
+                close
+              </span>
+              Before (Content blocked)
+            </div>
+
+            <div class="overflow-hidden rounded-md border border-slate-800"
+                 (click)="openImagePreview('assets/images/before_scribd.png')"
+            >
+              <img
+                src="assets/images/before_scribd.png"
+                alt="Before removing Scribd overlays"
+                class="w-full object-contain bg-black"/>
+            </div>
+          </div>
+
+          <!-- AFTER -->
+          <div class="rounded-lg border border-slate-700 bg-[#020617] p-3">
+            <div class="mb-2 text-sm font-medium text-slate-300 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px] text-green-400">
+                check_circle
+              </span>
+              After (Ready to print)
+            </div>
+
+            <div class="overflow-hidden rounded-md border border-slate-800"
+                 (click)="openImagePreview('assets/images/after_scribd.png')">
+              <img
+                src="assets/images/after_scribd.png"
+                alt="After removing Scribd overlays"
+                class="w-full object-contain bg-black"/>
+            </div>
+          </div>
+        </div>
+
+        <p class="mt-4 text-xs text-slate-400">
+          The screenshots above show the Scribd document <strong>before</strong> and
+          <strong>after</strong> removing the blocking overlay and toolbar elements.
+        </p>
+      </div>
+    </div>
+    <!-- Image Preview Modal -->
+    @if (previewImageSrc) {
+      <div
+        id="image-preview-backdrop"
+        (click)="onBackdropClick($event)"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+
+        <!-- Close button -->
+        <button
+          (click)="closeImagePreview()"
+          class="absolute top-4 right-4 rounded-full bg-black/60 p-2 text-white hover:bg-black transition">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <!-- Image -->
+        <img
+          [src]="previewImageSrc"
+          alt="Preview"
+          class="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl border border-slate-700 bg-black object-contain"
+        />
+      </div>
+    }
   </div>
 
   <!-- Custom Tools Section -->

@@ -18,27 +18,32 @@
            [routerLinkActiveOptions]="{exact: true}"
            class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
           <span class="material-symbols-outlined text-[18px]">home</span>
-          Trang chủ
+          Home
+        </a>
+        <a routerLink="/leagues" routerLinkActive="bg-blue-600 text-white shadow-md"
+           class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">trophy</span>
+          Leagues
         </a>
         <a routerLink="/matches" routerLinkActive="bg-blue-600 text-white shadow-md"
            class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
           <span class="material-symbols-outlined text-[18px]">sports_soccer</span>
-          Sự kiện
+          Events
         </a>
         <a routerLink="/results" routerLinkActive="bg-blue-600 text-white shadow-md"
            class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
           <span class="material-symbols-outlined text-[18px]">scoreboard</span>
-          Kết quả
+          Results
         </a>
         <a routerLink="/cards" routerLinkActive="bg-blue-600 text-white shadow-md"
            class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
           <span class="material-symbols-outlined text-[18px]">credit_card</span>
-          Thẻ
+          Credit card
         </a>
         <a routerLink="/profile" routerLinkActive="bg-blue-600 text-white shadow-md"
            class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
           <span class="material-symbols-outlined text-[18px]">person</span>
-          Cá nhân
+          Profile
         </a>
         <a routerLink="/tool" routerLinkActive="bg-blue-600 text-white shadow-md"
            class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
@@ -54,10 +59,11 @@
          title="Lịch sử giao dịch">
         <span class="material-symbols-outlined">receipt_long</span>
       </a>
-      <button class="text-slate-400 hover:text-blue-400 transition-colors p-2 rounded-full hover:bg-white/5 relative">
+      <a routerLink="/notifications"
+         class="text-slate-400 hover:text-blue-400 transition-colors p-2 rounded-full hover:bg-white/5 relative">
         <span class="material-symbols-outlined">notifications</span>
         <span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full ring-2 ring-[#0f172a]"></span>
-      </button>
+      </a>
       <a routerLink="/profile"
          class="size-9 rounded-full bg-slate-700 ring-2 ring-white/10 overflow-hidden cursor-pointer hover:ring-blue-500 transition-all">
         <img src="https://picsum.photos/seed/user/100/100" alt="User" class="w-full h-full object-cover">
@@ -75,20 +81,25 @@
       <span class="material-symbols-outlined">home</span>
       <span class="text-[10px] mt-1 font-medium">Home</span>
     </a>
+    <a routerLink="/leagues" routerLinkActive="text-blue-500"
+       class="flex flex-col items-center p-2 text-slate-500 transition-colors">
+      <span class="material-symbols-outlined">trophy</span>
+      <span class="text-[10px] mt-1 font-medium">League</span>
+    </a>
     <a routerLink="/matches" routerLinkActive="text-blue-500"
        class="flex flex-col items-center p-2 text-slate-500 transition-colors">
       <span class="material-symbols-outlined">sports_soccer</span>
-      <span class="text-[10px] mt-1 font-medium">Bóng đá</span>
+      <span class="text-[10px] mt-1 font-medium">Events</span>
     </a>
     <a routerLink="/cards" routerLinkActive="text-blue-500"
        class="flex flex-col items-center p-2 text-slate-500 transition-colors">
       <span class="material-symbols-outlined">credit_card</span>
-      <span class="text-[10px] mt-1 font-medium">Thẻ</span>
+      <span class="text-[10px] mt-1 font-medium">Credit card</span>
     </a>
     <a routerLink="/profile" routerLinkActive="text-blue-500"
        class="flex flex-col items-center p-2 text-slate-500 transition-colors">
       <span class="material-symbols-outlined">person</span>
-      <span class="text-[10px] mt-1 font-medium">Cá nhân</span>
+      <span class="text-[10px] mt-1 font-medium">Profile</span>
     </a>
     <a routerLink="/tool" routerLinkActive="text-blue-500"
        class="flex flex-col items-center p-2 text-slate-500 transition-colors">

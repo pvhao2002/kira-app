@@ -5,6 +5,7 @@ import { Component } from '@angular/core';
   imports: [],
   templateUrl: './match-detail.html',
   styleUrl: './match-detail.css',
+  standalone: true
 })
 export class MatchDetail {
 

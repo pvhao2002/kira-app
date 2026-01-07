@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import {Component} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 @Component({
@@ -8,6 +8,7 @@ import {RouterLink} from '@angular/router';
   ],
   templateUrl: './add-card.html',
   styleUrl: './add-card.css',
+  standalone: true
 })
 export class AddCard {
 

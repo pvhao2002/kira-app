@@ -1,0 +1,189 @@
+<div class="flex-1 w-full max-w-4xl mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-white">Thông báo</h1>
+      <p class="mt-2 text-sm text-slate-400">Cập nhật mới nhất về các trận đấu và giao dịch của bạn.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        class="text-sm font-bold text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">done_all</span>
+        Đánh dấu đã đọc
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="mb-6 flex flex-wrap items-center gap-2">
+    <button
+      class="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-500">
+      Tất cả
+    </button>
+    <button
+      class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-700 bg-[#1e293b] px-4 text-sm font-medium text-slate-300 shadow-sm transition-colors hover:bg-slate-700 hover:text-white">
+      Chưa đọc <span
+      class="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/20 text-xs text-blue-400">3</span>
+    </button>
+    <button
+      class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-700 bg-[#1e293b] px-4 text-sm font-medium text-slate-300 shadow-sm transition-colors hover:bg-slate-700 hover:text-white">
+      Bóng đá
+    </button>
+    <button
+      class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-700 bg-[#1e293b] px-4 text-sm font-medium text-slate-300 shadow-sm transition-colors hover:bg-slate-700 hover:text-white">
+      Tài chính
+    </button>
+  </div>
+
+  <!-- Notification List -->
+  <div class="space-y-3">
+    <!-- New / Unread Item (Finance) -->
+    <div
+      class="group relative flex gap-4 rounded-xl border border-slate-800 bg-[#1e293b] p-5 shadow-sm transition-all hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/10 cursor-pointer">
+      <div class="absolute right-4 top-4 h-2.5 w-2.5 rounded-full bg-blue-500 ring-2 ring-[#1e293b]"></div>
+      <div
+        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+      </div>
+      <div class="flex flex-1 flex-col justify-center">
+        <div class="flex items-center justify-between pr-4 mb-1">
+          <h3 class="text-base font-bold text-white group-hover:text-blue-400 transition-colors">Nạp tiền thành
+            công</h3>
+          <span class="text-xs text-slate-500 whitespace-nowrap">2 phút trước</span>
+        </div>
+        <p class="text-sm text-slate-400 line-clamp-2">
+          Bạn đã nạp thành công <span class="font-bold text-white">5.000.000 VNĐ</span> vào ví chính. Mã giao dịch
+          #TRX892301.
+        </p>
+      </div>
+    </div>
+
+    <!-- New / Unread Item (Soccer) -->
+    <div
+      class="group relative flex gap-4 rounded-xl border border-slate-800 bg-[#1e293b] p-5 shadow-sm transition-all hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/10 cursor-pointer">
+      <div class="absolute right-4 top-4 h-2.5 w-2.5 rounded-full bg-blue-500 ring-2 ring-[#1e293b]"></div>
+      <div
+        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20">
+        <span class="material-symbols-outlined">sports_soccer</span>
+      </div>
+      <div class="flex flex-1 flex-col justify-center">
+        <div class="flex items-center justify-between pr-4 mb-1">
+          <h3 class="text-base font-bold text-white group-hover:text-blue-400 transition-colors">Thông báo trận đấu</h3>
+          <span class="text-xs text-slate-500 whitespace-nowrap">15 phút trước</span>
+        </div>
+        <p class="text-sm text-slate-400 line-clamp-2">
+          Trận đấu giữa <span class="font-bold text-white">Man Utd vs Liverpool</span> sắp bắt đầu lúc 22:00. Hãy kiểm
+          tra kèo mới nhất!
+        </p>
+      </div>
+    </div>
+
+    <!-- New / Unread Item (Promo) -->
+    <div
+      class="group relative flex gap-4 rounded-xl border border-slate-800 bg-[#1e293b] p-5 shadow-sm transition-all hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/10 cursor-pointer">
+      <div class="absolute right-4 top-4 h-2.5 w-2.5 rounded-full bg-blue-500 ring-2 ring-[#1e293b]"></div>
+      <div
+        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
+        <span class="material-symbols-outlined">local_activity</span>
+      </div>
+      <div class="flex flex-1 flex-col justify-center">
+        <div class="flex items-center justify-between pr-4 mb-1">
+          <h3 class="text-base font-bold text-white group-hover:text-blue-400 transition-colors">Khuyến mãi đặc
+            biệt</h3>
+          <span class="text-xs text-slate-500 whitespace-nowrap">45 phút trước</span>
+        </div>
+        <p class="text-sm text-slate-400 line-clamp-2">
+          Nhận ngay 100% giá trị thẻ nạp cho lần nạp đầu tiên trong ngày hôm nay. Tối đa 2.000.000 VNĐ.
+        </p>
+      </div>
+    </div>
+
+    <!-- Read Item -->
+    <div
+      class="group relative flex gap-4 rounded-xl border border-slate-800/50 bg-[#151e32] p-5 transition-all hover:bg-[#1e293b] hover:border-slate-700 cursor-pointer">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-slate-400">
+        <span class="material-symbols-outlined">scoreboard</span>
+      </div>
+      <div class="flex flex-1 flex-col justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+        <div class="flex items-center justify-between pr-4 mb-1">
+          <h3 class="text-base font-medium text-white">Kết quả trận đấu: Arsenal vs Chelsea</h3>
+          <span class="text-xs text-slate-500 whitespace-nowrap">2 giờ trước</span>
+        </div>
+        <p class="text-sm text-slate-400 line-clamp-2">
+          Trận đấu kết thúc với tỷ số 2-0. Tiền thắng cược đã được cộng vào ví phụ của bạn.
+        </p>
+      </div>
+      <!-- Delete/Action button on hover -->
+      <div
+        class="absolute right-4 inset-y-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex">
+        <button
+          class="p-2 text-slate-500 hover:text-red-500 transition-colors rounded-full hover:bg-red-500/10">
+          <span class="material-symbols-outlined text-[20px] leading-none">
+            delete
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Read Item -->
+    <div
+      class="group relative flex gap-4 rounded-xl border border-slate-800/50 bg-[#151e32] p-5 transition-all hover:bg-[#1e293b] hover:border-slate-700 cursor-pointer">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-slate-400">
+        <span class="material-symbols-outlined">security</span>
+      </div>
+      <div class="flex flex-1 flex-col justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+        <div class="flex items-center justify-between pr-4 mb-1">
+          <h3 class="text-base font-medium text-white">Cập nhật bảo mật</h3>
+          <span class="text-xs text-slate-500 whitespace-nowrap">Hôm qua</span>
+        </div>
+        <p class="text-sm text-slate-400 line-clamp-2">
+          Hệ thống đã phát hiện đăng nhập lạ từ thiết bị mới. Vui lòng xác thực nếu đó là bạn.
+        </p>
+      </div>
+      <div
+        class="absolute right-4 inset-y-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex">
+        <button
+          class="p-2 text-slate-500 hover:text-red-500 transition-colors rounded-full hover:bg-red-500/10">
+          <span class="material-symbols-outlined text-[20px] leading-none">
+            delete
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Read Item -->
+    <div
+      class="group relative flex gap-4 rounded-xl border border-slate-800/50 bg-[#151e32] p-5 transition-all hover:bg-[#1e293b] hover:border-slate-700 cursor-pointer">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-slate-400">
+        <span class="material-symbols-outlined">sports_soccer</span>
+      </div>
+      <div class="flex flex-1 flex-col justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+        <div class="flex items-center justify-between pr-4 mb-1">
+          <h3 class="text-base font-medium text-white">Kèo Real Madrid vs Barcelona</h3>
+          <span class="text-xs text-slate-500 whitespace-nowrap">Hôm qua</span>
+        </div>
+        <p class="text-sm text-slate-400 line-clamp-2">
+          Tỷ lệ cược đã thay đổi đáng kể trước giờ bóng lăn.
+        </p>
+      </div>
+      <div
+        class="absolute right-4 inset-y-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex">
+        <button
+          class="p-2 text-slate-500 hover:text-red-500 transition-colors rounded-full hover:bg-red-500/10">
+          <span class="material-symbols-outlined text-[20px] leading-none">
+            delete
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination / Load More -->
+  <div class="mt-8 flex justify-center">
+    <button
+      class="flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium text-slate-400 hover:bg-[#1e293b] hover:text-white transition-colors border border-slate-700 hover:border-slate-600">
+      Xem thêm thông báo cũ
+      <span class="material-symbols-outlined text-[18px]">expand_more</span>
+    </button>
+  </div>
+</div>

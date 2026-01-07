@@ -5,6 +5,7 @@ import { Component } from '@angular/core';
   imports: [],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
+  standalone: true
 })
 export class Profile {
 

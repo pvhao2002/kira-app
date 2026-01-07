@@ -8,6 +8,7 @@ import {RouterLink} from '@angular/router';
   ],
   templateUrl: './add-transaction.html',
   styleUrl: './add-transaction.css',
+  standalone: true
 })
 export class AddTransaction {
 
