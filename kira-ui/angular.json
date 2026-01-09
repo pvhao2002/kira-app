@@ -60,7 +60,6 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true,
               "namedChunks": true
             }
           },
@@ -68,6 +67,11 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "allowedHosts": [
+              "kira.id.vn"
+            ]
+          },
           "configurations": {
             "production": {
               "buildTarget": "kira-ui:build:production"

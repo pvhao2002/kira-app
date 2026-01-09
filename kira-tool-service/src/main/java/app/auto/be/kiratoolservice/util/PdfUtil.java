@@ -19,4 +19,12 @@ public class PdfUtil {
         );
     }
 
+    public String normalizeFileName(String name) {
+        if (name == null || name.isEmpty()) return "unknown";
+        // 1. Loại bỏ ký tự không hợp lệ
+        String normalized = name.replaceAll("[\\\\/:*?\"<>|]", "");
+        // 2. Thay khoảng trắng và dấu gạch nối bằng underscore
+        normalized = normalized.replaceAll("[\\s-]+", "_");
+        return normalized;
+    }
 }

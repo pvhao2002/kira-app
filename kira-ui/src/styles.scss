@@ -1,8 +1,12 @@
 /* You can add global styles to this file, and also import other style files */
-
-@tailwind base;
-@tailwind components;
+@import "tailwindcss/preflight";
 @tailwind utilities;
+@import 'ngx-toastr/toastr';
+
+
+:root {
+  color-scheme: dark;
+}
 
 html, body {
   height: 100%;
