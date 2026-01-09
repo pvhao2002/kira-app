@@ -1,9 +1,11 @@
 package com.queue.kiraqueue.dto;
 
+import com.queue.kiraqueue.service.CrawDateService;
 import com.queue.kiraqueue.util.DateUtil;
 import com.queue.kiraqueue.util.PlaywrightUtil;
 import lombok.*;
 import org.jsoup.nodes.Element;
+import org.springframework.data.relational.core.sql.In;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
 import java.time.LocalDateTime;
@@ -13,6 +15,7 @@ import java.util.Optional;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@EqualsAndHashCode(of = "externalId")
 public class EventHtml {
     private Integer id;
     private String externalId;
@@ -32,17 +35,17 @@ public class EventHtml {
 
     private String detailLink;
 
-    private int ftHomeScore;
-    private int ftAwayScore;
-    private int htHomeScore;
-    private int htAwayScore;
+    private Integer ftHomeScore;
+    private Integer ftAwayScore;
+    private Integer htHomeScore;
+    private Integer htAwayScore;
 
     private String ftScoreStr;
     private String htScoreStr;
     private String cornerStr;
 
-    private int homeCorner;
-    private int awayCorner;
+    private Integer homeCorner;
+    private Integer awayCorner;
 
     private String providerStatus;
 
@@ -50,7 +53,7 @@ public class EventHtml {
         this.externalId = ele.attr("data-id");
         this.homeName = ele.select("[itemprop=homeTeam]").text();
         this.homeUrl = PlaywrightUtil.getImageFromImgSrc(ele, ".teamBox.teamHomeBox img");
-
+        this.providerStatus = ele.select(".status.minitext").text();
         this.awayName = ele.select("[itemprop=awayTeam]").text();
         this.awayUrl = PlaywrightUtil.getImageFromImgSrc(ele, ".teamBox.teamAwayBox img");
 
@@ -59,7 +62,7 @@ public class EventHtml {
                 .map(e -> e.attr("content"))
                 .map(DateUtil::convertToHCM)
                 .orElse(null);
-        this.detailLink = ele.absUrl("href").replace("h2h", "odds");
+        this.detailLink = ele.absUrl("href");
 
         this.htScoreStr = ele.select(".half-over").text();
         this.ftScoreStr = ele.select(".scores.finished").text();
@@ -71,8 +74,8 @@ public class EventHtml {
             this.ftHomeScore = parseScore(ftScoreTemp[0].trim());
             this.ftAwayScore = parseScore(ftScoreTemp[1].trim());
         } else {
-            this.ftHomeScore = 0;
-            this.ftAwayScore = 0;
+            this.ftHomeScore = null;
+            this.ftAwayScore = null;
         }
 
         var htScoreTemp = htScoreStr.replace("HT", "").split(minus);
@@ -80,8 +83,8 @@ public class EventHtml {
             this.htHomeScore = parseScore(htScoreTemp[0].trim());
             this.htAwayScore = parseScore(htScoreTemp[1].trim());
         } else {
-            this.htHomeScore = 0;
-            this.htAwayScore = 0;
+            this.htHomeScore = null;
+            this.htAwayScore = null;
         }
 
         var cornerTemp = cornerStr.split(minus);
@@ -89,35 +92,68 @@ public class EventHtml {
             this.homeCorner = parseScore(cornerTemp[0].trim());
             this.awayCorner = parseScore(cornerTemp[1].trim());
         } else {
-            this.homeCorner = 0;
-            this.awayCorner = 0;
+            this.homeCorner = null;
+            this.awayCorner = null;
         }
     }
 
-    public static MapSqlParameterSource toMap(EventHtml eventHtml) {
+    public MapSqlParameterSource toParamInsertEventResult(Long eventId) {
         return new MapSqlParameterSource()
-                .addValue("event_name", eventHtml.getEventName())
-                .addValue("home_team", eventHtml.getHomeName())
-                .addValue("away_team", eventHtml.getAwayName())
-                .addValue("league_name", eventHtml.getLeagueName())
-                .addValue("ht_home_score", eventHtml.getHtHomeScore())
-                .addValue("ht_away_score", eventHtml.getHtAwayScore())
-                .addValue("ft_home_score", eventHtml.getFtHomeScore())
-                .addValue("ft_away_score", eventHtml.getFtAwayScore())
-                .addValue("ht_score_str", eventHtml.getHtScoreStr())
-                .addValue("ft_score_str", eventHtml.getFtScoreStr())
-                .addValue("corner_str", eventHtml.getCornerStr())
-                .addValue("home_corner", eventHtml.getHomeCorner())
-                .addValue("away_corner", eventHtml.getAwayCorner())
-                .addValue("event_date", eventHtml.getEventDate())
-                .addValue("detail_link", eventHtml.getDetailLink());
+                .addValue("eventId", eventId)
+                .addValue("htHomeGoal", htHomeScore)
+                .addValue("htAwayGoal", htAwayScore)
+                .addValue("ftHomeGoal", ftHomeScore)
+                .addValue("ftAwayGoal", ftAwayScore)
+                .addValue("ftHomeCorner", homeCorner)
+                .addValue("ftAwayCorner", awayCorner)
+                .addValue("htResult", getResult(htHomeScore, htAwayScore))
+                .addValue("htGoalStr", htScoreStr)
+                .addValue("ftResult", getResult(ftHomeScore, ftAwayScore))
+                .addValue("ftGoalStr", ftScoreStr);
     }
 
-    public int parseScore(String score) {
+    public MapSqlParameterSource toParamInsertLeague() {
+        return new MapSqlParameterSource()
+                .addValue(CrawDateService.LEAGUE_NAME, this.getLeagueName())
+                .addValue(CrawDateService.LOGO_URL, this.getLeagueUrl())
+                .addValue("country", this.getCountryName());
+    }
+
+    public MapSqlParameterSource toParamInsertTeam(boolean isHome) {
+        return new MapSqlParameterSource()
+                .addValue(CrawDateService.TEAM_NAME, isHome ? this.getHomeName() : this.getAwayName())
+                .addValue(CrawDateService.LOGO_URL, isHome ? this.getHomeUrl() : this.getAwayUrl());
+    }
+
+    public MapSqlParameterSource toParamInsertEvent(Integer leagueId, Integer homeId, Integer awayId) {
+        return new MapSqlParameterSource()
+                .addValue("exid", this.getExternalId())
+                .addValue("league_id", leagueId)
+                .addValue("home_id", homeId)
+                .addValue("away_id", awayId)
+                .addValue("event_name", this.getEventName())
+                .addValue("event_date", this.getEventDate())
+                .addValue("status", this.getProviderStatus())
+                .addValue("link", this.getDetailLink());
+    }
+
+    public String getResult(Integer homeScore, Integer awayScore) {
+        if (homeScore == null || awayScore == null) {
+            return "None";
+        }
+        if (homeScore > awayScore) {
+            return "H";
+        } else if (homeScore < awayScore) {
+            return "A";
+        }
+        return "D";
+    }
+
+    public Integer parseScore(String score) {
         try {
             return Integer.parseInt(score.trim());
         } catch (NumberFormatException e) {
-            return 0; // Return 0 if parsing fails
+            return null;
         }
     }
 }

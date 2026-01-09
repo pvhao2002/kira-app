@@ -6,6 +6,8 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 import org.jsoup.nodes.Element;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 
@@ -30,9 +32,27 @@ public class PlaywrightUtil {
         } catch (PlaywrightException playwrightException) {
             log.log(Level.SEVERE, "Playwright error occurred", playwrightException);
         } catch (Exception e) {
-            log.log(Level.WARNING, "Error during Playwright task", e);
+            log.log(Level.WARNING, "withPlaywright >> Error during Playwright task", e);
         }
     }
+
+    public <P> void withPlaywrightPages(int pageCount, BiConsumer<List<Page>, P> logic, P obj) {
+        try (var p = Playwright.create();
+             var b = p.chromium().launch(new BrowserType.LaunchOptions().setHeadless(isRunningProd()));
+             var context = b.newContext(new Browser.NewContextOptions().setUserAgent(USER_AGENT).setTimezoneId("Asia/Ho_Chi_Minh"))) {
+
+            List<Page> pages = new ArrayList<>(pageCount);
+            for (int i = 0; i < pageCount; i++) {
+                pages.add(context.newPage());
+            }
+
+            logic.accept(pages, obj);
+
+        } catch (Exception e) {
+            log.log(Level.WARNING, "withPlaywrightPages >> Error during Playwright task", e);
+        }
+    }
+
 
     public void waitDomContentLoaded(Page page) {
         page.waitForLoadState();

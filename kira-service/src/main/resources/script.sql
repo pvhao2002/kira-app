@@ -1,3 +1,5 @@
+create database if not exists app;
+use app;
 drop table if exists crawl_date;
 create table crawl_date
 (
@@ -45,6 +47,7 @@ create table teams
     unique key uk_team_name (team_name)
 );
 
+
 drop table if exists events;
 create table events
 (
@@ -55,10 +58,10 @@ create table events
     away_id     int,
     event_name  varchar(255),
     event_date  datetime     not null,
-    status      enum ( 'upcoming', 'finished', 'live') default 'upcoming',
-    created_at  timestamp                              default current_timestamp,
-    updated_at  timestamp                              default current_timestamp on update current_timestamp,
-
+    status      varchar(25) default '-',
+    link        text,
+    created_at  timestamp   default current_timestamp,
+    updated_at  timestamp   default current_timestamp on update current_timestamp,
     unique key uk_external_event (external_id),
     index idx_event_date_event_name (event_date, event_name),
     index idx_league_date_name (league_id, event_date, event_name)
@@ -68,6 +71,11 @@ drop table if exists event_result;
 create table if not exists event_result
 (
     event_id                bigint primary key,
+
+    ht_result               enum ('H', 'D', 'A', 'None'),
+    ht_goal_str             varchar(10),
+    ft_result               enum ('H', 'D', 'A', 'None'),
+    ft_goal_str             varchar(10),
 
     ht_home_goal            tinyint unsigned,
     ht_away_goal            tinyint unsigned,

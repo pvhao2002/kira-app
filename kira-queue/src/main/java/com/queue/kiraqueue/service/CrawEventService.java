@@ -16,12 +16,14 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -160,6 +162,24 @@ public class CrawEventService {
             where queue_key = :queue_key
               and queue_type = :queue_type
             """;
+
+    public void processEvent(Long eventId) {
+        var sqlGetEvent = "select event_id , link , event_name from events where event_id = :eid";
+        var event = jdbcTemplate.query(sqlGetEvent, Map.of("eid", eventId), BeanPropertyRowMapper.newInstance(Event.class)).stream().findFirst().orElse(null);
+        if (event == null) {
+            log.log(Level.WARNING, "Event {0} not found", eventId);
+            return;
+        }
+        PlaywrightUtil.withPlaywrightPages(3, (pages, evt) -> {
+            var futures = pages.stream()
+                    .map(page -> CompletableFuture.runAsync(() -> {
+                        page.navigate(evt.getLink());
+                    }))
+                    .toList();
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        }, event);
+    }
 
     public void processOddForUpcomingEvent(List<Event> events) {
         PlaywrightUtil.withPlaywright(events, (page, evts) -> evts.forEach(event -> {

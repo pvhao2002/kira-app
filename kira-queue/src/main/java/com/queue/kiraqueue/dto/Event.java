@@ -13,4 +13,5 @@ public class Event {
     private String eventDate;
     private String leagueName;
     private String detailLink;
+    private String link;
 }
