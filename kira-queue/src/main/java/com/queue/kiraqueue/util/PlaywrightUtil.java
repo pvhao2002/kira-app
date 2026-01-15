@@ -58,6 +58,11 @@ public class PlaywrightUtil {
         page.waitForLoadState();
     }
 
+    public void removeAcceptAll(Page page) {
+        var selector = ".van-icon-cross";
+        page.locator(selector).click();
+    }
+
     public String getImageFromStyleBackgroundImage(Page page, String selector) {
         return (String) page.evaluate("""
                     (selector) => {

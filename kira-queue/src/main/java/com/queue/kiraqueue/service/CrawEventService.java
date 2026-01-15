@@ -163,6 +163,13 @@ public class CrawEventService {
               and queue_type = :queue_type
             """;
 
+    private static final String INSERT_EVENT_FAIL = """
+            INSERT INTO event_crawl_failed(event_id, message, html)
+            VALUES (:event_id, :mess, :html)
+            ON DUPLICATE KEY UPDATE message = values(message),
+                                    html    = values(html)
+            """;
+
     public void processEvent(Long eventId) {
         var sqlGetEvent = "select event_id , link , event_name from events where event_id = :eid";
         var event = jdbcTemplate.query(sqlGetEvent, Map.of("eid", eventId), BeanPropertyRowMapper.newInstance(Event.class)).stream().findFirst().orElse(null);
@@ -170,15 +177,48 @@ public class CrawEventService {
             log.log(Level.WARNING, "Event {0} not found", eventId);
             return;
         }
-        PlaywrightUtil.withPlaywrightPages(3, (pages, evt) -> {
-            var futures = pages.stream()
-                    .map(page -> CompletableFuture.runAsync(() -> {
-                        page.navigate(evt.getLink());
-                    }))
-                    .toList();
+        PlaywrightUtil.withPlaywright(event, (page, evt) -> {
+            page.navigate(event.getLink().replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL));
+            PlaywrightUtil.waitDomContentLoaded(page);
+            PlaywrightUtil.removeAcceptAll(page);
+            page.querySelectorAll("[role=tab]").parallelStream().forEach(it -> {
+                if ("stats".equalsIgnoreCase(it.textContent())) {
+                    crawlStatEvents(evt);
+                } else if ("odds".equalsIgnoreCase(it.textContent())) {
+//                    crawlOddEvents(evt);
+                }
+            });
+            page.waitForTimeout(12000);
+        });
+    }
 
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        }, event);
+    private void crawlStatEvents(Event event) {
+        PlaywrightUtil.withPlaywright(event, (page, evt) -> {
+            page.navigate(event.getLink().concat("/stats").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL));
+            PlaywrightUtil.waitDomContentLoaded(page);
+            PlaywrightUtil.removeAcceptAll(page);
+            var menus = page.querySelectorAll(".btnBox > *");
+            int count = menus.size();
+            if(count < 3) {
+                var params = new MapSqlParameterSource("event_id", event.getEventId())
+                        .addValue("mess", "Not enough menu ht and ft")
+                        .addValue("html", page.content());
+                jdbcTemplate.update(INSERT_EVENT_FAIL, params);
+                return;
+            }
+            menus.get(1).click();
+
+
+            menus.get(2).click();
+            page.waitForTimeout(12000);
+        });
+    }
+
+    private void crawlOddEvents(Event event) {
+        PlaywrightUtil.withPlaywright(event, (page, evt) -> {
+            page.navigate(event.getLink().concat("/odds").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL));
+            page.waitForTimeout(12000);
+        });
     }
 
     public void processOddForUpcomingEvent(List<Event> events) {

@@ -179,3 +179,12 @@ create table event_odds_timeline
     index idx_event_market (event_id, type, market, line)
 );
 
+drop table if exists event_crawl_failed;
+CREATE TABLE event_crawl_failed
+(
+    event_id   BIGINT PRIMARY KEY,
+    message    TEXT,
+    html       LONGTEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
