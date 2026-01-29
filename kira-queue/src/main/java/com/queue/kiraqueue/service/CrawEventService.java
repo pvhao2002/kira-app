@@ -5,10 +5,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.PlaywrightException;
 import com.queue.kiraqueue.dto.*;
-import com.queue.kiraqueue.util.Constants;
-import com.queue.kiraqueue.util.DateUtil;
-import com.queue.kiraqueue.util.OddConverter;
-import com.queue.kiraqueue.util.PlaywrightUtil;
+import com.queue.kiraqueue.util.*;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -181,14 +178,17 @@ public class CrawEventService {
             page.navigate(event.getLink().replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL));
             PlaywrightUtil.waitDomContentLoaded(page);
             PlaywrightUtil.removeAcceptAll(page);
-            page.querySelectorAll("[role=tab]").parallelStream().forEach(it -> {
+            page.querySelectorAll("[role=tab]").forEach(it -> {
                 if ("stats".equalsIgnoreCase(it.textContent())) {
-                    crawlStatEvents(evt);
+                    CompletableFuture.runAsync(() -> {
+//                        crawlStatEvents(evt);
+                    });
                 } else if ("odds".equalsIgnoreCase(it.textContent())) {
-//                    crawlOddEvents(evt);
+                    CompletableFuture.runAsync(() -> {
+                        crawlOddEvents(evt);
+                    });
                 }
             });
-            page.waitForTimeout(12000);
         });
     }
 
@@ -199,7 +199,7 @@ public class CrawEventService {
             PlaywrightUtil.removeAcceptAll(page);
             var menus = page.querySelectorAll(".btnBox > *");
             int count = menus.size();
-            if(count < 3) {
+            if (count < 3) {
                 var params = new MapSqlParameterSource("event_id", event.getEventId())
                         .addValue("mess", "Not enough menu ht and ft")
                         .addValue("html", page.content());
@@ -210,14 +210,22 @@ public class CrawEventService {
 
 
             menus.get(2).click();
-            page.waitForTimeout(12000);
         });
     }
 
     private void crawlOddEvents(Event event) {
         PlaywrightUtil.withPlaywright(event, (page, evt) -> {
+            var listTabOdds = List.of("asian handicap", "total goals", "total corners");
             page.navigate(event.getLink().concat("/odds").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL));
-            page.waitForTimeout(12000);
+            var tabOdds = page.querySelectorAll(".oddTypesBox span");
+            tabOdds.forEach(tab -> {
+                var tabNormalize = StringUtil.normalizeText(tab.textContent());
+                if (listTabOdds.contains(tabNormalize)) {
+                    tab.click();
+                    var oddButtons = page.querySelectorAll(".oddsBox > .oddsBoxRight");
+                    oddButtons.getFirst().click();
+                }
+            });
         });
     }
 
