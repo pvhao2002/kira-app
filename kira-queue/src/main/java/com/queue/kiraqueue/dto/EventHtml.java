@@ -5,7 +5,6 @@ import com.queue.kiraqueue.util.DateUtil;
 import com.queue.kiraqueue.util.PlaywrightUtil;
 import lombok.*;
 import org.jsoup.nodes.Element;
-import org.springframework.data.relational.core.sql.In;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
 import java.time.LocalDateTime;

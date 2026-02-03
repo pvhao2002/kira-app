@@ -4,10 +4,10 @@ drop table if exists crawl_date;
 create table crawl_date
 (
     date         varchar(255) primary key,
-    status       enum ('pending', 'picked', 'in_progress', 'done', 'failed')                  default 'pending',
-    total_events int       default 0,
-    created_at   timestamp default current_timestamp,
-    updated_at   timestamp default current_timestamp on update current_timestamp
+    status       enum ('pending', 'picked', 'in_progress', 'done', 'failed') default 'pending',
+    total_events int                                                         default 0,
+    created_at   timestamp                                                   default current_timestamp,
+    updated_at   timestamp                                                   default current_timestamp on update current_timestamp
 );
 
 drop table if exists users;
@@ -165,9 +165,7 @@ create table event_odds_timeline
 (
     odds_id      bigint auto_increment primary key,
     event_id     bigint not null,
-    type       enum ('open', 'pre-match', 'half-time')
-        comment 'open is the initial odds, pre-match is the latest odds before the match starts, half-time is the odds at second half start',
-    market     enum ('hdc', 'ou', 'corner'),
+    market       enum ('hdc', 'ou', 'corner'),
     line         varchar(25),
     price_a      decimal(10, 2),
     price_b      decimal(10, 2),
@@ -175,8 +173,8 @@ create table event_odds_timeline
     match_minute varchar(10) comment 'the minute of the match when the odds was  captured, e.g., HT, 45+, 60',
     crawled_at   datetime,
     created_at   timestamp default current_timestamp,
-    unique key uk_event_market_type_line (event_id, market, type),
-    index idx_event_market (event_id, type, market, line)
+    unique key uk_event_market_type_line (event_id, market),
+    index idx_event_market (event_id, market, line)
 );
 
 drop table if exists event_crawl_failed;

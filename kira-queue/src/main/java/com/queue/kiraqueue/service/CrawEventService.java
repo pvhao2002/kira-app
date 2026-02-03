@@ -238,18 +238,14 @@ public class CrawEventService {
                 if (listTabOdds.contains(tabNormalize)) {
                     if (isOpenModal) {
                         page.locator(".van-popup.van-popup--bottom span i.iconfont.icon-guanbi").click();
-                        isOpenModal = false;
                     }
                     tab.click();
                     isOpenModal = true;
                     page.waitForSelector(".oddsBoxRight");
                     page.locator(".oddsBox > .oddsBoxRight").first().click();
-                    page.querySelectorAll(".oddContent li").forEach(li -> {
-                        if (li.querySelectorAll(".firstSpan").size() > 3) {
-                        } else {
-                            
-                        }
-                    });
+                   var params =  page.querySelectorAll(".oddContent li").stream().map(li -> {
+
+                    }).toList();
                 }
 
                 page.waitForTimeout(1000);

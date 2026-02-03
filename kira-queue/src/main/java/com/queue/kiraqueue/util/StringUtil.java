@@ -8,8 +8,8 @@ public class StringUtil {
         if (text == null) return "";
 
         return text
-                .replace('\u00A0', ' ')   // non-breaking space
-                .replaceAll("\\s+", " ")  // gom nhiều whitespace
+                .replace('\u00A0', ' ')
+                .replaceAll("\\s+", " ")
                 .trim()
                 .toLowerCase();
     }
