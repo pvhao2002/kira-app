@@ -31,7 +31,6 @@ public class EventConsumer {
                 Map.of("eventIds", eventIdList),
                 BeanPropertyRowMapper.newInstance(Event.class)
         );
-        eventService.processOddForUpcomingEvent(events);
     }
 
     @RabbitListener(queues = QUEUE_EVENT_ODD, concurrency = "1")
@@ -42,6 +41,5 @@ public class EventConsumer {
                 Map.of("eventIds", eventIdList),
                 BeanPropertyRowMapper.newInstance(RawEventAnalyst.class)
         );
-        eventService.processCrawEvent(events);
     }
 }

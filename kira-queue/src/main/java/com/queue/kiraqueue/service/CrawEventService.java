@@ -1,11 +1,9 @@
 package com.queue.kiraqueue.service;
 
-import com.microsoft.playwright.ElementHandle;
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Page;
-import com.microsoft.playwright.PlaywrightException;
+import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import com.queue.kiraqueue.dto.*;
+import com.queue.kiraqueue.dto.model.EventOddsTimeline;
 import com.queue.kiraqueue.util.*;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +12,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -29,7 +28,7 @@ import java.util.logging.Level;
 
 @Log
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class CrawEventService {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private static final long MAX_WAIT_TIME = 60_000;
@@ -182,6 +181,7 @@ public class CrawEventService {
             );
             PlaywrightUtil.waitDomContentLoaded(page);
             PlaywrightUtil.removeAcceptAll(page);
+            page.waitForSelector("[role=tab]");
             page.locator("[role=tab]").all().forEach(it -> {
                 if ("stats".equalsIgnoreCase(it.textContent())) {
                     CompletableFuture.runAsync(() -> {
@@ -222,7 +222,7 @@ public class CrawEventService {
 
     private void crawlOddEvents(Event event) {
         PlaywrightUtil.withPlaywright(event, (page, evt) -> {
-            var listTabOdds = List.of("asian handicap", "total goals", "total corners");
+            var listTabOdds = Map.of("asian handicap", "hdc", "total goals", "ou", "total corners", "corner");
             page.navigate(
                     event.getLink().concat("/odds").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL),
                     new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE)
@@ -230,27 +230,25 @@ public class CrawEventService {
             page.waitForSelector(".oddTypesBox span");
             var tabOdds = page.locator(".oddTypesBox span");
             int count = tabOdds.count();
-            boolean isOpenModal = false;
+            final boolean[] isOpenModal = {false};
             for (int i = 0; i < count; i++) {
-                Locator tab = tabOdds.nth(i);
-                String tabNormalize = StringUtil.normalizeText(tab.innerText());
-
-                if (listTabOdds.contains(tabNormalize)) {
-                    if (isOpenModal) {
-                        page.locator(".van-popup.van-popup--bottom span i.iconfont.icon-guanbi").click();
-                    }
-                    tab.click();
-                    isOpenModal = true;
-                    page.waitForSelector(".oddsBoxRight");
-                    page.locator(".oddsBox > .oddsBoxRight").first().click();
-                   var params =  page.querySelectorAll(".oddContent li").stream().map(li -> {
-
-                    }).toList();
+                if (isOpenModal[0]) {
+                    page.locator(".van-popup.van-popup--bottom span i.iconfont.icon-guanbi").click();
                 }
-
-                page.waitForTimeout(1000);
+                Locator tab = tabOdds.nth(i);
+                tab.click();
+                String tabNormalize = StringUtil.normalizeText(tab.innerText());
+                listTabOdds.forEach((k, v) -> {
+                    if (k.equalsIgnoreCase(tabNormalize)) {
+                        page.waitForSelector(".oddsBoxRight");
+                        page.locator(".oddsBox > .oddsBoxRight").first().click();
+                        isOpenModal[0] = true;
+                        page.waitForSelector("ul.oddContent li");
+                        var listLi = page.querySelectorAll("ul.oddContent li");
+                        var params = listLi.stream().map(li -> new EventOddsTimeline(li, v)).toList();
+                    }
+                });
             }
-            page.waitForTimeout(5000);
         });
     }
 }

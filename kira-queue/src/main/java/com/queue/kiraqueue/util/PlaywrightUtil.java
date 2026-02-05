@@ -20,7 +20,7 @@ public class PlaywrightUtil {
     public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic) {
         try (
                 var p = Playwright.create();
-                var b = p.chromium().launch(new BrowserType.LaunchOptions().setHeadless(isRunningProd()));
+                var b = p.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false));
                 BrowserContext context = b.newContext(
                         new Browser.NewContextOptions()
                                 .setUserAgent(USER_AGENT)

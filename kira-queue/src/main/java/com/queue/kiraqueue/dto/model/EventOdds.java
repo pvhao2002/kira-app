@@ -25,7 +25,6 @@ public class EventOdds {
     BigDecimal priceB;
     LocalDateTime createdAt;
 
-    public EventOdds(ElementHandle li) {
-
+    public EventOdds(ElementHandle li, String market) {
     }
 }

@@ -13,4 +13,12 @@ public class StringUtil {
                 .trim()
                 .toLowerCase();
     }
+
+    public static boolean isEmpty(String text) {
+        return text == null || text.trim().isBlank();
+    }
+
+    public static boolean isNotEmpty(String text) {
+        return !isEmpty(text);
+    }
 }
