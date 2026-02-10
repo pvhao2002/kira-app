@@ -118,25 +118,25 @@ create table if not exists event_result
     ft_home_offside         tinyint unsigned,
     ft_away_offside         tinyint unsigned,
     ht_total_offside        tinyint unsigned
-        generated always as (coalesce(ht_away_offside, 0) + coalesce(ht_away_offside, 0)) stored,
+        generated always as (coalesce(ht_home_offside, 0) + coalesce(ht_away_offside, 0)) stored,
     ft_total_offside        tinyint unsigned
-        generated always as (coalesce(ft_away_offside, 0) + coalesce(ft_away_offside, 0)) stored,
+        generated always as (coalesce(ft_home_offside, 0) + coalesce(ft_away_offside, 0)) stored,
 
     ht_home_total_shot      tinyint unsigned,
     ht_away_total_shot      tinyint unsigned,
     ft_home_total_shot      tinyint unsigned,
     ft_away_total_shot      tinyint unsigned,
     ht_total_shot           tinyint unsigned
-        generated always as (coalesce(ht_away_total_shot, 0) + coalesce(ht_away_total_shot, 0)) stored,
+        generated always as (coalesce(ht_home_total_shot, 0) + coalesce(ht_away_total_shot, 0)) stored,
     ft_total_shot           tinyint unsigned
-        generated always as (coalesce(ft_away_total_shot, 0) + coalesce(ft_away_total_shot, 0)) stored,
+        generated always as (coalesce(ft_home_total_shot, 0) + coalesce(ft_away_total_shot, 0)) stored,
 
     ht_home_shot_on_target  tinyint unsigned,
     ht_away_shot_on_target  tinyint unsigned,
     ft_home_shot_on_target  tinyint unsigned,
     ft_away_shot_on_target  tinyint unsigned,
     ht_total_shot_on_target tinyint unsigned
-        generated always as (coalesce(ht_away_shot_on_target, 0) + coalesce(ht_away_shot_on_target, 0)) stored,
+        generated always as (coalesce(ht_home_shot_on_target, 0) + coalesce(ht_away_shot_on_target, 0)) stored,
     ft_total_shot_on_target tinyint unsigned
         generated always as (coalesce(ft_home_shot_on_target, 0) + coalesce(ft_away_shot_on_target, 0)) stored,
     created_at              timestamp default current_timestamp,

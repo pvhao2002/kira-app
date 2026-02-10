@@ -1,0 +1,15 @@
+---
+description: UI chuẩn cho web và mobile – đẹp, tối ưu, thân thiện, màu đồng nhất
+globs: kira-ui/**/*.ts,kira-ui/**/*.html,kira-ui/**/*.scss,kira-ui/**/*.css,mobile-app/**/*.tsx,mobile-app/**/*.ts,mobile-app/**/*.css
+alwaysApply: false
+---
+
+# Frontend UI Standards (Web & Mobile)
+
+- **Thiết kế đẹp, tối ưu**: Layout gọn, khoảng trắng hợp lý, typography rõ; component có trạng thái rõ (hover, focus, disabled). Tránh giao diện rối, quá tải thông tin.
+- **Thân thiện người dùng**: Copy dễ hiểu, feedback ngay (loading, success, error); touch target đủ lớn trên mobile (min ~44pt). Tránh jargon và hành vi gây bối rối.
+- **Màu sắc đồng nhất**: Dùng design tokens chung giữa web (kira-ui) và mobile (mobile-app). Sync với `mobile-app/constants/theme.ts`; web dùng CSS variables hoặc Tailwind theme cùng bảng màu (primary, background, text, border, card). Không hardcode hex khác token.
+
+**Ví dụ màu đồng nhất:** primary `#0a7ea4`, nền sáng `#fff` / tối `#151718`, card `#F8F9FA` / `#1C1C1E`. Khi thêm màu mới, cập nhật cả hai nền tảng.
+
+**Checklist nhanh:** Màu từ theme/tokens; hỗ trợ dark/light nếu app có; loading & lỗi hiển thị rõ; contrast chữ/nền đủ.

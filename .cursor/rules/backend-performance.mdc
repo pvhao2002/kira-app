@@ -1,0 +1,26 @@
+---
+description: Backend luôn tối ưu hiệu năng, dùng JDK 21 và virtual thread / đa luồng khi phù hợp
+globs: kira-service/**/*.java,kira-queue/**/*.java,kira-tool-service/**/*.java
+alwaysApply: false
+---
+
+# Backend Performance (JDK 21)
+
+- **Luôn viết tối ưu hiệu năng**: Query có index, tránh N+1; batch insert/update khi nhiều bản ghi; API response gọn, pagination cho list; cache khi đọc nhiều ít thay đổi. Đóng connection/stream đúng cách, tránh leak.
+- **Phù hợp JDK hiện tại**: Dự án dùng **Java 21**. Ưu tiên API hiện đại (records, pattern matching, sealed classes khi phù hợp) và tối ưu cho JVM 21.
+- **Đa luồng & virtual thread**: Tận dụng khi có I/O chờ (gọi API, DB, file). Không block thread cho tác vụ chậm.
+
+**Virtual thread (Java 21):**
+```java
+// ✅ Xử lý song song I/O-bound với virtual thread
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    List<Future<Result>> futures = items.stream()
+        .map(item -> executor.submit(() -> callExternalApi(item)))
+        .toList();
+    for (var f : futures) results.add(f.get());
+}
+```
+
+**Lưu ý:** Dùng virtual thread cho I/O-bound; CPU-bound nặng cân nhắc `ExecutorService` với thread pool có giới hạn. Tránh synchronized trong code chạy trên virtual thread (dùng ReentrantLock nếu cần). Queue/consumer trong kira-queue đã xử lý song song; tối ưu từng consumer (batch, timeout, không block).
+
+**Checklist nhanh:** Index cho query; tránh N+1; batch khi cần; pagination; async/virtual thread cho I/O chờ; đo (log/metric) trước khi tối ưu.
