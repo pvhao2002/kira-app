@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sao kê &amp; Thanh toán thẻ tín dụng</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-dark": "#1b2733",
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#111418] dark:text-white overflow-x-hidden min-h-screen flex flex-col">
+<div class="sticky top-0 z-10 bg-background-light dark:bg-background-dark/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<h1 class="text-xl font-bold leading-tight tracking-tight">Sao kê &amp; Thanh toán</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+<main class="flex-1 flex flex-col gap-6 p-4 pb-24">
+<section class="grid grid-cols-1 gap-4">
+<div class="flex flex-col gap-3 rounded-2xl p-5 bg-surface-light dark:bg-surface-dark shadow-sm border border-gray-200 dark:border-gray-800">
+<div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+<p class="text-sm font-medium">Tổng dư nợ hiện tại</p>
+</div>
+<p class="text-3xl font-bold text-[#111418] dark:text-white">125.450.000đ</p>
+</div>
+</section>
+<div class="flex items-center justify-between pt-2">
+<h2 class="text-xl font-bold">Danh sách thẻ</h2>
+<button class="text-primary text-sm font-medium hover:underline">Xem tất cả</button>
+</div>
+<div class="flex flex-col gap-4">
+<div class="group relative flex flex-col gap-4 rounded-xl p-4 bg-surface-light dark:bg-surface-dark border border-l-4 border-l-yellow-500 border-y-gray-200 border-r-gray-200 dark:border-y-gray-800 dark:border-r-gray-800 shadow-sm transition-transform active:scale-[0.99]">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="relative size-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+<div class="absolute inset-0 bg-gradient-to-br from-red-600 to-black opacity-80" data-alt="Red and black abstract gradient background for bank logo"></div>
+<div class="absolute inset-0 flex items-center justify-center text-white font-bold text-xs tracking-widest">TCB</div>
+</div>
+<div class="flex flex-col">
+<h3 class="font-semibold text-base leading-tight">Techcombank Visa</h3>
+<p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Hạn mức: 200.000.000đ</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="px-2 py-1 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold uppercase tracking-wider">Còn 4 ngày TT</span>
+</div>
+</div>
+<div class="h-px w-full bg-gray-200 dark:bg-gray-700/50"></div>
+<div class="flex items-start justify-between text-sm">
+<div class="flex flex-col gap-1">
+<span class="text-gray-500 dark:text-gray-400 text-xs">Ngày sao kê</span>
+<div class="flex flex-col">
+<span class="font-medium">25/10</span>
+<span class="text-[11px] text-gray-500 dark:text-gray-400">Đã sao kê</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-gray-500 dark:text-gray-400 text-xs">Hạn thanh toán</span>
+<div class="flex flex-col items-end">
+<span class="font-medium">10/11</span>
+<span class="text-[11px] font-bold text-red-500 dark:text-red-400">Chưa thanh toán</span>
+</div>
+</div>
+</div>
+</div>
+<div class="group relative flex flex-col gap-4 rounded-xl p-4 bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-800 shadow-sm transition-transform active:scale-[0.99]">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="relative size-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+<div class="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-900 opacity-80" data-alt="Blue and indigo abstract gradient background for bank logo"></div>
+<div class="absolute inset-0 flex items-center justify-center text-white font-bold text-xs tracking-widest">VIB</div>
+</div>
+<div class="flex flex-col">
+<h3 class="font-semibold text-base leading-tight">VIB Online Plus</h3>
+<p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Hạn mức: 50.000.000đ</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="px-2 py-1 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-bold uppercase tracking-wider">Còn 18 ngày SK</span>
+</div>
+</div>
+<div class="h-px w-full bg-gray-200 dark:bg-gray-700/50"></div>
+<div class="flex items-start justify-between text-sm">
+<div class="flex flex-col gap-1">
+<span class="text-gray-500 dark:text-gray-400 text-xs">Ngày sao kê</span>
+<div class="flex flex-col">
+<span class="font-medium">20/10</span>
+<span class="text-[11px] text-gray-500 dark:text-gray-400">Đã sao kê</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-gray-500 dark:text-gray-400 text-xs">Hạn thanh toán</span>
+<div class="flex flex-col items-end">
+<span class="font-medium">05/11</span>
+<span class="text-[11px] font-medium text-green-600 dark:text-green-400">Đã thanh toán</span>
+</div>
+</div>
+</div>
+</div>
+<div class="group relative flex flex-col gap-4 rounded-xl p-4 bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-800 shadow-sm transition-transform active:scale-[0.99]">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="relative size-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+<div class="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-600 opacity-80" data-alt="Purple and pink abstract gradient background for bank logo"></div>
+<div class="absolute inset-0 flex items-center justify-center text-white font-bold text-xs tracking-widest">TPB</div>
+</div>
+<div class="flex flex-col">
+<h3 class="font-semibold text-base leading-tight">TPBank EVO</h3>
+<p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Hạn mức: 30.000.000đ</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold uppercase tracking-wider">Còn 5 ngày SK</span>
+</div>
+</div>
+<div class="h-px w-full bg-gray-200 dark:bg-gray-700/50"></div>
+<div class="flex items-start justify-between text-sm">
+<div class="flex flex-col gap-1">
+<span class="text-gray-500 dark:text-gray-400 text-xs">Ngày sao kê</span>
+<div class="flex flex-col">
+<span class="font-medium">08/11</span>
+<span class="text-[11px] text-gray-500 dark:text-gray-400">Chưa sao kê</span>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-gray-500 dark:text-gray-400 text-xs">Hạn thanh toán</span>
+<div class="flex flex-col items-end">
+<span class="font-medium">23/11</span>
+<span class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Chưa thanh toán</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<button class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 bg-primary hover:bg-blue-600 text-white gap-2 text-base font-bold leading-normal tracking-wide shadow-lg shadow-blue-900/20 active:scale-95 transition-all mt-2">
+<span class="material-symbols-outlined">add_card</span>
+<span class="truncate">Thêm thẻ tín dụng mới</span>
+</button>
+</main>
+<nav class="fixed bottom-0 w-full bg-surface-light dark:bg-surface-dark border-t border-gray-200 dark:border-gray-800 pb-safe pt-2 px-2 z-50">
+<div class="flex justify-around items-end h-16 pb-2">
+<a class="flex flex-col items-center gap-1 w-1/4 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">sports_soccer</span>
+<span class="text-[10px] font-medium">Bóng đá</span>
+</a>
+<a class="flex flex-col items-center gap-1 w-1/4 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">scoreboard</span>
+<span class="text-[10px] font-medium">Kết quả</span>
+</a>
+<a class="flex flex-col items-center gap-1 w-1/4 text-primary transition-colors group relative" href="#">
+<div class="absolute -top-3 w-10 h-1 bg-primary rounded-full shadow-[0_0_10px_rgba(19,127,236,0.5)]"></div>
+<span class="material-symbols-outlined fill-current">credit_card</span>
+<span class="text-[10px] font-medium">Thẻ</span>
+</a>
+<a class="flex flex-col items-center gap-1 w-1/4 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">person</span>
+<span class="text-[10px] font-medium">Cá nhân</span>
+</a>
+</div>
+</nav>
+
+</body></html>

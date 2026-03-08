@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KiraManager Mobile Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#38bdf8",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                        "card-dark": "#1e293b",
+                        "accent-blue": "#0ea5e9",
+                        "accent-orange": "#f97316",
+                        "accent-green": "#22c55e",
+                        "accent-red": "#ef4444"
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "12px",
+                    },
+                },
+            },
+        };
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen pb-24">
+<header class="p-6 pb-2">
+<div class="flex justify-between items-center mb-6">
+<div class="flex items-center gap-2">
+<div class="bg-primary p-2 rounded-lg">
+<span class="material-icons-round text-white text-xl">sports_soccer</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight">KiraManager</h1>
+</div>
+<div class="flex items-center gap-3">
+<button class="relative p-2 rounded-full bg-slate-200 dark:bg-slate-800">
+<span class="material-icons-round text-slate-600 dark:text-slate-400">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-accent-red rounded-full border-2 border-slate-200 dark:border-slate-800"></span>
+</button>
+<img alt="User Avatar" class="w-10 h-10 rounded-full border-2 border-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHrwYLDHEbl2Lj9zoJ6UazVGzBsbp0XSN0jQxr5hw1W1R8yd6kXxHTwxcVLLdqRFjW7JkHALjFBjxIHExBArq0snU-GQV2YUk92UfbkWYVpftLKe7_gNemuP2XvDDo7QGF18rWiSQFndN8XbzqkylUcdCPmzlzHCE85HYMNLPxrFan_AfEYp1dglwtp7yVu7RsedsxlsDjwNxwht8jbcF81rZmXy_CVA67WjxTOcyBXTa6ZGGMYnCQ1bG9dppCJB_nJzi79n54h860"/>
+</div>
+</div>
+<div class="mb-6">
+<h2 class="text-2xl font-bold mb-1">Chào mừng trở lại!</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">Dưới đây là hiệu suất tài chính của bạn.</p>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 py-3 px-4 bg-slate-800 dark:bg-slate-700 text-white rounded-xl font-medium transition active:scale-95">
+<span class="material-icons-round text-lg">add</span>
+<span class="text-sm">Thêm trận</span>
+</button>
+<button class="flex items-center justify-center gap-2 py-3 px-4 bg-primary text-slate-900 rounded-xl font-bold transition active:scale-95">
+<span class="material-icons-round text-lg">payments</span>
+<span class="text-sm">Giao dịch</span>
+</button>
+</div>
+</header>
+<section class="mt-4">
+<div class="flex items-center gap-2 px-6 mb-3">
+<span class="material-icons-round text-primary text-lg">analytics</span>
+<h3 class="font-semibold text-sm uppercase tracking-wider text-slate-500">Hiệu suất Football</h3>
+</div>
+<div class="flex overflow-x-auto gap-4 px-6 pb-4 hide-scrollbar">
+<div class="min-w-[160px] bg-white dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/50">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Tổng trận</span>
+<span class="material-icons-round text-slate-400 text-lg">sports_soccer</span>
+</div>
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-bold">42</span>
+<span class="text-[10px] text-slate-400">trận</span>
+</div>
+<div class="mt-2 flex items-center gap-1 text-[10px] text-accent-green font-medium">
+<span class="material-icons-round text-xs">trending_up</span>
+<span>+5 tuần này</span>
+</div>
+</div>
+<div class="min-w-[160px] bg-white dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/50">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Tỷ lệ thắng</span>
+<span class="material-icons-round text-slate-400 text-lg">emoji_events</span>
+</div>
+<div class="text-2xl font-bold">68%</div>
+<div class="mt-2 w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[68%]"></div>
+</div>
+<p class="mt-1 text-[10px] text-slate-400">Cao hơn trung bình 12%</p>
+</div>
+<div class="min-w-[160px] bg-white dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/50">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Lợi nhuận</span>
+<span class="material-icons-round text-slate-400 text-lg">monetization_on</span>
+</div>
+<div class="text-2xl font-bold text-accent-green">+12.5tr</div>
+<div class="mt-2 flex items-center gap-1 text-[10px] text-accent-green font-medium">
+<span class="material-icons-round text-xs">trending_up</span>
+<span>+15% tháng trước</span>
+</div>
+</div>
+<div class="min-w-[160px] bg-white dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/50">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Dự đoán</span>
+<span class="material-icons-round text-slate-400 text-lg">assessment</span>
+</div>
+<div class="flex gap-4">
+<div>
+<span class="text-xl font-bold text-accent-green">28</span>
+<p class="text-[10px] text-slate-400">Thắng</p>
+</div>
+<div>
+<span class="text-xl font-bold text-accent-red">14</span>
+<p class="text-[10px] text-slate-400">Thua</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="mt-6 px-6">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-icons-round text-accent-orange text-lg">credit_card</span>
+<h3 class="font-semibold text-sm uppercase tracking-wider text-slate-500">Tài chính &amp; Thẻ</h3>
+</div>
+<div class="space-y-4">
+<div class="bg-slate-900 dark:bg-slate-900/50 p-5 rounded-2xl relative overflow-hidden text-white border border-slate-800">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl"></div>
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="text-xs text-slate-400 mb-1">Tổng dư nợ thẻ tín dụng</p>
+<h4 class="text-2xl font-bold">45.200.000 <span class="text-primary text-lg">đ</span></h4>
+</div>
+<div class="bg-accent-orange/20 p-2 rounded-lg">
+<span class="material-icons-round text-accent-orange">warning</span>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="px-2 py-1 bg-white/10 rounded text-[10px] uppercase font-bold border border-white/5">VISA ...4242</span>
+<span class="px-2 py-1 bg-white/10 rounded text-[10px] uppercase font-bold border border-white/5">MC ...8821</span>
+</div>
+</div>
+<div class="bg-white dark:bg-card-dark p-5 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+<div class="flex justify-between items-center mb-4">
+<div>
+<p class="text-xs text-slate-400">Kỳ sao kê tiếp theo</p>
+<h4 class="text-lg font-bold">Ngày 25/10</h4>
+</div>
+<div class="text-right">
+<span class="text-2xl font-bold text-primary">05</span>
+<p class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Ngày còn lại</p>
+</div>
+</div>
+<div class="relative h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-3">
+<div class="absolute top-0 left-0 h-full bg-gradient-to-r from-accent-orange to-red-500 w-[85%] rounded-full"></div>
+</div>
+<div class="flex justify-between text-[10px] text-slate-400 font-medium">
+<span>Đã dùng: 85% hạn mức</span>
+<span>Hạn mức: 50.000.000đ</span>
+</div>
+</div>
+</div>
+</section>
+<section class="mt-8 px-6">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-bold text-lg">Biểu đồ lợi nhuận</h3>
+<div class="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-xs font-medium text-slate-500">7 ngày qua</div>
+</div>
+<div class="bg-white dark:bg-card-dark p-5 rounded-3xl border border-slate-100 dark:border-slate-800/50">
+<div class="flex items-end justify-between h-40 gap-2 mb-4">
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg h-12"></div>
+<span class="text-[10px] text-slate-400">T2</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg h-24"></div>
+<span class="text-[10px] text-slate-400">T3</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg h-16"></div>
+<span class="text-[10px] text-slate-400">T4</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg h-32"></div>
+<span class="text-[10px] text-slate-400">T5</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg h-20"></div>
+<span class="text-[10px] text-slate-400">T6</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-t-lg h-14"></div>
+<span class="text-[10px] text-slate-400">T7</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="relative w-full">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-2 py-1 rounded text-[10px] font-bold">5.2M</div>
+<div class="w-full bg-primary rounded-t-lg h-32"></div>
+</div>
+<span class="text-[10px] text-slate-500 font-bold">CN</span>
+</div>
+</div>
+</div>
+</section>
+<section class="mt-8 px-6">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-bold text-lg">Hoạt động gần đây</h3>
+<button class="text-primary text-sm font-semibold">Xem tất cả</button>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-4 bg-white dark:bg-card-dark p-3 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+<div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+<span class="material-icons-round text-slate-500">sports_soccer</span>
+</div>
+<div class="flex-1">
+<h5 class="text-sm font-bold">Arsenal vs Man City</h5>
+<p class="text-[11px] text-slate-400">Dự đoán: Arsenal Thắng (2.10)</p>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-accent-green">+500K</p>
+<p class="text-[10px] text-slate-400">2h trước</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white dark:bg-card-dark p-3 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+<div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+<span class="material-icons-round text-slate-500">sports_soccer</span>
+</div>
+<div class="flex-1">
+<h5 class="text-sm font-bold">Chelsea vs Liverpool</h5>
+<p class="text-[11px] text-slate-400">Dự đoán: Tài 2.5 (1.85)</p>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-accent-red">-200K</p>
+<p class="text-[10px] text-slate-400">5h trước</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white dark:bg-card-dark p-3 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+<div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+<span class="material-icons-round text-slate-500">credit_card</span>
+</div>
+<div class="flex-1">
+<h5 class="text-sm font-bold">Thanh toán Spotify</h5>
+<p class="text-[11px] text-slate-400">Thẻ VISA ****4242</p>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-slate-500">-59K</p>
+<p class="text-[10px] text-slate-400">Hôm qua</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white dark:bg-card-dark p-3 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+<div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+<span class="material-icons-round text-slate-500">sports_soccer</span>
+</div>
+<div class="flex-1">
+<h5 class="text-sm font-bold">Real Madrid vs Barca</h5>
+<p class="text-[11px] text-slate-400">Dự đoán: Real Madrid (1.95)</p>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-accent-green">+950K</p>
+<p class="text-[10px] text-slate-400">1 ngày trước</p>
+</div>
+</div>
+</div>
+</section>
+<nav class="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-100 dark:border-slate-800 px-6 py-4 flex justify-between items-center z-50">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-icons-round">dashboard</span>
+<span class="text-[10px] font-bold">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-icons-round">sports_soccer</span>
+<span class="text-[10px] font-medium">Bóng đá</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-icons-round">poll</span>
+<span class="text-[10px] font-medium">Kết quả</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-icons-round">credit_card</span>
+<span class="text-[10px] font-medium">Thẻ</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-icons-round">person</span>
+<span class="text-[10px] font-medium">Cá nhân</span>
+</a>
+</nav>
+<footer class="mt-12 mb-24 px-6 text-center">
+<p class="text-[10px] text-slate-500 font-medium">© 2024 KiraManager. All rights reserved.</p>
+</footer>
+
+</body></html>
