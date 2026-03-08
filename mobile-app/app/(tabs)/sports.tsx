@@ -1,5 +1,5 @@
-import SportsAnalyticsScreen from '@/screens/SportsAnalyticsScreen';
+import EventListScreen from '@/screens/EventListScreen';
 
-export default function SportsScreen() {
-  return <SportsAnalyticsScreen />;
+export default function SportsTabScreen() {
+  return <EventListScreen />;
 }

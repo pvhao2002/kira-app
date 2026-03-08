@@ -1,6 +1,6 @@
 package com.app.kira.aspect;
 
-import com.app.kira.server.ServerInfoService;
+//import com.app.kira.server.ServerInfoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class ScheduleAOP {
-    private final ServerInfoService serverInfoService;
+//    private final ServerInfoService serverInfoService;
 
     @Around("@annotation(org.springframework.scheduling.annotation.Scheduled)")
     public Object beforeSchedule(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -21,6 +21,7 @@ public class ScheduleAOP {
 //        if ("PROD".equalsIgnoreCase(env) || "1".equals(env)) {
 //            return null;
 //        }
-        return joinPoint.proceed();
+//        return joinPoint.proceed();
+        return null;
     }
 }

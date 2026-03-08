@@ -1,330 +1,296 @@
-import React from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity, Alert } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Switch,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { router, Href } from 'expo-router';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+import { AppPalette } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 
+const P = AppPalette;
+
 export default function ProfileScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout } = useAuth();
+  const [note, setNote] = useState('');
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Đăng xuất',
-      'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?',
-      [
-        {
-          text: 'Hủy',
-          style: 'cancel',
-        },
-        {
-          text: 'Đăng xuất',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              router.replace('/login');
-            } catch (error) {
-              Alert.alert('Lỗi', 'Có lỗi xảy ra khi đăng xuất. Vui lòng thử lại.');
-            }
-          },
-        },
-      ]
-    );
+  const displayName = 'Nguyễn Hoàng Nam';
+  const displayEmail = user?.email ?? 'nam.nguyen@example.com';
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/login');
   };
-
-  // Get user initials for avatar
-  const getUserInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const menuItems = [
-    {
-      id: '1',
-      title: 'Thông tin cá nhân',
-      subtitle: 'Chỉnh sửa thông tin tài khoản',
-      icon: '👤',
-    },
-    {
-      id: '2',
-      title: 'Bảo mật',
-      subtitle: 'Mật khẩu và xác thực 2 bước',
-      icon: '🔒',
-    },
-    {
-      id: '3',
-      title: 'Thông báo',
-      subtitle: 'Cài đặt thông báo ứng dụng',
-      icon: '🔔',
-    },
-    {
-      id: '4',
-      title: 'Ngôn ngữ',
-      subtitle: 'Tiếng Việt',
-      icon: '🌐',
-    },
-    {
-      id: '5',
-      title: 'Hỗ trợ',
-      subtitle: 'Trung tâm trợ giúp và liên hệ',
-      icon: '❓',
-    },
-    {
-      id: '6',
-      title: 'Về ứng dụng',
-      subtitle: 'Phiên bản 1.0.0',
-      icon: 'ℹ️',
-    },
-  ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView style={styles.scrollView}>
-        <ThemedView style={styles.header}>
-          <View style={styles.avatarContainer}>
-            <View style={[styles.avatar, { backgroundColor: colors.tint }]}>
-              <ThemedText style={[styles.avatarText, { color: '#FFFFFF' }]}>
-                {user ? getUserInitials(user.name) : 'NA'}
-              </ThemedText>
-            </View>
-          </View>
-          
-          <ThemedText type="title" style={styles.userName}>
-            {user?.name || 'Người dùng'}
-          </ThemedText>
-          <ThemedText style={styles.userEmail}>
-            {user?.email || 'email@example.com'}
-          </ThemedText>
-          
-          <View style={[styles.premiumBadge, { backgroundColor: user?.isPremium ? '#FFD700' : '#E0E0E0' }]}>
-            <ThemedText style={[styles.premiumText, { color: user?.isPremium ? '#000' : '#666' }]}>
-              {user?.isPremium ? '⭐ Tài khoản Premium' : '👤 Tài khoản Thường'}
-            </ThemedText>
-          </View>
-        </ThemedView>
+    <SafeAreaView style={[styles.container, { backgroundColor: P.background }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: P.background, borderBottomColor: P.headerBorder }]}>
+        <Text style={[styles.headerTitle, { color: P.text }]}>Hồ sơ cá nhân</Text>
+        <TouchableOpacity style={[styles.headerBtn, { backgroundColor: P.surfaceInput }]} activeOpacity={0.8}>
+          <MaterialIcons name="settings" size={24} color={P.text} />
+        </TouchableOpacity>
+      </View>
 
-        <ThemedView style={styles.statsContainer}>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <ThemedText style={styles.statValue}>5</ThemedText>
-              <ThemedText style={styles.statLabel}>Thẻ đã liên kết</ThemedText>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.profileSection}>
+          <View style={styles.avatarWrap}>
+            <View style={[styles.avatar, { backgroundColor: P.surfaceInput, borderColor: P.surfaceCard }]}>
+              <MaterialIcons name="person" size={48} color={P.textSecondary} />
             </View>
-            <View style={styles.statItem}>
-              <ThemedText style={styles.statValue}>127</ThemedText>
-              <ThemedText style={styles.statLabel}>Giao dịch</ThemedText>
-            </View>
-            <View style={styles.statItem}>
-              <ThemedText style={styles.statValue}>85%</ThemedText>
-              <ThemedText style={styles.statLabel}>Độ chính xác dự đoán</ThemedText>
-            </View>
-          </View>
-        </ThemedView>
-
-        <ThemedView style={styles.menuContainer}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Cài đặt tài khoản
-          </ThemedText>
-          
-          {menuItems.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[styles.menuItem, { backgroundColor: colors.background }]}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemContent}>
-                <View style={styles.menuItemLeft}>
-                  <ThemedText style={styles.menuIcon}>{item.icon}</ThemedText>
-                  <View style={styles.menuItemText}>
-                    <ThemedText style={styles.menuItemTitle}>
-                      {item.title}
-                    </ThemedText>
-                    <ThemedText style={styles.menuItemSubtitle}>
-                      {item.subtitle}
-                    </ThemedText>
-                  </View>
-                </View>
-                <ThemedText style={styles.menuArrow}>›</ThemedText>
-              </View>
+            <TouchableOpacity style={[styles.editAvatarBtn, { backgroundColor: P.primary }]} activeOpacity={0.8}>
+              <MaterialIcons name="edit" size={18} color="#fff" />
             </TouchableOpacity>
-          ))}
-        </ThemedView>
+          </View>
+          <Text style={[styles.userName, { color: P.text }]}>{displayName}</Text>
+          <Text style={[styles.userEmail, { color: P.textSecondary }]}>{displayEmail}</Text>
+          <View style={[styles.premiumBadge, { backgroundColor: P.primarySoft }]}>
+            <MaterialIcons name="verified" size={14} color={P.primary} />
+            <Text style={[styles.premiumText, { color: P.primary }]}>Thành viên Premium</Text>
+          </View>
+        </View>
 
-        <ThemedView style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={[styles.logoutButton, { backgroundColor: '#FF4444' }]}
-            activeOpacity={0.8}
-            onPress={handleLogout}
-            disabled={isLoading}
-          >
-            <ThemedText style={[styles.logoutText, { color: '#FFFFFF' }]}>
-              {isLoading ? 'Đang đăng xuất...' : 'Đăng xuất'}
-            </ThemedText>
-          </TouchableOpacity>
-        </ThemedView>
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={[styles.sectionTitle, { color: P.textSecondary }]}>Ghi chú cá nhân</Text>
+            <TouchableOpacity activeOpacity={0.8}>
+              <Text style={[styles.sectionLink, { color: P.primary }]}>Lịch sử</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.noteCard, { backgroundColor: P.surfaceCard, borderColor: P.border }]}>
+            <TextInput
+              style={[styles.noteInput, { color: P.text }]}
+              placeholder="Viết ghi chú nhanh của bạn tại đây... Ví dụ: Mua quà sinh nhật, lịch hẹn bác sĩ..."
+              placeholderTextColor={P.textSecondary}
+              value={note}
+              onChangeText={setNote}
+              multiline
+              numberOfLines={4}
+            />
+            <View style={[styles.noteFooter, { borderTopColor: P.border }]}>
+              <View style={styles.noteActions}>
+                <TouchableOpacity style={styles.noteIconBtn}><MaterialIcons name="format-bold" size={20} color={P.textSecondary} /></TouchableOpacity>
+                <TouchableOpacity style={styles.noteIconBtn}><MaterialIcons name="format-italic" size={20} color={P.textSecondary} /></TouchableOpacity>
+                <TouchableOpacity style={styles.noteIconBtn}><MaterialIcons name="list" size={20} color={P.textSecondary} /></TouchableOpacity>
+              </View>
+              <TouchableOpacity style={[styles.saveNoteBtn, { backgroundColor: P.primary }]} activeOpacity={0.8}>
+                <Text style={styles.saveNoteText}>Lưu</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
 
-        <ThemedView style={styles.footer}>
-          <ThemedText style={styles.footerText}>
-            Kira Finance App v1.0.0
-          </ThemedText>
-          <ThemedText style={styles.footerText}>
-            © 2024 Kira Technology
-          </ThemedText>
-        </ThemedView>
+        <TouchableOpacity
+          style={[styles.menuCard, { backgroundColor: P.surfaceCard, borderColor: P.border }]}
+          activeOpacity={0.8}
+          onPress={() => router.push('/history-1x' as Href)}
+        >
+          <View style={[styles.menuIconWrap, { backgroundColor: 'rgba(99,102,241,0.15)' }]}>
+            <MaterialIcons name="history" size={24} color="#818cf8" />
+          </View>
+          <View style={styles.menuContent}>
+            <Text style={[styles.menuTitle, { color: P.text }]}>Lịch sử 1x</Text>
+            <Text style={[styles.menuSub, { color: P.textSecondary }]}>Xem lại lịch sử giao dịch 1x</Text>
+          </View>
+          <MaterialIcons name="chevron-right" size={24} color={P.textSecondary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuCard, { backgroundColor: P.surfaceCard, borderColor: P.border, marginTop: 12 }]}
+          activeOpacity={0.8}
+          onPress={() => router.push('/query-execute' as Href)}
+        >
+          <View style={[styles.menuIconWrap, { backgroundColor: P.primarySoft }]}>
+            <MaterialIcons name="search" size={24} color={P.primary} />
+          </View>
+          <View style={styles.menuContent}>
+            <Text style={[styles.menuTitle, { color: P.text }]}>Tra cứu sự kiện</Text>
+            <Text style={[styles.menuSub, { color: P.textSecondary }]}>Tìm kiếm và xem chi tiết sự kiện</Text>
+          </View>
+          <MaterialIcons name="chevron-right" size={24} color={P.textSecondary} />
+        </TouchableOpacity>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: P.textSecondary, marginBottom: 12 }]}>Bảo mật & Cài đặt</Text>
+          <View style={[styles.settingsCard, { backgroundColor: P.surfaceCard, borderColor: P.border }]}>
+            <TouchableOpacity style={styles.settingRow} activeOpacity={0.8}>
+              <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(249,115,22,0.15)' }]}>
+                <MaterialIcons name="lock-reset" size={24} color={P.orange} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={[styles.settingTitle, { color: P.text }]}>Đổi mật khẩu</Text>
+                <Text style={[styles.settingSub, { color: P.textSecondary }]}>Cập nhật mật khẩu định kỳ</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color={P.textSecondary} />
+            </TouchableOpacity>
+            <View style={[styles.settingDivider, { backgroundColor: P.border }]} />
+            <View style={styles.settingRow}>
+              <View style={[styles.settingIconWrap, { backgroundColor: P.greenSoft }]}>
+                <MaterialIcons name="security" size={24} color={P.green} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={[styles.settingTitle, { color: P.text }]}>Bảo mật 2 lớp</Text>
+                <Text style={[styles.settingSub, { color: P.textSecondary }]}>Bảo vệ tài khoản tối đa</Text>
+              </View>
+              <Switch
+                value={twoFactorEnabled}
+                onValueChange={setTwoFactorEnabled}
+                trackColor={{ false: P.surfaceInput, true: P.primary }}
+                thumbColor="#fff"
+              />
+            </View>
+            <View style={[styles.settingDivider, { backgroundColor: P.border }]} />
+            <TouchableOpacity style={styles.settingRow} activeOpacity={0.8}>
+              <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(168,85,247,0.15)' }]}>
+                <MaterialIcons name="notifications-active" size={24} color="#a855f7" />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={[styles.settingTitle, { color: P.text }]}>Thông báo</Text>
+                <Text style={[styles.settingSub, { color: P.textSecondary }]}>Quản lý nhận thông báo</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color={P.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.logoutBtn, { backgroundColor: P.redSoft }]}
+          onPress={handleLogout}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="logout" size={22} color={P.red} />
+          <Text style={[styles.logoutText, { color: P.red }]}>Đăng xuất</Text>
+        </TouchableOpacity>
+
+        <View style={styles.bottomPad} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
-    alignItems: 'center',
-    padding: 24,
-    paddingBottom: 16,
-  },
-  avatarContainer: {
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 16,
-    opacity: 0.7,
-    marginBottom: 12,
-  },
-  premiumBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  premiumText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  statsContainer: {
-    padding: 16,
-    paddingTop: 8,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    opacity: 0.7,
-    textAlign: 'center',
-  },
-  menuContainer: {
-    padding: 16,
-    paddingTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  menuItem: {
-    marginBottom: 8,
-    borderRadius: 8,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  menuItemLeft: {
+  headerTitle: { fontSize: 20, fontWeight: '700' },
+  headerBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 16, paddingBottom: 100 },
+  profileSection: { alignItems: 'center', paddingVertical: 24 },
+  avatarWrap: { position: 'relative', marginBottom: 16 },
+  avatar: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    borderWidth: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editAvatarBtn: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: AppPalette.background,
+  },
+  userName: { fontSize: 24, fontWeight: '700', marginBottom: 4 },
+  userEmail: { fontSize: 14, fontWeight: '500', marginBottom: 8 },
+  premiumBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
-  menuIcon: {
-    fontSize: 24,
-    marginRight: 16,
+  premiumText: { fontSize: 12, fontWeight: '700' },
+  section: { marginTop: 24 },
+  sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingHorizontal: 4 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  sectionLink: { fontSize: 12, fontWeight: '500' },
+  noteCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
-  menuItemText: {
-    flex: 1,
-  },
-  menuItemTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  menuItemSubtitle: {
-    fontSize: 14,
-    opacity: 0.6,
-  },
-  menuArrow: {
-    fontSize: 20,
-    opacity: 0.5,
-  },
-  actionsContainer: {
+  noteInput: {
+    minHeight: 120,
     padding: 16,
-    paddingTop: 8,
-  },
-  logoutButton: {
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  logoutText: {
     fontSize: 16,
-    fontWeight: '600',
+    textAlignVertical: 'top',
   },
-  footer: {
+  noteFooter: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 24,
-    paddingTop: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
   },
-  footerText: {
-    fontSize: 12,
-    opacity: 0.5,
-    marginBottom: 4,
+  noteActions: { flexDirection: 'row', gap: 8 },
+  noteIconBtn: { padding: 4 },
+  saveNoteBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+  saveNoteText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  menuCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 24,
+    gap: 16,
   },
+  menuIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  menuContent: { flex: 1 },
+  menuTitle: { fontSize: 16, fontWeight: '600' },
+  menuSub: { fontSize: 12, marginTop: 2 },
+  settingsCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 16,
+  },
+  settingIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  settingContent: { flex: 1 },
+  settingTitle: { fontSize: 16, fontWeight: '600' },
+  settingSub: { fontSize: 12, marginTop: 2 },
+  settingDivider: { height: 1, marginLeft: 72 },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 48,
+    borderRadius: 12,
+    marginTop: 24,
+  },
+  logoutText: { fontSize: 16, fontWeight: '600' },
+  bottomPad: { height: 24 },
 });

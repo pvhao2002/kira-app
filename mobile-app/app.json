@@ -1,15 +1,16 @@
 {
   "expo": {
-    "name": "kira-mobile",
-    "slug": "kira-mobile",
+    "name": "mobile-app",
+    "slug": "mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "kiramobile",
+    "scheme": "mobileapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "vn.kira.mobileapp"
     },
     "android": {
       "adaptiveIcon": {

@@ -13,6 +13,7 @@ import {AddTransaction} from './components/add-transaction/add-transaction';
 import {Leagues} from './components/leagues/leagues';
 import {Notifications} from './components/notifications/notifications';
 import {Users} from './components/users/users';
+import {SqlEditor} from './components/sql-editor/sql-editor';
 
 export const routes: Routes = [
   {path: '', redirectTo: 'dashboard', pathMatch: 'full'},
@@ -30,4 +31,5 @@ export const routes: Routes = [
   {path: 'leagues', component: Leagues},
   {path: 'notifications', component: Notifications},
   {path: 'users', component: Users},
+  {path: 'sql', component: SqlEditor},
 ];

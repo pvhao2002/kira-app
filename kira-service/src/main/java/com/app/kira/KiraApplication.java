@@ -6,8 +6,8 @@ import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableScheduling
-@EnableRetry
+//@EnableScheduling
+//@EnableRetry
 public class KiraApplication {
 
     public static void main(String[] args) {

@@ -1,58 +1,80 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import AuthGuard from '@/components/AuthGuard';
+import { AppPalette } from '@/constants/theme';
+import { useAuth } from '@/contexts/AuthContext';
+import { ActivityIndicator, View } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: AppPalette.background }}>
+        <ActivityIndicator size="large" color={AppPalette.primary} />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/login" />;
+  }
 
   return (
-    <AuthGuard>
-      <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: colors.tint,
-          tabBarInactiveTintColor: colors.text + '80',
-          tabBarStyle: {
-            backgroundColor: colors.background,
-            borderTopColor: colors.border,
-          },
-          headerShown: false,
-          tabBarButton: HapticTab,
-        }}>
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Thẻ',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="creditcard.fill" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="transactions"
-          options={{
-            title: 'Lịch sử',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="sports"
-          options={{
-            title: 'Thể thao',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="sportscourt.fill" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Hồ sơ',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
-          }}
-        />
-      </Tabs>
-    </AuthGuard>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarButton: HapticTab,
+        tabBarStyle: {
+          height: 60,
+          backgroundColor: AppPalette.tabBarBackground,
+          borderTopColor: AppPalette.tabBarBorder,
+          borderTopWidth: 1,
+        },
+        tabBarActiveTintColor: AppPalette.tabBarActive,
+        tabBarInactiveTintColor: AppPalette.tabBarInactive,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
+        },
+      }}>
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <MaterialIcons name="dashboard" size={26} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="sports"
+        options={{
+          title: 'Bóng đá',
+          tabBarIcon: ({ color }) => <MaterialIcons name="sports-soccer" size={26} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="results"
+        options={{
+          title: 'Kết quả',
+          tabBarIcon: ({ color }) => <MaterialIcons name="analytics" size={26} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="cards"
+        options={{
+          title: 'Thẻ',
+          tabBarIcon: ({ color }) => <MaterialIcons name="credit-card" size={26} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Cá nhân',
+          tabBarIcon: ({ color }) => <MaterialIcons name="person" size={26} color={color} />,
+        }}
+      />
+    </Tabs>
   );
 }
