@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "1234"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:latest
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+    restart: unless-stopped
+
+  # kira-service:
+  #   build:
+  #     context: ./kira-service
+  #     dockerfile: Dockerfile
+  #   container_name: kira-service
+  #   ports:
+  #     - "2308:2308"
+  #   environment:
+  #     DB_HOST: mysql
+  #     DB_PORT: 3306
+  #     DB_NAME: kira
+  #     DB_USERNAME: root
+  #     DB_PASSWORD: "1234"
+  #     RABBIT_HOST: rabbitmq
+  #     RABBIT_PORT: 5672
+  #     RABBIT_USERNAME: guest
+  #     RABBIT_PASSWORD: guest
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+
+volumes:
+  mysql_data:
