@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Lịch sử 1x</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922", 
+                        "card-dark": "#1c252e", 
+                        "input-dark": "#283039",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: 100vh;
+      padding-bottom: 24px;}
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-[#111418] dark:text-white font-display overflow-x-hidden min-h-screen flex flex-col">
+<div class="sticky top-0 z-50 flex items-center justify-between bg-background-light dark:bg-background-dark px-4 py-3 border-b border-[#e5e7eb] dark:border-[#283039]">
+<div class="flex items-center cursor-pointer w-10 h-10 -ml-2 justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[#111418] dark:text-white text-2xl">arrow_back</span>
+</div>
+<h2 class="text-[#111418] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] absolute left-1/2 -translate-x-1/2">Lịch sử 1x</h2>
+<div class="w-8"></div> 
+</div>
+<div class="flex flex-wrap gap-4 p-4">
+<div class="flex min-w-[158px] flex-1 flex-col gap-2 rounded-xl p-5 bg-white dark:bg-card-dark shadow-sm border border-[#e5e7eb] dark:border-transparent">
+<div class="flex items-center gap-2">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#0bda5b]/10">
+<span class="material-symbols-outlined text-[#0bda5b] text-lg">trending_up</span>
+</div>
+<p class="text-[#637588] dark:text-[#9dabb9] text-sm font-medium leading-normal">Tổng nạp</p>
+</div>
+<div class="flex items-baseline gap-2">
+<p class="text-[#111418] dark:text-white tracking-tight text-2xl font-bold leading-tight">+18.091.128đ</p>
+</div>
+<p class="text-[#0bda5b] text-xs font-medium leading-normal flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">arrow_upward</span>
+            12.5% so với tháng trước
+        </p>
+</div>
+<div class="flex min-w-[158px] flex-1 flex-col gap-2 rounded-xl p-5 bg-white dark:bg-card-dark shadow-sm border border-[#e5e7eb] dark:border-transparent">
+<div class="flex items-center gap-2">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#fa6238]/10">
+<span class="material-symbols-outlined text-[#fa6238] text-lg">trending_down</span>
+</div>
+<p class="text-[#637588] dark:text-[#9dabb9] text-sm font-medium leading-normal">Tổng rút</p>
+</div>
+<div class="flex items-baseline gap-2">
+<p class="text-[#111418] dark:text-white tracking-tight text-2xl font-bold leading-tight">-6.313.662đ</p>
+</div>
+<p class="text-[#fa6238] text-xs font-medium leading-normal flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">arrow_downward</span>
+            3.1% so với tháng trước
+        </p>
+</div>
+</div>
+<div class="px-4 py-1">
+<label class="flex flex-col min-w-40 h-12 w-full">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full shadow-sm bg-white dark:bg-input-dark border border-[#e5e7eb] dark:border-transparent overflow-hidden">
+<div class="text-[#637588] dark:text-[#9dabb9] flex items-center justify-center pl-4 pr-2">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] dark:text-white focus:outline-0 focus:ring-0 border-none bg-transparent focus:border-none h-full placeholder:text-[#637588] dark:placeholder:text-[#9dabb9] px-2 text-base font-normal leading-normal" placeholder="Tìm kiếm mã giao dịch, số tiền..." value=""/>
+<div class="text-[#637588] dark:text-[#9dabb9] flex items-center justify-center pr-4 pl-2 cursor-pointer">
+<span class="material-symbols-outlined text-xl">tune</span>
+</div>
+</div>
+</label>
+</div>
+<div class="flex gap-3 px-4 py-4 overflow-x-auto hide-scrollbar">
+<div class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary pl-4 pr-5 cursor-pointer shadow-md shadow-primary/20">
+<span class="material-symbols-outlined text-white text-lg">list</span>
+<p class="text-white text-sm font-semibold leading-normal">Tất cả</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-input-dark border border-[#e5e7eb] dark:border-transparent pl-4 pr-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#343e49] transition-colors">
+<span class="material-symbols-outlined text-[#111418] dark:text-white text-lg">account_balance_wallet</span>
+<p class="text-[#111418] dark:text-white text-sm font-medium leading-normal">Nạp tiền</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-input-dark border border-[#e5e7eb] dark:border-transparent pl-4 pr-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#343e49] transition-colors">
+<span class="material-symbols-outlined text-[#111418] dark:text-white text-lg">payments</span>
+<p class="text-[#111418] dark:text-white text-sm font-medium leading-normal">Rút tiền</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-input-dark border border-[#e5e7eb] dark:border-transparent pl-4 pr-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#343e49] transition-colors">
+<span class="material-symbols-outlined text-[#111418] dark:text-white text-lg">redeem</span>
+<p class="text-[#111418] dark:text-white text-sm font-medium leading-normal">Khuyến mãi</p>
+</div>
+</div>
+<div class="flex flex-col">
+<h2 class="text-[#637588] dark:text-[#9dabb9] text-sm font-bold leading-tight tracking-wide uppercase px-4 text-left pb-2 pt-2">27.12.2025</h2>
+<div class="flex items-center gap-4 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-500">
+<span class="material-symbols-outlined text-xl">redeem</span>
+</div>
+<div class="flex flex-1 flex-col justify-center">
+<p class="text-[#111418] dark:text-white text-base font-semibold leading-normal line-clamp-1">Quy đổi tiền thưởng khuyến mãi</p>
+<p class="text-[#637588] dark:text-[#9dabb9] text-sm font-normal leading-normal">00:10 • Tài khoản chính</p>
+</div>
+<div class="flex flex-col items-end justify-center">
+<p class="text-[#0bda5b] text-base font-bold leading-normal">+2.091.128đ</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col mt-2">
+<h2 class="text-[#637588] dark:text-[#9dabb9] text-sm font-bold leading-tight tracking-wide uppercase px-4 text-left pb-2 pt-2">26.12.2025</h2>
+<div class="flex items-center gap-4 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-500">
+<span class="material-symbols-outlined text-xl">redeem</span>
+</div>
+<div class="flex flex-1 flex-col justify-center">
+<p class="text-[#111418] dark:text-white text-base font-semibold leading-normal line-clamp-1">Thưởng ghi có vào tài khoản</p>
+<p class="text-[#637588] dark:text-[#9dabb9] text-sm font-normal leading-normal">00:10 • Khuyến mãi</p>
+</div>
+<div class="flex flex-col items-end justify-center">
+<p class="text-[#0bda5b] text-base font-bold leading-normal">+8.000.000đ</p>
+</div>
+</div>
+<div class="flex items-center gap-4 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0bda5b]/10 text-[#0bda5b]">
+<span class="material-symbols-outlined text-xl">account_balance_wallet</span>
+</div>
+<div class="flex flex-1 flex-col justify-center">
+<p class="text-[#111418] dark:text-white text-base font-semibold leading-normal line-clamp-1">Nạp tiền qua Techcombank</p>
+<p class="text-[#637588] dark:text-[#9dabb9] text-sm font-normal leading-normal">00:10 • GD 19325114033</p>
+</div>
+<div class="flex flex-col items-end justify-center">
+<p class="text-[#0bda5b] text-base font-bold leading-normal">+8.000.000đ</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col mt-2">
+<h2 class="text-[#637588] dark:text-[#9dabb9] text-sm font-bold leading-tight tracking-wide uppercase px-4 text-left pb-2 pt-2">25.12.2025</h2>
+<div class="flex items-center gap-4 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0bda5b]/10 text-[#0bda5b]">
+<span class="material-symbols-outlined text-xl">account_balance_wallet</span>
+</div>
+<div class="flex flex-1 flex-col justify-center">
+<p class="text-[#111418] dark:text-white text-base font-semibold leading-normal line-clamp-1">Nạp tiền qua Ví điện tử</p>
+<p class="text-[#637588] dark:text-[#9dabb9] text-sm font-normal leading-normal">21:51 • GD 19323400039</p>
+</div>
+<div class="flex flex-col items-end justify-center">
+<p class="text-[#0bda5b] text-base font-bold leading-normal">+3.000.000đ</p>
+</div>
+</div>
+<div class="flex items-center gap-4 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fa6238]/10 text-[#fa6238]">
+<span class="material-symbols-outlined text-xl">payments</span>
+</div>
+<div class="flex flex-1 flex-col justify-center">
+<p class="text-[#111418] dark:text-white text-base font-semibold leading-normal line-clamp-1">Rút về Vietcombank</p>
+<p class="text-[#637588] dark:text-[#9dabb9] text-sm font-normal leading-normal">13:36 • GD 4314648441</p>
+</div>
+<div class="flex flex-col items-end justify-center">
+<p class="text-[#111418] dark:text-white text-base font-bold leading-normal">-6.313.662đ</p>
+</div>
+</div>
+</div>
+
+</body></html>

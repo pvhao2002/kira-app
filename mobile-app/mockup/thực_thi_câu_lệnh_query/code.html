@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thực thi câu lệnh Query nâng cao</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00e5ff",
+                        "accent-blue": "#3b82f6",
+                        "background-dark": "#050a14","card-dark": "#0d1526",
+                        "input-bg": "#121d33",
+                        "border-muted": "#1e2d4d",
+                        "text-dim": "#a0aec0"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        :root {
+            --bg-deep: #050a14;
+            --card-deep: #0d1526;
+            --input-deep: #121d33;
+            --border-color: #1e2d4d;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: var(--bg-deep);
+            color: #ffffff;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e2d4d;
+            border-radius: 10px;
+        }
+        input::placeholder {
+            color: #4a5568;
+        }
+        input:focus {
+            outline: none;
+            border-color: theme('colors.primary');
+            box-shadow: 0 0 0 1px theme('colors.primary');
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen flex flex-col bg-background-dark text-white">
+<header class="sticky top-0 z-50 bg-background-dark/90 backdrop-blur-xl border-b border-border-muted">
+<div class="flex items-center px-4 py-4 justify-between max-w-md mx-auto w-full">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-card-dark transition-colors">
+<span class="material-symbols-outlined text-xl">arrow_back_ios_new</span>
+</button>
+<h2 class="text-base font-bold tracking-tight">Query nâng cao</h2>
+</div>
+<button class="text-primary text-sm font-semibold hover:opacity-80 transition-opacity">Đặt lại</button>
+</div>
+</header>
+<main class="flex-1 w-full max-w-md mx-auto px-4 pb-12">
+<div class="pt-6 pb-6 text-center">
+<h1 class="text-2xl font-bold leading-tight text-white">Bộ lọc dữ liệu</h1>
+<p class="text-text-dim text-sm mt-1">Cấu hình tham số để truy vấn kết quả chi tiết</p>
+</div>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-3">
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-text-dim ml-1">First HDC</label>
+<input class="w-full bg-input-bg border border-border-muted rounded-xl px-4 py-3 text-sm focus:ring-0 transition-all text-white" placeholder="0.5" type="text"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-text-dim ml-1">Last HDC</label>
+<input class="w-full bg-input-bg border border-border-muted rounded-xl px-4 py-3 text-sm focus:ring-0 transition-all text-white" placeholder="0.75" type="text"/>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-text-dim ml-1">First OU</label>
+<input class="w-full bg-input-bg border border-border-muted rounded-xl px-4 py-3 text-sm focus:ring-0 transition-all text-white" placeholder="2.5" type="text"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-text-dim ml-1">Last OU</label>
+<input class="w-full bg-input-bg border border-border-muted rounded-xl px-4 py-3 text-sm focus:ring-0 transition-all text-white" placeholder="2.25" type="text"/>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-text-dim ml-1">First Corner</label>
+<input class="w-full bg-input-bg border border-border-muted rounded-xl px-4 py-3 text-sm focus:ring-0 transition-all text-white" placeholder="4" type="number"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-text-dim ml-1">Last Corner</label>
+<input class="w-full bg-input-bg border border-border-muted rounded-xl px-4 py-3 text-sm focus:ring-0 transition-all text-white" placeholder="10" type="number"/>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold uppercase tracking-wider text-text-dim ml-1">HT Result</label>
+<input class="w-full bg-input-bg border border-border-muted rounded-xl px-4 py-3 text-sm focus:ring-0 transition-all text-white" placeholder="Ví dụ: 0-0, 1-0..." type="text"/>
+</div>
+<div class="pt-4">
+<button class="w-full flex items-center justify-center gap-2 bg-primary hover:brightness-110 active:scale-[0.98] transition-all text-background-dark py-4 rounded-xl font-bold text-base shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-xl">database</span>
+<span>Execute Query</span>
+</button>
+</div>
+</div>
+<div class="mt-8 space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-bold text-white">Kết quả truy vấn</h3>
+<span class="text-[10px] bg-primary/10 text-primary border border-primary/30 px-2 py-0.5 rounded-md font-bold uppercase">Live Data</span>
+</div>
+<div class="overflow-hidden rounded-xl border border-border-muted bg-card-dark">
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-input-bg/50 border-b border-border-muted">
+<th class="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-text-dim">FT Score</th>
+<th class="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-text-dim">HT Score</th>
+<th class="px-4 py-4 text-[10px] font-bold uppercase tracking-widest text-text-dim text-right">Count</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-muted/50 text-sm">
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="px-4 py-4 font-semibold text-white">2 - 1</td>
+<td class="px-4 py-4 text-text-dim">1 - 0</td>
+<td class="px-4 py-4 font-mono text-primary font-bold text-right">142</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="px-4 py-4 font-semibold text-white">1 - 1</td>
+<td class="px-4 py-4 text-text-dim">0 - 1</td>
+<td class="px-4 py-4 font-mono text-primary font-bold text-right">128</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="px-4 py-4 font-semibold text-white">0 - 0</td>
+<td class="px-4 py-4 text-text-dim">0 - 0</td>
+<td class="px-4 py-4 font-mono text-primary font-bold text-right">95</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="px-4 py-4 font-semibold text-white">3 - 1</td>
+<td class="px-4 py-4 text-text-dim">1 - 1</td>
+<td class="px-4 py-4 font-mono text-primary font-bold text-right">64</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-3 border-t border-border-muted flex items-center justify-between bg-input-bg/30">
+<p class="text-[10px] text-text-dim">Hiển thị 4 của 28 hàng</p>
+<div class="flex gap-1">
+<button class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-border-muted text-text-dim disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined text-base">chevron_left</span>
+</button>
+<button class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-border-muted text-primary">
+<span class="material-symbols-outlined text-base">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-3 p-4 rounded-xl bg-accent-blue/5 border border-accent-blue/20">
+<span class="material-symbols-outlined text-accent-blue text-xl">info</span>
+<p class="text-xs text-text-dim leading-relaxed">
+                    Dữ liệu được tổng hợp từ các mùa giải gần nhất. Bạn có thể thay đổi tham số để tinh chỉnh độ chính xác của dự đoán.
+                </p>
+</div>
+</div>
+</main>
+<div class="h-8"></div>
+
+</body></html>
