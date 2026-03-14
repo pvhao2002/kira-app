@@ -1,10 +1,12 @@
 package com.queue.kiraqueue.dto.model;
 
 import com.microsoft.playwright.ElementHandle;
+import com.queue.kiraqueue.util.OddConverter;
 import com.queue.kiraqueue.util.StringUtil;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -22,22 +24,35 @@ public class EventOddsTimeline extends EventOdds {
     public EventOddsTimeline(ElementHandle li, String market) {
         this.market = market;
         var allLineOdds = li.querySelectorAll(".firstSpan");
-        if (allLineOdds.size() < 3) {
-            date = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
-        } else {
-            matchMinute = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
-        }
+
         var oddsBox = li.querySelectorAll(".oddsBox");
         if ("hdc".equalsIgnoreCase(market)) {
+            if (allLineOdds.size() == 3) {
+                date = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
+            } else {
+                matchMinute = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
+            }
             li.waitForSelector(".oddsBox");
             this.line = oddsBox.stream().map(el -> {
                 var hdcEle = el.querySelector(".handicap.handicapRight");
                 return StringUtil.normalizeText(Optional.ofNullable(hdcEle).map(ElementHandle::textContent).orElse(null));
             }).filter(StringUtil::isNotEmpty).collect(Collectors.joining("#"));
-            System.out.println("HDC Line: " + this.line);
         } else {
-            this.line = StringUtil.normalizeText(oddsBox.getFirst().textContent());
-            System.out.println("Line: " + this.line);
+            if (allLineOdds.size() == 4) {
+                date = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
+            } else {
+                matchMinute = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
+            }
+            this.line = oddsBox.isEmpty() ? null : StringUtil.normalizeText(oddsBox.getFirst().textContent());
         }
+        parsePricesFromOddsBox(oddsBox);
+    }
+
+    private void parsePricesFromOddsBox(java.util.List<? extends ElementHandle> oddsBox) {
+        if (oddsBox == null || oddsBox.size() < 2) return;
+        var a = OddConverter.parse(StringUtil.normalizeText(oddsBox.get(oddsBox.size() - 2).textContent()));
+        var b = OddConverter.parse(StringUtil.normalizeText(oddsBox.get(oddsBox.size() - 1).textContent()));
+        if (a != null) setPriceA(BigDecimal.valueOf(a));
+        if (b != null) setPriceB(BigDecimal.valueOf(b));
     }
 }
