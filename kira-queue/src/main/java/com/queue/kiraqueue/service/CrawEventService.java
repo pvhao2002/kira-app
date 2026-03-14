@@ -2,12 +2,15 @@ package com.queue.kiraqueue.service;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.options.WaitUntilState;
 import com.queue.kiraqueue.dto.Event;
 import com.queue.kiraqueue.dto.model.EventOddsTimeline;
 import com.queue.kiraqueue.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -16,144 +19,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 @Log
 @Service
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class CrawEventService {
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private static final long MAX_WAIT_TIME = 60_000;
-    private static final long MIN_WAIT_TIME = 2_000;
-    private static final String EVENT_ID = "event_id";
-    private static final String EVENT_NAME = "event_name";
-    private static final String EVENT_DATE = "event_date";
-    private static final String STATUS = "status";
-    private static final String ODD_ITEM_BOX = ".oddsItemBox";
-
-    private static final String SQL_DELETE_EVENT_UPCOMING = """
-            delete from events where event_id = :event_id
-            """;
-    private static final String SQL_CLEAN_EVENT = """
-            delete
-            from event_analyst
-            where event_name = :event_name
-              and event_date = :event_date
-            """;
-
-    private static final String SQL_UPDATE_EVENT_ANAYLYST = """
-            update event_analyst
-            set first_home_odds        = :first_home_odds,
-                first_away_odds        = :first_away_odds,
-                first_over_corner_odds = :first_over_corner_odds,
-                first_under_corner_odds= :first_under_corner_odds,
-                first_over_odds        = :first_over_odds,
-                first_under_odds       = :first_under_odds,
-            
-                last_home_odds         = :last_home_odds,
-                last_away_odds         = :last_away_odds,
-                last_over_corner_odds  = :last_over_corner_odds,
-                last_under_corner_odds = :last_under_corner_odds,
-                last_over_odds         = :last_over_odds,
-                last_under_odds        = :last_under_odds,
-            
-                first_hdc              = :first_hdc,
-                last_hdc               = :last_hdc,
-                first_ou               = :first_ou,
-                last_ou                = :last_ou,
-                first_corner           = :first_corner,
-                last_corner            = :last_corner,
-            
-                home_logo              = :home_logo,
-                away_logo              = :away_logo,
-                status                 = 'completed'
-            where event_id = :event_id
-            """;
-    private static final String SQL_UPDATE_EVENT_ANALYST = """
-            update event_analyst set status = :status where event_id = :event_id
-            """;
-    private static final String SQL_UPDATE_EVENT_UPCOMING = """
-            update events
-            set first_home_odds        = :first_home_odds,
-                 first_away_odds        = :first_away_odds,
-                 last_home_odds         = :last_home_odds,
-                 last_away_odds         = :last_away_odds,
-                 first_over_corner_odds = :first_over_corner_odds,
-                 first_under_corner_odds= :first_under_corner_odds,
-                 last_over_corner_odds  = :last_over_corner_odds,
-                 last_under_corner_odds = :last_under_corner_odds,
-            
-                 first_over_odds        = :first_over_odds,
-                 first_under_odds       = :first_under_odds,
-                 last_over_odds         = :last_over_odds,
-                 last_under_odds        = :last_under_odds,
-            
-                 first_hdc              = :first_hdc,
-                 last_hdc               = :last_hdc,
-                 first_ou               = :first_ou,
-                 last_ou                = :last_ou,
-                 first_corner           = :first_corner,
-                 last_corner            = :last_corner,
-            
-                 home_logo              = :home_logo,
-                 away_logo              = :away_logo
-             where event_id = :event_id
-            """;
-
-    private static final String SQL_UPDATE_PREDICT = """
-            insert into predict(event_name, event_date, league_name, event_link,
-                                  first_hdc_line, first_home_odds, first_away_odds,
-                                  last_hdc_line, last_home_odds, last_away_odds,
-                                  first_ou_line, first_over_odds, first_under_odds,
-                                  last_ou_line, last_over_odds, last_under_odds,
-                                  first_corner_line, first_over_corner_odds, first_under_corner_odds,
-                                  last_corner_line, last_over_corner_odds, last_under_corner_odds)
-              values (:event_name, :event_date, :league_name, :event_link,
-                      :first_hdc, :first_home_odds, :first_away_odds,
-                      :last_hdc, :last_home_odds, :last_away_odds,
-                      :first_ou, :first_over_odds, :first_under_odds,
-                      :last_ou, :last_over_odds, :last_under_odds,
-                      :first_corner, :first_over_corner_odds, :first_under_corner_odds,
-                      :last_corner, :last_over_corner_odds, :last_under_corner_odds)
-              on duplicate key update first_hdc_line          = values(first_hdc_line),
-                                      first_home_odds         = values(first_home_odds),
-                                      first_away_odds         = values(first_away_odds),
-            
-                                      last_hdc_line           = values(last_hdc_line),
-                                      last_home_odds          = values(last_home_odds),
-                                      last_away_odds          = values(last_away_odds),
-            
-                                      first_ou_line           = values(first_ou_line),
-                                      first_over_odds         = values(first_over_odds),
-                                      first_under_odds        = values(first_under_odds),
-            
-                                      last_ou_line            = values(last_ou_line),
-                                      last_over_odds          = values(last_over_odds),
-                                      last_under_odds         = values(last_under_odds),
-            
-                                      first_corner_line       = values(first_corner_line),
-                                      first_over_corner_odds  = values(first_over_corner_odds),
-                                      first_under_corner_odds = values(first_under_corner_odds),
-            
-                                      last_corner_line        = values(last_corner_line),
-                                      last_over_corner_odds   = values(last_over_corner_odds),
-                                      last_under_corner_odds  = values(last_under_corner_odds)
-            """;
-    private static final String SQL_PREDICT_NO_ODD = """
-            delete p
-            from predict p
-            where event_date = :event_date
-                and event_name = :event_name
-            """;
-    private static final String DELETE_CRAWL_PREDICT_QUEUE = """
-            delete
-            from crawl_predict_queue
-            where queue_key = :queue_key
-              and queue_type = :queue_type
-            """;
 
     private static final String INSERT_EVENT_FAIL = """
             INSERT INTO event_crawl_failed(event_id, message, html)
@@ -179,6 +56,26 @@ public class CrawEventService {
     private static final String SQL_DELETE_EVENT_ODDS = "DELETE FROM event_odds WHERE event_id = :event_id";
     private static final String SQL_DELETE_EVENT_ODDS_TIMELINE = "DELETE FROM event_odds_timeline WHERE event_id = :event_id";
 
+    /** Cập nhật stats vào event_result (chỉ cột gốc; *_total_* là generated column, không set). */
+    private static final String SQL_UPDATE_EVENT_RESULT_STATS = """
+            UPDATE event_result SET
+                ht_home_corner = :ht_home_corner, ht_away_corner = :ht_away_corner,
+                ht_home_yellow_card = :ht_home_yellow_card, ht_away_yellow_card = :ht_away_yellow_card,
+                ht_home_foul = :ht_home_foul, ht_away_foul = :ht_away_foul,
+                ht_home_offside = :ht_home_offside, ht_away_offside = :ht_away_offside,
+                ht_home_total_shot = :ht_home_total_shot, ht_away_total_shot = :ht_away_total_shot,
+                ht_home_shot_on_target = :ht_home_shot_on_target, ht_away_shot_on_target = :ht_away_shot_on_target,
+                ft_home_corner = :ft_home_corner, ft_away_corner = :ft_away_corner,
+                ft_home_yellow_card = :ft_home_yellow_card, ft_away_yellow_card = :ft_away_yellow_card,
+                ft_home_foul = :ft_home_foul, ft_away_foul = :ft_away_foul,
+                ft_home_offside = :ft_home_offside, ft_away_offside = :ft_away_offside,
+                ft_home_total_shot = :ft_home_total_shot, ft_away_total_shot = :ft_away_total_shot,
+                ft_home_shot_on_target = :ft_home_shot_on_target, ft_away_shot_on_target = :ft_away_shot_on_target
+            WHERE event_id = :event_id
+            """;
+
+    private static final Pattern FIRST_INT = Pattern.compile("(\\d+)");
+
     public void processEvent(Long eventId) {
         var sqlGetEvent = "select event_id , link , event_name from events where event_id = :eid";
         var event = jdbcTemplate.query(sqlGetEvent, Map.of("eid", eventId), BeanPropertyRowMapper.newInstance(Event.class)).stream().findFirst().orElse(null);
@@ -186,108 +83,204 @@ public class CrawEventService {
             log.log(Level.WARNING, "Event {0} not found", eventId);
             return;
         }
-        log.info("Crawl event start: eventId=%d, eventName=%s".formatted(event.getEventId(), event.getEventName()));
         PlaywrightUtil.withPlaywright(event, (page, evt) -> {
-            page.navigate(
-                    event.getLink().replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL),
-                    new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE)
-            );
-            PlaywrightUtil.waitDomContentLoaded(page);
-            PlaywrightUtil.removeAcceptAll(page);
-            page.waitForSelector("[role=tab]");
-            page.locator("[role=tab]").all().forEach(it -> {
-                if ("stats".equalsIgnoreCase(it.textContent())) {
-                    CompletableFuture.runAsync(() -> {
-//                        crawlStatEvents(evt);
-                    });
-                } else if ("odds".equalsIgnoreCase(it.textContent())) {
-                    CompletableFuture.runAsync(() -> {
-                        crawlOddEvents(evt);
-                    });
+            try {
+                log.info("Crawl event start: eventId=%d, eventName=%s".formatted(event.getEventId(), event.getEventName()));
+                page.navigate(
+                        event.getLink().replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
+                );
+                PlaywrightUtil.waitDomContentLoaded(page);
+                PlaywrightUtil.removeAcceptAll(page);
+                page.waitForSelector("[role=tab]");
+                var statsFuture = CompletableFuture.supplyAsync(() -> crawlStatEvents(evt));
+                var oddsFuture = CompletableFuture.supplyAsync(() -> crawlOddEvents(evt));
+                boolean statsOk = statsFuture.join();
+                boolean oddsOk = oddsFuture.join();
+                // Chỉ xóa khỏi event_crawl_failed khi cả stats và odds đều success (async có thể đã gọi processEventFail)
+                if (statsOk && oddsOk) {
+                    jdbcTemplate.update("""
+                            delete from event_crawl_failed
+                            where event_id = :event_id
+                            """, Map.of("event_id", evt.getEventId()));
                 }
-            });
-        });
-    }
-
-    private void crawlStatEvents(Event event) {
-        PlaywrightUtil.withPlaywright(event, (page, evt) -> {
-            page.navigate(
-                    event.getLink().concat("/stats").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL),
-                    new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE)
-            );
-            PlaywrightUtil.waitDomContentLoaded(page);
-            PlaywrightUtil.removeAcceptAll(page);
-            var menus = page.querySelectorAll(".btnBox > *");
-            int count = menus.size();
-            if (count < 3) {
-                log.warning("Crawl stats skip: eventId=%d, menus=%d (need >= 3)".formatted(event.getEventId(), count));
-                var params = new MapSqlParameterSource("event_id", event.getEventId())
-                        .addValue("mess", "Not enough menu ht and ft")
-                        .addValue("html", page.content());
-                jdbcTemplate.update(INSERT_EVENT_FAIL, params);
-                return;
+            } catch (Exception e) {
+                processEventFail(eventId, "main", e.getMessage());
+            } finally {
+                log.info("Crawl event done: eventId=%d, eventName=%s".formatted(event.getEventId(), event.getEventName()));
             }
-            menus.get(1).click();
-
-
-            menus.get(2).click();
         });
     }
 
-    private void crawlOddEvents(Event event) {
-        log.info("Crawl odds start: eventId=%d".formatted(event.getEventId()));
+    private void processEventFail(Long eventId, String type, String message) {
+        var sql = """
+                insert into event_crawl_failed(event_id, type, message)
+                VALUES (:eventId, :type, :message)
+                on duplicate key update message = values(message)
+                """;
+        jdbcTemplate.update(sql, Map.of("eventId", eventId, "type", type, "message", message));
+    }
+
+    /** @return true nếu crawl stats thành công, false nếu lỗi (đã gọi processEventFail). */
+    private boolean crawlStatEvents(Event event) {
+        boolean[] ok = { true };
         PlaywrightUtil.withPlaywright(event, (page, evt) -> {
-            var listTabOdds = Map.of("asian handicap", "hdc", "total goals", "ou", "total corners", "corner");
-            page.navigate(
-                    event.getLink().concat("/odds").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL),
-                    new Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE)
-            );
-            page.waitForSelector(".oddTypesBox span");
-            var tabOdds = page.locator(".oddTypesBox span");
-            int count = tabOdds.count();
-            log.info("Crawl odds: eventId=%d, tabs=%d".formatted(evt.getEventId(), count));
-            deleteOddsForEvent(evt.getEventId());
-            final boolean[] isOpenModal = {false};
-            for (int i = 0; i < count; i++) {
-                if (isOpenModal[0]) {
-                    page.locator(".van-popup.van-popup--bottom span i.iconfont.icon-guanbi").click();
+            log.info("Crawl stats start: eventId=%d".formatted(evt.getEventId()));
+            try {
+                page.navigate(
+                        event.getLink().concat("/stats").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
+                );
+                PlaywrightUtil.waitDomContentLoaded(page);
+                PlaywrightUtil.removeAcceptAll(page);
+                page.waitForSelector(".statsBox .btnBox", new Page.WaitForSelectorOptions().setTimeout(15_000));
+                var tabs = page.locator(".btnBox > span");
+                int tabCount = tabs.count();
+                if (tabCount < 2) {
+                    log.warning("Crawl stats skip: eventId=%d, tabs=%d (need Match + 1st Half)".formatted(event.getEventId(), tabCount));
+                    jdbcTemplate.update(INSERT_EVENT_FAIL, new MapSqlParameterSource("event_id", event.getEventId())
+                            .addValue("mess", "Not enough tabs for stats")
+                            .addValue("html", page.content()));
+                    ok[0] = false;
+                    return;
                 }
-                Locator tab = tabOdds.nth(i);
-                tab.click();
-                String tabNormalize = StringUtil.normalizeText(tab.innerText());
-                for (var e : listTabOdds.entrySet()) {
-                    if (!e.getKey().equalsIgnoreCase(tabNormalize)) continue;
-                    String market = e.getValue();
-                    page.waitForSelector(".oddsBoxRight");
-                    page.locator(".oddsBox > .oddsBoxRight").first().click();
-                    isOpenModal[0] = true;
-                    page.waitForSelector("ul.oddContent li");
-                    var listLi = page.querySelectorAll("ul.oddContent li");
-                    var timelineItems = listLi.stream()
-                            .map(li -> new EventOddsTimeline(li, market))
-                            .toList();
-                    log.info("Crawl odds: eventId=%d, market=%s, timelineItems=%d".formatted(evt.getEventId(), market, timelineItems.size()));
-                    persistOddsForMarket(evt.getEventId(), market, timelineItems);
-                }
+                // Tab 0 = Match (FT), tab 1 = 1st Half (HT)
+                tabs.nth(0).click();
+                page.waitForTimeout(400);
+                Document docMatch = Jsoup.parse(page.content());
+                Map<String, int[]> ftStats = parseStatsView(docMatch);
+
+                tabs.nth(1).click();
+                page.waitForTimeout(400);
+                Document doc1stHalf = Jsoup.parse(page.content());
+                Map<String, int[]> htStats = parseStatsView(doc1stHalf);
+
+                MapSqlParameterSource params = toEventStatsParams(evt.getEventId(), htStats, ftStats);
+                jdbcTemplate.update(SQL_UPDATE_EVENT_RESULT_STATS, params);
+                log.info("Crawl stats saved: eventId=%d".formatted(evt.getEventId()));
+            } catch (Exception e) {
+                processEventFail(evt.getEventId(), "stats", e.getMessage());
+                ok[0] = false;
+            } finally {
+                log.info("Crawl stats done: eventId=%d".formatted(evt.getEventId()));
             }
-            log.info("Crawl odds done: eventId=%d".formatted(evt.getEventId()));
         });
+        return ok[0];
     }
 
-    /**
-     * Xóa toàn bộ odds của event trước khi insert lại — regen an toàn, không lỗi duplicate.
-     */
+    /** Parse một view (Match hoặc 1st Half) thành map: key = total_shot | shot_on_target | corner | yellow_card | foul | offside, value = [home, away]. */
+    private Map<String, int[]> parseStatsView(Document doc) {
+        Map<String, int[]> out = new HashMap<>();
+        // Total Shots: .totalShots .num.homeNum, .num.awayNum
+        Element totalShots = doc.selectFirst("p.totalShots");
+        if (totalShots != null) {
+            int home = parseFirstInt(totalShots.selectFirst(".num.homeNum"));
+            int away = parseFirstInt(totalShots.selectFirst(".num.awayNum"));
+            out.put("total_shot", new int[]{home, away});
+        }
+        // Shots on target: .ballPossession2 .textBottom .num
+        Element textBottom = doc.selectFirst(".ballPossession2 .textBottom");
+        if (textBottom != null) {
+            Elements nums = textBottom.select(".num");
+            int home = !nums.isEmpty() ? parseFirstInt(nums.get(0)) : 0;
+            int away = nums.size() >= 2 ? parseFirstInt(nums.get(1)) : 0;
+            out.put("shot_on_target", new int[]{home, away});
+        }
+        // statsData li: Corner Kicks, Yellow Cards, Fouls, Offsides
+        Map<String, String> labelToKey = Map.of(
+                "Corner Kicks", "corner",
+                "Yellow Cards", "yellow_card",
+                "Fouls", "foul",
+                "Offsides", "offside"
+        );
+        for (Element li : doc.select("ul.statsData li")) {
+            String label = li.ownText();
+            if (label.isBlank()) continue;
+            String normalized = label.trim().replaceAll("\\s+", " ");
+            String key = labelToKey.get(normalized);
+            if (key == null) continue;
+            int home = parseFirstInt(li.selectFirst(".num.homeNum"));
+            int away = parseFirstInt(li.selectFirst(".num.awayNum"));
+            out.put(key, new int[]{home, away});
+        }
+        return out;
+    }
+
+    private static int parseFirstInt(Element el) {
+        if (el == null) return 0;
+        String t = el.text();
+        if (t.isBlank()) return 0;
+        var m = FIRST_INT.matcher(t.trim());
+        return m.find() ? Integer.parseInt(m.group(1)) : 0;
+    }
+
+    /** Chỉ thêm cột gốc (home/away); event_result.*_total_* là generated, không set. */
+    private MapSqlParameterSource toEventStatsParams(Long eventId, Map<String, int[]> ht, Map<String, int[]> ft) {
+        MapSqlParameterSource p = new MapSqlParameterSource("event_id", eventId);
+        for (String key : List.of("corner", "yellow_card", "foul", "offside", "total_shot", "shot_on_target")) {
+            int[] htVal = ht.getOrDefault(key, new int[]{0, 0});
+            int[] ftVal = ft.getOrDefault(key, new int[]{0, 0});
+            p.addValue("ht_home_" + key, htVal[0]);
+            p.addValue("ht_away_" + key, htVal[1]);
+            p.addValue("ft_home_" + key, ftVal[0]);
+            p.addValue("ft_away_" + key, ftVal[1]);
+        }
+        return p;
+    }
+
+    /** @return true nếu crawl odds thành công, false nếu lỗi (đã gọi processEventFail). */
+    private boolean crawlOddEvents(Event event) {
+        boolean[] ok = { true };
+        PlaywrightUtil.withPlaywright(event, (page, evt) -> {
+            try {
+                log.info("Crawl odds start: eventId=%d".formatted(event.getEventId()));
+                var listTabOdds = Map.of("asian handicap", "hdc", "total goals", "ou", "total corners", "corner");
+                page.navigate(
+                        event.getLink().concat("/odds").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
+                );
+                page.waitForSelector(".oddTypesBox span");
+                var tabOdds = page.locator(".oddTypesBox span");
+                int count = tabOdds.count();
+                deleteOddsForEvent(evt.getEventId());
+                final boolean[] isOpenModal = {false};
+                for (int i = 0; i < count; i++) {
+                    if (isOpenModal[0]) {
+                        page.locator(".van-popup.van-popup--bottom span i.iconfont.icon-guanbi").click();
+                    }
+                    Locator tab = tabOdds.nth(i);
+                    tab.click();
+                    String tabNormalize = StringUtil.normalizeText(tab.innerText());
+                    for (var e : listTabOdds.entrySet()) {
+                        if (!e.getKey().equalsIgnoreCase(tabNormalize)) continue;
+                        String market = e.getValue();
+                        page.waitForSelector(".oddsBoxRight");
+                        page.locator(".oddsBox > .oddsBoxRight").first().click();
+                        isOpenModal[0] = true;
+                        page.waitForSelector("ul.oddContent li");
+                        var listLi = page.querySelectorAll("ul.oddContent li");
+                        var timelineItems = listLi.stream()
+                                .map(li -> new EventOddsTimeline(li, market))
+                                .filter(it -> it.getPriceA() != null && it.getPriceB() != null)
+                                .toList();
+                        log.info("Crawl odds: eventId=%d, market=%s, timelineItems=%d".formatted(evt.getEventId(), market, timelineItems.size()));
+                        persistOddsForMarket(evt.getEventId(), market, timelineItems);
+                    }
+                }
+            } catch (Exception e) {
+                processEventFail(evt.getEventId(), "odds", e.getMessage());
+                ok[0] = false;
+            } finally {
+                log.info("Crawl odds done: eventId=%d".formatted(evt.getEventId()));
+            }
+        });
+        return ok[0];
+    }
+
     private void deleteOddsForEvent(Long eventId) {
         int timelineDeleted = jdbcTemplate.update(SQL_DELETE_EVENT_ODDS_TIMELINE, Map.of("event_id", eventId));
         int oddsDeleted = jdbcTemplate.update(SQL_DELETE_EVENT_ODDS, Map.of("event_id", eventId));
         log.info("Delete odds for regen: eventId=%d, event_odds_timeline=%d, event_odds=%d".formatted(eventId, timelineDeleted, oddsDeleted));
     }
 
-    /**
-     * open = giá trị odd đầu tiên (dòng đầu timeline).
-     * pre-match = giá trị cuối trước khi trận bắt đầu; dòng cuối có ngày giờ.
-     * half-time = dòng cuối cùng có match_minute = HT (hiệp 1).
-     */
+
     private void persistOddsForMarket(Long eventId, String market, List<EventOddsTimeline> timelineItems) {
         if (CollectionUtils.isEmpty(timelineItems)) {
             log.warning("persistOddsForMarket skip: eventId=%d, market=%s, empty timeline".formatted(eventId, market));
@@ -300,7 +293,9 @@ public class CrawEventService {
         JdbcBatchUtils.batchInsertSafe(jdbcTemplate, SQL_INSERT_EVENT_ODDS_TIMELINE, timelineParams);
         log.info("persistOdds: eventId=%d, market=%s, timeline inserted=%d".formatted(eventId, market, timelineParams.size()));
 
-        var firstInList = timelineItems.getFirst();
+        var firstInList = timelineItems.stream()
+                .filter(it -> it.getDate() != null).findFirst()
+                .orElse(timelineItems.getFirst());
         var lastInList = timelineItems.getLast();
         jdbcTemplate.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "open", market, lastInList));
         jdbcTemplate.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "pre-match", market, firstInList));

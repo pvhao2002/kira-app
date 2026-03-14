@@ -1,3 +1,4 @@
+drop database if exists app;
 create database if not exists app;
 use app;
 
@@ -5,36 +6,41 @@ use app;
 drop table if exists event_crawl_failed;
 drop table if exists event_odds_timeline;
 drop table if exists event_odds;
+drop table if exists event_incident;
 drop table if exists event_result;
 drop table if exists events;
 drop table if exists teams;
 drop table if exists leagues;
 drop table if exists users;
 drop table if exists crawl_date;
+drop table if exists event_crawl_failed;
 
 -- crawl_date: varchar(20) đủ cho yyyyMMdd/yyyy-MM-dd (app dùng cho URL), index status cho query pending/picked
 create table crawl_date
 (
     date         varchar(20) primary key,
     status       enum ('pending', 'picked', 'in_progress', 'done', 'failed') default 'pending',
-    total_events int                                                        default 0,
-    created_at   timestamp                                                  default current_timestamp,
-    updated_at   timestamp                                                  default current_timestamp on update current_timestamp,
+    message      text,
+    total_events int                                                         default 0,
+    created_at   datetime                                                    default now(),
+    updated_at   datetime                                                    default now() on update now(),
     index idx_status (status)
-) engine = InnoDB row_format = dynamic;
+) engine = InnoDB
+  row_format = dynamic;
 
 create table users
 (
     user_id    int primary key auto_increment,
     username   varchar(50)  not null,
-    password   varchar(255) not null,
+    password   varchar(100) not null,
     status     varchar(20) default 'active',
     role       varchar(20) default 'user',
-    created_at timestamp   default current_timestamp,
-    updated_at timestamp   default current_timestamp on update current_timestamp,
+    created_at datetime    default now(),
+    updated_at datetime    default now() on update now(),
     unique key uk_username (username),
     index idx_status (status)
-) engine = InnoDB row_format = dynamic;
+) engine = InnoDB
+  row_format = dynamic;
 
 create table leagues
 (
@@ -44,21 +50,23 @@ create table leagues
     country      varchar(100),
     is_main      tinyint(1) default 0,
     total_events int        default 0,
-    created_at   timestamp  default current_timestamp,
-    updated_at   timestamp  default current_timestamp on update current_timestamp,
+    created_at   datetime   default now(),
+    updated_at   datetime   default now() on update now(),
     unique key uk_league_name (league_name),
     index idx_country (country)
-) engine = InnoDB row_format = dynamic;
+) engine = InnoDB
+  row_format = dynamic;
 
 create table teams
 (
     team_id    int auto_increment primary key,
     team_name  varchar(100) not null,
     logo_url   text,
-    created_at timestamp default current_timestamp,
-    updated_at timestamp default current_timestamp on update current_timestamp,
+    created_at datetime default now(),
+    updated_at datetime default now() on update now(),
     unique key uk_team_name (team_name)
-) engine = InnoDB row_format = dynamic;
+) engine = InnoDB
+  row_format = dynamic;
 
 
 create table events
@@ -71,15 +79,16 @@ create table events
     event_name  varchar(255),
     event_date  datetime     not null,
     status      varchar(25) default '-',
-    link        varchar(2000) null,
-    created_at  timestamp   default current_timestamp,
-    updated_at  timestamp   default current_timestamp on update current_timestamp,
+    link        text         null,
+    created_at  datetime    default now(),
+    updated_at  datetime    default now() on update now(),
     unique key uk_external_event (external_id),
     index idx_event_date (event_date),
     index idx_event_date_event_name (event_date, event_name),
     index idx_league_date_name (league_id, event_date, event_name),
     index idx_home_away (home_id, away_id)
-) engine = InnoDB row_format = dynamic;
+) engine = InnoDB
+  row_format = dynamic;
 
 create table event_result
 (
@@ -152,10 +161,10 @@ create table event_result
         generated always as (coalesce(ht_home_shot_on_target, 0) + coalesce(ht_away_shot_on_target, 0)) stored,
     ft_total_shot_on_target tinyint unsigned
         generated always as (coalesce(ft_home_shot_on_target, 0) + coalesce(ft_away_shot_on_target, 0)) stored,
-    created_at              timestamp default current_timestamp,
-    updated_at              timestamp default current_timestamp on update current_timestamp,
-    foreign key (event_id) references events (event_id) on delete cascade
-) engine = InnoDB row_format = dynamic;
+    created_at              datetime default now(),
+    updated_at              datetime default now() on update now()
+) engine = InnoDB
+  row_format = dynamic;
 
 create table event_odds
 (
@@ -167,11 +176,11 @@ create table event_odds
     line       varchar(25),
     price_a    decimal(10, 2),
     price_b    decimal(10, 2),
-    created_at timestamp default current_timestamp,
+    created_at datetime default now(),
     unique key uk_event_market_type (event_id, market, type),
-    index idx_event_market (event_id, type, market, line),
-    foreign key (event_id) references events (event_id) on delete cascade
-) engine = InnoDB row_format = dynamic;
+    index idx_event_market (event_id, type, market, line)
+) engine = InnoDB
+  row_format = dynamic;
 
 -- timeline: nhiều dòng theo thời gian mỗi (event_id, market); index cho query theo event/market/crawled_at
 create table event_odds_timeline
@@ -184,19 +193,52 @@ create table event_odds_timeline
     price_b      decimal(10, 2),
     match_minute varchar(10) comment 'e.g. HT, 45+, 60',
     crawled_at   datetime,
-    created_at   timestamp default current_timestamp,
+    created_at   datetime default now(),
     index idx_event_market (event_id, market),
     index idx_event_market_crawled (event_id, market, crawled_at),
-    index idx_event_market_line (event_id, market, line),
-    foreign key (event_id) references events (event_id) on delete cascade
-) engine = InnoDB row_format = dynamic;
+    index idx_event_market_line (event_id, market, line)
+) engine = InnoDB
+  row_format = dynamic;
+
+-- Sự kiện trong trận: thời gian ghi bàn, thẻ vàng, thẻ đỏ (theo phút và đội)
+create table event_incident
+(
+    incident_id   bigint auto_increment primary key,
+    event_id      bigint       not null,
+    incident_type enum ('goal', 'yellow_card', 'red_card', 'second_yellow') not null
+        comment 'goal = bàn thắng, yellow_card = thẻ vàng, red_card = thẻ đỏ trực tiếp, second_yellow = thẻ đỏ do 2 thẻ vàng',
+    minute        smallint unsigned not null comment 'phút diễn ra (0-120, 45+ = hiệp 1 bù giờ)',
+    minute_display varchar(10) null comment 'hiển thị e.g. 45+2, 90+4',
+    period        enum ('1st_half', '2nd_half', 'extra_time_1', 'extra_time_2') default '1st_half',
+    team_side     enum ('home', 'away') not null comment 'đội ghi bàn / đội nhận thẻ',
+    player_name   varchar(100) null,
+    is_penalty    tinyint(1) default 0 comment '1 nếu là penalty (chỉ với goal)',
+    is_own_goal   tinyint(1) default 0 comment '1 nếu là phản lưới (chỉ với goal)',
+    created_at   datetime default now(),
+    updated_at   datetime default now() on update now(),
+    index idx_event_id (event_id),
+    index idx_event_type_minute (event_id, incident_type, minute),
+    constraint fk_incident_event foreign key (event_id) references events (event_id) on delete cascade
+) engine = InnoDB
+  row_format = dynamic;
 
 create table event_crawl_failed
 (
-    event_id   bigint primary key,
+    event_id   bigint,
+    type       varchar(45),
     message    text,
-    html       longtext,
-    created_at datetime default current_timestamp,
-    updated_at datetime default current_timestamp on update current_timestamp,
-    foreign key (event_id) references events (event_id) on delete cascade
-) engine = InnoDB row_format = dynamic;
+    created_at datetime default now(),
+    primary key pk_event_fail (event_id, type),
+    index idx_event_fail (event_id)
+) engine = InnoDB
+  row_format = dynamic;
+
+create table event_cancelled
+(
+    event_id   bigint primary key,
+    event_name varchar(255),
+    event_date datetime not null,
+    status     varchar(25),
+    link       text     null,
+    created_at datetime default now()
+);

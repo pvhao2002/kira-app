@@ -9,7 +9,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: "1234"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - ${MYSQL_DATA_DIR:-./data/mysql}:/var/lib/mysql
     restart: unless-stopped
 
   rabbitmq:
@@ -22,6 +22,9 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
       RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - ${RABBITMQ_DATA_DIR:-./data/rabbitmq}:/var/lib/rabbitmq
+      - ${RABBITMQ_LOG_DIR:-./data/rabbitmq-logs}:/var/log/rabbitmq
     restart: unless-stopped
 
   # kira-service:
@@ -47,6 +50,3 @@ services:
   #     rabbitmq:
   #       condition: service_healthy
   #   restart: unless-stopped
-
-volumes:
-  mysql_data:

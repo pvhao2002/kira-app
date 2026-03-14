@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# docker bind-mount data (mysql, rabbitmq)
+data/
+
 # typescript
 *.tsbuildinfo
 

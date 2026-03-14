@@ -6,6 +6,7 @@ import lombok.extern.java.Log;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
@@ -121,7 +122,16 @@ public class DateUtil {
         return null;
     }
 
+    // Odd date từ crawl: "9:12 pm tuesday, december 30, 2025" (có thể lowercase)
     private static final List<DateTimeFormatter> FORMATTERS = List.of(
+            new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendPattern("h:mm a EEEE, MMMM d, yyyy")
+                    .toFormatter(Locale.ENGLISH),
+            new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendPattern("h:mm a EEE, MMM d, yyyy")
+                    .toFormatter(Locale.ENGLISH),
             DateTimeFormatter.ofPattern("h:mm a EEEE, MMMM d, yyyy", Locale.ENGLISH),
             DateTimeFormatter.ofPattern("h:mm a EEE, MMM d, yyyy", Locale.ENGLISH)
     );
