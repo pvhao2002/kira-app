@@ -30,7 +30,7 @@ spring:
     port: ${RABBIT_PORT:5672}
     username: ${RABBIT_USERNAME:guest}
     password: ${RABBIT_PASSWORD:guest}
-    virtual-host: ${nesdpetn:/}
+    virtual-host: ${RABBIT_VHOST:/}
     connection-timeout: 60000      # 60s
     requested-heartbeat: 30        # heartbeat 30s
     listener:
@@ -59,4 +59,5 @@ logging:
   level:
     root: info
   file:
-    name: target/queue.log
+    # Gộp vào folder chung để Promtail đọc. Nhiều consumer / nhiều máy: set INSTANCE_ID để dễ tracking (vd. worker-1, host-a).
+    name: ${LOG_DIR:../logs}/kira-queue-${INSTANCE_ID:local}.log

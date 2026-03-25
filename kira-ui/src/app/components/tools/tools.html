@@ -60,7 +60,8 @@
           </div>
 
           <button (click)="test()"
-                  class="flex min-w-[160px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-blue-600 text-white text-base font-bold tracking-wide hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all active:scale-95 gap-2">
+                  [disabled]="scribdProcessing()"
+                  class="flex min-w-[160px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-blue-600 text-white text-base font-bold tracking-wide hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all active:scale-95 gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-blue-600">
             <span class="material-symbols-outlined text-[20px]">download</span>
             <span>Download PDF</span>
           </button>
@@ -73,6 +74,18 @@
             Output format: PDF.
           </p>
         </div>
+
+        @if (scribdProcessing()) {
+          <div class="mt-4 flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-400 text-[16px] animate-spin">progress_activity</span>
+              <span class="text-xs font-medium text-blue-300">Processing PDF...</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+              <div class="h-full rounded-full progress-rainbow"></div>
+            </div>
+          </div>
+        }
       </div>
     </div>
 
@@ -214,8 +227,137 @@
     }
   </div>
 
-  <div class="mt-4">
-    <h3 class="text-white text-xl font-bold mb-4">Recent</h3>
+  <!-- Google Drive Downloader Card -->
+  <div class="rounded-2xl bg-[#1e293b] shadow-xl border border-slate-700 overflow-hidden">
+    <div class="flex flex-col md:flex-row">
+
+      <!-- Left: Visual -->
+      <div
+        class="hidden md:flex flex-col justify-end p-8 bg-gradient-to-br from-emerald-600 to-teal-800 w-1/3 text-white relative overflow-hidden">
+        <div
+          class="absolute top-0 right-0 p-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col gap-4">
+          <div
+            class="size-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm shadow-inner ring-1 ring-white/10">
+            <span class="material-symbols-outlined text-3xl">cloud_download</span>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-bold mb-1">Google Drive PDF Export</h3>
+            <p class="text-emerald-100 text-sm leading-relaxed">
+              Export PDF files displayed as images on Google Drive. Handles lazy-loaded pages automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Action Form -->
+      <div class="flex-1 p-6 md:p-10 flex flex-col justify-center">
+        <label class="block mb-2 text-sm font-semibold text-slate-200">
+          Google Drive PDF Link
+        </label>
+
+        <div class="flex flex-col sm:flex-row w-full gap-3">
+          <div class="relative flex-1 group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span
+              class="material-symbols-outlined text-slate-500 group-focus-within:text-emerald-500 transition-colors">
+              link
+            </span>
+            </div>
+
+            <input
+              type="text"
+              placeholder="https://drive.google.com/file/d/.../view"
+              name="driveUrl"
+              [(ngModel)]="driveUrl"
+              class="block w-full pl-10 pr-4 h-12 rounded-lg bg-[#0f172a] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"/>
+          </div>
+
+          <button (click)="submitDriveUrl()"
+                  [disabled]="driveProcessing()"
+                  class="flex min-w-[160px] cursor-pointer items-center justify-center rounded-lg h-12 px-6 bg-emerald-600 text-white text-base font-bold tracking-wide hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 transition-all active:scale-95 gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-emerald-600">
+            <span class="material-symbols-outlined text-[20px]">download</span>
+            <span>Export PDF</span>
+          </button>
+        </div>
+
+        <div class="mt-4 flex items-center gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+          <span class="material-symbols-outlined text-emerald-400 text-[18px]">info</span>
+          <p class="text-emerald-200/70 text-xs">
+            Supports public Google Drive PDF links. The service scrolls to load all pages, extracts images, and builds the PDF.
+          </p>
+        </div>
+
+        @if (driveProcessing()) {
+          <div class="mt-4 flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-emerald-400 text-[16px] animate-spin">progress_activity</span>
+              <span class="text-xs font-medium text-emerald-300">Processing PDF...</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+              <div class="h-full rounded-full progress-rainbow"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Drive Recent Files -->
+  <div>
+    <h3 class="text-white text-xl font-bold mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-emerald-400">cloud</span>
+      Recent — Google Drive
+    </h3>
+    <div class="rounded-xl border border-slate-700 overflow-hidden bg-[#1e293b]">
+      @for (f of driveData(); track f) {
+        <div
+          class="flex items-center justify-between p-4 border-b border-slate-700/50 hover:bg-white/5 transition-colors cursor-pointer group"
+          (click)="openDrivePdf(f.name)"
+        >
+          <div class="flex items-center gap-4">
+            <div
+              class="size-10 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center ring-1 ring-emerald-500/20">
+              <span class="material-symbols-outlined">picture_as_pdf</span>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
+                {{ f.name }}
+              </p>
+              <p class="text-xs text-slate-500">{{ f.date }}  {{ f.size }}</p>
+            </div>
+          </div>
+          <button
+            (click)="deleteDriveFile($event, f.name)"
+            class="size-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+            title="Delete">
+            <span class="material-symbols-outlined text-[20px]">delete</span>
+          </button>
+        </div>
+      } @empty {
+        <div class="flex flex-col items-center justify-center p-8 text-slate-400">
+            <span class="material-symbols-outlined text-5xl mb-3 opacity-50">
+              folder_off
+            </span>
+          <p class="text-sm font-medium text-slate-300">
+            Không có file nào
+          </p>
+          <p class="text-xs text-slate-500 mt-1">
+            Chưa có PDF từ Google Drive
+          </p>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Scribd Recent Files -->
+  <div>
+    <h3 class="text-white text-xl font-bold mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-blue-400">menu_book</span>
+      Recent — Scribd
+    </h3>
     <div class="rounded-xl border border-slate-700 overflow-hidden bg-[#1e293b]">
       @for (f of data(); track f) {
         <div
@@ -234,6 +376,12 @@
               <p class="text-xs text-slate-500">{{ f.date }}  {{ f.size }}</p>
             </div>
           </div>
+          <button
+            (click)="deleteScribdFile($event, f.name)"
+            class="size-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+            title="Delete">
+            <span class="material-symbols-outlined text-[20px]">delete</span>
+          </button>
         </div>
       } @empty {
         <div class="flex flex-col items-center justify-center p-8 text-slate-400">

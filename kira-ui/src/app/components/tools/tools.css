@@ -1,0 +1,26 @@
+.progress-rainbow {
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    #ff0000 0%,
+    #ff7f00 16.66%,
+    #ffff00 33.33%,
+    #00ff00 50%,
+    #0000ff 66.66%,
+    #4b0082 83.33%,
+    #9400d3 100%
+  );
+  background-size: 300% 100%;
+  animation: progress-slide 1.8s ease-in-out infinite, rainbow-shift 2.4s linear infinite;
+}
+
+@keyframes progress-slide {
+  0% { transform: translateX(-130%); }
+  50% { transform: translateX(80%); }
+  100% { transform: translateX(-130%); }
+}
+
+@keyframes rainbow-shift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}

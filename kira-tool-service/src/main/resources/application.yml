@@ -2,6 +2,10 @@ spring:
   application:
     name: tool-service
 
+logging:
+  file:
+    name: ${LOG_DIR:./logs}/tool-service.log
+
 server:
   port: 1406
   servlet:

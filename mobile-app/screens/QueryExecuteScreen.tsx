@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-const API_URL = 'http://192.168.2.101:2308/api/sql/execute';
+const API_URL = 'http://192.168.2.124:2308/api/sql/execute';
 const HISTORY_KEY = 'query_execute_history';
 const MAX_HISTORY = 10;
 

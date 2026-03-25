@@ -1,0 +1,14 @@
+{
+  "name": "english-homework-pdf",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scrape-to-pdf.mjs",
+    "start:chrome": "USE_SYSTEM_CHROME=1 node scrape-to-pdf.mjs",
+    "install-browser": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

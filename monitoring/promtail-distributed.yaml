@@ -1,0 +1,30 @@
+# Promtail cho nhiều máy / nhiều consumer.
+# Chạy với: -config.file=promtail-distributed.yaml -config.expand-env=true
+# Set env: LOKI_URL (Loki trung tâm), INSTANCE_NAME (tên máy/consumer, mặc định = hostname), LOG_PATH (thư mục log, mặc định /var/log/kira).
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: ${LOKI_URL:http://localhost:3100}/loki/api/v1/push
+
+scrape_configs:
+  - job_name: kira-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: kira
+          # Label theo máy / instance — dùng để filter trong Grafana
+          host: ${HOSTNAME:-unknown}
+          instance: ${INSTANCE_NAME:-unknown}
+          __path__: ${LOG_PATH:/var/log/kira}/*.log
+    relabel_configs:
+      - source_labels: ['__path__']
+        regex: '.+/(.+)\\.log'
+        target_label: service
+    pipeline_stages: []

@@ -6,6 +6,12 @@ application:
       password: "${DB_PASSWORD:1234}"
       driver-class-name: com.mysql.cj.jdbc.Driver
       maximum-pool-size: 5
+    read:
+      jdbc-url: "jdbc:mysql://${DB_READ_HOST:localhost}:${DB_READ_PORT:3306}/${DB_READ_NAME:app}?useUnicode=true&createDatabaseIfNotExist=true"
+      username: "${DB_READ_USERNAME:root}"
+      password: "${DB_READ_PASSWORD:1234}"
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      maximum-pool-size: 5
 spring:
   application:
     name: kira-service
@@ -58,7 +64,8 @@ logging:
   level:
     root: info
   file:
-    name: target/kira.log
+    # Gộp vào folder chung để Promtail đọc (chạy từ IntelliJ). Có thể set LOG_DIR tuyệt đối.
+    name: ${LOG_DIR:./logs}/kira-service.log
 jwt:
   secret: "${JWT_SECRET:f15745bb2fd9b06cce06c1d99bc32908667944325a65373598496e9a45eb367dcbe5fa255cd25a143f9393999e6e2f08ef69fd3ff2b145da7149bbbaacd762e3}"
   expiration: "${JWT_EXPIRATION:10800000}"

@@ -1,0 +1,31 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Log từ 1 folder chung (service/UI chạy IntelliJ ghi vào đây) — nhanh, không cần Docker
+  - job_name: kira-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: kira
+          __path__: /var/log/kira/*.log
+    relabel_configs:
+      # service + instance = tên file log không đuôi (kira-service, kira-queue, ...) = tên service chứa log
+      - source_labels: ['__path__']
+        regex: '.+/(.+)\\.log'
+        target_label: service
+      - source_labels: ['__path__']
+        regex: '.+/(.+)\\.log'
+        target_label: instance
+    pipeline_stages: []
+
+  # Job "docker" đã tắt: Docker daemon yêu cầu API 1.44+, image Promtail cũ dùng client 1.42.
+  # Log chính lấy từ folder chung (job kira-logs). Muốn bật lại: xem .cursor/skills/devops-engineer/reference.md hoặc README.

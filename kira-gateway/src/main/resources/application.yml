@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: kira-gateway
+  profiles:
+    active: composite
+  output:
+    ansi:
+      enabled: NEVER
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  task:
+    scheduling:
+      pool:
+        size: 36
+    execution:
+      pool:
+        core-size: 36
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    shutdown:
+      enabled: false
+server:
+  port: 8888
+  servlet:
+    context-path: /gateway
+  compression:
+    enabled: true
+    min-response-size: 512
+
+logging:
+  level:
+    root: info
+  file:
+    name: ${LOG_DIR:./logs}/kira-gateway.log

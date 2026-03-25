@@ -64,4 +64,44 @@ public class DBConfiguration {
         txManager.setDataSource(ds);
         return txManager;
     }
+
+    // ─── Read DB ───
+
+    @Bean
+    @ReadDB
+    @ConfigurationProperties(prefix = "application.datasource.read")
+    public HikariConfig readHikariConfig() {
+        return new HikariConfig();
+    }
+
+    @Bean
+    @ReadDB
+    public DataSource readDataSource(@ReadDB HikariConfig config) {
+        return getDataSource(config);
+    }
+
+    @Bean
+    @ReadDB
+    public JdbcTemplate readJdbcTemplate(@ReadDB DataSource ds) {
+        return new JdbcTemplate(ds);
+    }
+
+    @Bean
+    @ReadDB
+    public NamedParameterJdbcTemplate readNamedParameterJdbcTemplate(@ReadDB DataSource ds) {
+        return new NamedParameterJdbcTemplate(this.readJdbcTemplate(ds));
+    }
+
+    @Bean
+    @ReadDB
+    public JdbcClient readJdbcClient(@ReadDB DataSource ds) {
+        return JdbcClient.create(ds);
+    }
+
+    @Bean
+    public DataSourceTransactionManager readTransactionManager(@ReadDB DataSource ds) {
+        var txManager = new DataSourceTransactionManager();
+        txManager.setDataSource(ds);
+        return txManager;
+    }
 }
