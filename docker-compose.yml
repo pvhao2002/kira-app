@@ -1,16 +1,85 @@
-version: "3.8"
-
 services:
-  mysql:
-    image: mysql:latest
-    container_name: mysql
+  mysql-primary:
+    image: mysql:8.0
+    container_name: kira-mysql-primary
     ports:
-      - "3307:3307"
+      - "${DB_PRIMARY_PORT_PUBLISHED:-3310}:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: "1234"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-1234}"
+      DB_REPL_USER: "${DB_REPL_USER:-repl_user}"
+      DB_REPL_PASSWORD: "${DB_REPL_PASSWORD:-repl_password}"
+      MYSQL_DATABASE: "${DB_NAME:-kira}"
+      MYSQL_USER: "${DB_APP_USER:-kira_user}"
+      MYSQL_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
     volumes:
-      - ${MYSQL_DATA_DIR:-./data/mysql}:/var/lib/mysql
+      - mysql-primary-data:/var/lib/mysql
+      - ./mysql/primary/conf.d:/etc/mysql/conf.d:ro
+      - ./mysql/primary/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
     restart: unless-stopped
+
+  mysql-replica:
+    image: mysql:8.0
+    container_name: kira-mysql-replica
+    ports:
+      - "${DB_REPLICA_PORT_PUBLISHED:-3311}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-1234}"
+      DB_REPL_USER: "${DB_REPL_USER:-repl_user}"
+      DB_REPL_PASSWORD: "${DB_REPL_PASSWORD:-repl_password}"
+      DB_PRIMARY_HOST: "${DB_PRIMARY_HOST:-mysql-primary}"
+      DB_PRIMARY_PORT: "${DB_PRIMARY_PORT:-3306}"
+    depends_on:
+      mysql-primary:
+        condition: service_healthy
+    volumes:
+      - mysql-replica-data:/var/lib/mysql
+      - ./mysql/replica/conf.d:/etc/mysql/conf.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+
+  mysql-replica-init:
+    image: mysql:8.0
+    container_name: kira-mysql-replica-init
+    depends_on:
+      mysql-primary:
+        condition: service_healthy
+      mysql-replica:
+        condition: service_healthy
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-1234}"
+      DB_REPL_USER: "${DB_REPL_USER:-repl_user}"
+      DB_REPL_PASSWORD: "${DB_REPL_PASSWORD:-repl_password}"
+      DB_PRIMARY_HOST: "${DB_PRIMARY_HOST:-mysql-primary}"
+      DB_PRIMARY_PORT: "${DB_PRIMARY_PORT:-3306}"
+    command: >
+      sh -ec "
+      until mysql -h mysql-replica -P3306 -uroot -p$$MYSQL_ROOT_PASSWORD -e 'SELECT 1' >/dev/null 2>&1; do sleep 2; done;
+      mysql -h mysql-replica -P3306 -uroot -p$$MYSQL_ROOT_PASSWORD -e \"
+      STOP REPLICA;
+      RESET REPLICA ALL;
+      CHANGE REPLICATION SOURCE TO
+        SOURCE_HOST='$$DB_PRIMARY_HOST',
+        SOURCE_PORT=$$DB_PRIMARY_PORT,
+        SOURCE_USER='$$DB_REPL_USER',
+        SOURCE_PASSWORD='$$DB_REPL_PASSWORD',
+        SOURCE_AUTO_POSITION=1,
+        GET_SOURCE_PUBLIC_KEY=1;
+      START REPLICA;
+      SET GLOBAL read_only = ON;
+      SET GLOBAL super_read_only = ON;
+      SHOW REPLICA STATUS\\\\G
+      \";
+      "
+    restart: "no"
 
   rabbitmq:
     image: rabbitmq:latest
@@ -26,30 +95,6 @@ services:
       - ${RABBITMQ_DATA_DIR:-./data/rabbitmq}:/var/lib/rabbitmq
       - ${RABBITMQ_LOG_DIR:-./data/rabbitmq-logs}:/var/log/rabbitmq
     restart: unless-stopped
-
-  # kira-service:
-  #   build:
-  #     context: ./kira-service
-  #     dockerfile: Dockerfile
-  #   container_name: kira-service
-  #   ports:
-  #     - "2308:2308"
-  #   environment:
-  #     DB_HOST: mysql
-  #     DB_PORT: 3306
-  #     DB_NAME: kira
-  #     DB_USERNAME: root
-  #     DB_PASSWORD: "1234"
-  #     RABBIT_HOST: rabbitmq
-  #     RABBIT_PORT: 5672
-  #     RABBIT_USERNAME: guest
-  #     RABBIT_PASSWORD: guest
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
-  #     rabbitmq:
-  #       condition: service_healthy
-  #   restart: unless-stopped
 
   # ─── Monitoring (Loki + Promtail + Grafana) — config trong ./monitoring/ ───
   loki:
@@ -91,6 +136,31 @@ services:
       - loki
     restart: unless-stopped
 
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: kira-nginx
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    environment:
+      KIRA_SERVICE_HOST: "${KIRA_SERVICE_HOST:-host.docker.internal}"
+      KIRA_SERVICE_PORT: "${KIRA_SERVICE_PORT:-2308}"
+      KIRA_QUEUE_HOST: "${KIRA_QUEUE_HOST:-host.docker.internal}"
+      KIRA_QUEUE_PORT: "${KIRA_QUEUE_PORT:-2323}"
+      KIRA_GATEWAY_HOST_1: "${KIRA_GATEWAY_HOST_1:-host.docker.internal}"
+      KIRA_GATEWAY_PORT_1: "${KIRA_GATEWAY_PORT_1:-8888}"
+      KIRA_GATEWAY_HOST_2: "${KIRA_GATEWAY_HOST_2:-host.docker.internal}"
+      KIRA_GATEWAY_PORT_2: "${KIRA_GATEWAY_PORT_2:-8889}"
+      KIRA_GATEWAY_HOST_3: "${KIRA_GATEWAY_HOST_3:-host.docker.internal}"
+      KIRA_GATEWAY_PORT_3: "${KIRA_GATEWAY_PORT_3:-8890}"
+      KIRA_TOOL_SERVICE_HOST: "${KIRA_TOOL_SERVICE_HOST:-host.docker.internal}"
+      KIRA_TOOL_SERVICE_PORT: "${KIRA_TOOL_SERVICE_PORT:-1406}"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/templates:/etc/nginx/templates:ro
+    restart: unless-stopped
+
 volumes:
   loki-data:
   grafana-data:
+  mysql-primary-data:
+  mysql-replica-data:

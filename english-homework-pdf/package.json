@@ -6,9 +6,13 @@
   "scripts": {
     "start": "node scrape-to-pdf.mjs",
     "start:chrome": "USE_SYSTEM_CHROME=1 node scrape-to-pdf.mjs",
-    "install-browser": "npx playwright install chromium"
+    "start:single": "node scrape-series-to-single-pdf.mjs",
+    "start:single:chrome": "USE_SYSTEM_CHROME=1 node scrape-series-to-single-pdf.mjs",
+    "install-browser": "npx playwright install chromium",
+    "merge": "node merge-pdfs.mjs"
   },
   "dependencies": {
+    "pdf-lib": "^1.17.1",
     "playwright": "^1.49.0"
   }
 }

@@ -50,9 +50,143 @@ async function stripBodyToBlogPost(page) {
     if (!blogPost) {
       throw new Error("Không tìm thấy .blog-post trên trang");
     }
+    const titleEl = document.querySelector("#quiztitsp");
     const node = blogPost.cloneNode(true);
     document.body.innerHTML = "";
+
+    if (titleEl) {
+      const titleWrapper = document.createElement("div");
+      titleWrapper.style.marginBottom = "12px";
+      titleWrapper.style.fontWeight = "700";
+      titleWrapper.style.fontSize = "22px";
+      titleWrapper.innerHTML = titleEl.innerHTML;
+      document.body.appendChild(titleWrapper);
+    }
+
     document.body.appendChild(node);
+  });
+}
+
+async function prepareImagesForPdf(page) {
+  await page.evaluate(() => {
+    const imgs = Array.from(document.querySelectorAll("img"));
+
+    for (const img of imgs) {
+      const candidateSrc =
+        img.getAttribute("src") ||
+        img.getAttribute("data-src") ||
+        img.getAttribute("data-original") ||
+        img.getAttribute("data-lazy-src") ||
+        img.getAttribute("data-url");
+
+      if (!candidateSrc) continue;
+
+      try {
+        const absoluteSrc = new URL(candidateSrc, window.location.href).href;
+        if (img.getAttribute("src") !== absoluteSrc) {
+          img.setAttribute("src", absoluteSrc);
+        }
+      } catch {
+        img.setAttribute("src", candidateSrc);
+      }
+    }
+  });
+
+  await page.evaluate(async () => {
+    const imgs = Array.from(document.images);
+    await Promise.all(
+      imgs.map((img) => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise((resolve) => {
+          const done = () => resolve();
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+        });
+      })
+    );
+  });
+}
+
+async function removeTrailingArtifacts(page) {
+  await page.evaluate(() => {
+    const blogPost = document.querySelector(".blog-post");
+    if (!blogPost) return;
+
+    const isRemovableTailNode = (el) => {
+      const text = (el.textContent || "").replace(/\u00a0/g, " ").trim();
+      const media = el.querySelector("img, video, iframe, canvas, svg, table");
+      const hasFormControl = el.querySelector("input, textarea, select, button");
+
+      if (hasFormControl) return false;
+
+      if (media) {
+        const imgs = Array.from(el.querySelectorAll("img"));
+        const hasLoadedImage = imgs.some((img) => img.naturalWidth > 0);
+        if (hasLoadedImage) return false;
+      }
+
+      const style = window.getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      const looksLikePlaceholder =
+        rect.height >= 60 &&
+        style.backgroundColor !== "rgba(0, 0, 0, 0)" &&
+        style.backgroundColor !== "transparent";
+
+      return text.length === 0 && (looksLikePlaceholder || !media);
+    };
+
+    let guard = 0;
+    while (blogPost.lastElementChild && guard < 20) {
+      const last = blogPost.lastElementChild;
+      if (!isRemovableTailNode(last)) break;
+      last.remove();
+      guard += 1;
+    }
+  });
+}
+
+async function compactLayoutForPdf(page) {
+  await page.addStyleTag({
+    content: `
+      @page { size: A4; margin: 8mm; }
+      html, body {
+        font-size: 13px !important;
+        line-height: 1.25 !important;
+      }
+      #quiztitsp, body > div:first-child {
+        margin: 0 0 8px 0 !important;
+        font-size: 18px !important;
+        line-height: 1.2 !important;
+      }
+      .blog-post, .blog-post * {
+        box-sizing: border-box !important;
+      }
+      .blog-post p,
+      .blog-post li,
+      .blog-post div {
+        margin-top: 0.25rem !important;
+        margin-bottom: 0.25rem !important;
+        line-height: 1.25 !important;
+      }
+      .blog-post h1, .blog-post h2, .blog-post h3, .blog-post h4 {
+        margin-top: 0.35rem !important;
+        margin-bottom: 0.25rem !important;
+        line-height: 1.2 !important;
+      }
+      .blog-post img {
+        max-width: 100% !important;
+        height: auto !important;
+      }
+      .blog-post br + br {
+        display: none !important;
+      }
+      .blog-post .mb-5, .blog-post .mt-5, .blog-post .py-5, .blog-post .my-5 {
+        margin-top: 0.4rem !important;
+        margin-bottom: 0.4rem !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+      }
+    `,
   });
 }
 
@@ -110,12 +244,16 @@ async function main() {
       }
 
       await stripBodyToBlogPost(page);
+      await prepareImagesForPdf(page);
+      await removeTrailingArtifacts(page);
+      await compactLayoutForPdf(page);
 
       await page.pdf({
         path: pdfPath,
         format: "A4",
         printBackground: true,
-        margin: { top: "12mm", right: "12mm", bottom: "12mm", left: "12mm" },
+        scale: 0.92,
+        margin: { top: "8mm", right: "8mm", bottom: "8mm", left: "8mm" },
       });
 
       console.log("  -> PDF:", pdfPath);

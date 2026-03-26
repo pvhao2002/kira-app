@@ -1,0 +1,54 @@
+server {
+  listen 80;
+  server_name _;
+
+  # Fast health endpoint for checks.
+  location = /healthz {
+    access_log off;
+    add_header Content-Type text/plain;
+    return 200 "ok\n";
+  }
+
+  # kira-service (Spring context-path: /api)
+  location /api/ {
+    proxy_pass http://kira_service_upstream;
+  }
+
+  # kira-queue (Spring context-path: /queue)
+  location /queue/ {
+    proxy_pass http://kira_queue_upstream;
+  }
+
+  # kira-gateway (Spring context-path: /gateway)
+  location /gateway/ {
+    proxy_pass http://kira_gateway_upstream;
+  }
+
+  # tool-service (Spring context-path: /tool-service)
+  location /tool-service/ {
+    proxy_pass http://kira_tool_service_upstream;
+  }
+}
+
+upstream kira_service_upstream {
+  server ${KIRA_SERVICE_HOST}:${KIRA_SERVICE_PORT};
+  keepalive 32;
+}
+
+upstream kira_queue_upstream {
+  server ${KIRA_QUEUE_HOST}:${KIRA_QUEUE_PORT};
+  keepalive 32;
+}
+
+upstream kira_gateway_upstream {
+  least_conn;
+  server ${KIRA_GATEWAY_HOST_1}:${KIRA_GATEWAY_PORT_1};
+  server ${KIRA_GATEWAY_HOST_2}:${KIRA_GATEWAY_PORT_2};
+  server ${KIRA_GATEWAY_HOST_3}:${KIRA_GATEWAY_PORT_3};
+  keepalive 32;
+}
+
+upstream kira_tool_service_upstream {
+  server ${KIRA_TOOL_SERVICE_HOST}:${KIRA_TOOL_SERVICE_PORT};
+  keepalive 32;
+}
