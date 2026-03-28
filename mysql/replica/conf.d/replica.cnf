@@ -6,3 +6,6 @@ binlog_format=ROW
 gtid_mode=ON
 enforce_gtid_consistency=ON
 skip_replica_start=ON
+# Local dev: replica init creates MYSQL_DATABASE before replication replays primary binlog;
+# skip duplicate CREATE DATABASE (1007) so SQL thread keeps applying DDL/DML.
+replica_skip_errors=1007

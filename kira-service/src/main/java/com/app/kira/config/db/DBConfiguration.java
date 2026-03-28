@@ -17,11 +17,54 @@ import javax.sql.DataSource;
 @Configuration("DBConfiguration")
 @EnableTransactionManagement
 public class DBConfiguration {
-
+    // temp solution for ex is main database
+    @Bean
+    @ExDB
+    @ConfigurationProperties(prefix = "application.datasource.ex")
+    public HikariConfig exHikariConfig() {
+        return new HikariConfig();
+    }
 
     @Bean
+    @ExDB
+    public DataSource exDataSource(@ExDB HikariConfig config) {
+        return getDataSource(config);
+    }
+
+    @Bean
+    @ExDB
+    @Primary
+    public JdbcTemplate exJdbcTemplate(@ExDB DataSource ds) {
+        return new JdbcTemplate(ds);
+    }
+
+    @Bean
+    @ExDB
+    @Primary
+    public NamedParameterJdbcTemplate exNamedParameterJdbcTemplate(@ExDB DataSource ds) {
+        return new NamedParameterJdbcTemplate(this.exJdbcTemplate(ds));
+    }
+
+    @Bean
+    @ExDB
+    @Primary
+    public JdbcClient exJdbcClient(@ExDB DataSource ds) {
+        return JdbcClient.create(ds);
+    }
+
+    @Bean
+    @Primary
+    public DataSourceTransactionManager transactionManager(@ExDB DataSource ds) {
+        var txManager = new DataSourceTransactionManager();
+        txManager.setDataSource(ds);
+        return txManager;
+    }
+
+
+    // ─── Write DB ───
+    @Bean
     @WriteDB
-    @ConfigurationProperties(prefix = "application.datasource.write")
+    @ConfigurationProperties(prefix = "application.datasource.primary")
     public HikariConfig writeHikariConfig() {
         return new HikariConfig();
     }
@@ -38,38 +81,27 @@ public class DBConfiguration {
 
     @Bean
     @WriteDB
-    @Primary
     public JdbcTemplate writeJdbcTemplate(@WriteDB DataSource ds) {
         return new JdbcTemplate(ds);
     }
 
     @Bean
     @WriteDB
-    @Primary
     public NamedParameterJdbcTemplate writeNamedParameterJdbcTemplate(@WriteDB DataSource ds) {
         return new NamedParameterJdbcTemplate(this.writeJdbcTemplate(ds));
     }
 
     @Bean
     @WriteDB
-    @Primary
     public JdbcClient writeJdbcClient(@WriteDB DataSource ds) {
         return JdbcClient.create(ds);
-    }
-
-    @Bean
-    @Primary
-    public DataSourceTransactionManager transactionManager(@WriteDB DataSource ds) {
-        var txManager = new DataSourceTransactionManager();
-        txManager.setDataSource(ds);
-        return txManager;
     }
 
     // ─── Read DB ───
 
     @Bean
     @ReadDB
-    @ConfigurationProperties(prefix = "application.datasource.read")
+    @ConfigurationProperties(prefix = "application.datasource.replica")
     public HikariConfig readHikariConfig() {
         return new HikariConfig();
     }

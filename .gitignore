@@ -84,3 +84,4 @@ build/
 
 # Gộp log từ IntelliJ (Promtail đọc từ đây)
 logs/*.log
+/logs
