@@ -8,6 +8,7 @@ drop table if exists event_odds_timeline;
 drop table if exists event_odds;
 drop table if exists event_incident;
 drop table if exists event_result;
+drop table if exists event_claim;
 drop table if exists events;
 drop table if exists teams;
 drop table if exists leagues;
@@ -87,6 +88,19 @@ create table events
     index idx_event_date_event_name (event_date, event_name),
     index idx_league_date_name (league_id, event_date, event_name),
     index idx_home_away (home_id, away_id)
+) engine = InnoDB
+  row_format = dynamic;
+
+create table event_claim
+(
+    claim_id    bigint auto_increment primary key,
+    event_id    bigint      not null,
+    claimed_by  varchar(100) not null,
+    claimed_at  datetime    default now(),
+    unique key uk_event_claim_event_id (event_id),
+    index idx_claimed_by_claimed_at (claimed_by, claimed_at),
+    index idx_claimed_at (claimed_at),
+    constraint fk_event_claim_event foreign key (event_id) references events (event_id) on delete cascade
 ) engine = InnoDB
   row_format = dynamic;
 

@@ -20,6 +20,10 @@ server {
   }
 
   # kira-gateway (Spring context-path: /gateway)
+  location = /gateway {
+    return 301 /gateway/;
+  }
+
   location /gateway/ {
     proxy_pass http://kira_gateway_upstream;
   }

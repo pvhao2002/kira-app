@@ -1,3 +1,21 @@
+application:
+  datasource:
+    ex:
+      jdbc-url: "jdbc:mysql://${DB_EX_HOST:localhost}:${DB_EX_PORT:3306}/${DB_EX_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
+      username: "${DB_EX_USERNAME:root}"
+      password: "${DB_EX_PASSWORD:1234}"
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    primary:
+      jdbc-url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_PRIMARY_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
+      username: "${DB_PRIMARY_USERNAME:kira_user}"
+      password: "${DB_PRIMARY_PASSWORD:kira_password}"
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    replica:
+      jdbc-url: "jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3311}/${DB_REPLICA_NAME:kira}?useUnicode=true"
+      username: "${DB_REPLICA_USERNAME:kira_user}"
+      password: "${DB_REPLICA_PASSWORD:kira_password}"
+      driver-class-name: com.mysql.cj.jdbc.Driver
+
 spring:
   application:
     name: kira-gateway
@@ -17,6 +35,9 @@ spring:
     execution:
       pool:
         core-size: 36
+app:
+  crawl:
+    claim-stale-after-seconds: ${CRAWL_CLAIM_STALE_AFTER_SECONDS:900}
 
 management:
   endpoints:
@@ -38,4 +59,4 @@ logging:
   level:
     root: info
   file:
-    name: ${LOG_DIR:./logs}/kira-gateway.log
+    name: ${LOG_DIR:./logs}/kira-gateway-${INSTANCE_ID:${HOSTNAME:local}-${server.port}-${PID}}.log

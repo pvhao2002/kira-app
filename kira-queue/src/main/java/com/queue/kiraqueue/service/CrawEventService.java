@@ -84,6 +84,7 @@ public class CrawEventService {
             return;
         }
         PlaywrightUtil.withPlaywright(event, (page, evt) -> {
+            long start = System.currentTimeMillis();
             try {
                 log.info("Crawl event start: eventId=%d, eventName=%s".formatted(event.getEventId(), event.getEventName()));
                 page.navigate(
@@ -105,8 +106,9 @@ public class CrawEventService {
                 }
             } catch (Exception e) {
                 processEventFail(eventId, "main", e.getMessage());
+                log.warning("Crawl event failed: eventId=%d, error=%s".formatted(event.getEventId(), e.getMessage()));
             } finally {
-                log.info("Crawl event done: eventId=%d, eventName=%s".formatted(event.getEventId(), event.getEventName()));
+                log.info("Crawl event done: eventId=%d, eventName=%s took %d ms".formatted(event.getEventId(), event.getEventName(), System.currentTimeMillis() - start));
             }
         });
     }
@@ -125,6 +127,7 @@ public class CrawEventService {
         boolean[] ok = { true };
         PlaywrightUtil.withPlaywright(event, (page, evt) -> {
             log.info("Crawl stats start: eventId=%d".formatted(evt.getEventId()));
+            long start = System.currentTimeMillis();
             try {
                 page.navigate(
                         event.getLink().concat("/stats").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
@@ -160,7 +163,7 @@ public class CrawEventService {
                 processEventFail(evt.getEventId(), "stats", e.getMessage());
                 ok[0] = false;
             } finally {
-                log.info("Crawl stats done: eventId=%d".formatted(evt.getEventId()));
+                log.info("Crawl stats done: eventId=%d took %d ms".formatted(evt.getEventId(), System.currentTimeMillis() - start));
             }
         });
         return ok[0];
@@ -230,6 +233,7 @@ public class CrawEventService {
     private boolean crawlOddEvents(Event event) {
         boolean[] ok = { true };
         PlaywrightUtil.withPlaywright(event, (page, evt) -> {
+            long start = System.currentTimeMillis();
             try {
                 log.info("Crawl odds start: eventId=%d".formatted(event.getEventId()));
                 var listTabOdds = Map.of("asian handicap", "hdc", "total goals", "ou", "total corners", "corner");
@@ -267,8 +271,9 @@ public class CrawEventService {
             } catch (Exception e) {
                 processEventFail(evt.getEventId(), "odds", e.getMessage());
                 ok[0] = false;
+                log.warning("Crawl odds failed: eventId=%d, error=%s".formatted(evt.getEventId(), e.getMessage()));
             } finally {
-                log.info("Crawl odds done: eventId=%d".formatted(evt.getEventId()));
+                log.info("Crawl odds done: eventId=%d took %d ms".formatted(evt.getEventId(), System.currentTimeMillis() - start));
             }
         });
         return ok[0];

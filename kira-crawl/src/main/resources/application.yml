@@ -1,0 +1,34 @@
+app:
+  gateway:
+    base-url: ${GATEWAY_URL:http://localhost/gateway}
+
+server:
+  port: ${SERVER_PORT:2400}
+  servlet:
+    context-path: /crawl
+
+spring:
+  application:
+    name: kira-crawl
+  output:
+    ansi:
+      enabled: NEVER
+  task:
+    scheduling:
+      pool:
+        size: 36
+    execution:
+      pool:
+        core-size: 36
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+logging:
+  level:
+    root: info
+  file:
+    name: ${LOG_DIR:./logs}/kira-crawl-${INSTANCE_ID:local}.log
