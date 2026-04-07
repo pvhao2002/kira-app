@@ -14,22 +14,30 @@ import {Leagues} from './components/leagues/leagues';
 import {Notifications} from './components/notifications/notifications';
 import {Users} from './components/users/users';
 import {SqlEditor} from './components/sql-editor/sql-editor';
+import {authGuard} from './guards/auth.guard';
 
 export const routes: Routes = [
-  {path: '', redirectTo: 'dashboard', pathMatch: 'full'},
   {path: 'login', component: Login},
-  {path: 'dashboard', component: Dashboard},
-  {path: 'matches', component: Matches},
-  {path: 'match/:id', component: MatchDetail},
-  {path: 'results', component: Results},
-  {path: 'cards', component: Cards},
-  {path: 'cards/add', component: AddCard},
-  {path: 'profile', component: Profile},
-  {path: 'transactions', component: Transactions},
-  {path: 'tool', component: Tools},
-  {path: 'transactions/add', component: AddTransaction},
-  {path: 'leagues', component: Leagues},
-  {path: 'notifications', component: Notifications},
-  {path: 'users', component: Users},
-  {path: 'sql', component: SqlEditor},
+  {
+    path: '',
+    canActivate: [authGuard],
+    children: [
+      {path: '', redirectTo: 'dashboard', pathMatch: 'full'},
+      {path: 'dashboard', component: Dashboard},
+      {path: 'matches', component: Matches},
+      {path: 'match/:id', component: MatchDetail},
+      {path: 'results', component: Results},
+      {path: 'cards', component: Cards},
+      {path: 'cards/add', component: AddCard},
+      {path: 'profile', component: Profile},
+      {path: 'transactions', component: Transactions},
+      {path: 'tool', component: Tools},
+      {path: 'transactions/add', component: AddTransaction},
+      {path: 'leagues', component: Leagues},
+      {path: 'notifications', component: Notifications},
+      {path: 'users', component: Users},
+      {path: 'sql', component: SqlEditor},
+    ]
+  },
+  {path: '**', redirectTo: 'dashboard'},
 ];

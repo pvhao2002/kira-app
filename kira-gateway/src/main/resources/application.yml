@@ -38,12 +38,26 @@ spring:
 app:
   crawl:
     claim-stale-after-seconds: ${CRAWL_CLAIM_STALE_AFTER_SECONDS:900}
+  security:
+    jwt:
+      secret: ${APP_SECURITY_JWT_SECRET:change-me-in-production-change-me-in-production}
+      issuer: ${APP_SECURITY_JWT_ISSUER:kira-gateway}
+      access-token-ttl-seconds: ${APP_SECURITY_JWT_ACCESS_TOKEN_TTL_SECONDS:900}
+    cookie:
+      name: ${APP_SECURITY_COOKIE_NAME:access_token}
+      secure: ${APP_SECURITY_COOKIE_SECURE:true}
+      same-site: ${APP_SECURITY_COOKIE_SAME_SITE:Strict}
+      domain: ${APP_SECURITY_COOKIE_DOMAIN:}
+      path: ${APP_SECURITY_COOKIE_PATH:/gateway}
+      max-age-seconds: ${APP_SECURITY_COOKIE_MAX_AGE_SECONDS:900}
+    cors:
+      allowed-origins: ${APP_SECURITY_CORS_ALLOWED_ORIGINS:http://localhost:4200}
 
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: "health,info"
   endpoint:
     shutdown:
       enabled: false

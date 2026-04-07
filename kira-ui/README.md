@@ -57,3 +57,23 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+## Login Session Notes (Local Dev)
+
+The UI calls auth endpoints through `/gateway/*` (see `proxy.conf.js`) and relies on an HTTP-only cookie issued by `kira-gateway`.
+
+If you can login successfully but are redirected back to login on refresh or protected pages:
+
+1. Ensure UI proxy points to the running gateway instance.
+2. For non-HTTPS local environments, set `APP_SECURITY_COOKIE_SECURE=false` for `kira-gateway`.
+3. Keep `APP_SECURITY_COOKIE_PATH=/gateway` so the browser sends cookie for `/gateway/auth/me`.
+4. Keep `APP_SECURITY_COOKIE_DOMAIN` empty for localhost development unless you explicitly need a custom domain.
+
+Example local gateway env:
+
+```bash
+APP_SECURITY_COOKIE_SECURE=false
+APP_SECURITY_COOKIE_PATH=/gateway
+APP_SECURITY_COOKIE_DOMAIN=
+APP_SECURITY_CORS_ALLOWED_ORIGINS=http://localhost:4200
+```

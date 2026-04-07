@@ -1,15 +1,20 @@
 ---
-description: UI chuẩn cho web và mobile – đẹp, tối ưu, thân thiện, màu đồng nhất
-globs: kira-ui/**/*.ts,kira-ui/**/*.html,kira-ui/**/*.scss,kira-ui/**/*.css,mobile-app/**/*.tsx,mobile-app/**/*.ts,mobile-app/**/*.css
-alwaysApply: false
+description: Chuẩn frontend Angular 21, giao diện đồng bộ và UX nhất quán
+alwaysApply: true
 ---
 
-# Frontend UI Standards (Web & Mobile)
+# Frontend Standards (Angular 21 + UI Consistency)
 
-- **Thiết kế đẹp, tối ưu**: Layout gọn, khoảng trắng hợp lý, typography rõ; component có trạng thái rõ (hover, focus, disabled). Tránh giao diện rối, quá tải thông tin.
-- **Thân thiện người dùng**: Copy dễ hiểu, feedback ngay (loading, success, error); touch target đủ lớn trên mobile (min ~44pt). Tránh jargon và hành vi gây bối rối.
-- **Màu sắc đồng nhất**: Dùng design tokens chung giữa web (kira-ui) và mobile (mobile-app). Sync với `mobile-app/constants/theme.ts`; web dùng CSS variables hoặc Tailwind theme cùng bảng màu (primary, background, text, border, card). Không hardcode hex khác token.
+- Ưu tiên best practices Angular 21: standalone components, inject(), signal/computed/effect đúng ngữ cảnh, route-level lazy loading.
+- Tách rõ presentation và business logic; component mỏng, logic dùng service hoặc state layer phù hợp.
+- Dùng OnPush và track expression cho danh sách; hạn chế pipe hoặc function nặng chạy lại nhiều lần trong template.
+- Giao diện phải đồng bộ: dùng design tokens/theme chung, không hardcode màu ngoài palette chuẩn.
+- Trạng thái UI bắt buộc rõ ràng: loading, empty, success, error; form có validation và message dễ hiểu.
+- Đảm bảo accessibility cơ bản: semantic HTML, focus state rõ, contrast đủ tốt cho text và control.
 
-**Ví dụ màu đồng nhất:** primary `#0a7ea4`, nền sáng `#fff` / tối `#151718`, card `#F8F9FA` / `#1C1C1E`. Khi thêm màu mới, cập nhật cả hai nền tảng.
+## Checklist nhanh
 
-**Checklist nhanh:** Màu từ theme/tokens; hỗ trợ dark/light nếu app có; loading & lỗi hiển thị rõ; contrast chữ/nền đủ.
+1. Cùng token màu giữa web và mobile cho các semantic color chính.
+2. Không trùng lặp style, ưu tiên shared styles hoặc reusable components.
+3. Không render thừa; ưu tiên defer/lazy load cho màn hình nặng.
+4. API call có xử lý lỗi, timeout, retry hợp lý theo từng luồng.

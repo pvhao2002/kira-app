@@ -1,6 +1,16 @@
 const PROXY_CONFIG = [
   {
     context: [
+      '/gateway',
+    ],
+    target: "http://localhost:80",
+    secure: true,
+    changeOrigin: true,
+    logLevel: "debug",
+    ws: true
+  }
+  ,{
+    context: [
       '/tool-service',
     ],
     target: "http://localhost:1406",

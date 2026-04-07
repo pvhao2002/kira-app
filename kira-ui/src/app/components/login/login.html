@@ -20,14 +20,18 @@
       <p class="text-sm text-slate-400">Đăng nhập để quản lý tài chính</p>
     </div>
 
-    <form class="flex flex-col gap-5 mt-2" (submit)="$event.preventDefault()">
+    <form class="flex flex-col gap-5 mt-2" (ngSubmit)="onSubmit()">
       <div class="space-y-1.5">
         <label class="text-sm font-semibold text-slate-300">Email hoặc Tên đăng nhập</label>
         <div class="relative group">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <span class="material-symbols-outlined text-slate-500 group-focus-within:text-blue-500 transition-colors">mail</span>
           </div>
-          <input type="text" placeholder="user@example.com"
+          <input type="text"
+                 name="username"
+                 [ngModel]="username()"
+                 (ngModelChange)="username.set($event)"
+                 placeholder="user@example.com"
                  class="block w-full pl-10 pr-3 py-2.5 border border-slate-600 rounded-lg bg-[#334155] text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200"/>
         </div>
       </div>
@@ -38,20 +42,27 @@
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <span class="material-symbols-outlined text-slate-500 group-focus-within:text-blue-500 transition-colors">lock</span>
           </div>
-          <input type="password" placeholder="••••••••"
+          <input [type]="showPassword() ? 'text' : 'password'"
+                 name="password"
+                 [ngModel]="password()"
+                 (ngModelChange)="password.set($event)"
+                 placeholder="••••••••"
                  class="block w-full pl-10 pr-10 py-2.5 border border-slate-600 rounded-lg bg-[#334155] text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200"/>
           <button type="button"
+                  (click)="togglePasswordVisibility()"
+                  [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
                   class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-300 transition-colors">
-            <span class="material-symbols-outlined">visibility_off</span>
+            <span class="material-symbols-outlined">{{ showPassword() ? 'visibility' : 'visibility_off' }}</span>
           </button>
         </div>
       </div>
 
-      <a routerLink="/dashboard"
-         class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 flex items-center justify-center gap-2">
-        <span>Đăng nhập</span>
+      <button type="submit"
+              [disabled]="loading()"
+              class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 flex items-center justify-center gap-2">
+        <span>{{ loading() ? 'Đang đăng nhập...' : 'Đăng nhập' }}</span>
         <span class="material-symbols-outlined text-lg">arrow_forward</span>
-      </a>
+      </button>
     </form>
 
     <div class="relative flex py-2 items-center">

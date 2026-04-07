@@ -1,26 +1,20 @@
 ---
-description: Backend luôn tối ưu hiệu năng, dùng JDK 21 và virtual thread / đa luồng khi phù hợp
-globs: kira-service/**/*.java,kira-queue/**/*.java,kira-tool-service/**/*.java
-alwaysApply: false
+description: Chuẩn hiệu năng backend ưu tiên đo đạc, tối ưu query, I/O và tài nguyên
+alwaysApply: true
 ---
 
-# Backend Performance (JDK 21)
+# Backend Performance (Java 21)
 
-- **Luôn viết tối ưu hiệu năng**: Query có index, tránh N+1; batch insert/update khi nhiều bản ghi; API response gọn, pagination cho list; cache khi đọc nhiều ít thay đổi. Đóng connection/stream đúng cách, tránh leak.
-- **Phù hợp JDK hiện tại**: Dự án dùng **Java 21**. Ưu tiên API hiện đại (records, pattern matching, sealed classes khi phù hợp) và tối ưu cho JVM 21.
-- **Đa luồng & virtual thread**: Tận dụng khi có I/O chờ (gọi API, DB, file). Không block thread cho tác vụ chậm.
+- Tối ưu dựa trên số liệu: có log/metric cho latency, throughput, error rate trước và sau khi tối ưu.
+- Query phải có index phù hợp, tránh N+1, chỉ SELECT field cần thiết, dùng batch cho insert/update lớn.
+- API trả dữ liệu gọn, có pagination cho danh sách lớn, thêm cache cho dữ liệu đọc nhiều ít thay đổi.
+- Không block thread cho I/O chậm; ưu tiên async hoặc virtual thread (Java 21) cho tác vụ I/O-bound.
+- CPU-bound nặng dùng thread pool giới hạn; tránh tạo quá nhiều task nhỏ gây overhead context switch.
+- Luôn đóng connection/stream/tài nguyên đúng cách, cấu hình timeout và retry có backoff khi gọi external service.
 
-**Virtual thread (Java 21):**
-```java
-// ✅ Xử lý song song I/O-bound với virtual thread
-try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-    List<Future<Result>> futures = items.stream()
-        .map(item -> executor.submit(() -> callExternalApi(item)))
-        .toList();
-    for (var f : futures) results.add(f.get());
-}
-```
+## Khi sửa API hoặc job
 
-**Lưu ý:** Dùng virtual thread cho I/O-bound; CPU-bound nặng cân nhắc `ExecutorService` với thread pool có giới hạn. Tránh synchronized trong code chạy trên virtual thread (dùng ReentrantLock nếu cần). Queue/consumer trong kira-queue đã xử lý song song; tối ưu từng consumer (batch, timeout, không block).
-
-**Checklist nhanh:** Index cho query; tránh N+1; batch khi cần; pagination; async/virtual thread cho I/O chờ; đo (log/metric) trước khi tối ưu.
+1. Ước lượng tải dự kiến và SLA.
+2. Kiểm tra bottleneck ở DB, HTTP, queue, hoặc serialization.
+3. Chọn giải pháp tối ưu có thể đo được (index/cache/batch/async).
+4. Ghi rõ trade-off (consistency, memory, complexity).
