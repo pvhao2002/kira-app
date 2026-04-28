@@ -298,23 +298,72 @@ public class CrawEventService {
         JdbcBatchUtils.batchInsertSafe(jdbcTemplate, SQL_INSERT_EVENT_ODDS_TIMELINE, timelineParams);
         log.info("persistOdds: eventId=%d, market=%s, timeline inserted=%d".formatted(eventId, market, timelineParams.size()));
 
-        var firstInList = timelineItems.stream()
-                .filter(it -> it.getDate() != null).findFirst()
-                .orElse(timelineItems.getFirst());
-        var lastInList = timelineItems.getLast();
-        jdbcTemplate.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "open", market, lastInList));
-        jdbcTemplate.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "pre-match", market, firstInList));
+        var openCandidate = timelineItems.getLast();
+        var preMatchCandidate = pickPreMatchCandidate(timelineItems);
+        jdbcTemplate.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "open", market, openCandidate));
+        jdbcTemplate.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "pre-match", market, preMatchCandidate));
 
-        var firstHtOpt = timelineItems.stream()
-                .filter(t -> t.getMatchMinute() != null && t.getMatchMinute().trim().equalsIgnoreCase("ht"))
-                .findFirst();
-        if (firstHtOpt.isPresent()) {
-            jdbcTemplate.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "half-time", market, firstHtOpt.get()));
-            log.info("persistOdds: eventId=%d, market=%s, open+pre-match+half-time".formatted(eventId, market));
-        } else {
-            log.info("persistOdds: eventId=%d, market=%s, open+pre-match (no HT row)".formatted(eventId, market));
+        var halfTimeCandidate = pickHalfTimeCandidate(timelineItems);
+        if (halfTimeCandidate != null) {
+            jdbcTemplate.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "half-time", market, halfTimeCandidate.timeline()));
+            log.info("persistOdds: eventId=%d, market=%s, open+pre-match+half-time source=%s"
+                    .formatted(eventId, market, halfTimeCandidate.source()));
+            return;
         }
+        log.info("persistOdds: eventId=%d, market=%s, open+pre-match (no half-time candidate)".formatted(eventId, market));
     }
+
+    private EventOddsTimeline pickPreMatchCandidate(List<EventOddsTimeline> timelineItems) {
+        return timelineItems.stream()
+                .filter(it -> StringUtil.isNotEmpty(it.getDate()))
+                .findFirst()
+                .orElse(timelineItems.getFirst());
+    }
+
+    private HalfTimeCandidate pickHalfTimeCandidate(List<EventOddsTimeline> timelineItems) {
+        var directHt = timelineItems.stream()
+                .filter(t -> StringUtil.isNotEmpty(t.getMatchMinute()) && "ht".equalsIgnoreCase(t.getMatchMinute().trim()))
+                .findFirst()
+                .orElse(null);
+        if (directHt != null) {
+            return new HalfTimeCandidate(directHt, "direct_ht");
+        }
+
+        EventOddsTimeline minute45Newest = null;
+        EventOddsTimeline nearestUnder45 = null;
+        Integer nearestUnder45Minute = null;
+        for (EventOddsTimeline item : timelineItems) {
+            Integer minuteValue = parseMatchMinuteValue(item.getMatchMinute());
+            if (minuteValue == null) continue;
+            if (minuteValue == 45) {
+                minute45Newest = item;
+                continue;
+            }
+            if (minuteValue > 45) continue;
+            if (nearestUnder45Minute == null || minuteValue >= nearestUnder45Minute) {
+                nearestUnder45Minute = minuteValue;
+                nearestUnder45 = item;
+            }
+        }
+        if (minute45Newest != null) {
+            return new HalfTimeCandidate(minute45Newest, "fallback_minute_45_latest");
+        }
+        if (nearestUnder45 != null) {
+            return new HalfTimeCandidate(nearestUnder45, "fallback_nearest_minute_under_45");
+        }
+        return null;
+    }
+
+    private Integer parseMatchMinuteValue(String minuteText) {
+        if (StringUtil.isEmpty(minuteText)) return null;
+        String normalized = minuteText.trim();
+        if ("ht".equalsIgnoreCase(normalized)) return null;
+        var matcher = FIRST_INT.matcher(normalized);
+        if (!matcher.find()) return null;
+        return Integer.parseInt(matcher.group(1));
+    }
+
+    private record HalfTimeCandidate(EventOddsTimeline timeline, String source) {}
 
     private MapSqlParameterSource toTimelineParams(Long eventId, String market, EventOddsTimeline t, LocalDateTime defaultCrawledAt) {
         LocalDateTime crawledAt = (t.getDate() != null && !t.getDate().isBlank())

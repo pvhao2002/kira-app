@@ -66,7 +66,7 @@ public class PlaywrightUtil {
     public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic) {
         try (
                 var p = Playwright.create();
-                var b = p.chromium().launch(launchOptions(false));
+                var b = p.chromium().launch(launchOptions(true));
                 BrowserContext context = b.newContext(contextOptions())) {
             context.addInitScript(INIT_SCRIPT_STEALTH);
             Page page = context.newPage();

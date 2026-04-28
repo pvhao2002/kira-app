@@ -5,6 +5,7 @@ import com.app.kira.util.DateUtil;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,6 +21,10 @@ import java.util.concurrent.TimeUnit;
 public class DateSchedule {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final DateProducer dateProducer;
+
+    @Value("${kira.crawl-schedule.enabled:true}")
+    private boolean crawlScheduleEnabled;
+
     private static final String SQL_GET_DATE = """
             select date
             from crawl_date
@@ -31,6 +36,9 @@ public class DateSchedule {
 
     @Scheduled(cron = "0 0 0,3,15,20 * * *", zone = "Asia/Ho_Chi_Minh")
     public void crawlTomorrowEvent() {
+        if (!crawlScheduleEnabled) {
+            return;
+        }
         for (var date : List.of(DateUtil.getTodayDate(), DateUtil.getTomorrowDate())) {
             dateProducer.sendDateTomorrow(date);
         }
@@ -39,6 +47,9 @@ public class DateSchedule {
 
     @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlByDate() {
+        if (!crawlScheduleEnabled) {
+            return;
+        }
         var dates = jdbcTemplate.query(SQL_GET_DATE, (rs, rowNum) -> rs.getString("date"));
         if(CollectionUtils.isEmpty(dates)) {
             return;

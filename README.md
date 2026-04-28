@@ -8,6 +8,7 @@ Hệ sinh thái Kira gồm web, mobile và nhiều backend services hỗ trợ t
 - `mobile-app`: Ứng dụng mobile (Expo/React Native).
 - `kira-gateway`: Cổng API public, chịu trách nhiệm auth + routing vào các service nội bộ.
 - `kira-service`: Business API chính.
+- `kira-producer`: Lịch đẩy ngày/sự kiện cần crawl lên RabbitMQ (tách khỏi API nếu cần).
 - `kira-queue`: Xử lý hàng đợi và tác vụ async (RabbitMQ).
 - `kira-crawl`: Service thu thập và chuẩn hóa dữ liệu đầu vào cho pipeline phân tích.
 - `kira-tool-service`: Service công cụ/phụ trợ.
@@ -29,6 +30,7 @@ kira-app/
 |- kira-gateway/               # API gateway (default: :8888/gateway)
 |- kira-service/               # Core business service (default: :2308/api)
 |- kira-queue/                 # Queue worker/API (default: :2323/queue)
+|- kira-producer/              # Scheduler đẩy date/event crawl lên RabbitMQ (HTTP actuator default: :2311)
 |- kira-crawl/                 # Crawl service (default: :2400/crawl)
 |- kira-tool-service/          # Tool service (default: :1406/tool-service)
 |- monitoring/                 # Loki/Promtail/Grafana configs
@@ -55,7 +57,7 @@ docker compose up -d
 Stack này gồm:
 
 - MySQL primary (`3310`) + MySQL replica (`3311`)
-- RabbitMQ (`5672`, UI: `15672`)
+- RabbitMQ (`5672`, UI: `15672`); tùy chọn `kira-producer` (`build: ./kira-producer`, port `2311`) đẩy job crawl lên queue
 - Loki (`3100`) + Promtail
 - Grafana (`3000`, mặc định `admin/admin`)
 - Nginx reverse proxy (`80`)
@@ -74,6 +76,7 @@ Các cổng/context-path mặc định:
 
 - `kira-gateway`: `http://localhost:8888/gateway`
 - `kira-service`: `http://localhost:2308/api`
+- `kira-producer` (Rabbit publish + actuator): `http://localhost:2311` — khi chạy `kira-producer` (hoặc stack Docker), đặt `KIRA_CRAWL_SCHEDULE_ENABLED=false` trên `kira-service` để tắt lịch crawl trùng.
 - `kira-queue`: `http://localhost:2323/queue`
 - `kira-crawl`: `http://localhost:2400/crawl`
 - `kira-tool-service`: `http://localhost:1406/tool-service`

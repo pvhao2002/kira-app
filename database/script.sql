@@ -1,6 +1,4 @@
-drop database if exists app;
-create database if not exists app;
-use app;
+use kira;
 
 -- Drop theo thứ tự phụ thuộc FK (bảng con trước, events sau)
 drop table if exists event_crawl_failed;

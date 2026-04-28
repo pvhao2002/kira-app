@@ -5,6 +5,7 @@ import com.app.kira.util.PlaywrightUtil;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,6 +22,10 @@ import java.util.concurrent.TimeUnit;
 public class EventSchedule {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final EventProducer eventProducer;
+
+    @Value("${kira.crawl-schedule.enabled:true}")
+    private boolean crawlScheduleEnabled;
+
     private static final String SQL_GET_EVENT_ANALYST = """
             select event_id
             from event_analyst
@@ -41,6 +46,9 @@ public class EventSchedule {
 
     @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlOddForUpcomingEvent() {
+        if (!crawlScheduleEnabled) {
+            return;
+        }
         var result = jdbcTemplate.query(SQL_GET_EVENT_UPCOMING,
                 Map.of("queue_type", PlaywrightUtil.CRAWL_UPCOMING_EVENT),
                 (rs, rowNum) -> rs.getString("event_id")
@@ -72,6 +80,9 @@ public class EventSchedule {
 
     @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void event() {
+        if (!crawlScheduleEnabled) {
+            return;
+        }
         var result = jdbcTemplate.query(SQL_GET_EVENT_ANALYST, (rs, rowNum) -> rs.getString("event_id"));
         if (CollectionUtils.isEmpty(result)) {
             return;

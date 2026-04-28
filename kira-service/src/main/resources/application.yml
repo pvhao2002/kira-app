@@ -18,6 +18,10 @@ application:
       password: "${DB_REPLICA_PASSWORD:kira_password}"
       driver-class-name: com.mysql.cj.jdbc.Driver
       maximum-pool-size: 5
+kira:
+  crawl-schedule:
+    enabled: ${KIRA_CRAWL_SCHEDULE_ENABLED:true}
+
 spring:
   application:
     name: kira-service
@@ -42,7 +46,7 @@ spring:
     port: ${RABBIT_PORT:5672}
     username: ${RABBIT_USERNAME:guest}
     password: ${RABBIT_PASSWORD:guest}
-    virtual-host: ${nesdpetn:/}
+    virtual-host: ${RABBIT_VHOST:/}
     connection-timeout: 60000         # timeout 60s khi tạo connection
     requested-heartbeat: 30           # giữ heartbeat để phát hiện connection chết
     cache:
