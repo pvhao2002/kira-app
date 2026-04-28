@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: kira-producer
+  datasource:
+    url: "jdbc:mysql://${DB_EX_HOST:localhost}:${DB_EX_PORT:3306}/${DB_EX_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
+    username: "${DB_EX_USERNAME:root}"
+    password: "${DB_EX_PASSWORD:1234}"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+  output:
+    ansi:
+      enabled: NEVER
+  task:
+    scheduling:
+      pool:
+        size: 12
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USERNAME:guest}
+    password: ${RABBIT_PASSWORD:guest}
+    virtual-host: ${RABBIT_VHOST:/}
+    connection-timeout: 60000
+    requested-heartbeat: 30
+    cache:
+      channel:
+        size: 50
+      connection:
+        mode: CHANNEL
+
+# Set false on kira-service when this app runs crawl schedules (avoid duplicate queue messages).
+kira:
+  producer:
+    crawl-schedule:
+      enabled: ${KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED:true}
+
+server:
+  port: ${KIRA_PRODUCER_PORT:2311}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: info
