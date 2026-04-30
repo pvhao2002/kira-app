@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: kira-schema
+  main:
+    web-application-type: none
+  datasource:
+    url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_PRIMARY_NAME:kira}?useUnicode=true&characterEncoding=UTF-8&createDatabaseIfNotExist=true&serverTimezone=UTC"
+    username: "${DB_PRIMARY_USERNAME:kira_user}"
+    password: "${DB_PRIMARY_PASSWORD:kira_password}"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    open-in-view: false
+    show-sql: "${KIRA_SCHEMA_SHOW_SQL:false}"
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+  sql:
+    init:
+      mode: never
+
+kira:
+  schema:
+    drop-orphan-columns: false
+    fail-on-orphan-columns: false
+
+# SQL seed is disabled (spring.sql.init.mode=never). Optional safe scripts may be placed under classpath:db/
+# and enabled explicitly. Do not point init at ../database/script.sql (contains DROP). The event job under
+# database/event/evt_insert_crawl_date_daily.sql references event_analyst (not defined in script.sql); resolve that before scheduling.
+
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: warn
+    kira.schema: info

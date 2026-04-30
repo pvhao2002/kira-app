@@ -2,9 +2,9 @@ spring:
   application:
     name: kira-producer
   datasource:
-    url: "jdbc:mysql://${DB_EX_HOST:localhost}:${DB_EX_PORT:3306}/${DB_EX_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
-    username: "${DB_EX_USERNAME:root}"
-    password: "${DB_EX_PASSWORD:1234}"
+    url: "jdbc:mysql://${DB_EX_HOST:localhost}:${DB_EX_PORT:3310}/${DB_EX_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
+    username: "${DB_EX_USERNAME:kira_user}"
+    password: "${DB_EX_PASSWORD:kira_password}"
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10

@@ -19,9 +19,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
@@ -102,6 +105,7 @@ public class CrawEventService {
                     jdbcTemplate.update("""
                             delete from event_crawl_failed
                             where event_id = :event_id
+                              and type in ('main', 'stats', 'odds')
                             """, Map.of("event_id", evt.getEventId()));
                 }
             } catch (Exception e) {
@@ -237,17 +241,35 @@ public class CrawEventService {
             try {
                 log.info("Crawl odds start: eventId=%d".formatted(event.getEventId()));
                 var listTabOdds = Map.of("asian handicap", "hdc", "total goals", "ou", "total corners", "corner");
+                var requiredMarkets = Set.of("hdc", "ou");
+                var availableMarkets = new HashSet<String>();
+                var crawledMarkets = new HashSet<String>();
+                var warnings = new ArrayList<String>();
                 page.navigate(
                         event.getLink().concat("/odds").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
                 );
-                page.waitForSelector(".oddTypesBox span");
+                PlaywrightUtil.waitDomContentLoaded(page);
+                PlaywrightUtil.removeAcceptAll(page);
+                deleteOddsForEvent(evt.getEventId());
+                if (!selectorExists(page, ".oddTypesBox span", 8_000)) {
+                    warnings.add("no_odd_tabs");
+                    processEventWarning(evt.getEventId(), "odds_warning", String.join(" | ", warnings));
+                    log.warning("Crawl odds skip: eventId=%d, reason=no_odd_tabs".formatted(evt.getEventId()));
+                    return;
+                }
                 var tabOdds = page.locator(".oddTypesBox span");
                 int count = tabOdds.count();
-                deleteOddsForEvent(evt.getEventId());
+                if (count <= 0) {
+                    warnings.add("no_odd_tabs");
+                    processEventWarning(evt.getEventId(), "odds_warning", String.join(" | ", warnings));
+                    log.warning("Crawl odds skip: eventId=%d, reason=no_odd_tabs".formatted(evt.getEventId()));
+                    return;
+                }
                 final boolean[] isOpenModal = {false};
                 for (int i = 0; i < count; i++) {
                     if (isOpenModal[0]) {
-                        page.locator(".van-popup.van-popup--bottom span i.iconfont.icon-guanbi").click();
+                        closeOddsModal(page);
+                        isOpenModal[0] = false;
                     }
                     Locator tab = tabOdds.nth(i);
                     tab.click();
@@ -255,19 +277,53 @@ public class CrawEventService {
                     for (var e : listTabOdds.entrySet()) {
                         if (!e.getKey().equalsIgnoreCase(tabNormalize)) continue;
                         String market = e.getValue();
-                        page.waitForSelector(".oddsBoxRight");
-                        page.locator(".oddsBox > .oddsBoxRight").first().click();
+                        availableMarkets.add(market);
+                        if (!selectorExists(page, ".oddsBox > .oddsBoxRight", 4_000)) {
+                            warnings.add("market=%s no_provider".formatted(market));
+                            log.warning("Crawl odds skip: eventId=%d, market=%s, reason=no_provider".formatted(evt.getEventId(), market));
+                            continue;
+                        }
+                        var providers = page.locator(".oddsBox > .oddsBoxRight");
+                        if (providers.count() <= 0) {
+                            warnings.add("market=%s no_provider".formatted(market));
+                            log.warning("Crawl odds skip: eventId=%d, market=%s, reason=no_provider".formatted(evt.getEventId(), market));
+                            continue;
+                        }
+                        providers.first().click();
                         isOpenModal[0] = true;
-                        page.waitForSelector("ul.oddContent li");
+                        if (!selectorExists(page, "ul.oddContent li", 4_000)) {
+                            warnings.add("market=%s empty_timeline".formatted(market));
+                            log.warning("Crawl odds skip: eventId=%d, market=%s, reason=empty_timeline".formatted(evt.getEventId(), market));
+                            continue;
+                        }
                         var listLi = page.querySelectorAll("ul.oddContent li");
                         var timelineItems = listLi.stream()
                                 .map(li -> new EventOddsTimeline(li, market))
                                 .filter(it -> it.getPriceA() != null && it.getPriceB() != null)
                                 .toList();
+                        if (timelineItems.isEmpty()) {
+                            warnings.add("market=%s empty_timeline".formatted(market));
+                            log.warning("Crawl odds skip: eventId=%d, market=%s, reason=empty_timeline".formatted(evt.getEventId(), market));
+                            continue;
+                        }
                         log.info("Crawl odds: eventId=%d, market=%s, timelineItems=%d".formatted(evt.getEventId(), market, timelineItems.size()));
                         persistOddsForMarket(evt.getEventId(), market, timelineItems);
+                        crawledMarkets.add(market);
                     }
                 }
+                var missingRequiredMarkets = requiredMarkets.stream()
+                        .filter(market -> !availableMarkets.contains(market))
+                        .toList();
+                if (!missingRequiredMarkets.isEmpty()) {
+                    warnings.add("missing_required_markets:%s".formatted(String.join(",", missingRequiredMarkets)));
+                    log.warning("Crawl odds partial: eventId=%d, missingRequiredMarkets=%s"
+                            .formatted(evt.getEventId(), String.join(",", missingRequiredMarkets)));
+                }
+                if (!warnings.isEmpty()) {
+                    processEventWarning(evt.getEventId(), "odds_warning", String.join(" | ", warnings));
+                }
+                log.info("Crawl odds summary: eventId=%d, availableMarkets=%s, crawledMarkets=%s"
+                        .formatted(evt.getEventId(), availableMarkets, crawledMarkets));
             } catch (Exception e) {
                 processEventFail(evt.getEventId(), "odds", e.getMessage());
                 ok[0] = false;
@@ -277,6 +333,36 @@ public class CrawEventService {
             }
         });
         return ok[0];
+    }
+
+    private boolean selectorExists(Page page, String selector, int timeoutMs) {
+        try {
+            page.waitForSelector(selector, new Page.WaitForSelectorOptions().setTimeout(timeoutMs));
+            return page.locator(selector).count() > 0;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    private void closeOddsModal(Page page) {
+        try {
+            var close = page.locator(".van-popup.van-popup--bottom span i.iconfont.icon-guanbi");
+            if (close.count() > 0) {
+                close.first().click();
+                page.waitForTimeout(250);
+            }
+        } catch (Exception ignored) {
+            // Modal can already be closed by the site scripts; ignore safely.
+        }
+    }
+
+    private void processEventWarning(Long eventId, String type, String message) {
+        var sql = """
+                insert into event_crawl_failed(event_id, type, message)
+                VALUES (:eventId, :type, :message)
+                on duplicate key update message = values(message)
+                """;
+        jdbcTemplate.update(sql, Map.of("eventId", eventId, "type", type, "message", message));
     }
 
     private void deleteOddsForEvent(Long eventId) {
