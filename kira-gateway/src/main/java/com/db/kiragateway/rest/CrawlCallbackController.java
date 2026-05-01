@@ -89,4 +89,12 @@ public class CrawlCallbackController {
         service.clearCrawlFail(eventId);
         return ResponseEntity.ok(Map.of("status", "ok"));
     }
+
+    @PostMapping("/crawl/events/{eventId}/no-odds")
+    public ResponseEntity<?> recordEventNoOdds(@PathVariable long eventId,
+                                               HttpServletRequest httpReq) {
+        log.info("recordEventNoOdds: eventId=%d, %s".formatted(eventId, RequestLogUtil.summary(httpReq)));
+        service.recordEventNoOdds(eventId);
+        return ResponseEntity.ok(Map.of("status", "ok"));
+    }
 }

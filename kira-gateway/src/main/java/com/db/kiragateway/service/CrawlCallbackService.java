@@ -2,10 +2,12 @@ package com.db.kiragateway.service;
 
 import com.db.kiragateway.dto.*;
 import com.db.kiragateway.repository.CrawlCallbackRepository;
+import com.db.kiragateway.repository.EventClaimRepository;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -14,9 +16,11 @@ public class CrawlCallbackService {
 
     private static final Logger log = Logger.getLogger(CrawlCallbackService.class.getName());
     private final CrawlCallbackRepository repo;
+    private final EventClaimRepository eventClaimRepository;
 
-    public CrawlCallbackService(CrawlCallbackRepository repo) {
+    public CrawlCallbackService(CrawlCallbackRepository repo, EventClaimRepository eventClaimRepository) {
         this.repo = repo;
+        this.eventClaimRepository = eventClaimRepository;
     }
 
     public void updateCrawlDateStatus(String date, CrawlDateStatusRequest req) {
@@ -116,11 +120,21 @@ public class CrawlCallbackService {
         repo.persistOddsForMarket(eventId, req.market(), req.timeline());
     }
 
+    @Transactional
     public void reportCrawlFail(long eventId, CrawlFailRequest req) {
         repo.insertCrawlFail(eventId, req.type(), req.message());
+        int released = eventClaimRepository.deleteByEventId(eventId);
+        if (released > 0) {
+            log.fine("reportCrawlFail: released event_claim for eventId=%d".formatted(eventId));
+        }
     }
 
     public void clearCrawlFail(long eventId) {
         repo.deleteCrawlFail(eventId);
+    }
+
+    @Transactional
+    public void recordEventNoOdds(long eventId) {
+        repo.upsertEventNoOdds(eventId, LocalDateTime.now());
     }
 }

@@ -38,6 +38,11 @@ spring:
 app:
   crawl:
     claim-stale-after-seconds: ${CRAWL_CLAIM_STALE_AFTER_SECONDS:900}
+  export:
+    kira-crawl:
+      enabled: ${APP_EXPORT_KIRA_CRAWL_ENABLED:true}
+      source-directory: "${APP_EXPORT_KIRA_CRAWL_SOURCE_DIRECTORY:/Users/kira/Desktop/workspace/kira_app/kira-crawl}"
+      include-git: ${APP_EXPORT_KIRA_CRAWL_INCLUDE_GIT:false}
   security:
     jwt:
       secret: ${APP_SECURITY_JWT_SECRET:change-me-in-production-change-me-in-production}

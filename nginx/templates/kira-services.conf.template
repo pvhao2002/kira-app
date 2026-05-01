@@ -26,6 +26,12 @@ server {
 
   location /gateway/ {
     proxy_pass http://kira_gateway_upstream;
+    proxy_connect_timeout 5s;
+    proxy_send_timeout 120s;
+    proxy_read_timeout 120s;
+    # Retry peers on connect/timeout/5xx so a dead :8889/:8890 does not surface as 502 when :8888 is up.
+    proxy_next_upstream error timeout http_502 http_503 http_504;
+    proxy_next_upstream_tries 3;
   }
 
   # tool-service (Spring context-path: /tool-service)
@@ -44,11 +50,13 @@ upstream kira_queue_upstream {
   keepalive 32;
 }
 
+# Primary = KIRA_GATEWAY_*_1 (traffic goes here whenever it is up).
+# *_2 / *_3 are backup only — use when you run a single gateway on PORT_1 and nothing on PORT_2/3
+# (avoids least_conn sending requests to dead peers). For equal load across 3 instances, remove "backup".
 upstream kira_gateway_upstream {
-  least_conn;
-  server ${KIRA_GATEWAY_HOST_1}:${KIRA_GATEWAY_PORT_1};
-  server ${KIRA_GATEWAY_HOST_2}:${KIRA_GATEWAY_PORT_2};
-  server ${KIRA_GATEWAY_HOST_3}:${KIRA_GATEWAY_PORT_3};
+  server ${KIRA_GATEWAY_HOST_1}:${KIRA_GATEWAY_PORT_1} max_fails=2 fail_timeout=10s;
+  server ${KIRA_GATEWAY_HOST_2}:${KIRA_GATEWAY_PORT_2} max_fails=2 fail_timeout=10s;
+  server ${KIRA_GATEWAY_HOST_3}:${KIRA_GATEWAY_PORT_3} max_fails=2 fail_timeout=10s;
   keepalive 32;
 }
 

@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 @Log
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "kira.producer.crawl-schedule.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "kira.producer.crawl-schedule.event-enabled", havingValue = "true", matchIfMissing = true)
 public class EventSchedule {
     private static final int QUEUE_MAX_MESSAGES = 200;
 
@@ -33,7 +33,7 @@ public class EventSchedule {
             select distinct event_id
             from event_crawl_failed
             where type in (:retry_main, :retry_stats, :retry_odds)
-            limit 10000
+            limit 200
             """;
 
     private static final String SQL_GET_EVENT_UPCOMING = """
@@ -51,6 +51,7 @@ public class EventSchedule {
               and event_date >= CONVERT_TZ(NOW(), 'SYSTEM', '+07:00')
               and event_date < CONVERT_TZ(NOW(), 'SYSTEM', '+07:00') + interval 12 hour
             order by e.event_date
+            limit 200
             """;
 
     @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)

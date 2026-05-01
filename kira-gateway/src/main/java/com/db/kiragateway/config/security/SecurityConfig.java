@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -39,7 +40,22 @@ import java.util.Optional;
 @EnableConfigurationProperties(AppSecurityProperties.class)
 public class SecurityConfig {
 
+    /**
+     * Crawl / worker callbacks (kira-crawl, internal jobs): no JWT, no CSRF — server-to-server only.
+     * Matched before the default chain so OAuth2 Resource Server never runs on these paths.
+     */
     @Bean
+    @Order(1)
+    public SecurityFilterChain crawlCallbackSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/crawl/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    BearerTokenResolver bearerTokenResolver,
                                                    JwtAuthenticationConverter jwtAuthenticationConverter,
@@ -56,9 +72,9 @@ public class SecurityConfig {
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/internal/auth/register").permitAll()
-                        .requestMatchers("/crawl/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/events/claim/next").permitAll()
                         .requestMatchers(HttpMethod.GET, "/events/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/export/kira-crawl").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

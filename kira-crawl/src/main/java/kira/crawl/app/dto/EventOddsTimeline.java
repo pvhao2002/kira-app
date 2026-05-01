@@ -21,29 +21,59 @@ public class EventOddsTimeline extends EventOdds {
 
     public EventOddsTimeline(ElementHandle li, String market) {
         this.market = market;
-        var allLineOdds = li.querySelectorAll(".firstSpan");
         li.waitForSelector(".oddsBox");
         var oddsBox = li.querySelectorAll(".oddsBox");
         var isHdc = "hdc".equalsIgnoreCase(market);
+
+        resolveDateOrMatchMinute(li, isHdc);
+
+        if (isHdc) {
+            this.line = oddsBox.stream().map(el -> {
+                var hdcEle = el.querySelector(".handicap.handicapRight");
+                return StringUtil.normalizeText(Optional.ofNullable(hdcEle).map(ElementHandle::textContent).orElse(null));
+            }).filter(StringUtil::isNotEmpty).collect(Collectors.joining("#"));
+        } else {
+            this.line = oddsBox.isEmpty() ? null : StringUtil.normalizeText(oddsBox.getFirst().textContent());
+        }
+        parsePricesFromOddsBox(oddsBox, isHdc);
+    }
+
+    /**
+     * Prematch rows use {@code span.firstSpan.date}; live rows use {@code span.icon.redColor} (minute, score).
+     */
+    private void resolveDateOrMatchMinute(ElementHandle li, boolean isHdc) {
+        ElementHandle dateEl = li.querySelector(".firstSpan.date");
+        if (dateEl == null) {
+            dateEl = li.querySelector("span.date");
+        }
+        if (dateEl != null) {
+            String d = StringUtil.normalizeText(Optional.ofNullable(dateEl.textContent()).orElse(""));
+            if (!d.isBlank()) {
+                date = d;
+                return;
+            }
+        }
+
+        var liveIcons = li.querySelectorAll("span.icon.redColor");
+        if (!liveIcons.isEmpty()) {
+            matchMinute = StringUtil.normalizeText(liveIcons.get(0).textContent());
+            return;
+        }
+
+        var allLineOdds = li.querySelectorAll(".firstSpan");
         if (isHdc) {
             if (allLineOdds.size() == 3) {
                 date = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
             } else {
                 matchMinute = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
             }
-            this.line = oddsBox.stream().map(el -> {
-                var hdcEle = el.querySelector(".handicap.handicapRight");
-                return StringUtil.normalizeText(Optional.ofNullable(hdcEle).map(ElementHandle::textContent).orElse(null));
-            }).filter(StringUtil::isNotEmpty).collect(Collectors.joining("#"));
         } else {
             if (allLineOdds.size() == 4) {
                 date = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
             } else {
                 matchMinute = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
             }
-            this.line = oddsBox.isEmpty() ? null : StringUtil.normalizeText(oddsBox.getFirst().textContent());
         }
-        parsePricesFromOddsBox(oddsBox, isHdc);
     }
 
     private void parsePricesFromOddsBox(java.util.List<? extends ElementHandle> oddsBox, boolean isHdc) {

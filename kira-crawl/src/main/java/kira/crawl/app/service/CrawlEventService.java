@@ -2,6 +2,7 @@ package kira.crawl.app.service;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import kira.crawl.app.client.GatewayClient;
 import kira.crawl.app.dto.EventInfoResponse;
 import kira.crawl.app.dto.EventOddsTimeline;
@@ -21,6 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
@@ -31,7 +35,20 @@ public class CrawlEventService {
 
     private final GatewayClient gatewayClient;
 
+    /**
+     * Wall-clock cap for parallel stats+odds crawls (each opens its own browser). Avoids indefinite {@link CompletableFuture#join()}.
+     */
+    private static final long PARALLEL_CRAWL_TIMEOUT_MINUTES = 25;
+
     private static final Pattern FIRST_INT = Pattern.compile("(\\d+)");
+    /**
+     * Tab label for Odds (m.aiscore / Playwright runs regex in the browser — do not use {@code (?i)}; JS rejects it).
+     */
+    private static final Pattern ODD_TAB_TEXT = Pattern.compile("[Oo][Dd]{2}[Ss]?");
+    /**
+     * Stats / Statistics tab label (avoid {@code (?i)} for JS engine).
+     */
+    private static final Pattern STATS_TAB_TEXT = Pattern.compile("[Ss]tat(?:istics|s)?|[Ss]tats?");
 
     public void processEvent(long eventId) {
         var eventOpt = gatewayClient.getEventInfo(eventId);
@@ -50,15 +67,62 @@ public class CrawlEventService {
                 );
                 PlaywrightUtil.waitDomContentLoaded(page);
                 PlaywrightUtil.removeAcceptAll(page);
-                page.waitForSelector("[role=tab]");
+                waitForMatchPageTabBar(page);
 
-                var statsFuture = CompletableFuture.supplyAsync(() -> crawlStatEvents(evt));
-                var oddsFuture = CompletableFuture.supplyAsync(() -> crawlOddEvents(evt));
-                boolean statsOk = statsFuture.join();
-                boolean oddsOk = oddsFuture.join();
+                boolean isFt = "FT".equals(evt.status());
+                boolean oddTabPresent = waitForOddTab(page);
+                boolean statsTabPresent = isFt && waitForStatsTab(page);
 
-                if (statsOk && oddsOk) {
-                    gatewayClient.clearCrawlFail(evt.eventId());
+                boolean statsOk = true;
+                boolean oddsOk;
+
+                if (isFt) {
+                    var statsFuture = statsTabPresent
+                            ? CompletableFuture.supplyAsync(() -> crawlStatEvents(evt))
+                            : CompletableFuture.completedFuture(true);
+                    if (!statsTabPresent) {
+                        log.info("Crawl stats skip: eventId=%d, no Stats tab on match page".formatted(evt.eventId()));
+                    }
+                    if (!oddTabPresent) {
+                        gatewayClient.reportCrawlFail(evt.eventId(), "odds", "No Odd tab on match page");
+                        gatewayClient.recordEventNoOdds(evt.eventId());
+                    }
+                    var oddsFuture = oddTabPresent
+                            ? CompletableFuture.supplyAsync(() -> crawlOddEvents(evt))
+                            : CompletableFuture.completedFuture(false);
+                    try {
+                        CompletableFuture.allOf(statsFuture, oddsFuture)
+                                .orTimeout(PARALLEL_CRAWL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+                                .join();
+                        statsOk = statsFuture.join();
+                        oddsOk = oddsFuture.join();
+                    } catch (CompletionException ex) {
+                        Throwable cause = ex.getCause();
+                        if (cause instanceof TimeoutException) {
+                            log.warning("Parallel crawl timeout (%d min): eventId=%d"
+                                    .formatted(PARALLEL_CRAWL_TIMEOUT_MINUTES, evt.eventId()));
+                            gatewayClient.reportCrawlFail(evt.eventId(), "main",
+                                    "Parallel crawl exceeded %d min".formatted(PARALLEL_CRAWL_TIMEOUT_MINUTES));
+                            statsOk = false;
+                            oddsOk = false;
+                        } else {
+                            throw ex;
+                        }
+                    }
+                    if (statsOk && oddsOk) {
+                        gatewayClient.clearCrawlFail(evt.eventId());
+                    }
+                } else {
+                    if (!oddTabPresent) {
+                        gatewayClient.reportCrawlFail(evt.eventId(), "odds", "No Odd tab on match page");
+                        gatewayClient.recordEventNoOdds(evt.eventId());
+                        oddsOk = false;
+                    } else {
+                        oddsOk = crawlOddEvents(evt);
+                    }
+                    if (oddsOk) {
+                        gatewayClient.clearCrawlFail(evt.eventId());
+                    }
                 }
             } catch (Exception e) {
                 gatewayClient.reportCrawlFail(eventId, "main", e.getMessage());
@@ -68,6 +132,47 @@ public class CrawlEventService {
                         evt.eventId(), evt.eventName(), System.currentTimeMillis() - start));
             }
         });
+    }
+
+    /**
+     * m.aiscore: {@code div[role=tablist].van-tabs__nav} with {@code div[role=tab].van-tab} and {@code span.van-tab__text}.
+     */
+    private void waitForMatchPageTabBar(Page page) {
+        Locator nav = page.locator("[role=tablist].van-tabs__nav")
+                .or(page.locator(".van-tabs__nav[role=tablist]"));
+        nav.first().waitFor(new Locator.WaitForOptions().setTimeout(15_000).setState(WaitForSelectorState.VISIBLE));
+    }
+
+    /**
+     * Odds tab label lives in {@code span.van-tab__text} (e.g. "Odds").
+     */
+    private boolean waitForOddTab(Page page) {
+        return waitForLabeledOrHrefTab(page, ODD_TAB_TEXT, "odds", "Odd tab");
+    }
+
+    /**
+     * Stats tab: same Vant structure; fallback {@code a[href*='stats']} if layout differs.
+     */
+    private boolean waitForStatsTab(Page page) {
+        return waitForLabeledOrHrefTab(page, STATS_TAB_TEXT, "stats", "Stats tab");
+    }
+
+    private boolean waitForLabeledOrHrefTab(Page page, Pattern labelPattern, String hrefContains, String logLabel) {
+        try {
+            Locator inNavTab = page.locator("[role=tablist] [role=tab]")
+                    .filter(new Locator.FilterOptions().setHasText(labelPattern));
+            Locator inNavLabel = page.locator("[role=tablist] span.van-tab__text")
+                    .filter(new Locator.FilterOptions().setHasText(labelPattern));
+            Locator byHref = page.locator("a[href*='" + hrefContains + "']");
+            Locator fallbackTab = page.locator("[role=tab]")
+                    .filter(new Locator.FilterOptions().setHasText(labelPattern));
+            Locator any = inNavTab.or(inNavLabel).or(byHref).or(fallbackTab);
+            any.first().waitFor(new Locator.WaitForOptions().setTimeout(15_000).setState(WaitForSelectorState.VISIBLE));
+            return true;
+        } catch (Exception e) {
+            log.fine("%s wait failed: %s".formatted(logLabel, e.getMessage()));
+            return false;
+        }
     }
 
     private boolean crawlStatEvents(EventInfoResponse event) {
@@ -166,11 +271,43 @@ public class CrawlEventService {
                 page.navigate(
                         evt.link().concat("/odds").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
                 );
-                page.waitForSelector(".oddTypesBox span");
+                PlaywrightUtil.waitDomContentLoaded(page);
+
+                if (page.locator(".oddTypesBox").count() == 0) {
+                    log.info("Crawl odds skip: eventId=%d, no oddTypesBox".formatted(evt.eventId()));
+                    gatewayClient.recordEventNoOdds(evt.eventId());
+                    return;
+                }
+
                 var tabOdds = page.locator(".oddTypesBox span");
                 int count = tabOdds.count();
+                if (count == 0) {
+                    log.info("Crawl odds skip: eventId=%d, oddTypesBox has no tabs".formatted(evt.eventId()));
+                    gatewayClient.recordEventNoOdds(evt.eventId());
+                    return;
+                }
+
+                boolean hasAsianHandicap = false;
+                boolean hasTotalGoals = false;
+                for (int t = 0; t < count; t++) {
+                    String norm = StringUtil.normalizeText(tabOdds.nth(t).innerText());
+                    log.info("Found odds tab: eventId=%d, tab=%s".formatted(evt.eventId(), norm));
+                    if ("asian handicap".equalsIgnoreCase(norm)) {
+                        hasAsianHandicap = true;
+                    }
+                    if ("total goals".equalsIgnoreCase(norm)) {
+                        hasTotalGoals = true;
+                    }
+                }
+                if (!hasAsianHandicap || !hasTotalGoals) {
+                    log.info("Crawl odds skip: eventId=%d, missing Asian Handicap or Total Goals tab".formatted(evt.eventId()));
+                    gatewayClient.recordEventNoOdds(evt.eventId());
+                    return;
+                }
+
                 gatewayClient.deleteEventOdds(evt.eventId());
 
+                final boolean[] savedAny = {false};
                 final boolean[] isOpenModal = {false};
                 for (int i = 0; i < count; i++) {
                     if (isOpenModal[0]) {
@@ -197,8 +334,14 @@ public class CrawlEventService {
                                 .toList();
 
                         log.info("Crawl odds: eventId=%d, market=%s, items=%d".formatted(evt.eventId(), market, dtos.size()));
-                        gatewayClient.persistEventOdds(evt.eventId(), market, dtos);
+                        if (!dtos.isEmpty()) {
+                            gatewayClient.persistEventOdds(evt.eventId(), market, dtos);
+                            savedAny[0] = true;
+                        }
                     }
+                }
+                if (!savedAny[0]) {
+                    gatewayClient.recordEventNoOdds(evt.eventId());
                 }
             } catch (Exception e) {
                 gatewayClient.reportCrawlFail(evt.eventId(), "odds", e.getMessage());

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Repository
@@ -173,6 +174,8 @@ public class CrawlCallbackRepository {
         writeJdbc.update(SQL_DELETE_EVENT_ODDS, params);
     }
 
+    private static final Pattern LEADING_MINUTE = Pattern.compile("^\\s*(\\d+)");
+
     public void persistOddsForMarket(long eventId, String market, List<OddsTimelineItemDTO> timeline) {
         if (timeline == null || timeline.isEmpty()) return;
 
@@ -194,16 +197,47 @@ public class CrawlCallbackRepository {
                 .toList();
         JdbcBatchUtils.batchInsertSafe(writeJdbc, SQL_INSERT_EVENT_ODDS_TIMELINE, timelineParams);
 
-        var first = timeline.stream().filter(t -> t.date() != null).findFirst().orElse(timeline.getFirst());
-        var last = timeline.getLast();
+        boolean hasPrematch = timeline.stream()
+                .anyMatch(t -> t.date() != null && !t.date().isBlank());
 
-        writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "open", market, last));
-        writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "pre-match", market, first));
+        var nullSnapshot = new OddsTimelineItemDTO(null, null, null, null, null);
 
-        timeline.stream()
+        if (hasPrematch) {
+            var first = timeline.stream()
+                    .filter(t -> t.date() != null && !t.date().isBlank())
+                    .findFirst()
+                    .orElse(timeline.getFirst());
+            var last = timeline.getLast();
+            writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "open", market, last));
+            writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "pre-match", market, first));
+        } else {
+            writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "open", market, nullSnapshot));
+            writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "pre-match", market, nullSnapshot));
+        }
+
+        var htExplicit = timeline.stream()
                 .filter(t -> t.matchMinute() != null && t.matchMinute().trim().equalsIgnoreCase("ht"))
-                .findFirst()
-                .ifPresent(ht -> writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "half-time", market, ht)));
+                .findFirst();
+        if (htExplicit.isPresent()) {
+            writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "half-time", market, htExplicit.get()));
+        } else {
+            timeline.stream()
+                    .filter(t -> t.date() == null || t.date().isBlank())
+                    .filter(t -> {
+                        int m = leadingMinute(t.matchMinute());
+                        return m >= 0 && m < 46;
+                    })
+                    .max(Comparator.comparingInt(t -> leadingMinute(t.matchMinute())))
+                    .ifPresent(ht -> writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "half-time", market, ht)));
+        }
+    }
+
+    private static int leadingMinute(String matchMinute) {
+        if (matchMinute == null || matchMinute.isBlank()) {
+            return -1;
+        }
+        var m = LEADING_MINUTE.matcher(matchMinute.trim());
+        return m.find() ? Integer.parseInt(m.group(1)) : -1;
     }
 
     private MapSqlParameterSource toEventOddsParams(long eventId, String type, String market, OddsTimelineItemDTO t) {
@@ -236,16 +270,30 @@ public class CrawlCallbackRepository {
         writeJdbc.update(SQL_DELETE_CRAWL_FAIL, Map.of("eventId", eventId));
     }
 
+    // ─── event_no_odds ───
+
+    private static final String SQL_UPSERT_EVENT_NO_ODDS = """
+            INSERT INTO event_no_odds (event_id, recorded_at)
+            VALUES (:eventId, :recordedAt)
+            ON DUPLICATE KEY UPDATE recorded_at = VALUES(recorded_at)
+            """;
+
+    public void upsertEventNoOdds(long eventId, LocalDateTime recordedAt) {
+        writeJdbc.update(SQL_UPSERT_EVENT_NO_ODDS,
+                new MapSqlParameterSource("eventId", eventId).addValue("recordedAt", recordedAt));
+    }
+
     // ─── event info ───
 
     public Optional<EventInfoResponse> findEventInfo(long eventId) {
         return readClient
-                .sql("SELECT event_id, link, event_name FROM events WHERE event_id = :eid")
+                .sql("SELECT event_id, link, event_name, status FROM events WHERE event_id = :eid")
                 .param("eid", eventId)
                 .query((rs, rn) -> new EventInfoResponse(
                         rs.getLong("event_id"),
                         rs.getString("link"),
-                        rs.getString("event_name")))
+                        rs.getString("event_name"),
+                        rs.getString("status")))
                 .optional();
     }
 }

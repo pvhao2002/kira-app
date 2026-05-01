@@ -124,6 +124,8 @@ services:
       DB_EX_USERNAME: "${DB_APP_USER:-kira_user}"
       DB_EX_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       # Đặt false khi kira-service vẫn chạy crawl schedule trên host (tránh trùng publish).
+      # Tùy chọn tách: KIRA_PRODUCER_CRAWL_SCHEDULE_DATE_ENABLED / KIRA_PRODUCER_CRAWL_SCHEDULE_EVENT_ENABLED
+      # (ưu tiên hơn biến tổng bên dưới khi set).
       KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED: "${KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED:-true}"
     restart: unless-stopped
 
@@ -171,7 +173,7 @@ services:
     image: nginx:1.27-alpine
     container_name: kira-nginx
     ports:
-      - "${NGINX_PORT:-8080}:80"
+      - "${NGINX_PORT:-80}:80"
     environment:
       KIRA_SERVICE_HOST: "${KIRA_SERVICE_HOST:-host.docker.internal}"
       KIRA_SERVICE_PORT: "${KIRA_SERVICE_PORT:-2308}"

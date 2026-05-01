@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 @Log
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "kira.producer.crawl-schedule.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "kira.producer.crawl-schedule.date-enabled", havingValue = "true", matchIfMissing = true)
 public class DateSchedule {
     private static final int QUEUE_MAX_MESSAGES = 200;
 
@@ -33,7 +33,7 @@ public class DateSchedule {
             from crawl_date
             where status = 'pending'
                or status = 'failed'
-            limit 300
+            limit 200
             """;
 
     @Scheduled(cron = "0 0 0,3,15,20 * * *", zone = "Asia/Ho_Chi_Minh")

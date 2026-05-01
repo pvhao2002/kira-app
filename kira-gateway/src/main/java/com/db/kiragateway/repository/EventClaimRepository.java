@@ -29,8 +29,10 @@ public class EventClaimRepository {
                        e.link
                 from events e
                 left join event_claim ec on ec.event_id = e.event_id
-                where ec.event_id is null
-                   or timestampdiff(second, ec.claimed_at, now()) >= :claimStaleAfterSeconds
+                where (ec.event_id is null
+                   or timestampdiff(second, ec.claimed_at, now()) >= :claimStaleAfterSeconds)
+                  and e.status not in ('PENDING', 'POSTPONED', 'CANCELLED')
+                  and not exists (select 1 from event_no_odds eno where eno.event_id = e.event_id)
                 order by e.event_date asc, e.event_id asc
                 limit 1
                 for update skip locked
@@ -66,6 +68,14 @@ public class EventClaimRepository {
                 .param("eventId", eventId)
                 .param("claimedBy", claimedBy)
                 .param("claimedAt", claimedAt)
+                .update();
+    }
+
+    /** Release claim so the event can be picked again (e.g. after crawl failure). */
+    public int deleteByEventId(long eventId) {
+        return writeJdbcClient
+                .sql("DELETE FROM event_claim WHERE event_id = :eventId")
+                .param("eventId", eventId)
                 .update();
     }
 

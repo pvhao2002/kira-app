@@ -62,10 +62,13 @@ public class GatewayClient {
             @SuppressWarnings("unchecked")
             var data = (Map<String, Object>) response.get("data");
             if (data == null) return Optional.empty();
+            Object statusObj = data.get("status");
+            String status = statusObj != null ? statusObj.toString() : "-";
             return Optional.of(new EventInfoResponse(
                     ((Number) data.get("eventId")).longValue(),
                     (String) data.get("link"),
-                    (String) data.get("eventName")
+                    (String) data.get("eventName"),
+                    status
             ));
         } catch (Exception e) {
             log.log(Level.WARNING, "getEventInfo failed: eventId=%d, error=%s".formatted(eventId, e.getMessage()));
@@ -133,6 +136,18 @@ public class GatewayClient {
                     .toBodilessEntity();
         } catch (Exception e) {
             log.log(Level.WARNING, "clearCrawlFail failed: eventId=%d, error=%s".formatted(eventId, e.getMessage()));
+        }
+    }
+
+    public void recordEventNoOdds(long eventId) {
+        try {
+            gatewayRestClient.post()
+                    .uri("/crawl/events/{eventId}/no-odds", eventId)
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("recordEventNoOdds: eventId=%d".formatted(eventId));
+        } catch (Exception e) {
+            log.log(Level.WARNING, "recordEventNoOdds failed: eventId=%d, error=%s".formatted(eventId, e.getMessage()));
         }
     }
 
