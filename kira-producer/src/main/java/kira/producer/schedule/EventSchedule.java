@@ -15,6 +15,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -24,16 +25,32 @@ import java.util.concurrent.TimeUnit;
 @ConditionalOnProperty(name = "kira.producer.crawl-schedule.event-enabled", havingValue = "true", matchIfMissing = true)
 public class EventSchedule {
     private static final int QUEUE_MAX_MESSAGES = 200;
+    /** Max events per scheduler tick (fail retries first, then fill from {@code events}). */
+    private static final int EVENT_BATCH_LIMIT = 200;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final EventProducer eventProducer;
     private final QueueBackpressureService queueBackpressureService;
 
+    /** Retry queue: crawl failures (main / stats / odds). */
     private static final String SQL_GET_EVENT_ANALYST = """
-            select distinct event_id
-            from event_crawl_failed
-            where type in (:retry_main, :retry_stats, :retry_odds)
-            limit 200
+            select distinct f.event_id
+            from event_crawl_failed f
+            where f.type in (:retry_main, :retry_stats, :retry_odds)
+            order by f.event_id
+            limit :batch_limit
+            """;
+
+    /**
+     * Same eligibility as {@code EventClaimRepository} candidate rows (status, no {@code event_no_odds}, no {@code event_odds}),
+     * without claim/FOR UPDATE — used to backfill the batch after retries.
+     */
+    private static final String SQL_GET_EVENTS_NEED_ODDS_BASE = """
+            select e.event_id
+            from events e
+            where e.status not in ('PENDING', 'POSTPONED', 'CANCELLED')
+              and not exists (select 1 from event_no_odds eno where eno.event_id = e.event_id)
+              and not exists (select 1 from event_odds eo where eo.event_id = e.event_id)
             """;
 
     private static final String SQL_GET_EVENT_UPCOMING = """
@@ -92,18 +109,26 @@ public class EventSchedule {
             log.info("Skip event because queue " + RabbitMQConfig.QUEUE_ODD + " has more than " + QUEUE_MAX_MESSAGES + " messages.");
             return;
         }
-        var result = jdbcTemplate.query(SQL_GET_EVENT_ANALYST,
-                Map.of(
-                        "retry_main", CrawlQueueConstants.RETRY_MAIN,
-                        "retry_stats", CrawlQueueConstants.RETRY_STATS,
-                        "retry_odds", CrawlQueueConstants.RETRY_ODDS
-                ),
-                (rs, rowNum) -> rs.getString("event_id")
-        );
-        if (CollectionUtils.isEmpty(result)) {
+        var paramsAnalyst = new MapSqlParameterSource()
+                .addValue("retry_main", CrawlQueueConstants.RETRY_MAIN)
+                .addValue("retry_stats", CrawlQueueConstants.RETRY_STATS)
+                .addValue("retry_odds", CrawlQueueConstants.RETRY_ODDS)
+                .addValue("batch_limit", EVENT_BATCH_LIMIT);
+
+        List<String> failedRetryIds = jdbcTemplate.query(SQL_GET_EVENT_ANALYST, paramsAnalyst,
+                (rs, rowNum) -> rs.getString("event_id"));
+
+        int remaining = EVENT_BATCH_LIMIT - failedRetryIds.size();
+        List<String> backfillIds = remaining > 0 ? queryEventsNeedOdds(remaining, failedRetryIds) : List.of();
+
+        var retryEventIds = new ArrayList<String>(failedRetryIds.size() + backfillIds.size());
+        retryEventIds.addAll(failedRetryIds);
+        retryEventIds.addAll(backfillIds);
+
+        if (retryEventIds.isEmpty()) {
             return;
         }
-        var retryEventIds = new ArrayList<>(result);
+
         retryEventIds.forEach(eventProducer::sendEventAnalyst);
 
         jdbcTemplate.batchUpdate(
@@ -119,6 +144,30 @@ public class EventSchedule {
                                 .addValue("retry_odds", CrawlQueueConstants.RETRY_ODDS))
                         .toArray(MapSqlParameterSource[]::new)
         );
-        log.info("kira-producer >> Scheduled crawl odd for event analyst, total: " + retryEventIds.size());
+        log.info("kira-producer >> Scheduled crawl odd for event analyst, total: %d (retry_fail=%d, events_need_odds=%d)"
+                .formatted(retryEventIds.size(), failedRetryIds.size(), backfillIds.size()));
+    }
+
+    /**
+     * Events that still need odds (aligned with gateway claim query filters), excluding IDs already scheduled as retries.
+     */
+    private List<String> queryEventsNeedOdds(int limit, List<String> excludeEventIds) {
+        if (limit <= 0) {
+            return List.of();
+        }
+        MapSqlParameterSource p = new MapSqlParameterSource("lim", limit);
+        String sql = SQL_GET_EVENTS_NEED_ODDS_BASE + """
+                order by e.event_date asc, e.event_id asc
+                limit :lim
+                """;
+        if (!excludeEventIds.isEmpty()) {
+            sql = SQL_GET_EVENTS_NEED_ODDS_BASE + """
+                      and e.event_id not in (:excludeIds)
+                    order by e.event_date asc, e.event_id asc
+                    limit :lim
+                    """;
+            p.addValue("excludeIds", excludeEventIds);
+        }
+        return jdbcTemplate.query(sql, p, (rs, rowNum) -> rs.getString("event_id"));
     }
 }

@@ -10,6 +10,8 @@ import lombok.*;
 public class Event {
     private Long eventId;
     private String eventName;
+    /** Match status from DB (e.g. FT) — drives stats vs odds-only crawl like kira-crawl. */
+    private String status;
     private String eventDate;
     private String leagueName;
     private String detailLink;

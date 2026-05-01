@@ -2,6 +2,7 @@ package com.queue.kiraqueue.service;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import com.queue.kiraqueue.dto.Event;
 import com.queue.kiraqueue.dto.model.EventOddsTimeline;
 import com.queue.kiraqueue.util.*;
@@ -11,7 +12,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -19,27 +19,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 @Log
 @Service
-@RequiredArgsConstructor(onConstructor_ = @Autowired)
+@RequiredArgsConstructor
 public class CrawEventService {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    private static final String INSERT_EVENT_FAIL = """
-            INSERT INTO event_crawl_failed(event_id, message, html)
-            VALUES (:event_id, :mess, :html)
-            ON DUPLICATE KEY UPDATE message = values(message),
-                                    html    = values(html)
+    /**
+     * Wall-clock cap for parallel stats+odds crawls (each opens its own browser). Avoids indefinite {@link CompletableFuture#join()}.
+     */
+    private static final long PARALLEL_CRAWL_TIMEOUT_MINUTES = 25;
+
+    private static final String SQL_UPSERT_EVENT_NO_ODDS = """
+            INSERT INTO event_no_odds (event_id, recorded_at)
+            VALUES (:eventId, :recordedAt)
+            ON DUPLICATE KEY UPDATE recorded_at = VALUES(recorded_at)
             """;
 
     private static final String SQL_INSERT_EVENT_ODDS = """
@@ -78,9 +82,23 @@ public class CrawEventService {
             """;
 
     private static final Pattern FIRST_INT = Pattern.compile("(\\d+)");
+    /**
+     * Tab label for Odds (m.aiscore / Playwright runs regex in the browser — do not use {@code (?i)}; JS rejects it).
+     */
+    private static final Pattern ODD_TAB_TEXT = Pattern.compile("[Oo][Dd]{2}[Ss]?");
+    /**
+     * Stats / Statistics tab label (avoid {@code (?i)} for JS engine).
+     */
+    private static final Pattern STATS_TAB_TEXT = Pattern.compile("[Ss]tat(?:istics|s)?|[Ss]tats?");
+
+    private static final String SQL_DELETE_CRAWL_FAIL_SUCCESS = """
+            delete from event_crawl_failed
+            where event_id = :event_id
+              and type in ('main', 'stats', 'odds')
+            """;
 
     public void processEvent(Long eventId) {
-        var sqlGetEvent = "select event_id , link , event_name from events where event_id = :eid";
+        var sqlGetEvent = "select event_id, link, event_name, status from events where event_id = :eid";
         var event = jdbcTemplate.query(sqlGetEvent, Map.of("eid", eventId), BeanPropertyRowMapper.newInstance(Event.class)).stream().findFirst().orElse(null);
         if (event == null) {
             log.log(Level.WARNING, "Event {0} not found", eventId);
@@ -89,32 +107,123 @@ public class CrawEventService {
         PlaywrightUtil.withPlaywright(event, (page, evt) -> {
             long start = System.currentTimeMillis();
             try {
-                log.info("Crawl event start: eventId=%d, eventName=%s".formatted(event.getEventId(), event.getEventName()));
+                log.info("Crawl event start: eventId=%d, eventName=%s".formatted(evt.getEventId(), evt.getEventName()));
                 page.navigate(
-                        event.getLink().replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
+                        evt.getLink().replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
                 );
                 PlaywrightUtil.waitDomContentLoaded(page);
                 PlaywrightUtil.removeAcceptAll(page);
-                page.waitForSelector("[role=tab]");
-                var statsFuture = CompletableFuture.supplyAsync(() -> crawlStatEvents(evt));
-                var oddsFuture = CompletableFuture.supplyAsync(() -> crawlOddEvents(evt));
-                boolean statsOk = statsFuture.join();
-                boolean oddsOk = oddsFuture.join();
-                // Chỉ xóa khỏi event_crawl_failed khi cả stats và odds đều success (async có thể đã gọi processEventFail)
-                if (statsOk && oddsOk) {
-                    jdbcTemplate.update("""
-                            delete from event_crawl_failed
-                            where event_id = :event_id
-                              and type in ('main', 'stats', 'odds')
-                            """, Map.of("event_id", evt.getEventId()));
+                waitForMatchPageTabBar(page);
+
+                boolean isFt = "FT".equals(evt.getStatus());
+                boolean oddTabPresent = waitForOddTab(page);
+                boolean statsTabPresent = isFt && waitForStatsTab(page);
+
+                boolean statsOk = true;
+                boolean oddsOk;
+
+                if (isFt) {
+                    var statsFuture = statsTabPresent
+                            ? CompletableFuture.supplyAsync(() -> crawlStatEvents(evt))
+                            : CompletableFuture.completedFuture(true);
+                    if (!statsTabPresent) {
+                        log.info("Crawl stats skip: eventId=%d, no Stats tab on match page".formatted(evt.getEventId()));
+                    }
+                    if (!oddTabPresent) {
+                        processEventFail(evt.getEventId(), "odds", "No Odd tab on match page");
+                        recordEventNoOdds(evt.getEventId());
+                    }
+                    var oddsFuture = oddTabPresent
+                            ? CompletableFuture.supplyAsync(() -> crawlOddEvents(evt))
+                            : CompletableFuture.completedFuture(false);
+                    try {
+                        CompletableFuture.allOf(statsFuture, oddsFuture)
+                                .orTimeout(PARALLEL_CRAWL_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+                                .join();
+                        statsOk = statsFuture.join();
+                        oddsOk = oddsFuture.join();
+                    } catch (CompletionException ex) {
+                        Throwable cause = ex.getCause();
+                        if (cause instanceof TimeoutException) {
+                            log.warning("Parallel crawl timeout (%d min): eventId=%d"
+                                    .formatted(PARALLEL_CRAWL_TIMEOUT_MINUTES, evt.getEventId()));
+                            processEventFail(evt.getEventId(), "main",
+                                    "Parallel crawl exceeded %d min".formatted(PARALLEL_CRAWL_TIMEOUT_MINUTES));
+                            statsOk = false;
+                            oddsOk = false;
+                        } else {
+                            throw ex;
+                        }
+                    }
+                    if (statsOk && oddsOk) {
+                        jdbcTemplate.update(SQL_DELETE_CRAWL_FAIL_SUCCESS, Map.of("event_id", evt.getEventId()));
+                    }
+                } else {
+                    if (!oddTabPresent) {
+                        processEventFail(evt.getEventId(), "odds", "No Odd tab on match page");
+                        recordEventNoOdds(evt.getEventId());
+                        oddsOk = false;
+                    } else {
+                        oddsOk = crawlOddEvents(evt);
+                    }
+                    if (oddsOk) {
+                        jdbcTemplate.update(SQL_DELETE_CRAWL_FAIL_SUCCESS, Map.of("event_id", evt.getEventId()));
+                    }
                 }
             } catch (Exception e) {
                 processEventFail(eventId, "main", e.getMessage());
-                log.warning("Crawl event failed: eventId=%d, error=%s".formatted(event.getEventId(), e.getMessage()));
+                log.warning("Crawl event failed: eventId=%d, error=%s".formatted(evt.getEventId(), e.getMessage()));
             } finally {
-                log.info("Crawl event done: eventId=%d, eventName=%s took %d ms".formatted(event.getEventId(), event.getEventName(), System.currentTimeMillis() - start));
+                log.info("Crawl event done: eventId=%d, eventName=%s took %d ms".formatted(
+                        evt.getEventId(), evt.getEventName(), System.currentTimeMillis() - start));
             }
         });
+    }
+
+    private void recordEventNoOdds(long eventId) {
+        jdbcTemplate.update(SQL_UPSERT_EVENT_NO_ODDS,
+                new MapSqlParameterSource("eventId", eventId).addValue("recordedAt", LocalDateTime.now()));
+    }
+
+    /**
+     * m.aiscore: {@code div[role=tablist].van-tabs__nav} with {@code div[role=tab].van-tab} and {@code span.van-tab__text}.
+     */
+    private void waitForMatchPageTabBar(Page page) {
+        Locator nav = page.locator("[role=tablist].van-tabs__nav")
+                .or(page.locator(".van-tabs__nav[role=tablist]"));
+        nav.first().waitFor(new Locator.WaitForOptions().setTimeout(15_000).setState(WaitForSelectorState.VISIBLE));
+    }
+
+    /**
+     * Odds tab label lives in {@code span.van-tab__text} (e.g. "Odds").
+     */
+    private boolean waitForOddTab(Page page) {
+        return waitForLabeledOrHrefTab(page, ODD_TAB_TEXT, "odds", "Odd tab");
+    }
+
+    /**
+     * Stats tab: same Vant structure; fallback {@code a[href*='stats']} if layout differs.
+     */
+    private boolean waitForStatsTab(Page page) {
+        return waitForLabeledOrHrefTab(page, STATS_TAB_TEXT, "stats", "Stats tab");
+    }
+
+    private boolean waitForLabeledOrHrefTab(Page page, Pattern labelPattern, String hrefContains, String logLabel) {
+        try {
+            Locator inNavTab = page.locator("[role=tablist] [role=tab]")
+                    .filter(new Locator.FilterOptions().setHasText(labelPattern));
+            Locator inNavLabel = page.locator("[role=tablist] span.van-tab__text")
+                    .filter(new Locator.FilterOptions().setHasText(labelPattern));
+            Locator byHref = page.locator("a[href*='" + hrefContains + "']");
+            Locator fallbackTab = page.locator("[role=tab]")
+                    .filter(new Locator.FilterOptions().setHasText(labelPattern));
+            Locator any = inNavTab.or(inNavLabel).or(byHref).or(fallbackTab);
+            any.first().waitFor(new Locator.WaitForOptions().setTimeout(15_000).setState(WaitForSelectorState.VISIBLE));
+            return true;
+        } catch (Exception e) {
+            log.fine("%s wait failed: %s".formatted(logLabel, e.getMessage()));
+            return false;
+        }
     }
 
     private void processEventFail(Long eventId, String type, String message) {
@@ -128,13 +237,13 @@ public class CrawEventService {
 
     /** @return true nếu crawl stats thành công, false nếu lỗi (đã gọi processEventFail). */
     private boolean crawlStatEvents(Event event) {
-        boolean[] ok = { true };
+        boolean[] ok = {true};
         PlaywrightUtil.withPlaywright(event, (page, evt) -> {
             log.info("Crawl stats start: eventId=%d".formatted(evt.getEventId()));
             long start = System.currentTimeMillis();
             try {
                 page.navigate(
-                        event.getLink().concat("/stats").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
+                        evt.getLink().concat("/stats").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
                 );
                 PlaywrightUtil.waitDomContentLoaded(page);
                 PlaywrightUtil.removeAcceptAll(page);
@@ -142,10 +251,8 @@ public class CrawEventService {
                 var tabs = page.locator(".btnBox > span");
                 int tabCount = tabs.count();
                 if (tabCount < 2) {
-                    log.warning("Crawl stats skip: eventId=%d, tabs=%d (need Match + 1st Half)".formatted(event.getEventId(), tabCount));
-                    jdbcTemplate.update(INSERT_EVENT_FAIL, new MapSqlParameterSource("event_id", event.getEventId())
-                            .addValue("mess", "Not enough tabs for stats")
-                            .addValue("html", page.content()));
+                    log.warning("Crawl stats skip: eventId=%d, tabs=%d (need Match + 1st Half)".formatted(evt.getEventId(), tabCount));
+                    processEventFail(evt.getEventId(), "stats", "Not enough tabs for stats");
                     ok[0] = false;
                     return;
                 }
@@ -235,41 +342,58 @@ public class CrawEventService {
 
     /** @return true nếu crawl odds thành công, false nếu lỗi (đã gọi processEventFail). */
     private boolean crawlOddEvents(Event event) {
-        boolean[] ok = { true };
+        boolean[] ok = {true};
         PlaywrightUtil.withPlaywright(event, (page, evt) -> {
             long start = System.currentTimeMillis();
             try {
-                log.info("Crawl odds start: eventId=%d".formatted(event.getEventId()));
+                log.info("Crawl odds start: eventId=%d".formatted(evt.getEventId()));
                 var listTabOdds = Map.of("asian handicap", "hdc", "total goals", "ou", "total corners", "corner");
-                var requiredMarkets = Set.of("hdc", "ou");
-                var availableMarkets = new HashSet<String>();
-                var crawledMarkets = new HashSet<String>();
-                var warnings = new ArrayList<String>();
+
                 page.navigate(
-                        event.getLink().concat("/odds").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
+                        evt.getLink().concat("/odds").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
                 );
                 PlaywrightUtil.waitDomContentLoaded(page);
                 PlaywrightUtil.removeAcceptAll(page);
-                deleteOddsForEvent(evt.getEventId());
-                if (!selectorExists(page, ".oddTypesBox span", 8_000)) {
-                    warnings.add("no_odd_tabs");
-                    processEventWarning(evt.getEventId(), "odds_warning", String.join(" | ", warnings));
-                    log.warning("Crawl odds skip: eventId=%d, reason=no_odd_tabs".formatted(evt.getEventId()));
+
+                if (page.locator(".oddTypesBox").count() == 0) {
+                    log.info("Crawl odds skip: eventId=%d, no oddTypesBox".formatted(evt.getEventId()));
+                    recordEventNoOdds(evt.getEventId());
                     return;
                 }
+
                 var tabOdds = page.locator(".oddTypesBox span");
                 int count = tabOdds.count();
-                if (count <= 0) {
-                    warnings.add("no_odd_tabs");
-                    processEventWarning(evt.getEventId(), "odds_warning", String.join(" | ", warnings));
-                    log.warning("Crawl odds skip: eventId=%d, reason=no_odd_tabs".formatted(evt.getEventId()));
+                if (count == 0) {
+                    log.info("Crawl odds skip: eventId=%d, oddTypesBox has no tabs".formatted(evt.getEventId()));
+                    recordEventNoOdds(evt.getEventId());
                     return;
                 }
+
+                boolean hasAsianHandicap = false;
+                boolean hasTotalGoals = false;
+                for (int t = 0; t < count; t++) {
+                    String norm = StringUtil.normalizeText(tabOdds.nth(t).innerText());
+                    log.info("Found odds tab: eventId=%d, tab=%s".formatted(evt.getEventId(), norm));
+                    if ("asian handicap".equalsIgnoreCase(norm)) {
+                        hasAsianHandicap = true;
+                    }
+                    if ("total goals".equalsIgnoreCase(norm)) {
+                        hasTotalGoals = true;
+                    }
+                }
+                if (!hasAsianHandicap || !hasTotalGoals) {
+                    log.info("Crawl odds skip: eventId=%d, missing Asian Handicap or Total Goals tab".formatted(evt.getEventId()));
+                    recordEventNoOdds(evt.getEventId());
+                    return;
+                }
+
+                deleteOddsForEvent(evt.getEventId());
+
+                final boolean[] savedAny = {false};
                 final boolean[] isOpenModal = {false};
                 for (int i = 0; i < count; i++) {
                     if (isOpenModal[0]) {
-                        closeOddsModal(page);
-                        isOpenModal[0] = false;
+                        page.locator(".van-popup.van-popup--bottom span i.iconfont.icon-guanbi").click();
                     }
                     Locator tab = tabOdds.nth(i);
                     tab.click();
@@ -277,53 +401,26 @@ public class CrawEventService {
                     for (var e : listTabOdds.entrySet()) {
                         if (!e.getKey().equalsIgnoreCase(tabNormalize)) continue;
                         String market = e.getValue();
-                        availableMarkets.add(market);
-                        if (!selectorExists(page, ".oddsBox > .oddsBoxRight", 4_000)) {
-                            warnings.add("market=%s no_provider".formatted(market));
-                            log.warning("Crawl odds skip: eventId=%d, market=%s, reason=no_provider".formatted(evt.getEventId(), market));
-                            continue;
-                        }
-                        var providers = page.locator(".oddsBox > .oddsBoxRight");
-                        if (providers.count() <= 0) {
-                            warnings.add("market=%s no_provider".formatted(market));
-                            log.warning("Crawl odds skip: eventId=%d, market=%s, reason=no_provider".formatted(evt.getEventId(), market));
-                            continue;
-                        }
-                        providers.first().click();
+                        page.waitForSelector(".oddsBoxRight");
+                        page.locator(".oddsBox > .oddsBoxRight").first().click();
                         isOpenModal[0] = true;
-                        if (!selectorExists(page, "ul.oddContent li", 4_000)) {
-                            warnings.add("market=%s empty_timeline".formatted(market));
-                            log.warning("Crawl odds skip: eventId=%d, market=%s, reason=empty_timeline".formatted(evt.getEventId(), market));
-                            continue;
-                        }
+                        page.waitForSelector("ul.oddContent li");
                         var listLi = page.querySelectorAll("ul.oddContent li");
                         var timelineItems = listLi.stream()
                                 .map(li -> new EventOddsTimeline(li, market))
                                 .filter(it -> it.getPriceA() != null && it.getPriceB() != null)
                                 .toList();
-                        if (timelineItems.isEmpty()) {
-                            warnings.add("market=%s empty_timeline".formatted(market));
-                            log.warning("Crawl odds skip: eventId=%d, market=%s, reason=empty_timeline".formatted(evt.getEventId(), market));
-                            continue;
+
+                        log.info("Crawl odds: eventId=%d, market=%s, items=%d".formatted(evt.getEventId(), market, timelineItems.size()));
+                        if (!timelineItems.isEmpty()) {
+                            persistOddsForMarket(evt.getEventId(), market, timelineItems);
+                            savedAny[0] = true;
                         }
-                        log.info("Crawl odds: eventId=%d, market=%s, timelineItems=%d".formatted(evt.getEventId(), market, timelineItems.size()));
-                        persistOddsForMarket(evt.getEventId(), market, timelineItems);
-                        crawledMarkets.add(market);
                     }
                 }
-                var missingRequiredMarkets = requiredMarkets.stream()
-                        .filter(market -> !availableMarkets.contains(market))
-                        .toList();
-                if (!missingRequiredMarkets.isEmpty()) {
-                    warnings.add("missing_required_markets:%s".formatted(String.join(",", missingRequiredMarkets)));
-                    log.warning("Crawl odds partial: eventId=%d, missingRequiredMarkets=%s"
-                            .formatted(evt.getEventId(), String.join(",", missingRequiredMarkets)));
+                if (!savedAny[0]) {
+                    recordEventNoOdds(evt.getEventId());
                 }
-                if (!warnings.isEmpty()) {
-                    processEventWarning(evt.getEventId(), "odds_warning", String.join(" | ", warnings));
-                }
-                log.info("Crawl odds summary: eventId=%d, availableMarkets=%s, crawledMarkets=%s"
-                        .formatted(evt.getEventId(), availableMarkets, crawledMarkets));
             } catch (Exception e) {
                 processEventFail(evt.getEventId(), "odds", e.getMessage());
                 ok[0] = false;
@@ -333,36 +430,6 @@ public class CrawEventService {
             }
         });
         return ok[0];
-    }
-
-    private boolean selectorExists(Page page, String selector, int timeoutMs) {
-        try {
-            page.waitForSelector(selector, new Page.WaitForSelectorOptions().setTimeout(timeoutMs));
-            return page.locator(selector).count() > 0;
-        } catch (Exception ex) {
-            return false;
-        }
-    }
-
-    private void closeOddsModal(Page page) {
-        try {
-            var close = page.locator(".van-popup.van-popup--bottom span i.iconfont.icon-guanbi");
-            if (close.count() > 0) {
-                close.first().click();
-                page.waitForTimeout(250);
-            }
-        } catch (Exception ignored) {
-            // Modal can already be closed by the site scripts; ignore safely.
-        }
-    }
-
-    private void processEventWarning(Long eventId, String type, String message) {
-        var sql = """
-                insert into event_crawl_failed(event_id, type, message)
-                VALUES (:eventId, :type, :message)
-                on duplicate key update message = values(message)
-                """;
-        jdbcTemplate.update(sql, Map.of("eventId", eventId, "type", type, "message", message));
     }
 
     private void deleteOddsForEvent(Long eventId) {

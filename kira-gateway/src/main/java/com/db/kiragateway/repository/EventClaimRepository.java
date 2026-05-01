@@ -33,6 +33,10 @@ public class EventClaimRepository {
                    or timestampdiff(second, ec.claimed_at, now()) >= :claimStaleAfterSeconds)
                   and e.status not in ('PENDING', 'POSTPONED', 'CANCELLED')
                   and not exists (select 1 from event_no_odds eno where eno.event_id = e.event_id)
+                  and not exists (
+                      select 1 from event_odds eo
+                      where eo.event_id = e.event_id
+                  )
                 order by e.event_date asc, e.event_id asc
                 limit 1
                 for update skip locked
