@@ -22,12 +22,13 @@
         <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl"></div>
 
         <div class="relative z-10 flex flex-col justify-between h-full p-6 sm:p-8 text-white">
-          <div class="flex justify-between items-start">
-            <div>
+          <div class="flex justify-between items-start gap-2">
+            <div class="min-w-0">
               <p class="text-[10px] text-blue-200/60 font-semibold tracking-widest uppercase mb-1">Ngân hàng</p>
-              <p class="text-lg font-bold tracking-wide text-white">VIETCOMBANK</p>
+              <p class="text-lg font-bold tracking-wide text-white truncate">{{ form.controls.bankName.value }}</p>
+              <p class="text-xs text-blue-300/80 truncate mt-1">{{ form.controls.cardLabel.value }}</p>
             </div>
-            <span class="material-symbols-outlined text-3xl text-white/80">contactless</span>
+            <span class="material-symbols-outlined text-3xl text-white/80 shrink-0">contactless</span>
           </div>
           <div class="py-1">
             <div
@@ -41,24 +42,24 @@
           <div class="flex flex-col gap-5 mt-auto">
             <div>
               <p class="text-[10px] text-blue-200/60 uppercase tracking-widest mb-0.5">Hạn mức</p>
-              <p class="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight drop-shadow-md">50.000.000
+              <p class="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight drop-shadow-md">
+                {{ previewLimit() }}
                 <span class="text-lg align-top text-blue-500">₫</span></p>
             </div>
-            <div class="flex justify-between items-end border-t border-white/10 pt-4">
-              <div>
+            <div class="flex justify-between items-end border-t border-white/10 pt-4 gap-2">
+              <div class="min-w-0">
                 <p class="text-[9px] text-blue-200/60 uppercase tracking-widest mb-1">Chủ thẻ</p>
-                <p
-                  class="font-medium tracking-widest uppercase text-sm sm:text-base text-white truncate max-w-[140px] sm:max-w-[200px]">
-                  NGUYEN VAN A</p>
+                <p class="font-medium tracking-widest uppercase text-sm sm:text-base text-white truncate">
+                  {{ form.controls.cardholderName.value }}</p>
               </div>
-              <div class="flex gap-4 text-right">
+              <div class="flex gap-4 text-right shrink-0">
                 <div>
                   <p class="text-[9px] text-blue-200/60 uppercase mb-0.5">Sao kê</p>
-                  <p class="font-mono text-xs sm:text-sm">Ngày 20</p>
+                  <p class="font-mono text-xs sm:text-sm">Ngày {{ form.controls.statementDay.value }}</p>
                 </div>
                 <div>
                   <p class="text-[9px] text-blue-200/60 uppercase mb-0.5">Hạn TT</p>
-                  <p class="font-mono text-xs sm:text-sm text-blue-500 font-bold">Ngày 05</p>
+                  <p class="font-mono text-xs sm:text-sm text-blue-500 font-bold">Ngày {{ form.controls.paymentDueDay.value | number: '2.0-0' }}</p>
                 </div>
               </div>
             </div>
@@ -69,15 +70,14 @@
       <div class="mt-6 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 text-center backdrop-blur-sm">
         <p class="text-sm text-blue-200/80">
           <span class="material-symbols-outlined text-base align-text-bottom mr-1">info</span>
-          Thẻ này sẽ được sử dụng để quản lý ngân sách cá cược và theo dõi chi tiêu cá nhân.
+          Thẻ này dùng để theo dõi lịch sao kê và thanh toán do bạn nhập tay — không kết nối ngân hàng.
         </p>
       </div>
     </div>
 
     <!-- Form -->
     <div class="lg:col-span-7 xl:col-span-8">
-      <form class="space-y-6">
-        <!-- Section 1: Card Info -->
+      <form class="space-y-6" [formGroup]="form" (ngSubmit)="submit()">
         <div class="bg-[#0f172a] rounded-2xl p-6 lg:p-8 border border-white/5 shadow-xl">
           <h3
             class="text-white font-bold text-lg uppercase tracking-wide border-b border-white/10 pb-4 mb-6 flex items-center gap-3">
@@ -90,16 +90,29 @@
             <div class="md:col-span-2">
               <label class="block text-blue-200/80 text-sm font-medium mb-2">Tên ngân hàng</label>
               <div class="relative group">
-                <input type="text" value="VIETCOMBANK" placeholder="VD: TPBank, Techcombank..."
+                <input type="text" formControlName="bankName" placeholder="VD: TPBank, Techcombank..."
                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"/>
                 <span
                   class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-blue-500 transition-colors pointer-events-none">account_balance</span>
               </div>
             </div>
+            <div class="md:col-span-2">
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Tên hiển thị thẻ</label>
+              <input type="text" formControlName="cardLabel" placeholder="VD: Techcombank Visa"
+                     class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"/>
+            </div>
             <div>
               <label class="block text-blue-200/80 text-sm font-medium mb-2">Hạn mức tín dụng</label>
               <div class="relative group">
-                <input type="text" value="50.000.000" placeholder="0"
+                <input type="text" formControlName="creditLimitStr" placeholder="0"
+                       class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"/>
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 font-bold text-sm">VND</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Dư nợ hiện tại</label>
+              <div class="relative group">
+                <input type="text" formControlName="outstandingBalanceStr" placeholder="0"
                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"/>
                 <span class="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 font-bold text-sm">VND</span>
               </div>
@@ -107,16 +120,21 @@
             <div>
               <label class="block text-blue-200/80 text-sm font-medium mb-2">Tên chủ thẻ</label>
               <div class="relative group">
-                <input type="text" value="NGUYEN VAN A" placeholder="NHAP TEN KHONG DAU"
+                <input type="text" formControlName="cardholderName" placeholder="NHAP TEN KHONG DAU"
                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all uppercase"/>
                 <span
                   class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-blue-500 transition-colors pointer-events-none">person</span>
               </div>
             </div>
+            <div>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">4 số cuối (tuỳ chọn)</label>
+              <input type="text" formControlName="lastFour" maxlength="4" inputmode="numeric" autocomplete="off"
+                     placeholder="4582"
+                     class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono tracking-widest"/>
+            </div>
           </div>
         </div>
 
-        <!-- Section 2: Payment Schedule -->
         <div class="bg-[#0f172a] rounded-2xl p-6 lg:p-8 border border-white/5 shadow-xl">
           <h3
             class="text-white font-bold text-lg uppercase tracking-wide border-b border-white/10 pb-4 mb-6 flex items-center gap-3">
@@ -129,15 +147,11 @@
             <div>
               <label class="block text-blue-200/80 text-sm font-medium mb-2">Ngày sao kê</label>
               <div class="relative">
-                <select
-                  class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer">
-                  <option value="" disabled>Chọn ngày</option>
-                  <option value="20" selected>Ngày 20 hàng tháng</option>
-                  <option value="1">Ngày 1</option>
-                  <option value="5">Ngày 5</option>
-                  <option value="10">Ngày 10</option>
-                  <option value="15">Ngày 15</option>
-                  <option value="25">Ngày 25</option>
+                <select formControlName="statementDay"
+                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer">
+                  @for (d of dayOptions; track d) {
+                    <option [ngValue]="d">Ngày {{ d }} hàng tháng</option>
+                  }
                 </select>
                 <span
                   class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none">expand_more</span>
@@ -146,15 +160,11 @@
             <div>
               <label class="block text-blue-200/80 text-sm font-medium mb-2">Ngày thanh toán</label>
               <div class="relative">
-                <select
-                  class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer">
-                  <option value="" disabled>Chọn ngày</option>
-                  <option value="5" selected>Ngày 05 hàng tháng</option>
-                  <option value="1">Ngày 1</option>
-                  <option value="10">Ngày 10</option>
-                  <option value="15">Ngày 15</option>
-                  <option value="20">Ngày 20</option>
-                  <option value="25">Ngày 25</option>
+                <select formControlName="paymentDueDay"
+                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer">
+                  @for (d of dayOptions; track d) {
+                    <option [ngValue]="d">Ngày {{ d }} hàng tháng</option>
+                  }
                 </select>
                 <span
                   class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none">expand_more</span>
@@ -163,7 +173,7 @@
             <div>
               <label class="block text-blue-200/80 text-sm font-medium mb-2">Giờ nhắc</label>
               <div class="relative">
-                <input type="time" value="09:00"
+                <input type="time" formControlName="reminderTime"
                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all [color-scheme:dark]"/>
               </div>
             </div>
@@ -171,17 +181,21 @@
           <div class="mt-4 flex items-start gap-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
             <span class="material-symbols-outlined text-blue-500 text-lg mt-0.5">notifications_active</span>
             <p class="text-sm text-blue-200/80 leading-relaxed">
-              Hệ thống sẽ gửi thông báo nhắc thanh toán vào lúc <span class="font-bold text-white">09:00</span> ngày
-              <span class="font-bold text-white">05</span> hàng tháng để tránh phí phạt trả chậm.
+              Gợi ý: đặt nhắc vào lúc <span class="font-bold text-white">{{ form.controls.reminderTime.value }}</span> ngày
+              <span class="font-bold text-white">{{ form.controls.paymentDueDay.value }}</span> hàng tháng (thông báo tự động có thể được bổ sung sau).
             </p>
           </div>
         </div>
 
         <div class="flex justify-end pt-4">
-          <button type="button"
-                  class="w-full md:w-auto px-10 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
+          <button type="submit" [disabled]="form.invalid || saving()"
+                  class="w-full md:w-auto px-10 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
             <span class="material-symbols-outlined">save</span>
-            Lưu thẻ tín dụng
+            @if (saving()) {
+              <span>Đang lưu…</span>
+            } @else {
+              <span>Lưu thẻ tín dụng</span>
+            }
           </button>
         </div>
       </form>

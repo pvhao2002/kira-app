@@ -4,6 +4,7 @@ import {Dashboard} from './components/dashboard/dashboard';
 import {Matches} from './components/matches/matches';
 import {Cards} from './components/cards/cards';
 import {AddCard} from './components/add-card/add-card';
+import {CardPayments} from './components/card-payments/card-payments';
 import {Profile} from './components/profile/profile';
 import {Transactions} from './components/transactions/transactions';
 import {Results} from './components/results/results';
@@ -34,6 +35,7 @@ export const routes: Routes = [
       {path: 'results', component: Results},
       {path: 'cards', component: Cards},
       {path: 'cards/add', component: AddCard},
+      {path: 'cards/:creditCardId/payments', component: CardPayments},
       {path: 'profile', component: Profile},
       {path: 'transactions', component: Transactions},
       {path: 'tool', component: Tools},

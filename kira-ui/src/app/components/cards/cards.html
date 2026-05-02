@@ -10,8 +10,12 @@
         <span>Tổng dư nợ hiện tại</span>
       </div>
       <div class="flex items-baseline gap-2">
-        <h1 class="text-white tracking-tight text-5xl lg:text-7xl font-bold">125,000,000</h1>
-        <span class="text-3xl text-blue-200/50 font-medium">₫</span>
+        @if (loading()) {
+          <span class="text-white text-3xl font-semibold animate-pulse">…</span>
+        } @else {
+          <h1 class="text-white tracking-tight text-5xl lg:text-7xl font-bold">{{ formatVnd(summary()?.totalOutstandingBalance ?? 0) }}</h1>
+          <span class="text-3xl text-blue-200/50 font-medium">₫</span>
+        }
       </div>
       <p class="text-slate-400 text-sm max-w-md leading-relaxed">
         Tổng số tiền cần thanh toán cho tất cả các thẻ tín dụng trong kỳ này. Hãy đảm bảo thanh toán đúng hạn để tránh
@@ -29,73 +33,140 @@
 
   <!-- Cards List -->
   <div class="flex flex-col gap-6">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between flex-wrap gap-3">
       <h3 class="text-white text-2xl font-bold flex items-center gap-3">
         <span class="w-1.5 h-8 bg-blue-600 rounded-full shadow-[0_0_12px_rgba(37,99,235,0.5)]"></span>
         Danh sách thẻ
       </h3>
       <div class="flex gap-2">
-        <span class="text-sm text-blue-200 bg-[#151e32] px-4 py-2 rounded-lg border border-slate-700 font-medium">3 thẻ đang hoạt động</span>
+        <span class="text-sm text-blue-200 bg-[#151e32] px-4 py-2 rounded-lg border border-slate-700 font-medium">
+          {{ summary()?.activeCount ?? 0 }} thẻ đang hoạt động
+        </span>
       </div>
     </div>
 
-    <div class="w-full overflow-hidden rounded-xl border border-slate-700 bg-[#151e32]/30 shadow-xl backdrop-blur-sm">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-          <tr class="bg-[#151e32]/90 border-b border-slate-700 text-slate-400">
-            <th class="p-5 text-xs font-semibold uppercase tracking-wider w-[280px]">Ngân hàng / Thẻ</th>
-            <th class="p-5 text-xs font-semibold uppercase tracking-wider">Hạn mức</th>
-            <th class="p-5 text-xs font-semibold uppercase tracking-wider">Sao kê</th>
-            <th class="p-5 text-xs font-semibold uppercase tracking-wider">Thanh toán</th>
-            <th class="p-5 text-xs font-semibold uppercase tracking-wider text-right">Trạng thái</th>
-          </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-700 text-sm">
-          <tr class="group hover:bg-white/[0.03] transition-colors">
-            <td class="p-5">
-              <div class="flex items-center gap-4">
-                <div class="size-12 rounded-xl bg-white flex items-center justify-center p-1 shrink-0 shadow-md">
-                  <span class="text-black font-black text-xs tracking-tighter">TCB</span>
-                </div>
-                <div class="flex flex-col gap-1">
-                  <span class="text-white font-bold text-base">Techcombank Visa</span>
-                  <span class="text-slate-400 text-xs font-mono tracking-wider">**** 4582</span>
-                </div>
-              </div>
-            </td>
-            <td class="p-5"><span class="text-white font-semibold text-base">100,000,000 ₫</span></td>
-            <td class="p-5">
-              <div class="flex flex-col gap-1.5">
-                <span class="text-white text-sm font-medium">20/10</span>
-                <span
-                  class="inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                            <span class="material-symbols-outlined text-[12px]">check_circle</span> Đã sao kê
-                                        </span>
-              </div>
-            </td>
-            <td class="p-5">
-              <div class="flex flex-col gap-1.5">
-                <span class="text-white text-sm font-bold">05/11</span>
-                <span
-                  class="inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-md text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                                            <span class="material-symbols-outlined text-[12px]">cancel</span> Chưa thanh toán
-                                        </span>
-              </div>
-            </td>
-            <td class="p-5 text-right">
-              <div class="flex justify-end">
-                <div
-                  class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-sm animate-pulse">
-                  <span class="material-symbols-outlined text-lg">warning</span>
-                  <span class="text-xs font-bold uppercase">Còn 3 ngày</span>
-                </div>
-              </div>
-            </td>
-          </tr>
-          </tbody>
-        </table>
+    @if (loading()) {
+      <div class="text-slate-400 py-12 text-center">Đang tải…</div>
+    } @else if (error()) {
+      <div class="rounded-xl border border-red-500/30 bg-red-500/10 text-red-200 px-4 py-3">{{ error() }}</div>
+    } @else if (cards().length === 0) {
+      <div class="rounded-xl border border-slate-700 bg-[#151e32]/40 text-slate-300 px-6 py-12 text-center">
+        Chưa có thẻ nào. Thêm thẻ để theo dõi hạn mức và lịch thanh toán.
       </div>
-    </div>
+    } @else {
+      <div class="w-full overflow-hidden rounded-xl border border-slate-700 bg-[#151e32]/30 shadow-xl backdrop-blur-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[860px]">
+            <thead>
+            <tr class="bg-[#151e32]/90 border-b border-slate-700 text-slate-400">
+              <th class="p-5 text-xs font-semibold uppercase tracking-wider w-[280px]">Ngân hàng / Thẻ</th>
+              <th class="p-5 text-xs font-semibold uppercase tracking-wider">Hạn mức</th>
+              <th class="p-5 text-xs font-semibold uppercase tracking-wider">Dư nợ</th>
+              <th class="p-5 text-xs font-semibold uppercase tracking-wider">Sao kê</th>
+              <th class="p-5 text-xs font-semibold uppercase tracking-wider">Thanh toán</th>
+              <th class="p-5 text-xs font-semibold uppercase tracking-wider text-right">Trạng thái</th>
+              <th class="p-5 text-xs font-semibold uppercase tracking-wider text-right w-[120px]"></th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700 text-sm">
+              @for (card of cards(); track card.creditCardId) {
+                <tr class="group hover:bg-white/[0.03] transition-colors">
+                  <td class="p-5">
+                    <div class="flex items-center gap-4">
+                      <div class="size-12 rounded-xl bg-white flex items-center justify-center p-1 shrink-0 shadow-md">
+                        <span class="text-black font-black text-xs tracking-tighter">{{ bankInitials(card.bankName) }}</span>
+                      </div>
+                      <div class="flex flex-col gap-1 min-w-0">
+                        <span class="text-white font-bold text-base truncate">{{ card.cardLabel }}</span>
+                        <span class="text-slate-400 text-xs font-mono tracking-wider">
+                          @if (card.lastFour) {
+                            **** {{ card.lastFour }}
+                          } @else {
+                            —
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="p-5"><span class="text-white font-semibold text-base">{{ formatVnd(card.creditLimit) }} ₫</span></td>
+                  <td class="p-5"><span class="text-amber-200/90 font-semibold text-base">{{ formatVnd(card.outstandingBalance) }} ₫</span></td>
+                  <td class="p-5">
+                    <div class="flex flex-col gap-1.5">
+                      <button type="button" (click)="toggleStatement(card)"
+                              class="text-left text-white text-sm font-medium hover:text-blue-400 transition-colors cursor-pointer">
+                        {{ card.nextStatementLabel }}
+                      </button>
+                      <button type="button" (click)="toggleStatement(card)"
+                              [disabled]="togglingId() === card.creditCardId"
+                              class="inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-md text-[11px] font-bold border transition-colors cursor-pointer disabled:opacity-50"
+                              [class.bg-emerald-500/10]="card.cycleStatementDone"
+                              [class.text-emerald-400]="card.cycleStatementDone"
+                              [class.border-emerald-500/20]="card.cycleStatementDone"
+                              [class.bg-slate-500/10]="!card.cycleStatementDone"
+                              [class.text-slate-400]="!card.cycleStatementDone"
+                              [class.border-slate-600]="!card.cycleStatementDone">
+                        <span class="material-symbols-outlined text-[12px]">{{ card.cycleStatementDone ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                        {{ card.cycleStatementDone ? 'Đã sao kê' : 'Chưa sao kê' }}
+                      </button>
+                    </div>
+                  </td>
+                  <td class="p-5">
+                    <div class="flex flex-col gap-1.5">
+                      <button type="button" (click)="togglePaid(card)"
+                              class="text-left text-white text-sm font-bold hover:text-blue-400 transition-colors cursor-pointer">
+                        {{ card.nextDueLabel }}
+                      </button>
+                      <button type="button" (click)="togglePaid(card)"
+                              [disabled]="togglingId() === card.creditCardId"
+                              class="inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-md text-[11px] font-bold border transition-colors cursor-pointer disabled:opacity-50"
+                              [class.bg-emerald-500/10]="card.cycleDuePaid"
+                              [class.text-emerald-400]="card.cycleDuePaid"
+                              [class.border-emerald-500/20]="card.cycleDuePaid"
+                              [class.bg-rose-500/10]="!card.cycleDuePaid"
+                              [class.text-rose-400]="!card.cycleDuePaid"
+                              [class.border-rose-500/20]="!card.cycleDuePaid">
+                        <span class="material-symbols-outlined text-[12px]">{{ card.cycleDuePaid ? 'check_circle' : 'cancel' }}</span>
+                        {{ card.cycleDuePaid ? 'Đã thanh toán' : 'Chưa thanh toán' }}
+                      </button>
+                    </div>
+                  </td>
+                  <td class="p-5 text-right">
+                    @if (dueUrgency(card) === 'soon') {
+                      <div
+                        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-sm animate-pulse">
+                        <span class="material-symbols-outlined text-lg">warning</span>
+                        <span class="text-xs font-bold uppercase">Còn {{ card.daysUntilDue }} ngày</span>
+                      </div>
+                    } @else if (dueUrgency(card) === 'overdue') {
+                      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">
+                        <span class="material-symbols-outlined text-lg">event_busy</span>
+                        <span class="text-xs font-bold uppercase">Quá hạn</span>
+                      </div>
+                    } @else {
+                      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-500/10 text-slate-400 border border-slate-600">
+                        <span class="material-symbols-outlined text-lg">schedule</span>
+                        <span class="text-xs font-bold uppercase">Ổn định</span>
+                      </div>
+                    }
+                  </td>
+                  <td class="p-5 text-right">
+                    <div class="flex justify-end gap-2 flex-wrap">
+                      <a [routerLink]="['/cards', card.creditCardId, 'payments']"
+                         class="text-xs font-bold uppercase text-blue-400 hover:text-blue-300 px-2 py-1 rounded-lg border border-blue-500/30 hover:bg-blue-500/10 transition-colors">
+                        Lịch sử TT
+                      </a>
+                      <button type="button" (click)="deleteCard(card)"
+                              class="text-xs font-bold uppercase text-red-400/90 hover:text-red-300 px-2 py-1 rounded-lg border border-red-500/20 hover:bg-red-500/10 transition-colors">
+                        Xóa
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
   </div>
 </div>
