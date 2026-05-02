@@ -1,5 +1,4 @@
 <div class="flex flex-col max-w-[1400px] mx-auto w-full p-4 md:p-6 lg:p-8 gap-6 min-h-screen">
-  <!-- Page Heading & Primary Action -->
   <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-slate-700/50">
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2 text-slate-400 text-sm">
@@ -12,19 +11,19 @@
         <span class="text-white font-medium">Người dùng</span>
       </div>
       <h1 class="text-white text-3xl md:text-4xl font-black leading-tight tracking-tight">Quản lý người dùng</h1>
-      <p class="text-slate-400 text-base font-normal leading-normal">Danh sách và quản lý tài khoản thành viên trong hệ
-        thống.</p>
+      <p class="text-slate-400 text-base font-normal leading-normal">
+        Danh sách và quản lý tài khoản (API qua gateway, yêu cầu quyền ADMIN).
+      </p>
     </div>
-    <button
-      class="flex shrink-0 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold leading-normal transition-all shadow-lg shadow-blue-600/20 active:scale-95">
+    <button type="button"
+            (click)="openCreate()"
+            class="flex shrink-0 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold leading-normal transition-all shadow-lg shadow-blue-600/20 active:scale-95">
       <span class="material-symbols-outlined text-[20px]">add</span>
       <span class="truncate">Thêm người dùng mới</span>
     </button>
   </div>
 
-  <!-- Filters & Search Toolbar -->
   <div class="flex flex-col lg:flex-row gap-4 bg-[#1e293b] rounded-xl p-4 border border-slate-700 shadow-sm">
-    <!-- Search -->
     <div class="flex-1 min-w-[280px]">
       <div
         class="flex w-full items-center rounded-lg h-10 bg-[#0b1121] border border-slate-700 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
@@ -33,311 +32,289 @@
         </div>
         <input
           class="w-full bg-transparent text-white border-none focus:ring-0 placeholder:text-slate-500 text-sm h-full"
-          placeholder="Tìm kiếm theo tên hoặc ID người dùng..." type="text"/>
+          placeholder="Tìm theo tên đăng nhập..."
+          type="search"
+          autocomplete="off"
+          [value]="draftQ()"
+          (input)="draftQ.set($any($event.target).value)"
+          (keydown.enter)="applySearch()"/>
       </div>
     </div>
-    <!-- Chips / Filters -->
-    <div class="flex gap-2 overflow-x-auto pb-2 lg:pb-0 no-scrollbar items-center">
-      <button
-        class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-blue-600/20 border border-blue-500/30 pl-3 pr-3 text-blue-500 transition-colors font-bold">
-        <span class="text-sm leading-normal">Tất cả trạng thái</span>
-        <span class="material-symbols-outlined text-[20px]">keyboard_arrow_down</span>
+    <div class="flex gap-2 flex-wrap items-center">
+      <button type="button" (click)="applySearch()"
+              class="h-9 px-4 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
+        Tìm
       </button>
-      <button
-        class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-[#0b1121] border border-slate-700 hover:border-slate-500 pl-3 pr-3 text-slate-400 hover:text-white transition-colors">
-        <span class="text-sm font-medium leading-normal">Đang hoạt động</span>
+      <button type="button" (click)="setStatusFilter('all')" [class]="chipClass('all')">
+        <span>Tất cả</span>
       </button>
-      <button
-        class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-[#0b1121] border border-slate-700 hover:border-slate-500 pl-3 pr-3 text-slate-400 hover:text-white transition-colors">
-        <span class="text-sm font-medium leading-normal">Đã khóa</span>
+      <button type="button" (click)="setStatusFilter('active')" [class]="chipClass('active')">
+        <span>Hoạt động</span>
       </button>
-      <button
-        class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-[#0b1121] border border-slate-700 hover:border-slate-500 pl-3 pr-3 text-slate-400 hover:text-white transition-colors">
-        <span class="text-sm font-medium leading-normal">Chờ duyệt</span>
+      <button type="button" (click)="setStatusFilter('locked')" [class]="chipClass('locked')">
+        <span>Đã khóa</span>
+      </button>
+      <button type="button" (click)="setStatusFilter('pending')" [class]="chipClass('pending')">
+        <span>Chờ duyệt</span>
       </button>
     </div>
   </div>
 
-  <!-- Data Table -->
-  <div class="@container">
-    <div class="flex flex-col overflow-hidden rounded-xl border border-slate-700 bg-[#0b1121] shadow-md">
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[900px]">
-          <thead>
-          <tr class="bg-[#1e293b] border-b border-slate-700">
-            <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-24">ID</th>
-            <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Tên đăng
-              nhập
-            </th>
-            <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-40">Trạng
-              thái
-            </th>
-            <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-32">Vai trò
-            </th>
-            <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Ngày tạo</th>
-            <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Cập nhật</th>
-            <th class="px-6 py-4 text-right text-slate-400 text-xs font-semibold uppercase tracking-wider w-40">Hành
-              động
-            </th>
-          </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-700">
-          <!-- Row 1 -->
-          <tr class="hover:bg-[#1e293b]/50 transition-colors group">
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">#1001</td>
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-3">
-                <div
-                  class="size-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
-                  NV
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-white text-sm font-medium">nguyenvan_a</span>
-                  <span class="text-slate-400 text-xs">nguyenvana&#64;example.com</span>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4">
-                                    <span
-                                      class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-500 border border-emerald-500/20">
-                                        <span class="size-1.5 rounded-full bg-emerald-500"></span>
-                                        Hoạt động
-                                    </span>
-            </td>
-            <td class="px-6 py-4 text-slate-300 text-sm font-medium">Admin</td>
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">2023-10-10</td>
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">2023-10-25</td>
-            <td class="px-6 py-4">
-              <div
-                class="flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-blue-600 transition-colors"
-                  title="Xem chi tiết">
-                  <span class="material-symbols-outlined text-[18px]">visibility</span>
-                </button>
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-indigo-600 transition-colors"
-                  title="Chỉnh sửa">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-red-600 transition-colors"
-                  title="Xóa">
-                  <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <!-- Row 2 -->
-          <tr class="hover:bg-[#1e293b]/50 transition-colors group">
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">#1002</td>
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-3">
-                <div
-                  class="size-8 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
-                  TB
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-white text-sm font-medium">tran_b_99</span>
-                  <span class="text-slate-400 text-xs">tranb&#64;example.com</span>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4">
-                                    <span
-                                      class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-500 border border-emerald-500/20">
-                                        <span class="size-1.5 rounded-full bg-emerald-500"></span>
-                                        Hoạt động
-                                    </span>
-            </td>
-            <td class="px-6 py-4 text-slate-300 text-sm font-medium">User</td>
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">2023-10-12</td>
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">2023-11-01</td>
-            <td class="px-6 py-4">
-              <div
-                class="flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-blue-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">visibility</span>
-                </button>
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-indigo-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-red-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <!-- Row 3 -->
-          <tr class="hover:bg-[#1e293b]/50 transition-colors group">
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">#1003</td>
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-3">
-                <div
-                  class="size-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
-                  LC
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-white text-sm font-medium">le_c_bet</span>
-                  <span class="text-slate-400 text-xs">lec&#64;example.com</span>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4">
-                                    <span
-                                      class="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-500 border border-red-500/20">
-                                        <span class="size-1.5 rounded-full bg-red-500"></span>
-                                        Bị khóa
-                                    </span>
-            </td>
-            <td class="px-6 py-4 text-slate-300 text-sm font-medium">User</td>
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">2023-10-15</td>
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">2023-10-20</td>
-            <td class="px-6 py-4">
-              <div
-                class="flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-blue-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">visibility</span>
-                </button>
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-indigo-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-red-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <!-- Row 4 -->
-          <tr class="hover:bg-[#1e293b]/50 transition-colors group">
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">#1004</td>
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-3">
-                <div
-                  class="size-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
-                  PD
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-white text-sm font-medium">pham_d_fin</span>
-                  <span class="text-slate-400 text-xs">phamd&#64;example.com</span>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4">
-                                    <span
-                                      class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-500 border border-amber-500/20">
-                                        <span class="size-1.5 rounded-full bg-amber-500"></span>
-                                        Chờ duyệt
-                                    </span>
-            </td>
-            <td class="px-6 py-4 text-slate-300 text-sm font-medium">User</td>
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">2023-10-18</td>
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">2023-10-18</td>
-            <td class="px-6 py-4">
-              <div
-                class="flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-blue-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">visibility</span>
-                </button>
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-indigo-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-red-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <!-- Row 5 -->
-          <tr class="hover:bg-[#1e293b]/50 transition-colors group">
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">#1005</td>
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-3">
-                <div
-                  class="size-8 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
-                  HE
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-white text-sm font-medium">hoang_e</span>
-                  <span class="text-slate-400 text-xs">hoange&#64;example.com</span>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4">
-                                    <span
-                                      class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-500 border border-emerald-500/20">
-                                        <span class="size-1.5 rounded-full bg-emerald-500"></span>
-                                        Hoạt động
-                                    </span>
-            </td>
-            <td class="px-6 py-4 text-slate-300 text-sm font-medium">Moderator</td>
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">2023-10-20</td>
-            <td class="px-6 py-4 text-slate-400 text-sm font-mono">2023-11-02</td>
-            <td class="px-6 py-4">
-              <div
-                class="flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-blue-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">visibility</span>
-                </button>
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-indigo-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button
-                  class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-red-600 transition-colors">
-                  <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-      <!-- Pagination Footer -->
-      <div
-        class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-700 bg-[#1e293b] px-6 py-3 gap-4">
-        <div class="text-xs text-slate-400">
-          Hiển thị <span class="font-medium text-white">1</span> đến <span class="font-medium text-white">5</span> trong
-          số <span class="font-medium text-white">128</span> kết quả
+  @if (mutateError()) {
+    <div class="rounded-lg border border-red-500/30 bg-red-950/30 px-4 py-3 text-sm text-red-200">
+      {{ mutateError() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 flex flex-col items-center justify-center gap-3">
+      <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
+      <p class="text-slate-400 text-sm">Đang tải…</p>
+    </div>
+  } @else if (error(); as err) {
+    <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
+      <p class="text-red-300 text-sm">{{ err }}</p>
+      <button type="button"
+              (click)="load()"
+              class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
+        Thử lại
+      </button>
+    </div>
+  } @else if (data(); as page) {
+    <div class="@container">
+      <div class="flex flex-col overflow-hidden rounded-xl border border-slate-700 bg-[#0b1121] shadow-md">
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[900px]">
+            <thead>
+            <tr class="bg-[#1e293b] border-b border-slate-700">
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-24">ID</th>
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Tên đăng nhập</th>
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-40">Trạng thái</th>
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-32">Vai trò</th>
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Ngày tạo</th>
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Cập nhật</th>
+              <th class="px-6 py-4 text-right text-slate-400 text-xs font-semibold uppercase tracking-wider w-52">Hành động</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700">
+              @if (page.content.length === 0) {
+                <tr>
+                  <td colspan="7" class="px-6 py-12 text-center text-slate-400 text-sm">Không có người dùng.</td>
+                </tr>
+              } @else {
+                @for (row of page.content; track row.userId) {
+                  <tr class="hover:bg-[#1e293b]/50 transition-colors group">
+                    <td class="px-6 py-4 text-slate-400 text-sm font-mono">#{{ row.userId }}</td>
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-3">
+                        <div
+                          class="size-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+                          {{ initials(row.username) }}
+                        </div>
+                        <div class="flex flex-col">
+                          <span class="text-white text-sm font-medium">{{ row.username }}</span>
+                          @if (row.avatar) {
+                            <span class="text-slate-400 text-xs truncate max-w-[200px]">{{ row.avatar }}</span>
+                          }
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span [class]="badgeClass(row.status)">
+                        <span class="size-1.5 rounded-full bg-current opacity-80"></span>
+                        {{ statusLabel(row.status) }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-300 text-sm font-medium">{{ row.role }}</td>
+                    <td class="px-6 py-4 text-slate-400 text-sm font-mono">
+                      @if (row.createdAt) {
+                        {{ row.createdAt | date: 'yyyy-MM-dd HH:mm' }}
+                      } @else { — }
+                    </td>
+                    <td class="px-6 py-4 text-slate-400 text-sm font-mono">
+                      @if (row.updatedAt) {
+                        {{ row.updatedAt | date: 'yyyy-MM-dd HH:mm' }}
+                      } @else { — }
+                    </td>
+                    <td class="px-6 py-4">
+                      <div
+                        class="flex justify-end gap-1 flex-wrap sm:flex-nowrap opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                        <button type="button"
+                                [disabled]="mutatingId() !== null"
+                                (click)="toggleLock(row)"
+                                class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-600 transition-colors disabled:opacity-40"
+                                [title]="isLockedStatus(row.status) ? 'Mở khóa' : 'Khóa'">
+                          <span class="material-symbols-outlined text-[18px]">{{ isLockedStatus(row.status) ? 'lock_open' : 'lock' }}</span>
+                        </button>
+                        <button type="button"
+                                [disabled]="mutatingId() !== null"
+                                (click)="openResetPassword(row)"
+                                class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-amber-600 transition-colors disabled:opacity-40"
+                                title="Đặt lại mật khẩu">
+                          <span class="material-symbols-outlined text-[18px]">key</span>
+                        </button>
+                        <button type="button"
+                                [disabled]="mutatingId() !== null"
+                                (click)="openEdit(row)"
+                                class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-indigo-600 transition-colors disabled:opacity-40"
+                                title="Chỉnh sửa">
+                          <span class="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
+                        <button type="button"
+                                [disabled]="mutatingId() !== null"
+                                (click)="remove(row)"
+                                class="size-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-red-600 transition-colors disabled:opacity-40"
+                                title="Xóa">
+                          <span class="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
         </div>
-        <div class="flex items-center gap-1">
-          <button
-            class="flex size-8 items-center justify-center rounded-md border border-transparent text-slate-400 hover:bg-[#0b1121] disabled:opacity-50 transition-colors">
-            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-          </button>
-          <button
-            class="flex size-8 items-center justify-center rounded-md bg-blue-600 text-sm font-bold text-white shadow-sm">
-            1
-          </button>
-          <button
-            class="flex size-8 items-center justify-center rounded-md border border-transparent text-sm font-medium text-slate-400 hover:bg-[#0b1121] hover:text-white transition-colors">
-            2
-          </button>
-          <button
-            class="flex size-8 items-center justify-center rounded-md border border-transparent text-sm font-medium text-slate-400 hover:bg-[#0b1121] hover:text-white transition-colors">
-            3
-          </button>
-          <span class="flex size-8 items-center justify-center text-sm text-slate-500">...</span>
-          <button
-            class="flex size-8 items-center justify-center rounded-md border border-transparent text-sm font-medium text-slate-400 hover:bg-[#0b1121] hover:text-white transition-colors">
-            25
-          </button>
-          <button
-            class="flex size-8 items-center justify-center rounded-md border border-transparent text-slate-400 hover:bg-[#0b1121] hover:text-white transition-colors">
-            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-          </button>
+        <div
+          class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-700 bg-[#1e293b] px-6 py-3 gap-4">
+          <div class="text-xs text-slate-400">
+            Trang {{ page.page + 1 }} / {{ page.totalPages || 1 }}
+            · {{ page.totalElements | number }} người dùng
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button"
+                    (click)="prev()"
+                    [disabled]="page.page <= 0"
+                    class="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+              Trước
+            </button>
+            <button type="button"
+                    (click)="next()"
+                    [disabled]="page.totalPages <= 1 || page.page >= page.totalPages - 1"
+                    class="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+              Sau
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  }
 </div>
+
+@if (modalMode(); as mode) {
+  <div class="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4"
+       (click)="closeModal()"
+       role="presentation">
+    <div class="bg-[#1e293b] rounded-xl border border-slate-700 max-w-md w-full p-6 shadow-xl"
+         (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-white">
+          @switch (mode) {
+            @case ('create') {
+              Thêm người dùng
+            }
+            @case ('edit') {
+              Chỉnh sửa
+            }
+            @case ('password') {
+              Đặt lại mật khẩu
+            }
+          }
+        </h2>
+        <button type="button" (click)="closeModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      @if (modalError()) {
+        <p class="text-red-300 text-sm mb-3">{{ modalError() }}</p>
+      }
+
+      @switch (mode) {
+        @case ('create') {
+          <div class="space-y-3">
+            <label class="block text-xs text-slate-400 uppercase font-semibold">Username</label>
+            <input class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
+                   [value]="createUsername()"
+                   (input)="createUsername.set($any($event.target).value)"/>
+            <label class="block text-xs text-slate-400 uppercase font-semibold">Mật khẩu</label>
+            <input type="password"
+                   class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
+                   [value]="createPassword()"
+                   (input)="createPassword.set($any($event.target).value)"/>
+            <label class="block text-xs text-slate-400 uppercase font-semibold">Vai trò</label>
+            <select class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
+                    [value]="createRole()"
+                    (change)="createRole.set($any($event.target).value)">
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+              <option value="moderator">moderator</option>
+            </select>
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm">Hủy</button>
+              <button type="button"
+                      [disabled]="mutatingId() !== null"
+                      (click)="submitCreate()"
+                      class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 disabled:opacity-50">
+                Tạo
+              </button>
+            </div>
+          </div>
+        }
+        @case ('edit') {
+          @if (editingUser(); as u) {
+            <div class="space-y-3">
+              <p class="text-sm text-slate-400">Tài khoản: <span class="text-white font-medium">{{ u.username }}</span></p>
+              <label class="block text-xs text-slate-400 uppercase font-semibold">Vai trò</label>
+              <select class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
+                      [value]="editRole()"
+                      (change)="editRole.set($any($event.target).value)">
+                <option value="user">user</option>
+                <option value="admin">admin</option>
+                <option value="moderator">moderator</option>
+              </select>
+              <label class="block text-xs text-slate-400 uppercase font-semibold">Trạng thái</label>
+              <select class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
+                      [value]="editStatus()"
+                      (change)="editStatus.set($any($event.target).value)">
+                <option value="active">active</option>
+                <option value="locked">locked</option>
+                <option value="pending">pending</option>
+              </select>
+              <div class="flex justify-end gap-2 pt-2">
+                <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm">Hủy</button>
+                <button type="button"
+                        [disabled]="mutatingId() !== null"
+                        (click)="submitEdit()"
+                        class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 disabled:opacity-50">
+                  Lưu
+                </button>
+              </div>
+            </div>
+          }
+        }
+        @case ('password') {
+          @if (editingUser(); as u) {
+            <div class="space-y-3">
+              <p class="text-sm text-slate-400">Tài khoản: <span class="text-white font-medium">{{ u.username }}</span></p>
+              <label class="block text-xs text-slate-400 uppercase font-semibold">Mật khẩu mới</label>
+              <input type="password"
+                     class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
+                     [value]="resetPasswordValue()"
+                     (input)="resetPasswordValue.set($any($event.target).value)"/>
+              <div class="flex justify-end gap-2 pt-2">
+                <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm">Hủy</button>
+                <button type="button"
+                        [disabled]="mutatingId() !== null"
+                        (click)="submitResetPassword()"
+                        class="px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-500 disabled:opacity-50">
+                  Đặt lại
+                </button>
+              </div>
+            </div>
+          }
+        }
+      }
+    </div>
+  </div>
+}
