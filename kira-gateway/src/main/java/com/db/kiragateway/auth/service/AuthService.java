@@ -71,6 +71,22 @@ public class AuthService {
         return userAuthRepository.findByUsername(username.trim()).map(this::toAuthenticatedUser);
     }
 
+    /**
+     * Sets a new password for an existing user (no old password or token). Intended for trusted internal
+     * use only; do not expose to the public internet without additional protection.
+     */
+    public boolean resetPasswordByUsername(String username, String newPassword) {
+        if (!StringUtils.hasText(username) || !StringUtils.hasText(newPassword)) {
+            return false;
+        }
+        var normalizedUsername = username.trim();
+        if (userAuthRepository.findByUsername(normalizedUsername).isEmpty()) {
+            return false;
+        }
+        var encoded = passwordEncoder.encode(newPassword);
+        return userAuthRepository.updatePasswordByUsername(normalizedUsername, encoded) > 0;
+    }
+
     private boolean isActive(UserCredential user) {
         var status = user.status();
         if (!StringUtils.hasText(status)) {

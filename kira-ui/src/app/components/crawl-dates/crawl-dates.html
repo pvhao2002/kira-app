@@ -1,0 +1,117 @@
+<div class="max-w-[1100px] mx-auto p-6 space-y-6">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight text-white">Crawl Date</h1>
+    <p class="text-slate-400 mt-2">Trạng thái crawl theo ngày.</p>
+  </div>
+
+  @if (loading()) {
+    <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 flex flex-col items-center justify-center gap-3">
+      <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
+      <p class="text-slate-400 text-sm">Đang tải…</p>
+    </div>
+  } @else if (error()) {
+    <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
+      <p class="text-red-300 text-sm">{{ error() }}</p>
+      <button type="button"
+              (click)="load()"
+              class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
+        Thử lại
+      </button>
+    </div>
+  } @else if (data(); as page) {
+    @if (page.content.length === 0) {
+      <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 text-center">
+        <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">calendar_month</span>
+        <p class="text-slate-400 text-sm">Không có bản ghi.</p>
+      </div>
+    } @else {
+      <div class="rounded-xl border border-white/5 overflow-hidden bg-[#1e293b]">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-900/50 text-slate-400 font-medium border-b border-white/5">
+              <tr>
+                <th class="px-4 py-3">
+                  <button type="button"
+                          (click)="toggleSort('date')"
+                          class="inline-flex items-center gap-1 font-medium hover:text-white transition-colors"
+                          [class.text-blue-400]="sortHeaderActive('date')"
+                          [class.text-slate-400]="!sortHeaderActive('date')">
+                    Ngày
+                    <span class="material-symbols-outlined text-base leading-none">{{ sortHeaderIcon('date') }}</span>
+                  </button>
+                </th>
+                <th class="px-4 py-3">Trạng thái</th>
+                <th class="px-4 py-3 text-right">
+                  <button type="button"
+                          (click)="toggleSort('totalEvents')"
+                          class="inline-flex items-center gap-1 font-medium ml-auto hover:text-white transition-colors w-full justify-end"
+                          [class.text-blue-400]="sortHeaderActive('totalEvents')"
+                          [class.text-slate-400]="!sortHeaderActive('totalEvents')">
+                    Events
+                    <span class="material-symbols-outlined text-base leading-none">{{ sortHeaderIcon('totalEvents') }}</span>
+                  </button>
+                </th>
+                <th class="px-4 py-3 hidden md:table-cell">Tin nhắn</th>
+                <th class="px-4 py-3 hidden lg:table-cell">Cập nhật</th>
+                <th class="px-4 py-3 text-right w-[1%] whitespace-nowrap">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              @for (row of page.content; track row.date) {
+                <tr class="hover:bg-white/[0.03]">
+                  <td class="px-4 py-3 text-white font-medium whitespace-nowrap">{{ formatDisplayDate(row.date) }}</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex px-2 py-0.5 rounded-md text-xs font-medium"
+                          [class]="statusBadgeClass(row.status)">{{ row.status }}</span>
+                  </td>
+                  <td class="px-4 py-3 text-right text-slate-300">{{ row.totalEvents | number }}</td>
+                  <td class="px-4 py-3 text-slate-500 max-w-[200px] truncate hidden md:table-cell"
+                      [title]="row.message ?? ''">{{ row.message ?? '—' }}</td>
+                  <td class="px-4 py-3 text-slate-500 text-xs hidden lg:table-cell whitespace-nowrap">
+                    {{ row.updatedAt ? (row.updatedAt | date:'short') : '—' }}
+                  </td>
+                  <td class="px-4 py-3 text-right whitespace-nowrap">
+                    <button type="button"
+                            (click)="requeue(row.date)"
+                            [disabled]="requeueingDate() === row.date"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium
+                                   bg-slate-800 text-slate-200 hover:bg-slate-700 border border-white/10
+                                   disabled:opacity-40 disabled:cursor-not-allowed">
+                      @if (requeueingDate() === row.date) {
+                        <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                      } @else {
+                        <span class="material-symbols-outlined text-sm">replay</span>
+                      }
+                      Crawl lại
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400">
+        <span>
+          Trang {{ page.page + 1 }} / {{ page.totalPages || 1 }}
+          · {{ page.totalElements | number }} bản ghi
+        </span>
+        <div class="flex gap-2">
+          <button type="button"
+                  (click)="prev()"
+                  [disabled]="page.page <= 0"
+                  class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+            Trước
+          </button>
+          <button type="button"
+                  (click)="next()"
+                  [disabled]="page.page >= page.totalPages - 1"
+                  class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+            Sau
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

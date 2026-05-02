@@ -34,7 +34,7 @@ public class DateSchedule {
             """;
 
 
-    @Scheduled(cron = "0 0 0,3,15,20 * * *", zone = "Asia/Ho_Chi_Minh")
+//    @Scheduled(cron = "0 0 0,3,15,20 * * *", zone = "Asia/Ho_Chi_Minh")
     public void crawlTomorrowEvent() {
         if (!crawlScheduleEnabled) {
             return;
@@ -45,7 +45,7 @@ public class DateSchedule {
         log.info("DateSchedule >> Scheduled crawl for today and tomorrow events.");
     }
 
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+//    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlByDate() {
         if (!crawlScheduleEnabled) {
             return;

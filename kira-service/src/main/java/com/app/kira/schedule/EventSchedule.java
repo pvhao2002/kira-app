@@ -44,7 +44,7 @@ public class EventSchedule {
             order by e.event_date
             """;
 
-    @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+//    @Scheduled(fixedDelay = 20, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlOddForUpcomingEvent() {
         if (!crawlScheduleEnabled) {
             return;

@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import kira.schema.entity.enums.OddsMarket;
 import lombok.Getter;
@@ -17,7 +18,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "event_odds")
+@Table(
+        name = "event_odds",
+        indexes = @Index(name = "idx_event_odds_event_id_type", columnList = "event_id, type"))
 @Getter
 @Setter
 @NoArgsConstructor

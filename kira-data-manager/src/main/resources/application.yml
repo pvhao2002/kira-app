@@ -1,0 +1,21 @@
+server:
+  port: 9198
+  servlet:
+    context-path: /data
+
+spring:
+  application:
+    name: kira-data-manager
+
+kira:
+  datasource:
+    write:
+      url: jdbc:mysql://${DB_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_PRIMARY_NAME:kira}?useUnicode=true&characterEncoding=utf8
+      username: ${DB_PRIMARY_USERNAME:kira_user}
+      password: ${DB_PRIMARY_PASSWORD:kira_password}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    read:
+      url: jdbc:mysql://${DB_READ_HOST:${DB_HOST:localhost}}:${DB_READ_PORT:${DB_PRIMARY_PORT:3310}}/${DB_PRIMARY_NAME:kira}?useUnicode=true&characterEncoding=utf8
+      username: ${DB_PRIMARY_USERNAME:kira_user}
+      password: ${DB_PRIMARY_PASSWORD:kira_password}
+      driver-class-name: com.mysql.cj.jdbc.Driver

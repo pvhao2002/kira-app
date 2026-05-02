@@ -1,0 +1,86 @@
+<div class="max-w-[900px] mx-auto p-6 space-y-8">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight text-white">Soccer</h1>
+    <p class="text-slate-400 mt-2">Chọn mục để quản lý giải đấu, trận đấu và dữ liệu crawl.</p>
+  </div>
+
+  <ul class="grid gap-3 sm:grid-cols-2">
+    <li>
+      <a routerLink="/leagues"
+         class="flex items-center gap-4 rounded-xl bg-[#1e293b] p-5 border border-white/5 hover:border-blue-500/40 hover:bg-slate-800/80 transition-all group">
+        <span class="material-symbols-outlined text-3xl text-amber-400 group-hover:scale-105 transition-transform">trophy</span>
+        <div>
+          <span class="block text-white font-semibold">Leagues</span>
+          <span class="text-sm text-slate-500">Giải đấu</span>
+        </div>
+        <span class="material-symbols-outlined text-slate-500 ml-auto">chevron_right</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/matches"
+         class="flex items-center gap-4 rounded-xl bg-[#1e293b] p-5 border border-white/5 hover:border-blue-500/40 hover:bg-slate-800/80 transition-all group">
+        <span class="material-symbols-outlined text-3xl text-green-400 group-hover:scale-105 transition-transform">sports_soccer</span>
+        <div>
+          <span class="block text-white font-semibold">Events</span>
+          <span class="text-sm text-slate-500">Trận đấu</span>
+        </div>
+        <span class="material-symbols-outlined text-slate-500 ml-auto">chevron_right</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/results"
+         class="flex items-center gap-4 rounded-xl bg-[#1e293b] p-5 border border-white/5 hover:border-blue-500/40 hover:bg-slate-800/80 transition-all group">
+        <span class="material-symbols-outlined text-3xl text-blue-400 group-hover:scale-105 transition-transform">scoreboard</span>
+        <div>
+          <span class="block text-white font-semibold">Results</span>
+          <span class="text-sm text-slate-500">Kết quả</span>
+        </div>
+        <span class="material-symbols-outlined text-slate-500 ml-auto">chevron_right</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/crawl-dates"
+         class="flex items-center gap-4 rounded-xl bg-[#1e293b] p-5 border border-white/5 hover:border-blue-500/40 hover:bg-slate-800/80 transition-all group">
+        <span class="material-symbols-outlined text-3xl text-purple-400 group-hover:scale-105 transition-transform">calendar_month</span>
+        <div>
+          <span class="block text-white font-semibold">Crawl Date</span>
+          <span class="text-sm text-slate-500">Theo dõi ngày crawl</span>
+        </div>
+        <span class="material-symbols-outlined text-slate-500 ml-auto">chevron_right</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/event-no-odds"
+         class="flex items-center gap-4 rounded-xl bg-[#1e293b] p-5 border border-white/5 hover:border-orange-500/40 hover:bg-slate-800/80 transition-all group">
+        <span class="material-symbols-outlined text-3xl text-orange-400 group-hover:scale-105 transition-transform">money_off</span>
+        <div>
+          <span class="block text-white font-semibold">Event không odds</span>
+          <span class="text-sm text-slate-500">Trận không có kèo</span>
+        </div>
+        <span class="material-symbols-outlined text-slate-500 ml-auto">chevron_right</span>
+      </a>
+    </li>
+    <li>
+      <a routerLink="/events-cancelled"
+         class="flex items-center gap-4 rounded-xl bg-[#1e293b] p-5 border border-white/5 hover:border-rose-500/40 hover:bg-slate-800/80 transition-all group">
+        <span class="material-symbols-outlined text-3xl text-rose-400 group-hover:scale-105 transition-transform">block</span>
+        <div>
+          <span class="block text-white font-semibold">Event huỷ</span>
+          <span class="text-sm text-slate-500">Trận bị huỷ</span>
+        </div>
+        <span class="material-symbols-outlined text-slate-500 ml-auto">chevron_right</span>
+      </a>
+    </li>
+    <li class="sm:col-span-2">
+      <a routerLink="/teams"
+         class="flex items-center gap-4 rounded-xl bg-[#1e293b] p-5 border border-white/5 hover:border-blue-500/40 hover:bg-slate-800/80 transition-all group">
+        <span class="material-symbols-outlined text-3xl text-cyan-400 group-hover:scale-105 transition-transform">groups</span>
+        <div>
+          <span class="block text-white font-semibold">Team</span>
+          <span class="text-sm text-slate-500">Đội bóng</span>
+        </div>
+        <span class="material-symbols-outlined text-slate-500 ml-auto">chevron_right</span>
+      </a>
+    </li>
+  </ul>
+</div>

@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import kira.schema.entity.enums.CrawlDateStatus;
@@ -15,7 +16,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "crawl_date")
+@Table(name = "crawl_date", indexes = @Index(name = "idx_crawl_date_status", columnList = "status"))
 @Getter
 @Setter
 @NoArgsConstructor

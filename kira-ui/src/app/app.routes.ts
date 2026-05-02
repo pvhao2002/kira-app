@@ -14,6 +14,11 @@ import {Leagues} from './components/leagues/leagues';
 import {Notifications} from './components/notifications/notifications';
 import {Users} from './components/users/users';
 import {SqlEditor} from './components/sql-editor/sql-editor';
+import {SoccerHub} from './components/soccer-hub/soccer-hub';
+import {CrawlDates} from './components/crawl-dates/crawl-dates';
+import {Teams} from './components/teams/teams';
+import {EventNoOdds} from './components/event-no-odds/event-no-odds';
+import {EventsCancelled} from './components/events-cancelled/events-cancelled';
 import {authGuard} from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -37,6 +42,11 @@ export const routes: Routes = [
       {path: 'notifications', component: Notifications},
       {path: 'users', component: Users},
       {path: 'sql', component: SqlEditor},
+      {path: 'soccer', component: SoccerHub},
+      {path: 'crawl-dates', component: CrawlDates},
+      {path: 'event-no-odds', component: EventNoOdds},
+      {path: 'events-cancelled', component: EventsCancelled},
+      {path: 'teams', component: Teams},
     ]
   },
   {path: '**', redirectTo: 'dashboard'},

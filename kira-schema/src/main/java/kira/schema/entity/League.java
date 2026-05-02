@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -14,7 +15,9 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "leagues")
+@Table(
+        name = "leagues",
+        indexes = @Index(name = "idx_leagues_is_main_league_name", columnList = "is_main, league_name"))
 @Getter
 @Setter
 @NoArgsConstructor

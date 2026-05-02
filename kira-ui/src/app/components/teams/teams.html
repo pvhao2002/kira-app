@@ -1,0 +1,134 @@
+<div class="flex-1 overflow-y-auto bg-[#0b1121] relative pb-24 lg:pb-10 min-h-screen">
+  <div class="max-w-5xl mx-auto w-full px-4 py-8 lg:px-8">
+    <div class="mb-6">
+      <h2 class="text-3xl font-bold text-white tracking-tight">Đội bóng</h2>
+      <p class="text-slate-400 mt-1 text-sm">Danh sách đội — tìm theo tên.</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+      <div class="relative flex-1 group">
+        <span
+          class="absolute left-3 inset-y-0 flex items-center text-slate-500 group-focus-within:text-blue-500 transition-colors pointer-events-none z-10">
+          <span class="material-symbols-outlined text-[20px] leading-none">search</span>
+        </span>
+        <input
+          class="w-full pl-10 pr-4 py-3 bg-[#1e293b] border border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-white placeholder:text-slate-500"
+          placeholder="Tên đội..."
+          type="search"
+          autocomplete="off"
+          [value]="draftQ()"
+          (input)="onTeamNameInput($any($event.target).value)"
+          (focus)="onTeamNameFocus()"
+          (blur)="onTeamNameBlur()"
+          (keydown.escape)="closeTeamNamePanel()"
+          (keydown.enter)="applySearch()"/>
+        @if (showTeamNameDropdown()) {
+          <div
+            class="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl border border-slate-700 bg-[#1e293b] shadow-xl max-h-56 overflow-y-auto py-1">
+            @if (teamNameSuggestLoading()) {
+              <div class="px-4 py-3 text-sm text-slate-400 flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] animate-pulse">hourglass_empty</span>
+                Đang tải…
+              </div>
+            }
+            @for (name of teamNameSuggestions(); track name) {
+              <button type="button"
+                      class="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-slate-700/80 truncate"
+                      (mousedown)="$event.preventDefault()"
+                      (click)="pickTeamName(name)">
+                {{ name }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+      <button type="button"
+              (click)="applySearch()"
+              class="px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 shrink-0">
+        Tìm
+      </button>
+    </div>
+
+    @if (loading()) {
+      <div class="rounded-xl bg-[#1e293b] border border-slate-700 p-12 flex flex-col items-center justify-center gap-3">
+        <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
+        <p class="text-slate-400 text-sm">Đang tải…</p>
+      </div>
+    } @else if (error(); as err) {
+      <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
+        <p class="text-red-300 text-sm">{{ err }}</p>
+        <button type="button"
+                (click)="load()"
+                class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
+          Thử lại
+        </button>
+      </div>
+    } @else if (data(); as page) {
+      @if (page.content.length === 0) {
+        <div class="rounded-xl bg-[#1e293b] border border-slate-700 p-12 text-center">
+          <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">groups</span>
+          <p class="text-slate-400 text-sm">Không có đội phù hợp.</p>
+        </div>
+      } @else {
+        <div class="space-y-4">
+          @for (row of page.content; track row.teamId) {
+            <div
+              class="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-[#1e293b] rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all shadow-sm relative overflow-hidden">
+              <div
+                class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300 pointer-events-none"></div>
+              <div class="flex items-start sm:items-center gap-5 min-w-0 flex-1">
+                <div
+                  class="size-16 rounded-2xl bg-[#0b1121] p-0.5 flex items-center justify-center border border-slate-700 shrink-0 shadow-inner overflow-hidden">
+                  @if (row.logoUrl) {
+                    <img [src]="row.logoUrl"
+                         [alt]="row.teamName"
+                         loading="lazy"
+                         decoding="async"
+                         referrerpolicy="no-referrer"
+                         class="max-w-full max-h-full object-contain p-1"/>
+                  } @else {
+                    <span class="text-lg font-black text-slate-400 tracking-tighter">{{ initials(row.teamName) }}</span>
+                  }
+                </div>
+                <div class="min-w-0 flex-1">
+                  <h3 class="font-bold text-white text-lg truncate">{{ row.teamName }}</h3>
+                  <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-500">
+                    <span>Tạo: {{ row.createdAt ? (row.createdAt | date:'short') : '—' }}</span>
+                    <span>Cập nhật: {{ row.updatedAt ? (row.updatedAt | date:'short') : '—' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400 mt-8">
+          <span>
+            Trang {{ page.page + 1 }} / {{ page.totalPages || 1 }}
+            · {{ page.totalElements | number }} đội
+          </span>
+          <div class="flex gap-2">
+            <button type="button"
+                    (click)="prev()"
+                    [disabled]="page.page <= 0"
+                    class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+              Trước
+            </button>
+            <button type="button"
+                    (click)="next()"
+                    [disabled]="page.page >= page.totalPages - 1"
+                    class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+              Sau
+            </button>
+          </div>
+        </div>
+      }
+    }
+
+    <a routerLink="/soccer"
+       class="inline-flex items-center gap-2 mt-10 text-blue-400 hover:text-blue-300 text-sm font-medium">
+      <span class="material-symbols-outlined text-lg">arrow_back</span>
+      Về Soccer
+    </a>
+  </div>
+</div>

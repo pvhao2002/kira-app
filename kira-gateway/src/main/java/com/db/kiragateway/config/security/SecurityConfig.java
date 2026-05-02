@@ -32,6 +32,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,7 +65,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .ignoringRequestMatchers("/auth/login", "/auth/logout", "/internal/auth/register")
+                        .ignoringRequestMatchers(this::isPublicAuthPost)
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -72,6 +73,7 @@ public class SecurityConfig {
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/internal/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/internal/auth/password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/events/claim/next").permitAll()
                         .requestMatchers(HttpMethod.GET, "/events/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/export/kira-crawl").permitAll()
@@ -90,7 +92,20 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource(AppSecurityProperties props) {
         var config = new CorsConfiguration();
-        config.setAllowedOrigins(props.getCors().getAllowedOrigins());
+        // Exact origins (e.g. http://localhost:4200) miss loopback aliases like http://127.0.2.3:4200 → CorsFilter 403.
+        var patterns = new ArrayList<String>();
+        patterns.add("http://localhost:*");
+        patterns.add("https://localhost:*");
+        patterns.add("http://127.*.*.*:*");
+        patterns.add("https://127.*.*.*:*");
+        if (props.getCors().getAllowedOrigins() != null) {
+            for (var o : props.getCors().getAllowedOrigins()) {
+                if (o != null && !o.isBlank() && !"*".equals(o.trim())) {
+                    patterns.add(o.trim());
+                }
+            }
+        }
+        config.setAllowedOriginPatterns(patterns);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-XSRF-TOKEN"));
         config.setAllowCredentials(true);
@@ -106,8 +121,50 @@ public class SecurityConfig {
         var defaultResolver = new DefaultBearerTokenResolver();
         defaultResolver.setAllowUriQueryParameter(false);
 
-        return request -> readCookieToken(request, props.getCookie().getName())
-                .orElseGet(() -> defaultResolver.resolve(request));
+        return request -> {
+            // Stale/expired JWT in HttpOnly cookie breaks POST /auth/login (Resource Server validates before permitAll).
+            if (isPublicAuthPost(request)) {
+                return defaultResolver.resolve(request);
+            }
+            return readCookieToken(request, props.getCookie().getName())
+                    .orElseGet(() -> defaultResolver.resolve(request));
+        };
+    }
+
+    /**
+     * POSTs that must work without a valid JWT cookie (login/logout with stale cookie; register; password reset).
+     * Path must tolerate proxy/nginx quirks: optional duplicate {@code /gateway} prefix on the dispatch path.
+     */
+    private boolean isPublicAuthPost(HttpServletRequest request) {
+        if (!HttpMethod.POST.matches(request.getMethod())) {
+            return false;
+        }
+        var path = normalizeDispatchPath(request);
+        return "/auth/login".equals(path)
+                || "/auth/logout".equals(path)
+                || "/internal/auth/register".equals(path)
+                || "/internal/auth/password".equals(path);
+    }
+
+    /**
+     * Servlet path within the gateway app, with defensive stripping if {@code /gateway} appears twice
+     * (some proxies / misconfigurations).
+     */
+    private static String normalizeDispatchPath(HttpServletRequest request) {
+        var p = request.getServletPath();
+        if (request.getPathInfo() != null) {
+            p = p + request.getPathInfo();
+        }
+        if (p == null || p.isEmpty()) {
+            p = "/";
+        }
+        if (p.startsWith("/gateway")) {
+            p = p.substring("/gateway".length());
+            if (p.isEmpty()) {
+                p = "/";
+            }
+        }
+        return p;
     }
 
     @Bean

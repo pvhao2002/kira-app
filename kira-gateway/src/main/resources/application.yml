@@ -36,6 +36,10 @@ spring:
       pool:
         core-size: 36
 app:
+  data-manager:
+    base-url: ${APP_DATA_MANAGER_BASE_URL:http://localhost:9198/data}
+  kira-producer:
+    base-url: ${APP_KIRA_PRODUCER_BASE_URL:http://localhost:2311}
   crawl:
     claim-stale-after-seconds: ${CRAWL_CLAIM_STALE_AFTER_SECONDS:900}
   export:

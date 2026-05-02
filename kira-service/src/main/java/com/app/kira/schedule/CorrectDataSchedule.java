@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class CorrectDataSchedule {
     private final CorrectService correctService;
 
-    @Scheduled(cron = "0 0 5,7 * * *", zone = "Asia/Ho_Chi_Minh") // Every day at 7 AM
+//    @Scheduled(cron = "0 0 5,7 * * *", zone = "Asia/Ho_Chi_Minh") // Every day at 7 AM
     public void correctLeague() {
         correctService.correctLeagueForEventAnalyst();
     }

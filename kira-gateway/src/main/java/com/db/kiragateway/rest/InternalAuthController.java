@@ -1,5 +1,6 @@
 package com.db.kiragateway.rest;
 
+import com.db.kiragateway.auth.dto.PasswordResetRequest;
 import com.db.kiragateway.auth.dto.RegisterRequest;
 import com.db.kiragateway.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -21,6 +22,18 @@ public class InternalAuthController {
 
     public InternalAuthController(AuthService authService) {
         this.authService = authService;
+    }
+
+    @PostMapping("/password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        var ok = authService.resetPasswordByUsername(request.username(), request.password());
+        if (!ok) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", "User not found"
+            ));
+        }
+        return ResponseEntity.ok(Map.of("status", "ok"));
     }
 
     @PostMapping("/register")

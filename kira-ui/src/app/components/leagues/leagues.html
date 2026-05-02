@@ -1,294 +1,244 @@
 <div class="flex-1 overflow-y-auto bg-[#0b1121] relative pb-24 lg:pb-10 min-h-screen">
   <div class="max-w-5xl mx-auto w-full px-4 py-8 lg:px-8">
-    <!-- Header & Search -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-      <div>
-        <h2 class="text-3xl font-bold text-white tracking-tight">Giải đấu</h2>
-        <p class="text-slate-400 mt-1 text-sm">Chọn giải đấu để xem tỷ lệ cược và sự kiện</p>
-      </div>
-      <div class="relative w-full md:w-80 group">
-        <span
-          class="absolute left-3 inset-y-0 flex items-center text-slate-500 group-focus-within:text-blue-500 transition-colors">
-          <span class="material-symbols-outlined text-[20px] leading-none">
-            search
+    <div class="mb-6">
+      <h2 class="text-3xl font-bold text-white tracking-tight">Giải đấu</h2>
+      <p class="text-slate-400 mt-1 text-sm">Danh sách giải đấu — tìm kiếm và lọc theo quốc gia, giải chính.</p>
+    </div>
+
+    <div class="flex flex-col gap-4 mb-6">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1 group">
+          <span
+            class="absolute left-3 inset-y-0 flex items-center text-slate-500 group-focus-within:text-blue-500 transition-colors pointer-events-none z-10">
+            <span class="material-symbols-outlined text-[20px] leading-none">search</span>
           </span>
-        </span>
-        <input
-          class="w-full pl-10 pr-4 py-3 bg-[#1e293b] border border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-white placeholder:text-slate-500"
-          placeholder="Tìm kiếm giải đấu..." type="text"/>
+          <input
+            class="w-full pl-10 pr-4 py-3 bg-[#1e293b] border border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-white placeholder:text-slate-500"
+            placeholder="Tên giải hoặc quốc gia..."
+            type="search"
+            autocomplete="off"
+            [value]="draftQ()"
+            (input)="onLeagueNameInput($any($event.target).value)"
+            (focus)="onLeagueNameFocus()"
+            (blur)="onLeagueNameBlur()"
+            (keydown.escape)="closeLeagueNamePanel()"/>
+          @if (showLeagueNameDropdown()) {
+            <div
+              class="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl border border-slate-700 bg-[#1e293b] shadow-xl max-h-56 overflow-y-auto py-1">
+              @if (leagueNameSuggestLoading()) {
+                <div class="px-4 py-3 text-sm text-slate-400 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[18px] animate-pulse">hourglass_empty</span>
+                  Đang tải…
+                </div>
+              }
+              @for (name of leagueNameSuggestions(); track name) {
+                <button type="button"
+                        class="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-slate-700/80 truncate"
+                        (mousedown)="$event.preventDefault()"
+                        (click)="pickLeagueName(name)">
+                  {{ name }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+        <div class="relative flex-1 sm:max-w-xs group">
+          <span
+            class="absolute left-3 inset-y-0 flex items-center text-slate-500 pointer-events-none z-10">
+            <span class="material-symbols-outlined text-[20px] leading-none">public</span>
+          </span>
+          <input
+            class="w-full pl-10 pr-4 py-3 bg-[#1e293b] border border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-white placeholder:text-slate-500"
+            placeholder="Lọc quốc gia..."
+            type="text"
+            autocomplete="off"
+            [value]="draftCountry()"
+            (input)="onCountryInput($any($event.target).value)"
+            (focus)="onCountryFocus()"
+            (blur)="onCountryBlur()"
+            (keydown.escape)="closeCountryPanel()"/>
+          @if (showCountryDropdown()) {
+            <div
+              class="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl border border-slate-700 bg-[#1e293b] shadow-xl max-h-56 overflow-y-auto py-1">
+              @if (countrySuggestLoading()) {
+                <div class="px-4 py-3 text-sm text-slate-400 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[18px] animate-pulse">hourglass_empty</span>
+                  Đang tải…
+                </div>
+              }
+              @for (c of countrySuggestions(); track c) {
+                <button type="button"
+                        class="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-slate-700/80 truncate"
+                        (mousedown)="$event.preventDefault()"
+                        (click)="pickCountry(c)">
+                  {{ c }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+        <button type="button"
+                (click)="applySearch()"
+                class="px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 shadow-lg shadow-blue-500/20 whitespace-nowrap">
+          Tìm
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+        <button type="button"
+                (click)="setMainFilter('all')"
+                class="px-5 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border"
+                [class.bg-blue-600]="isMainFilter() === 'all'"
+                [class.text-white]="isMainFilter() === 'all'"
+                [class.shadow-lg]="isMainFilter() === 'all'"
+                [class.shadow-blue-500/20]="isMainFilter() === 'all'"
+                [class.bg-[#1e293b]]="isMainFilter() !== 'all'"
+                [class.border-slate-700]="isMainFilter() !== 'all'"
+                [class.text-slate-300]="isMainFilter() !== 'all'">
+          Tất cả
+        </button>
+        <button type="button"
+                (click)="setMainFilter('main')"
+                class="px-5 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border"
+                [class.bg-blue-600]="isMainFilter() === 'main'"
+                [class.text-white]="isMainFilter() === 'main'"
+                [class.bg-[#1e293b]]="isMainFilter() !== 'main'"
+                [class.border-slate-700]="isMainFilter() !== 'main'"
+                [class.text-slate-300]="isMainFilter() !== 'main'">
+          Giải đấu chính
+        </button>
+        <button type="button"
+                (click)="setMainFilter('nonmain')"
+                class="px-5 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border"
+                [class.bg-blue-600]="isMainFilter() === 'nonmain'"
+                [class.text-white]="isMainFilter() === 'nonmain'"
+                [class.bg-[#1e293b]]="isMainFilter() !== 'nonmain'"
+                [class.border-slate-700]="isMainFilter() !== 'nonmain'"
+                [class.text-slate-300]="isMainFilter() !== 'nonmain'">
+          Giải khác
+        </button>
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="flex items-center gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
-      <button
-        class="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold shadow-lg shadow-blue-500/20 whitespace-nowrap">
-        Tất cả
-      </button>
-      <button
-        class="px-5 py-2 rounded-lg bg-[#1e293b] border border-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-800 transition-colors whitespace-nowrap hover:text-white">
-        Giải đấu chính
-      </button>
-      <button
-        class="px-5 py-2 rounded-lg bg-[#1e293b] border border-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-800 transition-colors whitespace-nowrap hover:text-white">
-        Đã yêu thích
-      </button>
-      <button
-        class="px-5 py-2 rounded-lg bg-[#1e293b] border border-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-800 transition-colors whitespace-nowrap hover:text-white">
-        Khu vực Châu Âu
-      </button>
-    </div>
-
-    <!-- League List -->
-    <div class="space-y-4">
-      <!-- Premier League -->
-      <div
-        class="group flex items-center justify-between p-4 bg-[#1e293b] rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all shadow-sm hover:shadow-lg hover:shadow-blue-900/10 cursor-pointer relative overflow-hidden"
-        routerLink="/matches">
-        <div
-          class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300"></div>
-        <div class="flex items-center gap-5">
-          <div
-            class="size-16 rounded-2xl bg-[#0b1121] p-1 flex items-center justify-center border border-slate-700 shrink-0 shadow-inner">
-            <span class="text-xl font-black text-purple-500 tracking-tighter">PL</span>
-          </div>
-          <div>
-            <div class="flex items-center gap-3 flex-wrap">
-              <h3 class="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">Premier League</h3>
-              <span
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 uppercase tracking-wide border border-blue-500/20">
-                                    <span class="material-symbols-outlined text-[12px]">verified</span>
-                                    Chính
-                                </span>
-            </div>
-            <div class="flex items-center gap-2 mt-1.5">
-              <img alt="England" class="w-5 h-auto rounded-[2px] shadow-sm opacity-80"
-                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZyZV_fiZPmbKdixk7L8VVGrec2-4ruXH423B1DSLFR1d5o7LFgDvuNPLGajmtP2qQIuI8EF0Rmoc4Pz9-sFC2CjWcREVTLVo7ztT0Jh-VL69aZq7MdSf3PRvwYVrFpiv4YB_E45Iq1uP368lsKYz7BGFsr2sPsh_DLIUYGlWyCSIKRxC97OfTSAKYGB9xpnJmKwpUK581y-WjyTHpgDLluQk5CcnGIffKSrDYWsH3ld4MaOEwh7_KKZzJzaPgsEK02NQ_szimQ-I"/>
-              <p class="text-sm text-slate-400 font-medium group-hover:text-slate-300">Anh (England)</p>
-            </div>
-          </div>
-        </div>
-        <div class="flex items-center gap-4 sm:gap-8">
-          <div class="text-right hidden sm:block">
-            <div class="flex items-center justify-end gap-1.5 text-blue-500 font-bold">
-              <span class="material-symbols-outlined text-[18px]">event</span>
-              <span class="text-xl">24</span>
-            </div>
-            <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">Sự kiện hôm nay</span>
-          </div>
-          <button
-            class="size-10 rounded-full hover:bg-red-500/10 flex items-center justify-center text-red-500 transition-colors border border-transparent hover:border-red-500/30">
-            <span class="material-symbols-outlined filled" style="font-variation-settings: 'FILL' 1;">favorite</span>
-          </button>
-          <span class="material-symbols-outlined text-slate-600 group-hover:text-blue-500 transition-colors">chevron_right</span>
-        </div>
+    @if (patchError()) {
+      <div class="rounded-xl bg-amber-950/40 border border-amber-500/30 px-4 py-3 mb-4">
+        <p class="text-amber-200 text-sm">{{ patchError() }}</p>
       </div>
+    }
 
-      <!-- La Liga -->
-      <div
-        class="group flex items-center justify-between p-4 bg-[#1e293b] rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all shadow-sm hover:shadow-lg hover:shadow-blue-900/10 cursor-pointer relative overflow-hidden"
-        routerLink="/matches">
-        <div
-          class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300"></div>
-        <div class="flex items-center gap-5">
-          <div
-            class="size-16 rounded-2xl bg-[#0b1121] p-1 flex items-center justify-center border border-slate-700 shrink-0 shadow-inner">
-            <span class="text-xl font-black text-orange-500 tracking-tighter">LL</span>
-          </div>
-          <div>
-            <div class="flex items-center gap-3 flex-wrap">
-              <h3 class="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">La Liga</h3>
-              <span
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 uppercase tracking-wide border border-blue-500/20">
-                                    <span class="material-symbols-outlined text-[12px]">verified</span>
-                                    Chính
-                                </span>
-            </div>
-            <div class="flex items-center gap-2 mt-1.5">
-              <img alt="Spain" class="w-5 h-auto rounded-[2px] shadow-sm opacity-80"
-                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2tDT4mwvdNfTjDbXk1ZKFba8VjqAeX44h7kenToaS_1YnCbXs-5fXx9j931SZy5rI6MEiiB5a_qGw6DuwAEho2BbnI8vVCU-zyu5xlcIq0Vde8KzfxXK4AZkbTvYc587S6aXzgifS6tDVszpD0ycNU_sraJx78dO3SPcPLz29UKD_0ixBKI12ZouxxIRqGJkUShm63NM0-KwBSpqXQhUIjd1XHcI8Be_0zBA40OXbrkih8o1hX42b6myYDOFnvS6d8fMJbWVdi4Y"/>
-              <p class="text-sm text-slate-400 font-medium group-hover:text-slate-300">Tây Ban Nha (Spain)</p>
-            </div>
-          </div>
-        </div>
-        <div class="flex items-center gap-4 sm:gap-8">
-          <div class="text-right hidden sm:block">
-            <div class="flex items-center justify-end gap-1.5 text-slate-200 font-bold">
-              <span class="material-symbols-outlined text-[18px] text-slate-500">event</span>
-              <span class="text-xl">18</span>
-            </div>
-            <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">Sự kiện hôm nay</span>
-          </div>
-          <button
-            class="size-10 rounded-full hover:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors">
-            <span class="material-symbols-outlined">favorite</span>
-          </button>
-          <span class="material-symbols-outlined text-slate-600 group-hover:text-blue-500 transition-colors">chevron_right</span>
-        </div>
+    @if (loading()) {
+      <div class="rounded-xl bg-[#1e293b] border border-slate-700 p-12 flex flex-col items-center justify-center gap-3">
+        <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
+        <p class="text-slate-400 text-sm">Đang tải…</p>
       </div>
-
-      <!-- Champions League -->
-      <div
-        class="group flex items-center justify-between p-4 bg-[#1e293b] rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all shadow-sm hover:shadow-lg hover:shadow-blue-900/10 cursor-pointer relative overflow-hidden"
-        routerLink="/matches">
-        <div
-          class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300"></div>
-        <div class="flex items-center gap-5">
-          <div
-            class="size-16 rounded-2xl bg-[#0b1121] p-1 flex items-center justify-center border border-slate-700 shrink-0 shadow-inner">
-            <span class="material-symbols-outlined text-white text-3xl">sports_soccer</span>
-          </div>
-          <div>
-            <div class="flex items-center gap-3 flex-wrap">
-              <h3 class="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">UEFA Champions
-                League</h3>
-              <span
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 uppercase tracking-wide border border-blue-500/20">
-                                    <span class="material-symbols-outlined text-[12px]">verified</span>
-                                    Chính
-                                </span>
-            </div>
-            <div class="flex items-center gap-2 mt-1.5">
-              <span class="material-symbols-outlined text-[16px] text-slate-500">public</span>
-              <p class="text-sm text-slate-400 font-medium group-hover:text-slate-300">Châu Âu (Europe)</p>
-            </div>
-          </div>
-        </div>
-        <div class="flex items-center gap-4 sm:gap-8">
-          <div class="text-right hidden sm:block">
-            <div class="flex items-center justify-end gap-1.5 text-slate-200 font-bold">
-              <span class="material-symbols-outlined text-[18px] text-slate-500">event</span>
-              <span class="text-xl">8</span>
-            </div>
-            <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">Sự kiện hôm nay</span>
-          </div>
-          <button
-            class="size-10 rounded-full hover:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors">
-            <span class="material-symbols-outlined">favorite</span>
-          </button>
-          <span class="material-symbols-outlined text-slate-600 group-hover:text-blue-500 transition-colors">chevron_right</span>
-        </div>
+    } @else if (error()) {
+      <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
+        <p class="text-red-300 text-sm">{{ error() }}</p>
+        <button type="button"
+                (click)="load()"
+                class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
+          Thử lại
+        </button>
       </div>
+    } @else if (data(); as page) {
+      @if (page.content.length === 0) {
+        <div class="rounded-xl bg-[#1e293b] border border-slate-700 p-12 text-center">
+          <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">emoji_events</span>
+          <p class="text-slate-400 text-sm">Không có giải đấu phù hợp.</p>
+        </div>
+      } @else {
+        <div class="space-y-4">
+          @for (row of page.content; track row.leagueId) {
+            <div
+              class="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-[#1e293b] rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all shadow-sm relative overflow-hidden">
+              <div
+                class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300 pointer-events-none"></div>
+              <div class="flex items-start sm:items-center gap-5 min-w-0 flex-1">
+                <div
+                  class="size-16 rounded-2xl bg-[#0b1121] p-0.5 flex items-center justify-center border border-slate-700 shrink-0 shadow-inner overflow-hidden">
+                  @if (flagUrlFromCountry(row.country); as flagSrc) {
+                    <img [src]="flagSrc"
+                         [alt]="row.country ?? ''"
+                         loading="lazy"
+                         decoding="async"
+                         referrerpolicy="no-referrer"
+                         class="w-full h-full object-cover rounded-[0.65rem]"/>
+                  } @else if (row.logoUrl) {
+                    <img [src]="row.logoUrl" [alt]="row.leagueName" class="max-w-full max-h-full object-contain p-1"/>
+                  } @else {
+                    <span class="text-lg font-black text-slate-400 tracking-tighter">{{ initials(row.leagueName) }}</span>
+                  }
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-3 flex-wrap">
+                    <h3 class="font-bold text-white text-lg truncate">{{ row.leagueName }}</h3>
+                    @if (row.isMain) {
+                      <span
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 uppercase tracking-wide border border-blue-500/20 shrink-0">
+                        <span class="material-symbols-outlined text-[12px]">verified</span>
+                        Chính
+                      </span>
+                    }
+                  </div>
+                  <div class="flex items-center gap-2 mt-1.5 text-sm text-slate-400">
+                    <span class="material-symbols-outlined text-[16px] text-slate-500 shrink-0">place</span>
+                    <p class="truncate">{{ row.country ?? '—' }}</p>
+                  </div>
+                  <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-500">
+                    <span>Tạo: {{ row.createdAt ? (row.createdAt | date:'short') : '—' }}</span>
+                    <span>Cập nhật: {{ row.updatedAt ? (row.updatedAt | date:'short') : '—' }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-3 sm:justify-end shrink-0 pl-0 sm:pl-2">
+                <div class="text-right">
+                  <div class="flex items-center justify-end gap-1.5 text-blue-500 font-bold">
+                    <span class="material-symbols-outlined text-[18px]">event</span>
+                    <span class="text-xl">{{ row.totalEvents | number }}</span>
+                  </div>
+                  <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">Sự kiện</span>
+                </div>
+                @if (!row.isMain) {
+                  <button type="button"
+                          [disabled]="patchingId() !== null"
+                          (click)="setMainLeague(row, true)"
+                          class="px-3 py-2 rounded-lg bg-blue-600/90 text-white text-xs font-semibold hover:bg-blue-500 disabled:opacity-50 whitespace-nowrap">
+                    Đặt làm giải chính
+                  </button>
+                } @else {
+                  <button type="button"
+                          [disabled]="patchingId() !== null"
+                          (click)="setMainLeague(row, false)"
+                          class="px-3 py-2 rounded-lg bg-slate-700 text-slate-200 text-xs font-semibold hover:bg-slate-600 border border-slate-600 disabled:opacity-50 whitespace-nowrap">
+                    Gỡ giải chính
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
 
-      <!-- V.League -->
-      <div
-        class="group flex items-center justify-between p-4 bg-[#1e293b] rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all shadow-sm hover:shadow-lg hover:shadow-blue-900/10 cursor-pointer relative overflow-hidden"
-        routerLink="/matches">
-        <div
-          class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300"></div>
-        <div class="flex items-center gap-5">
-          <div
-            class="size-16 rounded-2xl bg-[#0b1121] p-1 flex items-center justify-center border border-slate-700 shrink-0 shadow-inner">
-            <span class="text-xl font-black text-red-600 tracking-tighter">VL</span>
-          </div>
-          <div>
-            <div class="flex items-center gap-3 flex-wrap">
-              <h3 class="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">V.League 1</h3>
-            </div>
-            <div class="flex items-center gap-2 mt-1.5">
-              <img alt="Vietnam" class="w-5 h-auto rounded-[2px] shadow-sm opacity-80"
-                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOHFPM_ZQgxNcs4fOOVffO7cY41dpLOEr-zw16nDB6u1XoKvSgiaosS5bNIL5gcyEhvH1LWFEG0-G5F1OI1xZsiGC8R8XxMQUzLWm8YvRHmrMGpCSakF7zKOqI90BKYoSoCjo1qTDjA7mY-JtnV3d8JA77X6MLg7OkGLoR4QkOIPvxakkrs92UsTYDY-O5vgNjz-_IbUUSxhJt-xxmA3ugnEwGcPkpgUm8TOeadua0_8zW29yXUaSPT0LhM0Xf7jaU7HJTppC8su8"/>
-              <p class="text-sm text-slate-400 font-medium group-hover:text-slate-300">Việt Nam (Vietnam)</p>
-            </div>
+        <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400 mt-8">
+          <span>
+            Trang {{ page.page + 1 }} / {{ page.totalPages || 1 }}
+            · {{ page.totalElements | number }} giải
+          </span>
+          <div class="flex gap-2">
+            <button type="button"
+                    (click)="prev()"
+                    [disabled]="page.page <= 0"
+                    class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+              Trước
+            </button>
+            <button type="button"
+                    (click)="next()"
+                    [disabled]="page.page >= page.totalPages - 1"
+                    class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+              Sau
+            </button>
           </div>
         </div>
-        <div class="flex items-center gap-4 sm:gap-8">
-          <div class="text-right hidden sm:block">
-            <div class="flex items-center justify-end gap-1.5 text-slate-200 font-bold">
-              <span class="material-symbols-outlined text-[18px] text-slate-500">event</span>
-              <span class="text-xl">5</span>
-            </div>
-            <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">Sự kiện hôm nay</span>
-          </div>
-          <button
-            class="size-10 rounded-full hover:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors">
-            <span class="material-symbols-outlined">favorite</span>
-          </button>
-          <span class="material-symbols-outlined text-slate-600 group-hover:text-blue-500 transition-colors">chevron_right</span>
-        </div>
-      </div>
-
-      <!-- Serie A -->
-      <div
-        class="group flex items-center justify-between p-4 bg-[#1e293b] rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all shadow-sm hover:shadow-lg hover:shadow-blue-900/10 cursor-pointer relative overflow-hidden"
-        routerLink="/matches">
-        <div
-          class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300"></div>
-        <div class="flex items-center gap-5">
-          <div
-            class="size-16 rounded-2xl bg-[#0b1121] p-1 flex items-center justify-center border border-slate-700 shrink-0 shadow-inner">
-            <span class="text-xl font-black text-blue-600 tracking-tighter">SA</span>
-          </div>
-          <div>
-            <div class="flex items-center gap-3 flex-wrap">
-              <h3 class="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">Serie A</h3>
-              <span
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 uppercase tracking-wide border border-blue-500/20">
-                                    <span class="material-symbols-outlined text-[12px]">verified</span>
-                                    Chính
-                                </span>
-            </div>
-            <div class="flex items-center gap-2 mt-1.5">
-              <img alt="Italy" class="w-5 h-auto rounded-[2px] shadow-sm opacity-80"
-                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCk5dxmdbVyrIbWN8suOJIRlEKM46MIu6zS1b2DXf5GNCEBL34jO56J8GGPMVc6NCEV3rAj4VYi_g5_zcG14tKPBEdiiDTl1MKh1uHIVcHWPmOoFCnG3w_9gLzmOtqTD_vLnyJqXwc5849sQ-U1u0jwIMTnU6gjb5-QURmGcMZG63wADVI2M8gorXtJ2W6ePPjpEXKVdMgx_Dv0RY-y0vVIf8JHPmRdJpH1uz-3vAt1BYqQb8rM1F-5nnsNsA3f1hBj2VEpiT9r5w"/>
-              <p class="text-sm text-slate-400 font-medium group-hover:text-slate-300">Ý (Italy)</p>
-            </div>
-          </div>
-        </div>
-        <div class="flex items-center gap-4 sm:gap-8">
-          <div class="text-right hidden sm:block">
-            <div class="flex items-center justify-end gap-1.5 text-slate-200 font-bold">
-              <span class="material-symbols-outlined text-[18px] text-slate-500">event</span>
-              <span class="text-xl">20</span>
-            </div>
-            <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">Sự kiện hôm nay</span>
-          </div>
-          <button
-            class="size-10 rounded-full hover:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors">
-            <span class="material-symbols-outlined">favorite</span>
-          </button>
-          <span class="material-symbols-outlined text-slate-600 group-hover:text-blue-500 transition-colors">chevron_right</span>
-        </div>
-      </div>
-
-      <!-- Bundesliga -->
-      <div
-        class="group flex items-center justify-between p-4 bg-[#1e293b] rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all shadow-sm hover:shadow-lg hover:shadow-blue-900/10 cursor-pointer relative overflow-hidden"
-        routerLink="/matches">
-        <div
-          class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300"></div>
-        <div class="flex items-center gap-5">
-          <div
-            class="size-16 rounded-2xl bg-[#0b1121] p-1 flex items-center justify-center border border-slate-700 shrink-0 shadow-inner">
-            <span class="text-xl font-black text-red-500 tracking-tighter">BL</span>
-          </div>
-          <div>
-            <div class="flex items-center gap-3 flex-wrap">
-              <h3 class="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">Bundesliga</h3>
-            </div>
-            <div class="flex items-center gap-2 mt-1.5">
-              <img alt="Germany" class="w-5 h-auto rounded-[2px] shadow-sm opacity-80"
-                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-DnWxTWcH84Qa4FBJtTEjtQAugYGjx0iU469BPsu3BJNM8bLuZY26qAEU9jyfBFeCDouzYPIHuEivSEYhlxLb28wQgcUaJNLjMrj4Qq36V4RJs49Nwn9BhObPWMuilM3BSlvJkxlQVEsy5uS2JveV3nHlK7g8Ea1ZCY-M7o6rA_LpfN1kFYp7s8ayVEIE2Btk9yCiaeca6aONLW7A7G1qT1AEPzA5fpr4iTh-W4B4zeyPpzH3XsHRZsw7KBR1cyu_nMBLLwhHdbc"/>
-              <p class="text-sm text-slate-400 font-medium group-hover:text-slate-300">Đức (Germany)</p>
-            </div>
-          </div>
-        </div>
-        <div class="flex items-center gap-4 sm:gap-8">
-          <div class="text-right hidden sm:block">
-            <div class="flex items-center justify-end gap-1.5 text-slate-200 font-bold">
-              <span class="material-symbols-outlined text-[18px] text-slate-500">event</span>
-              <span class="text-xl">16</span>
-            </div>
-            <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">Sự kiện hôm nay</span>
-          </div>
-          <button
-            class="size-10 rounded-full hover:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors">
-            <span class="material-symbols-outlined">favorite</span>
-          </button>
-          <span class="material-symbols-outlined text-slate-600 group-hover:text-blue-500 transition-colors">chevron_right</span>
-        </div>
-      </div>
-
-    </div>
+      }
+    }
   </div>
 </div>

@@ -60,6 +60,19 @@ public class UserAuthRepository {
                 .update();
     }
 
+    public int updatePasswordByUsername(String username, String passwordHash) {
+        var sql = """
+                update users
+                set password = :password
+                where username = :username
+                """;
+        return writeJdbcClient
+                .sql(sql)
+                .param("username", username)
+                .param("password", passwordHash)
+                .update();
+    }
+
     private UserCredential mapUser(java.sql.ResultSet rs) throws java.sql.SQLException {
         return new UserCredential(
                 rs.getInt("user_id"),
