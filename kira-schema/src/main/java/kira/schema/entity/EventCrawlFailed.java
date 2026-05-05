@@ -24,6 +24,6 @@ public class EventCrawlFailed {
     @Lob
     private String message;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 }

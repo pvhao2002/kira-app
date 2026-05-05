@@ -1,0 +1,67 @@
+---
+description: Expo React Native — components, navigation, state, lists, TypeScript, platform-agnostic patterns
+globs: mobile-app/**/*.ts, mobile-app/**/*.tsx
+alwaysApply: false
+---
+
+# Expo / React Native (mobile-app)
+
+## Principles
+
+- Prefer **platform-agnostic** UI and logic; use `Platform.OS` or platform files (`*.ios.tsx`) only when behavior or visuals must differ.
+- Target **smooth UI** (interactive work off the JS thread where Reanimated allows); use **native modules** only when JS/Expo APIs are insufficient.
+- Respect **iOS HIG** and **Material** patterns where users expect them (safe areas, headers, back behavior).
+
+This app uses **Expo Router** (`app/`) plus **React Navigation** primitives—extend that stack rather than introducing parallel routers.
+
+## UI building blocks
+
+- Compose screens from **`View`**, **`Text`**, **`Image`** / **`expo-image`**, **`ScrollView`**, and **`FlatList`** / **`SectionList`** for long content.
+- Style with **`StyleSheet.create`** and **Flexbox**; prefer tokens from shared theme modules over scattered magic numbers.
+
+## Navigation
+
+- Define routes under **`app/`** (Expo Router file-based layout); use **stack / tabs** layouts consistent with existing `_layout.tsx` files.
+- Prefer **typed navigation** where routes are parameterized; keep **deep links** (`expo-linking`) in sync with route paths.
+
+## Motion
+
+- Prefer **`react-native-reanimated`** for gestures and animations that must stay smooth; use **`LayoutAnimation`** only for simple, low-risk transitions.
+- Use **`expo-haptics`** for light, meaningful feedback—not on every tap.
+
+## State and data
+
+- **Context** for small, app-wide state (e.g. auth) when it stays simple and stable.
+- For **complex client state**, prefer **Redux Toolkit** or **Zustand** only if the team adds them; avoid ad-hoc global singletons.
+- For **server state**, prefer **TanStack Query** when introduced: caching, retries, and stale-while-revalidate beat manual `useEffect` fetches.
+- **Persistence**: **`@react-native-async-storage/async-storage`** is available; for **secrets** see the mobile security rule (never store tokens in AsyncStorage as plain policy without team agreement).
+
+## Performance habits
+
+- Use **`FlatList`** props intentionally: stable **`keyExtractor`**, **`removeClippedSubviews`** where safe, **`windowSize`** / **`maxToRenderPerBatch`** when profiling shows need.
+- **Memoize** pure list rows with **`React.memo`**; stabilize handlers with **`useCallback`** when passed to memoized children.
+
+```tsx
+const keyExtractor = (item: { id: string }) => item.id;
+
+const Row = React.memo(function Row({ title, onPress }: { title: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress}>
+      <Text>{title}</Text>
+    </Pressable>
+  );
+});
+
+// In parent: const onPressRow = useCallback((id: string) => { ... }, []);
+```
+
+## Architecture
+
+- Prefer **feature-based** folders (`screens/`, `components/`, `hooks/`, `contexts/`) and **thin screens**: hooks/services hold logic; presentational components stay dumb.
+- Keep **dependency direction** one-way (screens → hooks → API clients), not circular imports.
+
+## Testing and quality
+
+- **Unit / component**: Jest + **React Native Testing Library** when tests exist or are added.
+- **E2E**: Detox or Maestro—pick one stack per repo convention before adding cases.
+- **TypeScript strict**; handle **permissions** with clear UX and fallbacks; support **dark mode** via theme hooks; handle **offline** (cached UI, retry); use **error boundaries** at app shell level; keep **dependencies** current and audited.

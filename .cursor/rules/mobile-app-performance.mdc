@@ -1,0 +1,54 @@
+---
+description: Mobile performance — 60fps, startup, memory, network, battery, profiling
+globs: mobile-app/**/*.ts, mobile-app/**/*.tsx
+alwaysApply: false
+---
+
+# Mobile performance (mobile-app)
+
+## Principles
+
+- Treat **60 fps (~16 ms per frame)** as the UX bar for scrolling and transitions; **measure** before micro-optimizing.
+- Respect **battery** and **metered data**: batch work, avoid redundant location/network churn.
+- **Fast cold start**: defer non-critical work until after first interactive paint when possible.
+
+## Rendering
+
+- Reduce **overdraw** and **deep view trees**: prefer simple layouts, fewer wrapper `View`s, and conditional rendering over huge hidden subtrees.
+- Keep **heavy work off the JS thread** during scroll/gesture: offload to workers, native, or Reanimated worklets when profiling shows jank.
+- For long lists, rely on **`FlatList` / `SectionList` recycling**; avoid rendering large arrays inside `ScrollView`.
+- Prefer **hardware-accelerated** transforms (opacity, translate) over expensive per-frame layout thrash.
+
+## Startup
+
+- **Lazy import** heavy modules (charts, editors) at route or feature boundaries, not in the entry bundle.
+- Trim **initialization**: parallelize independent async setup; avoid sequential waterfalls in `useEffect` at root.
+- Use **splash / placeholder** content correctly: show branded splash only while truly blocking; transition quickly to UI shell.
+- On Android, consider **baseline profiles** / startup tuning when native build pipelines support it.
+
+## Memory
+
+- Watch **retained closures** (timers, listeners, subscriptions); always clean up in `useEffect` return or dedicated hooks.
+- **Images**: right-size sources, prefer modern formats where supported (**WebP** via pipeline), and use **`expo-image`** caching policies appropriate to the asset.
+- Release large in-memory caches when screens unmount or on memory warnings where APIs exist.
+
+## Network
+
+- **Prefetch** only what the user is likely to need; respect cache headers and local TTLs.
+- **Batch** and **compress** payloads when API design allows; prefer incremental fetch over giant blobs.
+- Handle **slow/offline** networks: timeouts, retries with backoff, and user-visible degraded modes.
+
+## Battery
+
+- Avoid unnecessary **wake locks** and high-frequency **location** updates; batch background work.
+- **OLED**: true black backgrounds in dark mode can save power on supported panels—still meet contrast requirements.
+
+## Tools
+
+- Profile with **Android Studio Profiler**, **Xcode Instruments**, **React DevTools**, and **Flipper** (when enabled in the project).
+- Use **Firebase Performance** or similar when the team wires it—annotate critical traces (startup, checkout, etc.).
+
+## Habits
+
+- **Measure** with release-like builds on **mid-tier devices**, not only simulators and flagship phones.
+- Keep **assets lean** (compressed images, vector where appropriate); keep the **main thread** free during user interactions.

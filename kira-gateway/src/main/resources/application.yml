@@ -40,6 +40,12 @@ app:
     base-url: ${APP_DATA_MANAGER_BASE_URL:http://localhost:9198/data}
   kira-producer:
     base-url: ${APP_KIRA_PRODUCER_BASE_URL:http://localhost:2311}
+  gemini:
+    base-url: ${APP_GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+    model: ${APP_GEMINI_MODEL:gemini-3-flash-preview}
+    api-key: ${APP_GEMINI_API_KEY:}
+    connect-timeout: ${APP_GEMINI_CONNECT_TIMEOUT:5s}
+    read-timeout: ${APP_GEMINI_READ_TIMEOUT:30s}
   crawl:
     claim-stale-after-seconds: ${CRAWL_CLAIM_STALE_AFTER_SECONDS:900}
   export:
@@ -51,7 +57,7 @@ app:
     jwt:
       secret: ${APP_SECURITY_JWT_SECRET:change-me-in-production-change-me-in-production}
       issuer: ${APP_SECURITY_JWT_ISSUER:kira-gateway}
-      access-token-ttl-seconds: ${APP_SECURITY_JWT_ACCESS_TOKEN_TTL_SECONDS:900}
+      access-token-ttl-seconds: ${APP_SECURITY_JWT_ACCESS_TOKEN_TTL_SECONDS:9000}
     cookie:
       name: ${APP_SECURITY_COOKIE_NAME:access_token}
       secure: ${APP_SECURITY_COOKIE_SECURE:true}

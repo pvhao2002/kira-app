@@ -14,9 +14,8 @@ CREATE TABLE IF NOT EXISTS credit_cards (
     reminder_time       TIME         NOT NULL,
     cycle_statement_done TINYINT(1)  NOT NULL DEFAULT 0,
     cycle_due_paid      TINYINT(1)   NOT NULL DEFAULT 0,
-    created_at          DATETIME(3)  NULL,
-    updated_at          DATETIME(3)  NULL,
-    CONSTRAINT fk_credit_cards_user FOREIGN KEY (user_id) REFERENCES users (user_id),
+    created_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_credit_cards_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -27,9 +26,7 @@ CREATE TABLE IF NOT EXISTS credit_card_payments (
     paid_at          DATE           NOT NULL,
     amount           DECIMAL(15, 2) NOT NULL,
     note             TEXT           NULL,
-    created_at       DATETIME(3)    NULL,
-    CONSTRAINT fk_ccp_card FOREIGN KEY (credit_card_id) REFERENCES credit_cards (credit_card_id) ON DELETE CASCADE,
-    CONSTRAINT fk_ccp_user FOREIGN KEY (user_id) REFERENCES users (user_id),
+    created_at       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_ccp_card (credit_card_id),
     INDEX idx_ccp_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

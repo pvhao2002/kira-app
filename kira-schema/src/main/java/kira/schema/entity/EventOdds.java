@@ -53,6 +53,6 @@ public class EventOdds {
     @Column(name = "price_b", precision = 10, scale = 2)
     private BigDecimal priceB;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 }

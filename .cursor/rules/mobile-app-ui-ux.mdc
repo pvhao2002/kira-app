@@ -1,0 +1,54 @@
+---
+description: Mobile UI/UX — touch targets, navigation, hierarchy, states, accessibility (a11y)
+globs: mobile-app/**/*.ts, mobile-app/**/*.tsx
+alwaysApply: false
+---
+
+# Mobile UI / UX (mobile-app)
+
+## Principles
+
+- Design for **touch**, not mouse: larger hit areas, drag thresholds, and forgiving spacing.
+- **Content first**, chrome second: minimize fixed chrome; prioritize the user’s task.
+- Stay **consistent per platform** (iOS vs Android): back behavior, tab placement, and motion norms differ—mirror platform expectations.
+- **Accessibility is required**, not optional: ship usable VoiceOver / TalkBack experiences by default.
+
+## Touch and layout
+
+- Minimum interactive targets: **44×44 pt (iOS)** / **48×48 dp (Android)**; add padding, not invisible fat targets that overlap neighbors.
+- Leave **space between** tappable controls; consider **thumb reach** (primary actions in the lower third on phones).
+
+## Navigation
+
+- Use **tab bars** for top-level sections when depth is shallow; pair with stack for drill-in.
+- Always respect **back**: hardware/gesture on Android, swipe-back and explicit back on iOS; never trap users without an exit.
+- Prefer **shallow hierarchies**; if depth grows, add cross-links, modals, or search instead of endless push stacks.
+- Maintain **clear visual hierarchy**: one primary action per screen when possible.
+
+## Visual design
+
+- **Typography**: readable body size (do not rely on tiny body text below about 11 pt / sp); scale with system settings.
+- **Color**: meet **WCAG contrast** for text and controls; verify **light and dark** themes.
+- **Icons**: use metaphors users already know from the OS; pair icons with text for critical actions when ambiguous.
+- **Whitespace**: group related content, separate unrelated blocks—density is not a virtue on small screens.
+
+## Interaction
+
+- Prefer **subtle motion** (Reanimated) for continuity; avoid gratuitous animation.
+- **Loading**: prefer **skeletons** or inline placeholders over blocking full-screen spinners for first paint.
+- **Errors**: actionable copy + recovery (retry, settings, support)—never raw stack traces for users.
+- **Empty states**: explain why it’s empty and offer a **clear next step** (create, refresh, sign in).
+
+## Accessibility
+
+- Support **font scaling** / Dynamic Type: layouts must reflow without clipping critical actions.
+- Set **`accessibilityLabel`** (and **`accessibilityRole`**) on non-obvious controls and images with meaning.
+- Verify **contrast** in both themes; ensure **focus order** matches visual order for screen readers.
+
+## Product patterns
+
+- **Onboarding**: short, skippable, defer non-essential questions.
+- **Permissions**: request **in context** after explaining value; handle “denied” gracefully.
+- **Forms**: correct **keyboard types**, **returnKeyType**, and autofill hints; validate inline with humane errors.
+- **Gestures**: align with OS idioms (e.g. swipe expectations); keep discoverability (hints or affordances).
+- **Haptics**: light confirmation on success or destructive confirm—do not buzz constantly.

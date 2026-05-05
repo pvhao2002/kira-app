@@ -1,0 +1,64 @@
+---
+description: Modern Angular (v17+) — standalone, signals, routing, forms, RxJS, OnPush
+globs: kira-ui/**/*.ts, kira-ui/**/*.html
+alwaysApply: false
+---
+
+# Modern Angular (v17+)
+
+## Principles
+
+- **TypeScript-first**; treat templates as thin views over typed component classes.
+- **Component-based** UI; **dependency injection** for services and tokens.
+- Prefer **signals** (`signal`, `computed`, `effect`) for fine-grained local and shared UI state.
+- Prefer **standalone** components: declare dependencies in `@Component({ standalone: true, imports: [...] })` instead of new NgModules unless existing code already uses a module for a clear reason.
+
+## Core APIs
+
+- Use **`signal()`**, **`computed()`**, and **`effect()`** with explicit intent: avoid effects for what computed or template bindings can express; clean up long-lived subscriptions tied to effects when needed.
+- Prefer built-in control flow: **`@if`**, **`@for`**, **`@switch`** in templates over structural `*ngIf` / `*ngFor` in new code.
+- Prefer **signal-based** **`input()`** / **`output()`** for public API where the codebase already uses that style; stay consistent within a file.
+- Use **`inject()`** or constructor injection; **do not mix styles arbitrarily** in one component—match neighboring code.
+
+## RxJS
+
+- Use **Observables** for async streams; compose with **pipeable** operators (`map`, `filter`, `switchMap`, `catchError`, etc.).
+- Prefer **`AsyncPipe`** in templates when a stream is consumed directly; otherwise use **`DestroyRef`** + **`takeUntilDestroyed()`** (or explicit teardown) for manual subscriptions.
+- Bridge RxJS and signals with **`toSignal`** / **`toObservable`** when one side is stream-based and the other is signal-based.
+
+## Routing
+
+- Define routes in **`app.routes.ts`** (and feature route files if split); align with existing patterns (e.g. functional **`CanActivateFn`** guards).
+- Prefer **`loadComponent`** (or lazy route children) for **lazy boundaries** where bundle size benefits; keep eager routes where the app already does.
+- Use **resolvers** when data must be available before the routed component renders.
+
+## Forms
+
+- Prefer **reactive forms** (`FormControl`, `FormGroup`); use **`FormBuilder`** for concise construction.
+- Use **strict typed forms** when the project/tsconfig allows; keep validators **pure** (custom validators as functions or small dedicated classes).
+
+## Quality and tooling
+
+- Default new or presentational components to **`ChangeDetectionStrategy.OnPush`**; use **`track`** expressions with **`@for`** for lists.
+- Avoid **heavy logic in templates**; keep formatting and non-trivial branching in the class or small pure helpers.
+- Prefer **smart vs dumb** components: containers orchestrate; presentational components receive **`input()`**s and emit **`output()`**s.
+- Put **business logic and cross-route state** in **injectable services**, not in components.
+- Keep **TypeScript strict**; use **Angular CLI** for generate/build when adding artifacts.
+
+## Example (standalone + signal input)
+
+```typescript
+import { Component, input } from '@angular/core';
+import { DatePipe } from '@angular/common';
+
+@Component({
+  standalone: true,
+  selector: 'app-user-badge',
+  imports: [DatePipe],
+  template: `<span>{{ label() }} — {{ createdAt() | date:'short' }}</span>`,
+})
+export class UserBadge {
+  readonly label = input.required<string>();
+  readonly createdAt = input.required<Date>();
+}
+```

@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import kira.schema.entity.enums.OddsMarket;
 import lombok.Getter;
@@ -17,7 +18,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "event_odds_timeline")
+@Table(
+        name = "event_odds_timeline",
+        indexes = {
+                @Index(name = "idx_eot_event", columnList = "event_id"),
+                @Index(name = "idx_eot_crawled_at", columnList = "crawled_at"),
+                @Index(name = "idx_eot_match_minute", columnList = "match_minute")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -50,6 +57,6 @@ public class EventOddsTimeline {
     @Column(name = "crawled_at")
     private LocalDateTime crawledAt;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 }

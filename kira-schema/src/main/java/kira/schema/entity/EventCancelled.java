@@ -34,6 +34,6 @@ public class EventCancelled {
     @Lob
     private String link;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 }

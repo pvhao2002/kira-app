@@ -14,31 +14,37 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users", indexes = @Index(name = "idx_users_username", columnList = "username"))
+@Table(
+        name = "system_config",
+        indexes = {
+                @Index(name = "idx_system_config_key", columnList = "config_key", unique = true),
+                @Index(name = "idx_system_config_group", columnList = "config_group")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
-public class User {
+public class SystemConfig {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
-    private Integer userId;
+    @Column(name = "config_id")
+    private Long configId;
 
-    @Column(nullable = false, length = 50)
-    private String username;
+    @Column(name = "config_key", nullable = false, length = 128, unique = true)
+    private String configKey;
 
-    @Column(nullable = false, length = 100)
-    private String password;
+    @Column(name = "config_value", nullable = false, columnDefinition = "TEXT")
+    private String configValue;
 
-    @Column(length = 20)
-    private String status = "active";
+    @Column(name = "config_group", length = 64)
+    private String configGroup = "general";
 
-    @Column(length = 20)
-    private String role = "user";
+    @Column
+    private String description;
 
-    @Column(length = 512)
-    private String avatar;
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
     @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;

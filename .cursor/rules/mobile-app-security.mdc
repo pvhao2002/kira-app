@@ -1,0 +1,48 @@
+---
+description: Mobile security — storage, transport, secrets, auth, hardening, platform requirements
+globs: mobile-app/**/*.ts, mobile-app/**/*.tsx
+alwaysApply: false
+---
+
+# Mobile security (mobile-app)
+
+## Principles
+
+- **Zero trust**: validate inputs, tokens, and server responses; assume compromised devices and networks.
+- **Defense in depth**: combine transport security, secure storage, least-privilege scopes, and server-side enforcement.
+- **Minimize data**: collect and retain only what the product needs; shorten retention where possible.
+
+## Data at rest
+
+- **Never store secrets** (API keys, refresh tokens, PII) in **plaintext** AsyncStorage or logs.
+- Prefer **Keychain (iOS)** and **EncryptedSharedPreferences / Keystore (Android)** for sensitive tokens when using native secure storage modules; use **SQLCipher** or equivalent only if the app ships an encrypted DB.
+- Avoid caching sensitive screens in **app switcher snapshots** where platform APIs allow mitigation; be careful with **clipboard** on fields that copy secrets.
+
+## Network
+
+- **HTTPS / TLS** for all remote calls; follow modern TLS versions and cipher expectations.
+- Consider **certificate pinning** only with operational plan for rotation failures.
+- **Do not hardcode** API keys or third-party secrets in the client repo; use **build-time env** + server mediation where possible.
+- Prefer **OAuth2 / OIDC** for user auth; keep **refresh** flows short-lived and revocable server-side.
+
+## Code and binary
+
+- Enable **R8 / ProGuard** obfuscation on Android release builds when the native pipeline supports it; strip **debug logging** from production.
+- Treat **root / jailbreak** as a signal, not a guarantee—combine with server risk scoring when needed.
+- Add **tamper checks** only with clear threat model; avoid brittle checks that harm legitimate users.
+
+## Authentication and sessions
+
+- Offer **biometrics** as a convenience layer atop secure token storage, not as the only secret.
+- Enforce **session timeouts**, **refresh rotation**, and **MFA** when product policy requires.
+- **Deep links**: validate hosts and paths; avoid passing long-lived secrets in URLs.
+
+## Platform specifics
+
+- **iOS**: respect **ATS**; ship accurate **privacy manifests** and usage strings for sensors, pasteboard, and tracking APIs you touch.
+- **Android**: follow **scoped storage** rules; request **runtime permissions** minimally; protect exports in the manifest.
+
+## Process
+
+- Schedule periodic **dependency updates** and review changelogs for security fixes.
+- For high-risk surfaces, plan **SAST/DAST** and **pen tests**; fix findings with severity-based SLAs.

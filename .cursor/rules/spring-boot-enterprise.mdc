@@ -1,0 +1,68 @@
+---
+description: Spring Boot and Java enterprise conventions (layers, DI, data, security, observability)
+globs: **/*.java
+alwaysApply: false
+---
+
+# Spring Boot and Java enterprise
+
+## Architecture
+
+- Prefer **convention over configuration** and **standalone**, production-oriented apps.
+- Layer clearly: `@RestController` / `@Controller` (web), `@Service` (business), `@Repository` or Spring Data (data), `@Component` for cross-cutting beans.
+- Use **starter** dependencies where they match the module; do not add frameworks the module does not already use without a clear need.
+
+## Dependency injection
+
+- Prefer **constructor injection**; avoid `@Autowired` on fields.
+- Optional: Lombok `@RequiredArgsConstructor` only if the module already uses Lombok consistently.
+
+```java
+// BAD — field injection
+@Service
+public class OrderService {
+    @Autowired
+    private OrderRepository orders;
+}
+
+// GOOD — constructor injection
+@Service
+public class OrderService {
+    private final OrderRepository orders;
+
+    public OrderService(OrderRepository orders) {
+        this.orders = orders;
+    }
+}
+```
+
+## Data access
+
+- Use **Spring Data JPA** (`JpaRepository`, etc.) and Hibernate as the JPA provider when the module uses JPA.
+- Put **`@Transactional`** on service boundaries (appropriate propagation/isolation), not scattered on controllers unless justified.
+- Prefer **Flyway** or **Liquibase** for schema migrations when the project uses them.
+
+## Configuration
+
+- Use **`application.yml`** / `application.properties`, **Spring profiles** (`dev`, `test`, `prod`).
+- Prefer **`@ConfigurationProperties`** for structured, type-safe config; use **`@Value`** only for simple values.
+- Keep configuration **externalized** (env, config server, secrets) rather than hardcoding secrets in source.
+
+## Security (Spring Security)
+
+- Model **authentication** and **authorization** explicitly; use **JWT** or **session**-based auth consistently with the module.
+- Use **`@PreAuthorize`** / method security when enabled.
+- Configure **CORS** and **CSRF** deliberately for the client and API style (e.g. stateless API vs browser form posts).
+- Use **OAuth2 / OIDC** when the product integrates with external identity providers.
+
+## Observability
+
+- Expose **health and metrics** via **Spring Boot Actuator** when enabled.
+- Use **Micrometer** for metrics export; add **distributed tracing** (Zipkin / OpenTelemetry) where the stack supports it.
+- Prefer **structured logging** (consistent fields, correlation IDs) for operations and debugging.
+
+## API and quality
+
+- Centralize errors with **`@ControllerAdvice`** / **`@RestControllerAdvice`**.
+- Validate inputs with **`@Valid`** and Bean Validation (`@NotNull`, etc.) on DTOs and controller parameters.
+- Add **`@SpringBootTest`** (and test slices where appropriate) for integration coverage when the module has tests.
