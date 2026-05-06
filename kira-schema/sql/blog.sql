@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS blogs (
+    blog_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    topic VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    excerpt TEXT NULL,
+    tags LONGTEXT NULL,
+    html_content LONGTEXT NOT NULL,
+    layout_variant VARCHAR(32) NOT NULL,
+    model VARCHAR(100) NOT NULL,
+    prompt LONGTEXT NOT NULL,
+    source_prompt_hash CHAR(64) NOT NULL,
+    status ENUM('draft', 'published') NOT NULL DEFAULT 'draft',
+    published_at DATETIME NULL,
+    created_by VARCHAR(100) NULL,
+    regenerate_count INT NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uk_blogs_slug UNIQUE (slug),
+    INDEX idx_blogs_status (status),
+    INDEX idx_blogs_created_at (created_at)
+);

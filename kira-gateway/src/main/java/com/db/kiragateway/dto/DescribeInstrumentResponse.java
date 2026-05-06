@@ -1,4 +1,4 @@
 package com.db.kiragateway.dto;
 
-public record DescribeInstrumentResponse(String status, Object data) {
+public record DescribeInstrumentResponse(String status, String model, Object data) {
 }

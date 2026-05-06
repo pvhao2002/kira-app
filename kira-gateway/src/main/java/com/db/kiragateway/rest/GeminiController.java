@@ -2,12 +2,20 @@ package com.db.kiragateway.rest;
 
 import com.db.kiragateway.dto.DescribeInstrumentRequest;
 import com.db.kiragateway.dto.DescribeInstrumentResponse;
+import com.db.kiragateway.dto.GenerateBlogRequest;
+import com.db.kiragateway.dto.GenerateBlogResponse;
+import com.db.kiragateway.service.BlogGenerationService;
 import com.db.kiragateway.service.GeminiService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,6 +25,7 @@ import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/ai/instruments")
+@RequiredArgsConstructor
 public class GeminiController {
 
     private static final Logger log = Logger.getLogger(GeminiController.class.getName());
@@ -85,10 +94,7 @@ public class GeminiController {
     );
 
     private final GeminiService geminiService;
-
-    public GeminiController(GeminiService geminiService) {
-        this.geminiService = geminiService;
-    }
+    private final BlogGenerationService blogGenerationService;
 
     @PostMapping(
             path = "/describe",
@@ -108,7 +114,7 @@ public class GeminiController {
         var prompt = StringUtils.hasText(request.getPrompt()) ? request.getPrompt().trim() : DEFAULT_PROMPT;
         try {
             var data = geminiService.describeTransactionsResult(request.getImage().getBytes(), mimeType, prompt);
-            return ResponseEntity.ok(new DescribeInstrumentResponse("ok", data));
+            return ResponseEntity.ok(new DescribeInstrumentResponse("ok", geminiService.getModel(), data));
         } catch (GeminiService.GeminiUpstreamException ex) {
             return ResponseEntity.status(ex.getStatusCode()).body(error(ex.getResponseBody()));
         } catch (IOException ex) {
@@ -117,7 +123,44 @@ public class GeminiController {
         }
     }
 
+    @PostMapping(
+            path = "/blog/generate",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<GenerateBlogResponse> generateBlog(@AuthenticationPrincipal Jwt jwt,
+                                                             @Valid @RequestBody GenerateBlogRequest request) {
+        if (request.minWords() != null && request.maxWords() != null && request.minWords() > request.maxWords()) {
+            return ResponseEntity.badRequest().build();
+        }
+        String createdBy = resolveCreatedBy(jwt);
+        GenerateBlogRequest requestWithCreator = new GenerateBlogRequest(
+                request.topic(),
+                request.tone(),
+                request.targetAudience(),
+                request.minWords(),
+                request.maxWords(),
+                createdBy,
+                request.publishNow()
+        );
+        return ResponseEntity.ok(blogGenerationService.generateAndSave(requestWithCreator));
+    }
+
     private static Object error(Object message) {
         return java.util.Map.of("status", "error", "message", message);
+    }
+
+    private String resolveCreatedBy(Jwt jwt) {
+        if (jwt == null) {
+            return "system";
+        }
+        var uid = jwt.getClaim("uid");
+        if (uid instanceof Number number && number.intValue() > 0) {
+            return String.valueOf(number.intValue());
+        }
+        if (StringUtils.hasText(jwt.getSubject())) {
+            return jwt.getSubject();
+        }
+        return "system";
     }
 }

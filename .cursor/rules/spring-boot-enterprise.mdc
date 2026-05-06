@@ -15,7 +15,9 @@ alwaysApply: false
 ## Dependency injection
 
 - Prefer **constructor injection**; avoid `@Autowired` on fields.
-- Optional: Lombok `@RequiredArgsConstructor` only if the module already uses Lombok consistently.
+- Prefer Lombok-generated constructors (`@RequiredArgsConstructor`) instead of writing constructors manually when the module already uses Lombok consistently.
+- Avoid field injection even when using Lombok; keep dependencies as `private final` fields.
+- Prefer Lombok (`@Getter`, `@Setter`, `@RequiredArgsConstructor`, `@NoArgsConstructor`, `@AllArgsConstructor`, `@Builder`) over hand-written boilerplate for DTO/entity/service classes, unless custom logic is required.
 
 ```java
 // BAD — field injection
@@ -25,14 +27,11 @@ public class OrderService {
     private OrderRepository orders;
 }
 
-// GOOD — constructor injection
+// GOOD — constructor injection with Lombok
 @Service
+@RequiredArgsConstructor
 public class OrderService {
     private final OrderRepository orders;
-
-    public OrderService(OrderRepository orders) {
-        this.orders = orders;
-    }
 }
 ```
 
@@ -66,3 +65,39 @@ public class OrderService {
 - Centralize errors with **`@ControllerAdvice`** / **`@RestControllerAdvice`**.
 - Validate inputs with **`@Valid`** and Bean Validation (`@NotNull`, etc.) on DTOs and controller parameters.
 - Add **`@SpringBootTest`** (and test slices where appropriate) for integration coverage when the module has tests.
+
+## Java 21 best practices (required)
+
+- Target **Java 21 LTS** features intentionally; do not mix legacy patterns when a clearer Java 21 option exists.
+- Prefer **`record`** for request/response DTOs and immutable value objects; use class only when mutable state or framework constraints require it.
+- Use **sealed hierarchies** (`sealed` + `permits`) for closed domain models (states/events/errors) to make `switch` exhaustive and safer.
+- Prefer **pattern matching `switch`** over long `if/else instanceof` chains for polymorphic branching.
+- Use **`Optional` only for return types**, not entity/DTO fields and not method params.
+- Prefer **immutable collections** (`List.of`, `Set.of`, `Map.of`) for constant data; remember `Map.of` rejects null keys/values.
+- Do not expose raw `Object`/`Map<String, Object>` in public API contracts unless absolutely necessary; prefer typed DTOs.
+- Prefer `ResponseEntity<ConcreteResponse>` over `ResponseEntity<?>` for successful paths to keep API schema stable.
+- Use `var` only when the inferred type is obvious from the right-hand side; avoid `var` if it hurts readability.
+- Use **`java.time`** only (`Instant`, `OffsetDateTime`, `LocalDateTime`, `ZoneId`); never use legacy `Date`/`Calendar` in new code.
+- Always define timezone behavior explicitly at system boundaries (DB, JSON, external API).
+- For concurrency-heavy workloads, consider **virtual threads** (`spring.threads.virtual.enabled=true`) only for blocking I/O use-cases; profile before rollout.
+- Never swallow exceptions; wrap with context and preserve cause (`new XException(message, cause)`).
+- Keep logs structured and safe: no secrets, include correlation identifiers, and avoid logging full payloads with sensitive data.
+
+## Java 21 examples
+
+```java
+// GOOD — explicit API contract with record DTO
+public record DescribeInstrumentResponse(String status, String model, Object data) {}
+
+// GOOD — exhaustive switch with sealed hierarchy
+sealed interface TxType permits Deposit, Withdrawal, Bonus {}
+record Deposit() implements TxType {}
+record Withdrawal() implements TxType {}
+record Bonus() implements TxType {}
+
+String code = switch (txType) {
+    case Deposit d -> "deposit";
+    case Withdrawal w -> "withdrawal";
+    case Bonus b -> "bonus";
+};
+```
