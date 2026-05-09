@@ -7,7 +7,6 @@ drop table if exists event_odds;
 drop table if exists event_incident;
 drop table if exists event_result;
 drop table if exists event_claim;
-drop table if exists transaction_ai_extractions;
 drop table if exists transactions;
 drop table if exists events;
 drop table if exists teams;
@@ -49,41 +48,24 @@ create table users
 
 create table transactions
 (
-    transaction_id bigint auto_increment primary key,
-    user_id        int                                             not null,
-    type           enum ('withdraw', 'deposit', 'bonus')           not null,
-    amount         decimal(15, 2)                                  not null default 0,
-    transaction_at datetime                                        not null,
-    description    text,
-    source         enum ('manual', 'ai')                           not null default 'manual',
-    status         enum ('success', 'processing', 'failed')        not null default 'success',
-    created_at     datetime                                        default now(),
-    updated_at     datetime                                        default now() on update now(),
+    transaction_id         bigint auto_increment primary key,
+    user_id                int                                      not null,
+    type                   enum ('withdraw', 'deposit', 'bonus')    not null,
+    amount                 decimal(15, 2)                           not null default 0,
+    transaction_at         datetime                                 not null,
+    description            text,
+    source                 enum ('manual', 'ai')                    not null default 'manual',
+    status                 enum ('success', 'processing', 'failed') not null default 'success',
+    receipt_image_base64   longtext,
+    receipt_mime_type      varchar(100),
+    receipt_file_name      varchar(255),
+    ai_error               text,
+    created_at             datetime                                 default now(),
+    updated_at             datetime                                 default now() on update now(),
     index idx_transactions_user_time (user_id, transaction_at desc),
     index idx_transactions_user_type_time (user_id, type, transaction_at desc),
+    index idx_transactions_ai_pending (status, source, transaction_id),
     constraint fk_transactions_user foreign key (user_id) references users (user_id) on delete cascade
-) engine = InnoDB
-  row_format = dynamic;
-
-create table transaction_ai_extractions
-(
-    extraction_id      bigint auto_increment primary key,
-    transaction_id     bigint null,
-    user_id            int                                              not null,
-    file_name          varchar(255),
-    prompt             text                                             not null,
-    ai_raw_response    mediumtext,
-    parsed_datetime    varchar(100)                                     not null default '',
-    parsed_money       varchar(100)                                     not null default '',
-    parsed_text        text,
-    parsed_type        varchar(20)                                      not null default '',
-    parse_status       enum ('success', 'invalid_json', 'invalid_type', 'error') not null default 'success',
-    parse_error        text,
-    created_at         datetime                                         default now(),
-    index idx_extraction_user_created (user_id, created_at desc),
-    index idx_extraction_transaction (transaction_id),
-    constraint fk_extraction_transaction foreign key (transaction_id) references transactions (transaction_id) on delete set null,
-    constraint fk_extraction_user foreign key (user_id) references users (user_id) on delete cascade
 ) engine = InnoDB
   row_format = dynamic;
 

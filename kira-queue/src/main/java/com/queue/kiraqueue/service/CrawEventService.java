@@ -97,6 +97,15 @@ public class CrawEventService {
               and type in ('main', 'stats', 'odds')
             """;
 
+    /** Matches {@code kira-producer} {@code EventSchedule} claims on queued odd jobs. */
+    private static final String EVENT_CLAIM_BY_PRODUCER = "kira-producer";
+
+    private static final String SQL_DELETE_EVENT_CLAIM_PRODUCER = """
+            delete from event_claim
+            where event_id = :event_id
+              and claimed_by = :claimed_by
+            """;
+
     public void processEvent(Long eventId) {
         var sqlGetEvent = "select event_id, link, event_name, status from events where event_id = :eid";
         var event = jdbcTemplate.query(sqlGetEvent, Map.of("eid", eventId), BeanPropertyRowMapper.newInstance(Event.class)).stream().findFirst().orElse(null);
@@ -157,6 +166,7 @@ public class CrawEventService {
                     }
                     if (statsOk && oddsOk) {
                         jdbcTemplate.update(SQL_DELETE_CRAWL_FAIL_SUCCESS, Map.of("event_id", evt.getEventId()));
+                        releaseProducerEventClaim(evt.getEventId());
                     }
                 } else {
                     if (!oddTabPresent) {
@@ -168,6 +178,7 @@ public class CrawEventService {
                     }
                     if (oddsOk) {
                         jdbcTemplate.update(SQL_DELETE_CRAWL_FAIL_SUCCESS, Map.of("event_id", evt.getEventId()));
+                        releaseProducerEventClaim(evt.getEventId());
                     }
                 }
             } catch (Exception e) {
@@ -178,6 +189,11 @@ public class CrawEventService {
                         evt.getEventId(), evt.getEventName(), System.currentTimeMillis() - start));
             }
         });
+    }
+
+    private void releaseProducerEventClaim(long eventId) {
+        jdbcTemplate.update(SQL_DELETE_EVENT_CLAIM_PRODUCER,
+                Map.of("event_id", eventId, "claimed_by", EVENT_CLAIM_BY_PRODUCER));
     }
 
     private void recordEventNoOdds(long eventId) {

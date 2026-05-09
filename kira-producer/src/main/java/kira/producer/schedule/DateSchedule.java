@@ -16,13 +16,14 @@ import org.springframework.util.CollectionUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 @Log
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "kira.producer.crawl-schedule.date-enabled", havingValue = "true", matchIfMissing = true)
 public class DateSchedule {
-    private static final int QUEUE_MAX_MESSAGES = 200;
+    private static final int QUEUE_MAX_MESSAGES = 2;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final DateProducer dateProducer;
@@ -33,7 +34,7 @@ public class DateSchedule {
             from crawl_date
             where status = 'pending'
                or status = 'failed'
-            limit 200
+            limit 2
             """;
 
     @Scheduled(cron = "0 0 0,3,15,20 * * *", zone = "Asia/Ho_Chi_Minh")
@@ -58,14 +59,24 @@ public class DateSchedule {
         if (CollectionUtils.isEmpty(dates)) {
             return;
         }
-        var queuedDates = new ArrayList<>(dates);
-        queuedDates.forEach(dateProducer::sendDate);
+        var sentDates = new ArrayList<String>(dates.size());
+        for (String date : dates) {
+            try {
+                dateProducer.sendDate(date);
+                sentDates.add(date);
+            } catch (Exception e) {
+                log.log(Level.WARNING, "DateSchedule: failed to send date to queue: " + date, e);
+            }
+        }
+        if (sentDates.isEmpty()) {
+            return;
+        }
         jdbcTemplate.batchUpdate(
                 "update crawl_date set status = 'picked' where date = :date",
-                queuedDates.stream()
+                sentDates.stream()
                         .map(date -> new MapSqlParameterSource("date", date))
                         .toArray(MapSqlParameterSource[]::new)
         );
-        log.info("DateSchedule >> Scheduled crawl by date, total: " + queuedDates.size());
+        log.info("DateSchedule >> Scheduled crawl by date, total sent: " + sentDates.size());
     }
 }

@@ -2,10 +2,8 @@ package com.queue.kiraqueue.util;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.ColorScheme;
-import com.microsoft.playwright.options.LoadState;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
-import org.jsoup.nodes.Element;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,9 +101,23 @@ public class PlaywrightUtil {
         page.waitForLoadState();
     }
 
+    /**
+     * Đóng banner cookie / accept nếu có. Best-effort: không ném lỗi khi không có icon,
+     * page đã đóng, hoặc click đua với navigation (TargetClosedError).
+     */
     public void removeAcceptAll(Page page) {
-        var selector = ".van-icon-cross";
-        page.locator(selector).click();
+        if (page == null) {
+            return;
+        }
+        try {
+            if (page.isClosed()) {
+                return;
+            }
+            page.locator(".van-icon-cross").first()
+                    .click(new Locator.ClickOptions().setTimeout(2_500));
+        } catch (PlaywrightException e) {
+            log.log(Level.FINE, "Accept banner not dismissed (no .van-icon-cross or page gone): {0}", e.getMessage());
+        }
     }
 
     public String getImageFromStyleBackgroundImage(Page page, String selector) {

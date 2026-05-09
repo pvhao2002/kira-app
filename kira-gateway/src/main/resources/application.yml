@@ -26,8 +26,8 @@ spring:
       enabled: NEVER
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 16MB
+      max-request-size: 16MB
   task:
     scheduling:
       pool:
@@ -78,6 +78,9 @@ management:
       enabled: false
 server:
   port: 8888
+  tomcat:
+    max-http-form-post-size: 16MB
+    max-swallow-size: 16MB
   servlet:
     context-path: /gateway
   compression:

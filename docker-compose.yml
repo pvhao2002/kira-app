@@ -85,7 +85,8 @@ services:
     restart: "no"
 
   rabbitmq:
-    image: rabbitmq:latest
+    # Image có sẵn plugin management (UI http://localhost:15672). `rabbitmq:latest` không bật UI.
+    image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
       - "5672:5672"
@@ -188,6 +189,9 @@ services:
       KIRA_DATA_MANAGER_PORT: "${KIRA_DATA_MANAGER_PORT:-${KIRA_DATA_MANAGER_PORT_1:-9198}}"
       KIRA_TOOL_SERVICE_HOST: "${KIRA_TOOL_SERVICE_HOST:-host.docker.internal}"
       KIRA_TOOL_SERVICE_PORT: "${KIRA_TOOL_SERVICE_PORT:-1406}"
+      KIRA_UI_HOST: "${KIRA_UI_HOST:-host.docker.internal}"
+      KIRA_UI_PORT: "${KIRA_UI_PORT:-4200}"
+      NGINX_SERVER_NAME: "${NGINX_SERVER_NAME:-localhost kira.local}"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/templates:/etc/nginx/templates:ro

@@ -11,12 +11,19 @@ MacOS se route toi cac service local qua `host.docker.internal`.
 
 ## Duong dan proxy
 
+- `http://localhost/` (hoac `http://kira.local/` neu da cau hinh) -> **kira-ui** (`ng serve` tren host, mac dinh `:4200`) — can chay `npm run start` trong `kira-ui` truoc.
 - `http://localhost/api/...` -> `kira-service` (`:2308`)
 - `http://localhost/queue/...` -> `kira-queue` (`:2323`)
 - `http://localhost/gateway/...` -> load balance qua nhieu instance `kira-gateway`
 - `http://localhost/data/...` -> load balance 2 instance `kira-data-manager` (context-path `/data`, mac dinh `9198` / `9199`)
 - `http://localhost/tool-service/...` -> `kira-tool-service` (`:1406`)
 - `http://localhost/healthz` -> health check Nginx
+
+### Domain local (kira.local)
+
+Them vao `/etc/hosts` (macOS/Linux): `127.0.0.1 kira.local`. `NGINX_SERVER_NAME` mac dinh la `localhost kira.local`; truy cap `http://kira.local` (cong Nginx, thuong 80). Trong `kira-ui/angular.json`, `allowedHosts` da gom `kira.local` va `localhost` de dev server chap nhan `Host` gui tu Nginx.
+
+**Doi template/env nginx:** image nginx generate `conf.d` luc **start** container — sau khi doi `templates/` hoac bien moi truong, chay `docker compose up -d --force-recreate nginx` (tu root repo hoac `nginx/`). Chi `nginx -s reload` khi ban sua file `.conf` da mount san (khong qua envsubst).
 
 ## Tuy chinh host/port
 
@@ -40,6 +47,9 @@ KIRA_DATA_MANAGER_HOST_2=host.docker.internal
 KIRA_DATA_MANAGER_PORT_2=9199
 KIRA_TOOL_SERVICE_HOST=host.docker.internal
 KIRA_TOOL_SERVICE_PORT=1406
+KIRA_UI_HOST=host.docker.internal
+KIRA_UI_PORT=4200
+NGINX_SERVER_NAME=localhost kira.local
 ```
 
 Neu service chay bang Docker cung network rieng, set `*_HOST` thanh ten container/service tuong ung.

@@ -1,6 +1,6 @@
 server {
   listen 80;
-  server_name _;
+  server_name ${NGINX_SERVER_NAME};
 
   # Fast health endpoint for checks.
   location = /healthz {
@@ -47,6 +47,16 @@ server {
   location /tool-service/ {
     proxy_pass http://kira_tool_service_upstream;
   }
+
+  # kira-ui (ng serve on host; must be last so /api, /gateway, etc. stay on backends)
+  location / {
+    proxy_pass http://kira_ui_upstream;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_buffering off;
+    proxy_read_timeout 86400s;
+  }
 }
 
 upstream kira_service_upstream {
@@ -71,5 +81,10 @@ upstream kira_data_manager_upstream {
 
 upstream kira_tool_service_upstream {
   server ${KIRA_TOOL_SERVICE_HOST}:${KIRA_TOOL_SERVICE_PORT};
+  keepalive 32;
+}
+
+upstream kira_ui_upstream {
+  server ${KIRA_UI_HOST}:${KIRA_UI_PORT};
   keepalive 32;
 }

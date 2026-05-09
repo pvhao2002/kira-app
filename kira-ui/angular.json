@@ -69,7 +69,10 @@
           "builder": "@angular/build:dev-server",
           "options": {
             "allowedHosts": [
-              "kira.id.vn"
+              "kira.id.vn",
+              "localhost",
+              "kira.local",
+              "kira_ui_upstream"
             ]
           },
           "configurations": {
