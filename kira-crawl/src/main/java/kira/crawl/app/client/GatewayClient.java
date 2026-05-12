@@ -151,6 +151,18 @@ public class GatewayClient {
         }
     }
 
+    public void recordEventMissingStats(long eventId) {
+        try {
+            gatewayRestClient.post()
+                    .uri("/crawl/events/{eventId}/missing-stats", eventId)
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("recordEventMissingStats: eventId=%d".formatted(eventId));
+        } catch (Exception e) {
+            log.log(Level.WARNING, "recordEventMissingStats failed: eventId=%d, error=%s".formatted(eventId, e.getMessage()));
+        }
+    }
+
     public Optional<Long> claimNextEvent(String instanceId) {
         try {
             var response = gatewayRestClient.get()

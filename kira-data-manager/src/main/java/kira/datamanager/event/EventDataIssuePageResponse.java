@@ -2,8 +2,8 @@ package kira.datamanager.event;
 
 import java.util.List;
 
-public record EventNoOddsPageResponse(
-        List<EventNoOddsRowResponse> content,
+public record EventDataIssuePageResponse(
+        List<EventDataIssueRowResponse> content,
         int page,
         int size,
         long totalElements,

@@ -19,3 +19,9 @@ kira:
       username: ${DB_PRIMARY_USERNAME:kira_user}
       password: ${DB_PRIMARY_PASSWORD:kira_password}
       driver-class-name: com.mysql.cj.jdbc.Driver
+
+logging:
+  level:
+    root: info
+  file:
+    name: ${LOG_FILE:logs/kira-data-manager.log}

@@ -32,7 +32,11 @@ public class EventClaimRepository {
                 where (ec.event_id is null
                    or timestampdiff(second, ec.claimed_at, now()) >= :claimStaleAfterSeconds)
                   and e.status not in ('PENDING', 'POSTPONED', 'CANCELLED')
-                  and not exists (select 1 from event_no_odds eno where eno.event_id = e.event_id)
+                  and not exists (
+                      select 1 from event_data_issue edi
+                      where edi.event_id = e.event_id
+                        and edi.issue_type = 'missing_odds'
+                  )
                   and not exists (
                       select 1 from event_odds eo
                       where eo.event_id = e.event_id
@@ -59,7 +63,7 @@ public class EventClaimRepository {
                 .optional();
     }
 
-    public int insertClaim(long eventId, String claimedBy, LocalDateTime claimedAt) {
+    public void insertClaim(long eventId, String claimedBy, LocalDateTime claimedAt) {
         var sql = """
                 insert into event_claim (event_id, claimed_by, claimed_at)
                 values (:eventId, :claimedBy, :claimedAt)
@@ -67,7 +71,7 @@ public class EventClaimRepository {
                                         claimed_at = values(claimed_at)
                 """;
 
-        return writeJdbcClient
+        writeJdbcClient
                 .sql(sql)
                 .param("eventId", eventId)
                 .param("claimedBy", claimedBy)
@@ -75,7 +79,9 @@ public class EventClaimRepository {
                 .update();
     }
 
-    /** Release claim so the event can be picked again (e.g. after crawl failure). */
+    /**
+     * Release claim so the event can be picked again (e.g. after crawl failure).
+     */
     public int deleteByEventId(long eventId) {
         return writeJdbcClient
                 .sql("DELETE FROM event_claim WHERE event_id = :eventId")

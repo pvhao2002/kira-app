@@ -1,7 +1,8 @@
-<div class="max-w-[1100px] mx-auto p-6 space-y-6">
+<div class="max-w-[1200px] mx-auto p-6 space-y-6">
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white">Event huỷ</h1>
-    <p class="text-slate-400 mt-2">Trận bị huỷ (<code class="text-slate-500">event_cancelled</code>, bổ sung từ <code class="text-slate-500">events</code> khi có).</p>
+    <h1 class="text-3xl font-bold tracking-tight text-white">Event crawl fail</h1>
+    <p class="text-slate-400 mt-2">Danh sách lỗi crawl event từ <code class="text-slate-500">event_crawl_failed</code>.</p>
+    <p class="text-slate-500 text-xs mt-1">Timezone client: {{ clientTimeZone }}</p>
   </div>
 
   @if (loading()) {
@@ -21,7 +22,7 @@
   } @else if (data(); as page) {
     @if (page.content.length === 0) {
       <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 text-center">
-        <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">block</span>
+        <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">error</span>
         <p class="text-slate-400 text-sm">Không có bản ghi.</p>
       </div>
     } @else {
@@ -31,45 +32,61 @@
             <thead class="bg-slate-900/50 text-slate-400 font-medium border-b border-white/5">
               <tr>
                 <th class="px-4 py-3">Event ID</th>
+                <th class="px-4 py-3">Type</th>
+                <th class="px-4 py-3 min-w-[260px]">Message</th>
+                <th class="px-4 py-3">Screenshot</th>
                 <th class="px-4 py-3">
-                  <button type="button"
-                          (click)="toggleSort('eventDate')"
-                          class="inline-flex items-center gap-1 font-medium hover:text-white transition-colors"
-                          [class.text-blue-400]="sortHeaderActive('eventDate')"
-                          [class.text-slate-400]="!sortHeaderActive('eventDate')">
-                    Giờ trận
-                    <span class="material-symbols-outlined text-base leading-none">{{ sortHeaderIcon('eventDate') }}</span>
-                  </button>
-                </th>
-                <th class="px-4 py-3 min-w-[200px]">Tên trận</th>
-                <th class="px-4 py-3">Trạng thái</th>
-                <th class="px-4 py-3 hidden lg:table-cell">
                   <button type="button"
                           (click)="toggleSort('createdAt')"
                           class="inline-flex items-center gap-1 font-medium hover:text-white transition-colors"
                           [class.text-blue-400]="sortHeaderActive('createdAt')"
                           [class.text-slate-400]="!sortHeaderActive('createdAt')">
-                    Ghi nhận
+                    Created
                     <span class="material-symbols-outlined text-base leading-none">{{ sortHeaderIcon('createdAt') }}</span>
                   </button>
                 </th>
+                <th class="px-4 py-3 min-w-[220px]">Event</th>
+                <th class="px-4 py-3">Status</th>
                 <th class="px-4 py-3 hidden md:table-cell w-[1%] whitespace-nowrap">Link</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
-              @for (row of page.content; track row.eventId) {
+              @for (row of page.content; track rowTrack(row)) {
                 <tr class="hover:bg-white/[0.03]">
                   <td class="px-4 py-3 text-slate-300 font-mono text-xs">{{ row.eventId }}</td>
-                  <td class="px-4 py-3 text-slate-300 whitespace-nowrap text-xs">
-                    {{ row.eventDate ? (row.eventDate | date:'short') : '—' }}
+                  <td class="px-4 py-3 text-rose-300 text-xs whitespace-nowrap">{{ row.type ?? '—' }}</td>
+                  <td class="px-4 py-3 text-slate-300 max-w-[320px] truncate" [title]="row.message ?? ''">
+                    @if (row.message) {
+                      <button type="button"
+                              (click)="openMessagePreview(row.message)"
+                              class="text-left text-slate-300 hover:text-blue-300 underline-offset-2 hover:underline truncate max-w-[320px] inline-block align-bottom">
+                        {{ row.message }}
+                      </button>
+                    } @else {
+                      <span>—</span>
+                    }
                   </td>
-                  <td class="px-4 py-3 text-white max-w-[280px] truncate" [title]="row.eventName ?? ''">
-                    {{ row.eventName ?? '—' }}
+                  <td class="px-4 py-3 text-xs whitespace-nowrap">
+                    @if (hasScreenshot(row.screenshot)) {
+                      <button type="button"
+                              (click)="openScreenshotPreview(row.screenshot)"
+                              class="px-2.5 py-1 rounded-md bg-slate-800 border border-white/10 text-blue-300 hover:bg-slate-700">
+                        Mở
+                      </button>
+                    } @else {
+                      <span class="text-slate-600">—</span>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-slate-300 whitespace-nowrap text-xs">
+                    {{ formatClientDate(row.createdAt) }}
+                  </td>
+                  <td class="px-4 py-3 text-white max-w-[320px]" [title]="row.eventName ?? ''">
+                    <div class="truncate">{{ row.eventName ?? '—' }}</div>
+                    <div class="text-slate-400 text-xs mt-1">
+                      {{ row.eventDate ?? '—' }}
+                    </div>
                   </td>
                   <td class="px-4 py-3 text-slate-400">{{ row.status ?? '—' }}</td>
-                  <td class="px-4 py-3 text-slate-500 text-xs whitespace-nowrap hidden lg:table-cell">
-                    {{ row.createdAt ? (row.createdAt | date:'short') : '—' }}
-                  </td>
                   <td class="px-4 py-3 hidden md:table-cell">
                     @if (row.link) {
                       <a [href]="row.link"
@@ -112,3 +129,24 @@
     }
   }
 </div>
+
+@if (previewImageSrc() || previewText()) {
+  <div class="fixed inset-0 z-50 bg-black/70 p-4 flex items-center justify-center" (click)="closePreview()">
+    <div class="w-full max-w-5xl max-h-[90vh] rounded-xl bg-[#0f172a] border border-white/10 p-4 overflow-auto"
+         (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-white font-semibold text-lg">Preview</h2>
+        <button type="button"
+                (click)="closePreview()"
+                class="px-3 py-1 rounded-md bg-slate-800 text-slate-200 border border-white/10 hover:bg-slate-700">
+          Đóng
+        </button>
+      </div>
+      @if (previewImageSrc(); as src) {
+        <img [src]="src" alt="Screenshot preview" class="w-full h-auto rounded-lg border border-white/10" />
+      } @else if (previewText(); as text) {
+        <pre class="text-sm text-slate-200 whitespace-pre-wrap break-words bg-slate-900/60 rounded-lg p-4 border border-white/10">{{ text }}</pre>
+      }
+    </div>
+  </div>
+}

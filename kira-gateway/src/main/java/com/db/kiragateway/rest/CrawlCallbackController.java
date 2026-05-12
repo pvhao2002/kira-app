@@ -97,4 +97,12 @@ public class CrawlCallbackController {
         service.recordEventNoOdds(eventId);
         return ResponseEntity.ok(Map.of("status", "ok"));
     }
+
+    @PostMapping("/crawl/events/{eventId}/missing-stats")
+    public ResponseEntity<?> recordEventMissingStats(@PathVariable long eventId,
+                                                     HttpServletRequest httpReq) {
+        log.info("recordEventMissingStats: eventId=%d, %s".formatted(eventId, RequestLogUtil.summary(httpReq)));
+        service.recordEventMissingStats(eventId);
+        return ResponseEntity.ok(Map.of("status", "ok"));
+    }
 }

@@ -49,3 +49,5 @@ management:
 logging:
   level:
     root: info
+  file:
+    name: ${LOG_FILE:logs/kira-producer.log}

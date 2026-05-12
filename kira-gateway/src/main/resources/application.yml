@@ -64,7 +64,7 @@ app:
       same-site: ${APP_SECURITY_COOKIE_SAME_SITE:Strict}
       domain: ${APP_SECURITY_COOKIE_DOMAIN:}
       path: ${APP_SECURITY_COOKIE_PATH:/gateway}
-      max-age-seconds: ${APP_SECURITY_COOKIE_MAX_AGE_SECONDS:900}
+      max-age-seconds: ${APP_SECURITY_COOKIE_MAX_AGE_SECONDS:9000}
     cors:
       allowed-origins: ${APP_SECURITY_CORS_ALLOWED_ORIGINS:http://localhost:4200}
 

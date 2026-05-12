@@ -1,7 +1,5 @@
 # Kira App Monorepo
 
-Hệ sinh thái Kira gồm web, mobile và nhiều backend services hỗ trợ tổng hợp dữ liệu sự kiện bóng đá, xử lý hàng đợi và cung cấp dữ liệu đầu vào cho nghiên cứu Machine Learning/AI, đặc biệt cho các mô hình dự đoán (predict models).
-
 ## Tổng quan kiến trúc
 
 - `kira-ui`: Frontend web (Angular 21).
@@ -11,20 +9,20 @@ Hệ sinh thái Kira gồm web, mobile và nhiều backend services hỗ trợ t
 - `kira-producer`: Lịch đẩy ngày/sự kiện cần crawl lên RabbitMQ (tách khỏi API nếu cần).
 - `kira-queue`: Xử lý hàng đợi và tác vụ async (RabbitMQ).
 - `kira-crawl`: Service thu thập và chuẩn hóa dữ liệu đầu vào cho pipeline phân tích.
+- `kira-schema`: Module schema/entity dùng chung cho các service backend.
 - `kira-tool-service`: Service công cụ/phụ trợ.
 - `kira-websocket`, `kira-data-manager`: Các service mở rộng theo nhu cầu realtime/data.
+- `database`: SQL scripts cho schema, migration và vận hành DB.
+- `model-ai`: Cấu hình/chạy các thành phần phục vụ AI pipeline.
+- `n8n`: Workflow automation tích hợp dịch vụ ngoài hệ thống.
 
-Luồng khuyến nghị cho client:
-
-`Web/Mobile -> kira-gateway -> internal services`
-
-> Lưu ý: các endpoint public nên đi qua `kira-gateway`, hạn chế gọi trực tiếp service nội bộ từ frontend/client bên ngoài.
 
 ## Cấu trúc thư mục chính
 
 ```text
 kira-app/
 |- docker-compose.yml          # Infra local: MySQL primary/replica, RabbitMQ, Loki, Promtail, Grafana, Nginx
+|- database/                   # SQL scripts: schema, migration, health-check
 |- kira-ui/                    # Angular web app
 |- mobile-app/                 # Expo mobile app
 |- kira-gateway/               # API gateway (default: :8888/gateway)
@@ -32,7 +30,12 @@ kira-app/
 |- kira-queue/                 # Queue worker/API (default: :2323/queue)
 |- kira-producer/              # Scheduler đẩy date/event crawl lên RabbitMQ (HTTP actuator default: :2311)
 |- kira-crawl/                 # Crawl service (default: :2400/crawl)
+|- kira-schema/                # Shared schema/entities for backend modules
+|- kira-data-manager/          # Data manager APIs/monitoring endpoints
+|- kira-websocket/             # Realtime channel/service
 |- kira-tool-service/          # Tool service (default: :1406/tool-service)
+|- model-ai/                   # AI-related services and compose config
+|- n8n/                        # Automation workflows (n8n)
 |- monitoring/                 # Loki/Promtail/Grafana configs
 |- nginx/                      # Reverse proxy config
 ```
@@ -123,9 +126,8 @@ Xem thêm cấu hình tại `nginx/README.md`.
 - `kira-ui/README.md`
 - `mobile-app/README.md`
 - `kira-service/README.md`
+- `model-ai/README.md`
+- `n8n/README.md`
 - `monitoring/README.md`
 - `nginx/README.md`
 
----
-
-Nếu bạn muốn, mình có thể viết thêm phiên bản README nâng cao (kèm sơ đồ kiến trúc, flow auth, biến môi trường chuẩn cho từng service và checklist deploy staging/production).

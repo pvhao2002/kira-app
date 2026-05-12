@@ -18,8 +18,8 @@ import {SqlEditor} from './components/sql-editor/sql-editor';
 import {SoccerHub} from './components/soccer-hub/soccer-hub';
 import {CrawlDates} from './components/crawl-dates/crawl-dates';
 import {Teams} from './components/teams/teams';
-import {EventNoOdds} from './components/event-no-odds/event-no-odds';
-import {EventsCancelled} from './components/events-cancelled/events-cancelled';
+import {EventDataIssue} from './components/event-data-issue/event-data-issue';
+import {EventCrawlFailed} from './components/event-crawl-failed/event-crawl-failed';
 import {authGuard} from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -46,8 +46,8 @@ export const routes: Routes = [
       {path: 'sql', component: SqlEditor},
       {path: 'soccer', component: SoccerHub},
       {path: 'crawl-dates', component: CrawlDates},
-      {path: 'event-no-odds', component: EventNoOdds},
-      {path: 'events-cancelled', component: EventsCancelled},
+      {path: 'event-data-issue', component: EventDataIssue},
+      {path: 'event-crawl-failed', component: EventCrawlFailed},
       {path: 'teams', component: Teams},
     ]
   },

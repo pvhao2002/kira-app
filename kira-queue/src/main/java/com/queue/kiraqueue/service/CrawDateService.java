@@ -72,12 +72,10 @@ public class CrawDateService {
             );
             try {
                 page.navigate(Constants.AI_SCORE_URL + "%s".formatted(date));
-                PlaywrightUtil.waitDomContentLoaded(page);
                 var allBtn = page.locator("span.changeItem", new Page.LocatorOptions().setHasText("All"));
                 allBtn.click();
                 page.locator("span.sortByText", new Page.LocatorOptions().setHasText("Sort by time"))
                         .click();
-                PlaywrightUtil.waitDomContentLoaded(page);
                 crawlEvent(page, eventQueue);
                 List<EventHtml> distinctEvents = eventQueue.stream().distinct().toList();
                 persistEvents(distinctEvents);
@@ -205,7 +203,7 @@ public class CrawDateService {
             previousKey = currentKey;
 
             page.evaluate("window.scrollBy(0, %d)".formatted(scrollStep));
-            page.waitForTimeout(120);
+            page.waitForTimeout(1000);
         }
     }
 

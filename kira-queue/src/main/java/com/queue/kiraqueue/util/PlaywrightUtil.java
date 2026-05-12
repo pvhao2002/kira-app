@@ -113,8 +113,7 @@ public class PlaywrightUtil {
             if (page.isClosed()) {
                 return;
             }
-            page.locator(".van-icon-cross").first()
-                    .click(new Locator.ClickOptions().setTimeout(2_500));
+            page.locator(".van-icon-cross").first().click();
         } catch (PlaywrightException e) {
             log.log(Level.FINE, "Accept banner not dismissed (no .van-icon-cross or page gone): {0}", e.getMessage());
         }

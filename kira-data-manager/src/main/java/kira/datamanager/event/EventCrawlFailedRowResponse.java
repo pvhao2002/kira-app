@@ -4,9 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
 
-public record EventNoOddsRowResponse(
+public record EventCrawlFailedRowResponse(
         @JsonProperty("eventId") long eventId,
-        LocalDateTime recordedAt,
+        String type,
+        String message,
+        String screenshot,
+        LocalDateTime createdAt,
         String eventName,
         LocalDateTime eventDate,
         String status,

@@ -2,8 +2,8 @@ package kira.datamanager.event;
 
 import java.util.List;
 
-public record EventCancelledPageResponse(
-        List<EventCancelledRowResponse> content,
+public record EventCrawlFailedPageResponse(
+        List<EventCrawlFailedRowResponse> content,
         int page,
         int size,
         long totalElements,

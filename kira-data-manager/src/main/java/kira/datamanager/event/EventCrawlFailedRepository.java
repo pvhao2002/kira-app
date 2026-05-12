@@ -10,14 +10,14 @@ import java.util.Locale;
 import java.util.Set;
 
 @Repository
-public class EventCancelledRepository {
+public class EventCrawlFailedRepository {
 
-    private static final Set<String> ALLOWED_SORT_BY = Set.of("event_date", "created_at");
+    private static final Set<String> ALLOWED_SORT_BY = Set.of("created_at", "event_date");
     private static final Set<String> ALLOWED_SORT_DIR = Set.of("asc", "desc");
 
     private final JdbcClient jdbcClient;
 
-    public EventCancelledRepository(@Qualifier("readJdbcClient") JdbcClient jdbcClient) {
+    public EventCrawlFailedRepository(@Qualifier("readJdbcClient") JdbcClient jdbcClient) {
         this.jdbcClient = jdbcClient;
     }
 
@@ -35,21 +35,26 @@ public class EventCancelledRepository {
         return ALLOWED_SORT_DIR.contains(sortDir.trim().toLowerCase(Locale.ROOT));
     }
 
-    public EventCancelledPageResponse findPage(int page, int size, String sortBy, String sortDir) {
+    public EventCrawlFailedPageResponse findPage(int page, int size, String sortBy, String sortDir) {
         var orderBy = resolveOrderBy(sortBy, sortDir);
 
-        var countSql = "SELECT COUNT(*) FROM event_cancelled";
-        var total = jdbcClient.sql(countSql).query((rs, rowNum) -> rs.getLong(1)).single();
+        var countSql = "SELECT COUNT(*) FROM event_crawl_failed";
+        var total = jdbcClient.sql(countSql)
+                .query((rs, rowNum) -> rs.getLong(1))
+                .single();
 
         var dataSql = """
-                SELECT ec.event_id,
-                       COALESCE(e.event_name, ec.event_name) AS event_name,
-                       COALESCE(e.event_date, ec.event_date) AS event_date,
-                       COALESCE(e.status, ec.status) AS status,
-                       COALESCE(e.link, ec.link) AS link,
-                       ec.created_at
-                FROM event_cancelled ec
-                LEFT JOIN events e ON e.event_id = ec.event_id
+                SELECT f.event_id,
+                       f.type,
+                       f.message,
+                       f.screenshot,
+                       f.created_at,
+                       e.event_name,
+                       e.event_date,
+                       e.status,
+                       REPLACE(e.link, 'www', 'm') AS link
+                FROM event_crawl_failed f
+                LEFT JOIN events e ON e.event_id = f.event_id
                 """ + " ORDER BY " + orderBy + " LIMIT :limit OFFSET :offset";
 
         var content = jdbcClient.sql(dataSql)
@@ -63,35 +68,38 @@ public class EventCancelledRepository {
             totalPages = 0;
         }
 
-        return new EventCancelledPageResponse(content, page, size, total, totalPages);
+        return new EventCrawlFailedPageResponse(content, page, size, total, totalPages);
     }
 
     private static String resolveOrderBy(String sortBy, String sortDir) {
-        String by = sortBy == null || sortBy.isBlank() ? "event_date" : sortBy.trim().toLowerCase(Locale.ROOT);
+        String by = sortBy == null || sortBy.isBlank() ? "created_at" : sortBy.trim().toLowerCase(Locale.ROOT);
         if (!ALLOWED_SORT_BY.contains(by)) {
-            by = "event_date";
+            by = "created_at";
         }
         String dir = sortDir == null || sortDir.isBlank() ? "desc" : sortDir.trim().toLowerCase(Locale.ROOT);
         if (!ALLOWED_SORT_DIR.contains(dir)) {
             dir = "desc";
         }
         String upperDir = dir.toUpperCase(Locale.ROOT);
-        if ("created_at".equals(by)) {
-            return "ec.created_at " + upperDir;
+        if ("event_date".equals(by)) {
+            return "(e.event_date IS NULL), e.event_date " + upperDir;
         }
-        return "(COALESCE(e.event_date, ec.event_date) IS NULL), COALESCE(e.event_date, ec.event_date) " + upperDir;
+        return "f.created_at " + upperDir;
     }
 
-    private EventCancelledRowResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
-        var ed = rs.getTimestamp("event_date");
-        var ca = rs.getTimestamp("created_at");
-        return new EventCancelledRowResponse(
+    private EventCrawlFailedRowResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
+        var createdAt = rs.getTimestamp("created_at");
+        var eventDate = rs.getTimestamp("event_date");
+        return new EventCrawlFailedRowResponse(
                 rs.getLong("event_id"),
+                rs.getString("type"),
+                rs.getString("message"),
+                rs.getString("screenshot"),
+                createdAt != null ? createdAt.toLocalDateTime() : null,
                 rs.getString("event_name"),
-                ed != null ? ed.toLocalDateTime() : null,
+                eventDate != null ? eventDate.toLocalDateTime() : null,
                 rs.getString("status"),
-                rs.getString("link"),
-                ca != null ? ca.toLocalDateTime() : null
+                rs.getString("link")
         );
     }
 }

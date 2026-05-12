@@ -81,18 +81,22 @@ public class EventSchedule {
             """;
 
     /**
-     * Same eligibility as {@code EventClaimRepository} candidate rows (status, no {@code event_no_odds}, no {@code event_odds},
+     * Same eligibility as {@code EventClaimRepository} candidate rows (status, no missing-odds issue, no {@code event_odds},
      * no active claim) — used to backfill the batch after retries.
      */
     private static final String SQL_GET_EVENTS_NEED_ODDS_BASE = """
             select e.event_id
             from events e
             where e.status not in ('PENDING', 'POSTPONED', 'CANCELLED')
-              and not exists (select 1 from event_no_odds eno where eno.event_id = e.event_id)
+              and not exists (
+                  select 1 from event_data_issue edi
+                  where edi.event_id = e.event_id
+                    and edi.issue_type = 'missing_odds'
+              )
               and not exists (select 1 from event_odds eo where eo.event_id = e.event_id)
             """ + SQL_NO_ACTIVE_CLAIM_FOR_E;
 
-    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void event() {
         if (queueBackpressureService.isQueueOverLimit(RabbitMQConfig.QUEUE_ODD, QUEUE_MAX_MESSAGES)) {
             log.info("Skip event because queue " + RabbitMQConfig.QUEUE_ODD + " has more than " + QUEUE_MAX_MESSAGES + " messages.");

@@ -1,0 +1,167 @@
+<div class="max-w-[1200px] mx-auto p-6 space-y-6">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-white">Event data issue</h1>
+      <p class="text-slate-400 mt-2">Danh sách lỗi dữ liệu event từ <code class="text-slate-500">event_data_issue</code>.</p>
+      <p class="text-slate-500 text-xs mt-1">Timezone client: {{ clientTimeZone }}</p>
+    </div>
+
+    <label class="flex items-center gap-2 text-sm text-slate-300">
+      <span>Issue type</span>
+      <select class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
+              [value]="issueType()"
+              (change)="onIssueTypeChange($any($event.target).value)">
+        <option value="all">All</option>
+        <option value="missing_stats">missing_stats</option>
+        <option value="missing_odds">missing_odds</option>
+        <option value="cancelled">cancelled</option>
+      </select>
+    </label>
+  </div>
+
+  @if (loading()) {
+    <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 flex flex-col items-center justify-center gap-3">
+      <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
+      <p class="text-slate-400 text-sm">Đang tải…</p>
+    </div>
+  } @else if (error()) {
+    <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
+      <p class="text-red-300 text-sm">{{ error() }}</p>
+      <button type="button"
+              (click)="load()"
+              class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
+        Thử lại
+      </button>
+    </div>
+  } @else if (data(); as page) {
+    @if (page.content.length === 0) {
+      <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 text-center">
+        <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">report_problem</span>
+        <p class="text-slate-400 text-sm">Không có bản ghi.</p>
+      </div>
+    } @else {
+      <div class="rounded-xl border border-white/5 overflow-hidden bg-[#1e293b]">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-900/50 text-slate-400 font-medium border-b border-white/5">
+              <tr>
+                <th class="px-4 py-3">Event ID</th>
+                <th class="px-4 py-3">Issue type</th>
+                <th class="px-4 py-3 min-w-[220px]">Description</th>
+                <th class="px-4 py-3">Screenshot</th>
+                <th class="px-4 py-3">
+                  <button type="button"
+                          (click)="toggleSort('recordedAt')"
+                          class="inline-flex items-center gap-1 font-medium hover:text-white transition-colors"
+                          [class.text-blue-400]="sortHeaderActive('recordedAt')"
+                          [class.text-slate-400]="!sortHeaderActive('recordedAt')">
+                    Recorded
+                    <span class="material-symbols-outlined text-base leading-none">{{ sortHeaderIcon('recordedAt') }}</span>
+                  </button>
+                </th>
+                <th class="px-4 py-3 min-w-[220px]">Event</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 hidden md:table-cell w-[1%] whitespace-nowrap">Link</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              @for (row of page.content; track rowTrack(row)) {
+                <tr class="hover:bg-white/[0.03]">
+                  <td class="px-4 py-3 text-slate-300 font-mono text-xs">{{ row.eventId }}</td>
+                  <td class="px-4 py-3 text-amber-300 text-xs whitespace-nowrap">{{ issueTypeLabel(row.issueType) }}</td>
+                  <td class="px-4 py-3 text-slate-300 max-w-[300px] truncate" [title]="row.description ?? ''">
+                    @if (row.description) {
+                      <button type="button"
+                              (click)="openDescriptionPreview(row.description)"
+                              class="text-left text-slate-300 hover:text-blue-300 underline-offset-2 hover:underline truncate max-w-[300px] inline-block align-bottom">
+                        {{ row.description }}
+                      </button>
+                    } @else {
+                      <span>—</span>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-xs whitespace-nowrap">
+                    @if (hasScreenshot(row.screenshot)) {
+                      <button type="button"
+                              (click)="openScreenshotPreview(row.screenshot)"
+                              class="px-2.5 py-1 rounded-md bg-slate-800 border border-white/10 text-blue-300 hover:bg-slate-700">
+                        Mở
+                      </button>
+                    } @else {
+                      <span class="text-slate-600">—</span>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-slate-300 whitespace-nowrap text-xs">
+                    {{ formatClientDate(row.recordedAt) }}
+                  </td>
+                  <td class="px-4 py-3 text-white max-w-[320px]" [title]="row.eventName ?? ''">
+                    <div class="truncate">{{ row.eventName ?? '—' }}</div>
+                    <div class="text-slate-400 text-xs mt-1">
+                      {{ row.eventDate ?? '—' }}
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-slate-400">{{ row.status ?? '—' }}</td>
+                  <td class="px-4 py-3 hidden md:table-cell">
+                    @if (row.link) {
+                      <a [href]="row.link"
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         class="text-blue-400 hover:text-blue-300 text-xs truncate max-w-[120px] inline-block align-bottom">
+                        Mở
+                      </a>
+                    } @else {
+                      <span class="text-slate-600">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400">
+        <span>
+          Trang {{ page.page + 1 }} / {{ page.totalPages || 1 }}
+          · {{ page.totalElements | number }} bản ghi
+        </span>
+        <div class="flex gap-2">
+          <button type="button"
+                  (click)="prev()"
+                  [disabled]="page.page <= 0"
+                  class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+            Trước
+          </button>
+          <button type="button"
+                  (click)="next()"
+                  [disabled]="page.page >= page.totalPages - 1"
+                  class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+            Sau
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>
+
+@if (previewImageSrc() || previewText()) {
+  <div class="fixed inset-0 z-50 bg-black/70 p-4 flex items-center justify-center" (click)="closePreview()">
+    <div class="w-full max-w-5xl max-h-[90vh] rounded-xl bg-[#0f172a] border border-white/10 p-4 overflow-auto"
+         (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-white font-semibold text-lg">Preview</h2>
+        <button type="button"
+                (click)="closePreview()"
+                class="px-3 py-1 rounded-md bg-slate-800 text-slate-200 border border-white/10 hover:bg-slate-700">
+          Đóng
+        </button>
+      </div>
+
+      @if (previewImageSrc(); as src) {
+        <img [src]="src" alt="Screenshot preview" class="w-full h-auto rounded-lg border border-white/10" />
+      } @else if (previewText(); as text) {
+        <pre class="text-sm text-slate-200 whitespace-pre-wrap break-words bg-slate-900/60 rounded-lg p-4 border border-white/10">{{ text }}</pre>
+      }
+    </div>
+  </div>
+}

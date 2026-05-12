@@ -78,6 +78,19 @@ public class CrawlCallbackService {
         var exIds = events.stream().map(CrawledEventDTO::externalId).toList();
         var eventIdMap = repo.selectEventIdsByExternalId(exIds);
 
+        // 5.1 Mark cancelled events for downstream visibility.
+        events.stream()
+                .filter(e -> "CANCELLED".equalsIgnoreCase(e.providerStatus()))
+                .map(CrawledEventDTO::externalId)
+                .map(eventIdMap::get)
+                .filter(Objects::nonNull)
+                .forEach(eventId -> repo.upsertEventDataIssue(
+                        eventId,
+                        "cancelled",
+                        "Provider status is CANCELLED",
+                        LocalDateTime.now()
+                ));
+
         // 6. Batch insert event_result
         var resultParams = events.stream()
                 .map(e -> {
@@ -135,6 +148,11 @@ public class CrawlCallbackService {
 
     @Transactional
     public void recordEventNoOdds(long eventId) {
-        repo.upsertEventNoOdds(eventId, LocalDateTime.now());
+        repo.upsertEventDataIssue(eventId, "missing_odds", null, LocalDateTime.now());
+    }
+
+    @Transactional
+    public void recordEventMissingStats(long eventId) {
+        repo.upsertEventDataIssue(eventId, "missing_stats", null, LocalDateTime.now());
     }
 }

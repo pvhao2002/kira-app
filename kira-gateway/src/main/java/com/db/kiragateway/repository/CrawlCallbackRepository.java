@@ -270,17 +270,21 @@ public class CrawlCallbackRepository {
         writeJdbc.update(SQL_DELETE_CRAWL_FAIL, Map.of("eventId", eventId));
     }
 
-    // ─── event_no_odds ───
+    // ─── event_data_issue ───
 
-    private static final String SQL_UPSERT_EVENT_NO_ODDS = """
-            INSERT INTO event_no_odds (event_id, recorded_at)
-            VALUES (:eventId, :recordedAt)
-            ON DUPLICATE KEY UPDATE recorded_at = VALUES(recorded_at)
+    private static final String SQL_UPSERT_EVENT_DATA_ISSUE = """
+            INSERT INTO event_data_issue (event_id, issue_type, description, recorded_at)
+            VALUES (:eventId, :issueType, :description, :recordedAt)
+            ON DUPLICATE KEY UPDATE description = VALUES(description),
+                                    recorded_at = VALUES(recorded_at)
             """;
 
-    public void upsertEventNoOdds(long eventId, LocalDateTime recordedAt) {
-        writeJdbc.update(SQL_UPSERT_EVENT_NO_ODDS,
-                new MapSqlParameterSource("eventId", eventId).addValue("recordedAt", recordedAt));
+    public void upsertEventDataIssue(long eventId, String issueType, String description, LocalDateTime recordedAt) {
+        writeJdbc.update(SQL_UPSERT_EVENT_DATA_ISSUE,
+                new MapSqlParameterSource("eventId", eventId)
+                        .addValue("issueType", issueType)
+                        .addValue("description", description)
+                        .addValue("recordedAt", recordedAt));
     }
 
     // ─── event info ───

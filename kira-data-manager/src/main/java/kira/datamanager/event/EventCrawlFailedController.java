@@ -10,15 +10,15 @@ import java.util.Map;
 
 @RestController
 @RequestMapping
-public class EventNoOddsController {
+public class EventCrawlFailedController {
 
-    private final EventNoOddsRepository eventNoOddsRepository;
+    private final EventCrawlFailedRepository eventCrawlFailedRepository;
 
-    public EventNoOddsController(EventNoOddsRepository eventNoOddsRepository) {
-        this.eventNoOddsRepository = eventNoOddsRepository;
+    public EventCrawlFailedController(EventCrawlFailedRepository eventCrawlFailedRepository) {
+        this.eventCrawlFailedRepository = eventCrawlFailedRepository;
     }
 
-    @GetMapping("/event-no-odds")
+    @GetMapping("/event-crawl-failed")
     public ResponseEntity<?> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -31,20 +31,20 @@ public class EventNoOddsController {
         if (size < 1 || size > 100) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "size must be between 1 and 100"));
         }
-        if (sortBy != null && !sortBy.isBlank() && !EventNoOddsRepository.isAllowedSortBy(sortBy)) {
+        if (sortBy != null && !sortBy.isBlank() && !EventCrawlFailedRepository.isAllowedSortBy(sortBy)) {
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "error",
-                    "message", "sortBy must be one of: recorded_at, event_date"
+                    "message", "sortBy must be one of: created_at, event_date"
             ));
         }
-        if (sortDir != null && !sortDir.isBlank() && !EventNoOddsRepository.isAllowedSortDir(sortDir)) {
+        if (sortDir != null && !sortDir.isBlank() && !EventCrawlFailedRepository.isAllowedSortDir(sortDir)) {
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "error",
                     "message", "sortDir must be one of: asc, desc"
             ));
         }
 
-        var body = eventNoOddsRepository.findPage(page, size, sortBy, sortDir);
+        var body = eventCrawlFailedRepository.findPage(page, size, sortBy, sortDir);
         return ResponseEntity.ok(body);
     }
 }

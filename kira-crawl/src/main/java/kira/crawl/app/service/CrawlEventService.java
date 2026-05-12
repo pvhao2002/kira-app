@@ -82,6 +82,7 @@ public class CrawlEventService {
                             : CompletableFuture.completedFuture(true);
                     if (!statsTabPresent) {
                         log.info("Crawl stats skip: eventId=%d, no Stats tab on match page".formatted(evt.eventId()));
+                        gatewayClient.recordEventMissingStats(evt.eventId());
                     }
                     if (!oddTabPresent) {
                         gatewayClient.reportCrawlFail(evt.eventId(), "odds", "No Odd tab on match page");
@@ -192,6 +193,7 @@ public class CrawlEventService {
                 if (tabCount < 2) {
                     log.warning("Crawl stats skip: eventId=%d, tabs=%d (need Match + 1st Half)".formatted(evt.eventId(), tabCount));
                     gatewayClient.reportCrawlFail(evt.eventId(), "stats", "Not enough tabs for stats");
+                    gatewayClient.recordEventMissingStats(evt.eventId());
                     ok[0] = false;
                     return;
                 }
@@ -210,6 +212,7 @@ public class CrawlEventService {
                 log.info("Crawl stats saved: eventId=%d".formatted(evt.eventId()));
             } catch (Exception e) {
                 gatewayClient.reportCrawlFail(evt.eventId(), "stats", e.getMessage());
+                gatewayClient.recordEventMissingStats(evt.eventId());
                 ok[0] = false;
             } finally {
                 log.info("Crawl stats done: eventId=%d took %d ms".formatted(evt.eventId(), System.currentTimeMillis() - start));

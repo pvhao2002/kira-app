@@ -1,6 +1,6 @@
 package com.queue.kiraqueue.dto.model;
 
-import com.microsoft.playwright.ElementHandle;
+import com.microsoft.playwright.Locator;
 import com.queue.kiraqueue.util.OddConverter;
 import com.queue.kiraqueue.util.StringUtil;
 import lombok.*;
@@ -21,38 +21,43 @@ public class EventOddsTimeline extends EventOdds {
     LocalDateTime createdAt;
     String date;
 
-    public EventOddsTimeline(ElementHandle li, String market) {
+    public EventOddsTimeline(Locator li, String market) {
         this.market = market;
-        var allLineOdds = li.querySelectorAll(".firstSpan");
-        li.waitForSelector(".oddsBox");
-        var oddsBox = li.querySelectorAll(".oddsBox");
+        var allLineOdds = li.locator(".firstSpan");
+        var oddsBox = li.locator(".oddsBox");
+        if (StringUtil.normalizeText(oddsBox.all().stream().map(Locator::textContent).collect(Collectors.joining(" "))).isBlank()) {
+            return;
+        }
         var isHdc = "hdc".equalsIgnoreCase(market);
         if (isHdc) {
-            if (allLineOdds.size() == 3) {
-                date = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
+            if (allLineOdds.count() == 3) {
+                date = StringUtil.normalizeText(allLineOdds.first().textContent());
             } else {
-                matchMinute = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
+                matchMinute = StringUtil.normalizeText(allLineOdds.first().textContent());
             }
-            this.line = oddsBox.stream().map(el -> {
-                var hdcEle = el.querySelector(".handicap.handicapRight");
-                return StringUtil.normalizeText(Optional.ofNullable(hdcEle).map(ElementHandle::textContent).orElse(null));
+            this.line = oddsBox.all().stream().map(el -> {
+                if (StringUtil.normalizeText(el.textContent()).isBlank()) {
+                    return null;
+                }
+                var hdcEle = el.locator(".handicap.handicapRight");
+                return StringUtil.normalizeText(Optional.ofNullable(hdcEle).map(Locator::textContent).orElse(null));
             }).filter(StringUtil::isNotEmpty).collect(Collectors.joining("#"));
         } else {
-            if (allLineOdds.size() == 4) {
-                date = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
+            if (allLineOdds.count() == 4) {
+                date = StringUtil.normalizeText(allLineOdds.first().textContent());
             } else {
-                matchMinute = StringUtil.normalizeText(allLineOdds.getFirst().textContent());
+                matchMinute = StringUtil.normalizeText(allLineOdds.first().textContent());
             }
-            this.line = oddsBox.isEmpty() ? null : StringUtil.normalizeText(oddsBox.getFirst().textContent());
+            this.line = oddsBox.count() == 0 ? null : StringUtil.normalizeText(oddsBox.first().textContent());
         }
-        parsePricesFromOddsBox(oddsBox, isHdc);
+        parsePricesFromOddsBox(oddsBox.all(), isHdc);
     }
 
-    private void parsePricesFromOddsBox(java.util.List<? extends ElementHandle> oddsBox, boolean isHdc) {
+    private void parsePricesFromOddsBox(java.util.List<? extends Locator> oddsBox, boolean isHdc) {
         if (oddsBox == null || oddsBox.isEmpty()) return;
         if (oddsBox.size() < 2) return;
-        Double a = null;
-        Double b = null;
+        Double a;
+        Double b;
         if (isHdc) {
             if (oddsBox.size() == 2) {
                 a = parseHdcOddsText(oddsBox.getFirst());
@@ -72,7 +77,7 @@ public class EventOddsTimeline extends EventOdds {
         if (b != null) setPriceB(BigDecimal.valueOf(b));
     }
 
-    private static Double parseHdcOddsText(ElementHandle el) {
+    private static Double parseHdcOddsText(Locator el) {
         if (el == null) return null;
         try {
             String raw = el.evaluate("node => { const h = node.querySelector('.handicap.handicapRight'); const t = (node.innerText || node.textContent || '').trim(); return h ? t.replace(h.textContent.trim(), '').trim() : t; }").toString();

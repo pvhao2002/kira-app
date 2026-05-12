@@ -2,6 +2,9 @@ use kira;
 
 -- Drop theo thứ tự phụ thuộc FK (bảng con trước, events sau)
 drop table if exists event_crawl_failed;
+drop table if exists event_data_issue;
+drop table if exists event_no_odds;
+drop table if exists event_cancelled;
 drop table if exists event_odds_timeline;
 drop table if exists event_odds;
 drop table if exists event_incident;
@@ -267,18 +270,22 @@ create table event_crawl_failed
     event_id   bigint,
     type       varchar(45),
     message    text,
+    screenshot longtext,
     created_at datetime default now(),
     primary key pk_event_fail (event_id, type),
     index idx_event_fail (event_id)
 ) engine = InnoDB
   row_format = dynamic;
 
-create table event_cancelled
+create table event_data_issue
 (
-    event_id   bigint primary key,
-    event_name varchar(255),
-    event_date datetime not null,
-    status     varchar(25),
-    link       text     null,
-    created_at datetime default now()
-);
+    event_id    bigint                                       not null,
+    issue_type  enum ('missing_stats', 'missing_odds', 'cancelled') not null,
+    description longtext,
+    screenshot  longtext,
+    recorded_at datetime                                     default now(),
+    primary key pk_event_data_issue (event_id, issue_type),
+    index idx_issue_type_recorded_at (issue_type, recorded_at),
+    constraint fk_event_data_issue_event foreign key (event_id) references events (event_id) on delete cascade
+) engine = InnoDB
+  row_format = dynamic;
