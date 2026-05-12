@@ -16,6 +16,59 @@
 - `model-ai`: Cấu hình/chạy các thành phần phục vụ AI pipeline.
 - `n8n`: Workflow automation tích hợp dịch vụ ngoài hệ thống.
 
+## Technical Overview (focus kỹ thuật)
+
+### 1) Kiến trúc xử lý dữ liệu (event-driven)
+
+- **Entry layer**: `kira-gateway` là cổng API public, gom auth/security + điều phối vào service nội bộ.
+- **Core API layer**: `kira-service` xử lý API nghiệp vụ đồng bộ.
+- **Async layer**:
+  - `kira-producer` chạy scheduler, publish job crawl vào RabbitMQ theo batch.
+  - `kira-queue` tiêu thụ queue, chạy crawler/parser và cập nhật DB.
+  - `kira-crawl` tách riêng luồng crawl/normalize từ nguồn ngoài khi cần scale độc lập.
+- **Data layer**: MySQL theo mô hình primary/replica; các service có cấu hình datasource read/write để tối ưu tải đọc.
+- **Observability layer**: log file -> Promtail -> Loki -> Grafana.
+
+### 2) Công nghệ sử dụng
+
+- **Backend**: Java 21 + Spring Boot (đa module), Maven.
+- **Messaging**: RabbitMQ (`spring-boot-starter-amqp`).
+- **Data access**: Spring JDBC (`NamedParameterJdbcTemplate`) + JPA ở module schema dùng chung.
+- **Crawler stack**: Playwright Java + Jsoup (DOM parsing).
+- **Web frontend**: Angular 21 + RxJS + Tailwind CSS.
+- **Mobile**: Expo + React Native + React 19.
+- **Infra local**: Docker Compose, Nginx reverse proxy, MySQL, Grafana/Loki/Promtail.
+
+### 3) Kỹ thuật triển khai chính
+
+- **Queue backpressure**: scheduler kiểm tra ngưỡng message trong queue trước khi publish thêm để tránh quá tải worker.
+- **Claim-based concurrency control**:
+  - Dùng bảng `event_claim` để đánh dấu event đang được xử lý.
+  - Có cơ chế stale timeout để tránh lock logic vĩnh viễn khi worker lỗi.
+- **Idempotent write**:
+  - Nhiều điểm ghi DB dùng `INSERT ... ON DUPLICATE KEY UPDATE` để retry an toàn.
+  - Giảm nguy cơ ghi trùng khi job được phát lại.
+- **Retry + backfill strategy**:
+  - Ưu tiên event fail trước (retry queue), sau đó backfill event còn thiếu dữ liệu odds/stats.
+  - Áp dụng batch limit theo từng scheduler tick.
+- **Crawl hardening**:
+  - Playwright cấu hình user-agent, locale, timezone, context gần với browser thật.
+  - Có timeout cho crawl song song để tránh treo tác vụ.
+  - Lưu dấu lỗi (message/html/screenshot) hỗ trợ debug post-mortem.
+- **Tách scheduler tránh duplicate**:
+  - Khi chạy `kira-producer`, có thể tắt schedule tương ứng ở `kira-service` qua env để tránh publish trùng.
+- **Reverse proxy topology**:
+  - Nginx route `/api`, `/queue`, `/gateway`, `/data`, `/tool-service`.
+  - Hỗ trợ load balancing nhiều instance gateway/data-manager.
+
+### 4) Luồng kỹ thuật điển hình (crawl event)
+
+1. `kira-producer` quét danh sách event cần crawl và publish event-id vào RabbitMQ.
+2. `kira-queue` consume message, dùng Playwright/Jsoup thu thập và parse dữ liệu.
+3. Worker ghi dữ liệu vào MySQL (odds/result/issue tables), cập nhật trạng thái crawl.
+4. Với lỗi crawl, worker ghi bảng fail/issue để hệ thống retry ở các tick sau.
+5. Log runtime của toàn bộ service được đẩy về Loki để truy vấn trong Grafana.
+
 
 ## Cấu trúc thư mục chính
 
