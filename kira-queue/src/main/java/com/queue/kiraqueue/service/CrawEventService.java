@@ -205,7 +205,7 @@ public class CrawEventService {
             log.warning(description);
             recordEventMissingStats(event.getEventId(), description, screenshot);
         }
-        var statsFuture = statsTabPresent
+        var statsFuture = statsTabPresent && !oddTabPresent
                 ? CompletableFuture.supplyAsync(() -> crawlStatEvents(event))
                 : CompletableFuture.completedFuture(true);
 
@@ -233,7 +233,7 @@ public class CrawEventService {
     }
 
     private List<String> getMatchPageTabTexts(Page page) {
-        return page.locator("div[role=tablist] div[role=tab]").allInnerTexts();
+        return page.locator("div[role=tablist] div[role=tab]").allInnerTexts().stream().filter(StringUtil::isNotEmpty).toList();
     }
 
     private boolean hasTabLabel(List<String> tabTexts, String expectedLabel) {

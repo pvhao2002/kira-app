@@ -23,7 +23,7 @@ import java.util.logging.Level;
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "kira.producer.crawl-schedule.date-enabled", havingValue = "true", matchIfMissing = true)
 public class DateSchedule {
-    private static final int QUEUE_MAX_MESSAGES = 2;
+    private static final int QUEUE_MAX_MESSAGES = 50;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final DateProducer dateProducer;
@@ -34,19 +34,15 @@ public class DateSchedule {
             from crawl_date
             where status = 'pending'
                or status = 'failed'
-            limit 2
+            limit 20
             """;
 
-    @Scheduled(cron = "0 0 0,3,15,20 * * *", zone = "Asia/Ho_Chi_Minh")
+    @Scheduled(cron = "0 0 22 * * *", zone = "Asia/Ho_Chi_Minh")
     public void crawlTomorrowEvent() {
-        if (queueBackpressureService.isQueueOverLimit(RabbitMQConfig.QUEUE_DATE_TOMORROW, QUEUE_MAX_MESSAGES)) {
-            log.info("Skip crawlTomorrowEvent because queue " + RabbitMQConfig.QUEUE_DATE_TOMORROW + " has more than " + QUEUE_MAX_MESSAGES + " messages.");
-            return;
-        }
-        for (var date : List.of(DateUtil.getTodayDate(), DateUtil.getTomorrowDate())) {
+        for (var date : List.of(DateUtil.getTomorrowDate())) {
             dateProducer.sendDateTomorrow(date);
+            log.info("DateSchedule >> Scheduled crawl for [%s] events.".formatted(date));
         }
-        log.info("DateSchedule >> Scheduled crawl for today and tomorrow events.");
     }
 
     @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)

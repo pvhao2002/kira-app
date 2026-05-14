@@ -32,6 +32,7 @@ public class CrawDateService {
     public static final String LOGO_URL = "logo_url";
     public static final String IN_PROGRESS = "in_progress";
     public static final String DONE = "done";
+    public static final String FAILED = "failed";
     public static final String TOTAL_EVENTS = "total_events";
     public static final String ERROR_MESSAGE = "error_message";
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -59,45 +60,68 @@ public class CrawDateService {
     private static final String SQL_SELECT_EVENT_IDS = "select event_id, external_id from events where external_id in (:exids)";
 
     public void crawlDate(List<String> dates) {
-        PlaywrightUtil.withPlaywright(dates, (page, mDates) -> mDates.forEach(date -> {
-            log.info("Start crawl analystDate for date: " + date);
-            long totalEvents = 0;
-            var startTimes = System.currentTimeMillis();
-            var eventQueue = new ArrayList<EventHtml>();
-            jdbcTemplate.update(SQL_CRAWL_DATE,
-                    new MapSqlParameterSource("date", date)
-                            .addValue(STATUS, IN_PROGRESS)
-                            .addValue(TOTAL_EVENTS, 0)
-                            .addValue(ERROR_MESSAGE, null)
-            );
-            try {
-                page.navigate(Constants.AI_SCORE_URL + "%s".formatted(date));
-                var allBtn = page.locator("span.changeItem", new Page.LocatorOptions().setHasText("All"));
-                allBtn.click();
-                page.locator("span.sortByText", new Page.LocatorOptions().setHasText("Sort by time"))
-                        .click();
-                crawlEvent(page, eventQueue);
-                List<EventHtml> distinctEvents = eventQueue.stream().distinct().toList();
-                persistEvents(distinctEvents);
-                totalEvents = distinctEvents.size();
-                jdbcTemplate.update(SQL_CRAWL_DATE,
-                        new MapSqlParameterSource("date", date)
-                                .addValue(ERROR_MESSAGE, null)
-                                .addValue(STATUS, DONE)
-                                .addValue(TOTAL_EVENTS, distinctEvents.size())
-                );
-            } catch (Exception ex) {
-                log.log(Level.WARNING, "Error during analystDate", ex);
-                jdbcTemplate.update(SQL_CRAWL_DATE,
-                        new MapSqlParameterSource("date", date)
-                                .addValue(STATUS, "failed")
+        if (CollectionUtils.isEmpty(dates)) {
+            return;
+        }
+
+        jdbcTemplate.batchUpdate(
+                SQL_CRAWL_DATE,
+                dates.stream()
+                        .map(date -> new MapSqlParameterSource("date", date)
+                                .addValue(STATUS, IN_PROGRESS)
                                 .addValue(TOTAL_EVENTS, 0)
-                                .addValue(ERROR_MESSAGE, ex.getMessage())
-                );
-            } finally {
-                log.info("Crawl analystDate for date: " + date + " has %d events done at %s took %.2f s".formatted(totalEvents, new Date().toString(), ((System.currentTimeMillis() - startTimes) / 1000.0)));
+                                .addValue(ERROR_MESSAGE, null))
+                        .toArray(MapSqlParameterSource[]::new)
+        );
+
+        PlaywrightUtil.withPlaywright(dates, (page, mDates) -> {
+            var dateStatusUpdates = new ArrayList<MapSqlParameterSource>(mDates.size());
+
+            mDates.forEach(date -> {
+                log.info("Start crawl analystDate for date: " + date);
+                long totalEvents = 0;
+                var startTimes = System.currentTimeMillis();
+                var eventQueue = new ArrayList<EventHtml>();
+                try {
+                    page.navigate(Constants.AI_SCORE_URL + "%s".formatted(date));
+                    var allBtn = page.locator("span.changeItem", new Page.LocatorOptions().setHasText("All"));
+                    allBtn.click();
+                    page.locator("span.sortByText", new Page.LocatorOptions().setHasText("Sort by time"))
+                            .click();
+                    crawlEvent(page, eventQueue);
+                    List<EventHtml> distinctEvents = eventQueue.stream().distinct().toList();
+                    persistEvents(distinctEvents);
+                    totalEvents = distinctEvents.size();
+                    dateStatusUpdates.add(new MapSqlParameterSource("date", date)
+                            .addValue(ERROR_MESSAGE, null)
+                            .addValue(STATUS, DONE)
+                            .addValue(TOTAL_EVENTS, distinctEvents.size()));
+                } catch (Exception ex) {
+                    log.log(Level.WARNING, "Error during analystDate", ex);
+                    dateStatusUpdates.add(new MapSqlParameterSource("date", date)
+                            .addValue(STATUS, FAILED)
+                            .addValue(TOTAL_EVENTS, 0)
+                            .addValue(ERROR_MESSAGE, ex.getMessage()));
+                } finally {
+                    log.info("Crawl analystDate for date: " + date + " has %d events done at %s took %.2f s".formatted(totalEvents, new Date().toString(), ((System.currentTimeMillis() - startTimes) / 1000.0)));
+                }
+            });
+
+            if (!dateStatusUpdates.isEmpty()) {
+                jdbcTemplate.batchUpdate(SQL_CRAWL_DATE, dateStatusUpdates.toArray(MapSqlParameterSource[]::new));
             }
-        }));
+        }, ex -> {
+            log.log(Level.WARNING, "Error initializing Playwright for analystDate batch", ex);
+            var failedParams = dates.stream()
+                    .map(date -> new MapSqlParameterSource("date", date)
+                            .addValue(STATUS, FAILED)
+                            .addValue(TOTAL_EVENTS, 0)
+                            .addValue(ERROR_MESSAGE, ex.getMessage()))
+                    .toArray(MapSqlParameterSource[]::new);
+            if (failedParams.length > 0) {
+                jdbcTemplate.batchUpdate(SQL_CRAWL_DATE, failedParams);
+            }
+        });
     }
 
     /**

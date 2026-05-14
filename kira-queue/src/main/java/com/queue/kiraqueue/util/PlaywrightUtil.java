@@ -9,12 +9,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 
 @Log
 @UtilityClass
 public class PlaywrightUtil {
-    /** Chrome trên Windows, phiên bản mới — giống user thật. */
+    /**
+     * Chrome trên Windows, phiên bản mới — giống user thật.
+     */
     public static final String USER_AGENT =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
@@ -23,7 +26,9 @@ public class PlaywrightUtil {
     private static final String LOCALE = "en-US";
     private static final String ACCEPT_LANGUAGE = "en-US,en;q=0.9,vi;q=0.8";
 
-    /** Launch options giống trình duyệt thật: tắt cờ automation, dùng Chrome nếu có. */
+    /**
+     * Launch options giống trình duyệt thật: tắt cờ automation, dùng Chrome nếu có.
+     */
     private static BrowserType.LaunchOptions launchOptions(boolean headless) {
         var opts = new BrowserType.LaunchOptions()
                 .setHeadless(headless)
@@ -42,7 +47,9 @@ public class PlaywrightUtil {
         return opts;
     }
 
-    /** Context options giống user thật: viewport, locale, timezone. */
+    /**
+     * Context options giống user thật: viewport, locale, timezone.
+     */
     private static Browser.NewContextOptions contextOptions() {
         return new Browser.NewContextOptions()
                 .setUserAgent(USER_AGENT)
@@ -55,13 +62,19 @@ public class PlaywrightUtil {
                 .setDeviceScaleFactor(1);
     }
 
-    /** Script chạy trước mỗi page: giảm phát hiện automation. */
+    /**
+     * Script chạy trước mỗi page: giảm phát hiện automation.
+     */
     private static final String INIT_SCRIPT_STEALTH = """
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             window.chrome = window.chrome || { runtime: {} };
             """;
 
     public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic) {
+        withPlaywright(obj, logic, null);
+    }
+
+    public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic, Consumer<Exception> errorHandler) {
         try (
                 var p = Playwright.create();
                 var b = p.chromium().launch(launchOptions(true));
@@ -69,12 +82,11 @@ public class PlaywrightUtil {
             context.addInitScript(INIT_SCRIPT_STEALTH);
             Page page = context.newPage();
             logic.accept(page, obj);
-        } catch (TimeoutError timeoutError) {
-            log.log(Level.WARNING, "Playwright task timed out", timeoutError);
-        } catch (PlaywrightException playwrightException) {
-            log.log(Level.SEVERE, "Playwright error occurred", playwrightException);
         } catch (Exception e) {
             log.log(Level.WARNING, "withPlaywright >> Error during Playwright task", e);
+            if (errorHandler != null) {
+                errorHandler.accept(e);
+            }
         }
     }
 

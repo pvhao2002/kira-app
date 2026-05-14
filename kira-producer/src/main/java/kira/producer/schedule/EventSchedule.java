@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ import java.util.logging.Level;
 @Log
 @ConditionalOnProperty(name = "kira.producer.crawl-schedule.event-enabled", havingValue = "true", matchIfMissing = true)
 public class EventSchedule {
-    private static final int QUEUE_MAX_MESSAGES = 100;
+    private static final int QUEUE_MAX_MESSAGES = 300;
     /** Max events per scheduler tick (fail retries first, then fill from {@code events}). */
     private static final int EVENT_BATCH_LIMIT = 20;
     /** Same table as gateway {@code EventClaimRepository}; blocks duplicate picks while odd job is queued. */
@@ -54,7 +55,7 @@ public class EventSchedule {
     /**
      * No active {@code event_claim} (none or stale) — same idea as {@code EventClaimRepository#findNextClaimableEventForUpdate}.
      */
-    private static final String SQL_NO_ACTIVE_CLAIM_FOR_F = """
+    private static final String SQL_FILTER_NO_ACTIVE_CLAIM_FOR_FAILED_EVENT = """
               and not exists (
                 select 1 from event_claim ec
                 where ec.event_id = f.event_id
@@ -62,7 +63,7 @@ public class EventSchedule {
               )
             """;
 
-    private static final String SQL_NO_ACTIVE_CLAIM_FOR_E = """
+    private static final String SQL_FILTER_NO_ACTIVE_CLAIM_FOR_EVENT = """
               and not exists (
                 select 1 from event_claim ec
                 where ec.event_id = e.event_id
@@ -71,20 +72,21 @@ public class EventSchedule {
             """;
 
     /** Retry queue: crawl failures (main / stats / odds). */
-    private static final String SQL_GET_EVENT_ANALYST = """
+    private static final String SQL_SELECT_FAILED_RETRY_EVENTS_FOR_UPDATE = """
             select distinct f.event_id
             from event_crawl_failed f
             where f.type in (:retry_main, :retry_stats, :retry_odds)
-            """ + SQL_NO_ACTIVE_CLAIM_FOR_F + """
+            """ + SQL_FILTER_NO_ACTIVE_CLAIM_FOR_FAILED_EVENT + """
             order by f.event_id
             limit :batch_limit
+            for update skip locked
             """;
 
     /**
      * Same eligibility as {@code EventClaimRepository} candidate rows (status, no missing-odds issue, no {@code event_odds},
      * no active claim) — used to backfill the batch after retries.
      */
-    private static final String SQL_GET_EVENTS_NEED_ODDS_BASE = """
+    private static final String SQL_SELECT_EVENTS_NEED_ODDS_BASE = """
             select e.event_id
             from events e
             where e.status not in ('PENDING', 'POSTPONED', 'CANCELLED')
@@ -94,9 +96,10 @@ public class EventSchedule {
                     and edi.issue_type = 'missing_odds'
               )
               and not exists (select 1 from event_odds eo where eo.event_id = e.event_id)
-            """ + SQL_NO_ACTIVE_CLAIM_FOR_E;
+            """ + SQL_FILTER_NO_ACTIVE_CLAIM_FOR_EVENT;
 
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Scheduled(fixedDelay = 2, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Transactional
     public void event() {
         if (queueBackpressureService.isQueueOverLimit(RabbitMQConfig.QUEUE_ODD, QUEUE_MAX_MESSAGES)) {
             log.info("Skip event because queue " + RabbitMQConfig.QUEUE_ODD + " has more than " + QUEUE_MAX_MESSAGES + " messages.");
@@ -109,7 +112,7 @@ public class EventSchedule {
                 .addValue("batch_limit", EVENT_BATCH_LIMIT)
                 .addValue("claimStaleAfterSeconds", claimStaleAfterSeconds);
 
-        List<String> failedRetryIds = jdbcTemplate.query(SQL_GET_EVENT_ANALYST, paramsAnalyst,
+        List<String> failedRetryIds = jdbcTemplate.query(SQL_SELECT_FAILED_RETRY_EVENTS_FOR_UPDATE, paramsAnalyst,
                 (rs, rowNum) -> rs.getString("event_id"));
 
         int remaining = EVENT_BATCH_LIMIT - failedRetryIds.size();
@@ -172,15 +175,17 @@ public class EventSchedule {
         }
         MapSqlParameterSource p = new MapSqlParameterSource("lim", limit)
                 .addValue("claimStaleAfterSeconds", claimStaleAfterSeconds);
-        String sql = SQL_GET_EVENTS_NEED_ODDS_BASE + """
+        String sql = SQL_SELECT_EVENTS_NEED_ODDS_BASE + """
                 order by e.event_date asc, e.event_id asc
                 limit :lim
+                for update skip locked
                 """;
         if (!excludeEventIds.isEmpty()) {
-            sql = SQL_GET_EVENTS_NEED_ODDS_BASE + """
+            sql = SQL_SELECT_EVENTS_NEED_ODDS_BASE + """
                       and e.event_id not in (:excludeIds)
                     order by e.event_date asc, e.event_id asc
                     limit :lim
+                    for update skip locked
                     """;
             p.addValue("excludeIds", excludeEventIds);
         }
