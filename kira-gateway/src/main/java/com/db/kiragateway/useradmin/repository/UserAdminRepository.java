@@ -1,5 +1,6 @@
 package com.db.kiragateway.useradmin.repository;
 
+import com.db.kiragateway.config.db.ReadDB;
 import com.db.kiragateway.config.db.WriteDB;
 import com.db.kiragateway.useradmin.model.UserAdminRow;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -14,16 +15,19 @@ import java.util.Optional;
 @Repository
 public class UserAdminRepository {
 
+    private final JdbcClient readJdbcClient;
     private final JdbcClient writeJdbcClient;
 
-    public UserAdminRepository(@WriteDB JdbcClient writeJdbcClient) {
+    public UserAdminRepository(@ReadDB JdbcClient readJdbcClient,
+                               @WriteDB JdbcClient writeJdbcClient) {
+        this.readJdbcClient = readJdbcClient;
         this.writeJdbcClient = writeJdbcClient;
     }
 
     public long count(String usernameLikePattern, String statusFilter, String roleFilter) {
         var where = buildWhereClause(usernameLikePattern, statusFilter, roleFilter);
         var sql = "select count(*) from users " + where.sql();
-        var spec = writeJdbcClient.sql(sql);
+        var spec = readJdbcClient.sql(sql);
         for (var p : where.params()) {
             spec = spec.param(p.name(), p.value());
         }
@@ -45,7 +49,7 @@ public class UserAdminRepository {
                 from users
                 """ + where.sql() + " order by " + orderByColumn + " " + orderDir + " limit :limit offset :offset";
 
-        var spec = writeJdbcClient.sql(sql).param("limit", limit).param("offset", offset);
+        var spec = readJdbcClient.sql(sql).param("limit", limit).param("offset", offset);
         for (var p : where.params()) {
             spec = spec.param(p.name(), p.value());
         }
@@ -81,7 +85,7 @@ public class UserAdminRepository {
                 where user_id = :userId
                 limit 1
                 """;
-        return writeJdbcClient.sql(sql)
+        return readJdbcClient.sql(sql)
                 .param("userId", userId)
                 .query(this::mapRow)
                 .optional();
@@ -94,7 +98,7 @@ public class UserAdminRepository {
                 where username = :username
                 limit 1
                 """;
-        return writeJdbcClient.sql(sql)
+        return readJdbcClient.sql(sql)
                 .param("username", username)
                 .query(this::mapRow)
                 .optional();
@@ -104,7 +108,7 @@ public class UserAdminRepository {
         var sql = """
                 select 1 from users where username = :username limit 1
                 """;
-        return writeJdbcClient.sql(sql)
+        return readJdbcClient.sql(sql)
                 .param("username", username)
                 .query((rs, rowNum) -> true)
                 .optional()

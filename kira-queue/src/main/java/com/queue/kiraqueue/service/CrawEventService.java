@@ -330,6 +330,7 @@ public class CrawEventService {
                 page.navigate(
                         evt.getLink().concat("/stats").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
                 );
+                page.waitForTimeout(400);
                 PlaywrightUtil.removeAcceptAll(page);
                 var tabs = page.locator(".btnBox > span");
                 int tabCount = tabs.count();

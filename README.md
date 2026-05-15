@@ -110,13 +110,23 @@ Từ thư mục root:
 docker compose up -d
 ```
 
+**Lưu ý 502 khi app chạy trên IntelliJ (một JVM):** nginx mặc định load-balance tới hai cổng (`7777`/`7778`, `6868`/`6869`). Nếu bạn chỉ chạy một instance trên host, hãy dùng file [`.env.host-dev.example`](.env.host-dev.example) rồi `docker compose --env-file .env.host-dev.example up -d --force-recreate nginx`.
+
 Stack này gồm:
 
 - MySQL primary (`3310`) + MySQL replica (`3311`)
-- RabbitMQ (`5672`, UI: `15672`); tùy chọn `kira-producer` (`build: ./kira-producer`, port `2311`) đẩy job crawl lên queue
+- RabbitMQ (`5672`, UI: `15672`)
 - Loki (`3100`) + Promtail
 - Grafana (`3000`, mặc định `admin/admin`)
 - Nginx reverse proxy (`80`)
+
+Các app chạy bằng Docker là optional và mặc định tắt bằng Compose profile `apps`:
+
+```bash
+# Chạy toàn bộ app optional (UI + 2 gateway + 2 data-manager + producer)
+docker compose --env-file .env.compose-apps.example \
+  --profile apps up -d --build
+```
 
 ### 2) Chạy backend services
 
@@ -130,11 +140,12 @@ mvn spring-boot:run
 
 Các cổng/context-path mặc định:
 
-- `kira-gateway`: `http://localhost:8888/gateway`
+- `kira-gateway`: `http://localhost:6868/gateway` và `http://localhost:6869/gateway` khi chạy 2 instance cho Nginx load balancing
 - `kira-service`: `http://localhost:2308/api`
 - `kira-producer` (Rabbit publish + actuator): `http://localhost:2311` — khi chạy `kira-producer` (hoặc stack Docker), đặt `KIRA_CRAWL_SCHEDULE_ENABLED=false` trên `kira-service` để tắt lịch crawl trùng.
 - `kira-queue`: `http://localhost:2323/queue`
 - `kira-crawl`: `http://localhost:2400/crawl`
+- `kira-data-manager`: `http://localhost:7777/data` và `http://localhost:7778/data` khi chạy 2 instance cho Nginx load balancing
 - `kira-tool-service`: `http://localhost:1406/tool-service`
 
 ### 3) Chạy web app
@@ -163,7 +174,8 @@ Nếu dùng Nginx ở local (`http://localhost`):
 
 - `/api/...` -> `kira-service`
 - `/queue/...` -> `kira-queue`
-- `/gateway/...` -> `kira-gateway` (có load balancing nhiều instance)
+- `/gateway/...` -> `kira-gateway` (load balancing 2 instance, mặc định `6868` / `6869`)
+- `/data/...` -> `kira-data-manager` (load balancing 2 instance, mặc định `7777` / `7778`)
 - `/tool-service/...` -> `kira-tool-service`
 
 Xem thêm cấu hình tại `nginx/README.md`.

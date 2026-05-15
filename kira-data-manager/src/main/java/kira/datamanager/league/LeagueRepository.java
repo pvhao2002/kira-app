@@ -24,16 +24,34 @@ public class LeagueRepository {
     public LeaguePageResponse findPage(int page, int size, String q, Boolean isMain, String country) {
         var where = buildWhereClause(q, isMain, country);
 
-        var countSql = "SELECT COUNT(*) FROM leagues WHERE 1=1" + where.clause();
+        // One row per logical league: DB may contain duplicate (league_name, country) rows (legacy / missing UK).
+        var countSql = """
+                SELECT COUNT(*) FROM (
+                    SELECT 1 FROM leagues
+                    WHERE 1=1
+                    """ + where.clause() + """
+                    GROUP BY league_name, COALESCE(country, '')
+                ) deduped
+                """;
         var countSpec = bindParams(readJdbcClient.sql(countSql), where);
         var total = countSpec.query((rs, rowNum) -> rs.getLong(1)).single();
 
         var dataSql = """
                 SELECT league_id, league_name, logo_url, country, is_main, total_events, created_at, updated_at
-                FROM leagues
-                WHERE 1=1
-                """ + where.clause()
-                + " ORDER BY is_main DESC, COALESCE(country, '') ASC, league_name ASC LIMIT :limit OFFSET :offset";
+                FROM (
+                    SELECT league_id, league_name, logo_url, country, is_main, total_events, created_at, updated_at,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY league_name, COALESCE(country, '')
+                               ORDER BY is_main DESC, total_events DESC, league_id ASC
+                           ) AS rn
+                    FROM leagues
+                    WHERE 1=1
+                    """ + where.clause() + """
+                ) ranked
+                WHERE rn = 1
+                ORDER BY is_main DESC, COALESCE(country, '') ASC, league_name ASC
+                LIMIT :limit OFFSET :offset
+                """;
 
         var dataSpec = bindParams(readJdbcClient.sql(dataSql), where)
                 .param("limit", size)

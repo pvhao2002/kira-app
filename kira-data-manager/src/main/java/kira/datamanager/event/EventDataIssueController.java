@@ -1,11 +1,14 @@
 package kira.datamanager.event;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
@@ -53,5 +56,29 @@ public class EventDataIssueController {
 
         var body = eventDataIssueRepository.findPage(page, size, sortBy, sortDir, issueType);
         return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/event-data-issues/screenshot")
+    public ResponseEntity<?> screenshot(
+            @RequestParam long eventId,
+            @RequestParam String issueType,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime recordedAt
+    ) {
+        if (eventId <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "eventId must be > 0"));
+        }
+        if (issueType == null || issueType.isBlank() || !EventDataIssueRepository.isAllowedIssueType(issueType)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", "issueType must be one of: missing_stats, missing_odds, cancelled"
+            ));
+        }
+
+        var normalizedIssueType = issueType.trim().toLowerCase(Locale.ROOT);
+        var screenshot = eventDataIssueRepository.findScreenshot(eventId, normalizedIssueType, recordedAt);
+        if (screenshot == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(new EventDataIssueScreenshotResponse(eventId, normalizedIssueType, recordedAt, screenshot));
     }
 }

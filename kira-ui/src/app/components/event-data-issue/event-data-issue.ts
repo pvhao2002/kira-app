@@ -6,12 +6,12 @@ export interface EventDataIssueRow {
   eventId: number;
   issueType: string | null;
   description: string | null;
-  screenshot: string | null;
+  hasScreenshot: boolean;
   recordedAt: string | null;
   eventName: string | null;
   eventDate: string | null;
   status: string | null;
-  link: string | null;
+  eventLink: string | null;
 }
 
 export interface EventDataIssuePage {
@@ -20,6 +20,13 @@ export interface EventDataIssuePage {
   size: number;
   totalElements: number;
   totalPages: number;
+}
+
+interface EventDataIssueScreenshotResponse {
+  eventId: number;
+  issueType: string;
+  recordedAt: string;
+  screenshot: string;
 }
 
 export type EventDataIssueSortColumn = 'recordedAt' | 'eventDate';
@@ -48,6 +55,7 @@ export class EventDataIssue {
   readonly issueType = signal<EventDataIssueTypeFilter>('all');
   readonly previewImageSrc = signal<string | null>(null);
   readonly previewText = signal<string | null>(null);
+  readonly previewLoading = signal(false);
 
   constructor() {
     this.load();
@@ -100,13 +108,38 @@ export class EventDataIssue {
     return `${row.eventId}-${row.issueType ?? 'unknown'}`;
   }
 
-  openScreenshotPreview(raw: string | null): void {
-    const src = this.resolveScreenshotSrc(raw);
-    if (!src) {
+  openScreenshotPreview(row: EventDataIssueRow): void {
+    if (!row.hasScreenshot || !row.recordedAt || !row.issueType) {
       return;
     }
+    this.previewLoading.set(true);
     this.previewText.set(null);
-    this.previewImageSrc.set(src);
+    this.previewImageSrc.set(null);
+
+    const params = new HttpParams()
+      .set('eventId', String(row.eventId))
+      .set('issueType', row.issueType)
+      .set('recordedAt', row.recordedAt);
+
+    this.http.get<EventDataIssueScreenshotResponse>('/data/event-data-issues/screenshot', {params}).subscribe({
+      next: body => {
+        const src = this.resolveScreenshotSrc(body?.screenshot ?? null);
+        if (!src) {
+          this.previewText.set('Không có screenshot cho bản ghi này.');
+          this.previewLoading.set(false);
+          return;
+        }
+        this.previewImageSrc.set(src);
+        this.previewLoading.set(false);
+      },
+      error: err => {
+        const message = err?.status === 404
+          ? 'Không tìm thấy screenshot cho bản ghi này.'
+          : (err?.error?.message ?? err?.message ?? 'Không tải được screenshot.');
+        this.previewText.set(typeof message === 'string' ? message : 'Không tải được screenshot.');
+        this.previewLoading.set(false);
+      }
+    });
   }
 
   openDescriptionPreview(text: string | null): void {
@@ -121,10 +154,11 @@ export class EventDataIssue {
   closePreview(): void {
     this.previewImageSrc.set(null);
     this.previewText.set(null);
+    this.previewLoading.set(false);
   }
 
-  hasScreenshot(raw: string | null): boolean {
-    return !!this.resolveScreenshotSrc(raw);
+  hasScreenshot(row: EventDataIssueRow): boolean {
+    return !!row.hasScreenshot;
   }
 
   formatClientDate(raw: string | null): string {

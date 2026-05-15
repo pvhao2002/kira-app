@@ -26,7 +26,7 @@ public class Team {
     @Column(name = "team_id")
     private Integer teamId;
 
-    @Column(name = "team_name", nullable = false, length = 100)
+    @Column(name = "team_name", nullable = false, length = 100, unique = true)
     private String teamName;
 
     @Lob

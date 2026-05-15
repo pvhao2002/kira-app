@@ -28,7 +28,7 @@ public class League {
     @Column(name = "league_id")
     private Integer leagueId;
 
-    @Column(name = "league_name", nullable = false)
+    @Column(name = "league_name", nullable = false, unique = true)
     private String leagueName;
 
     @Lob

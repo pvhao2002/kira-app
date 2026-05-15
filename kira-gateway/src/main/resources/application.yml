@@ -77,10 +77,15 @@ management:
     shutdown:
       enabled: false
 server:
-  port: 8888
+  port: 6868
   tomcat:
     max-http-form-post-size: 16MB
     max-swallow-size: 16MB
+    threads:
+      max: 400
+      min-spare: 50
+    accept-count: 500
+    max-connections: 20000
   servlet:
     context-path: /gateway
   compression:

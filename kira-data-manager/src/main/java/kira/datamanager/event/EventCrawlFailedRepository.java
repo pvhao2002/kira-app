@@ -15,10 +15,10 @@ public class EventCrawlFailedRepository {
     private static final Set<String> ALLOWED_SORT_BY = Set.of("created_at", "event_date");
     private static final Set<String> ALLOWED_SORT_DIR = Set.of("asc", "desc");
 
-    private final JdbcClient jdbcClient;
+    private final JdbcClient readJdbcClient;
 
-    public EventCrawlFailedRepository(@Qualifier("readJdbcClient") JdbcClient jdbcClient) {
-        this.jdbcClient = jdbcClient;
+    public EventCrawlFailedRepository(@Qualifier("readJdbcClient") JdbcClient readJdbcClient) {
+        this.readJdbcClient = readJdbcClient;
     }
 
     public static boolean isAllowedSortBy(String sortBy) {
@@ -39,7 +39,7 @@ public class EventCrawlFailedRepository {
         var orderBy = resolveOrderBy(sortBy, sortDir);
 
         var countSql = "SELECT COUNT(*) FROM event_crawl_failed";
-        var total = jdbcClient.sql(countSql)
+        var total = readJdbcClient.sql(countSql)
                 .query((rs, rowNum) -> rs.getLong(1))
                 .single();
 
@@ -57,7 +57,7 @@ public class EventCrawlFailedRepository {
                 LEFT JOIN events e ON e.event_id = f.event_id
                 """ + " ORDER BY " + orderBy + " LIMIT :limit OFFSET :offset";
 
-        var content = jdbcClient.sql(dataSql)
+        var content = readJdbcClient.sql(dataSql)
                 .param("limit", size)
                 .param("offset", page * size)
                 .query(this::mapRow)

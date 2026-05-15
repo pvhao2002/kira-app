@@ -1,5 +1,6 @@
 package com.db.kiragateway.credit;
 
+import com.db.kiragateway.config.db.ReadDB;
 import com.db.kiragateway.config.db.WriteDB;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -9,7 +10,6 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -20,10 +20,13 @@ import java.util.Optional;
 @Repository
 public class CreditCardRepository {
 
-    private final NamedParameterJdbcTemplate jdbc;
+    private final NamedParameterJdbcTemplate readJdbc;
+    private final NamedParameterJdbcTemplate writeJdbc;
 
-    public CreditCardRepository(@WriteDB NamedParameterJdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public CreditCardRepository(@ReadDB NamedParameterJdbcTemplate readJdbc,
+                                @WriteDB NamedParameterJdbcTemplate writeJdbc) {
+        this.readJdbc = readJdbc;
+        this.writeJdbc = writeJdbc;
     }
 
     public CreditCardSummaryAgg summary(int userId) {
@@ -33,7 +36,7 @@ public class CreditCardRepository {
                 from credit_cards
                 where user_id = :userId
                 """;
-        return jdbc.queryForObject(sql, new MapSqlParameterSource("userId", userId), (rs, rn) -> {
+        return readJdbc.queryForObject(sql, new MapSqlParameterSource("userId", userId), (rs, rn) -> {
             BigDecimal total = rs.getBigDecimal("total");
             if (total == null) {
                 total = BigDecimal.ZERO;
@@ -51,7 +54,7 @@ public class CreditCardRepository {
                 where user_id = :userId
                 order by credit_card_id desc
                 """;
-        return jdbc.query(sql, new MapSqlParameterSource("userId", userId), this::mapCard);
+        return readJdbc.query(sql, new MapSqlParameterSource("userId", userId), this::mapCard);
     }
 
     public Optional<CreditCardRow> findByIdAndUserId(long creditCardId, int userId) {
@@ -63,7 +66,7 @@ public class CreditCardRepository {
                 where credit_card_id = :id and user_id = :userId
                 limit 1
                 """;
-        var list = jdbc.query(sql,
+        var list = readJdbc.query(sql,
                 new MapSqlParameterSource("id", creditCardId).addValue("userId", userId),
                 this::mapCard);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
@@ -95,7 +98,7 @@ public class CreditCardRepository {
                 .addValue("created_at", Objects.requireNonNullElse(row.createdAt(), now))
                 .addValue("updated_at", Objects.requireNonNullElse(row.updatedAt(), now));
         var keyHolder = new GeneratedKeyHolder();
-        jdbc.update(sql, params, keyHolder, new String[]{"credit_card_id"});
+        writeJdbc.update(sql, params, keyHolder, new String[]{"credit_card_id"});
         Number key = keyHolder.getKey();
         if (key == null) {
             throw new IllegalStateException("insert credit_cards returned no key");
@@ -135,7 +138,7 @@ public class CreditCardRepository {
                 .addValue("cycle_statement_done", row.cycleStatementDone())
                 .addValue("cycle_due_paid", row.cycleDuePaid())
                 .addValue("updated_at", LocalDateTime.now());
-        return jdbc.update(sql, params);
+        return writeJdbc.update(sql, params);
     }
 
     public int updateCycleFlags(long creditCardId, int userId, Boolean statementDone, Boolean duePaid) {
@@ -147,7 +150,7 @@ public class CreditCardRepository {
                     update credit_cards set cycle_statement_done = :sd, cycle_due_paid = :dp, updated_at = :ua
                     where credit_card_id = :id and user_id = :uid
                     """;
-            return jdbc.update(sql, new MapSqlParameterSource()
+            return writeJdbc.update(sql, new MapSqlParameterSource()
                     .addValue("sd", statementDone)
                     .addValue("dp", duePaid)
                     .addValue("ua", LocalDateTime.now())
@@ -155,7 +158,7 @@ public class CreditCardRepository {
                     .addValue("uid", userId));
         }
         if (statementDone != null) {
-            return jdbc.update("""
+            return writeJdbc.update("""
                             update credit_cards set cycle_statement_done = :sd, updated_at = :ua
                             where credit_card_id = :id and user_id = :uid
                             """,
@@ -164,7 +167,7 @@ public class CreditCardRepository {
                             .addValue("id", creditCardId)
                             .addValue("uid", userId));
         }
-        return jdbc.update("""
+        return writeJdbc.update("""
                         update credit_cards set cycle_due_paid = :dp, updated_at = :ua
                         where credit_card_id = :id and user_id = :uid
                         """,
@@ -176,7 +179,7 @@ public class CreditCardRepository {
 
     public int delete(long creditCardId, int userId) {
         var sql = "delete from credit_cards where credit_card_id = :id and user_id = :uid";
-        return jdbc.update(sql, new MapSqlParameterSource("id", creditCardId).addValue("uid", userId));
+        return writeJdbc.update(sql, new MapSqlParameterSource("id", creditCardId).addValue("uid", userId));
     }
 
     public long countPayments(long creditCardId, int userId) {
@@ -184,7 +187,7 @@ public class CreditCardRepository {
                 select count(*) from credit_card_payments p
                 where p.credit_card_id = :cid and p.user_id = :uid
                 """;
-        Long n = jdbc.queryForObject(sql,
+        Long n = readJdbc.queryForObject(sql,
                 new MapSqlParameterSource("cid", creditCardId).addValue("uid", userId),
                 Long.class);
         return n != null ? n : 0L;
@@ -198,7 +201,7 @@ public class CreditCardRepository {
                 order by p.paid_at desc, p.payment_id desc
                 limit :limit offset :offset
                 """;
-        return jdbc.query(sql,
+        return readJdbc.query(sql,
                 new MapSqlParameterSource("cid", creditCardId)
                         .addValue("uid", userId)
                         .addValue("limit", limit)
@@ -219,7 +222,7 @@ public class CreditCardRepository {
                 .addValue("note", note)
                 .addValue("ca", LocalDateTime.now());
         var keyHolder = new GeneratedKeyHolder();
-        jdbc.update(sql, params, keyHolder, new String[]{"payment_id"});
+        writeJdbc.update(sql, params, keyHolder, new String[]{"payment_id"});
         Number key = keyHolder.getKey();
         if (key == null) {
             throw new IllegalStateException("insert payment returned no key");
@@ -232,7 +235,7 @@ public class CreditCardRepository {
                 delete from credit_card_payments
                 where payment_id = :pid and credit_card_id = :cid and user_id = :uid
                 """;
-        return jdbc.update(sql, new MapSqlParameterSource("pid", paymentId)
+        return writeJdbc.update(sql, new MapSqlParameterSource("pid", paymentId)
                 .addValue("cid", creditCardId)
                 .addValue("uid", userId));
     }
@@ -244,7 +247,7 @@ public class CreditCardRepository {
                 where payment_id = :pid and credit_card_id = :cid and user_id = :uid
                 limit 1
                 """;
-        var list = jdbc.query(sql,
+        var list = readJdbc.query(sql,
                 new MapSqlParameterSource("pid", paymentId)
                         .addValue("cid", creditCardId)
                         .addValue("uid", userId),

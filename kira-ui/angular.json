@@ -39,10 +39,8 @@
             "production": {
               "optimization": true,
               "sourceMap": false,
-              "extractCss": true,
               "namedChunks": false,
               "aot": true,
-              "buildOptimizer": true,
               "budgets": [
                 {
                   "type": "initial",

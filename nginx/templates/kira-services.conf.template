@@ -3,7 +3,7 @@ server {
   server_name ${NGINX_SERVER_NAME};
 
   # Fast health endpoint for checks.
-  location = /healthz {
+  location = /health {
     access_log off;
     add_header Content-Type text/plain;
     return 200 "ok\n";
@@ -26,9 +26,12 @@ server {
 
   location /gateway/ {
     proxy_pass http://kira_gateway_upstream;
-    proxy_connect_timeout 5s;
+    proxy_connect_timeout 10s;
     proxy_send_timeout 120s;
     proxy_read_timeout 120s;
+    # Retry only on TCP errors / timeouts — retrying 502 overloads backends under load.
+    proxy_next_upstream error timeout;
+    proxy_next_upstream_tries 2;
   }
 
   # kira-data-manager (Spring context-path: /data)
@@ -38,9 +41,11 @@ server {
 
   location /data/ {
     proxy_pass http://kira_data_manager_upstream;
-    proxy_connect_timeout 5s;
+    proxy_connect_timeout 10s;
     proxy_send_timeout 120s;
     proxy_read_timeout 120s;
+    proxy_next_upstream error timeout;
+    proxy_next_upstream_tries 2;
   }
 
   # tool-service (Spring context-path: /tool-service)
@@ -70,12 +75,14 @@ upstream kira_queue_upstream {
 }
 
 upstream kira_gateway_upstream {
-  server ${KIRA_GATEWAY_HOST}:${KIRA_GATEWAY_PORT} max_fails=2 fail_timeout=10s;
+  server ${KIRA_GATEWAY_HOST_1}:${KIRA_GATEWAY_PORT_1};
+  server ${KIRA_GATEWAY_HOST_2}:${KIRA_GATEWAY_PORT_2};
   keepalive 32;
 }
 
 upstream kira_data_manager_upstream {
-  server ${KIRA_DATA_MANAGER_HOST}:${KIRA_DATA_MANAGER_PORT} max_fails=2 fail_timeout=10s;
+  server ${KIRA_DATA_MANAGER_HOST_1}:${KIRA_DATA_MANAGER_PORT_1};
+  server ${KIRA_DATA_MANAGER_HOST_2}:${KIRA_DATA_MANAGER_PORT_2};
   keepalive 32;
 }
 

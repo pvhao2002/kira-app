@@ -1,7 +1,13 @@
 server:
-  port: 9198
+  port: 7777
   servlet:
     context-path: /data
+  tomcat:
+    threads:
+      max: 400
+      min-spare: 50
+    accept-count: 500
+    max-connections: 20000
 
 spring:
   application:

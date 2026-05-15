@@ -25,7 +25,7 @@ public class User {
     @Column(name = "user_id")
     private Integer userId;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 50, unique = true)
     private String username;
 
     @Column(nullable = false, length = 100)

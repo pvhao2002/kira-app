@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Set;
 
@@ -16,10 +17,10 @@ public class EventDataIssueRepository {
     private static final Set<String> ALLOWED_SORT_DIR = Set.of("asc", "desc");
     private static final Set<String> ALLOWED_ISSUE_TYPE = Set.of("missing_stats", "missing_odds", "cancelled");
 
-    private final JdbcClient jdbcClient;
+    private final JdbcClient readJdbcClient;
 
-    public EventDataIssueRepository(@Qualifier("readJdbcClient") JdbcClient jdbcClient) {
-        this.jdbcClient = jdbcClient;
+    public EventDataIssueRepository(@Qualifier("readJdbcClient") JdbcClient readJdbcClient) {
+        this.readJdbcClient = readJdbcClient;
     }
 
     public static boolean isAllowedSortBy(String sortBy) {
@@ -52,7 +53,7 @@ public class EventDataIssueRepository {
                 FROM event_data_issue edi
                 WHERE (:issueType IS NULL OR edi.issue_type = :issueType)
                 """;
-        var total = jdbcClient.sql(countSql)
+        var total = readJdbcClient.sql(countSql)
                 .param("issueType", normalizedIssueType)
                 .query((rs, rowNum) -> rs.getLong(1))
                 .single();
@@ -61,18 +62,21 @@ public class EventDataIssueRepository {
                 SELECT edi.event_id,
                        edi.issue_type,
                        edi.description,
-                       edi.screenshot,
+                       CASE
+                           WHEN edi.screenshot IS NULL OR TRIM(edi.screenshot) = '' THEN FALSE
+                           ELSE TRUE
+                       END AS has_screenshot,
                        edi.recorded_at,
                        e.event_name,
                        e.event_date,
                        e.status,
-                       e.link
+                       e.link AS event_link
                 FROM event_data_issue edi
                 LEFT JOIN events e ON e.event_id = edi.event_id
                 WHERE (:issueType IS NULL OR edi.issue_type = :issueType)
                 """ + " ORDER BY " + orderBy + " LIMIT :limit OFFSET :offset";
 
-        var content = jdbcClient.sql(dataSql)
+        var content = readJdbcClient.sql(dataSql)
                 .param("issueType", normalizedIssueType)
                 .param("limit", size)
                 .param("offset", page * size)
@@ -85,6 +89,26 @@ public class EventDataIssueRepository {
         }
 
         return new EventDataIssuePageResponse(content, page, size, total, totalPages);
+    }
+
+    public String findScreenshot(long eventId, String issueType, LocalDateTime recordedAt) {
+        var sql = """
+                SELECT edi.screenshot
+                FROM event_data_issue edi
+                WHERE edi.event_id = :eventId
+                  AND edi.issue_type = :issueType
+                  AND edi.recorded_at = :recordedAt
+                LIMIT 1
+                """;
+        return readJdbcClient.sql(sql)
+                .param("eventId", eventId)
+                .param("issueType", issueType)
+                .param("recordedAt", recordedAt)
+                .query((rs, rowNum) -> rs.getString("screenshot"))
+                .optional()
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .orElse(null);
     }
 
     private static String normalizeIssueType(String issueType) {
@@ -117,12 +141,12 @@ public class EventDataIssueRepository {
                 rs.getLong("event_id"),
                 rs.getString("issue_type"),
                 rs.getString("description"),
-                rs.getString("screenshot"),
+                rs.getBoolean("has_screenshot"),
                 recordedAt != null ? recordedAt.toLocalDateTime() : null,
                 rs.getString("event_name"),
                 eventDate != null ? eventDate.toLocalDateTime() : null,
                 rs.getString("status"),
-                rs.getString("link")
+                rs.getString("event_link")
         );
     }
 }

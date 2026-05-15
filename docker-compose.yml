@@ -100,7 +100,162 @@ services:
       - ${RABBITMQ_LOG_DIR:-./data/rabbitmq-logs}:/var/log/rabbitmq
     restart: unless-stopped
 
+  kira-ui:
+    profiles: ["apps"]
+    image: kira-ui:local
+    build:
+      context: ./kira-ui
+      dockerfile: Dockerfile
+    container_name: kira-ui
+    ports:
+      - "${KIRA_UI_PORT_PUBLISHED:-4200}:80"
+    restart: unless-stopped
+
+  kira-gateway-1:
+    profiles: ["apps"]
+    image: kira-gateway:local
+    build:
+      context: ./kira-gateway
+      dockerfile: Dockerfile
+    container_name: kira-gateway-1
+    depends_on:
+      mysql-primary:
+        condition: service_healthy
+      mysql-replica:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    ports:
+      - "${KIRA_GATEWAY_PORT_1:-6868}:${KIRA_GATEWAY_PORT_1:-6868}"
+    environment:
+      SERVER_PORT: "${KIRA_GATEWAY_PORT_1:-6868}"
+      INSTANCE_ID: gateway-1
+      LOG_DIR: /app/logs
+      DB_EX_HOST: mysql-primary
+      DB_EX_PORT: "3306"
+      DB_EX_NAME: "${DB_NAME:-kira}"
+      DB_EX_USERNAME: "${DB_APP_USER:-kira_user}"
+      DB_EX_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_PRIMARY_HOST: mysql-primary
+      DB_PRIMARY_PORT: "3306"
+      DB_PRIMARY_NAME: "${DB_NAME:-kira}"
+      DB_PRIMARY_USERNAME: "${DB_APP_USER:-kira_user}"
+      DB_PRIMARY_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_REPLICA_HOST: mysql-replica
+      DB_REPLICA_PORT: "3306"
+      DB_REPLICA_NAME: "${DB_NAME:-kira}"
+      DB_REPLICA_USERNAME: "${DB_APP_USER:-kira_user}"
+      DB_REPLICA_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      RABBIT_HOST: rabbitmq
+      RABBIT_PORT: "5672"
+      RABBIT_USERNAME: guest
+      RABBIT_PASSWORD: guest
+      RABBIT_VHOST: /
+      APP_DATA_MANAGER_BASE_URL: "${APP_DATA_MANAGER_BASE_URL:-http://nginx/data}"
+      APP_KIRA_PRODUCER_BASE_URL: "${APP_KIRA_PRODUCER_BASE_URL:-http://kira-producer:2311}"
+      APP_SECURITY_COOKIE_SECURE: "${APP_SECURITY_COOKIE_SECURE:-false}"
+    restart: unless-stopped
+
+  kira-gateway-2:
+    profiles: ["apps"]
+    image: kira-gateway:local
+    build:
+      context: ./kira-gateway
+      dockerfile: Dockerfile
+    container_name: kira-gateway-2
+    depends_on:
+      mysql-primary:
+        condition: service_healthy
+      mysql-replica:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    ports:
+      - "${KIRA_GATEWAY_PORT_2:-6869}:${KIRA_GATEWAY_PORT_2:-6869}"
+    environment:
+      SERVER_PORT: "${KIRA_GATEWAY_PORT_2:-6869}"
+      INSTANCE_ID: gateway-2
+      LOG_DIR: /app/logs
+      DB_EX_HOST: mysql-primary
+      DB_EX_PORT: "3306"
+      DB_EX_NAME: "${DB_NAME:-kira}"
+      DB_EX_USERNAME: "${DB_APP_USER:-kira_user}"
+      DB_EX_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_PRIMARY_HOST: mysql-primary
+      DB_PRIMARY_PORT: "3306"
+      DB_PRIMARY_NAME: "${DB_NAME:-kira}"
+      DB_PRIMARY_USERNAME: "${DB_APP_USER:-kira_user}"
+      DB_PRIMARY_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_REPLICA_HOST: mysql-replica
+      DB_REPLICA_PORT: "3306"
+      DB_REPLICA_NAME: "${DB_NAME:-kira}"
+      DB_REPLICA_USERNAME: "${DB_APP_USER:-kira_user}"
+      DB_REPLICA_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      RABBIT_HOST: rabbitmq
+      RABBIT_PORT: "5672"
+      RABBIT_USERNAME: guest
+      RABBIT_PASSWORD: guest
+      RABBIT_VHOST: /
+      APP_DATA_MANAGER_BASE_URL: "${APP_DATA_MANAGER_BASE_URL:-http://nginx/data}"
+      APP_KIRA_PRODUCER_BASE_URL: "${APP_KIRA_PRODUCER_BASE_URL:-http://kira-producer:2311}"
+      APP_SECURITY_COOKIE_SECURE: "${APP_SECURITY_COOKIE_SECURE:-false}"
+    restart: unless-stopped
+
+  kira-data-manager-1:
+    profiles: ["apps"]
+    image: kira-data-manager:local
+    build:
+      context: ./kira-data-manager
+      dockerfile: Dockerfile
+    container_name: kira-data-manager-1
+    depends_on:
+      mysql-primary:
+        condition: service_healthy
+      mysql-replica:
+        condition: service_healthy
+    ports:
+      - "${KIRA_DATA_MANAGER_PORT_1:-7777}:${KIRA_DATA_MANAGER_PORT_1:-7777}"
+    environment:
+      SERVER_PORT: "${KIRA_DATA_MANAGER_PORT_1:-7777}"
+      LOG_FILE: /app/logs/kira-data-manager-1.log
+      DB_HOST: mysql-primary
+      DB_PRIMARY_PORT: "3306"
+      DB_PRIMARY_NAME: "${DB_NAME:-kira}"
+      DB_PRIMARY_USERNAME: "${DB_APP_USER:-kira_user}"
+      DB_PRIMARY_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_READ_HOST: mysql-replica
+      DB_READ_PORT: "3306"
+    restart: unless-stopped
+
+  kira-data-manager-2:
+    profiles: ["apps"]
+    image: kira-data-manager:local
+    build:
+      context: ./kira-data-manager
+      dockerfile: Dockerfile
+    container_name: kira-data-manager-2
+    depends_on:
+      mysql-primary:
+        condition: service_healthy
+      mysql-replica:
+        condition: service_healthy
+    ports:
+      - "${KIRA_DATA_MANAGER_PORT_2:-7778}:${KIRA_DATA_MANAGER_PORT_2:-7778}"
+    environment:
+      SERVER_PORT: "${KIRA_DATA_MANAGER_PORT_2:-7778}"
+      LOG_FILE: /app/logs/kira-data-manager-2.log
+      DB_HOST: mysql-primary
+      DB_PRIMARY_PORT: "3306"
+      DB_PRIMARY_NAME: "${DB_NAME:-kira}"
+      DB_PRIMARY_USERNAME: "${DB_APP_USER:-kira_user}"
+      DB_PRIMARY_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_READ_HOST: mysql-replica
+      DB_READ_PORT: "3306"
+    restart: unless-stopped
+
   kira-producer:
+    profiles: ["apps"]
+    image: kira-producer:local
     build:
       context: ./kira-producer
       dockerfile: Dockerfile
@@ -183,10 +338,14 @@ services:
       KIRA_SERVICE_PORT: "${KIRA_SERVICE_PORT:-2308}"
       KIRA_QUEUE_HOST: "${KIRA_QUEUE_HOST:-host.docker.internal}"
       KIRA_QUEUE_PORT: "${KIRA_QUEUE_PORT:-2323}"
-      KIRA_GATEWAY_HOST: "${KIRA_GATEWAY_HOST:-${KIRA_GATEWAY_HOST_1:-host.docker.internal}}"
-      KIRA_GATEWAY_PORT: "${KIRA_GATEWAY_PORT:-${KIRA_GATEWAY_PORT_1:-8888}}"
-      KIRA_DATA_MANAGER_HOST: "${KIRA_DATA_MANAGER_HOST:-${KIRA_DATA_MANAGER_HOST_1:-host.docker.internal}}"
-      KIRA_DATA_MANAGER_PORT: "${KIRA_DATA_MANAGER_PORT:-${KIRA_DATA_MANAGER_PORT_1:-9198}}"
+      KIRA_GATEWAY_HOST_1: "${KIRA_GATEWAY_HOST_1:-host.docker.internal}"
+      KIRA_GATEWAY_PORT_1: "${KIRA_GATEWAY_PORT_1:-6868}"
+      KIRA_GATEWAY_HOST_2: "${KIRA_GATEWAY_HOST_2:-host.docker.internal}"
+      KIRA_GATEWAY_PORT_2: "${KIRA_GATEWAY_PORT_2:-6869}"
+      KIRA_DATA_MANAGER_HOST_1: "${KIRA_DATA_MANAGER_HOST_1:-host.docker.internal}"
+      KIRA_DATA_MANAGER_PORT_1: "${KIRA_DATA_MANAGER_PORT_1:-7777}"
+      KIRA_DATA_MANAGER_HOST_2: "${KIRA_DATA_MANAGER_HOST_2:-host.docker.internal}"
+      KIRA_DATA_MANAGER_PORT_2: "${KIRA_DATA_MANAGER_PORT_2:-7778}"
       KIRA_TOOL_SERVICE_HOST: "${KIRA_TOOL_SERVICE_HOST:-host.docker.internal}"
       KIRA_TOOL_SERVICE_PORT: "${KIRA_TOOL_SERVICE_PORT:-1406}"
       KIRA_UI_HOST: "${KIRA_UI_HOST:-host.docker.internal}"

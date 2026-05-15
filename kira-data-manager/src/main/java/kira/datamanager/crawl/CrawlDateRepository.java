@@ -19,10 +19,10 @@ public class CrawlDateRepository {
     private static final Set<String> ALLOWED_SORT_BY = Set.of("date", "total_events");
     private static final Set<String> ALLOWED_SORT_DIR = Set.of("asc", "desc");
 
-    private final JdbcClient jdbcClient;
+    private final JdbcClient readJdbcClient;
 
-    public CrawlDateRepository(@Qualifier("readJdbcClient") JdbcClient jdbcClient) {
-        this.jdbcClient = jdbcClient;
+    public CrawlDateRepository(@Qualifier("readJdbcClient") JdbcClient readJdbcClient) {
+        this.readJdbcClient = readJdbcClient;
     }
 
     public static boolean isAllowedStatus(String status) {
@@ -52,7 +52,7 @@ public class CrawlDateRepository {
         var orderBy = resolveOrderBy(sortBy, sortDir);
 
         var countSql = "SELECT COUNT(*) FROM crawl_date WHERE 1=1" + where.clause();
-        var countSpec = bindParams(jdbcClient.sql(countSql), where);
+        var countSpec = bindParams(readJdbcClient.sql(countSql), where);
         var total = countSpec.query((rs, rowNum) -> rs.getLong(1)).single();
 
         var dataSql = """
@@ -61,7 +61,7 @@ public class CrawlDateRepository {
                 WHERE 1=1
                 """ + where.clause() + " ORDER BY " + orderBy + " LIMIT :limit OFFSET :offset";
 
-        var dataSpec = bindParams(jdbcClient.sql(dataSql), where)
+        var dataSpec = bindParams(readJdbcClient.sql(dataSql), where)
                 .param("limit", size)
                 .param("offset", page * size);
 

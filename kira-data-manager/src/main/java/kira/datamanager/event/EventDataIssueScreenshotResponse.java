@@ -4,15 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
 
-public record EventDataIssueRowResponse(
+public record EventDataIssueScreenshotResponse(
         @JsonProperty("eventId") long eventId,
         String issueType,
-        String description,
-        boolean hasScreenshot,
         LocalDateTime recordedAt,
-        String eventName,
-        LocalDateTime eventDate,
-        String status,
-        @JsonProperty("eventLink") String eventLink
+        String screenshot
 ) {
 }

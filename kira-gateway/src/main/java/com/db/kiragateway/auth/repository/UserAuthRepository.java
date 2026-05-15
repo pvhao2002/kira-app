@@ -1,6 +1,7 @@
 package com.db.kiragateway.auth.repository;
 
 import com.db.kiragateway.auth.model.UserCredential;
+import com.db.kiragateway.config.db.ReadDB;
 import com.db.kiragateway.config.db.WriteDB;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -10,9 +11,12 @@ import java.util.Optional;
 @Repository
 public class UserAuthRepository {
 
+    private final JdbcClient readJdbcClient;
     private final JdbcClient writeJdbcClient;
 
-    public UserAuthRepository(@WriteDB JdbcClient writeJdbcClient) {
+    public UserAuthRepository(@ReadDB JdbcClient readJdbcClient,
+                              @WriteDB JdbcClient writeJdbcClient) {
+        this.readJdbcClient = readJdbcClient;
         this.writeJdbcClient = writeJdbcClient;
     }
 
@@ -24,7 +28,7 @@ public class UserAuthRepository {
                 limit 1
                 """;
 
-        return writeJdbcClient.sql(sql)
+        return readJdbcClient.sql(sql)
                 .param("username", username)
                 .query((rs, rowNum) -> mapUser(rs))
                 .optional();
@@ -38,7 +42,7 @@ public class UserAuthRepository {
                 limit 1
                 """;
 
-        return writeJdbcClient.sql(sql)
+        return readJdbcClient.sql(sql)
                 .param("userId", userId)
                 .query((rs, rowNum) -> mapUser(rs))
                 .optional();

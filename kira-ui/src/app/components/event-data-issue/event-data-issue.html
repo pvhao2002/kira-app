@@ -81,9 +81,9 @@
                     }
                   </td>
                   <td class="px-4 py-3 text-xs whitespace-nowrap">
-                    @if (hasScreenshot(row.screenshot)) {
+                    @if (hasScreenshot(row)) {
                       <button type="button"
-                              (click)="openScreenshotPreview(row.screenshot)"
+                              (click)="openScreenshotPreview(row)"
                               class="px-2.5 py-1 rounded-md bg-slate-800 border border-white/10 text-blue-300 hover:bg-slate-700">
                         Mở
                       </button>
@@ -95,15 +95,26 @@
                     {{ formatClientDate(row.recordedAt) }}
                   </td>
                   <td class="px-4 py-3 text-white max-w-[320px]" [title]="row.eventName ?? ''">
-                    <div class="truncate">{{ row.eventName ?? '—' }}</div>
+                    <div class="truncate">
+                      @if (row.eventLink && row.eventName) {
+                        <a [href]="row.eventLink"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="text-white hover:text-blue-300 truncate max-w-[320px] inline-block">
+                          {{ row.eventName }}
+                        </a>
+                      } @else {
+                        <span>{{ row.eventName ?? '—' }}</span>
+                      }
+                    </div>
                     <div class="text-slate-400 text-xs mt-1">
-                      {{ row.eventDate ?? '—' }}
+                      {{ formatClientDate(row.eventDate) }}
                     </div>
                   </td>
                   <td class="px-4 py-3 text-slate-400">{{ row.status ?? '—' }}</td>
                   <td class="px-4 py-3 hidden md:table-cell">
-                    @if (row.link) {
-                      <a [href]="row.link"
+                    @if (row.eventLink) {
+                      <a [href]="row.eventLink"
                          target="_blank"
                          rel="noopener noreferrer"
                          class="text-blue-400 hover:text-blue-300 text-xs truncate max-w-[120px] inline-block align-bottom">
@@ -157,7 +168,9 @@
         </button>
       </div>
 
-      @if (previewImageSrc(); as src) {
+      @if (previewLoading()) {
+        <div class="text-slate-300 text-sm">Đang tải screenshot...</div>
+      } @else if (previewImageSrc(); as src) {
         <img [src]="src" alt="Screenshot preview" class="w-full h-auto rounded-lg border border-white/10" />
       } @else if (previewText(); as text) {
         <pre class="text-sm text-slate-200 whitespace-pre-wrap break-words bg-slate-900/60 rounded-lg p-4 border border-white/10">{{ text }}</pre>
