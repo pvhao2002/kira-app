@@ -34,6 +34,7 @@ public class DateSchedule {
             from crawl_date
             where status = 'pending'
                or status = 'failed'
+               or (updated_at + interval '15' minute < now() and status <> 'done')
             limit 20
             """;
 

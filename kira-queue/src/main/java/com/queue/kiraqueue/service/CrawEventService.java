@@ -176,7 +176,7 @@ public class CrawEventService {
                     markEventCrawlSuccess(evt.getEventId());
                 }
             } catch (Exception e) {
-                processEventFail(eventId, "main", e.getMessage(), page.content(), captureScreenshotBase64(page));
+                processEventFail(eventId, "main", e.getMessage(), PlaywrightUtil.safePageContent(page), captureScreenshotBase64(page));
                 log.warning(withPrefix("processEvent.withPlaywright",
                         "Crawl event failed: eventId=%d, error=%s".formatted(evt.getEventId(), e.getMessage())));
             } finally {
@@ -346,18 +346,38 @@ public class CrawEventService {
                 }
                 // Tab 0 = Match (FT), tab 1 = 1st Half (HT)
                 tabs.nth(0).click();
-                Document docMatch = Jsoup.parse(page.content());
+                String matchHtml = PlaywrightUtil.safePageContent(page);
+                if (StringUtil.isEmpty(matchHtml)) {
+                    recordEventMissingStats(
+                            evt.getEventId(),
+                            "Cannot read Match tab html in stats view (page likely navigating)",
+                            captureScreenshotBase64(page)
+                    );
+                    ok[0] = false;
+                    return;
+                }
+                Document docMatch = Jsoup.parse(matchHtml);
                 Map<String, int[]> ftStats = parseStatsView(docMatch);
 
                 tabs.nth(1).click();
-                Document doc1stHalf = Jsoup.parse(page.content());
+                String firstHalfHtml = PlaywrightUtil.safePageContent(page);
+                if (StringUtil.isEmpty(firstHalfHtml)) {
+                    recordEventMissingStats(
+                            evt.getEventId(),
+                            "Cannot read 1st Half tab html in stats view (page likely navigating)",
+                            captureScreenshotBase64(page)
+                    );
+                    ok[0] = false;
+                    return;
+                }
+                Document doc1stHalf = Jsoup.parse(firstHalfHtml);
                 Map<String, int[]> htStats = parseStatsView(doc1stHalf);
 
                 MapSqlParameterSource params = toEventStatsParams(evt.getEventId(), htStats, ftStats);
                 jdbcTemplate.update(SQL_UPDATE_EVENT_RESULT_STATS, params);
                 log.info(withPrefix("crawlStatEvents", "Crawl stats saved: eventId=%d".formatted(evt.getEventId())));
             } catch (Exception e) {
-                processEventFail(evt.getEventId(), "stats", e.getMessage(), page.content(), captureScreenshotBase64(page));
+                processEventFail(evt.getEventId(), "stats", e.getMessage(), PlaywrightUtil.safePageContent(page), captureScreenshotBase64(page));
                 ok[0] = false;
             } finally {
                 log.info(withPrefix("crawlStatEvents",
@@ -554,7 +574,7 @@ public class CrawEventService {
                     );
                 }
             } catch (Exception e) {
-                processEventFail(evt.getEventId(), "odds", e.getMessage(), page.content(), captureScreenshotBase64(page));
+                processEventFail(evt.getEventId(), "odds", e.getMessage(), PlaywrightUtil.safePageContent(page), captureScreenshotBase64(page));
                 ok[0] = false;
                 log.warning(withPrefix("crawlOddEvents",
                         "Crawl odds failed: eventId=%d, error=%s".formatted(evt.getEventId(), e.getMessage())));

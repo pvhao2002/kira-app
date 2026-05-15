@@ -6,6 +6,9 @@ GRANT SELECT, INSERT, UPDATE, DELETE
     ON kira.*
     TO 'kira'@'%';
 
+SHOW GLOBAL STATUS LIKE 'Innodb_buffer_pool_read_requests';
+SHOW GLOBAL STATUS LIKE 'Innodb_buffer_pool_reads';
+SHOW GLOBAL STATUS LIKE 'Innodb_log_waits';
 
 SELECT @@innodb_buffer_pool_size / 1024 / 1024 / 1024 AS size_in_GB;
 SELECT @@innodb_log_file_size / 1024 / 1024 / 1024 AS size_in_GB;
@@ -45,6 +48,28 @@ SELECT trx_id,
        trx_query
 FROM information_schema.innodb_trx;
 
--- 705472
 
-mysqldump -h old-host -u olduser -p oldpass mydb --single-transaction --quick --compress | mysql -h new-host.aivencloud.com -P 12345 -u newuser -p newpass mydb
+-- Connection utilization monitor
+SHOW GLOBAL STATUS LIKE 'Threads_connected';
+SHOW VARIABLES LIKE 'max_connections';
+
+SELECT
+  @@hostname AS host,
+  @@port AS port,
+  @@max_connections AS max_connections,
+  (SELECT VARIABLE_VALUE
+   FROM performance_schema.global_status
+   WHERE VARIABLE_NAME = 'Threads_connected') AS threads_connected,
+  ROUND(
+    (SELECT VARIABLE_VALUE
+     FROM performance_schema.global_status
+     WHERE VARIABLE_NAME = 'Threads_connected') / @@max_connections * 100,
+    2
+  ) AS connection_usage_pct,
+  CASE
+    WHEN (SELECT VARIABLE_VALUE
+          FROM performance_schema.global_status
+          WHERE VARIABLE_NAME = 'Threads_connected') / @@max_connections >= 0.80
+    THEN 'WARN'
+    ELSE 'OK'
+  END AS status;

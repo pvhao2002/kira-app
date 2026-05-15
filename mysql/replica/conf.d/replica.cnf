@@ -9,3 +9,17 @@ skip_replica_start=ON
 # Local dev: replica init creates MYSQL_DATABASE before replication replays primary binlog;
 # skip duplicate CREATE DATABASE (1007) so SQL thread keeps applying DDL/DML.
 replica_skip_errors=1007
+# Keep replica behavior close to primary for consistent testing.
+innodb_buffer_pool_size=4G
+innodb_redo_log_capacity=512M
+max_connections=230
+innodb_flush_method=O_DIRECT
+innodb_flush_neighbors=0
+thread_cache_size=64
+table_open_cache=2000
+wait_timeout=600
+interactive_timeout=600
+slow_query_log=ON
+long_query_time=0.5
+log_queries_not_using_indexes=ON
+binlog_expire_logs_seconds=604800

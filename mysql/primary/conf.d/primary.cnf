@@ -4,3 +4,19 @@ log_bin=mysql-bin
 binlog_format=ROW
 gtid_mode=ON
 enforce_gtid_consistency=ON
+# InnoDB tuning for local 16GB RAM host.
+innodb_buffer_pool_size=4G
+innodb_redo_log_capacity=512M
+# Anticipate 12+ consumers and multiple app instances.
+max_connections=230
+# Safe production-like durability and cache settings.
+innodb_flush_method=O_DIRECT
+innodb_flush_neighbors=0
+thread_cache_size=64
+table_open_cache=2000
+wait_timeout=600
+interactive_timeout=600
+slow_query_log=ON
+long_query_time=0.5
+log_queries_not_using_indexes=ON
+binlog_expire_logs_seconds=604800
