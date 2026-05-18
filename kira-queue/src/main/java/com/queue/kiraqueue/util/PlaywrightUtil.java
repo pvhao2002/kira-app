@@ -2,6 +2,7 @@ package com.queue.kiraqueue.util;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.ColorScheme;
+import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.LoadState;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
@@ -71,6 +72,20 @@ public class PlaywrightUtil {
             window.chrome = window.chrome || { runtime: {} };
             """;
 
+    private static final String DEFAULT_OPTIONS_CLOSED_COOKIE = "optionsClosed";
+
+    /**
+     * Cookie mặc định cho crawl aiscore ({@link Constants#AI_SCORE_URL} / mobile): khớp domain gốc và mọi subdomain.
+     */
+    private static void addDefaultContextCookies(BrowserContext context) {
+        long ts = System.currentTimeMillis();
+        context.addCookies(List.of(
+                new Cookie(DEFAULT_OPTIONS_CLOSED_COOKIE, Long.toString(ts))
+                        .setDomain("aiscore.com")
+                        .setPath("/")
+        ));
+    }
+
     public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic) {
         withPlaywright(obj, logic, null);
     }
@@ -80,6 +95,7 @@ public class PlaywrightUtil {
                 var p = Playwright.create();
                 var b = p.chromium().launch(launchOptions(true));
                 BrowserContext context = b.newContext(contextOptions())) {
+            addDefaultContextCookies(context);
             context.addInitScript(INIT_SCRIPT_STEALTH);
             Page page = context.newPage();
             logic.accept(page, obj);
@@ -95,6 +111,7 @@ public class PlaywrightUtil {
         try (var p = Playwright.create();
              var b = p.chromium().launch(launchOptions(isRunningProd()));
              var context = b.newContext(contextOptions())) {
+            addDefaultContextCookies(context);
             context.addInitScript(INIT_SCRIPT_STEALTH);
 
             List<Page> pages = new ArrayList<>(pageCount);

@@ -32,9 +32,10 @@ public class DateSchedule {
     private static final String SQL_GET_DATE = """
             select date
             from crawl_date
-            where status = 'pending'
-               or status = 'failed'
-               or (updated_at + interval '15' minute < now() and status <> 'done')
+            where false
+                     or status in ('pending', 'failed')
+                     or (updated_at + interval '15' minute < now() and status <> 'done')
+                     or total_events = 0
             limit 20
             """;
 

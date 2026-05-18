@@ -169,6 +169,7 @@ public class CrawEventService {
                 var logStartMsg = "Crawl event start: eventId=%d, eventName=%s, status=%s".formatted(evt.getEventId(), evt.getEventName(), evt.getStatus());
                 log.info(withPrefix("processEvent.withPlaywright", logStartMsg));
                 openMatchPage(page, evt);
+                page.waitForTimeout(400); // wait for page load before next action
                 boolean crawlOk = "FT".equals(evt.getStatus())
                         ? processFullTimeEvent(page, evt)
                         : processNonFullTimeEvent(page, evt);
@@ -189,7 +190,6 @@ public class CrawEventService {
 
     private void openMatchPage(Page page, Event event) {
         page.navigate(event.getLink().replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL));
-        PlaywrightUtil.removeAcceptAll(page);
     }
 
     private boolean processFullTimeEvent(Page page, Event event) {
@@ -233,6 +233,7 @@ public class CrawEventService {
     }
 
     private List<String> getMatchPageTabTexts(Page page) {
+        page.waitForTimeout(400); // wait for page load before next action
         return page.locator("div[role=tablist] div[role=tab]").allInnerTexts().stream().filter(StringUtil::isNotEmpty).toList();
     }
 
@@ -331,7 +332,6 @@ public class CrawEventService {
                         evt.getLink().concat("/stats").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
                 );
                 page.waitForTimeout(400);
-                PlaywrightUtil.removeAcceptAll(page);
                 var tabs = page.locator(".btnBox > span");
                 int tabCount = tabs.count();
                 if (tabCount < 2) {
@@ -347,6 +347,8 @@ public class CrawEventService {
                 }
                 // Tab 0 = Match (FT), tab 1 = 1st Half (HT)
                 tabs.nth(0).click();
+                page.waitForTimeout(400); // wait for tab click before next action
+
                 String matchHtml = PlaywrightUtil.safePageContent(page);
                 if (StringUtil.isEmpty(matchHtml)) {
                     recordEventMissingStats(
@@ -361,6 +363,7 @@ public class CrawEventService {
                 Map<String, int[]> ftStats = parseStatsView(docMatch);
 
                 tabs.nth(1).click();
+                page.waitForTimeout(400); // wait for tab click before next action
                 String firstHalfHtml = PlaywrightUtil.safePageContent(page);
                 if (StringUtil.isEmpty(firstHalfHtml)) {
                     recordEventMissingStats(
@@ -466,7 +469,7 @@ public class CrawEventService {
                 page.navigate(
                         evt.getLink().concat("/odds").replace(Constants.AI_SCORE_URL, Constants.M_AI_SCORE_URL)
                 );
-                PlaywrightUtil.removeAcceptAll(page);
+                page.waitForTimeout(400); // wait for page load before next action
 
                 var oddTypeBox = page.locator(".oddTypesBox");
                 if (oddTypeBox.count() == 0) {
@@ -517,10 +520,13 @@ public class CrawEventService {
                 var isOpenModal = new AtomicBoolean(false);
                 tabOdds.all().forEach(tab -> {
                     if (isOpenModal.get()) {
-                        var x = page.locator(".van-popup.van-popup--bottom span i.iconfont.icon-guanbi");
+                        var x = page.locator(".van-popup i.iconfont.icon-guanbi");
                         x.click();
+                        page.waitForTimeout(300); // wait for modal close before next tab click
+                        isOpenModal.set(false);
                     }
                     tab.click();
+                    page.waitForTimeout(300); // wait for tab click before next action
                     String tabNormalize = StringUtil.normalizeText(tab.innerText());
                     for (var e : listTabOdds.entrySet()) {
                         if (!e.getKey().equalsIgnoreCase(tabNormalize)) continue;
