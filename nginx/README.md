@@ -81,7 +81,7 @@ Nginx log dang `connect() to [xxxx:....]:port failed (101: Network unreachable)`
 
 **Cach xu ly:**
 
-1. **Docker Compose (dev):** Image nginx da co `extra_hosts: host.docker.internal:host-gateway` de tro host bang IPv4. Sau khi pull thay doi, chay lai: `docker compose up -d --force-recreate nginx`.
+1. **Docker Compose (dev):** Khi chay app tren host/IntelliJ, dung `.env.host-dev.example` de tro cac upstream toi alias `kira-host` (compose map alias nay den `host-gateway`), thay vi `localhost`. Entrypoint cua nginx se resolve alias nay sang IPv4 hien tai truoc khi render config, tranh hostname resolve sang IPv6. Sau khi doi env, chay lai: `docker compose --env-file .env.host-dev.example up -d --force-recreate nginx`.
 2. **Production:** Dat `KIRA_GATEWAY_HOST_1` / `_2` thanh **dia chi IPv4** cua gateway, hoac hostname **chi** co ban ghi A (IPv4), khong dung hostname ma DNS tra ve IPv6 ma mang khong toi duoc.
 3. **K8s/VM:** Bat IPv6 dau den container den gateway, hoac dung Service/ClusterIP IPv4 thay vi hostname cloud tra AAAA.
 

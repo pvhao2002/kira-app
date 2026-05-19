@@ -38,6 +38,9 @@ public class League {
     @Column(length = 100)
     private String country;
 
+    @Column(name = "country_code_short", length = 3)
+    private String countryCodeShort;
+
     @Column(name = "is_main")
     private Boolean isMain = Boolean.FALSE;
 

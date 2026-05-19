@@ -21,7 +21,10 @@ export interface CrawlDatePage {
   totalPages: number;
 }
 
+export type CrawlDateFilterMode = 'basic' | 'advance';
 export type CrawlDateSortColumn = 'date' | 'totalEvents';
+export type CrawlDateStatusFilter = 'all' | 'pending' | 'picked' | 'in_progress' | 'done' | 'failed';
+export type CrawlDateTotalEventFilter = 'all' | '0';
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
   pending: 'bg-amber-500/15 text-amber-300 border border-amber-500/30',
@@ -54,6 +57,11 @@ export class CrawlDates {
   /** Khớp mặc định API cũ: date giảm dần */
   readonly sortColumn = signal<CrawlDateSortColumn>('date');
   readonly sortDir = signal<'asc' | 'desc'>('desc');
+  readonly filterMode = signal<CrawlDateFilterMode>('basic');
+  readonly fromDate = signal('');
+  readonly toDate = signal('');
+  readonly statusFilter = signal<CrawlDateStatusFilter>('all');
+  readonly totalEventFilter = signal<CrawlDateTotalEventFilter>('all');
 
   constructor() {
     this.load();
@@ -113,6 +121,29 @@ export class CrawlDates {
     this.load();
   }
 
+  setFilterMode(mode: CrawlDateFilterMode): void {
+    if (this.filterMode() === mode) {
+      return;
+    }
+    this.filterMode.set(mode);
+    this.pageIndex.set(0);
+    this.load();
+  }
+
+  applyAdvancedFilters(): void {
+    this.pageIndex.set(0);
+    this.load();
+  }
+
+  resetAdvancedFilters(): void {
+    this.fromDate.set('');
+    this.toDate.set('');
+    this.statusFilter.set('all');
+    this.totalEventFilter.set('all');
+    this.pageIndex.set(0);
+    this.load();
+  }
+
   requeue(isoDate: string): void {
     if (this.requeueingDate() !== null) {
       return;
@@ -147,6 +178,23 @@ export class CrawlDates {
       .set('size', String(this.pageSize()))
       .set('sortBy', this.sortByQueryParam())
       .set('sortDir', this.sortDir());
+
+    if (this.filterMode() === 'advance') {
+      const dateFrom = this.fromDate().trim();
+      const dateTo = this.toDate().trim();
+      if (dateFrom) {
+        params = params.set('dateFrom', dateFrom);
+      }
+      if (dateTo) {
+        params = params.set('dateTo', dateTo);
+      }
+      if (this.statusFilter() !== 'all') {
+        params = params.set('status', this.statusFilter());
+      }
+      if (this.totalEventFilter() !== 'all') {
+        params = params.set('totalEvent', this.totalEventFilter());
+      }
+    }
 
     this.http.get<CrawlDatePage>('/data/crawl-dates', {params}).subscribe({
       next: body => {

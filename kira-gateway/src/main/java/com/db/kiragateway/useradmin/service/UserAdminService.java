@@ -6,6 +6,7 @@ import com.db.kiragateway.useradmin.dto.UpdateUserRequest;
 import com.db.kiragateway.useradmin.dto.UserAdminPage;
 import com.db.kiragateway.useradmin.model.UserAdminRow;
 import com.db.kiragateway.useradmin.repository.UserAdminRepository;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -66,16 +67,21 @@ public class UserAdminService {
 
     public UserAdminRow create(CreateUserRequest request) {
         var username = request.username().trim();
-        if (userAdminRepository.existsByUsername(username)) {
+        if (userAdminRepository.existsByUsernameForWrite(username)) {
             throw new IllegalStateException("Username already exists");
         }
         var role = normalizeRoleOrDefault(request.role());
         var hash = passwordEncoder.encode(request.password());
-        int n = userAdminRepository.insert(username, hash, "active", role);
+        int n;
+        try {
+            n = userAdminRepository.insert(username, hash, "active", role);
+        } catch (DuplicateKeyException ex) {
+            throw new IllegalStateException("Username already exists", ex);
+        }
         if (n <= 0) {
             throw new IllegalStateException("Could not create user");
         }
-        return userAdminRepository.findByUsername(username)
+        return userAdminRepository.findByUsernameForWrite(username)
                 .orElseThrow(() -> new IllegalStateException("Could not load created user"));
     }
 

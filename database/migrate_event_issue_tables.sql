@@ -13,6 +13,36 @@ create table if not exists event_data_issue
 ) engine = InnoDB
   row_format = dynamic;
 
+set @event_data_issue_type_recorded_at_idx := (
+    select if(
+        count(*) = 0,
+        'alter table event_data_issue add index idx_issue_type_recorded_at (issue_type, recorded_at)',
+        'select 1'
+    )
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'event_data_issue'
+      and index_name = 'idx_issue_type_recorded_at'
+);
+prepare event_data_issue_type_recorded_at_idx_stmt from @event_data_issue_type_recorded_at_idx;
+execute event_data_issue_type_recorded_at_idx_stmt;
+deallocate prepare event_data_issue_type_recorded_at_idx_stmt;
+
+set @event_data_issue_recorded_at_idx := (
+    select if(
+        count(*) = 0,
+        'alter table event_data_issue add index idx_event_data_issue_recorded_at (recorded_at)',
+        'select 1'
+    )
+    from information_schema.statistics
+    where table_schema = database()
+      and table_name = 'event_data_issue'
+      and index_name = 'idx_event_data_issue_recorded_at'
+);
+prepare event_data_issue_recorded_at_idx_stmt from @event_data_issue_recorded_at_idx;
+execute event_data_issue_recorded_at_idx_stmt;
+deallocate prepare event_data_issue_recorded_at_idx_stmt;
+
 insert into event_data_issue (event_id, issue_type, description, recorded_at)
 select eno.event_id, 'missing_odds', null, eno.recorded_at
 from event_no_odds eno

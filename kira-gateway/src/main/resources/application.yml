@@ -1,19 +1,19 @@
 application:
   datasource:
     ex:
-      jdbc-url: "jdbc:mysql://${DB_EX_HOST:localhost}:${DB_EX_PORT:3306}/${DB_EX_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
-      username: "${DB_EX_USERNAME:root}"
-      password: "${DB_EX_PASSWORD:1234}"
+      jdbc-url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
+      username: "${DB_APP_USER:kira_user}"
+      password: "${DB_APP_PASSWORD:kira_password}"
       driver-class-name: com.mysql.cj.jdbc.Driver
     primary:
-      jdbc-url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_PRIMARY_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
-      username: "${DB_PRIMARY_USERNAME:kira_user}"
-      password: "${DB_PRIMARY_PASSWORD:kira_password}"
+      jdbc-url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
+      username: "${DB_APP_USER:kira_user}"
+      password: "${DB_APP_PASSWORD:kira_password}"
       driver-class-name: com.mysql.cj.jdbc.Driver
     replica:
-      jdbc-url: "jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3311}/${DB_REPLICA_NAME:kira}?useUnicode=true"
-      username: "${DB_REPLICA_USERNAME:kira_user}"
-      password: "${DB_REPLICA_PASSWORD:kira_password}"
+      jdbc-url: "jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3311}/${DB_NAME:kira}?useUnicode=true"
+      username: "${DB_APP_USER:kira_user}"
+      password: "${DB_APP_PASSWORD:kira_password}"
       driver-class-name: com.mysql.cj.jdbc.Driver
 
 spring:
@@ -37,7 +37,7 @@ spring:
         core-size: 36
 app:
   data-manager:
-    base-url: ${APP_DATA_MANAGER_BASE_URL:http://localhost:9198/data}
+    base-url: ${APP_DATA_MANAGER_BASE_URL:http://localhost/data}
   kira-producer:
     base-url: ${APP_KIRA_PRODUCER_BASE_URL:http://localhost:2311}
   gemini:
@@ -57,14 +57,14 @@ app:
     jwt:
       secret: ${APP_SECURITY_JWT_SECRET:change-me-in-production-change-me-in-production}
       issuer: ${APP_SECURITY_JWT_ISSUER:kira-gateway}
-      access-token-ttl-seconds: ${APP_SECURITY_JWT_ACCESS_TOKEN_TTL_SECONDS:9000}
+      access-token-ttl-seconds: ${APP_SECURITY_JWT_ACCESS_TOKEN_TTL_SECONDS:20000}
     cookie:
       name: ${APP_SECURITY_COOKIE_NAME:access_token}
       secure: ${APP_SECURITY_COOKIE_SECURE:true}
       same-site: ${APP_SECURITY_COOKIE_SAME_SITE:Strict}
       domain: ${APP_SECURITY_COOKIE_DOMAIN:}
       path: ${APP_SECURITY_COOKIE_PATH:/gateway}
-      max-age-seconds: ${APP_SECURITY_COOKIE_MAX_AGE_SECONDS:9000}
+      max-age-seconds: ${APP_SECURITY_COOKIE_MAX_AGE_SECONDS:20000}
     cors:
       allowed-origins: ${APP_SECURITY_CORS_ALLOWED_ORIGINS:http://localhost:4200}
 

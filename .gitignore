@@ -32,6 +32,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
 
 # docker bind-mount data (mysql, rabbitmq)
 data/
@@ -79,7 +80,6 @@ build/
 ### VS Code ###
 .vscode/
 
-/upload
 /target
 
 # Gộp log từ IntelliJ (Promtail đọc từ đây)

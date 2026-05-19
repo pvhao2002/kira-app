@@ -1,6 +1,7 @@
 package com.queue.kiraqueue.dto;
 
 import com.queue.kiraqueue.service.CrawDateService;
+import com.queue.kiraqueue.util.CountryCodeShortUtil;
 import com.queue.kiraqueue.util.DateUtil;
 import com.queue.kiraqueue.util.PlaywrightUtil;
 import lombok.*;
@@ -115,7 +116,8 @@ public class EventHtml {
         return new MapSqlParameterSource()
                 .addValue(CrawDateService.LEAGUE_NAME, this.getLeagueName())
                 .addValue(CrawDateService.LOGO_URL, this.getLeagueUrl())
-                .addValue("country", this.getCountryName());
+                .addValue("country", this.getCountryName())
+                .addValue(CrawDateService.COUNTRY_CODE_SHORT, CountryCodeShortUtil.toAlpha3(this.getCountryName()));
     }
 
     public MapSqlParameterSource toParamInsertTeam(boolean isHome) {

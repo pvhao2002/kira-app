@@ -63,7 +63,7 @@ public class EventDataIssueRepository {
                        edi.issue_type,
                        edi.description,
                        CASE
-                           WHEN edi.screenshot IS NULL OR TRIM(edi.screenshot) = '' THEN FALSE
+                           WHEN edi.screenshot IS NULL THEN FALSE
                            ELSE TRUE
                        END AS has_screenshot,
                        edi.recorded_at,

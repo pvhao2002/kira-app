@@ -1,0 +1,28 @@
+# Resolve the local host alias to IPv4 before nginx renders templates.
+# Docker Desktop can expose both A and AAAA records for host-gateway aliases;
+# nginx may pick AAAA first even when the container cannot route IPv6.
+
+resolve_kira_host_ipv4() {
+  getent ahostsv4 kira-host 2>/dev/null | awk 'NR == 1 { print $1 }'
+}
+
+replace_kira_host() {
+  var_name="$1"
+  eval "var_value=\${$var_name}"
+
+  if [ "$var_value" = "kira-host" ] && [ -n "$KIRA_HOST_IPV4" ]; then
+    export "$var_name=$KIRA_HOST_IPV4"
+  fi
+}
+
+KIRA_HOST_IPV4="$(resolve_kira_host_ipv4)"
+export KIRA_HOST_IPV4
+
+replace_kira_host KIRA_SERVICE_HOST
+replace_kira_host KIRA_QUEUE_HOST
+replace_kira_host KIRA_GATEWAY_HOST_1
+replace_kira_host KIRA_GATEWAY_HOST_2
+replace_kira_host KIRA_DATA_MANAGER_HOST_1
+replace_kira_host KIRA_DATA_MANAGER_HOST_2
+replace_kira_host KIRA_TOOL_SERVICE_HOST
+replace_kira_host KIRA_UI_HOST

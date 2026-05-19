@@ -1,14 +1,14 @@
 application:
   datasource:
     primary:
-      jdbc-url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_PRIMARY_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
-      username: "${DB_PRIMARY_USERNAME:kira_user}"
-      password: "${DB_PRIMARY_PASSWORD:kira_password}"
+      jdbc-url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
+      username: "${DB_APP_USER:kira_user}"
+      password: "${DB_APP_PASSWORD:kira_password}"
       driver-class-name: com.mysql.cj.jdbc.Driver
     replica:
-      jdbc-url: "jdbc:mysql://${DB_HOST:localhost}:${DB_REPLICA_PORT:3311}/${DB_REPLICA_NAME:kira}?useUnicode=true"
-      username: "${DB_REPLICA_USERNAME:kira_user}"
-      password: "${DB_REPLICA_PASSWORD:kira_password}"
+      jdbc-url: "jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3311}/${DB_NAME:kira}?useUnicode=true"
+      username: "${DB_APP_USER:kira_user}"
+      password: "${DB_APP_PASSWORD:kira_password}"
       driver-class-name: com.mysql.cj.jdbc.Driver
 spring:
   application:

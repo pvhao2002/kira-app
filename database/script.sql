@@ -27,7 +27,8 @@ create table crawl_date
     total_events int                                                         default 0,
     created_at   datetime                                                    default now(),
     updated_at   datetime                                                    default now() on update now(),
-    index idx_status (status)
+    index idx_status (status),
+    index idx_crawl_date_total_events (total_events)
 ) engine = InnoDB
   row_format = dynamic;
 
@@ -78,12 +79,14 @@ create table leagues
     league_name  varchar(255) not null,
     logo_url     text,
     country      varchar(100),
+    country_code_short char(3),
     is_main      tinyint(1) default 0,
     total_events int        default 0,
     created_at   datetime   default now(),
     updated_at   datetime   default now() on update now(),
     unique key uk_league_name (league_name),
-    index idx_country (country)
+    index idx_country (country),
+    index idx_country_code_short (country_code_short)
 ) engine = InnoDB
   row_format = dynamic;
 
@@ -286,6 +289,7 @@ create table event_data_issue
     recorded_at datetime                                     default now(),
     primary key pk_event_data_issue (event_id, issue_type),
     index idx_issue_type_recorded_at (issue_type, recorded_at),
+    index idx_event_data_issue_recorded_at (recorded_at),
     constraint fk_event_data_issue_event foreign key (event_id) references events (event_id) on delete cascade
 ) engine = InnoDB
   row_format = dynamic;

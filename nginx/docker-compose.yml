@@ -8,6 +8,7 @@ services:
     # resolvers return only IPv6 and nginx gets "Network unreachable" -> 502.
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "kira-host:host-gateway"
     environment:
       KIRA_SERVICE_HOST: "${KIRA_SERVICE_HOST:-host.docker.internal}"
       KIRA_SERVICE_PORT: "${KIRA_SERVICE_PORT:-2308}"
@@ -29,4 +30,5 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./templates:/etc/nginx/templates:ro
+      - ./docker-entrypoint.d/10-resolve-kira-host.envsh:/docker-entrypoint.d/10-resolve-kira-host.envsh:ro
     restart: unless-stopped

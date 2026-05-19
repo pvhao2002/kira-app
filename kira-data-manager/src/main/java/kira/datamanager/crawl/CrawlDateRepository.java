@@ -18,6 +18,7 @@ public class CrawlDateRepository {
 
     private static final Set<String> ALLOWED_SORT_BY = Set.of("date", "total_events");
     private static final Set<String> ALLOWED_SORT_DIR = Set.of("asc", "desc");
+    private static final Set<String> ALLOWED_TOTAL_EVENT_FILTER = Set.of("all", "0");
 
     private final JdbcClient readJdbcClient;
 
@@ -46,9 +47,16 @@ public class CrawlDateRepository {
         return ALLOWED_SORT_DIR.contains(sortDir.trim().toLowerCase(Locale.ROOT));
     }
 
+    public static boolean isAllowedTotalEventFilter(String totalEvent) {
+        if (totalEvent == null || totalEvent.isBlank()) {
+            return true;
+        }
+        return ALLOWED_TOTAL_EVENT_FILTER.contains(totalEvent.trim().toLowerCase(Locale.ROOT));
+    }
+
     public CrawlDatePageResponse findPage(int page, int size, String status, String date, String dateFrom, String dateTo,
-                                          String sortBy, String sortDir) {
-        var where = buildWhereClause(status, date, dateFrom, dateTo);
+                                          String totalEvent, String sortBy, String sortDir) {
+        var where = buildWhereClause(status, date, dateFrom, dateTo, totalEvent);
         var orderBy = resolveOrderBy(sortBy, sortDir);
 
         var countSql = "SELECT COUNT(*) FROM crawl_date WHERE 1=1" + where.clause();
@@ -91,31 +99,40 @@ public class CrawlDateRepository {
         return col + " " + dir.toUpperCase(Locale.ROOT);
     }
 
-    private WhereClause buildWhereClause(String status, String date, String dateFrom, String dateTo) {
+    private WhereClause buildWhereClause(String status, String date, String dateFrom, String dateTo, String totalEvent) {
         var clause = new StringBuilder();
         String normalizedStatus = null;
         String normalizedDate = null;
         String from = null;
         String to = null;
+        Integer totalEvents = null;
 
         if (status != null && !status.isBlank()) {
             normalizedStatus = status.trim().toLowerCase();
             clause.append(" AND status = :status");
         }
         if (date != null && !date.isBlank()) {
-            normalizedDate = date.trim();
-            clause.append(" AND date = :date");
+            normalizedDate = normalizeDateValue(date);
+            clause.append(" AND REPLACE(date, '-', '') = :date");
         }
         if (dateFrom != null && !dateFrom.isBlank()) {
-            from = dateFrom.trim();
-            clause.append(" AND date >= :dateFrom");
+            from = normalizeDateValue(dateFrom);
+            clause.append(" AND REPLACE(date, '-', '') >= :dateFrom");
         }
         if (dateTo != null && !dateTo.isBlank()) {
-            to = dateTo.trim();
-            clause.append(" AND date <= :dateTo");
+            to = normalizeDateValue(dateTo);
+            clause.append(" AND REPLACE(date, '-', '') <= :dateTo");
+        }
+        if (totalEvent != null && !totalEvent.isBlank() && !"all".equalsIgnoreCase(totalEvent.trim())) {
+            totalEvents = Integer.parseInt(totalEvent.trim());
+            clause.append(" AND total_events = :totalEvents");
         }
 
-        return new WhereClause(clause.toString(), normalizedStatus, normalizedDate, from, to);
+        return new WhereClause(clause.toString(), normalizedStatus, normalizedDate, from, to, totalEvents);
+    }
+
+    private static String normalizeDateValue(String value) {
+        return value.trim().replace("-", "");
     }
 
     private JdbcClient.StatementSpec bindParams(JdbcClient.StatementSpec spec, WhereClause w) {
@@ -130,6 +147,9 @@ public class CrawlDateRepository {
         }
         if (w.dateTo() != null) {
             spec = spec.param("dateTo", w.dateTo());
+        }
+        if (w.totalEvents() != null) {
+            spec = spec.param("totalEvents", w.totalEvents());
         }
         return spec;
     }
@@ -154,7 +174,8 @@ public class CrawlDateRepository {
             String status,
             String date,
             String dateFrom,
-            String dateTo
+            String dateTo,
+            Integer totalEvents
     ) {
     }
 }

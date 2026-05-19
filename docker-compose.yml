@@ -34,8 +34,8 @@ services:
       MYSQL_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       DB_REPL_USER: "${DB_REPL_USER:-repl_user}"
       DB_REPL_PASSWORD: "${DB_REPL_PASSWORD:-repl_password}"
-      DB_PRIMARY_HOST: "${DB_PRIMARY_HOST:-mysql-primary}"
-      DB_PRIMARY_PORT: "${DB_PRIMARY_PORT:-3306}"
+      DB_PRIMARY_HOST: mysql-primary
+      DB_PRIMARY_PORT: "3306"
     depends_on:
       mysql-primary:
         condition: service_healthy
@@ -61,8 +61,8 @@ services:
       MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-1234}"
       DB_REPL_USER: "${DB_REPL_USER:-repl_user}"
       DB_REPL_PASSWORD: "${DB_REPL_PASSWORD:-repl_password}"
-      DB_PRIMARY_HOST: "${DB_PRIMARY_HOST:-mysql-primary}"
-      DB_PRIMARY_PORT: "${DB_PRIMARY_PORT:-3306}"
+      DB_PRIMARY_HOST: mysql-primary
+      DB_PRIMARY_PORT: "3306"
     command: >
       sh -ec "
       until mysql -h mysql-replica -P3306 -uroot -p$$MYSQL_ROOT_PASSWORD -e 'SELECT 1' >/dev/null 2>&1; do sleep 2; done;
@@ -131,21 +131,13 @@ services:
       SERVER_PORT: "${KIRA_GATEWAY_PORT_1:-6868}"
       INSTANCE_ID: gateway-1
       LOG_DIR: /app/logs
-      DB_EX_HOST: mysql-primary
-      DB_EX_PORT: "3306"
-      DB_EX_NAME: "${DB_NAME:-kira}"
-      DB_EX_USERNAME: "${DB_APP_USER:-kira_user}"
-      DB_EX_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_NAME: "${DB_NAME:-kira}"
+      DB_APP_USER: "${DB_APP_USER:-kira_user}"
+      DB_APP_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       DB_PRIMARY_HOST: mysql-primary
       DB_PRIMARY_PORT: "3306"
-      DB_PRIMARY_NAME: "${DB_NAME:-kira}"
-      DB_PRIMARY_USERNAME: "${DB_APP_USER:-kira_user}"
-      DB_PRIMARY_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       DB_REPLICA_HOST: mysql-replica
       DB_REPLICA_PORT: "3306"
-      DB_REPLICA_NAME: "${DB_NAME:-kira}"
-      DB_REPLICA_USERNAME: "${DB_APP_USER:-kira_user}"
-      DB_REPLICA_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       RABBIT_HOST: rabbitmq
       RABBIT_PORT: "5672"
       RABBIT_USERNAME: guest
@@ -176,21 +168,13 @@ services:
       SERVER_PORT: "${KIRA_GATEWAY_PORT_2:-6869}"
       INSTANCE_ID: gateway-2
       LOG_DIR: /app/logs
-      DB_EX_HOST: mysql-primary
-      DB_EX_PORT: "3306"
-      DB_EX_NAME: "${DB_NAME:-kira}"
-      DB_EX_USERNAME: "${DB_APP_USER:-kira_user}"
-      DB_EX_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_NAME: "${DB_NAME:-kira}"
+      DB_APP_USER: "${DB_APP_USER:-kira_user}"
+      DB_APP_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       DB_PRIMARY_HOST: mysql-primary
       DB_PRIMARY_PORT: "3306"
-      DB_PRIMARY_NAME: "${DB_NAME:-kira}"
-      DB_PRIMARY_USERNAME: "${DB_APP_USER:-kira_user}"
-      DB_PRIMARY_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       DB_REPLICA_HOST: mysql-replica
       DB_REPLICA_PORT: "3306"
-      DB_REPLICA_NAME: "${DB_NAME:-kira}"
-      DB_REPLICA_USERNAME: "${DB_APP_USER:-kira_user}"
-      DB_REPLICA_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       RABBIT_HOST: rabbitmq
       RABBIT_PORT: "5672"
       RABBIT_USERNAME: guest
@@ -218,13 +202,13 @@ services:
     environment:
       SERVER_PORT: "${KIRA_DATA_MANAGER_PORT_1:-7777}"
       LOG_FILE: /app/logs/kira-data-manager-1.log
-      DB_HOST: mysql-primary
+      DB_NAME: "${DB_NAME:-kira}"
+      DB_APP_USER: "${DB_APP_USER:-kira_user}"
+      DB_APP_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_PRIMARY_HOST: mysql-primary
       DB_PRIMARY_PORT: "3306"
-      DB_PRIMARY_NAME: "${DB_NAME:-kira}"
-      DB_PRIMARY_USERNAME: "${DB_APP_USER:-kira_user}"
-      DB_PRIMARY_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
-      DB_READ_HOST: mysql-replica
-      DB_READ_PORT: "3306"
+      DB_REPLICA_HOST: mysql-replica
+      DB_REPLICA_PORT: "3306"
     restart: unless-stopped
 
   kira-data-manager-2:
@@ -244,13 +228,13 @@ services:
     environment:
       SERVER_PORT: "${KIRA_DATA_MANAGER_PORT_2:-7778}"
       LOG_FILE: /app/logs/kira-data-manager-2.log
-      DB_HOST: mysql-primary
+      DB_NAME: "${DB_NAME:-kira}"
+      DB_APP_USER: "${DB_APP_USER:-kira_user}"
+      DB_APP_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_PRIMARY_HOST: mysql-primary
       DB_PRIMARY_PORT: "3306"
-      DB_PRIMARY_NAME: "${DB_NAME:-kira}"
-      DB_PRIMARY_USERNAME: "${DB_APP_USER:-kira_user}"
-      DB_PRIMARY_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
-      DB_READ_HOST: mysql-replica
-      DB_READ_PORT: "3306"
+      DB_REPLICA_HOST: mysql-replica
+      DB_REPLICA_PORT: "3306"
     restart: unless-stopped
 
   kira-producer:
@@ -274,11 +258,11 @@ services:
       RABBIT_USERNAME: guest
       RABBIT_PASSWORD: guest
       RABBIT_VHOST: /
-      DB_EX_HOST: mysql-primary
-      DB_EX_PORT: "3306"
-      DB_EX_NAME: "${DB_NAME:-kira}"
-      DB_EX_USERNAME: "${DB_APP_USER:-kira_user}"
-      DB_EX_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_NAME: "${DB_NAME:-kira}"
+      DB_APP_USER: "${DB_APP_USER:-kira_user}"
+      DB_APP_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
+      DB_PRIMARY_HOST: mysql-primary
+      DB_PRIMARY_PORT: "3306"
       # Đặt false khi kira-service vẫn chạy crawl schedule trên host (tránh trùng publish).
       # Tùy chọn tách: KIRA_PRODUCER_CRAWL_SCHEDULE_DATE_ENABLED / KIRA_PRODUCER_CRAWL_SCHEDULE_EVENT_ENABLED
       # (ưu tiên hơn biến tổng bên dưới khi set).
@@ -333,6 +317,7 @@ services:
     # Prefer IPv4 for host.docker.internal (avoids upstream IPv6 that Docker cannot route).
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "kira-host:host-gateway"
     environment:
       KIRA_SERVICE_HOST: "${KIRA_SERVICE_HOST:-host.docker.internal}"
       KIRA_SERVICE_PORT: "${KIRA_SERVICE_PORT:-2308}"
@@ -354,6 +339,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/docker-entrypoint.d/10-resolve-kira-host.envsh:/docker-entrypoint.d/10-resolve-kira-host.envsh:ro
     restart: unless-stopped
 
 volumes:

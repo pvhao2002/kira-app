@@ -19,4 +19,4 @@ interactive_timeout=600
 slow_query_log=ON
 long_query_time=0.5
 log_queries_not_using_indexes=ON
-binlog_expire_logs_seconds=604800
+binlog_expire_logs_seconds=86400

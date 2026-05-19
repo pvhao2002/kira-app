@@ -26,6 +26,7 @@ public class CrawlDateController {
             @RequestParam(required = false) String date,
             @RequestParam(required = false) String dateFrom,
             @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) String totalEvent,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDir
     ) {
@@ -41,6 +42,12 @@ public class CrawlDateController {
                     "message", "status must be one of: pending, picked, in_progress, done, failed"
             ));
         }
+        if (totalEvent != null && !totalEvent.isBlank() && !CrawlDateRepository.isAllowedTotalEventFilter(totalEvent)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", "totalEvent must be one of: all, 0"
+            ));
+        }
         if (sortBy != null && !sortBy.isBlank() && !CrawlDateRepository.isAllowedSortBy(sortBy)) {
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "error",
@@ -54,7 +61,7 @@ public class CrawlDateController {
             ));
         }
 
-        var body = crawlDateRepository.findPage(page, size, status, date, dateFrom, dateTo, sortBy, sortDir);
+        var body = crawlDateRepository.findPage(page, size, status, date, dateFrom, dateTo, totalEvent, sortBy, sortDir);
         return ResponseEntity.ok(body);
     }
 }

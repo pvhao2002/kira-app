@@ -47,7 +47,6 @@
                 </th>
                 <th class="px-4 py-3 min-w-[220px]">Event</th>
                 <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3 hidden md:table-cell w-[1%] whitespace-nowrap">Link</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
@@ -81,24 +80,23 @@
                     {{ formatClientDate(row.createdAt) }}
                   </td>
                   <td class="px-4 py-3 text-white max-w-[320px]" [title]="row.eventName ?? ''">
-                    <div class="truncate">{{ row.eventName ?? '—' }}</div>
+                    <div class="truncate">
+                      @if (row.link && row.eventName) {
+                        <a [href]="row.link"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="text-white hover:text-blue-300 truncate max-w-[320px] inline-block">
+                          {{ row.eventName }}
+                        </a>
+                      } @else {
+                        <span>{{ row.eventName ?? '—' }}</span>
+                      }
+                    </div>
                     <div class="text-slate-400 text-xs mt-1">
                       {{ row.eventDate ?? '—' }}
                     </div>
                   </td>
                   <td class="px-4 py-3 text-slate-400">{{ row.status ?? '—' }}</td>
-                  <td class="px-4 py-3 hidden md:table-cell">
-                    @if (row.link) {
-                      <a [href]="row.link"
-                         target="_blank"
-                         rel="noopener noreferrer"
-                         class="text-blue-400 hover:text-blue-300 text-xs truncate max-w-[120px] inline-block align-bottom">
-                        Mở
-                      </a>
-                    } @else {
-                      <span class="text-slate-600">—</span>
-                    }
-                  </td>
                 </tr>
               }
             </tbody>

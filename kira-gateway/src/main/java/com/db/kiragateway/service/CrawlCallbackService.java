@@ -3,6 +3,7 @@ package com.db.kiragateway.service;
 import com.db.kiragateway.dto.*;
 import com.db.kiragateway.repository.CrawlCallbackRepository;
 import com.db.kiragateway.repository.EventClaimRepository;
+import com.db.kiragateway.util.CountryCodeShortUtil;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,7 +39,8 @@ public class CrawlCallbackService {
                     new MapSqlParameterSource()
                             .addValue("league_name", e.leagueName())
                             .addValue("logo_url", e.leagueUrl())
-                            .addValue("country", e.countryName()));
+                            .addValue("country", e.countryName())
+                            .addValue("country_code_short", CountryCodeShortUtil.toAlpha3(e.countryName())));
         }
         repo.batchInsertLeagues(new ArrayList<>(leagueByName.values()));
 

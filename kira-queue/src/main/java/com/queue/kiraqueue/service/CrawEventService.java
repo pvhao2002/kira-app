@@ -1,6 +1,7 @@
 package com.queue.kiraqueue.service;
 
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.ScreenshotType;
 import com.queue.kiraqueue.dto.Event;
 import com.queue.kiraqueue.dto.model.EventOddsTimeline;
 import com.queue.kiraqueue.util.*;
@@ -113,7 +114,10 @@ public class CrawEventService {
             return null;
         }
         try {
-            byte[] screenshot = page.screenshot(new Page.ScreenshotOptions().setFullPage(true));
+            byte[] screenshot = page.screenshot(new Page.ScreenshotOptions()
+                    .setFullPage(true)
+                    .setType(ScreenshotType.JPEG)
+                    .setQuality(70));
             return Base64.getEncoder().encodeToString(screenshot);
         } catch (Exception e) {
             log.log(Level.WARNING, withPrefix("captureScreenshotBase64", "Failed to capture screenshot"), e);

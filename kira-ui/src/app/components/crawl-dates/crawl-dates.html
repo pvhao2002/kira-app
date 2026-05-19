@@ -4,6 +4,83 @@
     <p class="text-slate-400 mt-2">Trạng thái crawl theo ngày.</p>
   </div>
 
+  <div class="rounded-xl border border-white/5 bg-[#1e293b] p-4 space-y-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-sm font-medium text-slate-300 mr-2">Filter mode</span>
+      <button type="button"
+              (click)="setFilterMode('basic')"
+              [class]="filterMode() === 'basic'
+                ? 'px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-semibold border border-blue-500/40'
+                : 'px-3 py-1.5 rounded-lg bg-slate-900 text-slate-300 text-sm font-semibold border border-white/10 hover:bg-slate-800'">
+        Basic
+      </button>
+      <button type="button"
+              (click)="setFilterMode('advance')"
+              [class]="filterMode() === 'advance'
+                ? 'px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-semibold border border-blue-500/40'
+                : 'px-3 py-1.5 rounded-lg bg-slate-900 text-slate-300 text-sm font-semibold border border-white/10 hover:bg-slate-800'">
+        Advance
+      </button>
+    </div>
+
+    @if (filterMode() === 'advance') {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+        <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <span class="text-xs font-semibold uppercase text-slate-500">From date</span>
+          <input type="date"
+                 class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
+                 [value]="fromDate()"
+                 (input)="fromDate.set($any($event.target).value)"/>
+        </label>
+
+        <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <span class="text-xs font-semibold uppercase text-slate-500">To date</span>
+          <input type="date"
+                 class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
+                 [value]="toDate()"
+                 (input)="toDate.set($any($event.target).value)"/>
+        </label>
+
+        <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <span class="text-xs font-semibold uppercase text-slate-500">Status</span>
+          <select class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
+                  [value]="statusFilter()"
+                  (change)="statusFilter.set($any($event.target).value)">
+            <option value="all">Tất cả</option>
+            <option value="pending">pending</option>
+            <option value="picked">picked</option>
+            <option value="in_progress">in_progress</option>
+            <option value="done">done</option>
+            <option value="failed">failed</option>
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <span class="text-xs font-semibold uppercase text-slate-500">Total event</span>
+          <select class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
+                  [value]="totalEventFilter()"
+                  (change)="totalEventFilter.set($any($event.target).value)">
+            <option value="all">Tất cả</option>
+            <option value="0">total event = 0</option>
+          </select>
+        </label>
+
+        <div class="flex flex-wrap gap-2">
+          <button type="button"
+                  (click)="applyAdvancedFilters()"
+                  class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500">
+            Áp dụng
+          </button>
+          <button type="button"
+                  (click)="resetAdvancedFilters()"
+                  class="px-4 py-2 rounded-lg bg-slate-900 text-slate-300 text-sm font-semibold border border-white/10 hover:bg-slate-800">
+            Xóa lọc
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
   @if (loading()) {
     <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 flex flex-col items-center justify-center gap-3">
       <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>

@@ -50,7 +50,10 @@ public class CrawlCallbackRepository {
     // ─── leagues ───
 
     private static final String SQL_INSERT_LEAGUE =
-            "INSERT IGNORE INTO leagues(league_name, logo_url, country) VALUES (:league_name, :logo_url, :country)";
+            """
+                    INSERT IGNORE INTO leagues(league_name, logo_url, country, country_code_short)
+                    VALUES (:league_name, :logo_url, :country, :country_code_short)
+                    """;
 
     private static final String SQL_SELECT_LEAGUES =
             "SELECT league_id, league_name FROM leagues WHERE league_name IN (:names)";

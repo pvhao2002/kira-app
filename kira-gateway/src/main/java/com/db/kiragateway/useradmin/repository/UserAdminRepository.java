@@ -92,23 +92,39 @@ public class UserAdminRepository {
     }
 
     public Optional<UserAdminRow> findByUsername(String username) {
+        return findByUsername(readJdbcClient, username);
+    }
+
+    public Optional<UserAdminRow> findByUsernameForWrite(String username) {
+        return findByUsername(writeJdbcClient, username);
+    }
+
+    private Optional<UserAdminRow> findByUsername(JdbcClient jdbcClient, String username) {
         var sql = """
                 select user_id, username, status, role, avatar, created_at, updated_at
                 from users
                 where username = :username
                 limit 1
                 """;
-        return readJdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("username", username)
                 .query(this::mapRow)
                 .optional();
     }
 
     public boolean existsByUsername(String username) {
+        return existsByUsername(readJdbcClient, username);
+    }
+
+    public boolean existsByUsernameForWrite(String username) {
+        return existsByUsername(writeJdbcClient, username);
+    }
+
+    private boolean existsByUsername(JdbcClient jdbcClient, String username) {
         var sql = """
                 select 1 from users where username = :username limit 1
                 """;
-        return readJdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("username", username)
                 .query((rs, rowNum) -> true)
                 .optional()

@@ -4,9 +4,9 @@ spring:
   main:
     web-application-type: none
   datasource:
-    url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_PRIMARY_NAME:kira}?useUnicode=true&characterEncoding=UTF-8&createDatabaseIfNotExist=true&serverTimezone=UTC"
-    username: "${DB_PRIMARY_USERNAME:kira_user}"
-    password: "${DB_PRIMARY_PASSWORD:kira_password}"
+    url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&characterEncoding=UTF-8&createDatabaseIfNotExist=true&serverTimezone=UTC"
+    username: "${DB_APP_USER:kira_user}"
+    password: "${DB_APP_PASSWORD:kira_password}"
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     open-in-view: false

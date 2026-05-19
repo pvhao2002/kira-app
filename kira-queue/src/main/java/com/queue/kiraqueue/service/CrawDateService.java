@@ -30,6 +30,7 @@ public class CrawDateService {
     public static final String TEAM_NAME = "team_name";
     public static final String LEAGUE_NAME = "league_name";
     public static final String LOGO_URL = "logo_url";
+    public static final String COUNTRY_CODE_SHORT = "country_code_short";
     public static final String IN_PROGRESS = "in_progress";
     public static final String DONE = "done";
     public static final String FAILED = "failed";
@@ -43,7 +44,10 @@ public class CrawDateService {
                 message      = :error_message
             where date = :date
             """;
-    private static final String SQL_INSERT_LEAGUE = "insert ignore into leagues(league_name, logo_url, country) VALUES (:league_name, :logo_url, :country)";
+    private static final String SQL_INSERT_LEAGUE = """
+            insert ignore into leagues(league_name, logo_url, country, country_code_short)
+            VALUES (:league_name, :logo_url, :country, :country_code_short)
+            """;
     private static final String SQL_INSERT_EVENT = """
             insert ignore into events(external_id, league_id, home_id, away_id, event_name, event_date, status, link)
             VALUES (:exid, :league_id, :home_id, :away_id, :event_name, :event_date, :status, :link)
