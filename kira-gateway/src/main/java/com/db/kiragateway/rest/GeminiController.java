@@ -4,6 +4,8 @@ import com.db.kiragateway.dto.DescribeInstrumentRequest;
 import com.db.kiragateway.dto.DescribeInstrumentResponse;
 import com.db.kiragateway.dto.GenerateBlogRequest;
 import com.db.kiragateway.dto.GenerateBlogResponse;
+import com.db.kiragateway.dto.GeminiWebsiteCrawlRequest;
+import com.db.kiragateway.dto.GeminiWebsiteCrawlResponse;
 import com.db.kiragateway.service.BlogGenerationService;
 import com.db.kiragateway.service.GeminiService;
 import jakarta.validation.Valid;
@@ -144,6 +146,22 @@ public class GeminiController {
                 request.publishNow()
         );
         return ResponseEntity.ok(blogGenerationService.generateAndSave(requestWithCreator));
+    }
+
+    @PostMapping(
+            path = "/events/crawl",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> crawlWebsiteEvents(@Valid @RequestBody GeminiWebsiteCrawlRequest request) {
+        try {
+            var result = geminiService.extractWebsiteEventData(request.url(), request.prompt());
+            return ResponseEntity.ok(new GeminiWebsiteCrawlResponse("ok", result.model(), result.data()));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(error(ex.getMessage()));
+        } catch (GeminiService.GeminiUpstreamException ex) {
+            return ResponseEntity.status(ex.getStatusCode()).body(error(ex.getResponseBody()));
+        }
     }
 
     private static Object error(Object message) {

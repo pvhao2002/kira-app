@@ -1,21 +1,26 @@
 package com.db.kiragateway.service;
 
 import com.db.kiragateway.config.GeminiProperties;
+import com.db.kiragateway.dto.GeminiWebsiteCrawlResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.net.URI;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.logging.Logger;
@@ -131,6 +136,28 @@ public class GeminiService {
         );
     }
 
+    public WebsiteCrawlResult extractWebsiteEventData(String sourceUrl, String customPrompt) {
+        var normalizedUrl = normalizeHttpUrl(sourceUrl);
+        var prompt = buildWebsiteEventCrawlPrompt(normalizedUrl, customPrompt);
+        var response = generateStructuredJson(prompt, websiteEventCrawlSchema());
+        var rawResponse = extractTextFromGeminiResponse(response);
+        var payload = parseWebsiteEventCrawlPayload(rawResponse);
+        return new WebsiteCrawlResult(
+                geminiProperties.getModel(),
+                prompt,
+                rawResponse == null ? "" : rawResponse,
+                new GeminiWebsiteCrawlResponse.GeminiWebsiteCrawlData(
+                        normalizedUrl,
+                        sha256Hex(prompt),
+                        rawResponse == null ? "" : rawResponse,
+                        safeList(payload.events()),
+                        safeList(payload.eventResults()),
+                        safeList(payload.eventOdds()),
+                        safeList(payload.eventOddsTimeline())
+                )
+        );
+    }
+
     private Map<String, Object> generateText(String prompt) {
         var payload = Map.of(
                 "contents", List.of(
@@ -167,6 +194,50 @@ public class GeminiService {
         }
     }
 
+    private Map<String, Object> generateStructuredJson(String prompt, Map<String, Object> schema) {
+        var payload = Map.of(
+                "contents", List.of(
+                        Map.of(
+                                "parts", List.of(
+                                        Map.of("text", prompt)
+                                )
+                        )
+                ),
+                "tools", List.of(
+                        Map.of("googleSearch", Map.of()),
+                        Map.of("urlContext", Map.of())
+                ),
+                "generationConfig", Map.of(
+                        "responseMimeType", "application/json",
+                        "responseSchema", schema
+                )
+        );
+        try {
+            Object response = geminiRestClient.post()
+                    .uri("/v1beta/models/{model}:generateContent", geminiProperties.getModel())
+                    .header("x-goog-api-key", geminiProperties.getApiKey())
+                    .body(payload)
+                    .retrieve()
+                    .body(Object.class);
+            return response == null
+                    ? Map.of()
+                    : objectMapper.convertValue(response, new TypeReference<>() {
+            });
+        } catch (RestClientResponseException ex) {
+            Object errBody = ex.getResponseBodyAs(Map.class);
+            if (errBody == null) {
+                errBody = Map.of("message", ex.getMessage());
+            }
+            throw new GeminiUpstreamException(ex.getStatusCode(), errBody, ex);
+        } catch (ResourceAccessException ex) {
+            var timeout = isTimeout(ex);
+            var status = timeout ? HttpStatusCode.valueOf(504) : HttpStatusCode.valueOf(502);
+            var message = timeout ? "Gemini request timed out" : "Gemini service is unavailable";
+            log.warning("generateStructuredJson upstream failure: %s".formatted(ex.getMessage()));
+            throw new GeminiUpstreamException(status, Map.of("message", message), ex);
+        }
+    }
+
     private BlogParsedPayload parseBlogPayload(String rawText) {
         var normalized = stripCodeFence(rawText == null ? "" : rawText);
         var jsonText = extractFirstJsonObject(normalized);
@@ -192,6 +263,21 @@ public class GeminiService {
         } catch (Exception ex) {
             log.warning("Failed to parse Gemini blog JSON payload: %s".formatted(ex.getMessage()));
             return new BlogParsedPayload("", "", List.of(), normalized);
+        }
+    }
+
+    private WebsiteCrawlPayload parseWebsiteEventCrawlPayload(String rawText) {
+        var normalized = stripCodeFence(rawText == null ? "" : rawText);
+        var jsonText = extractFirstJsonObject(normalized);
+        if (jsonText == null) {
+            return WebsiteCrawlPayload.empty();
+        }
+
+        try {
+            return objectMapper.readValue(jsonText, WebsiteCrawlPayload.class);
+        } catch (Exception ex) {
+            log.warning("Failed to parse Gemini website crawl JSON payload: %s".formatted(ex.getMessage()));
+            return WebsiteCrawlPayload.empty();
         }
     }
 
@@ -249,6 +335,152 @@ public class GeminiService {
                 
                 Ensure content is informative, coherent, and production-ready for direct rendering.
                 """.formatted(topic, effectiveTone, effectiveAudience, safeMin, safeMax, variant);
+    }
+
+    private static String buildWebsiteEventCrawlPrompt(String sourceUrl, String customPrompt) {
+        var effectiveCustomPrompt = customPrompt == null || customPrompt.isBlank()
+                ? "No additional user instruction."
+                : customPrompt.trim();
+        return """
+                You are a data extraction engine for football/soccer event pages and betting odds pages.
+                Use Google Search and URL Context tools to retrieve factual data for the provided source URL.
+                The target website can be AIScore and may be a JavaScript SPA, so do not rely on caller-provided HTML.
+                Search for indexed page content, structured snippets, URL context, and related public match/odds data.
+                Do not invent values.
+                
+                Source URL:
+                %s
+                
+                Additional user instruction:
+                %s
+                
+                Output rules:
+                - Return exactly one JSON object, no markdown, no code fence, no explanation.
+                - Use camelCase field names exactly as defined by the schema.
+                - Return empty arrays when no rows are found.
+                - Use null when a value is missing or uncertain.
+                - Dates must be ISO-like strings: "yyyy-MM-dd HH:mm:ss" when time is known, otherwise "yyyy-MM-dd".
+                - `externalId` is required for row correlation. Prefer provider event id from the page; otherwise derive a stable id from source URL + home team + away team + event date.
+                - `providerStatus` should be one of scheduled, live, finished, cancelled, postponed, or null.
+                - `htResult` and `ftResult` must be H, D, A, or None when score data is available.
+                - Odds market values must be: hdc, ou, corner.
+                - Odds type values must be: open, pre-match, half-time.
+                - `priceA` is home/over/first-side price. `priceB` is away/under/second-side price.
+                - For child rows, include `externalId`; leave `eventId` null unless the website explicitly provides this database id.
+                - Do not include generated database columns such as htTotalGoal, ftTotalGoal, htTotalCorner, or ftTotalCorner.
+                - Ignore navigation, ads, unrelated links, comments, scripts, styles, tracking content, and generic SPA shell text.
+                """.formatted(sourceUrl, effectiveCustomPrompt);
+    }
+
+    private static String normalizeHttpUrl(String sourceUrl) {
+        if (!StringUtils.hasText(sourceUrl)) {
+            throw new IllegalArgumentException("url is required");
+        }
+        try {
+            var uri = URI.create(sourceUrl.trim());
+            var scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+            if (!("http".equals(scheme) || "https".equals(scheme)) || !StringUtils.hasText(uri.getHost())) {
+                throw new IllegalArgumentException("url must be an absolute http/https URL");
+            }
+            return uri.toString();
+        } catch (IllegalArgumentException ex) {
+            if (ex.getMessage() != null && ex.getMessage().startsWith("url ")) {
+                throw ex;
+            }
+            throw new IllegalArgumentException("url is invalid", ex);
+        }
+    }
+
+    private static Map<String, Object> websiteEventCrawlSchema() {
+        var properties = new LinkedHashMap<String, Object>();
+        properties.put("events", arraySchema(eventRowSchema()));
+        properties.put("eventResults", arraySchema(eventResultRowSchema()));
+        properties.put("eventOdds", arraySchema(eventOddsRowSchema()));
+        properties.put("eventOddsTimeline", arraySchema(eventOddsTimelineRowSchema()));
+        return objectSchema(properties, List.of("events", "eventResults", "eventOdds", "eventOddsTimeline"));
+    }
+
+    private static Map<String, Object> eventRowSchema() {
+        var properties = new LinkedHashMap<String, Object>();
+        for (var field : List.of(
+                "externalId", "homeName", "awayName", "homeUrl", "awayUrl", "eventName", "eventDate",
+                "countryName", "leagueName", "leagueUrl", "detailLink", "ftScoreStr", "htScoreStr", "providerStatus"
+        )) {
+            properties.put(field, nullableSchema("string"));
+        }
+        for (var field : List.of("ftHomeScore", "ftAwayScore", "htHomeScore", "htAwayScore", "homeCorner", "awayCorner")) {
+            properties.put(field, nullableSchema("integer"));
+        }
+        return objectSchema(properties, List.of());
+    }
+
+    private static Map<String, Object> eventResultRowSchema() {
+        var properties = new LinkedHashMap<String, Object>();
+        properties.put("externalId", nullableSchema("string"));
+        properties.put("eventId", nullableSchema("integer"));
+        for (var field : List.of("htResult", "htGoalStr", "ftResult", "ftGoalStr")) {
+            properties.put(field, nullableSchema("string"));
+        }
+        for (var field : List.of(
+                "htHomeGoal", "htAwayGoal", "ftHomeGoal", "ftAwayGoal",
+                "htHomeCorner", "htAwayCorner", "ftHomeCorner", "ftAwayCorner",
+                "htHomeYellowCard", "htAwayYellowCard", "ftHomeYellowCard", "ftAwayYellowCard",
+                "htHomeFoul", "htAwayFoul", "ftHomeFoul", "ftAwayFoul",
+                "htHomeOffside", "htAwayOffside", "ftHomeOffside", "ftAwayOffside",
+                "htHomeTotalShot", "htAwayTotalShot", "ftHomeTotalShot", "ftAwayTotalShot",
+                "htHomeShotOnTarget", "htAwayShotOnTarget", "ftHomeShotOnTarget", "ftAwayShotOnTarget"
+        )) {
+            properties.put(field, nullableSchema("integer"));
+        }
+        return objectSchema(properties, List.of());
+    }
+
+    private static Map<String, Object> eventOddsRowSchema() {
+        var properties = new LinkedHashMap<String, Object>();
+        properties.put("externalId", nullableSchema("string"));
+        properties.put("eventId", nullableSchema("integer"));
+        for (var field : List.of("type", "market", "line")) {
+            properties.put(field, nullableSchema("string"));
+        }
+        properties.put("priceA", nullableSchema("number"));
+        properties.put("priceB", nullableSchema("number"));
+        return objectSchema(properties, List.of());
+    }
+
+    private static Map<String, Object> eventOddsTimelineRowSchema() {
+        var properties = new LinkedHashMap<String, Object>();
+        properties.put("externalId", nullableSchema("string"));
+        properties.put("eventId", nullableSchema("integer"));
+        for (var field : List.of("market", "line", "matchMinute", "crawledAt")) {
+            properties.put(field, nullableSchema("string"));
+        }
+        properties.put("priceA", nullableSchema("number"));
+        properties.put("priceB", nullableSchema("number"));
+        return objectSchema(properties, List.of());
+    }
+
+    private static Map<String, Object> objectSchema(Map<String, Object> properties, List<String> required) {
+        var schema = new LinkedHashMap<String, Object>();
+        schema.put("type", "object");
+        schema.put("properties", properties);
+        if (!required.isEmpty()) {
+            schema.put("required", required);
+        }
+        return schema;
+    }
+
+    private static Map<String, Object> arraySchema(Map<String, Object> itemSchema) {
+        var schema = new LinkedHashMap<String, Object>();
+        schema.put("type", "array");
+        schema.put("items", itemSchema);
+        return schema;
+    }
+
+    private static Map<String, Object> nullableSchema(String type) {
+        var schema = new LinkedHashMap<String, Object>();
+        schema.put("type", type);
+        schema.put("nullable", true);
+        return schema;
     }
 
     private static String sanitizeHtml(String html) {
@@ -319,7 +551,22 @@ public class GeminiService {
         }
     }
 
+    private static <T> List<T> safeList(List<T> items) {
+        return items == null ? List.of() : items;
+    }
+
     private record BlogParsedPayload(String title, String excerpt, List<String> tags, String htmlContent) {
+    }
+
+    private record WebsiteCrawlPayload(
+            List<GeminiWebsiteCrawlResponse.EventRow> events,
+            List<GeminiWebsiteCrawlResponse.EventResultRow> eventResults,
+            List<GeminiWebsiteCrawlResponse.EventOddsRow> eventOdds,
+            List<GeminiWebsiteCrawlResponse.EventOddsTimelineRow> eventOddsTimeline
+    ) {
+        private static WebsiteCrawlPayload empty() {
+            return new WebsiteCrawlPayload(List.of(), List.of(), List.of(), List.of());
+        }
     }
 
     public record BlogGenerationResult(
@@ -332,6 +579,14 @@ public class GeminiService {
             String htmlContent,
             String layoutVariant,
             String sourcePromptHash
+    ) {
+    }
+
+    public record WebsiteCrawlResult(
+            String model,
+            String prompt,
+            String rawResponse,
+            GeminiWebsiteCrawlResponse.GeminiWebsiteCrawlData data
     ) {
     }
 

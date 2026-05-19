@@ -11,7 +11,7 @@ application:
       password: "${DB_APP_PASSWORD:kira_password}"
       driver-class-name: com.mysql.cj.jdbc.Driver
     replica:
-      jdbc-url: "jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3311}/${DB_NAME:kira}?useUnicode=true"
+      jdbc-url: "jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3310}/${DB_NAME:kira}?useUnicode=true"
       username: "${DB_APP_USER:kira_user}"
       password: "${DB_APP_PASSWORD:kira_password}"
       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -42,7 +42,7 @@ app:
     base-url: ${APP_KIRA_PRODUCER_BASE_URL:http://localhost:2311}
   gemini:
     base-url: ${APP_GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
-    model: ${APP_GEMINI_MODEL:gemini-3-flash-preview}
+    model: ${APP_GEMINI_MODEL:Gemini 3 Flash}
     api-key: ${APP_GEMINI_API_KEY:}
     connect-timeout: ${APP_GEMINI_CONNECT_TIMEOUT:5s}
     read-timeout: ${APP_GEMINI_READ_TIMEOUT:30s}
