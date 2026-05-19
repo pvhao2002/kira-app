@@ -5,7 +5,7 @@ const PROXY_CONFIG = [
       '/tool-service',
       '/data'
     ],
-    target: "http://localhost:80",
+    target: "http://localhost:8800",
     secure: true,
     changeOrigin: true,
     logLevel: "debug",

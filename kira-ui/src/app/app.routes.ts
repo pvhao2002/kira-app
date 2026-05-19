@@ -20,6 +20,7 @@ import {CrawlDates} from './components/crawl-dates/crawl-dates';
 import {Teams} from './components/teams/teams';
 import {EventDataIssue} from './components/event-data-issue/event-data-issue';
 import {EventCrawlFailed} from './components/event-crawl-failed/event-crawl-failed';
+import {Statistics} from './components/statistics/statistics';
 import {authGuard} from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -49,6 +50,7 @@ export const routes: Routes = [
       {path: 'event-data-issue', component: EventDataIssue},
       {path: 'event-crawl-failed', component: EventCrawlFailed},
       {path: 'teams', component: Teams},
+      {path: 'statistics', component: Statistics},
     ]
   },
   {path: '**', redirectTo: 'dashboard'},

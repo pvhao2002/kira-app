@@ -1,0 +1,4 @@
+# Shell scripts mounted into Linux containers must use LF (CRLF breaks BusyBox sh).
+*.sh text eol=lf
+*.envsh text eol=lf
+.env.example text eol=lf

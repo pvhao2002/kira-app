@@ -21,9 +21,9 @@ import java.time.LocalDateTime;
 @Table(
         name = "event_odds_timeline",
         indexes = {
-                @Index(name = "idx_eot_event", columnList = "event_id"),
-                @Index(name = "idx_eot_crawled_at", columnList = "crawled_at"),
-                @Index(name = "idx_eot_match_minute", columnList = "match_minute")
+                @Index(name = "idx_event_market", columnList = "event_id, market"),
+                @Index(name = "idx_event_market_crawled", columnList = "event_id, market, crawled_at"),
+                @Index(name = "idx_event_market_line", columnList = "event_id, market, line")
         })
 @Getter
 @Setter

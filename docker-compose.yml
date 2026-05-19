@@ -267,6 +267,8 @@ services:
       # Tùy chọn tách: KIRA_PRODUCER_CRAWL_SCHEDULE_DATE_ENABLED / KIRA_PRODUCER_CRAWL_SCHEDULE_EVENT_ENABLED
       # (ưu tiên hơn biến tổng bên dưới khi set).
       KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED: "${KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED:-true}"
+      KIRA_PRODUCER_SOCCER_TEAM_RECENT_STAT_ENABLED: "${KIRA_PRODUCER_SOCCER_TEAM_RECENT_STAT_ENABLED:-true}"
+      KIRA_PRODUCER_SOCCER_TEAM_RECENT_STAT_CRON: "${KIRA_PRODUCER_SOCCER_TEAM_RECENT_STAT_CRON:-0 30 2 * * *}"
     restart: unless-stopped
 
   # ─── Monitoring (Loki + Promtail + Grafana) — config trong ./monitoring/ ───

@@ -17,7 +17,11 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "leagues",
-        indexes = @Index(name = "idx_leagues_is_main_league_name", columnList = "is_main, league_name"))
+        indexes = {
+                @Index(name = "idx_country", columnList = "country"),
+                @Index(name = "idx_country_code_short", columnList = "country_code_short"),
+                @Index(name = "idx_leagues_main_country_name", columnList = "is_main, country, league_name")
+        })
 @Getter
 @Setter
 @NoArgsConstructor

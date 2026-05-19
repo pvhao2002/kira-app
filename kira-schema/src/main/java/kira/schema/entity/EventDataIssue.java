@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
+import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -13,7 +14,12 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "event_data_issue")
+@Table(
+        name = "event_data_issue",
+        indexes = {
+                @Index(name = "idx_issue_type_recorded_at", columnList = "issue_type, recorded_at"),
+                @Index(name = "idx_event_data_issue_recorded_at", columnList = "recorded_at")
+        })
 @IdClass(EventDataIssueId.class)
 @Getter
 @Setter

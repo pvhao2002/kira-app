@@ -102,9 +102,12 @@ public class CrawlDateRepository {
     private WhereClause buildWhereClause(String status, String date, String dateFrom, String dateTo, String totalEvent) {
         var clause = new StringBuilder();
         String normalizedStatus = null;
-        String normalizedDate = null;
-        String from = null;
-        String to = null;
+        String compactDate = null;
+        String isoDate = null;
+        String fromCompact = null;
+        String fromIso = null;
+        String toCompact = null;
+        String toIso = null;
         Integer totalEvents = null;
 
         if (status != null && !status.isBlank()) {
@@ -112,41 +115,78 @@ public class CrawlDateRepository {
             clause.append(" AND status = :status");
         }
         if (date != null && !date.isBlank()) {
-            normalizedDate = normalizeDateValue(date);
-            clause.append(" AND REPLACE(date, '-', '') = :date");
+            compactDate = toCompactDateValue(date);
+            isoDate = toIsoDateValue(date);
+            clause.append(" AND date IN (:dateCompact, :dateIso)");
         }
         if (dateFrom != null && !dateFrom.isBlank()) {
-            from = normalizeDateValue(dateFrom);
-            clause.append(" AND REPLACE(date, '-', '') >= :dateFrom");
+            fromCompact = toCompactDateValue(dateFrom);
+            fromIso = toIsoDateValue(dateFrom);
         }
         if (dateTo != null && !dateTo.isBlank()) {
-            to = normalizeDateValue(dateTo);
-            clause.append(" AND REPLACE(date, '-', '') <= :dateTo");
+            toCompact = toCompactDateValue(dateTo);
+            toIso = toIsoDateValue(dateTo);
+        }
+        if (fromCompact != null || toCompact != null) {
+            if (fromCompact != null && toCompact != null) {
+                clause.append("""
+                         AND (
+                            (date NOT LIKE '%-%' AND date BETWEEN :dateFromCompact AND :dateToCompact)
+                            OR (date LIKE '____-__-__' AND date BETWEEN :dateFromIso AND :dateToIso)
+                         )
+                        """);
+            } else if (fromCompact != null) {
+                clause.append("""
+                         AND (
+                            (date NOT LIKE '%-%' AND date >= :dateFromCompact)
+                            OR (date LIKE '____-__-__' AND date >= :dateFromIso)
+                         )
+                        """);
+            } else {
+                clause.append("""
+                         AND (
+                            (date NOT LIKE '%-%' AND date <= :dateToCompact)
+                            OR (date LIKE '____-__-__' AND date <= :dateToIso)
+                         )
+                        """);
+            }
         }
         if (totalEvent != null && !totalEvent.isBlank() && !"all".equalsIgnoreCase(totalEvent.trim())) {
             totalEvents = Integer.parseInt(totalEvent.trim());
             clause.append(" AND total_events = :totalEvents");
         }
 
-        return new WhereClause(clause.toString(), normalizedStatus, normalizedDate, from, to, totalEvents);
+        return new WhereClause(clause.toString(), normalizedStatus, compactDate, isoDate, fromCompact, fromIso,
+                toCompact, toIso, totalEvents);
     }
 
-    private static String normalizeDateValue(String value) {
+    private static String toCompactDateValue(String value) {
         return value.trim().replace("-", "");
+    }
+
+    private static String toIsoDateValue(String value) {
+        var compact = toCompactDateValue(value);
+        if (compact.length() == 8) {
+            return compact.substring(0, 4) + "-" + compact.substring(4, 6) + "-" + compact.substring(6, 8);
+        }
+        return value.trim();
     }
 
     private JdbcClient.StatementSpec bindParams(JdbcClient.StatementSpec spec, WhereClause w) {
         if (w.status() != null) {
             spec = spec.param("status", w.status());
         }
-        if (w.date() != null) {
-            spec = spec.param("date", w.date());
+        if (w.dateCompact() != null) {
+            spec = spec.param("dateCompact", w.dateCompact())
+                    .param("dateIso", w.dateIso());
         }
-        if (w.dateFrom() != null) {
-            spec = spec.param("dateFrom", w.dateFrom());
+        if (w.dateFromCompact() != null) {
+            spec = spec.param("dateFromCompact", w.dateFromCompact())
+                    .param("dateFromIso", w.dateFromIso());
         }
-        if (w.dateTo() != null) {
-            spec = spec.param("dateTo", w.dateTo());
+        if (w.dateToCompact() != null) {
+            spec = spec.param("dateToCompact", w.dateToCompact())
+                    .param("dateToIso", w.dateToIso());
         }
         if (w.totalEvents() != null) {
             spec = spec.param("totalEvents", w.totalEvents());
@@ -172,9 +212,12 @@ public class CrawlDateRepository {
     private record WhereClause(
             String clause,
             String status,
-            String date,
-            String dateFrom,
-            String dateTo,
+            String dateCompact,
+            String dateIso,
+            String dateFromCompact,
+            String dateFromIso,
+            String dateToCompact,
+            String dateToIso,
             Integer totalEvents
     ) {
     }

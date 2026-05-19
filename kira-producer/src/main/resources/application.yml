@@ -36,6 +36,9 @@ kira:
     crawl-schedule:
       date-enabled: ${KIRA_PRODUCER_CRAWL_SCHEDULE_DATE_ENABLED:${KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED:true}}
       event-enabled: ${KIRA_PRODUCER_CRAWL_SCHEDULE_EVENT_ENABLED:${KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED:true}}
+    soccer-team-recent-stat:
+      enabled: ${KIRA_PRODUCER_SOCCER_TEAM_RECENT_STAT_ENABLED:true}
+      cron: "${KIRA_PRODUCER_SOCCER_TEAM_RECENT_STAT_CRON:0 30 2 * * *}"
 
 server:
   port: ${KIRA_PRODUCER_PORT:2311}

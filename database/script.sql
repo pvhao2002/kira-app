@@ -10,6 +10,7 @@ drop table if exists event_odds;
 drop table if exists event_incident;
 drop table if exists event_result;
 drop table if exists event_claim;
+drop table if exists soccer_team_recent_stat;
 drop table if exists transactions;
 drop table if exists events;
 drop table if exists teams;
@@ -28,6 +29,7 @@ create table crawl_date
     created_at   datetime                                                    default now(),
     updated_at   datetime                                                    default now() on update now(),
     index idx_status (status),
+    index idx_crawl_date_status_updated_at (status, updated_at),
     index idx_crawl_date_total_events (total_events)
 ) engine = InnoDB
   row_format = dynamic;
@@ -86,7 +88,8 @@ create table leagues
     updated_at   datetime   default now() on update now(),
     unique key uk_league_name (league_name),
     index idx_country (country),
-    index idx_country_code_short (country_code_short)
+    index idx_country_code_short (country_code_short),
+    index idx_leagues_main_country_name (is_main, country, league_name)
 ) engine = InnoDB
   row_format = dynamic;
 
@@ -98,6 +101,29 @@ create table teams
     created_at datetime default now(),
     updated_at datetime default now() on update now(),
     unique key uk_team_name (team_name)
+) engine = InnoDB
+  row_format = dynamic;
+
+create table soccer_team_recent_stat
+(
+    stat_id              bigint auto_increment primary key,
+    metric_type          enum ('TOTAL_GOALS_3_PLUS', 'TOTAL_CORNERS_10_PLUS', 'FIRST_HALF_GOAL') not null,
+    team_id              int                                                                     not null,
+    team_name            varchar(100)                                                            not null,
+    window_start         date                                                                    not null,
+    window_end           date                                                                    not null,
+    eligible_match_count int unsigned                                                            not null,
+    matched_match_count  int unsigned                                                            not null,
+    percentage           decimal(6, 2)                                                           not null,
+    rank_no              int unsigned                                                            not null,
+    computed_at          datetime                                                                not null default now(),
+    created_at           datetime                                                                         default now(),
+    updated_at           datetime                                                                         default now() on update now(),
+    unique key uk_strs_metric_team_window (metric_type, team_id, window_end),
+    index idx_strs_metric_rank (metric_type, rank_no),
+    index idx_strs_window_metric_rank (window_end, metric_type, rank_no),
+    index idx_strs_computed_at (computed_at),
+    constraint fk_strs_team foreign key (team_id) references teams (team_id) on delete cascade
 ) engine = InnoDB
   row_format = dynamic;
 
@@ -117,6 +143,9 @@ create table events
     updated_at  datetime    default now() on update now(),
     unique key uk_external_event (external_id),
     index idx_event_date (event_date),
+    index idx_events_status_date_id (status, event_date, event_id),
+    index idx_events_date_home (event_date, home_id),
+    index idx_events_date_away (event_date, away_id),
     index idx_event_date_event_name (event_date, event_name),
     index idx_league_date_name (league_id, event_date, event_name),
     index idx_home_away (home_id, away_id)
@@ -224,7 +253,8 @@ create table event_odds
     price_b    decimal(10, 2),
     created_at datetime default now(),
     unique key uk_event_market_type (event_id, market, type),
-    index idx_event_market (event_id, type, market, line)
+    index idx_event_market (event_id, type, market, line),
+    index idx_event_odds_type_market_event (type, market, event_id)
 ) engine = InnoDB
   row_format = dynamic;
 
@@ -276,7 +306,9 @@ create table event_crawl_failed
     screenshot longtext,
     created_at datetime default now(),
     primary key pk_event_fail (event_id, type),
-    index idx_event_fail (event_id)
+    index idx_event_fail (event_id),
+    index idx_event_crawl_failed_type_event (type, event_id),
+    index idx_event_crawl_failed_type_created_at (type, created_at)
 ) engine = InnoDB
   row_format = dynamic;
 

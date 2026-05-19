@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import kira.schema.entity.enums.OddsMarket;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +21,14 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "event_odds",
-        indexes = @Index(name = "idx_event_odds_event_id_type", columnList = "event_id, type"))
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_event_market_type",
+                columnNames = {"event_id", "market", "type"}
+        ),
+        indexes = {
+                @Index(name = "idx_event_market", columnList = "event_id, type, market, line"),
+                @Index(name = "idx_event_odds_type_market_event", columnList = "type, market, event_id")
+        })
 @Getter
 @Setter
 @NoArgsConstructor

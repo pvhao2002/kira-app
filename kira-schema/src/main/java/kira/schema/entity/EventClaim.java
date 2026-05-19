@@ -12,6 +12,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,9 +22,13 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "event_claim",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_event_claim_event_id",
+                columnNames = "event_id"
+        ),
         indexes = {
-                @Index(name = "idx_event_claim_event", columnList = "event_id"),
-                @Index(name = "idx_event_claimed_at", columnList = "claimed_at")
+                @Index(name = "idx_claimed_by_claimed_at", columnList = "claimed_by, claimed_at"),
+                @Index(name = "idx_claimed_at", columnList = "claimed_at")
         })
 @Getter
 @Setter

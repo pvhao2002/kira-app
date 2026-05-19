@@ -17,9 +17,15 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "events",
-        indexes = @Index(
-                name = "idx_events_league_home_away_status_date_name",
-                columnList = "league_id, home_id, away_id, status, event_date, event_name"))
+        indexes = {
+                @Index(name = "idx_event_date", columnList = "event_date"),
+                @Index(name = "idx_events_status_date_id", columnList = "status, event_date, event_id"),
+                @Index(name = "idx_events_date_home", columnList = "event_date, home_id"),
+                @Index(name = "idx_events_date_away", columnList = "event_date, away_id"),
+                @Index(name = "idx_event_date_event_name", columnList = "event_date, event_name"),
+                @Index(name = "idx_league_date_name", columnList = "league_id, event_date, event_name"),
+                @Index(name = "idx_home_away", columnList = "home_id, away_id")
+        })
 @Getter
 @Setter
 @NoArgsConstructor

@@ -16,7 +16,13 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "crawl_date", indexes = @Index(name = "idx_crawl_date_status", columnList = "status"))
+@Table(
+        name = "crawl_date",
+        indexes = {
+                @Index(name = "idx_crawl_date_status", columnList = "status"),
+                @Index(name = "idx_crawl_date_status_updated_at", columnList = "status, updated_at"),
+                @Index(name = "idx_crawl_date_total_events", columnList = "total_events")
+        })
 @Getter
 @Setter
 @NoArgsConstructor

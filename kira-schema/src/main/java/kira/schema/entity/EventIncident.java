@@ -25,7 +25,10 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "event_incident",
-        indexes = @Index(name = "idx_event_incident_event", columnList = "event_id"))
+        indexes = {
+                @Index(name = "idx_event_id", columnList = "event_id"),
+                @Index(name = "idx_event_type_minute", columnList = "event_id, incident_type, minute")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
