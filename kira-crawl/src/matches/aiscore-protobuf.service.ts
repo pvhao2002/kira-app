@@ -8,8 +8,10 @@ import * as protobuf from 'protobufjs';
 export class AiscoreProtobufService {
   private readonly responseType: protobuf.Type;
   private readonly matchesType: protobuf.Type;
+  private readonly matchOddsType: protobuf.Type;
   private readonly webMatchOddsDetailType: protobuf.Type;
   private readonly matchOddsDetailType: protobuf.Type;
+  private readonly matchTeamStatsType: protobuf.Type;
 
   constructor() {
     const schemaPath = join(process.cwd(), 'protobuf.json');
@@ -18,14 +20,20 @@ export class AiscoreProtobufService {
 
     const responseType = root.lookupTypeOrEnum('onescore.app.v1.Response');
     const matchesType = root.lookupTypeOrEnum('onescore.app.v1.Matches');
+    const matchOddsType = root.lookupTypeOrEnum('onescore.app.v1.MatchOdds');
     const webMatchOddsDetailType = root.lookupTypeOrEnum('onescore.app.v1.WebMatchOddsDetail');
     const matchOddsDetailType = root.lookupTypeOrEnum('onescore.app.v1.MatchOddsDetail');
+    const matchTeamStatsType = root.lookupTypeOrEnum('onescore.app.v1.MatchTeamStats');
     if (!(responseType instanceof protobuf.Type)) {
       throw new InternalServerErrorException('Protobuf message onescore.app.v1.Response was not found');
     }
 
     if (!(matchesType instanceof protobuf.Type)) {
       throw new InternalServerErrorException('Protobuf message onescore.app.v1.Matches was not found');
+    }
+
+    if (!(matchOddsType instanceof protobuf.Type)) {
+      throw new InternalServerErrorException('Protobuf message onescore.app.v1.MatchOdds was not found');
     }
 
     if (!(webMatchOddsDetailType instanceof protobuf.Type)) {
@@ -35,11 +43,16 @@ export class AiscoreProtobufService {
     if (!(matchOddsDetailType instanceof protobuf.Type)) {
       throw new InternalServerErrorException('Protobuf message onescore.app.v1.MatchOddsDetail was not found');
     }
+    if (!(matchTeamStatsType instanceof protobuf.Type)) {
+      throw new InternalServerErrorException('Protobuf message onescore.app.v1.MatchTeamStats was not found');
+    }
 
     this.responseType = responseType;
     this.matchesType = matchesType;
+    this.matchOddsType = matchOddsType;
     this.webMatchOddsDetailType = webMatchOddsDetailType;
     this.matchOddsDetailType = matchOddsDetailType;
+    this.matchTeamStatsType = matchTeamStatsType;
   }
 
   decodeMatches(body: Buffer): Record<string, unknown> {
@@ -72,12 +85,42 @@ export class AiscoreProtobufService {
     }) as Record<string, unknown>;
   }
 
+  decodeMatchOdds(body: Buffer): Record<string, unknown> {
+    const payload = this.unwrapGzip(body);
+    const oddsPayload = this.unwrapResponseData(payload);
+    const decoded = this.matchOddsType.decode(oddsPayload);
+
+    return this.matchOddsType.toObject(decoded, {
+      longs: String,
+      enums: String,
+      bytes: String,
+      defaults: false,
+      arrays: true,
+      objects: true,
+    }) as Record<string, unknown>;
+  }
+
   decodeMatchOddsDetail(body: Buffer): Record<string, unknown> {
     const payload = this.unwrapGzip(body);
     const oddsPayload = this.unwrapResponseData(payload);
     const decoded = this.matchOddsDetailType.decode(oddsPayload);
 
     return this.matchOddsDetailType.toObject(decoded, {
+      longs: String,
+      enums: String,
+      bytes: String,
+      defaults: false,
+      arrays: true,
+      objects: true,
+    }) as Record<string, unknown>;
+  }
+
+  decodeMatchTeamStats(body: Buffer): Record<string, unknown> {
+    const payload = this.unwrapGzip(body);
+    const statsPayload = this.unwrapResponseData(payload);
+    const decoded = this.matchTeamStatsType.decode(statsPayload);
+
+    return this.matchTeamStatsType.toObject(decoded, {
       longs: String,
       enums: String,
       bytes: String,

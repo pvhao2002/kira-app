@@ -57,6 +57,9 @@ public class Event {
     @Column(length = 25)
     private String status = "-";
 
+    @Column(name = "status_id")
+    private Integer statusId;
+
     @Lob
     private String link;
 

@@ -29,6 +29,12 @@ public class Team {
     @Column(name = "team_name", nullable = false, length = 100, unique = true)
     private String teamName;
 
+    @Column(name = "external_id", length = 100)
+    private String externalId;
+
+    @Column(name = "sport_id")
+    private Integer sportId;
+
     @Lob
     @Column(name = "logo_url")
     private String logoUrl;

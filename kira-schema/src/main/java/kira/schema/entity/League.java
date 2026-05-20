@@ -26,7 +26,6 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 public class League {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "league_id")
@@ -44,6 +43,21 @@ public class League {
 
     @Column(name = "country_code_short", length = 3)
     private String countryCodeShort;
+
+    @Column(name = "external_id", length = 100)
+    private String externalId;
+
+    @Column(name = "has_stats")
+    private Integer hasStats;
+
+    @Column(name = "slug", length = 200)
+    private String slug;
+
+    @Column(name = "sport_id")
+    private Integer sportId;
+
+    @Column(name = "color", length = 50)
+    private String color;
 
     @Column(name = "is_main")
     private Boolean isMain = Boolean.FALSE;

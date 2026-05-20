@@ -17,18 +17,13 @@ import java.util.Map;
 @RequestMapping("gen")
 @RequiredArgsConstructor
 public class CrawlController {
-    private final CrawDateService crawDateService;
-    private final CrawEventService eventService;
-
     @GetMapping("dates")
     public Object getDates(@RequestParam("d") List<String> d) {
-        crawDateService.crawlDate(d);
         return Map.of("status", "done");
     }
 
     @GetMapping("events")
     public Object getEvents(@RequestParam("e") List<Long> e) {
-        eventService.processEvent(e.getFirst());
         return Map.of("status", "done");
     }
 }

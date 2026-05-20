@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 @Log
 @Service
 @RequiredArgsConstructor
+@Deprecated
 public class CrawDateService {
     public static final String STATUS = "status";
     public static final String TEAM_NAME = "team_name";

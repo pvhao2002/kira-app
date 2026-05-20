@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 @Log
 @Service
 @RequiredArgsConstructor
+@Deprecated
 public class CrawEventService {
     private static final String PREFIX_LOG = "CrawEventService >> %s >> %s";
     private static final int EVENT_DATA_ISSUE_DESCRIPTION_MAX_LENGTH = 16_000;
