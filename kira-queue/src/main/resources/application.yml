@@ -13,8 +13,6 @@ application:
 spring:
   application:
     name: kira-queue
-  profiles:
-    active: composite
   output:
     ansi:
       enabled: NEVER
@@ -62,6 +60,9 @@ server:
 app:
   gateway:
     base-url: ${APP_GATEWAY_BASE_URL:http://localhost/gateway}
+  kira-crawl:
+    base-url: ${APP_KIRA_CRAWL_BASE_URL:http://localhost:3000}
+    read-timeout-ms: ${APP_KIRA_CRAWL_READ_TIMEOUT_MS:300000}
 
 logging:
   level:

@@ -15,6 +15,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -34,7 +35,7 @@ public class DateSchedule {
             from crawl_date
             where false
                      or status in ('pending', 'failed')
-                     or (updated_at + interval '15' minute < now() and status <> 'done')
+                     or (updated_at + interval 15 minute < now() and status <> 'done')
                      or total_events = 0
             limit 20
             """;
@@ -42,8 +43,19 @@ public class DateSchedule {
     @Scheduled(cron = "0 0 22 * * *", zone = "Asia/Ho_Chi_Minh")
     public void crawlTomorrowEvent() {
         for (var date : List.of(DateUtil.getTomorrowDate())) {
-            dateProducer.sendDateTomorrow(date);
-            log.info("DateSchedule >> Scheduled crawl for [%s] events.".formatted(date));
+            try {
+                dateProducer.sendDateTomorrow(date);
+                jdbcTemplate.update(
+                        """
+                                insert into crawl_date (date, status) values (:date, 'picked')
+                                on duplicate key update status = 'picked'
+                                """,
+                        Map.of("date", date)
+                );
+                log.info("DateSchedule >> Scheduled crawl for [%s] events.".formatted(date));
+            } catch (Exception e) {
+                log.log(Level.WARNING, "DateSchedule: failed to send tomorrow date to queue: " + date, e);
+            }
         }
     }
 

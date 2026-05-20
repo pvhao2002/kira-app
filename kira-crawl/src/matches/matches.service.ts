@@ -20,7 +20,7 @@ type MatchOddsDetails = {
     corner?: DecodedRecord;
 };
 type OddsDetailType = keyof MatchOddsDetails;
-type OddsSnapshotType = 'open' | 'pre-match' | 'ht';
+type OddsSnapshotType = 'open' | 'pre-match' | 'half-time';
 type OddsTimelineMarket = 'hdc' | 'eu' | 'ou' | 'corner';
 type OddsTimelineItem = {
     market: OddsTimelineMarket;
@@ -972,14 +972,13 @@ export class MatchesService {
         return [
             ...this.pickOddsSnapshotsByStatus(timelineOdds, 'open', 1, 'first'),
             ...this.pickOddsSnapshotsByStatus(timelineOdds, 'pre-match', 1, 'last'),
-            ...this.pickOddsSnapshotsByStatus(timelineOdds, 'ht', 3, 'last'),
+            ...this.pickOddsSnapshotsByStatus(timelineOdds, 'half-time', 3, 'last'),
         ];
     }
 
     private mapOddsListForDatabase(oddsList: DecodedRecord) {
         return [
             ...this.mapOddsListMarketForDatabase('hdc', this.asArray(oddsList.asia)),
-            ...this.mapOddsListMarketForDatabase('eu', this.asArray(oddsList.eu)),
             ...this.mapOddsListMarketForDatabase('ou', this.asArray(oddsList.bs)),
             ...this.mapOddsListMarketForDatabase('corner', this.asArray(oddsList.corner)),
         ];
@@ -997,7 +996,7 @@ export class MatchesService {
         return [
             this.mapOddsListItemForDatabase('open', market, bet365Odds.f),
             this.mapOddsListItemForDatabase('pre-match', market, bet365Odds.s),
-            this.mapOddsListItemForDatabase('ht', market, bet365Odds.l),
+            this.mapOddsListItemForDatabase('half-time', market, bet365Odds.l),
         ].filter((item) => item !== undefined);
     }
 
@@ -1086,7 +1085,7 @@ export class MatchesService {
             crawledAt?: string;
             statusId?: number;
         }>,
-        type: 'open' | 'pre-match' | 'ht',
+        type: 'open' | 'pre-match' | 'half-time',
         statusId: number,
         position: 'first' | 'last',
     ) {
