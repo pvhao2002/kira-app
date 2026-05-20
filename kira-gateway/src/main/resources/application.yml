@@ -42,7 +42,7 @@ app:
     base-url: ${APP_KIRA_PRODUCER_BASE_URL:http://localhost:2311}
   gemini:
     base-url: ${APP_GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
-    model: ${APP_GEMINI_MODEL:Gemini 3 Flash}
+    model: ${APP_GEMINI_MODEL:gemini-3.1-flash-lite}
     api-key: ${APP_GEMINI_API_KEY:}
     connect-timeout: ${APP_GEMINI_CONNECT_TIMEOUT:5s}
     read-timeout: ${APP_GEMINI_READ_TIMEOUT:30s}

@@ -204,13 +204,9 @@ public class CrawDateService {
 
             for (var item : items) {
                 var countryName = item.select(".country-name").text();
-                var compeName = item.select(".compe-name").text();
-                var leagueName = "%s %s".formatted(
-                        countryName,
-                        compeName
-                );
-                String logo = PlaywrightUtil.getImageFromStyleBackgroundImage(page, "i.country-logo.squareLogo");
-
+                var leagueName = item.select(".compe-name").text();
+                String logo = item.select("i.country-logo").attr("style")
+                        .replaceFirst(".*url\\(&?\"?'?([^\"')]+)\"?'?\\).*", "$1");
                 var matches = item.select("a.match-container");
                 for (var m : matches) {
                     var event = new EventHtml(m).withCountryName(countryName.replace(":", "")).withLeagueName(leagueName).withLeagueUrl(logo);

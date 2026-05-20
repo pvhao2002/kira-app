@@ -43,10 +43,9 @@ public class CrawEventService {
     private static final long PARALLEL_CRAWL_TIMEOUT_MINUTES = 10;
 
     private static final String SQL_UPSERT_EVENT_DATA_ISSUE = """
-            INSERT INTO event_data_issue (event_id, issue_type, description, screenshot, recorded_at)
-            VALUES (:eventId, :issueType, :description, :screenshot, :recordedAt)
+            INSERT INTO event_data_issue (event_id, issue_type, description, recorded_at)
+            VALUES (:eventId, :issueType, :description, :recordedAt)
             ON DUPLICATE KEY UPDATE description = VALUES(description),
-                                    screenshot = VALUES(screenshot),
                                     recorded_at = VALUES(recorded_at)
             """;
 
@@ -202,24 +201,22 @@ public class CrawEventService {
         boolean oddTabPresent = hasTabLabel(tabTexts, "Odds");
 
         if (!statsTabPresent) {
-            var screenshot = captureScreenshotBase64(page);
             var description = withPrefix("processFullTimeEvent.statsTabPresent"
                     , "No Stats tab on match page; tabs found: %s of event_id = %s".formatted(tabTexts, event.getEventId())
             );
             log.warning(description);
-            recordEventMissingStats(event.getEventId(), description, screenshot);
+            recordEventMissingStats(event.getEventId(), description);
         }
         var statsFuture = statsTabPresent && !oddTabPresent
                 ? CompletableFuture.supplyAsync(() -> crawlStatEvents(event))
                 : CompletableFuture.completedFuture(true);
 
         if (!oddTabPresent) {
-            var screenshot = captureScreenshotBase64(page);
             var description = withPrefix("processFullTimeEvent.oddTabPresent"
                     , "No Odds tab on match page; tabs found: %s of event_id = %s".formatted(tabTexts, event.getEventId())
             );
             log.warning(description);
-            recordEventNoOdds(event.getEventId(), description, screenshot);
+            recordEventNoOdds(event.getEventId(), description);
         }
         var oddsFuture = oddTabPresent
                 ? CompletableFuture.supplyAsync(() -> crawlOddEvents(event))
@@ -230,7 +227,7 @@ public class CrawEventService {
 
     private boolean processNonFullTimeEvent(Page page, Event event) {
         if (!hasTabLabel(getMatchPageTabTexts(page), "Odds")) {
-            recordEventNoOdds(event.getEventId(), "No Odds tab on match page for non-FT event", captureScreenshotBase64(page));
+            recordEventNoOdds(event.getEventId(), "No Odds tab on match page for non-FT event");
             return true;
         }
         return crawlOddEvents(event);
@@ -281,21 +278,20 @@ public class CrawEventService {
                 Map.of("event_id", eventId, "claimed_by", EVENT_CLAIM_BY_PRODUCER));
     }
 
-    private void recordEventNoOdds(long eventId, String description, String screenshot) {
-        recordEventDataIssue(eventId, "missing_odds", description, screenshot);
+    private void recordEventNoOdds(long eventId, String description) {
+        recordEventDataIssue(eventId, "missing_odds", description);
     }
 
-    private void recordEventMissingStats(long eventId, String description, String screenshot) {
-        recordEventDataIssue(eventId, "missing_stats", description, screenshot);
+    private void recordEventMissingStats(long eventId, String description) {
+        recordEventDataIssue(eventId, "missing_stats", description);
     }
 
-    private void recordEventDataIssue(long eventId, String issueType, String description, String screenshot) {
+    private void recordEventDataIssue(long eventId, String issueType, String description) {
         var safeDescription = truncateForEventDataIssue(description);
         jdbcTemplate.update(SQL_UPSERT_EVENT_DATA_ISSUE,
                 new MapSqlParameterSource("eventId", eventId)
                         .addValue("issueType", issueType)
                         .addValue("description", safeDescription)
-                        .addValue("screenshot", screenshot)
                         .addValue("recordedAt", LocalDateTime.now()));
     }
 
@@ -343,8 +339,7 @@ public class CrawEventService {
                             "Crawl stats skip: eventId=%d (need Match + 1st Half)".formatted(evt.getEventId())));
                     recordEventMissingStats(
                             evt.getEventId(),
-                            "Not enough tabs in stats view: found %d, expected at least 2 (Match and 1st Half) with HTML: %s".formatted(tabCount, safeLocatorHtml(tabs)),
-                            captureScreenshotBase64(page)
+                            "Not enough tabs in stats view: found %d, expected at least 2 (Match and 1st Half) with HTML: %s".formatted(tabCount, safeLocatorHtml(tabs))
                     );
                     ok[0] = false;
                     return;
@@ -357,8 +352,7 @@ public class CrawEventService {
                 if (StringUtil.isEmpty(matchHtml)) {
                     recordEventMissingStats(
                             evt.getEventId(),
-                            "Cannot read Match tab html in stats view (page likely navigating)",
-                            captureScreenshotBase64(page)
+                            "Cannot read Match tab html in stats view (page likely navigating)"
                     );
                     ok[0] = false;
                     return;
@@ -372,8 +366,7 @@ public class CrawEventService {
                 if (StringUtil.isEmpty(firstHalfHtml)) {
                     recordEventMissingStats(
                             evt.getEventId(),
-                            "Cannot read 1st Half tab html in stats view (page likely navigating)",
-                            captureScreenshotBase64(page)
+                            "Cannot read 1st Half tab html in stats view (page likely navigating)"
                     );
                     ok[0] = false;
                     return;
@@ -480,7 +473,7 @@ public class CrawEventService {
                     var description = withPrefix("crawlOddEvents",
                             "No oddTypesBox on page for event_id = %d".formatted(evt.getEventId()));
                     log.warning(description);
-                    recordEventNoOdds(evt.getEventId(), description, captureScreenshotBase64(page));
+                    recordEventNoOdds(evt.getEventId(), description);
                     return;
                 }
 
@@ -490,7 +483,7 @@ public class CrawEventService {
                     var description = withPrefix("crawlOddEvents",
                             "No odds tabs in oddTypesBox for event_id = %d".formatted(evt.getEventId()));
                     log.warning(description);
-                    recordEventNoOdds(evt.getEventId(), description, captureScreenshotBase64(page));
+                    recordEventNoOdds(evt.getEventId(), description);
                     return;
                 }
 
@@ -514,7 +507,7 @@ public class CrawEventService {
                             evt.getEventId(), hasAsianHandicap.get(), hasTotalGoals.get()
                     ));
                     log.warning(description);
-                    recordEventNoOdds(evt.getEventId(), description, captureScreenshotBase64(page));
+                    recordEventNoOdds(evt.getEventId(), description);
                     return;
                 }
 
@@ -529,11 +522,11 @@ public class CrawEventService {
                         page.waitForTimeout(300); // wait for modal close before next tab click
                         isOpenModal.set(false);
                     }
-                    tab.click();
-                    page.waitForTimeout(300); // wait for tab click before next action
                     String tabNormalize = StringUtil.normalizeText(tab.innerText());
                     for (var e : listTabOdds.entrySet()) {
                         if (!e.getKey().equalsIgnoreCase(tabNormalize)) continue;
+                        tab.click();
+                        page.waitForTimeout(300); // wait for tab click before next action
                         String market = e.getValue();
                         var oddProvider = page.locator(".oddsBox .oddsBoxRight");
                         if (oddProvider.count() == 0) {
@@ -541,7 +534,7 @@ public class CrawEventService {
                                     "No odds provider box for market %s on event_id = %d"
                                             .formatted(market, evt.getEventId()));
                             log.warning(description);
-                            recordEventNoOdds(evt.getEventId(), description, captureScreenshotBase64(page));
+                            recordEventNoOdds(evt.getEventId(), description);
                             return;
                         }
                         if (!clickFirstVisible(oddProvider)) {
@@ -549,7 +542,7 @@ public class CrawEventService {
                                     "Cannot click any visible odds provider for market %s on event_id = %d"
                                             .formatted(market, evt.getEventId()));
                             log.warning(description);
-                            recordEventNoOdds(evt.getEventId(), description, captureScreenshotBase64(page));
+                            recordEventNoOdds(evt.getEventId(), description);
                             return;
                         }
                         isOpenModal.set(true);
@@ -560,7 +553,7 @@ public class CrawEventService {
                                     "No odds entries in odds provider box for market %s on event_id = %d"
                                             .formatted(market, evt.getEventId()));
                             log.warning(description);
-                            recordEventNoOdds(evt.getEventId(), description, captureScreenshotBase64(page));
+                            recordEventNoOdds(evt.getEventId(), description);
                             return;
                         }
                         var timelineItems = listLi.all().stream()
@@ -580,8 +573,7 @@ public class CrawEventService {
                 if (!savedAny.get()) {
                     recordEventNoOdds(
                             evt.getEventId(),
-                            "Crawled odds but no valid odds entries found for any market",
-                            captureScreenshotBase64(page)
+                            "Crawled odds but no valid odds entries found for any market"
                     );
                 }
             } catch (Exception e) {

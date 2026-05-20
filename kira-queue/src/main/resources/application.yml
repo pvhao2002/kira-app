@@ -6,7 +6,7 @@ application:
       password: "${DB_APP_PASSWORD:kira_password}"
       driver-class-name: com.mysql.cj.jdbc.Driver
     replica:
-      jdbc-url: "jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3311}/${DB_NAME:kira}?useUnicode=true"
+      jdbc-url: "jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3310}/${DB_NAME:kira}?useUnicode=true"
       username: "${DB_APP_USER:kira_user}"
       password: "${DB_APP_PASSWORD:kira_password}"
       driver-class-name: com.mysql.cj.jdbc.Driver

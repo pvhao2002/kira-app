@@ -184,17 +184,6 @@ public class PlaywrightUtil {
         }
     }
 
-    public String getImageFromStyleBackgroundImage(Page page, String selector) {
-        return (String) page.evaluate("""
-                    (selector) => {
-                        const el = document.querySelector(selector);
-                        if (!el) return null;
-                        const bg = getComputedStyle(el).backgroundImage;
-                        return bg?.replace(/^url\\(["']?/, '').replace(/["']?\\)$/, '');
-                    }
-                """, selector);
-    }
-
     public String getImageFromImgSrc(org.jsoup.nodes.Element root, String selector) {
         if (root == null) return null;
 
