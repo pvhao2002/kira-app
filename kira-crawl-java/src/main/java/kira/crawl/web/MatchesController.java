@@ -32,17 +32,18 @@ public class MatchesController {
             @RequestParam(name = "match_id", required = false) String matchId,
             @RequestParam(required = false) String raw
     ) {
-        return crawlTask(() -> matchesService.findMatches(new MatchesService.MatchQuery(date, sportId, lang, tz, matchId, raw)));
+        return crawlTask(playwrightProperties.matchesAsyncTimeoutMs(),
+                () -> matchesService.findMatches(new MatchesService.MatchQuery(date, sportId, lang, tz, matchId, raw)));
     }
 
     @GetMapping("/odds")
     @Operation(summary = "Crawl odds for a single match")
     public WebAsyncTask<Object> findMatchOdds(@RequestParam(name = "event_link") String eventLink) {
-        return crawlTask(() -> matchesService.findMatchOdds(eventLink));
+        return crawlTask(playwrightProperties.oddsAsyncTimeoutMs(), () -> matchesService.findMatchOdds(eventLink));
     }
 
-    private WebAsyncTask<Object> crawlTask(ThrowingSupplier supplier) {
-        var task = new WebAsyncTask<>(playwrightProperties.browserTimeoutMs(), supplier::get);
+    private WebAsyncTask<Object> crawlTask(long asyncTimeoutMs, ThrowingSupplier supplier) {
+        var task = new WebAsyncTask<>(asyncTimeoutMs, supplier::get);
         task.onTimeout(() -> {
             throw new ResponseStatusException(HttpStatus.REQUEST_TIMEOUT, "AiScore crawl request timed out");
         });

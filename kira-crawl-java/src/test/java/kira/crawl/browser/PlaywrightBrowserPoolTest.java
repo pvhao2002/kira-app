@@ -13,6 +13,8 @@ class PlaywrightBrowserPoolTest {
                 true,
                 "",
                 80000,
+                180000,
+                300000,
                 60000,
                 "ua",
                 "en-US",

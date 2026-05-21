@@ -45,7 +45,9 @@ Virtual threads are enabled for the HTTP layer (`spring.threads.virtual.enabled=
 | `KIRA_CRAWL_PORT` / `PORT` | `3000` | HTTP port |
 | `PLAYWRIGHT_HEADLESS` | `true` | Headless browser |
 | `PLAYWRIGHT_CHANNEL` | — | e.g. `chrome` |
-| `AISCORE_BROWSER_TIMEOUT_MS` | `80000` | Browser timeout |
+| `AISCORE_BROWSER_TIMEOUT_MS` | `80000` | Per-step Playwright timeout (navigate, waitForResponse, …) |
+| `AISCORE_MATCHES_ASYNC_TIMEOUT_MS` | `180000` | HTTP async timeout for `GET /matches` |
+| `AISCORE_ODDS_ASYNC_TIMEOUT_MS` | `300000` | HTTP async timeout for `GET /matches/odds` (align with kira-queue `read-timeout-ms`) |
 | `AISCORE_COOKIE` | — | Pre-seed Cloudflare/session cookies |
 | `AISCORE_USER_AGENT` | Chrome UA | Override user agent |
 | `AISCORE_PROFILE_BASE_DIR` | `.playwright` | Browser profile root |

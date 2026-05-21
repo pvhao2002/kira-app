@@ -7,6 +7,8 @@ public record PlaywrightProperties(
         boolean headless,
         String channel,
         long browserTimeoutMs,
+        long matchesAsyncTimeoutMs,
+        long oddsAsyncTimeoutMs,
         long rawBrowserTimeoutMs,
         String userAgent,
         String acceptLanguage,
