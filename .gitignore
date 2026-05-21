@@ -37,6 +37,10 @@ yarn-error.*
 # docker bind-mount data (mysql, rabbitmq)
 data/
 
+# Playwright persistent browser profiles (kira-crawl, kira-crawl-java)
+.playwright/
+.playwright-test/
+
 # typescript
 *.tsbuildinfo
 

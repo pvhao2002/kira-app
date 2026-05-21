@@ -1,0 +1,46 @@
+server:
+  port: ${KIRA_CRAWL_PORT:${PORT:4000}}
+
+spring:
+  application:
+    name: kira-crawl-java
+  threads:
+    virtual:
+      enabled: true
+
+app:
+  playwright:
+    headless: ${PLAYWRIGHT_HEADLESS:true}
+    channel: ${PLAYWRIGHT_CHANNEL:}
+    browser-timeout-ms: ${AISCORE_BROWSER_TIMEOUT_MS:80000}
+    raw-browser-timeout-ms: ${AISCORE_RAW_BROWSER_TIMEOUT_MS:60000}
+    user-agent: ${AISCORE_USER_AGENT:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0}
+    accept-language: ${AISCORE_ACCEPT_LANGUAGE:en-US,en;q=0.9}
+    cookie: ${AISCORE_COOKIE:}
+    profile-base-dir: ${AISCORE_PROFILE_BASE_DIR:.playwright}
+    # Isolate profiles per instance (defaults to server port, same idea as kira-crawl port_${PORT}_${api})
+    profile-instance-id: ${PLAYWRIGHT_INSTANCE_ID:${KIRA_CRAWL_INSTANCE_ID:}}
+    server-port: ${server.port}
+    matches-concurrency: ${AISCORE_MATCHES_CONCURRENCY:1}
+    odds-concurrency: ${AISCORE_ODDS_CONCURRENCY:1}
+    raw-concurrency: ${AISCORE_RAW_CONCURRENCY:1}
+    acquire-timeout-ms: ${AISCORE_POOL_ACQUIRE_TIMEOUT_MS:120000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+springdoc:
+  swagger-ui:
+    path: /docs
+  api-docs:
+    path: /docs/openapi
+
+logging:
+  file:
+    name: ${LOG_FILE:logs/kira-crawl-java.log}

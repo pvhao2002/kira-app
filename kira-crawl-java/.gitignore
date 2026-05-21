@@ -1,0 +1,6 @@
+target/
+.idea/
+.playwright/
+.playwright-test/
+logs/
+package-lock.json
