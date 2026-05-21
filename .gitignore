@@ -41,6 +41,10 @@ data/
 .playwright/
 .playwright-test/
 
+# Cursor IDE debug/session logs
+.cursor/**/*.log
+.cursor/*.log
+
 # typescript
 *.tsbuildinfo
 
