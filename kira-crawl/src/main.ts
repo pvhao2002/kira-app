@@ -17,6 +17,7 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   const port = Number(process.env.PORT ?? 3000);
+  console.log(`Starting Kira Crawl API on port ${port}...`);
   await app.listen(port);
 }
 

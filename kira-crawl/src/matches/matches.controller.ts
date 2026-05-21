@@ -22,7 +22,7 @@ export class MatchesController {
   @ApiQuery({ name: 'raw', required: false, example: 'true', description: 'Return raw decoded protobuf instead of mapped response' })
   @ApiOkResponse({ description: 'Mapped match list with aiscoreRaw' })
   findMatches(@Query() query: Record<string, string | undefined>) {
-    return this.matchesService.findMatches(query);
+    return this.matchesService.findMatches('matches', query);
   }
 
   @Get('odds')
@@ -45,6 +45,6 @@ export class MatchesController {
       throw new BadRequestException('event_link query parameter is required');
     }
 
-    return this.matchesService.findMatchOdds(eventLink);
+    return this.matchesService.findMatchOdds('odds', eventLink);
   }
 }

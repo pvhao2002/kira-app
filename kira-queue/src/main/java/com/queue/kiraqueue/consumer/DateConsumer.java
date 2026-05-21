@@ -15,35 +15,41 @@ import java.util.logging.Level;
 @Service
 @RequiredArgsConstructor
 public class DateConsumer {
-   private final CrawDateServiceV2 crawDateServiceV2;
-   public static final String QUEUE_DATE_TOMORROW = "crawlTomorrowEvent";
-   public static final String QUEUE_DATE = "crawlByDate";
+    private final CrawDateServiceV2 crawDateServiceV2;
+    public static final String QUEUE_DATE_TOMORROW = "crawlTomorrowEvent";
+    public static final String QUEUE_DATE = "crawlByDate";
 
-   @RabbitListener(queues = QUEUE_DATE_TOMORROW, concurrency = "1")
-   public void handleDateTomorrow(String date) {
-       processDates("handleDateTomorrow", date);
-   }
+    @RabbitListener(queues = QUEUE_DATE_TOMORROW, concurrency = "1")
+    public void handleDateTomorrow(String date) {
+        processDates("handleDateTomorrow", date);
+    }
 
-   @RabbitListener(queues = QUEUE_DATE, concurrency = "1")
-   public void handleDate(String dates) {
-       processDates("handleDate", dates);
-   }
+    @RabbitListener(queues = QUEUE_DATE, concurrency = "1")
+    public void handleDate(String dates) {
+        processDates("handleDate", dates);
+        // sleep for 5 second to avoid overwhelming the crawl service when there are many dates
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
-   private void processDates(String handler, String dates) {
-       if (!StringUtils.hasText(dates)) {
-           return;
-       }
-       List<String> dateList = Arrays.stream(dates.split(","))
-               .map(String::trim)
-               .filter(StringUtils::hasText)
-               .toList();
-       if (dateList.isEmpty()) {
-           return;
-       }
-       try {
-           crawDateServiceV2.crawlDate(dateList);
-       } catch (Exception e) {
-           log.log(Level.SEVERE, handler + " failed: " + e.getMessage(), e);
-       }
-   }
+    private void processDates(String handler, String dates) {
+        if (!StringUtils.hasText(dates)) {
+            return;
+        }
+        List<String> dateList = Arrays.stream(dates.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .toList();
+        if (dateList.isEmpty()) {
+            return;
+        }
+        try {
+            crawDateServiceV2.crawlDate(dateList);
+        } catch (Exception e) {
+            log.log(Level.SEVERE, handler + " failed: " + e.getMessage(), e);
+        }
+    }
 }

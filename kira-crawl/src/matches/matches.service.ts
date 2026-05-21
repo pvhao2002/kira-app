@@ -1,6 +1,6 @@
 import {BadGatewayException, BadRequestException, Injectable} from '@nestjs/common';
-import {join} from 'node:path';
 import {chromium, type CDPSession, type Page} from 'playwright';
+import {resolveAiscoreUserDataDir} from '../aiscore-browser.util';
 import {AiscoreProtobufService} from './aiscore-protobuf.service';
 
 type MatchQuery = {
@@ -45,6 +45,7 @@ type NetworkBodyCapture = {
 
 @Injectable()
 export class MatchesService {
+    private readonly defaultTimeout = 80000;
     private readonly apiBaseUrl = 'https://api.aiscore.com/v1/web/api/matches';
     private readonly oddsListApiBaseUrl = 'https://api.aiscore.com/v1/web/api/match/odds_list';
     private readonly oddsDetailApiBaseUrl = 'https://api.aiscore.com/v1/web/api/match/odds/detail';
@@ -53,12 +54,12 @@ export class MatchesService {
     constructor(private readonly protobufService: AiscoreProtobufService) {
     }
 
-    async findMatches(query: MatchQuery) {
+    async findMatches(api: string, query: MatchQuery) {
         const params = this.normalizeQuery(query);
         const apiUrl = this.buildApiUrl(params);
         const publicPageUrl = this.buildPublicPageUrl(apiUrl);
 
-        return this.withBrowserPage(publicPageUrl, async (page, timeout) => {
+        return this.withBrowserPage(api, publicPageUrl, async (page, timeout) => {
             const [body] = await this.captureApiResponseBodies(page, [apiUrl], publicPageUrl, timeout);
             const decoded = this.protobufService.decodeMatches(body);
 
@@ -88,14 +89,14 @@ export class MatchesService {
         });
     }
 
-    async findMatchOdds(eventLink: string) {
+    async findMatchOdds(api: string, eventLink: string) {
         const publicPageUrl = this.parseAndValidateEventLink(eventLink).toString();
         const oddsPublicPageUrl = this.buildOddsPublicPageUrl(publicPageUrl);
         const matchId = this.extractMatchIdFromEventLink(publicPageUrl);
         const oddsListApiUrl = this.buildOddsListApiUrl(matchId);
         const teamStatsApiUrl = this.buildTeamStatsApiUrl(matchId);
 
-        return this.withBrowserPage(oddsPublicPageUrl, async (page, timeout) => {
+        return this.withBrowserPage(api, oddsPublicPageUrl, async (page, timeout) => {
             const [oddsListBody] = await this.captureApiResponseBodies(page, [oddsListApiUrl], oddsPublicPageUrl, timeout);
             const oddsList = this.protobufService.decodeMatchOdds(oddsListBody);
             if (!this.hasBet365Company(oddsList)) {
@@ -365,9 +366,13 @@ export class MatchesService {
         return result;
     }
 
-    private async withBrowserPage<T>(publicPageUrl: string, handler: (page: Page, timeout: number) => Promise<T>): Promise<T> {
-        const timeout = Number(process.env.AISCORE_BROWSER_TIMEOUT_MS ?? 60000);
-        const userDataDir = process.env.AISCORE_USER_DATA_DIR ?? join(process.cwd(), '.playwright', 'aiscore-profile');
+    private async withBrowserPage<T>(
+        api: string,
+        publicPageUrl: string,
+        handler: (page: Page, timeout: number) => Promise<T>,
+    ): Promise<T> {
+        const timeout = Number(process.env.AISCORE_BROWSER_TIMEOUT_MS ?? this.defaultTimeout.toString());
+        const userDataDir = resolveAiscoreUserDataDir(api);
         const userAgent =
             process.env.AISCORE_USER_AGENT ??
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0';

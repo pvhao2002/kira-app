@@ -422,18 +422,22 @@ public class CrawDateServiceV2 {
         }
         return new MapSqlParameterSource()
                 .addValue("eventId", eventId)
-                .addValue("htHomeGoal", result.htHomeGoal())
-                .addValue("htAwayGoal", result.htAwayGoal())
-                .addValue("ftHomeGoal", result.ftHomeGoal())
-                .addValue("ftAwayGoal", result.ftAwayGoal())
-                .addValue("ftHomeCorner", result.ftHomeCorner())
-                .addValue("ftAwayCorner", result.ftAwayCorner())
-                .addValue("ftHomeYellowCard", result.ftHomeYellowCard())
-                .addValue("ftAwayYellowCard", result.ftAwayYellowCard())
+                .addValue("htHomeGoal", nonNegative(result.htHomeGoal()))
+                .addValue("htAwayGoal", nonNegative(result.htAwayGoal()))
+                .addValue("ftHomeGoal", nonNegative(result.ftHomeGoal()))
+                .addValue("ftAwayGoal", nonNegative(result.ftAwayGoal()))
+                .addValue("ftHomeCorner", nonNegative(result.ftHomeCorner()))
+                .addValue("ftAwayCorner", nonNegative(result.ftAwayCorner()))
+                .addValue("ftHomeYellowCard", nonNegative(result.ftHomeYellowCard()))
+                .addValue("ftAwayYellowCard", nonNegative(result.ftAwayYellowCard()))
                 .addValue("htResult", result.htResult())
                 .addValue("htGoalStr", result.htGoalStr())
                 .addValue("ftResult", result.ftResult())
                 .addValue("ftGoalStr", result.ftGoalStr());
+    }
+
+    private static Integer nonNegative(Integer value) {
+        return value == null ? null : Math.max(0, value);
     }
 
     private static LocalDateTime parseEventDate(String eventDate) {

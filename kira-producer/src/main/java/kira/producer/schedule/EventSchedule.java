@@ -41,11 +41,6 @@ public class EventSchedule {
                 select 1 from event_claim ec
                 where ec.event_id = e.event_id
               )
-              and not exists (
-                select 1 from event_data_issue edi
-                where edi.event_id = e.event_id
-                  and edi.issue_type = 'missing_odds'
-              )
             """;
 
     private static final String SQL_SELECT_FINISHED_EVENTS = """
