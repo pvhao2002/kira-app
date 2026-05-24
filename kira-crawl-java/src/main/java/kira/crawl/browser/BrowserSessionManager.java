@@ -24,7 +24,7 @@ public class BrowserSessionManager {
             BiFunction<Page, Long, T> handler
     ) {
         return browserPool.withContext(apiType, context -> {
-            var timeout = timeoutFor(apiType);
+            var timeout = properties.browserTimeoutMs();
             var page = context.newPage();
             page.setDefaultTimeout(timeout);
             page.setDefaultNavigationTimeout(timeout);
@@ -43,11 +43,5 @@ public class BrowserSessionManager {
                 }
             }
         });
-    }
-
-    private long timeoutFor(BrowserApiType apiType) {
-        return apiType == BrowserApiType.RAW
-                ? properties.rawBrowserTimeoutMs()
-                : properties.browserTimeoutMs();
     }
 }

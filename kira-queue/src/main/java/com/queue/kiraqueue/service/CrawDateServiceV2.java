@@ -1,5 +1,6 @@
 package com.queue.kiraqueue.service;
 
+import com.queue.kiraqueue.amqp.LogoUploadProducer;
 import com.queue.kiraqueue.client.KiraCrawlClient;
 import com.queue.kiraqueue.dto.crawl.CrawledMatchBundle;
 import com.queue.kiraqueue.dto.crawl.CrawlEventDto;
@@ -80,9 +81,11 @@ public class CrawDateServiceV2 {
 
     private static final String SQL_UPSERT_EVENT = """
             insert into events (external_id, league_id, home_id, away_id,
-                                event_name, event_date, status, status_id, link)
+                                event_name, event_date, status, status_id, link,
+                                has_odds, has_odds_corner)
             values (:exid, :league_id, :home_id, :away_id,
-                    :event_name, :event_date, :status, :status_id, :link)
+                    :event_name, :event_date, :status, :status_id, :link,
+                    :has_odds, :has_odds_corner)
             on duplicate key update
                 league_id = values(league_id),
                 home_id = values(home_id),
@@ -91,7 +94,9 @@ public class CrawDateServiceV2 {
                 event_date = values(event_date),
                 status = values(status),
                 status_id = values(status_id),
-                link = values(link)
+                link = values(link),
+                has_odds = values(has_odds),
+                has_odds_corner = values(has_odds_corner)
             """;
 
     private static final String SQL_UPSERT_EVENT_RESULT = """
@@ -140,6 +145,7 @@ public class CrawDateServiceV2 {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KiraCrawlClient kiraCrawlClient;
+    private final LogoUploadProducer logoUploadProducer;
 
     public void crawlDate(List<String> dates) {
         if (CollectionUtils.isEmpty(dates)) {
@@ -239,6 +245,11 @@ public class CrawDateServiceV2 {
         Map<String, Integer> teamIdByExternalId = new HashMap<>();
         Map<String, Integer> teamIdByName = new HashMap<>();
         loadTeamIds(teamNames, teamExternalIds, teamIdByName, teamIdByExternalId);
+
+        logoUploadProducer.enqueuePendingLeagues(leagueIdByName.values());
+        logoUploadProducer.enqueuePendingLeagues(leagueIdByExternalId.values());
+        logoUploadProducer.enqueuePendingTeams(teamIdByName.values());
+        logoUploadProducer.enqueuePendingTeams(teamIdByExternalId.values());
 
         List<MapSqlParameterSource> eventParams = new ArrayList<>();
         for (CrawledMatchBundle bundle : events) {
@@ -413,7 +424,9 @@ public class CrawDateServiceV2 {
                 .addValue("event_date", parseEventDate(event.eventDate()))
                 .addValue("status", defaultStatus(event.status()))
                 .addValue("status_id", event.statusId())
-                .addValue("link", event.link());
+                .addValue("link", event.link())
+                .addValue("has_odds", Boolean.TRUE.equals(event.hasOdds()))
+                .addValue("has_odds_corner", Boolean.TRUE.equals(event.hasOddsCorner()));
     }
 
     private static MapSqlParameterSource toEventResultParams(Long eventId, CrawlEventResultDto result) {

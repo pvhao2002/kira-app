@@ -51,6 +51,7 @@ public class EventSchedule {
              and r.code = e.status_id
              and r.sport_id = 1
             where e.link is not null
+              and coalesce(e.has_odds, 0) = 1
             """ + SQL_FILTER_NOT_CLAIMED + """
               and (
                     (r.ref_id is not null and r.is_terminal = 1 and r.code not in (9, 12))
@@ -69,6 +70,7 @@ public class EventSchedule {
              and r.code = e.status_id
              and r.sport_id = 1
             where e.link is not null
+              and coalesce(e.has_odds, 0) = 1
             """ + SQL_FILTER_NOT_CLAIMED + """
               and (
                     (r.ref_id is not null and r.is_in_play = 1)

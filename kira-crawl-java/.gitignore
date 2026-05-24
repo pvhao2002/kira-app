@@ -1,6 +1,12 @@
 target/
 .idea/
-.playwright/
-.playwright-test/
 logs/
+
+# Playwright Chromium user-data profiles (runtime)
+.playwright/
+.playwright/**/
+.playwright-test/
+.playwright-test/**/
+
+node_modules/
 package-lock.json

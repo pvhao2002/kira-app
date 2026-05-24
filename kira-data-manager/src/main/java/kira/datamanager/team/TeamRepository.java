@@ -33,7 +33,7 @@ public class TeamRepository {
         var total = countSpec.query((rs, rowNum) -> rs.getLong(1)).single();
 
         var dataSql = """
-                SELECT team_id, team_name, logo_url, created_at, updated_at
+                SELECT team_id, team_name, logo_url, logo, created_at, updated_at
                 FROM teams
                 WHERE 1=1
                 """ + where
@@ -71,12 +71,14 @@ public class TeamRepository {
     }
 
     private TeamRowResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
-        var logo = rs.getString("logo_url");
+        var logoUrl = rs.getString("logo_url");
+        var logo = rs.getString("logo");
         var created = rs.getTimestamp("created_at");
         var updated = rs.getTimestamp("updated_at");
         return new TeamRowResponse(
                 rs.getInt("team_id"),
                 rs.getString("team_name"),
+                logoUrl,
                 logo,
                 created != null ? created.toLocalDateTime() : null,
                 updated != null ? updated.toLocalDateTime() : null

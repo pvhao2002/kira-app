@@ -24,7 +24,6 @@ Health: http://localhost:3000/actuator/health
 |----------|-------------|
 | `GET /matches?date=YYYYMMDD&sport_id=1&lang=2&tz=07:00` | Crawl match list for a date |
 | `GET /matches/odds?event_link=https://www.aiscore.com/...` | Crawl odds for one match |
-| `GET /aiscore/raw?publicPageUrl=...&apiUrl=...` | Generic protobuf proxy |
 
 ## Concurrency
 
@@ -32,9 +31,8 @@ Matches and odds crawls use **separate Playwright drivers and browser pools** (o
 
 - `AISCORE_MATCHES_CONCURRENCY` (default `1`)
 - `AISCORE_ODDS_CONCURRENCY` (default `1`)
-- `AISCORE_RAW_CONCURRENCY` (default `1`)
 
-Each request creates and closes its own persistent Chromium context. Profiles are separated by **JVM** (`port` + **PID**), API type, and pool slot under `.playwright/{port4000_pid12345}_{matches|odds|raw}_s0` so multiple JVMs never share the same Chromium user-data directory—even when two instances use the same HTTP port by mistake.
+Each request creates and closes its own persistent Chromium context. Profiles are separated by **JVM** (`port` + **PID**), API type, and pool slot under `.playwright/{port4000_pid12345}_{matches|odds}_s0` so multiple JVMs never share the same Chromium user-data directory—even when two instances use the same HTTP port by mistake.
 
 Virtual threads are enabled for the HTTP layer (`spring.threads.virtual.enabled=true`).
 

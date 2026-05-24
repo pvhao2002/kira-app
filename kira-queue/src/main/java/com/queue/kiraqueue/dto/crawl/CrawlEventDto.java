@@ -13,6 +13,8 @@ public record CrawlEventDto(
         String status,
         Integer statusId,
         String link,
-        Integer matchStatus
+        Integer matchStatus,
+        Boolean hasOdds,
+        Boolean hasOddsCorner
 ) {
 }

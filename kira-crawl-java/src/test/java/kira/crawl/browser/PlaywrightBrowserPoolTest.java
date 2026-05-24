@@ -15,7 +15,6 @@ class PlaywrightBrowserPoolTest {
                 80000,
                 180000,
                 300000,
-                60000,
                 "ua",
                 "en-US",
                 "",
@@ -24,14 +23,12 @@ class PlaywrightBrowserPoolTest {
                 4000,
                 2,
                 4,
-                1,
                 1000
         );
 
         try (var pool = new PlaywrightBrowserPool(properties)) {
             assertEquals(2, pool.available(BrowserApiType.MATCHES));
             assertEquals(4, pool.available(BrowserApiType.ODDS));
-            assertEquals(1, pool.available(BrowserApiType.RAW));
         }
     }
 }

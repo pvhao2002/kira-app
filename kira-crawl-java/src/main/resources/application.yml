@@ -10,12 +10,11 @@ spring:
 
 app:
   playwright:
-    headless: ${PLAYWRIGHT_HEADLESS:true}
+    headless: ${PLAYWRIGHT_HEADLESS:false}
     channel: ${PLAYWRIGHT_CHANNEL:}
     browser-timeout-ms: ${AISCORE_BROWSER_TIMEOUT_MS:80000}
     matches-async-timeout-ms: ${AISCORE_MATCHES_ASYNC_TIMEOUT_MS:180000}
     odds-async-timeout-ms: ${AISCORE_ODDS_ASYNC_TIMEOUT_MS:300000}
-    raw-browser-timeout-ms: ${AISCORE_RAW_BROWSER_TIMEOUT_MS:60000}
     user-agent: ${AISCORE_USER_AGENT:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0}
     accept-language: ${AISCORE_ACCEPT_LANGUAGE:en-US,en;q=0.9}
     cookie: ${AISCORE_COOKIE:}
@@ -25,7 +24,6 @@ app:
     server-port: ${server.port}
     matches-concurrency: ${AISCORE_MATCHES_CONCURRENCY:1}
     odds-concurrency: ${AISCORE_ODDS_CONCURRENCY:1}
-    raw-concurrency: ${AISCORE_RAW_CONCURRENCY:1}
     acquire-timeout-ms: ${AISCORE_POOL_ACQUIRE_TIMEOUT_MS:120000}
 
 management:

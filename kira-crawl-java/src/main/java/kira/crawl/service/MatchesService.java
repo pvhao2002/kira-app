@@ -96,7 +96,7 @@ public class MatchesService {
                 return Map.of();
             }
 
-            var oddsDetails = captureWebOddsDetailBody(page, matchId, timeout);
+            var oddsDetails = captureWebOddsDetailBody(page, matchId, timeout, oddsMapper.hasCornerMarket(oddsList));
             var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
             var pageInfo = readMatchPageInfo(page, timeout);
             var teamStatsBody = captureOptionalApiBody(page, teamStatsApiUrl, publicPageUrl, timeout);
@@ -137,9 +137,16 @@ public class MatchesService {
         return OBJECT_MAPPER.convertValue(node, Map.class);
     }
 
-    private OddsMapper.OddsDetails captureWebOddsDetailBody(Page page, String matchId, long timeout) {
+    private OddsMapper.OddsDetails captureWebOddsDetailBody(
+            Page page,
+            String matchId,
+            long timeout,
+            boolean includeCorner
+    ) {
         page.setDefaultTimeout(timeout);
-        var detailConfigs = List.of("asia", "bs", "corner");
+        var detailConfigs = includeCorner
+                ? List.of("asia", "bs", "corner")
+                : List.of("asia", "bs");
         JsonNode asia = null;
         JsonNode bs = null;
         JsonNode corner = null;

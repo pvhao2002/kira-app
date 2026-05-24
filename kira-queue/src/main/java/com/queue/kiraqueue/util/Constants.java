@@ -16,6 +16,7 @@ public class Constants {
     public static final String CRAWLTOMORROW_EVENT = "crawlTomorrowEvent";
     public static final String EVENT = "event";
     public static final String PREDICTION = "prediction";
+    public static final String LOGO_QUEUE = "logo_queue";
     public static final String AI_SCORE = "ai-score";
 
     public static final List<String> FIELD_EVENT_RESULT = List.of(

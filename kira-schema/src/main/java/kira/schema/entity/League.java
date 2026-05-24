@@ -38,6 +38,10 @@ public class League {
     @Column(name = "logo_url")
     private String logoUrl;
 
+    @Lob
+    @Column(name = "logo")
+    private String logo;
+
     @Column(length = 100)
     private String country;
 

@@ -24,6 +24,7 @@ public class MatchMapper {
         var awayScores = numberArray(matchRecord.get("awayScores"));
         var homeName = stringValue(homeTeam.get("name"));
         var awayName = stringValue(awayTeam.get("name"));
+        var validOddItemCount = countValidOddItems(matchRecord);
 
         return new CrawledMatchBundleDto(
                 mapLeague(competition),
@@ -39,7 +40,9 @@ public class MatchMapper {
                         mapEventStatus(matchRecord),
                         numberValue(matchRecord.get("statusId")),
                         buildMatchLink(matchRecord, homeTeam, awayTeam),
-                        numberValue(matchRecord.get("matchStatus"))
+                        numberValue(matchRecord.get("matchStatus")),
+                        validOddItemCount >= 3,
+                        validOddItemCount == 4
                 ),
                 mapResultForDatabase(homeScores, awayScores)
         );
@@ -243,5 +246,18 @@ public class MatchMapper {
 
     private String goalString(Integer home, Integer away) {
         return home == null || away == null ? null : home + "-" + away;
+    }
+
+    private int countValidOddItems(JsonNode matchRecord) {
+        var ext = asRecord(matchRecord.get("ext"));
+        var odds = asRecord(ext.get("odds"));
+        return (int) asArray(odds.get("oddItems")).stream()
+                .filter(this::hasOddItem)
+                .count();
+    }
+
+    private boolean hasOddItem(JsonNode oddItem) {
+        return stringArray(asRecord(oddItem).get("odd")).stream()
+                .anyMatch(value -> value != null && !value.isBlank());
     }
 }

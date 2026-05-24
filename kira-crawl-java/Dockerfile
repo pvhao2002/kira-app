@@ -5,7 +5,6 @@ FROM maven:3.9.8-eclipse-temurin-21 AS build
 
 WORKDIR /app
 COPY pom.xml .
-COPY protobuf.json .
 RUN mvn dependency:go-offline -B
 COPY scripts scripts
 COPY src src
@@ -42,7 +41,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-COPY --from=build /app/protobuf.json protobuf.json
 
 ENV PATH="/opt/jre-min/bin:$PATH"
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright

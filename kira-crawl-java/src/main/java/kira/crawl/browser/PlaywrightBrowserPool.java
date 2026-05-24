@@ -41,8 +41,7 @@ public class PlaywrightBrowserPool implements AutoCloseable {
         }
         this.pools = Map.of(
                 BrowserApiType.MATCHES, createPool(BrowserApiType.MATCHES, properties.matchesConcurrency(), meterRegistry),
-                BrowserApiType.ODDS, createPool(BrowserApiType.ODDS, properties.oddsConcurrency(), meterRegistry),
-                BrowserApiType.RAW, createPool(BrowserApiType.RAW, properties.rawConcurrency(), meterRegistry)
+                BrowserApiType.ODDS, createPool(BrowserApiType.ODDS, properties.oddsConcurrency(), meterRegistry)
         );
         log.info(
                 "Playwright profile instance: {} (serverPort={}, explicitInstanceId={}, drivers={})",

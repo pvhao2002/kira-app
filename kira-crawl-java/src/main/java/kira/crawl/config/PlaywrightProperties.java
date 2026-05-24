@@ -9,7 +9,6 @@ public record PlaywrightProperties(
         long browserTimeoutMs,
         long matchesAsyncTimeoutMs,
         long oddsAsyncTimeoutMs,
-        long rawBrowserTimeoutMs,
         String userAgent,
         String acceptLanguage,
         String cookie,
@@ -18,7 +17,6 @@ public record PlaywrightProperties(
         int serverPort,
         int matchesConcurrency,
         int oddsConcurrency,
-        int rawConcurrency,
         long acquireTimeoutMs
 ) {
     /**

@@ -75,6 +75,10 @@ public class OddsMapper {
                 .anyMatch(value -> isBet365Company(asRecord(value)));
     }
 
+    public boolean hasCornerMarket(JsonNode oddsList) {
+        return !mapOddsListMarketForDatabase("corner", asArray(oddsList.get("corner"))).isEmpty();
+    }
+
     public boolean isBet365Company(JsonNode company) {
         var companyId = numberValue(company.get("id"));
         var companyName = stringValue(company.get("name"));

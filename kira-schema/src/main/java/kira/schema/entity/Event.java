@@ -63,6 +63,12 @@ public class Event {
     @Lob
     private String link;
 
+    @Column(name = "has_odds")
+    private Boolean hasOdds = false;
+
+    @Column(name = "has_odds_corner")
+    private Boolean hasOddsCorner = false;
+
     @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 

@@ -81,6 +81,7 @@ create table leagues
     league_id          int auto_increment primary key,
     league_name        varchar(255) not null,
     logo_url           text,
+    logo               text,
     country            varchar(100),
     country_code_short char(3),
     external_id        varchar(100),
@@ -106,6 +107,7 @@ create table teams
     external_id varchar(100),
     sport_id    int,
     logo_url    text,
+    logo        text,
     created_at  datetime default now(),
     updated_at  datetime default now() on update now(),
     unique key uk_team_name (team_name)
@@ -197,6 +199,8 @@ create table events
     status      varchar(25) default '-',
     status_id   int,
     link        text         null,
+    has_odds    tinyint(1) default 0,
+    has_odds_corner tinyint(1) default 0,
     created_at  datetime    default now(),
     updated_at  datetime    default now() on update now(),
     unique key uk_external_event (external_id),
@@ -381,5 +385,16 @@ create table event_data_issue
     index idx_issue_type_recorded_at (issue_type, recorded_at),
     index idx_event_data_issue_recorded_at (recorded_at),
     constraint fk_event_data_issue_event foreign key (event_id) references events (event_id) on delete cascade
+) engine = InnoDB
+  row_format = dynamic;
+
+create table r2_upload_quota
+(
+    period          char(7)     not null primary key comment 'YYYY-MM',
+    storage_bytes   bigint      not null default 0,
+    class_a_ops     bigint      not null default 0,
+    halted          tinyint(1)  not null default 0,
+    created_at      datetime    default now(),
+    updated_at      datetime    default now() on update now()
 ) engine = InnoDB
   row_format = dynamic;
