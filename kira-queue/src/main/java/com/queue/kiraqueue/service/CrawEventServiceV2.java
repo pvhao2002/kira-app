@@ -144,6 +144,7 @@ public class CrawEventServiceV2 {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KiraCrawlClient kiraCrawlClient;
+    private final AiscoreMatchStatusLabelCache statusLabelCache;
 
     @Transactional
     public boolean processEvent(long eventId) {
@@ -246,7 +247,7 @@ public class CrawEventServiceV2 {
         jdbcTemplate.update(
                 SQL_UPDATE_EVENT,
                 new MapSqlParameterSource("event_id", eventId)
-                        .addValue("status", defaultStatus(event.status()))
+                        .addValue("status", statusLabelCache.resolveStatus(event.statusId(), event.status()))
                         .addValue("status_id", event.statusId())
         );
     }
@@ -371,10 +372,6 @@ public class CrawEventServiceV2 {
         } catch (Exception ignored) {
             return fallback;
         }
-    }
-
-    private static String defaultStatus(String status) {
-        return StringUtils.hasText(status) ? status : "-";
     }
 
     private record EventRow(long eventId, String link) {

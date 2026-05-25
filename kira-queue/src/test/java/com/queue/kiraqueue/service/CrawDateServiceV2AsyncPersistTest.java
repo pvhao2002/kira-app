@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,8 +35,13 @@ class CrawDateServiceV2AsyncPersistTest {
     @Mock
     private KiraCrawlClient kiraCrawlClient;
 
+    @Mock
+    private AiscoreMatchStatusLabelCache statusLabelCache;
+
     @Test
     void crawlDate_fetchSuccess_returnsBeforePersistStatusUpdate() throws InterruptedException {
+        lenient().when(statusLabelCache.resolveStatus(any(), anyString()))
+                .thenAnswer(inv -> inv.getArgument(1) != null ? inv.getArgument(1) : "-");
         var order = Collections.synchronizedList(new ArrayList<String>());
         var persistStarted = new CountDownLatch(1);
         var allowPersist = new CountDownLatch(1);
@@ -56,7 +62,7 @@ class CrawDateServiceV2AsyncPersistTest {
         when(kiraCrawlClient.fetchMatches("2025-05-25"))
                 .thenReturn(new MatchesResponse("2025-05-25", 1, 2, "07:00", 0, List.of()));
 
-        var service = new CrawDateServiceV2(jdbcTemplate, kiraCrawlClient, asyncExecutor);
+        var service = new CrawDateServiceV2(jdbcTemplate, kiraCrawlClient, asyncExecutor, statusLabelCache);
         service.crawlDate(List.of("2025-05-25"));
         order.add("crawl-returned");
 
@@ -79,10 +85,12 @@ class CrawDateServiceV2AsyncPersistTest {
     @Test
     void crawlDate_fetchFailure_marksFailedSynchronously() {
         Executor inlineExecutor = Runnable::run;
+        lenient().when(statusLabelCache.resolveStatus(any(), anyString()))
+                .thenAnswer(inv -> inv.getArgument(1) != null ? inv.getArgument(1) : "-");
         when(kiraCrawlClient.fetchMatches("2025-05-25"))
                 .thenThrow(new IllegalStateException("crawl down"));
 
-        var service = new CrawDateServiceV2(jdbcTemplate, kiraCrawlClient, inlineExecutor);
+        var service = new CrawDateServiceV2(jdbcTemplate, kiraCrawlClient, inlineExecutor, statusLabelCache);
         service.crawlDate(List.of("2025-05-25"));
 
         var paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);

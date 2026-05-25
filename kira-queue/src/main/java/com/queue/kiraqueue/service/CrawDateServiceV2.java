@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 @Log
 @Service
 public class CrawDateServiceV2 {
-
     public static final String STATUS = "status";
     public static final String DONE = "done";
     public static final String FAILED = "failed";
@@ -149,15 +148,18 @@ public class CrawDateServiceV2 {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KiraCrawlClient kiraCrawlClient;
     private final Executor crawlPersistExecutor;
+    private final AiscoreMatchStatusLabelCache statusLabelCache;
 
     public CrawDateServiceV2(
             NamedParameterJdbcTemplate jdbcTemplate,
             KiraCrawlClient kiraCrawlClient,
-            @Qualifier(CrawlPersistExecutorConfig.CRAWL_PERSIST_EXECUTOR) Executor crawlPersistExecutor
+            @Qualifier(CrawlPersistExecutorConfig.CRAWL_PERSIST_EXECUTOR) Executor crawlPersistExecutor,
+            AiscoreMatchStatusLabelCache statusLabelCache
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.kiraCrawlClient = kiraCrawlClient;
         this.crawlPersistExecutor = crawlPersistExecutor;
+        this.statusLabelCache = statusLabelCache;
     }
 
     public void crawlDate(List<String> dates) {
@@ -276,7 +278,7 @@ public class CrawDateServiceV2 {
             Integer leagueId = resolveLeagueId(league, leagueIdByExternalId, leagueIdByName);
             Integer homeId = resolveTeamId(homeTeam, teamIdByExternalId, teamIdByName);
             Integer awayId = resolveTeamId(awayTeam, teamIdByExternalId, teamIdByName);
-            eventParams.add(toEventParams(event, leagueId, homeId, awayId));
+            eventParams.add(toEventParams(event, leagueId, homeId, awayId, statusLabelCache));
         }
         JdbcBatchUtils.batchInsertSafe(jdbcTemplate, SQL_UPSERT_EVENT, eventParams);
 
@@ -426,7 +428,8 @@ public class CrawDateServiceV2 {
             CrawlEventDto event,
             Integer leagueId,
             Integer homeId,
-            Integer awayId
+            Integer awayId,
+            AiscoreMatchStatusLabelCache statusLabelCache
     ) {
         return new MapSqlParameterSource()
                 .addValue("exid", event.externalId())
@@ -435,7 +438,7 @@ public class CrawDateServiceV2 {
                 .addValue("away_id", awayId)
                 .addValue("event_name", event.eventName())
                 .addValue("event_date", parseEventDate(event.eventDate()))
-                .addValue("status", defaultStatus(event.status()))
+                .addValue("status", statusLabelCache.resolveStatus(event.statusId(), event.status()))
                 .addValue("status_id", event.statusId())
                 .addValue("link", event.link())
                 .addValue("has_odds", Boolean.TRUE.equals(event.hasOdds()))
@@ -471,10 +474,6 @@ public class CrawDateServiceV2 {
             return null;
         }
         return OffsetDateTime.parse(eventDate).toLocalDateTime();
-    }
-
-    private static String defaultStatus(String status) {
-        return StringUtils.hasText(status) ? status : "-";
     }
 
     private static boolean isCancelled(CrawlEventDto event) {
