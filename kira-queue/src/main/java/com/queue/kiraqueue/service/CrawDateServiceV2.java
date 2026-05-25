@@ -1,15 +1,15 @@
 package com.queue.kiraqueue.service;
 
-import com.queue.kiraqueue.amqp.LogoUploadProducer;
 import com.queue.kiraqueue.client.KiraCrawlClient;
+import com.queue.kiraqueue.config.CrawlPersistExecutorConfig;
 import com.queue.kiraqueue.dto.crawl.CrawledMatchBundle;
 import com.queue.kiraqueue.dto.crawl.CrawlEventDto;
 import com.queue.kiraqueue.dto.crawl.CrawlEventResultDto;
 import com.queue.kiraqueue.dto.crawl.CrawlLeagueDto;
 import com.queue.kiraqueue.dto.crawl.CrawlTeamDto;
 import com.queue.kiraqueue.util.JdbcBatchUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -24,16 +24,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 @Log
 @Service
-@RequiredArgsConstructor
 public class CrawDateServiceV2 {
 
     public static final String STATUS = "status";
-    public static final String IN_PROGRESS = "in_progress";
     public static final String DONE = "done";
     public static final String FAILED = "failed";
     public static final String TOTAL_EVENTS = "total_events";
@@ -41,9 +40,13 @@ public class CrawDateServiceV2 {
 
     private static final int CANCELLED_STATUS_ID = 12;
 
-    private static final String SQL_ENSURE_CRAWL_DATE = """
-            insert into crawl_date (date, status) values (:date, 'pending')
-            on duplicate key update date = date
+    private static final String SQL_START_CRAWL_DATE = """
+            insert into crawl_date (date, status, total_events, message)
+            values (:date, 'in_progress', 0, null)
+            on duplicate key update
+                status = 'in_progress',
+                total_events = 0,
+                message = null
             """;
 
     private static final String SQL_CRAWL_DATE = """
@@ -145,7 +148,17 @@ public class CrawDateServiceV2 {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KiraCrawlClient kiraCrawlClient;
-    private final LogoUploadProducer logoUploadProducer;
+    private final Executor crawlPersistExecutor;
+
+    public CrawDateServiceV2(
+            NamedParameterJdbcTemplate jdbcTemplate,
+            KiraCrawlClient kiraCrawlClient,
+            @Qualifier(CrawlPersistExecutorConfig.CRAWL_PERSIST_EXECUTOR) Executor crawlPersistExecutor
+    ) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.kiraCrawlClient = kiraCrawlClient;
+        this.crawlPersistExecutor = crawlPersistExecutor;
+    }
 
     public void crawlDate(List<String> dates) {
         if (CollectionUtils.isEmpty(dates)) {
@@ -153,51 +166,56 @@ public class CrawDateServiceV2 {
         }
 
         jdbcTemplate.batchUpdate(
-                SQL_ENSURE_CRAWL_DATE,
+                SQL_START_CRAWL_DATE,
                 dates.stream()
                         .map(date -> new MapSqlParameterSource("date", date))
                         .toArray(MapSqlParameterSource[]::new)
         );
 
-        jdbcTemplate.batchUpdate(
-                SQL_CRAWL_DATE,
-                dates.stream()
-                        .map(date -> new MapSqlParameterSource("date", date)
-                                .addValue(STATUS, IN_PROGRESS)
-                                .addValue(TOTAL_EVENTS, 0)
-                                .addValue(ERROR_MESSAGE, null))
-                        .toArray(MapSqlParameterSource[]::new)
-        );
-
-        var dateStatusUpdates = new ArrayList<MapSqlParameterSource>(dates.size());
         for (String date : dates) {
             log.info("Start crawlDateV2 for date: " + date);
             long startTime = System.currentTimeMillis();
-            int totalEvents = 0;
+            int fetchedEvents = 0;
             try {
                 var response = kiraCrawlClient.fetchMatches(date);
                 var events = response.events() == null ? List.<CrawledMatchBundle>of() : response.events();
-                persistEvents(events);
-                totalEvents = events.size();
-                dateStatusUpdates.add(new MapSqlParameterSource("date", date)
-                        .addValue(ERROR_MESSAGE, null)
-                        .addValue(STATUS, DONE)
-                        .addValue(TOTAL_EVENTS, totalEvents));
+                fetchedEvents = events.size();
+                schedulePersist(date, events);
             } catch (Exception ex) {
-                log.log(Level.WARNING, "Error during crawlDateV2 for date=" + date, ex);
-                dateStatusUpdates.add(new MapSqlParameterSource("date", date)
-                        .addValue(STATUS, FAILED)
-                        .addValue(TOTAL_EVENTS, 0)
-                        .addValue(ERROR_MESSAGE, ex.getMessage()));
+                log.log(Level.WARNING, "Error during crawlDateV2 fetch for date=" + date, ex);
+                updateCrawlDateStatus(date, FAILED, 0, ex.getMessage());
             } finally {
-                log.info("CrawlDateV2 for date=%s has %d events, took %.2f s".formatted(
-                        date, totalEvents, (System.currentTimeMillis() - startTime) / 1000.0));
+                log.info("CrawlDateV2 fetch for date=%s has %d events, took %.2f s (persist scheduled async)".formatted(
+                        date, fetchedEvents, (System.currentTimeMillis() - startTime) / 1000.0));
             }
         }
+    }
 
-        if (!dateStatusUpdates.isEmpty()) {
-            jdbcTemplate.batchUpdate(SQL_CRAWL_DATE, dateStatusUpdates.toArray(MapSqlParameterSource[]::new));
-        }
+    private void updateCrawlDateStatus(String date, String status, int totalEvents, String errorMessage) {
+        jdbcTemplate.update(
+                SQL_CRAWL_DATE,
+                new MapSqlParameterSource("date", date)
+                        .addValue(STATUS, status)
+                        .addValue(TOTAL_EVENTS, totalEvents)
+                        .addValue(ERROR_MESSAGE, errorMessage)
+        );
+    }
+
+    private void schedulePersist(String date, List<CrawledMatchBundle> events) {
+        var eventsCopy = List.copyOf(events);
+        int totalEvents = eventsCopy.size();
+        crawlPersistExecutor.execute(() -> {
+            long persistStart = System.currentTimeMillis();
+            try {
+                persistEvents(eventsCopy);
+                updateCrawlDateStatus(date, DONE, totalEvents, null);
+                log.info("CrawlDateV2 persist done for date=%s, %d events, took %.2f s".formatted(
+                        date, totalEvents, (System.currentTimeMillis() - persistStart) / 1000.0));
+            } catch (Exception ex) {
+                log.log(Level.WARNING, "persistEvents failed for date=" + date, ex);
+                updateCrawlDateStatus(date, FAILED, 0, ex.getMessage());
+            }
+        });
     }
 
     private void persistEvents(List<CrawledMatchBundle> events) {
@@ -245,11 +263,6 @@ public class CrawDateServiceV2 {
         Map<String, Integer> teamIdByExternalId = new HashMap<>();
         Map<String, Integer> teamIdByName = new HashMap<>();
         loadTeamIds(teamNames, teamExternalIds, teamIdByName, teamIdByExternalId);
-
-        logoUploadProducer.enqueuePendingLeagues(leagueIdByName.values());
-        logoUploadProducer.enqueuePendingLeagues(leagueIdByExternalId.values());
-        logoUploadProducer.enqueuePendingTeams(teamIdByName.values());
-        logoUploadProducer.enqueuePendingTeams(teamIdByExternalId.values());
 
         List<MapSqlParameterSource> eventParams = new ArrayList<>();
         for (CrawledMatchBundle bundle : events) {

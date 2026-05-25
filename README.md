@@ -114,7 +114,7 @@ docker compose up -d
 
 Stack này gồm:
 
-- MySQL primary (`3310`) + MySQL replica (`3311`)
+- MySQL (`3310`, single instance — `DB_PRIMARY_*` / `DB_REPLICA_*` trỏ cùng host trong compose)
 - RabbitMQ (`5672`, UI: `15672`)
 - Loki (`3100`) + Promtail
 - Grafana (`3000`, mặc định `admin/admin`)

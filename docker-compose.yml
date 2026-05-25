@@ -2,8 +2,23 @@ services:
   mysql:
     image: mysql:8.0
     container_name: kira-mysql
+    # Windows bind-mount gives mysql.cnf mode 777; MySQL 8 ignores world-writable configs.
+    # Keep flags here (and mirrored in mysql/conf.d/mysql.cnf for Linux/VPS reference).
+    command:
+      - --innodb-buffer-pool-size=4G
+      - --innodb-redo-log-capacity=512M
+      - --max-connections=230
+      - --innodb-flush-method=O_DIRECT
+      - --innodb-flush-neighbors=0
+      - --thread-cache-size=64
+      - --table-open-cache=2000
+      - --wait-timeout=600
+      - --interactive-timeout=600
+      - --slow-query-log=ON
+      - --long-query-time=0.5
+      - --log-queries-not-using-indexes=ON
     ports:
-      - "${DB_PORT_PUBLISHED:-${DB_PRIMARY_PORT_PUBLISHED:-3310}}:3306"
+      - "${DB_PORT_PUBLISHED:-3310}:3306"
     environment:
       MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-1234}"
       MYSQL_DATABASE: "${DB_NAME:-kira}"
@@ -11,8 +26,7 @@ services:
       MYSQL_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./mysql/primary/conf.d:/etc/mysql/conf.d:ro
-      - ./mysql/primary/initdb:/docker-entrypoint-initdb.d:ro
+      - ./mysql/conf.d:/etc/mysql/conf.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 10s

@@ -1,19 +1,18 @@
 package kira.crawl.config;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import kira.crawl.browser.PlaywrightBrowserPool;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.context.annotation.Bean;
+import jakarta.annotation.PostConstruct;
+import kira.crawl.util.PlaywrightUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@RequiredArgsConstructor
 public class PlaywrightConfig {
 
-    @Bean(destroyMethod = "close")
-    PlaywrightBrowserPool playwrightBrowserPool(
-            PlaywrightProperties properties,
-            ObjectProvider<MeterRegistry> meterRegistry
-    ) {
-        return new PlaywrightBrowserPool(properties, meterRegistry.getIfAvailable());
+    private final PlaywrightProperties properties;
+
+    @PostConstruct
+    void bindPlaywrightRuntime() {
+        PlaywrightUtil.bindFromProperties(properties);
     }
 }

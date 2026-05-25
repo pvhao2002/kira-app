@@ -57,23 +57,21 @@ server:
     enabled: true
     min-response-size: 512
 
+kira:
+  queue:
+    crawl-persist:
+      core-pool-size: 2
+      max-pool-size: 4
+      queue-capacity: 50
+      thread-name-prefix: crawl-persist-
+      await-termination-seconds: 30
+
 app:
   gateway:
     base-url: ${APP_GATEWAY_BASE_URL:http://localhost/gateway}
   kira-crawl:
     base-url: ${APP_KIRA_CRAWL_BASE_URL:http://localhost:3000}
     read-timeout-ms: ${APP_KIRA_CRAWL_READ_TIMEOUT_MS:300000}
-
-r2:
-  endpoint: ${R2_ENDPOINT:}
-  access-key: ${R2_ACCESS_KEY:}
-  secret-key: ${R2_SECRET_KEY:}
-  bucket: ${R2_BUCKET:}
-  public-base-url: ${R2_PUBLIC_BASE_URL:}
-  quota:
-    max-storage-bytes: ${R2_QUOTA_MAX_STORAGE_BYTES:10737418240}
-    max-class-a-ops-month: ${R2_QUOTA_MAX_CLASS_A_OPS_MONTH:1000000}
-    warn-at-percent: ${R2_QUOTA_WARN_AT_PERCENT:90}
 
 logging:
   level:

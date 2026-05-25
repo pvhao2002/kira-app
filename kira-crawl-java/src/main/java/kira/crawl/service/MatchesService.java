@@ -14,6 +14,7 @@ import kira.crawl.mapper.MatchMapper;
 import kira.crawl.mapper.OddsMapper;
 import kira.crawl.protobuf.AiscoreProtobufService;
 import kira.crawl.util.JsonRecords;
+import kira.crawl.util.PlaywrightUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -258,9 +259,7 @@ public class MatchesService {
                                 .setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED)
                                 .setTimeout(timeout));
                     } else {
-                        page.navigate(publicPageUrl, new Page.NavigateOptions()
-                                .setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED)
-                                .setTimeout(timeout));
+                        PlaywrightUtil.navigateForApiCapture(page, publicPageUrl, timeout);
                         CloudflareSupport.waitForClearance(page, timeout);
                     }
                 }

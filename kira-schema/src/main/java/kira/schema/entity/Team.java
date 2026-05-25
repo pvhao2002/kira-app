@@ -39,10 +39,6 @@ public class Team {
     @Column(name = "logo_url")
     private String logoUrl;
 
-    @Lob
-    @Column(name = "logo")
-    private String logo;
-
     @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 

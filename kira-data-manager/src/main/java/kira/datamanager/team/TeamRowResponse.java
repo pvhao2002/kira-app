@@ -8,7 +8,6 @@ public record TeamRowResponse(
         @JsonProperty("teamId") int teamId,
         @JsonProperty("teamName") String teamName,
         @JsonProperty("logoUrl") String logoUrl,
-        String logo,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

@@ -16,8 +16,6 @@ public class RabbitMQConfig {
     public static final String QUEUE_ODD_TOMORROW = "crawlOddForUpcomingEvent";
     public static final String QUEUE_ODD = "event";
     public static final String QUEUE_PREDICTION = "prediction";
-    public static final String QUEUE_LOGO = "logo_queue";
-
 
     // === ROUTING KEY ===
     public static final String ROUTING_KEY_DATE_TOMORROW = "crawl.crawlTomorrowEvent";
@@ -25,17 +23,6 @@ public class RabbitMQConfig {
     public static final String ROUTING_KEY_ODD_TOMORROW = "crawl.crawlOddForUpcomingEvent";
     public static final String ROUTING_KEY_ODD = "crawl.event";
     public static final String ROUTING_KEY_PREDICTION = "crawl.prediction";
-    public static final String ROUTING_KEY_LOGO = "crawl.logo_queue";
-
-    @Bean
-    public Queue queueLogo() {
-        return new Queue(QUEUE_LOGO, true);
-    }
-
-    @Bean
-    public Binding bindingLogo(Queue queueLogo, DirectExchange exchange) {
-        return BindingBuilder.bind(queueLogo).to(exchange).with(ROUTING_KEY_LOGO);
-    }
 
     //  Begin queue for prediction
     @Bean

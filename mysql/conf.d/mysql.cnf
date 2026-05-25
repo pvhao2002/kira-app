@@ -1,0 +1,15 @@
+[mysqld]
+# Single MySQL instance (no replication).
+# Applied via docker-compose.yml `mysql.command` (Windows bind-mount is often 777 and ignored by MySQL 8).
+innodb_buffer_pool_size=4G
+innodb_redo_log_capacity=512M
+max_connections=230
+innodb_flush_method=O_DIRECT
+innodb_flush_neighbors=0
+thread_cache_size=64
+table_open_cache=2000
+wait_timeout=600
+interactive_timeout=600
+slow_query_log=ON
+long_query_time=0.5
+log_queries_not_using_indexes=ON

@@ -25,6 +25,8 @@ app:
     matches-concurrency: ${AISCORE_MATCHES_CONCURRENCY:1}
     odds-concurrency: ${AISCORE_ODDS_CONCURRENCY:1}
     acquire-timeout-ms: ${AISCORE_POOL_ACQUIRE_TIMEOUT_MS:120000}
+    test-api-enabled: ${PLAYWRIGHT_TEST_API_ENABLED:true}
+    matches-benchmark-base-url: ${MATCHES_BENCHMARK_BASE_URL:}
 
 management:
   endpoints:

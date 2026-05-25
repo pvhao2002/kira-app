@@ -1,8 +1,8 @@
 package kira.crawl.browser;
 
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import kira.crawl.config.PlaywrightProperties;
+import kira.crawl.util.PlaywrightUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,6 @@ import java.util.function.BiFunction;
 @Slf4j
 public class BrowserSessionManager {
 
-    private final PlaywrightBrowserPool browserPool;
     private final PlaywrightProperties properties;
 
     public <T> T withPage(
@@ -23,25 +22,13 @@ public class BrowserSessionManager {
             String publicPageUrl,
             BiFunction<Page, Long, T> handler
     ) {
-        return browserPool.withContext(apiType, context -> {
-            var timeout = properties.browserTimeoutMs();
-            var page = context.newPage();
-            page.setDefaultTimeout(timeout);
-            page.setDefaultNavigationTimeout(timeout);
-            page.setExtraHTTPHeaders(Map.of(
-                    "referer", publicPageUrl,
-                    "origin", "https://www.aiscore.com",
-                    "accept-language", properties.acceptLanguage()
-            ));
-            try {
-                return handler.apply(page, timeout);
-            } finally {
-                try {
-                    page.close();
-                } catch (Exception ex) {
-                    log.warn("Failed to close Playwright page for {}", apiType, ex);
-                }
-            }
-        });
+        var timeout = properties.browserTimeoutMs();
+        var headers = Map.of(
+                "referer", publicPageUrl,
+                "origin", "https://www.aiscore.com",
+                "accept-language", properties.acceptLanguage()
+        );
+        log.debug("Opening crawl page for {} at {}", apiType, publicPageUrl);
+        return PlaywrightUtil.withCrawlPage(timeout, headers, properties.headless(), handler);
     }
 }

@@ -1,9 +1,10 @@
-package com.queue.kiraqueue.util;
+package kira.crawl.util;
 
-import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.ColorScheme;
-import com.microsoft.playwright.options.Cookie;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.PlaywrightException;
+import kira.crawl.config.PlaywrightProperties;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.WaitUntilState;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 
@@ -11,124 +12,158 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.Level;
 
+/**
+ * Playwright helpers optimized for multi-instance crawl (3–4 JVMs on different ports).
+ * <p>
+ * Shared browser access runs on a single {@code playwright-driver} thread inside {@link PlaywrightRuntime}
+ * so Spring virtual threads can call this util safely. Parallel load tests use
+ * {@link PlaywrightRuntime#runIsolated(boolean, java.util.function.Function)} instead.
+ */
 @Log
 @UtilityClass
 public class PlaywrightUtil {
-    /**
-     * Chrome trên Windows, phiên bản mới — giống user thật.
-     */
-    public static final String USER_AGENT =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
-    private static final int VIEWPORT_WIDTH = 1920;
-    private static final int VIEWPORT_HEIGHT = 1080;
-    private static final String LOCALE = "en-US";
-    private static final String ACCEPT_LANGUAGE = "en-US,en;q=0.9,vi;q=0.8";
+    public static final String USER_AGENT = PlaywrightRuntime.USER_AGENT;
 
-    /**
-     * Launch options giống trình duyệt thật: tắt cờ automation, dùng Chrome nếu có.
-     */
-    private static BrowserType.LaunchOptions launchOptions(boolean headless) {
-        var opts = new BrowserType.LaunchOptions()
-                .setHeadless(headless)
-                .setArgs(List.of(
-                        "--disable-blink-features=AutomationControlled",
-                        "--no-first-run",
-                        "--no-default-browser-check",
-                        "--disable-infobars",
-                        "--window-size=%d,%d".formatted(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
-                ));
-        try {
-            opts.setChannel("chrome");
-        } catch (Exception ignored) {
-            // Chrome chưa cài, dùng Chromium mặc định
-        }
-        return opts;
-    }
-
-    /**
-     * Context options giống user thật: viewport, locale, timezone.
-     */
-    private static Browser.NewContextOptions contextOptions() {
-        return new Browser.NewContextOptions()
-                .setUserAgent(USER_AGENT)
-                .setViewportSize(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
-                .setLocale(LOCALE)
-                .setTimezoneId("Asia/Ho_Chi_Minh")
-                .setExtraHTTPHeaders(Map.of("Accept-Language", ACCEPT_LANGUAGE))
-                .setIgnoreHTTPSErrors(false)
-                .setColorScheme(ColorScheme.LIGHT)
-                .setDeviceScaleFactor(1);
-    }
-
-    /**
-     * Script chạy trước mỗi page: giảm phát hiện automation.
-     */
-    private static final String INIT_SCRIPT_STEALTH = """
-            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-            window.chrome = window.chrome || { runtime: {} };
-            """;
-
-    private static final String DEFAULT_OPTIONS_CLOSED_COOKIE = "optionsClosed";
-
-    /**
-     * Cookie mặc định cho crawl aiscore ({@link Constants#AI_SCORE_URL} / mobile): khớp domain gốc và mọi subdomain.
-     */
-    private static void addDefaultContextCookies(BrowserContext context) {
-        long ts = System.currentTimeMillis();
-        context.addCookies(List.of(
-                new Cookie(DEFAULT_OPTIONS_CLOSED_COOKIE, Long.toString(ts))
-                        .setDomain("aiscore.com")
-                        .setPath("/")
-        ));
-    }
+    private static final PlaywrightRuntime RUNTIME = PlaywrightRuntime.getInstance();
 
     public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic) {
         withPlaywright(obj, logic, null);
     }
 
     public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic, Consumer<Exception> errorHandler) {
-        try (
-                var p = Playwright.create();
-                var b = p.chromium().launch(launchOptions(true));
-                BrowserContext context = b.newContext(contextOptions())) {
-            addDefaultContextCookies(context);
-            context.addInitScript(INIT_SCRIPT_STEALTH);
-            Page page = context.newPage();
-            logic.accept(page, obj);
-        } catch (Exception e) {
-            log.log(Level.WARNING, "withPlaywright >> Error during Playwright task", e);
-            if (errorHandler != null) {
-                errorHandler.accept(e);
-            }
-        }
+        withPlaywright(obj, logic, errorHandler, true);
     }
 
+    /**
+     * Runs logic on a single page using a pooled browser context (headless by default).
+     */
+    public <P> void withPlaywright(
+            P obj,
+            BiConsumer<Page, P> logic,
+            Consumer<Exception> errorHandler,
+            boolean headless
+    ) {
+        RUNTIME.call(() -> {
+            var context = RUNTIME.acquireContextOnDriverThread(headless);
+            try {
+                var page = context.newPage();
+                try {
+                    logic.accept(page, obj);
+                } finally {
+                    closePageQuietly(page);
+                }
+            } catch (Exception e) {
+                log.log(Level.WARNING, "withPlaywright >> Error during Playwright task", e);
+                RUNTIME.evictContextOnDriverThread(context);
+                context = null;
+                if (errorHandler != null) {
+                    errorHandler.accept(e);
+                }
+            } finally {
+                if (context != null) {
+                    RUNTIME.releaseContextOnDriverThread(context);
+                }
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Opens {@code pageCount} tabs in one pooled context on the driver thread.
+     */
     public <P> void withPlaywrightPages(int pageCount, BiConsumer<List<Page>, P> logic, P obj) {
-        try (var p = Playwright.create();
-             var b = p.chromium().launch(launchOptions(isRunningProd()));
-             var context = b.newContext(contextOptions())) {
-            addDefaultContextCookies(context);
-            context.addInitScript(INIT_SCRIPT_STEALTH);
-
-            List<Page> pages = new ArrayList<>(pageCount);
-            for (int i = 0; i < pageCount; i++) {
-                pages.add(context.newPage());
-            }
-
-            logic.accept(pages, obj);
-
-        } catch (Exception e) {
-            log.log(Level.WARNING, "withPlaywrightPages >> Error during Playwright task", e);
-        }
+        withPlaywrightPages(pageCount, logic, obj, !isRunningProd());
     }
 
+    public <P> void withPlaywrightPages(
+            int pageCount,
+            BiConsumer<List<Page>, P> logic,
+            P obj,
+            boolean headless
+    ) {
+        if (pageCount < 1) {
+            throw new IllegalArgumentException("pageCount must be >= 1");
+        }
+        RUNTIME.call(() -> {
+            var context = RUNTIME.acquireContextOnDriverThread(headless);
+            var pages = new ArrayList<Page>(pageCount);
+            try {
+                for (int i = 0; i < pageCount; i++) {
+                    pages.add(context.newPage());
+                }
+                logic.accept(pages, obj);
+            } catch (Exception e) {
+                log.log(Level.WARNING, "withPlaywrightPages >> Error during Playwright task", e);
+                RUNTIME.evictContextOnDriverThread(context);
+                context = null;
+            } finally {
+                for (var page : pages) {
+                    closePageQuietly(page);
+                }
+                if (context != null) {
+                    RUNTIME.releaseContextOnDriverThread(context);
+                }
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Production crawl: pooled context on the driver thread, lean network, returns handler result.
+     */
+    public <T> T withCrawlPage(
+            long timeoutMs,
+            Map<String, String> extraPageHeaders,
+            boolean headless,
+            BiFunction<Page, Long, T> handler
+    ) {
+        return RUNTIME.call(() -> {
+            var context = RUNTIME.acquireContextOnDriverThread(headless);
+            try {
+                var page = context.newPage();
+                page.setDefaultTimeout(timeoutMs);
+                page.setDefaultNavigationTimeout(timeoutMs);
+                if (extraPageHeaders != null && !extraPageHeaders.isEmpty()) {
+                    page.setExtraHTTPHeaders(extraPageHeaders);
+                }
+                try {
+                    return handler.apply(page, timeoutMs);
+                } finally {
+                    closePageQuietly(page);
+                }
+            } catch (RuntimeException ex) {
+                RUNTIME.evictContextOnDriverThread(context);
+                context = null;
+                throw ex;
+            } catch (Exception ex) {
+                RUNTIME.evictContextOnDriverThread(context);
+                context = null;
+                throw new IllegalStateException("Playwright crawl page task failed", ex);
+            } finally {
+                if (context != null) {
+                    RUNTIME.releaseContextOnDriverThread(context);
+                }
+            }
+        });
+    }
+
+    /**
+     * Navigate for API capture: waits for DOMContentLoaded only (not full load / network idle).
+     */
+    public void navigateForApiCapture(Page page, String url, long timeoutMs) {
+        page.navigate(url, new Page.NavigateOptions()
+                .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
+                .setTimeout(timeoutMs));
+    }
 
     public void waitDomContentLoaded(Page page) {
-        page.waitForLoadState();
+        page.waitForLoadState(LoadState.DOMCONTENTLOADED);
     }
 
     /**
@@ -152,7 +187,6 @@ public class PlaywrightUtil {
                 if (page.isClosed()) {
                     return null;
                 }
-                // Common transient failure when reading content mid-navigation.
                 if (e.getMessage() != null && e.getMessage().contains("page is navigating")) {
                     page.waitForTimeout(250);
                     continue;
@@ -166,40 +200,42 @@ public class PlaywrightUtil {
         return null;
     }
 
-    /**
-     * Đóng banner cookie / accept nếu có. Best-effort: không ném lỗi khi không có icon,
-     * page đã đóng, hoặc click đua với navigation (TargetClosedError).
-     */
-    public void removeAcceptAll(Page page) {
-        if (page == null) {
-            return;
-        }
-        try {
-            if (page.isClosed()) {
-                return;
-            }
-            page.locator(".van-icon-cross").first().click();
-        } catch (PlaywrightException e) {
-            log.log(Level.FINE, "Accept banner not dismissed (no .van-icon-cross or page gone): {0}", e.getMessage());
-        }
-    }
-
-    public String getImageFromImgSrc(org.jsoup.nodes.Element root, String selector) {
-        if (root == null) return null;
-
-        var img = root.selectFirst(selector);
-        if (img == null) return null;
-
-        String src = img.attr("abs:src");
-        return src.isBlank() ? null : src.trim();
-    }
-
-
     public static boolean isRunningProd() {
         try {
             return "PROD".equalsIgnoreCase(System.getenv("ENV"));
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /** Visible for tests. */
+    static void shutdownRuntime() {
+        RUNTIME.shutdown();
+    }
+
+    public static int contextPoolSize() {
+        return PlaywrightRuntime.resolvePoolSize();
+    }
+
+    public static void bindFromProperties(PlaywrightProperties properties) {
+        RUNTIME.bindProperties(properties);
+    }
+
+    /**
+     * Runs action with a dedicated Playwright on the current thread (for parallel load tests).
+     */
+    public static <T> T runIsolated(boolean headless, Function<Page, T> action) {
+        return PlaywrightRuntime.runIsolated(headless, action);
+    }
+
+    private static void closePageQuietly(Page page) {
+        if (page == null || page.isClosed()) {
+            return;
+        }
+        try {
+            page.close();
+        } catch (Exception ex) {
+            log.log(Level.FINE, "Failed to close page: {0}", ex.getMessage());
         }
     }
 }

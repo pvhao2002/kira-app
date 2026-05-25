@@ -17,7 +17,8 @@ public record PlaywrightProperties(
         int serverPort,
         int matchesConcurrency,
         int oddsConcurrency,
-        long acquireTimeoutMs
+        long acquireTimeoutMs,
+        String matchesBenchmarkBaseUrl
 ) {
     /**
      * Unique per JVM: {@code port4000_pid12345}. Prevents two processes on the same HTTP port from sharing Chromium user-data.

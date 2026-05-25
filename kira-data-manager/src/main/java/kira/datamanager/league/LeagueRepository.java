@@ -29,7 +29,7 @@ public class LeagueRepository {
         var total = countSpec.query((rs, rowNum) -> rs.getLong(1)).single();
 
         var dataSql = """
-                SELECT league_id, league_name, logo_url, logo, country, is_main, total_events, created_at, updated_at
+                SELECT league_id, league_name, logo_url, country, is_main, total_events, created_at, updated_at
                 FROM leagues
                 WHERE 1=1
                 """ + where.clause()
@@ -125,7 +125,6 @@ public class LeagueRepository {
 
     private LeagueRowResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
         var logoUrl = rs.getString("logo_url");
-        var logo = rs.getString("logo");
         var c = rs.getString("country");
         var mainObj = rs.getObject("is_main");
         boolean main = mainObj instanceof Boolean b ? b : (mainObj instanceof Number n && n.intValue() != 0);
@@ -136,7 +135,6 @@ public class LeagueRepository {
                 rs.getInt("league_id"),
                 rs.getString("league_name"),
                 logoUrl,
-                logo,
                 c,
                 main,
                 total != null ? total : 0,

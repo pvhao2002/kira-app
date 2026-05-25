@@ -47,7 +47,7 @@ public class DateSchedule {
                 dateProducer.sendDateTomorrow(date);
                 jdbcTemplate.update(
                         """
-                                insert into crawl_date (date, status) values (:date, 'picked')
+                                insert into crawl_date (date, status, total_events) values (:date, 'picked', 0)
                                 on duplicate key update status = 'picked'
                                 """,
                         Map.of("date", date)
