@@ -35,7 +35,7 @@ public class DateSchedule {
             from crawl_date
             where false
                      or status in ('pending', 'failed')
-                     or (updated_at + interval 15 minute < now() and status <> 'done')
+                     or (updated_at + interval 30 minute < now() and status <> 'done')
                      or total_events = 0
             limit 20
             """;

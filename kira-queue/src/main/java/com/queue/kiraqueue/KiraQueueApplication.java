@@ -5,11 +5,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import com.queue.kiraqueue.config.R2Properties;
+//import com.queue.kiraqueue.config.R2Properties;
 
 @SpringBootApplication
 @EnableScheduling
-@EnableConfigurationProperties(R2Properties.class)
+//@EnableConfigurationProperties(R2Properties.class)
 public class KiraQueueApplication {
 
     public static void main(String[] args) {
