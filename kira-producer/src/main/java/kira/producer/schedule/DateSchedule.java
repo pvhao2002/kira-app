@@ -36,7 +36,7 @@ public class DateSchedule {
             where false
                      or status in ('pending', 'failed')
                      or (updated_at + interval 30 minute < now() and status <> 'done')
-                     or total_events = 0
+                     or (total_events = 0 and status = 'done')
             limit 20
             """;
 

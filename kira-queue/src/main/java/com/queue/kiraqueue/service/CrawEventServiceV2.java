@@ -1,6 +1,7 @@
 package com.queue.kiraqueue.service;
 
 import com.queue.kiraqueue.client.KiraCrawlClient;
+import com.queue.kiraqueue.config.CrawlPersistExecutorConfig;
 import com.queue.kiraqueue.dto.crawl.CrawlEventResultDto;
 import com.queue.kiraqueue.dto.crawl.CrawlMatchOddsEventDto;
 import com.queue.kiraqueue.dto.crawl.CrawlOddsSnapshotDto;
@@ -8,12 +9,13 @@ import com.queue.kiraqueue.dto.crawl.CrawlOddsTimelineGroupDto;
 import com.queue.kiraqueue.dto.crawl.CrawlOddsTimelineItemDto;
 import com.queue.kiraqueue.dto.crawl.MatchOddsResponse;
 import com.queue.kiraqueue.util.JdbcBatchUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -23,11 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.logging.Level;
 
 @Log
 @Service
-@RequiredArgsConstructor
 public class CrawEventServiceV2 {
 
     private static final Set<String> SUPPORTED_ODDS_MARKETS = Set.of("hdc", "ou", "corner");
@@ -144,9 +146,24 @@ public class CrawEventServiceV2 {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final KiraCrawlClient kiraCrawlClient;
+    private final Executor crawlPersistExecutor;
+    private final TransactionTemplate transactionTemplate;
     private final AiscoreMatchStatusLabelCache statusLabelCache;
 
-    @Transactional
+    public CrawEventServiceV2(
+            NamedParameterJdbcTemplate jdbcTemplate,
+            KiraCrawlClient kiraCrawlClient,
+            @Qualifier(CrawlPersistExecutorConfig.CRAWL_PERSIST_EXECUTOR) Executor crawlPersistExecutor,
+            PlatformTransactionManager transactionManager,
+            AiscoreMatchStatusLabelCache statusLabelCache
+    ) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.kiraCrawlClient = kiraCrawlClient;
+        this.crawlPersistExecutor = crawlPersistExecutor;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.statusLabelCache = statusLabelCache;
+    }
+
     public boolean processEvent(long eventId) {
         var eventRow = jdbcTemplate.query(
                 SQL_SELECT_EVENT,
@@ -173,15 +190,28 @@ public class CrawEventServiceV2 {
                 return false;
             }
 
-            persistCrawlResult(eventId, response);
-            handleClaimAfterSuccess(eventId);
-            log.info("CrawEventServiceV2 >> saved eventId=" + eventId + " matchId=" + response.matchId());
+            schedulePersist(eventId, response);
             return true;
         } catch (Exception ex) {
             log.log(Level.WARNING, "CrawEventServiceV2 >> failed eventId=" + eventId, ex);
             releaseEventClaim(eventId);
             return false;
         }
+    }
+
+    private void schedulePersist(long eventId, MatchOddsResponse response) {
+        crawlPersistExecutor.execute(() -> {
+            try {
+                transactionTemplate.executeWithoutResult(status -> {
+                    persistCrawlResult(eventId, response);
+                    handleClaimAfterSuccess(eventId);
+                });
+                log.info("CrawEventServiceV2 >> saved eventId=" + eventId + " matchId=" + response.matchId());
+            } catch (Exception ex) {
+                log.log(Level.WARNING, "persist failed eventId=" + eventId, ex);
+                releaseEventClaim(eventId);
+            }
+        });
     }
 
     public void releaseEventClaim(long eventId) {
