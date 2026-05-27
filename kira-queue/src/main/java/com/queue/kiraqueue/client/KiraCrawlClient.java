@@ -34,15 +34,17 @@ public class KiraCrawlClient {
         return response;
     }
 
-    public MatchOddsResponse fetchMatchOdds(String eventLink) {
+    public MatchOddsResponse fetchMatchOdds(String eventLink, Boolean hasOddsCorner) {
         if (!StringUtils.hasText(eventLink)) {
             throw new IllegalArgumentException("eventLink is required");
         }
 
-        var uri = UriComponentsBuilder.fromPath("/matches/odds")
-                .queryParam("event_link", eventLink)
-                .build()
-                .toUri();
+        var uriBuilder = UriComponentsBuilder.fromPath("/matches/odds")
+                .queryParam("event_link", eventLink);
+        if (hasOddsCorner != null) {
+            uriBuilder.queryParam("has_odds_corner", hasOddsCorner);
+        }
+        var uri = uriBuilder.build().toUri();
 
         var response = kiraCrawlRestClient.get()
                 .uri(uri)

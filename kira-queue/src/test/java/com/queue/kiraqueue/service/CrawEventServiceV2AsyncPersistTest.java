@@ -53,7 +53,7 @@ class CrawEventServiceV2AsyncPersistTest {
     @Test
     void processEvent_fetchSuccess_returnsBeforePersistCompletes() throws Exception {
         stubEventSelect();
-        when(kiraCrawlClient.fetchMatchOdds(LINK))
+        when(kiraCrawlClient.fetchMatchOdds(LINK, false))
                 .thenReturn(new MatchOddsResponse("m1", null, null, List.of(), null));
 
         var order = Collections.synchronizedList(new ArrayList<String>());
@@ -96,7 +96,7 @@ class CrawEventServiceV2AsyncPersistTest {
     @Test
     void processEvent_persistFailure_releasesClaimAsync() throws Exception {
         stubEventSelect();
-        when(kiraCrawlClient.fetchMatchOdds(LINK))
+        when(kiraCrawlClient.fetchMatchOdds(LINK, false))
                 .thenReturn(new MatchOddsResponse("m1", null, null, List.of(), null));
         when(jdbcTemplate.update(anyString(), anyMap()))
                 .thenAnswer(invocation -> {
@@ -145,9 +145,10 @@ class CrawEventServiceV2AsyncPersistTest {
                     String sql = invocation.getArgument(0);
                     RowMapper<Object> mapper = invocation.getArgument(2);
                     ResultSet rs = mock(ResultSet.class);
-                    if (sql.contains("event_id, link")) {
+                    if (sql.contains("event_id, link, has_odds_corner")) {
                         when(rs.getLong("event_id")).thenReturn(EVENT_ID);
                         when(rs.getString("link")).thenReturn(LINK);
+                        when(rs.getObject("has_odds_corner", Boolean.class)).thenReturn(false);
                     } else {
                         when(rs.getString("status")).thenReturn("FT");
                         when(rs.getInt("is_terminal")).thenReturn(1);

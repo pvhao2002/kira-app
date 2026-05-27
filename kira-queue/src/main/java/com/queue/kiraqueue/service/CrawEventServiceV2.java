@@ -36,7 +36,7 @@ public class CrawEventServiceV2 {
     private static final Set<String> IN_PLAY_STATUS_FALLBACK = Set.of("1H", "HT", "2H", "ET", "Penalties");
 
     private static final String SQL_SELECT_EVENT = """
-            select event_id, link
+            select event_id, link, has_odds_corner
             from events
             where event_id = :eventId
             """;
@@ -168,7 +168,11 @@ public class CrawEventServiceV2 {
         var eventRow = jdbcTemplate.query(
                 SQL_SELECT_EVENT,
                 Map.of("eventId", eventId),
-                (rs, rn) -> new EventRow(rs.getLong("event_id"), rs.getString("link"))
+                (rs, rn) -> new EventRow(
+                        rs.getLong("event_id"),
+                        rs.getString("link"),
+                        rs.getObject("has_odds_corner", Boolean.class)
+                )
         ).stream().findFirst().orElse(null);
 
         if (eventRow == null) {
@@ -183,7 +187,10 @@ public class CrawEventServiceV2 {
         }
 
         try {
-            MatchOddsResponse response = kiraCrawlClient.fetchMatchOdds(eventRow.link());
+            MatchOddsResponse response = kiraCrawlClient.fetchMatchOdds(
+                    eventRow.link(),
+                    eventRow.hasOddsCorner()
+            );
             if (response.isEmpty()) {
                 log.warning("CrawEventServiceV2 >> empty kira-crawl response (no Bet365?): eventId=" + eventId);
                 recordMissingOdds(eventId);
@@ -404,7 +411,7 @@ public class CrawEventServiceV2 {
         }
     }
 
-    private record EventRow(long eventId, String link) {
+    private record EventRow(long eventId, String link, Boolean hasOddsCorner) {
     }
 
     private record EventPlayState(String status, int isTerminal, int isInPlay) {

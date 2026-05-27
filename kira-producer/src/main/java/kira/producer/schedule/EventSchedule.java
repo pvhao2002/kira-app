@@ -97,6 +97,12 @@ public class EventSchedule {
     @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     @Transactional
     public void crawlFinishedEvents() {
+        var sqlCheck = """
+                SELECT COUNT(1)
+                FROM crawl_date
+                WHERE status <> 'done'
+                """;
+        Integer pendingCrawlCount = jdbcTemplate.queryForObject(sqlCheck, new MapSqlParameterSource(), Integer.class);
         publishEvents(
                 "crawlFinishedEvents",
                 FINISHED_BATCH_LIMIT,
@@ -104,15 +110,15 @@ public class EventSchedule {
         );
     }
 
-    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES, initialDelay = 2)
-    @Transactional
-    public void crawlLiveEvents() {
-        publishEvents(
-                "crawlLiveEvents",
-                LIVE_BATCH_LIMIT,
-                SQL_SELECT_LIVE_EVENTS
-        );
-    }
+//    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES, initialDelay = 2)
+//    @Transactional
+//    public void crawlLiveEvents() {
+//        publishEvents(
+//                "crawlLiveEvents",
+//                LIVE_BATCH_LIMIT,
+//                SQL_SELECT_LIVE_EVENTS
+//        );
+//    }
 
     private void publishEvents(String jobName, int batchLimit, String selectSql) {
         if (queueBackpressureService.isQueueOverLimit(RabbitMQConfig.QUEUE_ODD, QUEUE_MAX_MESSAGES)) {

@@ -24,6 +24,7 @@ Health: http://localhost:3000/actuator/health
 |----------|-------------|
 | `GET /matches?date=YYYYMMDD&sport_id=1&lang=2&tz=07:00` | Crawl match list for a date |
 | `GET /matches/odds?event_link=https://www.aiscore.com/...` | Crawl odds for one match |
+| `GET /matches/odds?event_link=...&has_odds_corner=false` | Skip corner odds detail capture when the match has no corner market |
 
 ## Concurrency
 

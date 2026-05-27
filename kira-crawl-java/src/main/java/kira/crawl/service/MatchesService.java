@@ -83,7 +83,7 @@ public class MatchesService {
         });
     }
 
-    public Object findMatchOdds(String eventLink) {
+    public Object findMatchOdds(String eventLink, Boolean hasOddsCorner) {
         var publicPageUrl = parseAndValidateEventLink(eventLink).toString();
         var oddsPublicPageUrl = buildOddsPublicPageUrl(publicPageUrl);
         var matchId = extractMatchIdFromEventLink(publicPageUrl);
@@ -97,7 +97,8 @@ public class MatchesService {
                 return Map.of();
             }
 
-            var oddsDetails = captureWebOddsDetailBody(page, matchId, timeout, oddsMapper.hasCornerMarket(oddsList));
+            boolean includeCorner = !Boolean.FALSE.equals(hasOddsCorner) && (Boolean.TRUE.equals(hasOddsCorner) || oddsMapper.hasCornerMarket(oddsList));
+            var oddsDetails = captureWebOddsDetailBody(page, matchId, timeout, includeCorner);
             var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
             var pageInfo = readMatchPageInfo(page, timeout);
             var teamStatsBody = captureOptionalApiBody(page, teamStatsApiUrl, publicPageUrl, timeout);
