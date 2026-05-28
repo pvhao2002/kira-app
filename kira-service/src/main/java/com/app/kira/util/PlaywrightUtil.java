@@ -11,5 +11,6 @@ public class PlaywrightUtil {
     public static final String CRAWL_TOMORROW_DATE = "CRAWL_TOMORROW_DATE";
     public static final String CRAWL_EVENT = "CRAWL_EVENT";
     public static final String CRAWL_UPCOMING_EVENT = "CRAWL_UPCOMING_EVENT";
-    public static final  String PREDICT = "PREDICT";
+    public static final String PREDICT = "PREDICT";
+    public static final String PREDICT_BASE_DATA = "PREDICT_BASE_DATA";
 }

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
 import com.microsoft.playwright.TimeoutError;
+import kira.crawl.browser.AiscoreContextApiClient;
+import kira.crawl.browser.AiscoreOddsDomInteractor;
 import kira.crawl.browser.BrowserApiType;
 import kira.crawl.browser.BrowserSessionManager;
 import kira.crawl.browser.CdpNetworkCapture.ApiUrlMatcher;
@@ -40,6 +42,8 @@ public class MatchesService {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final BrowserSessionManager browserSessionManager;
+    private final AiscoreOddsDomInteractor oddsDomInteractor;
+    private final AiscoreContextApiClient contextApiClient;
     private final AiscoreProtobufService protobufService;
     private final MatchMapper matchMapper;
     private final OddsMapper oddsMapper;
@@ -101,7 +105,7 @@ public class MatchesService {
             var oddsDetails = captureWebOddsDetailBody(page, matchId, timeout, includeCorner);
             var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
             var pageInfo = readMatchPageInfo(page, timeout);
-            var teamStatsBody = captureOptionalApiBody(page, teamStatsApiUrl, publicPageUrl, timeout);
+            var teamStatsBody = contextApiClient.getOptional(page, teamStatsApiUrl, publicPageUrl, timeout);
             var eventResult = teamStatsBody == null
                     ? new CrawlEventResultDto(null, null, null, null, null, null, null, null,
                     null, null, null, null, null, null, null, null, null, null, null, null,
@@ -146,21 +150,23 @@ public class MatchesService {
             boolean includeCorner
     ) {
         page.setDefaultTimeout(timeout);
-        var detailConfigs = includeCorner
-                ? List.of("asia", "bs", "corner")
-                : List.of("asia", "bs");
+        oddsDomInteractor.openBet365OddsModal(page, timeout);
+
         JsonNode asia = null;
         JsonNode bs = null;
         JsonNode corner = null;
 
-        for (var oddsType : detailConfigs) {
-            var apiUrl = buildOddsDetailApiUrl(matchId, oddsType);
-            var body = captureOddsDetailResponse(page, matchId, oddsType, apiUrl, timeout);
+        for (var tab : AiscoreOddsDomInteractor.DETAIL_TABS) {
+            if ("corner".equals(tab.oddsType()) && !includeCorner) {
+                continue;
+            }
+            var apiUrl = buildOddsDetailApiUrl(matchId, tab.oddsType());
+            var body = oddsDomInteractor.captureOddsDetailViaEvaluate(page, matchId, tab.oddsType(), apiUrl, timeout);
             var decoded = decodeOddsDetailBody(body);
             if (decoded == null) {
                 continue;
             }
-            switch (oddsType) {
+            switch (tab.oddsType()) {
                 case "asia" -> asia = decoded;
                 case "bs" -> bs = decoded;
                 case "corner" -> corner = decoded;
@@ -169,34 +175,6 @@ public class MatchesService {
             }
         }
         return new OddsMapper.OddsDetails(asia, null, bs, corner);
-    }
-
-    private byte[] captureOddsDetailResponse(
-            Page page,
-            String matchId,
-            String oddsType,
-            String apiUrl,
-            long timeout
-    ) {
-        Response response;
-        try {
-            response = page.waitForResponse(
-                    candidate -> ApiUrlMatcher.isSameApiRequest(candidate.url(), apiUrl),
-                    () -> requestOddsDetailFromPage(page, matchId, oddsType, timeout)
-            );
-        } catch (TimeoutError ex) {
-            throw new AiscoreBadGatewayException(
-                    "AiScore API response was not found in page network traffic",
-                    Map.of("apiUrl", apiUrl)
-            );
-        }
-        if (!response.ok()) {
-            throw new AiscoreBadGatewayException(
-                    "AiScore upstream request failed",
-                    Map.of("url", apiUrl, "status", response.status(), "statusText", response.statusText())
-            );
-        }
-        return response.body();
     }
 
     private JsonNode decodeOddsDetailBody(byte[] body) {
@@ -264,68 +242,6 @@ public class MatchesService {
                         CloudflareSupport.waitForClearance(page, timeout);
                     }
                 }
-        );
-    }
-
-    private void requestOddsDetailFromPage(Page page, String matchId, String oddsType, long timeout) {
-        page.waitForFunction(
-                """
-                        () => {
-                          const nuxt = window.$nuxt;
-                          const queue = [...(nuxt?.$children ?? [])];
-                          while (queue.length > 0) {
-                            const vm = queue.shift();
-                            if (!vm) continue;
-                            if (typeof vm.$options?.methods?.getOddsDetail === 'function'
-                                && vm.$data
-                                && Object.prototype.hasOwnProperty.call(vm.$data, 'activeTab')) {
-                              return true;
-                            }
-                            queue.push(...(vm.$children ?? []));
-                          }
-                          return false;
-                        }
-                        """,
-                null,
-                new Page.WaitForFunctionOptions().setTimeout(timeout)
-        );
-
-        page.evaluate(
-                """
-                        async ({ id, type }) => {
-                          const nuxt = window.$nuxt;
-                          const queue = [nuxt];
-                          const visited = new Set();
-                          let target;
-                          while (queue.length > 0) {
-                            const vm = queue.shift();
-                            if (!vm) continue;
-                            if (typeof vm._uid === 'number') {
-                              if (visited.has(vm._uid)) continue;
-                              visited.add(vm._uid);
-                            }
-                            const hasGetOddsDetail =
-                              typeof vm.$options?.methods?.getOddsDetail === 'function'
-                              && vm.$data
-                              && Object.prototype.hasOwnProperty.call(vm.$data, 'activeTab');
-                            if (hasGetOddsDetail) {
-                              target = vm;
-                              break;
-                            }
-                            queue.push(...(vm.$children ?? []));
-                          }
-                          if (!target || typeof target.getOddsDetail !== 'function') {
-                            throw new Error('Cannot find AiScore odds detail component to trigger tab request');
-                          }
-                          target.activeTab = type;
-                          target.countryId = 2;
-                          if (!target.WebMatchData?.match?.id) {
-                            target.WebMatchData = { match: { id } };
-                          }
-                          await target.getOddsDetail();
-                        }
-                        """,
-                Map.of("id", matchId, "type", oddsType)
         );
     }
 

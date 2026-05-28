@@ -1,33 +1,30 @@
-package com.app.kira.producer;
+package kira.producer.amqp;
 
-import com.app.kira.config.RabbitMQConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import kira.producer.config.RabbitMQConfig;
+import kira.producer.dto.PredictJobMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Log
 @Service
 @RequiredArgsConstructor
 public class PredictProducer {
+
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
 
-    public void sendPredict(String eventId) {
-        sendPredict(Long.parseLong(eventId), "base_data");
-    }
-
-    public void sendPredict(long eventId, String versionCode) {
+    public void sendPredict(PredictJobMessage job) {
         try {
-            var payload = objectMapper.writeValueAsString(Map.of(
-                    "eventId", eventId,
-                    "versionCode", versionCode
-            ));
-            rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY_PREDICTION, payload);
+            var payload = objectMapper.writeValueAsString(job);
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.EXCHANGE,
+                    RabbitMQConfig.ROUTING_KEY_PREDICTION,
+                    payload
+            );
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Failed to serialize prediction job", ex);
         }
