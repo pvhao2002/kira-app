@@ -25,7 +25,11 @@ select e.event_id,
 from events e
 left join event_claim ec on ec.event_id = e.event_id
 where (ec.event_id is null
-   or timestampdiff(second, ec.claimed_at, now()) >= @claim_stale_after_seconds)
+   or ec.status = 'failed'
+   or (
+        ec.status = 'processing'
+    and timestampdiff(second, ec.claimed_at, now()) >= @claim_stale_after_seconds
+      ))
   and e.status not in ('PENDING', 'POSTPONED', 'CANCELLED')
   and not exists (
       select 1
@@ -50,7 +54,13 @@ where f.type in ('retry_main', 'retry_stats', 'retry_odds')
     select 1
     from event_claim ec
     where ec.event_id = f.event_id
-      and timestampdiff(second, ec.claimed_at, now()) < @claim_stale_after_seconds
+      and (
+            ec.status = 'completed'
+         or (
+                ec.status = 'processing'
+            and timestampdiff(second, ec.claimed_at, now()) < @claim_stale_after_seconds
+            )
+      )
   )
 order by f.event_id
 limit 20;

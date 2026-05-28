@@ -218,9 +218,11 @@ create table event_claim
     event_id    bigint      not null,
     claimed_by  varchar(100) not null,
     claimed_at  datetime    default now(),
+    status      enum ('processing', 'completed', 'failed') not null default 'processing',
     unique key uk_event_claim_event_id (event_id),
     index idx_claimed_by_claimed_at (claimed_by, claimed_at),
     index idx_claimed_at (claimed_at),
+    index idx_event_claim_status_claimed_at (status, claimed_at),
     constraint fk_event_claim_event foreign key (event_id) references events (event_id) on delete cascade
 ) engine = InnoDB
   row_format = dynamic;

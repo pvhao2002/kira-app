@@ -3,6 +3,8 @@ package kira.schema.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
@@ -28,7 +30,8 @@ import java.time.LocalDateTime;
         ),
         indexes = {
                 @Index(name = "idx_claimed_by_claimed_at", columnList = "claimed_by, claimed_at"),
-                @Index(name = "idx_claimed_at", columnList = "claimed_at")
+                @Index(name = "idx_claimed_at", columnList = "claimed_at"),
+                @Index(name = "idx_event_claim_status_claimed_at", columnList = "status, claimed_at")
         })
 @Getter
 @Setter
@@ -49,4 +52,8 @@ public class EventClaim {
 
     @Column(name = "claimed_at")
     private LocalDateTime claimedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private EventClaimStatus status = EventClaimStatus.processing;
 }

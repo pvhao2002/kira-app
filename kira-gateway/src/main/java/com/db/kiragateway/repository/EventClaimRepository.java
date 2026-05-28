@@ -30,7 +30,11 @@ public class EventClaimRepository {
                 from events e
                 left join event_claim ec on ec.event_id = e.event_id
                 where (ec.event_id is null
-                   or timestampdiff(second, ec.claimed_at, now()) >= :claimStaleAfterSeconds)
+                   or ec.status = 'failed'
+                   or (
+                        ec.status = 'processing'
+                    and timestampdiff(second, ec.claimed_at, now()) >= :claimStaleAfterSeconds
+                      ))
                   and e.status not in ('PENDING', 'POSTPONED', 'CANCELLED')
                   and not exists (
                       select 1 from event_data_issue edi
@@ -65,10 +69,11 @@ public class EventClaimRepository {
 
     public void insertClaim(long eventId, String claimedBy, LocalDateTime claimedAt) {
         var sql = """
-                insert into event_claim (event_id, claimed_by, claimed_at)
-                values (:eventId, :claimedBy, :claimedAt)
+                insert into event_claim (event_id, claimed_by, claimed_at, status)
+                values (:eventId, :claimedBy, :claimedAt, 'processing')
                 on duplicate key update claimed_by = values(claimed_by),
-                                        claimed_at = values(claimed_at)
+                                        claimed_at = values(claimed_at),
+                                        status = 'processing'
                 """;
 
         writeJdbcClient
@@ -80,11 +85,15 @@ public class EventClaimRepository {
     }
 
     /**
-     * Release claim so the event can be picked again (e.g. after crawl failure).
+     * Mark claim failed so the event can be picked again (e.g. after crawl failure).
      */
-    public int deleteByEventId(long eventId) {
+    public int markFailedByEventId(long eventId) {
         return writeJdbcClient
-                .sql("DELETE FROM event_claim WHERE event_id = :eventId")
+                .sql("""
+                        UPDATE event_claim
+                        SET status = 'failed'
+                        WHERE event_id = :eventId
+                        """)
                 .param("eventId", eventId)
                 .update();
     }

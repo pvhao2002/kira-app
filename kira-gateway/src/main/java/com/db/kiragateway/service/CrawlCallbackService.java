@@ -138,9 +138,9 @@ public class CrawlCallbackService {
     @Transactional
     public void reportCrawlFail(long eventId, CrawlFailRequest req) {
         repo.insertCrawlFail(eventId, req.type(), req.message());
-        int released = eventClaimRepository.deleteByEventId(eventId);
+        int released = eventClaimRepository.markFailedByEventId(eventId);
         if (released > 0) {
-            log.fine("reportCrawlFail: released event_claim for eventId=%d".formatted(eventId));
+            log.fine("reportCrawlFail: marked event_claim failed for eventId=%d".formatted(eventId));
         }
     }
 

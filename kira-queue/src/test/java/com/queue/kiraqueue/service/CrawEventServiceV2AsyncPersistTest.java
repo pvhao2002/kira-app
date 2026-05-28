@@ -94,14 +94,14 @@ class CrawEventServiceV2AsyncPersistTest {
     }
 
     @Test
-    void processEvent_persistFailure_releasesClaimAsync() throws Exception {
+    void processEvent_persistFailure_marksClaimFailedAsync() throws Exception {
         stubEventSelect();
         when(kiraCrawlClient.fetchMatchOdds(LINK, false))
                 .thenReturn(new MatchOddsResponse("m1", null, null, List.of(), null));
         when(jdbcTemplate.update(anyString(), anyMap()))
                 .thenAnswer(invocation -> {
                     String sql = invocation.getArgument(0);
-                    if (sql.contains("event_claim")) {
+                    if (sql.contains("event_claim") && sql.contains("failed")) {
                         return 1;
                     }
                     throw new RuntimeException("db down");
@@ -111,7 +111,7 @@ class CrawEventServiceV2AsyncPersistTest {
         assertTrue(service.processEvent(EVENT_ID));
 
         verify(jdbcTemplate, timeout(5000))
-                .update(contains("event_claim"), eq(Map.of("event_id", EVENT_ID)));
+                .update(contains("status = 'failed'"), eq(Map.of("event_id", EVENT_ID)));
     }
 
     private CrawEventServiceV2 newService(Executor executor) {

@@ -137,6 +137,18 @@ public class CrawEventServiceV2 {
     private static final String SQL_DELETE_EVENT_CLAIM =
             "delete from event_claim where event_id = :event_id";
 
+    private static final String SQL_FAIL_EVENT_CLAIM = """
+            update event_claim
+            set status = 'failed'
+            where event_id = :event_id
+            """;
+
+    private static final String SQL_COMPLETE_EVENT_CLAIM = """
+            update event_claim
+            set status = 'completed'
+            where event_id = :event_id
+            """;
+
     private static final String SQL_UPSERT_EVENT_DATA_ISSUE = """
             insert into event_data_issue (event_id, issue_type, description, recorded_at)
             values (:eventId, :issueType, :description, :recordedAt)
@@ -177,12 +189,12 @@ public class CrawEventServiceV2 {
 
         if (eventRow == null) {
             log.warning("CrawEventServiceV2 >> event not found: " + eventId);
-            releaseEventClaim(eventId);
+            failEventClaim(eventId);
             return false;
         }
         if (!StringUtils.hasText(eventRow.link())) {
             log.warning("CrawEventServiceV2 >> event has no link: " + eventId);
-            releaseEventClaim(eventId);
+            failEventClaim(eventId);
             return false;
         }
 
@@ -194,6 +206,7 @@ public class CrawEventServiceV2 {
             if (response.isEmpty()) {
                 log.warning("CrawEventServiceV2 >> empty kira-crawl response (no Bet365?): eventId=" + eventId);
                 recordMissingOdds(eventId);
+                failEventClaim(eventId);
                 return false;
             }
 
@@ -201,7 +214,7 @@ public class CrawEventServiceV2 {
             return true;
         } catch (Exception ex) {
             log.log(Level.WARNING, "CrawEventServiceV2 >> failed eventId=" + eventId, ex);
-            releaseEventClaim(eventId);
+            failEventClaim(eventId);
             return false;
         }
     }
@@ -216,13 +229,21 @@ public class CrawEventServiceV2 {
                 log.info("CrawEventServiceV2 >> saved eventId=" + eventId + " matchId=" + response.matchId());
             } catch (Exception ex) {
                 log.log(Level.WARNING, "persist failed eventId=" + eventId, ex);
-                releaseEventClaim(eventId);
+                failEventClaim(eventId);
             }
         });
     }
 
+    public void failEventClaim(long eventId) {
+        jdbcTemplate.update(SQL_FAIL_EVENT_CLAIM, Map.of("event_id", eventId));
+    }
+
     public void releaseEventClaim(long eventId) {
         jdbcTemplate.update(SQL_DELETE_EVENT_CLAIM, Map.of("event_id", eventId));
+    }
+
+    private void completeEventClaim(long eventId) {
+        jdbcTemplate.update(SQL_COMPLETE_EVENT_CLAIM, Map.of("event_id", eventId));
     }
 
     private void persistCrawlResult(long eventId, MatchOddsResponse response) {
@@ -234,6 +255,8 @@ public class CrawEventServiceV2 {
     private void handleClaimAfterSuccess(long eventId) {
         if (shouldReleaseClaimAfterSuccess(loadEventPlayState(eventId))) {
             releaseEventClaim(eventId);
+        } else {
+            completeEventClaim(eventId);
         }
     }
 

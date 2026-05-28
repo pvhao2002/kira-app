@@ -99,8 +99,9 @@ public class CrawEventService {
      */
     private static final String EVENT_CLAIM_BY_PRODUCER = "kira-producer";
 
-    private static final String SQL_DELETE_EVENT_CLAIM_PRODUCER = """
-            delete from event_claim
+    private static final String SQL_FAIL_EVENT_CLAIM_PRODUCER = """
+            update event_claim
+            set status = 'failed'
             where event_id = :event_id
               and claimed_by = :claimed_by
             """;
@@ -275,7 +276,7 @@ public class CrawEventService {
     }
 
     private void releaseProducerEventClaim(long eventId) {
-        jdbcTemplate.update(SQL_DELETE_EVENT_CLAIM_PRODUCER,
+        jdbcTemplate.update(SQL_FAIL_EVENT_CLAIM_PRODUCER,
                 Map.of("event_id", eventId, "claimed_by", EVENT_CLAIM_BY_PRODUCER));
     }
 

@@ -5,6 +5,7 @@ import kira.producer.amqp.EventProducer;
 import kira.producer.amqp.QueueBackpressureService;
 import kira.producer.config.RabbitMQConfig;
 import lombok.extern.java.Log;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -30,16 +31,24 @@ public class EventSchedule {
     private static final String EVENT_CLAIM_BY = "kira-producer";
 
     private static final String SQL_UPSERT_EVENT_CLAIM = """
-            insert into event_claim (event_id, claimed_by, claimed_at)
-            values (:eventId, :claimedBy, :claimedAt)
+            insert into event_claim (event_id, claimed_by, claimed_at, status)
+            values (:eventId, :claimedBy, :claimedAt, 'processing')
             on duplicate key update claimed_by = values(claimed_by),
-                                    claimed_at = values(claimed_at)
+                                    claimed_at = values(claimed_at),
+                                    status = 'processing'
             """;
 
     private static final String SQL_FILTER_NOT_CLAIMED = """
               and not exists (
                 select 1 from event_claim ec
                 where ec.event_id = e.event_id
+                  and (
+                        ec.status = 'completed'
+                     or (
+                            ec.status = 'processing'
+                        and timestampdiff(second, ec.claimed_at, now()) < :claimStaleAfterSeconds
+                        )
+                  )
               )
             """;
 
@@ -84,14 +93,18 @@ public class EventSchedule {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final EventProducer eventProducer;
     private final QueueBackpressureService queueBackpressureService;
+    private final long claimStaleAfterSeconds;
 
     public EventSchedule(
             NamedParameterJdbcTemplate jdbcTemplate,
             EventProducer eventProducer,
-            QueueBackpressureService queueBackpressureService) {
+            QueueBackpressureService queueBackpressureService,
+            @Value("${kira.producer.claim-stale-after-seconds:${CRAWL_CLAIM_STALE_AFTER_SECONDS:900}}")
+            long claimStaleAfterSeconds) {
         this.jdbcTemplate = jdbcTemplate;
         this.eventProducer = eventProducer;
         this.queueBackpressureService = queueBackpressureService;
+        this.claimStaleAfterSeconds = Math.max(60, claimStaleAfterSeconds);
     }
 
     @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
@@ -128,7 +141,8 @@ public class EventSchedule {
         }
 
         var params = new MapSqlParameterSource()
-                .addValue("batch_limit", batchLimit);
+                .addValue("batch_limit", batchLimit)
+                .addValue("claimStaleAfterSeconds", claimStaleAfterSeconds);
 
         List<String> eventIds = jdbcTemplate.query(selectSql, params, (rs, rowNum) -> rs.getString("event_id"));
         if (CollectionUtils.isEmpty(eventIds)) {

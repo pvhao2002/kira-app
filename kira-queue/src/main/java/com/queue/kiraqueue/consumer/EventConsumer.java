@@ -26,12 +26,6 @@ public class EventConsumer {
     @RabbitListener(queues = QUEUE_EVENT_ODD, concurrency = "1")
     public void handleEvent(String eventIds) {
         processEventIds("handleEvent", eventIds);
-        // sleep for 5 second to avoid overwhelming the crawl service when there are many events
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 
     private void processEventIds(String handler, String eventIds) {
