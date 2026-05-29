@@ -60,6 +60,13 @@ public class CrawEventServiceV2 {
             where event_id = :event_id
             """;
 
+    private static final String SQL_CLEAR_EVENT_ODDS_FLAGS = """
+            update events
+            set has_odds = false,
+                has_odds_corner = false
+            where event_id = :event_id
+            """;
+
     private static final String SQL_UPSERT_EVENT_RESULT = """
             insert into event_result (
                 event_id,
@@ -249,7 +256,14 @@ public class CrawEventServiceV2 {
     private void persistCrawlResult(long eventId, MatchOddsResponse response) {
         updateEvent(eventId, response.event());
         upsertEventResult(eventId, response.eventResult());
+        if (CollectionUtils.isEmpty(response.odds())) {
+            clearEventOddsFlags(eventId);
+        }
         persistOdds(eventId, response.odds(), response.oddsTimeline());
+    }
+
+    private void clearEventOddsFlags(long eventId) {
+        jdbcTemplate.update(SQL_CLEAR_EVENT_ODDS_FLAGS, Map.of("event_id", eventId));
     }
 
     private void handleClaimAfterSuccess(long eventId) {

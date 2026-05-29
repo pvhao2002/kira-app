@@ -39,4 +39,11 @@ public record CrawlEventResultDto(
         Integer ftHomeShotOnTarget,
         Integer ftAwayShotOnTarget
 ) {
+    public static CrawlEventResultDto empty() {
+        return new CrawlEventResultDto(
+                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null
+        );
+    }
 }

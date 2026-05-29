@@ -1,6 +1,9 @@
 package com.queue.kiraqueue.service;
 
 import com.queue.kiraqueue.client.KiraCrawlClient;
+import com.queue.kiraqueue.dto.crawl.CrawlMatchOddsEventDto;
+import com.queue.kiraqueue.dto.crawl.CrawlOddsTimelineGroupDto;
+import com.queue.kiraqueue.dto.crawl.CrawlOddsTimelineItemDto;
 import com.queue.kiraqueue.dto.crawl.MatchOddsResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,6 +94,32 @@ class CrawEventServiceV2AsyncPersistTest {
 
         verify(jdbcTemplate, timeout(5000).atLeastOnce())
                 .update(contains("event_odds_timeline"), anyMap());
+    }
+
+    @Test
+    void processEvent_emptyOddsSnapshots_clearsHasOddsFlags() throws Exception {
+        stubEventSelect();
+        var timeline = new CrawlOddsTimelineGroupDto(
+                List.of(new CrawlOddsTimelineItemDto(
+                        "hdc", "-0.5#+0.5", "1.03", "0.87", "1'", "2015-01-01T19:15:00+07:00"
+                )),
+                List.of(),
+                List.of()
+        );
+        when(kiraCrawlClient.fetchMatchOdds(LINK, false))
+                .thenReturn(new MatchOddsResponse(
+                        "vmqy9i4eeougk9r",
+                        new CrawlMatchOddsEventDto("FT", 8),
+                        null,
+                        List.of(),
+                        timeline
+                ));
+
+        var service = newService(Runnable::run);
+        assertTrue(service.processEvent(EVENT_ID));
+
+        verify(jdbcTemplate, timeout(5000))
+                .update(contains("has_odds = false"), eq(Map.of("event_id", EVENT_ID)));
     }
 
     @Test

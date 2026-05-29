@@ -107,9 +107,7 @@ public class MatchesService {
             var pageInfo = readMatchPageInfo(page, timeout);
             var teamStatsBody = contextApiClient.getOptional(page, teamStatsApiUrl, publicPageUrl, timeout);
             var eventResult = teamStatsBody == null
-                    ? new CrawlEventResultDto(null, null, null, null, null, null, null, null,
-                    null, null, null, null, null, null, null, null, null, null, null, null,
-                    null, null, null, null, null, null, null, null, null, null, null, null)
+                    ? CrawlEventResultDto.empty()
                     : matchMapper.mapEventResultForDatabase(pageInfo.homeScores(), pageInfo.awayScores(),
                     protobufService.decodeMatchTeamStats(teamStatsBody));
 
