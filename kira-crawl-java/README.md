@@ -28,15 +28,25 @@ Health: http://localhost:3000/actuator/health
 
 ## Concurrency
 
-Production `/matches` and `/matches/odds` use **`PlaywrightUtil.withCrawlPage`** on a single **`playwright-driver`** thread with a warm context pool (no `launchPersistentContext` per request). Non-essential assets (`image`, `font`, `media`) are blocked via lean network routing.
+Production `/matches` and `/matches/odds` use **two dedicated Playwright crawl lanes** (`PlaywrightCrawlLanes`):
+
+| Lane | Driver thread | API |
+|------|---------------|-----|
+| `playwright-matches-driver` | 1 warm browser context | `GET /matches` |
+| `playwright-odds-driver` | 1 warm browser context | `GET /matches/odds` |
+
+Each lane processes requests **sequentially** (one crawl at a time per API). The two lanes run **in parallel** — an odds crawl does not block a matches crawl. Browsers and contexts are warmed at startup; each request only opens/closes a page tab.
+
+Non-essential assets (`image`, `font`, `media`) are blocked via lean network routing.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `PLAYWRIGHT_UTIL_CONTEXT_POOL_SIZE` | `2` | Warm browser contexts per JVM (1–8) |
 | `PLAYWRIGHT_UTIL_LEAN_NETWORK` | `true` | Block heavy assets to reduce network delay |
 | `AISCORE_COOKIE` | — | Session cookies (replaces on-disk profile for Cloudflare) |
 
-HTTP handlers use virtual threads (`spring.threads.virtual.enabled=true`); all Playwright calls are serialized on the driver thread for thread-safety.
+HTTP handlers use virtual threads (`spring.threads.virtual.enabled=true`); Playwright calls are marshaled to each lane's dedicated driver thread for thread-safety.
+
+`PLAYWRIGHT_UTIL_CONTEXT_POOL_SIZE` applies only to legacy `PlaywrightUtil.withCrawlPage` / dev helpers, not production crawl lanes.
 
 Legacy env vars `AISCORE_MATCHES_CONCURRENCY` / `AISCORE_ODDS_CONCURRENCY` and `AISCORE_PROFILE_BASE_DIR` are unused by the current crawl path.
 
@@ -52,7 +62,7 @@ Legacy env vars `AISCORE_MATCHES_CONCURRENCY` / `AISCORE_ODDS_CONCURRENCY` and `
 | `AISCORE_ODDS_ASYNC_TIMEOUT_MS` | `300000` | HTTP async timeout for `GET /matches/odds` (align with kira-queue `read-timeout-ms`) |
 | `AISCORE_COOKIE` | — | Pre-seed Cloudflare/session cookies (required if challenged) |
 | `AISCORE_USER_AGENT` | Chrome UA | Override user agent |
-| `PLAYWRIGHT_UTIL_CONTEXT_POOL_SIZE` | `2` | Warm context pool for `/matches` |
+| `PLAYWRIGHT_UTIL_CONTEXT_POOL_SIZE` | `2` | Legacy `PlaywrightUtil.withCrawlPage` context pool; production crawl lanes ignore it |
 | `PLAYWRIGHT_UTIL_LEAN_NETWORK` | `true` | Block image/font/media on crawl pages |
 
 ### Multiple instances
@@ -70,7 +80,7 @@ Each JVM is isolated by process; run different ports when scaling horizontally.
 
 ## PlaywrightUtil
 
-Shared crawl runtime for production `/matches` and dev helpers. One Chromium process per JVM, warm contexts, lean network.
+Shared crawl runtime for dev load tests and legacy helpers. Production `/matches` and `/matches/odds` use **`PlaywrightCrawlLanes`** instead (two warm browser lanes).
 
 ## Playwright load test API
 

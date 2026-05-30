@@ -15,7 +15,7 @@ public class SoccerTeamRecentStatSchedule {
 
     private final SoccerTeamRecentStatService soccerTeamRecentStatService;
 
-    @Scheduled(cron = "${kira.producer.soccer-team-recent-stat.cron:0 30 2 * * *}", zone = "Asia/Ho_Chi_Minh")
+    @Scheduled(cron = "0 30 2 * * *", zone = "Asia/Ho_Chi_Minh")
     public void recomputeRecentStats() {
         var insertedRows = soccerTeamRecentStatService.recomputeRecentStats();
         log.info("SoccerTeamRecentStatSchedule >> Recomputed recent team stats, inserted rows: " + insertedRows);

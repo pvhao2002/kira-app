@@ -10,7 +10,7 @@ spring:
 
 app:
   playwright:
-    headless: ${PLAYWRIGHT_HEADLESS:true}
+    headless: ${PLAYWRIGHT_HEADLESS:false}
     channel: ${PLAYWRIGHT_CHANNEL:}
     browser-timeout-ms: ${AISCORE_BROWSER_TIMEOUT_MS:80000}
     matches-async-timeout-ms: ${AISCORE_MATCHES_ASYNC_TIMEOUT_MS:180000}

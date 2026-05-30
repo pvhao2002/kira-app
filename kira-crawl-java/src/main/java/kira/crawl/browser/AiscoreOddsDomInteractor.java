@@ -70,7 +70,7 @@ public class AiscoreOddsDomInteractor {
             return requireOkBody(response, apiUrl);
         } catch (TimeoutError ex) {
             throw new AiscoreBadGatewayException(
-                    "AiScore API response was not found in page network traffic",
+                    "AiScore API response was not found in page network traffic url (%s) of matchId %s and oddsType %s".formatted(apiUrl, matchId, oddsType),
                     Map.of("apiUrl", apiUrl, "oddsType", oddsType)
             );
         }
@@ -125,6 +125,13 @@ public class AiscoreOddsDomInteractor {
                           }
                           if (!target || typeof target.getOddsDetail !== 'function') {
                             throw new Error('Cannot find AiScore odds detail component to trigger tab request');
+                          }
+                          const tabs = ['asia', 'bs', 'corner'];
+                          if (target.activeTab === type) {
+                            const alternate = tabs.find((tab) => tab !== type);
+                            if (alternate) {
+                              target.activeTab = alternate;
+                            }
                           }
                           target.activeTab = type;
                           target.countryId = 2;

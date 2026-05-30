@@ -2,7 +2,6 @@ package kira.crawl.browser;
 
 import com.microsoft.playwright.Page;
 import kira.crawl.config.PlaywrightProperties;
-import kira.crawl.util.PlaywrightUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -16,6 +15,7 @@ import java.util.function.BiFunction;
 public class BrowserSessionManager {
 
     private final PlaywrightProperties properties;
+    private final PlaywrightCrawlLanes crawlLanes;
 
     public <T> T withPage(
             BrowserApiType apiType,
@@ -29,6 +29,6 @@ public class BrowserSessionManager {
                 "accept-language", properties.acceptLanguage()
         );
         log.debug("Opening crawl page for {} at {}", apiType, publicPageUrl);
-        return PlaywrightUtil.withCrawlPage(timeout, headers, properties.headless(), handler);
+        return crawlLanes.lane(apiType).withPage(timeout, headers, handler);
     }
 }

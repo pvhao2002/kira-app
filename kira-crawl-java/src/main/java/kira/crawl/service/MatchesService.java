@@ -18,6 +18,7 @@ import kira.crawl.protobuf.AiscoreProtobufService;
 import kira.crawl.util.JsonRecords;
 import kira.crawl.util.PlaywrightUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -32,6 +33,7 @@ import static kira.crawl.util.JsonRecords.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MatchesService {
 
     private static final String API_BASE_URL = "https://api.aiscore.com/v1/web/api/matches";
@@ -95,22 +97,48 @@ public class MatchesService {
         var teamStatsApiUrl = buildTeamStatsApiUrl(matchId);
 
         return browserSessionManager.withPage(BrowserApiType.ODDS, oddsPublicPageUrl, (page, timeout) -> {
+            long crawlStart = System.nanoTime();
+
+            long stepStart = System.nanoTime();
             var oddsListBody = captureApiResponseBodies(page, List.of(oddsListApiUrl), oddsPublicPageUrl, timeout).getFirst();
             var oddsList = protobufService.decodeMatchOdds(oddsListBody);
+            logOddsStep(matchId, "oddsList", stepStart);
+
             if (!oddsMapper.hasBet365Company(oddsList)) {
+                log.info(
+                        "MatchOdds timing summary matchId={} outcome=noBet365 totalSec={}",
+                        matchId,
+                        formatDurationSec(crawlStart)
+                );
                 return Map.of();
             }
 
             boolean includeCorner = !Boolean.FALSE.equals(hasOddsCorner) && (Boolean.TRUE.equals(hasOddsCorner) || oddsMapper.hasCornerMarket(oddsList));
-            var oddsDetails = captureWebOddsDetailBody(page, matchId, timeout, includeCorner);
+
+            stepStart = System.nanoTime();
+            var oddsDetails = captureWebOddsDetailBody(page, matchId, oddsPublicPageUrl, timeout, includeCorner);
+            logOddsStep(matchId, "oddsDetails", stepStart, "includeCorner", includeCorner);
+
+            stepStart = System.nanoTime();
             var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
+            logOddsStep(matchId, "mapTimelineOdds", stepStart);
+
+            stepStart = System.nanoTime();
             var pageInfo = readMatchPageInfo(page, timeout);
+            logOddsStep(matchId, "readMatchPageInfo", stepStart);
+
+            stepStart = System.nanoTime();
             var teamStatsBody = contextApiClient.getOptional(page, teamStatsApiUrl, publicPageUrl, timeout);
+            logOddsStep(matchId, "teamStats", stepStart, "found", teamStatsBody != null);
+
+            stepStart = System.nanoTime();
             var eventResult = teamStatsBody == null
                     ? CrawlEventResultDto.empty()
                     : matchMapper.mapEventResultForDatabase(pageInfo.homeScores(), pageInfo.awayScores(),
                     protobufService.decodeMatchTeamStats(teamStatsBody));
+            logOddsStep(matchId, "mapEventResult", stepStart);
 
+            stepStart = System.nanoTime();
             var aiscoreRaw = new LinkedHashMap<String, Object>();
             aiscoreRaw.put("oddsList", OBJECT_MAPPER.convertValue(oddsList, Map.class));
             aiscoreRaw.put("asia", toMapOrNull(oddsDetails.asia()));
@@ -121,7 +149,7 @@ public class MatchesService {
                     ? null
                     : OBJECT_MAPPER.convertValue(protobufService.decodeMatchTeamStats(teamStatsBody), Map.class));
 
-            return new MatchOddsResponseDto(
+            var response = new MatchOddsResponseDto(
                     matchId,
                     new CrawlMatchOddsEventDto(pageInfo.status() != null ? pageInfo.status() : "-", pageInfo.statusId()),
                     eventResult,
@@ -131,6 +159,14 @@ public class MatchesService {
                     oddsMapper.groupOddsTimelineForResponse(timelineOdds),
                     aiscoreRaw
             );
+            logOddsStep(matchId, "buildResponse", stepStart);
+            log.info(
+                    "MatchOdds timing summary matchId={} outcome=success totalSec={} includeCorner={}",
+                    matchId,
+                    formatDurationSec(crawlStart),
+                    includeCorner
+            );
+            return response;
         });
     }
 
@@ -144,11 +180,15 @@ public class MatchesService {
     private OddsMapper.OddsDetails captureWebOddsDetailBody(
             Page page,
             String matchId,
+            String referer,
             long timeout,
             boolean includeCorner
     ) {
         page.setDefaultTimeout(timeout);
+
+        long modalStart = System.nanoTime();
         oddsDomInteractor.openBet365OddsModal(page, timeout);
+        logOddsStep(matchId, "openBet365OddsModal", modalStart);
 
         JsonNode asia = null;
         JsonNode bs = null;
@@ -158,9 +198,11 @@ public class MatchesService {
             if ("corner".equals(tab.oddsType()) && !includeCorner) {
                 continue;
             }
+            long tabStart = System.nanoTime();
             var apiUrl = buildOddsDetailApiUrl(matchId, tab.oddsType());
-            var body = oddsDomInteractor.captureOddsDetailViaEvaluate(page, matchId, tab.oddsType(), apiUrl, timeout);
+            var body = captureOddsDetailBody(page, matchId, tab.oddsType(), apiUrl, referer, timeout);
             var decoded = decodeOddsDetailBody(body);
+            logOddsStep(matchId, "oddsDetailTab", tabStart, "oddsType", tab.oddsType(), "decoded", decoded != null);
             if (decoded == null) {
                 continue;
             }
@@ -173,6 +215,25 @@ public class MatchesService {
             }
         }
         return new OddsMapper.OddsDetails(asia, null, bs, corner);
+    }
+
+    private byte[] captureOddsDetailBody(
+            Page page,
+            String matchId,
+            String oddsType,
+            String apiUrl,
+            String referer,
+            long timeout
+    ) {
+        long stepStart = System.nanoTime();
+        var direct = contextApiClient.getOptional(page, apiUrl, referer, timeout);
+        if (direct != null) {
+            logOddsStep(matchId, "oddsDetailFetch", stepStart, "oddsType", oddsType, "method", "direct");
+            return direct;
+        }
+        var body = oddsDomInteractor.captureOddsDetailViaEvaluate(page, matchId, oddsType, apiUrl, timeout);
+        logOddsStep(matchId, "oddsDetailFetch", stepStart, "oddsType", oddsType, "method", "evaluate");
+        return body;
     }
 
     private JsonNode decodeOddsDetailBody(byte[] body) {
@@ -418,5 +479,50 @@ public class MatchesService {
             List<Integer> homeScores,
             List<Integer> awayScores
     ) {
+    }
+
+    private static void logOddsStep(String matchId, String step, long startNano) {
+        log.info(
+                "MatchOdds timing matchId={} step={} durationSec={}",
+                matchId,
+                step,
+                formatDurationSec(startNano)
+        );
+    }
+
+    private static void logOddsStep(String matchId, String step, long startNano, String key, Object value) {
+        log.info(
+                "MatchOdds timing matchId={} step={} durationSec={} {}={}",
+                matchId,
+                step,
+                formatDurationSec(startNano),
+                key,
+                value
+        );
+    }
+
+    private static void logOddsStep(
+            String matchId,
+            String step,
+            long startNano,
+            String key1,
+            Object value1,
+            String key2,
+            Object value2
+    ) {
+        log.info(
+                "MatchOdds timing matchId={} step={} durationSec={} {}={} {}={}",
+                matchId,
+                step,
+                formatDurationSec(startNano),
+                key1,
+                value1,
+                key2,
+                value2
+        );
+    }
+
+    private static String formatDurationSec(long startNano) {
+        return "%.3f".formatted((System.nanoTime() - startNano) / 1_000_000_000.0);
     }
 }
