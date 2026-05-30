@@ -1,4 +1,4 @@
-import {Component, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {DecimalPipe} from '@angular/common';
 
@@ -29,7 +29,7 @@ export type EventCrawlFailedSortColumn = 'createdAt' | 'eventDate';
   imports: [DecimalPipe],
   templateUrl: './event-crawl-failed.html',
   styleUrl: './event-crawl-failed.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventCrawlFailed {
   private readonly http = inject(HttpClient);

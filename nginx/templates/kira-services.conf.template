@@ -75,14 +75,18 @@ upstream kira_queue_upstream {
 }
 
 upstream kira_gateway_upstream {
-  server ${KIRA_GATEWAY_HOST_1}:${KIRA_GATEWAY_PORT_1};
-  server ${KIRA_GATEWAY_HOST_2}:${KIRA_GATEWAY_PORT_2};
+  # max_fails=0: never mark a peer "temporarily disabled" — safe when both
+  # entries point to the same port (single-instance dev via nginx/.env).
+  server ${KIRA_GATEWAY_HOST_1}:${KIRA_GATEWAY_PORT_1} max_fails=0;
+  server ${KIRA_GATEWAY_HOST_2}:${KIRA_GATEWAY_PORT_2} max_fails=0;
   keepalive 32;
 }
 
 upstream kira_data_manager_upstream {
-  server ${KIRA_DATA_MANAGER_HOST_1}:${KIRA_DATA_MANAGER_PORT_1};
-  server ${KIRA_DATA_MANAGER_HOST_2}:${KIRA_DATA_MANAGER_PORT_2};
+  # max_fails=0: never mark a peer "temporarily disabled" — safe when both
+  # entries point to the same port (single-instance dev via nginx/.env).
+  server ${KIRA_DATA_MANAGER_HOST_1}:${KIRA_DATA_MANAGER_PORT_1} max_fails=0;
+  server ${KIRA_DATA_MANAGER_HOST_2}:${KIRA_DATA_MANAGER_PORT_2} max_fails=0;
   keepalive 32;
 }
 

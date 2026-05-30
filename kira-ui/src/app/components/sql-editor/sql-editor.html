@@ -55,8 +55,8 @@
 
         <textarea
           #textArea
-          [(ngModel)]="localQuery"
-          (input)="updateLineCount()"
+          [value]="localQuery()"
+          (input)="onLocalQueryInput($any($event.target).value)"
           (scroll)="syncScroll()"
           spellcheck="false"
           class="flex-1 w-full h-full pl-4 pr-4 py-4 bg-transparent border-none focus:ring-0 font-mono text-sm leading-6 resize-none placeholder:text-slate-500 text-slate-200 outline-none custom-scrollbar"
@@ -71,39 +71,39 @@
             <div class="grid grid-cols-3 gap-1 p-1 bg-slate-800 rounded-lg border border-slate-700">
 
               <button
-                (click)="inputData.mode = 'FT'"
+                (click)="setInputMode('FT')"
                 class="flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-bold transition-all relative group"
-                [class.bg-slate-700]="inputData.mode === 'FT'"
-                [class.shadow-sm]="inputData.mode === 'FT'"
-                [class.text-blue-400]="inputData.mode === 'FT'"
-                [class.text-slate-400]="inputData.mode !== 'FT'"
-                [class.hover:text-slate-300]="inputData.mode !== 'FT'"
+                [class.bg-slate-700]="inputData().mode === 'FT'"
+                [class.shadow-sm]="inputData().mode === 'FT'"
+                [class.text-blue-400]="inputData().mode === 'FT'"
+                [class.text-slate-400]="inputData().mode !== 'FT'"
+                [class.hover:text-slate-300]="inputData().mode !== 'FT'"
               >
                 <span class="material-symbols-outlined text-[16px]">sports_soccer</span>
                 FT
               </button>
 
               <button
-                (click)="inputData.mode = 'HT'"
+                (click)="setInputMode('HT')"
                 class="flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-bold transition-all relative group"
-                [class.bg-slate-700]="inputData.mode === 'HT'"
-                [class.shadow-sm]="inputData.mode === 'HT'"
-                [class.text-blue-400]="inputData.mode === 'HT'"
-                [class.text-slate-400]="inputData.mode !== 'HT'"
-                [class.hover:text-slate-300]="inputData.mode !== 'HT'"
+                [class.bg-slate-700]="inputData().mode === 'HT'"
+                [class.shadow-sm]="inputData().mode === 'HT'"
+                [class.text-blue-400]="inputData().mode === 'HT'"
+                [class.text-slate-400]="inputData().mode !== 'HT'"
+                [class.hover:text-slate-300]="inputData().mode !== 'HT'"
               >
                 <span class="material-symbols-outlined text-[16px]">history_toggle_off</span>
                 FT-HT
               </button>
 
               <button
-                (click)="inputData.mode = 'CORNER'"
+                (click)="setInputMode('CORNER')"
                 class="flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-bold transition-all relative group"
-                [class.bg-slate-700]="inputData.mode === 'CORNER'"
-                [class.shadow-sm]="inputData.mode === 'CORNER'"
-                [class.text-blue-400]="inputData.mode === 'CORNER'"
-                [class.text-slate-400]="inputData.mode !== 'CORNER'"
-                [class.hover:text-slate-300]="inputData.mode !== 'CORNER'"
+                [class.bg-slate-700]="inputData().mode === 'CORNER'"
+                [class.shadow-sm]="inputData().mode === 'CORNER'"
+                [class.text-blue-400]="inputData().mode === 'CORNER'"
+                [class.text-slate-400]="inputData().mode !== 'CORNER'"
+                [class.hover:text-slate-300]="inputData().mode !== 'CORNER'"
               >
                 <span class="material-symbols-outlined text-[16px]">flag</span>
                 CORNER
@@ -112,36 +112,36 @@
           </div>
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">First HDC</label>
-            <input [(ngModel)]="inputData.firstHdc" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
+            <input [value]="inputData().firstHdc" (input)="updateInputField('firstHdc', $any($event.target).value)" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
           </div>
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">Last HDC</label>
-            <input [(ngModel)]="inputData.lastHdc" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
+            <input [value]="inputData().lastHdc" (input)="updateInputField('lastHdc', $any($event.target).value)" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
           </div>
 
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">First OU</label>
-            <input [(ngModel)]="inputData.firstOu" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
+            <input [value]="inputData().firstOu" (input)="updateInputField('firstOu', $any($event.target).value)" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
           </div>
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">Last OU</label>
-            <input [(ngModel)]="inputData.lastOu" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
+            <input [value]="inputData().lastOu" (input)="updateInputField('lastOu', $any($event.target).value)" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
           </div>
 
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">First Corner</label>
-            <input [(ngModel)]="inputData.firstCorner" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
+            <input [value]="inputData().firstCorner" (input)="updateInputField('firstCorner', $any($event.target).value)" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
           </div>
           <div class="space-y-1.5">
             <label class="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">Last Corner</label>
-            <input [(ngModel)]="inputData.lastCorner" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
+            <input [value]="inputData().lastCorner" (input)="updateInputField('lastCorner', $any($event.target).value)" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono placeholder-slate-500 transition-colors">
           </div>
 
           <div class="col-span-1 md:col-span-2 space-y-1.5 pt-2 border-t border-slate-700 mt-2">
             <label class="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">HT Score String</label>
             <div class="relative group">
               <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors text-lg">scoreboard</span>
-              <input [(ngModel)]="inputData.htScoreStr" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold font-mono placeholder-slate-500 transition-colors">
+              <input [value]="inputData().htScoreStr" (input)="updateInputField('htScoreStr', $any($event.target).value)" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold font-mono placeholder-slate-500 transition-colors">
             </div>
           </div>
         </div>

@@ -1,6 +1,5 @@
 package kira.producer.schedule;
 
-import com.google.common.collect.Lists;
 import kira.producer.amqp.EventProducer;
 import kira.producer.amqp.QueueBackpressureService;
 import kira.producer.config.RabbitMQConfig;
@@ -27,7 +26,6 @@ public class EventSchedule {
     private static final int QUEUE_MAX_MESSAGES = 1500;
     private static final int FINISHED_BATCH_LIMIT = 1000;
     private static final int LIVE_BATCH_LIMIT = 300;
-    private static final int PUBLISH_PARTITION_SIZE = 50;
     private static final String EVENT_CLAIM_BY = "kira-producer";
 
     private static final String SQL_UPSERT_EVENT_CLAIM = """
@@ -150,13 +148,13 @@ public class EventSchedule {
         }
 
         var sentEventIds = new ArrayList<String>(eventIds.size());
-        for (List<String> partition : Lists.partition(eventIds, PUBLISH_PARTITION_SIZE)) {
-            String payload = String.join(",", partition);
+        for (String eventId : eventIds) {
             try {
-                eventProducer.sendEventAnalyst(payload);
-                sentEventIds.addAll(partition);
+                eventProducer.sendEventAnalyst(eventId);
+                sentEventIds.add(eventId);
             } catch (Exception e) {
-                log.log(Level.WARNING, "EventSchedule >> %s: failed to send batch: %s".formatted(jobName, payload), e);
+                log.log(Level.WARNING, "EventSchedule >> %s: failed to send event: %s"
+                        .formatted(jobName, eventId), e);
             }
         }
 
@@ -174,8 +172,7 @@ public class EventSchedule {
                         .toArray(MapSqlParameterSource[]::new)
         );
 
-        log.info("kira-producer >> %s: sent %d of %d events in %d batch(es)"
-                .formatted(jobName, sentEventIds.size(), eventIds.size(),
-                        (sentEventIds.size() + PUBLISH_PARTITION_SIZE - 1) / PUBLISH_PARTITION_SIZE));
+        log.info("kira-producer >> %s: sent %d of %d events"
+                .formatted(jobName, sentEventIds.size(), eventIds.size()));
     }
 }

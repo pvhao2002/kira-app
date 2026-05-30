@@ -1,4 +1,4 @@
-import {Component, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
 import {DatePipe, DecimalPipe} from '@angular/common';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {RouterLink} from '@angular/router';
@@ -31,10 +31,10 @@ function errMsg(err: unknown): string {
 
 @Component({
   selector: 'app-users',
-  standalone: true,
   imports: [RouterLink, DatePipe, DecimalPipe],
   templateUrl: './users.html',
   styleUrl: './users.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Users {
   private readonly http = inject(HttpClient);

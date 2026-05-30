@@ -1,4 +1,4 @@
-import {Component, inject, OnDestroy, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, OnDestroy, signal} from '@angular/core';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 import {catchError, distinctUntilChanged, EMPTY, filter, forkJoin, map, Subject, switchMap, takeUntil} from 'rxjs';
@@ -11,7 +11,7 @@ import {formatVnd, parseVndInput} from '../../utils/format-vnd';
   imports: [RouterLink, ReactiveFormsModule],
   templateUrl: './card-payments.html',
   styleUrl: './card-payments.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CardPayments implements OnDestroy {
   private readonly route = inject(ActivatedRoute);

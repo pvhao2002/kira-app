@@ -1,4 +1,4 @@
-import {Component, inject, OnDestroy, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, OnDestroy, signal} from '@angular/core';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router, RouterLink} from '@angular/router';
 import {ToastService} from '../../config/ToastService';
@@ -24,7 +24,7 @@ function defaultLocalTime(): string {
   imports: [RouterLink, ReactiveFormsModule],
   templateUrl: './add-transaction.html',
   styleUrl: './add-transaction.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AddTransaction implements OnDestroy {
   private readonly fb = inject(FormBuilder);

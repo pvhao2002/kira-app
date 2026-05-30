@@ -54,8 +54,8 @@
               type="text"
               placeholder="https://www.scribd.com/document/123456789/ten-tai-lieu"
               name="url"
-              [(ngModel)]="url"
-              (ngModelChange)="decodeUrl()"
+              [value]="url()"
+              (input)="onUrlInput($any($event.target).value)"
               class="block w-full pl-10 pr-4 h-12 rounded-lg bg-[#0f172a] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"/>
           </div>
 
@@ -204,7 +204,7 @@
       </div>
     </div>
     <!-- Image Preview Modal -->
-    @if (previewImageSrc) {
+    @if (previewImageSrc()) {
       <div
         id="image-preview-backdrop"
         (click)="onBackdropClick($event)"
@@ -219,7 +219,7 @@
 
         <!-- Image -->
         <img
-          [src]="previewImageSrc"
+          [src]="previewImageSrc()"
           alt="Preview"
           class="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl border border-slate-700 bg-black object-contain"
         />
@@ -271,7 +271,8 @@
               type="text"
               placeholder="https://drive.google.com/file/d/.../view"
               name="driveUrl"
-              [(ngModel)]="driveUrl"
+              [value]="driveUrl()"
+              (input)="driveUrl.set($any($event.target).value)"
               class="block w-full pl-10 pr-4 h-12 rounded-lg bg-[#0f172a] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"/>
           </div>
 

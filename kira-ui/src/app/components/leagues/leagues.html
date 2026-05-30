@@ -156,15 +156,20 @@
               <div class="flex items-start sm:items-center gap-5 min-w-0 flex-1">
                 <div
                   class="size-16 rounded-2xl bg-[#0b1121] p-0.5 flex items-center justify-center border border-slate-700 shrink-0 shadow-inner overflow-hidden">
-                  @if (flagUrlFromCountry(row.country); as flagSrc) {
+                  @if (row.logoUrl) {
+                    <img [src]="row.logoUrl"
+                         [alt]="row.leagueName"
+                         loading="lazy"
+                         decoding="async"
+                         referrerpolicy="no-referrer"
+                         class="max-w-full max-h-full object-contain p-1"/>
+                  } @else if (flagUrlFromCountry(row.country); as flagSrc) {
                     <img [src]="flagSrc"
                          [alt]="row.country ?? ''"
                          loading="lazy"
                          decoding="async"
                          referrerpolicy="no-referrer"
                          class="w-full h-full object-cover rounded-[0.65rem]"/>
-                  } @else if (row.logoUrl) {
-                    <img [src]="row.logoUrl" [alt]="row.leagueName" class="max-w-full max-h-full object-contain p-1"/>
                   } @else {
                     <span class="text-lg font-black text-slate-400 tracking-tighter">{{ initials(row.leagueName) }}</span>
                   }

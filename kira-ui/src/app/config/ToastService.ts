@@ -1,11 +1,10 @@
 // `kira-ui/src/app/config/Toast.service.ts`
-import {Injectable} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {ToastrService, IndividualConfig} from 'ngx-toastr';
 
 @Injectable({providedIn: 'root'})
 export class ToastService {
-  constructor(protected readonly toast: ToastrService) {
-  }
+  private readonly toast = inject(ToastrService);
 
   success(message: string, title?: string, options?: Partial<IndividualConfig>) {
     this.toast.success(message, title, options);

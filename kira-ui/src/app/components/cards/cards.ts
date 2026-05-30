@@ -1,4 +1,4 @@
-import {Component, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
 import {RouterLink} from '@angular/router';
 import {catchError, forkJoin, of} from 'rxjs';
 import {CreditCardApiService, CreditCardDto, CreditCardSummary} from '../../services/credit-card-api.service';
@@ -10,7 +10,7 @@ import {formatVnd} from '../../utils/format-vnd';
   imports: [RouterLink],
   templateUrl: './cards.html',
   styleUrl: './cards.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Cards {
   private readonly api = inject(CreditCardApiService);

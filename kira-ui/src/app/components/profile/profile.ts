@@ -1,4 +1,4 @@
-import {Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {Router} from '@angular/router';
 import {AuthService} from '../../config/AuthService';
 
@@ -7,7 +7,7 @@ import {AuthService} from '../../config/AuthService';
   imports: [],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Profile {
   private readonly authService = inject(AuthService);

@@ -1,4 +1,4 @@
-import {Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 import {HttpClient, HttpParams} from '@angular/common/http';
@@ -31,7 +31,7 @@ export interface TeamPage {
   imports: [RouterLink, DatePipe, DecimalPipe],
   templateUrl: './teams.html',
   styleUrl: './teams.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Teams {
   private readonly http = inject(HttpClient);

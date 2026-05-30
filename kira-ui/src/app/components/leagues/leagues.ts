@@ -1,4 +1,4 @@
-import {Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {DatePipe, DecimalPipe} from '@angular/common';
@@ -37,7 +37,7 @@ export type IsMainFilterMode = 'all' | 'main' | 'nonmain';
   imports: [DatePipe, DecimalPipe],
   templateUrl: './leagues.html',
   styleUrl: './leagues.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Leagues {
   private readonly http = inject(HttpClient);

@@ -1,18 +1,14 @@
-import {Component, inject, OnInit, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, OnInit, signal} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import {FormsModule} from '@angular/forms';
 import {AuthService} from '../../config/AuthService';
 import {ToastService} from '../../config/ToastService';
 import {Subscription, take} from 'rxjs';
 
 @Component({
   selector: 'app-login',
-  imports: [
-    FormsModule
-  ],
   templateUrl: './login.html',
   styleUrl: './login.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Login implements OnInit {
   private readonly authService = inject(AuthService);

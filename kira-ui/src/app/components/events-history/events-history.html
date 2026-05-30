@@ -1,0 +1,639 @@
+<div class="px-6 py-8 w-full max-w-[1600px] mx-auto">
+  <!-- Header -->
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+      <span class="material-symbols-outlined text-indigo-500">history</span>
+      Events History
+    </h2>
+  </div>
+
+  <!-- Controls row: Date Filter & Autocomplete Searches -->
+  <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 mb-6">
+    <!-- Date Filter with Prev / Next / Native Picker -->
+    <div class="relative flex items-center bg-[#1e293b] border border-slate-700 rounded-lg p-1.5 shadow-sm w-full lg:w-auto justify-between lg:justify-start">
+      <button type="button"
+              (click)="changeDate(-1)"
+              class="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors z-10"
+              title="Previous Day">
+        <span class="material-symbols-outlined text-[20px] align-middle">chevron_left</span>
+      </button>
+      <div class="relative px-4 py-1 text-sm font-semibold text-white min-w-[160px] text-center flex items-center justify-center gap-2 hover:bg-slate-800 rounded transition-colors cursor-pointer select-none">
+        <span class="material-symbols-outlined text-indigo-400 text-[18px]">calendar_today</span>
+        <span>{{ getFormattedDateWithDay(selectedDate()) }}</span>
+        <input #dateInput
+               type="date"
+               [value]="selectedDate()"
+               (change)="onDatePicked($any($event.target).value)"
+               (click)="dateInput.showPicker()"
+               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+      </div>
+      <button type="button"
+              (click)="changeDate(1)"
+              class="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors z-10"
+              title="Next Day">
+        <span class="material-symbols-outlined text-[20px] align-middle">chevron_right</span>
+      </button>
+    </div>
+
+    <!-- Autocomplete inputs -->
+    <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto flex-1 lg:flex-none justify-end">
+      <!-- Search Events / Teams Autocomplete -->
+      <div class="relative w-full sm:w-auto sm:flex-1 lg:w-64 lg:flex-none group">
+        <span class="absolute left-3 inset-y-0 flex items-center text-slate-500 group-focus-within:text-blue-500 transition-colors pointer-events-none z-10">
+          <span class="material-symbols-outlined text-[20px] leading-none">search</span>
+        </span>
+        <input type="text"
+               placeholder="Search matches (teams)..."
+               autocomplete="off"
+               [value]="eventSearchQuery()"
+               (input)="onEventSearchInput($any($event.target).value)"
+               (blur)="closeEventPanel()"
+               (keyup.enter)="applyEventSearch()"
+               class="w-full pl-10 pr-4 py-2 bg-[#1e293b] text-sm text-white placeholder-slate-500 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all">
+
+        @if (isEventPanelOpen() && eventSuggestions().length > 0) {
+          <div class="absolute z-50 left-0 right-0 top-full mt-1 rounded-lg border border-slate-700 bg-[#1e293b] shadow-xl max-h-56 overflow-y-auto py-1">
+            @for (sug of eventSuggestions(); track sug) {
+              <button type="button"
+                      (mousedown)="$event.preventDefault()"
+                      (click)="pickEvent(sug)"
+                      class="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-slate-700/80 truncate border-b border-slate-800/30 last:border-none">
+                {{ sug }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Search League Autocomplete -->
+      <div class="relative w-full sm:w-auto sm:flex-1 lg:w-60 lg:flex-none group">
+        <span class="absolute left-3 inset-y-0 flex items-center text-slate-500 group-focus-within:text-blue-500 transition-colors pointer-events-none z-10">
+          <span class="material-symbols-outlined text-[20px] leading-none">filter_list</span>
+        </span>
+        <input type="text"
+               placeholder="Filter by league..."
+               autocomplete="off"
+               [value]="leagueSearchQuery()"
+               (input)="onLeagueSearchInput($any($event.target).value)"
+               (blur)="closeLeaguePanel()"
+               (keyup.enter)="applyLeagueSearch()"
+               class="w-full pl-10 pr-4 py-2 bg-[#1e293b] text-sm text-white placeholder-slate-500 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all">
+
+        @if (isLeaguePanelOpen() && leagueSuggestions().length > 0) {
+          <div class="absolute z-50 left-0 right-0 top-full mt-1 rounded-lg border border-slate-700 bg-[#1e293b] shadow-xl max-h-56 overflow-y-auto py-1">
+            @for (sug of leagueSuggestions(); track sug) {
+              <button type="button"
+                      (mousedown)="$event.preventDefault()"
+                      (click)="pickLeague(sug)"
+                      class="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-slate-700/80 truncate border-b border-slate-800/30 last:border-none">
+                {{ sug }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Clear filters button -->
+      @if (eventSearchQuery() || leagueSearchQuery()) {
+        <button type="button"
+                (click)="resetFilters()"
+                class="px-4 py-2 bg-slate-850 border border-slate-700 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors whitespace-nowrap">
+          Clear filters
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="mb-4 flex items-center gap-3 bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
+      <span class="material-symbols-outlined text-[20px]">error</span>
+      <span>{{ error() }}</span>
+      <button type="button" (click)="load()" class="ml-auto text-xs underline hover:no-underline">Retry</button>
+    </div>
+  }
+
+  <!-- Events History Table -->
+  <div class="bg-[#1e293b] rounded-xl border border-slate-700 overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left border-collapse">
+        <thead class="text-xs text-slate-400 uppercase bg-slate-900/80 border-b border-slate-700">
+          <tr>
+            <th class="px-4 py-4 font-medium w-[16%] min-w-[120px]">League & Time</th>
+            <th class="px-4 py-4 font-medium text-center w-[32%] min-w-[180px]">Match</th>
+            <th class="px-4 py-4 font-medium text-center w-[11%] min-w-[80px]">Score</th>
+            <th class="px-4 py-4 font-medium text-center w-[11%] min-w-[80px]">Corners</th>
+            <th class="px-4 py-4 font-medium text-center w-[11%] min-w-[80px]">Yellow Cards</th>
+            <th class="px-4 py-4 font-medium text-right w-[14%] min-w-[90px]">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-700/50">
+
+          @if (loading()) {
+            @for (_ of skeletonRows(); track $index) {
+              <tr class="animate-pulse">
+                <td rowspan="2" class="px-4 py-4 align-top border-b border-slate-700 bg-slate-800/10 w-[16%] min-w-[120px]">
+                  <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-700/60 shrink-0"></div>
+                    <div class="space-y-2 flex-1">
+                      <div class="h-3 bg-slate-700/60 rounded w-3/4"></div>
+                      <div class="h-2.5 bg-slate-700/40 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 border-none text-center">
+                  <div class="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3">
+                    <div class="h-3 bg-slate-700/60 rounded w-16 sm:w-20"></div>
+                    <div class="h-2.5 bg-slate-700/40 rounded w-4"></div>
+                    <div class="h-3 bg-slate-700/60 rounded w-16 sm:w-20"></div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-center align-middle border-none">
+                  <div class="h-8 bg-slate-700/60 rounded mx-auto w-16"></div>
+                </td>
+                <td class="px-4 py-3 text-center align-middle border-none">
+                  <div class="h-8 bg-slate-700/40 rounded mx-auto w-16"></div>
+                </td>
+                <td class="px-4 py-3 text-center align-middle border-none">
+                  <div class="h-8 bg-slate-700/40 rounded mx-auto w-16"></div>
+                </td>
+                <td rowspan="2" class="px-4 py-4 text-right align-top border-b border-slate-700 bg-slate-800/10 w-[14%] min-w-[90px]">
+                  <div class="h-8 bg-slate-700/40 rounded w-20 ml-auto"></div>
+                </td>
+              </tr>
+              <tr class="animate-pulse">
+                <td colspan="4" class="px-4 pb-4 pt-1 border-b border-slate-700">
+                  <div class="h-16 bg-slate-700/20 rounded-lg"></div>
+                </td>
+              </tr>
+            }
+          } @else if (data(); as page) {
+            @for (item of page.content; track item.eventId) {
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td rowspan="2" class="px-4 py-4 align-top border-b border-slate-700 bg-slate-800/10 w-[16%] min-w-[120px]">
+                  <div class="flex items-start gap-3">
+                    @if (item.leagueLogoUrl) {
+                      <img [src]="item.leagueLogoUrl"
+                           alt="League"
+                           class="w-8 h-8 rounded-full border border-slate-600 shadow-sm mt-1 object-contain shrink-0">
+                    } @else {
+                      <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mt-1 shrink-0">
+                        <span class="material-symbols-outlined text-[14px] text-slate-400">sports_soccer</span>
+                      </div>
+                    }
+                    <div class="min-w-0 flex-1">
+                      <div class="text-white font-semibold text-xs leading-tight mb-1.5 break-words">{{ item.leagueName ?? '—' }}</div>
+                      <div class="text-slate-400 text-[11px] bg-slate-900 px-1.5 py-0.5 rounded inline-block border border-slate-700 whitespace-nowrap">
+                        {{ formatEventDateTime(item) }}
+                      </div>
+                      <div class="mt-1 flex items-center gap-1 select-none">
+                        <span class="text-slate-500 text-[10px] font-mono">ID: {{ item.eventId }}</span>
+                        <button (click)="copyToClipboard(item.eventId, $event)"
+                                class="text-slate-500 hover:text-indigo-400 hover:bg-slate-800 p-0.5 rounded transition-all cursor-pointer inline-flex items-center"
+                                title="Copy Event ID">
+                          <span class="material-symbols-outlined text-[12px] leading-none">content_copy</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 border-none text-center">
+                  <div class="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 text-center">
+                    <div class="flex items-center gap-2 max-w-full justify-center">
+                      @if (item.homeLogoUrl) {
+                        <img [src]="item.homeLogoUrl"
+                             alt="Home"
+                             class="w-5 h-5 rounded-sm shrink-0 object-contain">
+                      }
+                      <span class="font-bold text-white text-sm truncate max-w-[120px] sm:max-w-none" [title]="getHomeName(item)">{{ getHomeName(item) }}</span>
+                    </div>
+                    <span class="text-slate-500 text-xs font-semibold select-none">vs</span>
+                    <div class="flex items-center gap-2 max-w-full justify-center">
+                      @if (item.awayLogoUrl) {
+                        <img [src]="item.awayLogoUrl"
+                             alt="Away"
+                             class="w-5 h-5 rounded-sm shrink-0 object-contain">
+                      }
+                      <span class="font-bold text-white text-sm truncate max-w-[120px] sm:max-w-none" [title]="getAwayName(item)">{{ getAwayName(item) }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-center align-middle border-none">
+                  <div class="flex flex-row items-center gap-1.5 justify-center flex-wrap">
+                    <div class="text-lg font-black text-white bg-slate-800/50 inline-flex items-center gap-1.5 px-3 py-1 rounded-md border border-slate-700/50 shadow-inner">
+                      <span class="material-symbols-outlined text-[18px] text-slate-400">sports_soccer</span>
+                      {{ formatScore(item) }}
+                    </div>
+                    @if (getHdcResultTag(item); as tag) {
+                      <span [class]="tag === 'W' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'"
+                            class="text-[9px] uppercase font-black px-1.5 py-1 rounded border leading-none tracking-wider whitespace-nowrap">
+                        HDC {{ getHdcLine(item) }}: {{ tag }}
+                      </span>
+                    }
+                    @if (getGoalResultTag(item); as tag) {
+                      <span [class]="tag === 'O' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'"
+                            class="text-[9px] uppercase font-black px-1.5 py-1 rounded border leading-none tracking-wider whitespace-nowrap">
+                        OU {{ getGoalLine(item) }}: {{ tag }}
+                      </span>
+                    }
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-center align-middle border-none">
+                  <div class="flex flex-row items-center gap-1.5 justify-center flex-wrap">
+                    <div class="text-base font-bold text-emerald-400 bg-emerald-500/5 inline-flex items-center gap-1.5 px-3 py-1 rounded-md border border-emerald-500/10">
+                      <span class="material-symbols-outlined text-[16px] text-emerald-400">flag</span>
+                      {{ formatCornerScore(item) }}
+                    </div>
+                    @if (getCornerResultTag(item); as tag) {
+                      <span [class]="tag === 'O' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'"
+                            class="text-[9px] uppercase font-black px-1.5 py-1 rounded border leading-none tracking-wider whitespace-nowrap">
+                        OU {{ getCornerLine(item) }}: {{ tag }}
+                      </span>
+                    }
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-center align-middle border-none">
+                  <div class="text-base font-bold text-amber-400 flex items-center justify-center gap-1.5 bg-amber-500/5 inline-block px-2 py-1 rounded-md border border-amber-500/10 w-fit mx-auto">
+                    <span class="w-2.5 h-3.5 bg-amber-400 rounded-sm shadow-sm"></span>
+                    {{ formatYellowCardScore(item) }}
+                  </div>
+                </td>
+                <td rowspan="2" class="px-4 py-4 text-right align-top border-b border-slate-700 bg-slate-800/10">
+                  <div class="flex flex-col items-end gap-2">
+                    <button (click)="openModalFor(item)"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-indigo-500/10 text-indigo-400 rounded-lg hover:bg-indigo-500/20 border border-indigo-500/20 transition-all shadow-sm w-full justify-center cursor-pointer">
+                      <span class="material-symbols-outlined text-[16px]">monitoring</span>
+                      Detail
+                    </button>
+                    @if (item.link) {
+                      <a [href]="item.link"
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 hover:text-white border border-slate-700 transition-all shadow-sm w-full justify-center cursor-pointer">
+                        <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+                        Open Link
+                      </a>
+                    }
+                  </div>
+                </td>
+              </tr>
+
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td colspan="4" class="px-4 pb-4 pt-1 border-b border-slate-700">
+                  @if (item.odds) {
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div class="bg-[#151e2b] rounded-lg border border-slate-700/60 p-3 shadow-sm">
+                        <div class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2 border-b border-slate-700/50 pb-1.5">Handicap (HDC)</div>
+                        <div class="flex items-center justify-between">
+                          <div class="flex flex-col gap-1 items-center flex-1">
+                            <span class="text-slate-500 text-xs font-semibold">Open</span>
+                            <span class="text-white font-bold text-sm">{{ formatOddsLine(item.odds?.hdc?.open) }}</span>
+                            <span class="text-slate-300 font-semibold text-xs">{{ formatPriceA(item.odds?.hdc?.open) }} / {{ formatPriceB(item.odds?.hdc?.open) }}</span>
+                          </div>
+                          <div class="w-px h-10 bg-slate-700/50"></div>
+                          <div class="flex flex-col gap-1 items-center flex-1">
+                            <span class="text-blue-400 text-xs font-semibold">Pre</span>
+                            <span class="text-white font-bold text-sm">{{ formatOddsLine(item.odds?.hdc?.pre) }}</span>
+                            <span class="text-slate-300 font-semibold text-xs">{{ formatPriceA(item.odds?.hdc?.pre) }} / {{ formatPriceB(item.odds?.hdc?.pre) }}</span>
+                          </div>
+                          <div class="w-px h-10 bg-slate-700/50"></div>
+                          <div class="flex flex-col gap-1 items-center flex-1">
+                            <span class="text-orange-400 text-xs font-semibold">HT</span>
+                            <span class="text-white font-bold text-sm">{{ formatOddsLine(item.odds?.hdc?.ht) }}</span>
+                            <span class="text-slate-300 font-semibold text-xs">{{ formatPriceA(item.odds?.hdc?.ht) }} / {{ formatPriceB(item.odds?.hdc?.ht) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="bg-[#151e2b] rounded-lg border border-slate-700/60 p-3 shadow-sm">
+                        <div class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2 border-b border-slate-700/50 pb-1.5">Over / Under</div>
+                        <div class="flex items-center justify-between">
+                          <div class="flex flex-col gap-1 items-center flex-1">
+                            <span class="text-slate-500 text-xs font-semibold">Open</span>
+                            <span class="text-white font-bold text-sm">{{ formatOddsLine(item.odds?.ou?.open) }}</span>
+                            <span class="text-slate-300 font-semibold text-xs">{{ formatPriceA(item.odds?.ou?.open) }} / {{ formatPriceB(item.odds?.ou?.open) }}</span>
+                          </div>
+                          <div class="w-px h-10 bg-slate-700/50"></div>
+                          <div class="flex flex-col gap-1 items-center flex-1">
+                            <span class="text-blue-400 text-xs font-semibold">Pre</span>
+                            <span class="text-white font-bold text-sm">{{ formatOddsLine(item.odds?.ou?.pre) }}</span>
+                            <span class="text-slate-300 font-semibold text-xs">{{ formatPriceA(item.odds?.ou?.pre) }} / {{ formatPriceB(item.odds?.ou?.pre) }}</span>
+                          </div>
+                          <div class="w-px h-10 bg-slate-700/50"></div>
+                          <div class="flex flex-col gap-1 items-center flex-1">
+                            <span class="text-orange-400 text-xs font-semibold">HT</span>
+                            <span class="text-white font-bold text-sm">{{ formatOddsLine(item.odds?.ou?.ht) }}</span>
+                            <span class="text-slate-300 font-semibold text-xs">{{ formatPriceA(item.odds?.ou?.ht) }} / {{ formatPriceB(item.odds?.ou?.ht) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="bg-[#151e2b] rounded-lg border border-slate-700/60 p-3 shadow-sm">
+                        <div class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2 border-b border-slate-700/50 pb-1.5">Corner</div>
+                        <div class="flex items-center justify-between">
+                          <div class="flex flex-col gap-1 items-center flex-1">
+                            <span class="text-slate-500 text-xs font-semibold">Open</span>
+                            <span class="text-white font-bold text-sm">{{ formatOddsLine(item.odds?.corner?.open) }}</span>
+                            <span class="text-slate-300 font-semibold text-xs">{{ formatPriceA(item.odds?.corner?.open) }} / {{ formatPriceB(item.odds?.corner?.open) }}</span>
+                          </div>
+                          <div class="w-px h-10 bg-slate-700/50"></div>
+                          <div class="flex flex-col gap-1 items-center flex-1">
+                            <span class="text-blue-400 text-xs font-semibold">Pre</span>
+                            <span class="text-white font-bold text-sm">{{ formatOddsLine(item.odds?.corner?.pre) }}</span>
+                            <span class="text-slate-300 font-semibold text-xs">{{ formatPriceA(item.odds?.corner?.pre) }} / {{ formatPriceB(item.odds?.corner?.pre) }}</span>
+                          </div>
+                          <div class="w-px h-10 bg-slate-700/50"></div>
+                          <div class="flex flex-col gap-1 items-center flex-1">
+                            <span class="text-orange-400 text-xs font-semibold">HT</span>
+                            <span class="text-white font-bold text-sm">{{ formatOddsLine(item.odds?.corner?.ht) }}</span>
+                            <span class="text-slate-300 font-semibold text-xs">{{ formatPriceA(item.odds?.corner?.ht) }} / {{ formatPriceB(item.odds?.corner?.ht) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="text-xs text-slate-500 italic py-2">No odds data available for this event.</div>
+                  }
+                </td>
+              </tr>
+            }
+          }
+
+          @if (!loading() && totalElements() === 0) {
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-slate-400 bg-slate-800/10">
+                <span class="material-symbols-outlined text-4xl block mb-2 text-slate-500">sentiment_dissatisfied</span>
+                No matches found for the selected filters.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (!loading() && totalElements() > 0) {
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400 mt-6 px-2 pb-12">
+      <span>
+        Showing {{ showingStart() }} - {{ showingEnd() }} of {{ totalElements() }} matches
+      </span>
+      <div class="flex gap-1.5 sm:gap-2">
+        <button type="button"
+                (click)="goToPage(0)"
+                [disabled]="currentPage() === 0"
+                class="px-2.5 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-slate-700 transition-colors select-none text-xs sm:text-sm"
+                title="First Page">
+          First
+        </button>
+        <button type="button"
+                (click)="prevPage()"
+                [disabled]="currentPage() === 0"
+                class="px-2.5 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-slate-700 transition-colors select-none text-xs sm:text-sm"
+                title="Previous Page">
+          Prev
+        </button>
+        @for (p of pageNumbers(); track p) {
+          <button type="button"
+                  (click)="goToPage(p)"
+                  [class]="currentPage() === p ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'"
+                  class="px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs sm:text-sm font-semibold transition-colors select-none">
+            {{ p + 1 }}
+          </button>
+        }
+        <button type="button"
+                (click)="nextPage()"
+                [disabled]="currentPage() >= totalPages() - 1"
+                class="px-2.5 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-slate-700 transition-colors select-none text-xs sm:text-sm"
+                title="Next Page">
+          Next
+        </button>
+        <button type="button"
+                (click)="goToPage(totalPages() - 1)"
+                [disabled]="currentPage() >= totalPages() - 1"
+                class="px-2.5 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-slate-700 transition-colors select-none text-xs sm:text-sm"
+                title="Last Page">
+          Last
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+@if (isModalOpen() && selectedEvent(); as event) {
+  <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm transition-opacity">
+    <div class="bg-[#1e293b] rounded-xl border border-slate-700 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-400">monitoring</span>
+          {{ getHomeName(event) }} vs {{ getAwayName(event) }}
+        </h3>
+        <button (click)="closeModal()" class="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-800">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="px-6 pt-4 border-b border-slate-700 bg-[#1e293b]">
+        <div class="flex gap-6 -mb-px">
+          <button (click)="setTab('handicap')"
+                  [class]="activeTab() === 'handicap' ? 'text-blue-400 border-blue-400' : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-600'"
+                  class="pb-3 px-1 border-b-2 font-medium text-sm transition-colors">
+            Handicap (HDC)
+          </button>
+          <button (click)="setTab('ou')"
+                  [class]="activeTab() === 'ou' ? 'text-emerald-400 border-emerald-400' : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-600'"
+                  class="pb-3 px-1 border-b-2 font-medium text-sm transition-colors">
+            Over/Under (O/U)
+          </button>
+          <button (click)="setTab('corner')"
+                  [class]="activeTab() === 'corner' ? 'text-orange-400 border-orange-400' : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-600'"
+                  class="pb-3 px-1 border-b-2 font-medium text-sm transition-colors">
+            Corner
+          </button>
+        </div>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1 bg-slate-900/20">
+        <div class="overflow-hidden rounded-lg border border-slate-700">
+          <table class="w-full text-sm text-center">
+            <thead class="text-xs text-slate-400 uppercase bg-slate-800 border-b border-slate-700">
+              <tr>
+                <th class="px-4 py-3 font-medium w-[80px]">Period</th>
+                <th class="px-4 py-3 font-medium border-l border-slate-700">Line</th>
+                @if (activeTab() === 'handicap') {
+                  <th class="px-4 py-3 font-medium">Home</th>
+                  <th class="px-4 py-3 font-medium">Away</th>
+                } @else {
+                  <th class="px-4 py-3 font-medium">Over</th>
+                  <th class="px-4 py-3 font-medium">Under</th>
+                }
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700">
+              @switch (activeTab()) {
+                @case ('handicap') {
+                  <tr class="hover:bg-slate-800/50 transition-colors">
+                    <td class="px-4 py-3 text-slate-500 text-xs font-semibold">Open</td>
+                    <td class="px-4 py-3 text-blue-400 font-bold border-l border-slate-700">{{ formatOddsLine(event.odds?.hdc?.open) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceA(event.odds?.hdc?.open) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceB(event.odds?.hdc?.open) }}</td>
+                  </tr>
+                  <tr class="hover:bg-slate-800/50 transition-colors">
+                    <td class="px-4 py-3 text-blue-400 text-xs font-semibold">Pre</td>
+                    <td class="px-4 py-3 text-blue-400 font-bold border-l border-slate-700">{{ formatOddsLine(event.odds?.hdc?.pre) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceA(event.odds?.hdc?.pre) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceB(event.odds?.hdc?.pre) }}</td>
+                  </tr>
+                  <tr class="hover:bg-slate-800/50 transition-colors">
+                    <td class="px-4 py-3 text-orange-400 text-xs font-semibold">HT</td>
+                    <td class="px-4 py-3 text-orange-400 font-bold border-l border-slate-700">{{ formatOddsLine(event.odds?.hdc?.ht) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceA(event.odds?.hdc?.ht) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceB(event.odds?.hdc?.ht) }}</td>
+                  </tr>
+                }
+                @case ('ou') {
+                  <tr class="hover:bg-slate-800/50 transition-colors">
+                    <td class="px-4 py-3 text-slate-500 text-xs font-semibold">Open</td>
+                    <td class="px-4 py-3 text-emerald-400 font-bold border-l border-slate-700">{{ formatOddsLine(event.odds?.ou?.open) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceA(event.odds?.ou?.open) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceB(event.odds?.ou?.open) }}</td>
+                  </tr>
+                  <tr class="hover:bg-slate-800/50 transition-colors">
+                    <td class="px-4 py-3 text-blue-400 text-xs font-semibold">Pre</td>
+                    <td class="px-4 py-3 text-emerald-400 font-bold border-l border-slate-700">{{ formatOddsLine(event.odds?.ou?.pre) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceA(event.odds?.ou?.pre) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceB(event.odds?.ou?.pre) }}</td>
+                  </tr>
+                  <tr class="hover:bg-slate-800/50 transition-colors">
+                    <td class="px-4 py-3 text-orange-400 text-xs font-semibold">HT</td>
+                    <td class="px-4 py-3 text-emerald-400 font-bold border-l border-slate-700">{{ formatOddsLine(event.odds?.ou?.ht) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceA(event.odds?.ou?.ht) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceB(event.odds?.ou?.ht) }}</td>
+                  </tr>
+                }
+                @case ('corner') {
+                  <tr class="hover:bg-slate-800/50 transition-colors">
+                    <td class="px-4 py-3 text-slate-500 text-xs font-semibold">Open</td>
+                    <td class="px-4 py-3 text-orange-400 font-bold border-l border-slate-700">{{ formatOddsLine(event.odds?.corner?.open) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceA(event.odds?.corner?.open) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceB(event.odds?.corner?.open) }}</td>
+                  </tr>
+                  <tr class="hover:bg-slate-800/50 transition-colors">
+                    <td class="px-4 py-3 text-blue-400 text-xs font-semibold">Pre</td>
+                    <td class="px-4 py-3 text-orange-400 font-bold border-l border-slate-700">{{ formatOddsLine(event.odds?.corner?.pre) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceA(event.odds?.corner?.pre) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceB(event.odds?.corner?.pre) }}</td>
+                  </tr>
+                  <tr class="hover:bg-slate-800/50 transition-colors">
+                    <td class="px-4 py-3 text-orange-400 text-xs font-semibold">HT</td>
+                    <td class="px-4 py-3 text-orange-400 font-bold border-l border-slate-700">{{ formatOddsLine(event.odds?.corner?.ht) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceA(event.odds?.corner?.ht) }}</td>
+                    <td class="px-4 py-3 text-slate-300">{{ formatPriceB(event.odds?.corner?.ht) }}</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="material-symbols-outlined text-[18px] text-indigo-400">timeline</span>
+            <span class="text-xs uppercase tracking-widest font-bold text-slate-400">Odds Movement Timeline</span>
+            @if (timelineForTab().length > 0) {
+              <span class="ml-auto text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full">
+                {{ timelineForTab().length }} snapshots
+              </span>
+            }
+          </div>
+
+          @if (timelineLoading()) {
+            <div class="space-y-2">
+              @for (_ of [1, 2, 3, 4, 5]; track $index) {
+                <div class="animate-pulse flex items-center gap-3 bg-slate-800/40 rounded-lg px-4 py-2.5">
+                  <div class="h-5 w-10 bg-slate-700/60 rounded"></div>
+                  <div class="h-4 w-14 bg-slate-700/60 rounded ml-2"></div>
+                  <div class="flex-1"></div>
+                  <div class="h-4 w-12 bg-slate-700/40 rounded"></div>
+                  <div class="h-4 w-4 bg-slate-700/30 rounded mx-1"></div>
+                  <div class="h-4 w-12 bg-slate-700/40 rounded"></div>
+                  <div class="h-4 w-20 bg-slate-700/30 rounded ml-4"></div>
+                </div>
+              }
+            </div>
+          } @else if (timelineError()) {
+            <div class="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
+              <span class="material-symbols-outlined text-[16px]">error</span>
+              {{ timelineError() }}
+            </div>
+          } @else if (timelineForTab().length === 0) {
+            <div class="flex flex-col items-center justify-center py-8 text-slate-500 text-xs gap-2">
+              <span class="material-symbols-outlined text-3xl text-slate-600">bar_chart_4_bars</span>
+              No timeline snapshots available for this market.
+            </div>
+          } @else {
+            <div class="overflow-hidden rounded-lg border border-slate-700/60">
+              <table class="w-full text-xs text-center">
+                <thead class="bg-slate-800/80 text-slate-500 uppercase border-b border-slate-700">
+                  <tr>
+                    <th class="px-3 py-2.5 font-semibold text-left w-[60px]">Min</th>
+                    <th class="px-3 py-2.5 font-semibold">Line</th>
+                    @if (activeTab() === 'handicap') {
+                      <th class="px-3 py-2.5 font-semibold">Home</th>
+                      <th class="px-3 py-2.5 font-semibold">Away</th>
+                    } @else {
+                      <th class="px-3 py-2.5 font-semibold">Over</th>
+                      <th class="px-3 py-2.5 font-semibold">Under</th>
+                    }
+                    <th class="px-3 py-2.5 font-semibold text-right">Crawled At</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700/40">
+                  @for (entry of timelineForTab(); track $index; let i = $index) {
+                    <tr class="hover:bg-slate-800/40 transition-colors"
+                        [class]="i % 2 === 0 ? 'bg-slate-900/10' : ''">
+                      <td class="px-3 py-2 text-left">
+                        @if (entry.matchMinute) {
+                          <span [class]="getMinuteClass(entry.matchMinute)"
+                                class="inline-flex items-center justify-center min-w-[34px] px-1.5 py-0.5 rounded font-bold text-[10px] leading-none">
+                            {{ formatMatchMinute(entry.matchMinute) }}
+                          </span>
+                        } @else {
+                          <span class="text-slate-600">—</span>
+                        }
+                      </td>
+                      <td class="px-3 py-2 font-bold"
+                          [class.text-blue-400]="activeTab() === 'handicap'"
+                          [class.text-emerald-400]="activeTab() === 'ou'"
+                          [class.text-orange-400]="activeTab() === 'corner'">
+                        {{ entry.line ?? '—' }}
+                      </td>
+                      <td class="px-3 py-2 text-slate-300 font-semibold">{{ formatTimelinePriceA(entry) }}</td>
+                      <td class="px-3 py-2 text-slate-300 font-semibold">{{ formatTimelinePriceB(entry) }}</td>
+                      <td class="px-3 py-2 text-right text-slate-500 font-mono">{{ formatCrawledAt(entry) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="px-6 py-4 border-t border-slate-700 bg-slate-900/50 text-right">
+        <button (click)="closeModal()"
+                class="px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors shadow-sm select-none">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Floating Scroll to Top Button -->
+@if (showScrollTop()) {
+  <button type="button"
+          (click)="scrollToTop()"
+          class="fixed bottom-8 right-8 z-[90] flex items-center justify-center w-10 h-10 rounded-full bg-indigo-600/90 text-white hover:bg-indigo-500 hover:scale-110 active:scale-95 border border-indigo-500/30 shadow-lg hover:shadow-indigo-500/20 transition-all duration-200 cursor-pointer animate-in fade-in zoom-in-95 duration-200"
+          title="Scroll to Top">
+    <span class="material-symbols-outlined text-[22px] leading-none">arrow_upward</span>
+  </button>
+}
+

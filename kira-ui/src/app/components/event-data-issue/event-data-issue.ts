@@ -1,4 +1,4 @@
-import {Component, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {DecimalPipe} from '@angular/common';
 
@@ -37,7 +37,7 @@ export type EventDataIssueTypeFilter = 'all' | 'missing_stats' | 'missing_odds' 
   imports: [DecimalPipe],
   templateUrl: './event-data-issue.html',
   styleUrl: './event-data-issue.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EventDataIssue {
   private readonly http = inject(HttpClient);

@@ -1,14 +1,14 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 @Component({
-  selector: 'app-matches',
+  selector: 'app/matches',
   imports: [
     RouterLink
   ],
   templateUrl: './matches.html',
   styleUrl: './matches.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Matches {
 

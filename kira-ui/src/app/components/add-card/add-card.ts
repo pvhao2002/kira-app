@@ -1,5 +1,5 @@
 import {DecimalPipe} from '@angular/common';
-import {Component, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router, RouterLink} from '@angular/router';
 import {CreditCardApiService} from '../../services/credit-card-api.service';
@@ -11,7 +11,7 @@ import {formatVnd, parseVndInput} from '../../utils/format-vnd';
   imports: [RouterLink, ReactiveFormsModule, DecimalPipe],
   templateUrl: './add-card.html',
   styleUrl: './add-card.css',
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AddCard {
   private readonly fb = inject(FormBuilder);
