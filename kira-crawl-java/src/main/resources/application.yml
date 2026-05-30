@@ -10,7 +10,7 @@ spring:
 
 app:
   playwright:
-    headless: ${PLAYWRIGHT_HEADLESS:false}
+    headless: ${PLAYWRIGHT_HEADLESS:true}
     channel: ${PLAYWRIGHT_CHANNEL:}
     browser-timeout-ms: ${AISCORE_BROWSER_TIMEOUT_MS:80000}
     matches-async-timeout-ms: ${AISCORE_MATCHES_ASYNC_TIMEOUT_MS:180000}
@@ -45,4 +45,4 @@ springdoc:
 
 logging:
   file:
-    name: ${LOG_FILE:logs/kira-crawl-java.log}
+    name: ${LOG_FILE:../logs/kira-crawl-java.log}

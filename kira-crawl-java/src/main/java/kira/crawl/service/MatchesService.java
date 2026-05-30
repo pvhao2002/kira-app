@@ -113,7 +113,7 @@ public class MatchesService {
                 return Map.of();
             }
 
-            boolean includeCorner = !Boolean.FALSE.equals(hasOddsCorner) && (Boolean.TRUE.equals(hasOddsCorner) || oddsMapper.hasCornerMarket(oddsList));
+            boolean includeCorner = Boolean.TRUE.equals(hasOddsCorner);
 
             stepStart = System.nanoTime();
             var oddsDetails = captureWebOddsDetailBody(page, matchId, oddsPublicPageUrl, timeout, includeCorner);
@@ -186,10 +186,27 @@ public class MatchesService {
     ) {
         page.setDefaultTimeout(timeout);
 
+        var result = captureOddsDetailTabs(page, matchId, referer, timeout, includeCorner, false);
+        if (hasAllExpectedOddsDetails(result, includeCorner)) {
+            return result;
+        }
+
         long modalStart = System.nanoTime();
         oddsDomInteractor.openBet365OddsModal(page, timeout);
         logOddsStep(matchId, "openBet365OddsModal", modalStart);
 
+        var retry = captureOddsDetailTabs(page, matchId, referer, timeout, includeCorner, true);
+        return mergeOddsDetails(result, retry);
+    }
+
+    private OddsMapper.OddsDetails captureOddsDetailTabs(
+            Page page,
+            String matchId,
+            String referer,
+            long timeout,
+            boolean includeCorner,
+            boolean failOnEvaluateError
+    ) {
         JsonNode asia = null;
         JsonNode bs = null;
         JsonNode corner = null;
@@ -200,7 +217,16 @@ public class MatchesService {
             }
             long tabStart = System.nanoTime();
             var apiUrl = buildOddsDetailApiUrl(matchId, tab.oddsType());
-            var body = captureOddsDetailBody(page, matchId, tab.oddsType(), apiUrl, referer, timeout);
+            byte[] body;
+            try {
+                body = captureOddsDetailBody(page, matchId, tab.oddsType(), apiUrl, referer, timeout);
+            } catch (AiscoreBadGatewayException ex) {
+                logOddsStep(matchId, "oddsDetailTab", tabStart, "oddsType", tab.oddsType(), "decoded", false);
+                if (failOnEvaluateError) {
+                    throw ex;
+                }
+                continue;
+            }
             var decoded = decodeOddsDetailBody(body);
             logOddsStep(matchId, "oddsDetailTab", tabStart, "oddsType", tab.oddsType(), "decoded", decoded != null);
             if (decoded == null) {
@@ -215,6 +241,25 @@ public class MatchesService {
             }
         }
         return new OddsMapper.OddsDetails(asia, null, bs, corner);
+    }
+
+    private static boolean hasAllExpectedOddsDetails(OddsMapper.OddsDetails details, boolean includeCorner) {
+        if (details.asia() == null || details.bs() == null) {
+            return false;
+        }
+        return !includeCorner || details.corner() != null;
+    }
+
+    private static OddsMapper.OddsDetails mergeOddsDetails(
+            OddsMapper.OddsDetails first,
+            OddsMapper.OddsDetails second
+    ) {
+        return new OddsMapper.OddsDetails(
+                first.asia() != null ? first.asia() : second.asia(),
+                null,
+                first.bs() != null ? first.bs() : second.bs(),
+                first.corner() != null ? first.corner() : second.corner()
+        );
     }
 
     private byte[] captureOddsDetailBody(

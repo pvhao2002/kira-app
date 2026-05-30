@@ -22,8 +22,8 @@ public class PlaywrightBrowserSupport {
     static final String USER_AGENT =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
-    private static final int VIEWPORT_WIDTH = 1920;
-    private static final int VIEWPORT_HEIGHT = 1080;
+    private static final int VIEWPORT_WIDTH = 1280;
+    private static final int VIEWPORT_HEIGHT = 720;
     private static final String LOCALE = "en-US";
     private static final Set<String> LEAN_NETWORK_BLOCKED_TYPES = Set.of("image", "font", "media");
 

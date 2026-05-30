@@ -28,7 +28,7 @@ public class BrowserSessionManager {
                 "origin", "https://www.aiscore.com",
                 "accept-language", properties.acceptLanguage()
         );
-        log.debug("Opening crawl page for {} at {}", apiType, publicPageUrl);
+        log.info("Opening crawl page for {} at {}", apiType, publicPageUrl);
         return crawlLanes.lane(apiType).withPage(timeout, headers, handler);
     }
 }
