@@ -16,4 +16,7 @@ public record MatchOddsResponseDto(
         CrawlOddsTimelineGroupDto oddsTimeline,
         Map<String, Object> aiscoreRaw
 ) {
+    public boolean isEmpty() {
+        return matchId == null || matchId.isBlank();
+    }
 }

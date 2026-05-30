@@ -9,6 +9,13 @@ spring:
       enabled: true
 
 app:
+  gateway:
+    base-url: ${APP_GATEWAY_BASE_URL:http://localhost/gateway}
+  odds-crawl-job:
+    enabled: ${KIRA_CRAWL_ODDS_JOB_ENABLED:false}
+    fixed-delay-seconds: ${KIRA_CRAWL_ODDS_JOB_DELAY_SECONDS:60}
+    instance-id: ${KIRA_CRAWL_INSTANCE_ID:kira-crawl-java}
+    read-timeout-ms: ${KIRA_CRAWL_GATEWAY_READ_TIMEOUT_MS:30000}
   playwright:
     headless: ${PLAYWRIGHT_HEADLESS:true}
     channel: ${PLAYWRIGHT_CHANNEL:}
