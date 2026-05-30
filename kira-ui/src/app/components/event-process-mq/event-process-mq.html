@@ -1,0 +1,148 @@
+<div class="max-w-[1200px] mx-auto p-6 space-y-6">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-white">Event Process by MQ</h1>
+      <p class="text-slate-400 mt-2">Danh sách tiến trình xử lý event qua Message Queue (<code class="text-slate-500">event_claim</code>).</p>
+      <p class="text-slate-500 text-xs mt-1">Timezone client: {{ clientTimeZone }}</p>
+    </div>
+
+    <!-- Filter dropdown -->
+    <div class="flex items-center gap-2">
+      <span class="text-sm text-slate-400 whitespace-nowrap">Trạng thái:</span>
+      <select [value]="claimStatus()"
+              (change)="onStatusChange($any($event.target).value)"
+              class="bg-[#1e293b] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500 min-w-[140px]">
+        <option value="all">Tất cả</option>
+        <option value="processing">Processing</option>
+        <option value="completed">Completed</option>
+        <option value="failed">Failed</option>
+      </select>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 flex flex-col items-center justify-center gap-3">
+      <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
+      <p class="text-slate-400 text-sm">Đang tải…</p>
+    </div>
+  } @else if (error()) {
+    <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
+      <p class="text-red-300 text-sm">{{ error() }}</p>
+      <button type="button"
+              (click)="load()"
+              class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
+        Thử lại
+      </button>
+    </div>
+  } @else if (data(); as page) {
+    @if (page.content.length === 0) {
+      <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 text-center">
+        <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">sync_alt</span>
+        <p class="text-slate-400 text-sm">Không có bản ghi nào.</p>
+      </div>
+    } @else {
+      <div class="rounded-xl border border-white/5 overflow-hidden bg-[#1e293b]">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-900/50 text-slate-400 font-medium border-b border-white/5">
+              <tr>
+                <th class="px-4 py-3">Claim ID</th>
+                <th class="px-4 py-3">Event ID</th>
+                <th class="px-4 py-3">Claimed By</th>
+                <th class="px-4 py-3">
+                  <button type="button"
+                          (click)="toggleSort('claimedAt')"
+                          class="inline-flex items-center gap-1 font-medium hover:text-white transition-colors"
+                          [class.text-blue-400]="sortHeaderActive('claimedAt')"
+                          [class.text-slate-400]="!sortHeaderActive('claimedAt')">
+                    Claimed At
+                    <span class="material-symbols-outlined text-base leading-none">{{ sortHeaderIcon('claimedAt') }}</span>
+                  </button>
+                </th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 min-w-[280px]">Event Name</th>
+                <th class="px-4 py-3">
+                  <button type="button"
+                          (click)="toggleSort('eventDate')"
+                          class="inline-flex items-center gap-1 font-medium hover:text-white transition-colors"
+                          [class.text-blue-400]="sortHeaderActive('eventDate')"
+                          [class.text-slate-400]="!sortHeaderActive('eventDate')">
+                    Event Date
+                    <span class="material-symbols-outlined text-base leading-none">{{ sortHeaderIcon('eventDate') }}</span>
+                  </button>
+                </th>
+                <th class="px-4 py-3">Event Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              @for (row of page.content; track rowTrack(row)) {
+                <tr class="hover:bg-white/[0.03]">
+                  <td class="px-4 py-3 text-slate-400 font-mono text-xs">{{ row.claimId }}</td>
+                  <td class="px-4 py-3 text-slate-300 font-mono text-xs">{{ row.eventId }}</td>
+                  <td class="px-4 py-3 text-slate-300 font-medium text-xs">{{ row.claimedBy ?? '—' }}</td>
+                  <td class="px-4 py-3 text-slate-300 whitespace-nowrap text-xs">
+                    {{ formatClientDate(row.claimedAt) }}
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    @if (row.status === 'completed') {
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
+                        Completed
+                      </span>
+                    } @else if (row.status === 'failed') {
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-400/10 text-rose-400 border border-rose-400/20">
+                        Failed
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-400/10 text-amber-400 border border-amber-400/20 animate-pulse">
+                        Processing
+                      </span>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-white max-w-[320px]" [title]="row.eventName ?? ''">
+                    <div class="truncate">
+                      @if (row.link && row.eventName) {
+                        <a [href]="row.link"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="text-white hover:text-blue-300 hover:underline truncate max-w-[320px] inline-block">
+                          {{ row.eventName }}
+                        </a>
+                      } @else {
+                        <span>{{ row.eventName ?? '—' }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-slate-300 whitespace-nowrap text-xs">
+                    {{ row.eventDate ? formatClientDate(row.eventDate) : '—' }}
+                  </td>
+                  <td class="px-4 py-3 text-slate-400 font-medium text-xs">{{ row.eventStatus ?? '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400">
+        <span>
+          Trang {{ page.page + 1 }} / {{ page.totalPages || 1 }}
+          · {{ page.totalElements | number }} bản ghi
+        </span>
+        <div class="flex gap-2">
+          <button type="button"
+                  (click)="prev()"
+                  [disabled]="page.page <= 0"
+                  class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+            Trước
+          </button>
+          <button type="button"
+                  (click)="next()"
+                  [disabled]="page.page >= page.totalPages - 1"
+                  class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
+            Sau
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

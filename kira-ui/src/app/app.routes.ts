@@ -22,6 +22,7 @@ import {EventDataIssue} from './components/event-data-issue/event-data-issue';
 import {EventCrawlFailed} from './components/event-crawl-failed/event-crawl-failed';
 import {EventsHistory} from './components/events-history/events-history';
 import {Statistics} from './components/statistics/statistics';
+import {EventProcessMq} from './components/event-process-mq/event-process-mq';
 import {authGuard} from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -50,6 +51,7 @@ export const routes: Routes = [
       {path: 'crawl-dates', component: CrawlDates},
       {path: 'event-data-issue', component: EventDataIssue},
       {path: 'event-crawl-failed', component: EventCrawlFailed},
+      {path: 'event-process-mq', component: EventProcessMq},
       {path: 'events-history', component: EventsHistory},
       {path: 'teams', component: Teams},
       {path: 'statistics', component: Statistics},
