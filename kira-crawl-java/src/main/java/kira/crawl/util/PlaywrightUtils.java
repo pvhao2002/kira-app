@@ -84,7 +84,7 @@ public class PlaywrightUtils {
     public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic, Consumer<Exception> errorHandler) {
         try (
                 var p = Playwright.create();
-                var b = p.chromium().launch(launchOptions(false));
+                var b = p.chromium().launch(launchOptions(true));
                 BrowserContext context = b.newContext(contextOptions())) {
             addDefaultContextCookies(context);
             context.addInitScript(INIT_SCRIPT_STEALTH);

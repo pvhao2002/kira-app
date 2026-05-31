@@ -26,6 +26,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static kira.crawl.util.JsonRecords.*;
 
@@ -261,6 +262,62 @@ public class MatchesService {
         private CrawlMatchOddsV2Dto toDto() {
             return new CrawlMatchOddsV2Dto(event, eventResult, odds, timelineOdds);
         }
+    }
+
+    public CrawlMatchOddsV2Dto getOddsV3(String eventLink, Boolean hasOddsCorner) {
+        var publicPageUrl = parseAndValidateEventLink(eventLink).toString();
+        var oddsPublicPageUrl = buildOddsPublicPageUrl(publicPageUrl);
+        var matchId = extractMatchIdFromEventLink(publicPageUrl);
+        var oddsListApiUrl = buildOddsListApiUrl(matchId);
+        var teamStatsApiUrl = buildTeamStatsApiUrl(matchId);
+        var includeCorner = Boolean.TRUE.equals(hasOddsCorner);
+
+        var result = new AtomicReference<CrawlMatchOddsV2Dto>();
+        PlaywrightUtils.withPlaywright(oddsPublicPageUrl, (page, referer) -> {
+            var oddsListBody = captureSingleApiBody(page, oddsListApiUrl, referer, TIME_OUT);
+            var oddsList = protobufService.decodeMatchOdds(oddsListBody);
+            if (!oddsMapper.hasBet365Company(oddsList) || !oddsMapper.hasAsiaMarketAndOverUnder(oddsList)) {
+                result.set(emptyOddsV2Dto());
+                return;
+            }
+
+            var oddsDetails = captureOddsDetailTabs(page, matchId, referer, TIME_OUT, includeCorner, false);
+            var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
+            var pageInfo = readMatchPageInfo(page, TIME_OUT);
+            var teamStatsBody = captureOptionalApiBody(page, teamStatsApiUrl, publicPageUrl, TIME_OUT);
+
+            result.set(buildOddsV2Dto(pageInfo, oddsDetails, timelineOdds, teamStatsBody));
+        }, ex -> {
+            throw ex instanceof RuntimeException re ? re : new RuntimeException(ex);
+        });
+
+        return result.get() != null ? result.get() : emptyOddsV2Dto();
+    }
+
+    private CrawlMatchOddsV2Dto buildOddsV2Dto(
+            MatchPageInfo pageInfo,
+            OddsMapper.OddsDetails oddsDetails,
+            List<CrawlOddsTimelineItemDto> timelineOdds,
+            byte[] teamStatsBody
+    ) {
+        var eventResult = teamStatsBody == null
+                ? CrawlEventResultDto.empty()
+                : matchMapper.mapEventResultForDatabase(
+                pageInfo.homeScores(), pageInfo.awayScores(),
+                protobufService.decodeMatchTeamStats(teamStatsBody));
+        var event = new CrawlMatchOddsEventDto(
+                pageInfo.status() != null ? pageInfo.status() : "-",
+                pageInfo.statusId()
+        );
+        var odds = timelineOdds.isEmpty()
+                ? null
+                : oddsMapper.mapOddsForDatabase(oddsDetails);
+        var oddsTimeline = oddsMapper.groupOddsTimelineForResponse(timelineOdds);
+        return new CrawlMatchOddsV2Dto(event, eventResult, odds, oddsTimeline);
+    }
+
+    private static CrawlMatchOddsV2Dto emptyOddsV2Dto() {
+        return new CrawlMatchOddsV2Dto(null, null, null, null);
     }
 
     public Object findMatchOdds(String eventLink, Boolean hasOddsCorner) {

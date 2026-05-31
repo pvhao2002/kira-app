@@ -74,6 +74,21 @@ public class MatchesController {
         );
     }
 
+    @GetMapping("v3/odds")
+    public WebAsyncTask<Object> getOddsV3(@RequestParam(name = "event_link") String eventLink,
+                                          @RequestParam(name = "has_odds_corner", required = false) Boolean hasOddsCorner) {
+        var logParams = logParams(
+                "eventLinkSuffix", eventLinkSuffix(eventLink),
+                "hasOddsCorner", hasOddsCorner == null ? null : String.valueOf(hasOddsCorner)
+        );
+        return crawlTask(
+                "oddsV3",
+                playwrightProperties.oddsAsyncTimeoutMs(),
+                logParams,
+                () -> matchesService.getOddsV3(eventLink, hasOddsCorner)
+        );
+    }
+
     @GetMapping("/odds")
     @Operation(summary = "Crawl odds for a single match")
     public WebAsyncTask<Object> findMatchOdds(
