@@ -19,7 +19,7 @@ app:
   playwright:
     headless: ${PLAYWRIGHT_HEADLESS:true}
     channel: ${PLAYWRIGHT_CHANNEL:}
-    browser-timeout-ms: ${AISCORE_BROWSER_TIMEOUT_MS:80000}
+    browser-timeout-ms: ${AISCORE_BROWSER_TIMEOUT_MS:30000}
     matches-async-timeout-ms: ${AISCORE_MATCHES_ASYNC_TIMEOUT_MS:180000}
     odds-async-timeout-ms: ${AISCORE_ODDS_ASYNC_TIMEOUT_MS:300000}
     user-agent: ${AISCORE_USER_AGENT:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0}

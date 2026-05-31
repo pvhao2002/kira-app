@@ -208,7 +208,11 @@ public class MatchesController {
             return "matchId=" + dto.matchId();
         }
         if (result instanceof CrawlMatchOddsV2Dto dto) {
-            return "odds=" + (dto.odds() == null ? 0 : dto.odds().size())
+            if (!StringUtils.hasText(dto.matchId())) {
+                return "empty=true";
+            }
+            return "matchId=" + dto.matchId()
+                    + " odds=" + (dto.odds() == null ? 0 : dto.odds().size())
                     + " timeline=" + (dto.timelineOdds() != null)
                     + " event=" + (dto.event() != null)
                     + " eventResult=" + (dto.eventResult() != null);

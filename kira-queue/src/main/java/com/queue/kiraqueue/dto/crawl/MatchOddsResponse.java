@@ -1,5 +1,6 @@
 package com.queue.kiraqueue.dto.crawl;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
@@ -10,9 +11,15 @@ public record MatchOddsResponse(
         CrawlMatchOddsEventDto event,
         CrawlEventResultDto eventResult,
         List<CrawlOddsSnapshotDto> odds,
-        CrawlOddsTimelineGroupDto oddsTimeline
+        @JsonAlias("timelineOdds") CrawlOddsTimelineGroupDto oddsTimeline
 ) {
     public boolean isEmpty() {
-        return matchId == null || matchId.isBlank();
+        if (matchId != null && !matchId.isBlank()) {
+            return false;
+        }
+        var hasOdds = odds != null && !odds.isEmpty();
+        var hasEvent = event != null;
+        var hasTimeline = oddsTimeline != null;
+        return !hasOdds && !hasEvent && !hasTimeline;
     }
 }
