@@ -45,7 +45,7 @@ public class MatchesService {
     public static final String ODDS_DETAIL_API_BASE_URL_V2 = "web/api/match/odds/detail";
     public static final String TEAM_STATS_API_BASE_URL_V2 = "web/api/match/team_stats";
 
-    public static final long TIME_OUT = 5000;
+    public static final long TIME_OUT = 30000;
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
