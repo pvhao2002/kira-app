@@ -116,6 +116,177 @@ public class MatchesService {
         return state.toDto();
     }
 
+    public CrawlMatchOddsV2Dto getOddsV4(String eventLink, Boolean hasOddsCorner) {
+        var publicPageUrl = parseAndValidateEventLink(eventLink).toString();
+        var matchId = extractMatchIdFromEventLink(publicPageUrl);
+        var timeout = playwrightProperties.browserTimeoutMs();
+        var session = new OddsV4Session(matchId, hasOddsCorner);
+
+        PlaywrightUtils.withPlaywright(eventLink + "/odds", (page, url) -> {
+            page.setDefaultTimeout(timeout);
+            page.setDefaultNavigationTimeout(timeout);
+
+            page.onResponse(session::onResponse);
+
+            page.navigate(url, new Page.NavigateOptions()
+                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
+                    .setTimeout(timeout));
+
+            waitForOddsList(page, session, timeout);
+
+            if (session.shouldFetchOddsDetails()) {
+                var includeCorner = !Boolean.FALSE.equals(hasOddsCorner);
+                var oddsDetails = captureWebOddsDetailBody(page, matchId, publicPageUrl, timeout, includeCorner);
+                session.applyOddsDetails(oddsDetails);
+            }
+
+            fetchTeamStats(page, session, publicPageUrl, eventLink, matchId, timeout);
+        }, ex -> {
+            if (ex instanceof TimeoutError) {
+                log.warn("getOddsV4 timed out matchId={} timeoutMs={}", matchId, timeout);
+                return;
+            }
+            throw ex instanceof RuntimeException re ? re : new RuntimeException(ex);
+        });
+
+        return session.toDto();
+    }
+
+    private void waitForOddsList(Page page, OddsV4Session session, long timeout) {
+        try {
+            page.waitForCondition(
+                    session::isOddsListResolved,
+                    new Page.WaitForConditionOptions().setTimeout(timeout)
+            );
+        } catch (TimeoutError ex) {
+            log.debug("getOddsV4 odds_list not observed matchId={}", session.matchId());
+            session.markNoOdds();
+        }
+    }
+
+    private void fetchTeamStats(
+            Page page,
+            OddsV4Session session,
+            String publicPageUrl,
+            String oddsPageUrl,
+            String matchId,
+            long timeout
+    ) {
+        if (session.isTeamStatsComplete()) {
+            return;
+        }
+        var teamStatsApiUrl = buildTeamStatsApiUrl(matchId);
+        var fetchTimeout = Math.min(timeout, 10_000);
+        var teamStatsBody = captureOptionalApiBody(page, teamStatsApiUrl, publicPageUrl, fetchTimeout);
+        if (teamStatsBody != null) {
+            session.applyTeamStats(
+                    readMatchPageInfo(page, timeout),
+                    protobufService.decodeMatchTeamStats(teamStatsBody)
+            );
+        }
+    }
+
+    /**
+     * Self-contained capture session for v4 odds crawl.
+     * Accumulates network responses registered before navigation.
+     */
+    private final class OddsV4Session {
+        private final String matchId;
+        private final Boolean hasOddsCorner;
+
+        private boolean oddsListReceived;
+        private boolean hasBet365;
+        private boolean hasAsianOu;
+        private boolean noOdds;
+
+        private boolean oddsDone;
+        private boolean teamStatsDone;
+
+        private List<CrawlOddsSnapshotDto> odds;
+        private CrawlOddsTimelineGroupDto timelineOdds;
+        private CrawlEventResultDto eventResult;
+        private CrawlMatchOddsEventDto event;
+
+        OddsV4Session(String matchId, Boolean hasOddsCorner) {
+            this.matchId = matchId;
+            this.hasOddsCorner = hasOddsCorner;
+        }
+
+        String matchId() {
+            return matchId;
+        }
+
+        void onResponse(Response response) {
+            if (!response.ok()) {
+                return;
+            }
+            try {
+                var url = response.url();
+                if (url.contains(ODDS_LIST_API_BASE_URL_V2)) {
+                    handleOddsList(response);
+                }
+            } catch (RuntimeException ex) {
+                log.warn("getOddsV4 response handling failed matchId={} url={}", matchId, response.url(), ex);
+            }
+        }
+
+        private void handleOddsList(Response response) {
+            var oddsList = protobufService.decodeMatchOdds(response.body());
+            hasBet365 = oddsMapper.hasBet365Company(oddsList);
+            hasAsianOu = oddsMapper.hasAsiaMarketAndOverUnder(oddsList);
+            oddsListReceived = true;
+            if (!hasBet365 || !hasAsianOu) {
+                noOdds = true;
+            }
+        }
+
+        void applyOddsDetails(OddsMapper.OddsDetails oddsDetails) {
+            var timeline = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
+            if (timeline.isEmpty()) {
+                return;
+            }
+            odds = oddsMapper.mapOddsForDatabase(oddsDetails);
+            timelineOdds = oddsMapper.groupOddsTimelineForResponse(timeline);
+            oddsDone = true;
+        }
+
+        void applyTeamStats(MatchPageInfo pageInfo, JsonNode stats) {
+            eventResult = stats == null
+                    ? CrawlEventResultDto.empty()
+                    : matchMapper.mapEventResultForDatabase(pageInfo.homeScores(), pageInfo.awayScores(), stats);
+            event = new CrawlMatchOddsEventDto(
+                    pageInfo.status() != null ? pageInfo.status() : "-",
+                    pageInfo.statusId()
+            );
+            teamStatsDone = true;
+        }
+
+        boolean isOddsListResolved() {
+            return oddsListReceived || noOdds;
+        }
+
+        boolean shouldFetchOddsDetails() {
+            return oddsListReceived && hasBet365 && hasAsianOu && !noOdds;
+        }
+
+        boolean isTeamStatsComplete() {
+            return teamStatsDone;
+        }
+
+        void markNoOdds() {
+            noOdds = true;
+            oddsListReceived = true;
+        }
+
+        CrawlMatchOddsV2Dto toDto() {
+            if (noOdds && !oddsDone && !teamStatsDone) {
+                return emptyOddsV2Dto();
+            }
+            var id = (oddsDone || teamStatsDone) ? matchId : null;
+            return new CrawlMatchOddsV2Dto(id, event, eventResult, odds, timelineOdds);
+        }
+    }
+
     private void handleOddsResponseSafely(
             Page page,
             Response response,

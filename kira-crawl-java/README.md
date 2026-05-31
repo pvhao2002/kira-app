@@ -114,6 +114,19 @@ curl "http://localhost:4000/test/matches/benchmark?base_url=http://localhost:400
 
 Response JSON includes `totalDurationMs`, `baseUrl`, and per-date `durationMs`, `httpStatus`, `responseBytes`, `ok`, `error` (no full match payload).
 
+## Odds v4 benchmark
+
+Direct-service benchmark: **6 parallel calls** to `MatchesService.getOddsV4` (default fixtures are built-in AiScore match links with `hasOddsCorner` true/false). Measures per-link wall-clock `durationMs` under concurrent load on the shared Playwright driver.
+
+```bash
+curl "http://localhost:4000/test/matches/v4/benchmark"
+curl "http://localhost:4000/test/matches/v4/benchmark?fixtures=https://www.aiscore.com/match-sk-treibach-sc-gleisdorf/527r3i4954pu47e,true|https://www.aiscore.com/match-elfsborg-mjallby-aif/g6763i5lw3jio7r,false"
+```
+
+Fixture query format: pipe-separated `eventLink,hasOddsCorner` pairs (`true` or `false`). Override count: 1–10 fixtures.
+
+Response JSON includes `totalDurationMs`, `parallel`, `fixtureCount`, and per-link `eventLink`, `hasOddsCorner`, `durationMs`, `matchId`, `ok`, `error`.
+
 ### 3 instances in parallel (shell)
 
 With three JVMs on ports 4001–4003:
