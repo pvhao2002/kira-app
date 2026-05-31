@@ -75,6 +75,11 @@ public class OddsMapper {
                 .anyMatch(value -> isBet365Company(asRecord(value)));
     }
 
+    public boolean hasAsiaMarketAndOverUnder(JsonNode oddsList) {
+        return !mapOddsListMarketForDatabase("hdc", asArray(oddsList.get("asia"))).isEmpty()
+                && !mapOddsListMarketForDatabase("ou", asArray(oddsList.get("bs"))).isEmpty();
+    }
+
     public boolean hasCornerMarket(JsonNode oddsList) {
         return !mapOddsListMarketForDatabase("corner", asArray(oddsList.get("corner"))).isEmpty();
     }

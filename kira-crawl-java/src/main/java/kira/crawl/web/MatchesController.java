@@ -3,6 +3,7 @@ package kira.crawl.web;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kira.crawl.config.PlaywrightProperties;
+import kira.crawl.dto.CrawlMatchOddsV2Dto;
 import kira.crawl.dto.MatchOddsResponseDto;
 import kira.crawl.dto.MatchesResponseDto;
 import kira.crawl.service.MatchesService;
@@ -55,6 +56,21 @@ public class MatchesController {
                 playwrightProperties.matchesAsyncTimeoutMs(),
                 logParams,
                 () -> matchesService.findMatches(new MatchesService.MatchQuery(date, sportId, lang, tz, matchId, raw))
+        );
+    }
+
+    @GetMapping("v2/odds")
+    public WebAsyncTask<Object> getOdds(@RequestParam(name = "event_link") String eventLink,
+                                        @RequestParam(name = "has_odds_corner", required = false) Boolean hasOddsCorner) {
+        var logParams = logParams(
+                "eventLinkSuffix", eventLinkSuffix(eventLink),
+                "hasOddsCorner", hasOddsCorner == null ? null : String.valueOf(hasOddsCorner)
+        );
+        return crawlTask(
+                "oddsV2",
+                playwrightProperties.oddsAsyncTimeoutMs(),
+                logParams,
+                () -> matchesService.getOdds(eventLink, hasOddsCorner)
         );
     }
 
@@ -175,6 +191,12 @@ public class MatchesController {
                 return "empty=true";
             }
             return "matchId=" + dto.matchId();
+        }
+        if (result instanceof CrawlMatchOddsV2Dto dto) {
+            return "odds=" + (dto.odds() == null ? 0 : dto.odds().size())
+                    + " timeline=" + (dto.timelineOdds() != null)
+                    + " event=" + (dto.event() != null)
+                    + " eventResult=" + (dto.eventResult() != null);
         }
         if (result instanceof Map<?, ?> map) {
             return map.isEmpty() ? "empty=true" : "raw=true";

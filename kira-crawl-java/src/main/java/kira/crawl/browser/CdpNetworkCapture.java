@@ -171,6 +171,16 @@ public final class CdpNetworkCapture implements AutoCloseable {
         private ApiUrlMatcher() {
         }
 
+        public static boolean isUrlOddType(String actualUrl, String oddsType) {
+            try {
+                var actual = java.net.URI.create(actualUrl);
+                var query = parseQuery(actual.getRawQuery());
+                return oddsType.equalsIgnoreCase(query.get("odds_type"));
+            } catch (IllegalArgumentException ex) {
+                return false;
+            }
+        }
+
         public static boolean isSameApiRequest(String actualUrl, String expectedUrl) {
             try {
                 var actual = java.net.URI.create(actualUrl);

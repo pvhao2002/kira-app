@@ -1,4 +1,4 @@
-package com.queue.kiraqueue.util;
+package kira.crawl.util;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.ColorScheme;
@@ -16,7 +16,7 @@ import java.util.logging.Level;
 
 @Log
 @UtilityClass
-public class PlaywrightUtil {
+public class PlaywrightUtils {
     /**
      * Chrome trên Windows, phiên bản mới — giống user thật.
      */
@@ -32,7 +32,7 @@ public class PlaywrightUtil {
      * Launch options giống trình duyệt thật: tắt cờ automation, dùng Chrome nếu có.
      */
     private static BrowserType.LaunchOptions launchOptions(boolean headless) {
-        var opts = new BrowserType.LaunchOptions()
+        return new BrowserType.LaunchOptions()
                 .setHeadless(headless)
                 .setArgs(List.of(
                         "--disable-blink-features=AutomationControlled",
@@ -41,12 +41,6 @@ public class PlaywrightUtil {
                         "--disable-infobars",
                         "--window-size=%d,%d".formatted(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
                 ));
-        try {
-            opts.setChannel("chrome");
-        } catch (Exception ignored) {
-            // Chrome chưa cài, dùng Chromium mặc định
-        }
-        return opts;
     }
 
     /**
@@ -74,9 +68,6 @@ public class PlaywrightUtil {
 
     private static final String DEFAULT_OPTIONS_CLOSED_COOKIE = "optionsClosed";
 
-    /**
-     * Cookie mặc định cho crawl aiscore ({@link Constants#AI_SCORE_URL} / mobile): khớp domain gốc và mọi subdomain.
-     */
     private static void addDefaultContextCookies(BrowserContext context) {
         long ts = System.currentTimeMillis();
         context.addCookies(List.of(
@@ -93,7 +84,7 @@ public class PlaywrightUtil {
     public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic, Consumer<Exception> errorHandler) {
         try (
                 var p = Playwright.create();
-                var b = p.chromium().launch(launchOptions(true));
+                var b = p.chromium().launch(launchOptions(false));
                 BrowserContext context = b.newContext(contextOptions())) {
             addDefaultContextCookies(context);
             context.addInitScript(INIT_SCRIPT_STEALTH);
@@ -182,16 +173,6 @@ public class PlaywrightUtil {
         } catch (PlaywrightException e) {
             log.log(Level.FINE, "Accept banner not dismissed (no .van-icon-cross or page gone): {0}", e.getMessage());
         }
-    }
-
-    public String getImageFromImgSrc(org.jsoup.nodes.Element root, String selector) {
-        if (root == null) return null;
-
-        var img = root.selectFirst(selector);
-        if (img == null) return null;
-
-        String src = img.attr("abs:src");
-        return src.isBlank() ? null : src.trim();
     }
 
 

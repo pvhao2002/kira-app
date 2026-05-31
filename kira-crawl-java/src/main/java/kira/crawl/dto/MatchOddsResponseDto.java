@@ -19,4 +19,7 @@ public record MatchOddsResponseDto(
     public boolean isEmpty() {
         return matchId == null || matchId.isBlank();
     }
+    public static MatchOddsResponseDto empty() {
+        return new MatchOddsResponseDto(null, null, null, List.of(), null, Map.of());
+    }
 }

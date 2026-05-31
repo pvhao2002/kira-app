@@ -17,4 +17,7 @@ public record MatchesResponseDto(
         List<CrawledMatchBundleDto> events,
         Map<String, Object> aiscoreRaw
 ) {
+    public static MatchesResponseDto empty() {
+        return new MatchesResponseDto(null, null, null, null, null, List.of(), Map.of());
+    }
 }

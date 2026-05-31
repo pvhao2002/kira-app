@@ -25,6 +25,11 @@ public class AiscoreOddsDomInteractor {
             new DetailTab("Total Corners", "corner")
     );
 
+    public boolean openBet365OddsModalV2(Page page, long timeout) {
+        openBet365OddsModal(page, timeout);
+        return true;
+    }
+
     public void openBet365OddsModal(Page page, long timeout) {
         page.setDefaultTimeout(timeout);
         Locator lookBox;
@@ -43,11 +48,14 @@ public class AiscoreOddsDomInteractor {
         page.locator(ODDS_MODAL_SELECTOR).waitFor(
                 new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE).setTimeout(timeout)
         );
-        if (page.locator(MODAL_TAB_SELECTOR).count() < 2) {
+        var tab = page.locator(MODAL_TAB_SELECTOR);
+        if (tab.count() < 2) {
             throw new AiscoreBadGatewayException(
                     "AiScore odds detail modal tabs were not found",
                     Map.of("step", "openOddsModal")
             );
+        } else {
+            tab.all().forEach(Locator::click);
         }
     }
 

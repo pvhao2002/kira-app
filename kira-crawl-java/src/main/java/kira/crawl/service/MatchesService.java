@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
 import com.microsoft.playwright.TimeoutError;
+import com.microsoft.playwright.options.WaitUntilState;
 import kira.crawl.browser.AiscoreContextApiClient;
 import kira.crawl.browser.AiscoreOddsDomInteractor;
 import kira.crawl.browser.BrowserApiType;
@@ -15,8 +16,8 @@ import kira.crawl.dto.*;
 import kira.crawl.mapper.MatchMapper;
 import kira.crawl.mapper.OddsMapper;
 import kira.crawl.protobuf.AiscoreProtobufService;
-import kira.crawl.util.JsonRecords;
 import kira.crawl.util.PlaywrightUtil;
+import kira.crawl.util.PlaywrightUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,10 +25,7 @@ import org.springframework.stereotype.Service;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static kira.crawl.util.JsonRecords.*;
 
@@ -35,11 +33,17 @@ import static kira.crawl.util.JsonRecords.*;
 @RequiredArgsConstructor
 @Slf4j
 public class MatchesService {
+    public static final String API_BASE_URL = "https://api.aiscore.com/v1/web/api/matches";
+    public static final String ODDS_LIST_API_BASE_URL = "https://api.aiscore.com/v1/web/api/match/odds_list";
+    public static final String ODDS_DETAIL_API_BASE_URL = "https://api.aiscore.com/v1/web/api/match/odds/detail";
+    public static final String TEAM_STATS_API_BASE_URL = "https://api.aiscore.com/v1/web/api/match/team_stats";
 
-    private static final String API_BASE_URL = "https://api.aiscore.com/v1/web/api/matches";
-    private static final String ODDS_LIST_API_BASE_URL = "https://api.aiscore.com/v1/web/api/match/odds_list";
-    private static final String ODDS_DETAIL_API_BASE_URL = "https://api.aiscore.com/v1/web/api/match/odds/detail";
-    private static final String TEAM_STATS_API_BASE_URL = "https://api.aiscore.com/v1/web/api/match/team_stats";
+    public static final String API_BASE_URL_V2 = "web/api/matches";
+    public static final String ODDS_LIST_API_BASE_URL_V2 = "web/api/match/odds_list";
+    public static final String ODDS_DETAIL_API_BASE_URL_V2 = "web/api/match/odds/detail";
+    public static final String TEAM_STATS_API_BASE_URL_V2 = "web/api/match/team_stats";
+
+    public static final long TIME_OUT = 5000;
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -89,6 +93,176 @@ public class MatchesService {
         });
     }
 
+    public CrawlMatchOddsV2Dto getOdds(String eventLink, Boolean hasOddsCorner) {
+        var state = new MatchOddsV2CaptureState();
+        PlaywrightUtils.withPlaywright(eventLink + "/odds", (p, l) -> {
+            p.onResponse(res -> handleOddsResponseSafely(p, res, hasOddsCorner, state));
+            p.navigate(l, new Page.NavigateOptions().setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+
+            waitForInitialOddsCapture(p, state);
+
+            if (state.needsOddsDetails && !state.oddsDone) {
+                fetchMissingOddsDetails(p, eventLink, hasOddsCorner, state);
+            }
+
+            if (!state.teamStatsDone) {
+                fetchMissingTeamStats(p, eventLink, state);
+            }
+        });
+        return state.toDto();
+    }
+
+    private void handleOddsResponseSafely(
+            Page page,
+            Response response,
+            Boolean hasOddsCorner,
+            MatchOddsV2CaptureState state
+    ) {
+        try {
+            handleOddsResponse(page, response, hasOddsCorner, state);
+        } catch (AiscoreBadGatewayException ex) {
+            if (state.needsOddsDetails && !state.oddsDone) {
+                state.oddsFallbackReady = true;
+            }
+            log.debug("AiScore odds v2 response handling skipped; fallback may complete response");
+        } catch (RuntimeException ex) {
+            log.warn("AiScore odds v2 response handling failed url={}", response.url(), ex);
+        }
+    }
+
+    private void waitForInitialOddsCapture(Page page, MatchOddsV2CaptureState state) {
+        try {
+            page.waitForCondition(
+                    () -> state.oddsDone || state.teamStatsDone || state.noOdds || state.oddsFallbackReady,
+                    new Page.WaitForConditionOptions().setTimeout(TIME_OUT)
+            );
+        } catch (TimeoutError ex) {
+            log.debug("AiScore odds v2 initial capture timed out; returning best-effort response");
+        }
+    }
+
+    private void handleOddsResponse(
+            Page page,
+            Response response,
+            Boolean hasOddsCorner,
+            MatchOddsV2CaptureState state
+    ) {
+        switch (response.url()) {
+            case String url when url.contains(ODDS_LIST_API_BASE_URL_V2) ->
+                    handleOddsListResponse(page, response, state);
+            case String url when url.contains(ODDS_DETAIL_API_BASE_URL_V2) ->
+                    handleOddsDetailResponse(response, hasOddsCorner, state);
+            case String url when url.contains(TEAM_STATS_API_BASE_URL_V2) ->
+                    handleTeamStatsResponse(page, response, state);
+            default -> {
+                // skip
+            }
+        }
+    }
+
+    private void handleOddsListResponse(Page page, Response response, MatchOddsV2CaptureState state) {
+        var oddsList = protobufService.decodeMatchOdds(response.body());
+        var hasOdds365 = oddsMapper.hasBet365Company(oddsList);
+        var hasAsianAndOuOdds = oddsMapper.hasAsiaMarketAndOverUnder(oddsList);
+        if (hasOdds365 && hasAsianAndOuOdds) {
+            state.needsOddsDetails = true;
+            state.oddsFallbackReady = true;
+        } else {
+            state.noOdds = true;
+        }
+    }
+
+    private void handleOddsDetailResponse(Response response, Boolean hasOddsCorner, MatchOddsV2CaptureState state) {
+        var url = response.url();
+        if (ApiUrlMatcher.isUrlOddType(url, "asia")) {
+            state.asia = decodeOddsDetailBody(response.body());
+        } else if (ApiUrlMatcher.isUrlOddType(url, "bs")) {
+            state.bs = decodeOddsDetailBody(response.body());
+        } else if (ApiUrlMatcher.isUrlOddType(url, "corner")) {
+            state.corner = decodeOddsDetailBody(response.body());
+        }
+
+        if (state.asia == null || state.bs == null || (state.corner == null && !Boolean.FALSE.equals(hasOddsCorner))) {
+            return;
+        }
+
+        var oddsDetails = new OddsMapper.OddsDetails(state.asia, null, state.bs, state.corner);
+        var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
+        if (timelineOdds.isEmpty()) {
+            return;
+        }
+
+        state.odds = oddsMapper.mapOddsForDatabase(oddsDetails);
+        state.timelineOdds = oddsMapper.groupOddsTimelineForResponse(timelineOdds);
+        state.oddsDone = true;
+    }
+
+    private void fetchMissingOddsDetails(
+            Page page,
+            String eventLink,
+            Boolean hasOddsCorner,
+            MatchOddsV2CaptureState state
+    ) {
+        var publicPageUrl = parseAndValidateEventLink(eventLink).toString();
+        var oddsPublicPageUrl = buildOddsPublicPageUrl(publicPageUrl);
+        var matchId = extractMatchIdFromEventLink(publicPageUrl);
+        var includeCorner = Boolean.TRUE.equals(hasOddsCorner);
+        var oddsDetails = captureOddsDetailTabs(page, matchId, oddsPublicPageUrl, TIME_OUT, includeCorner, false);
+        var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
+        if (timelineOdds.isEmpty()) {
+            return;
+        }
+        state.odds = oddsMapper.mapOddsForDatabase(oddsDetails);
+        state.timelineOdds = oddsMapper.groupOddsTimelineForResponse(timelineOdds);
+        state.oddsDone = true;
+    }
+
+    private void handleTeamStatsResponse(Page page, Response response, MatchOddsV2CaptureState state) {
+        var pageInfo = readMatchPageInfo(page, TIME_OUT);
+        var teamStats = protobufService.decodeMatchTeamStats(response.body());
+        applyEventResult(state, pageInfo, teamStats);
+    }
+
+    private void fetchMissingTeamStats(Page page, String eventLink, MatchOddsV2CaptureState state) {
+        var publicPageUrl = parseAndValidateEventLink(eventLink).toString();
+        var matchId = extractMatchIdFromEventLink(publicPageUrl);
+        var teamStatsApiUrl = buildTeamStatsApiUrl(matchId);
+        var pageInfo = readMatchPageInfo(page, TIME_OUT);
+        var teamStatsBody = captureOptionalApiBody(page, teamStatsApiUrl, publicPageUrl, TIME_OUT);
+        var teamStats = teamStatsBody == null ? null : protobufService.decodeMatchTeamStats(teamStatsBody);
+        applyEventResult(state, pageInfo, teamStats);
+    }
+
+    private void applyEventResult(MatchOddsV2CaptureState state, MatchPageInfo pageInfo, JsonNode teamStats) {
+        state.eventResult = teamStats == null
+                ? CrawlEventResultDto.empty()
+                : matchMapper.mapEventResultForDatabase(pageInfo.homeScores(), pageInfo.awayScores(), teamStats);
+        state.event = new CrawlMatchOddsEventDto(
+                pageInfo.status() != null ? pageInfo.status() : "-",
+                pageInfo.statusId()
+        );
+        state.teamStatsDone = true;
+    }
+
+    private static final class MatchOddsV2CaptureState {
+        private JsonNode asia;
+        private JsonNode bs;
+        private JsonNode corner;
+        private boolean oddsDone;
+        private boolean teamStatsDone;
+        private boolean noOdds;
+        private boolean needsOddsDetails;
+        private boolean oddsFallbackReady;
+        private List<CrawlOddsSnapshotDto> odds;
+        private CrawlOddsTimelineGroupDto timelineOdds;
+        private CrawlEventResultDto eventResult;
+        private CrawlMatchOddsEventDto event;
+
+        private CrawlMatchOddsV2Dto toDto() {
+            return new CrawlMatchOddsV2Dto(event, eventResult, odds, timelineOdds);
+        }
+    }
+
     public Object findMatchOdds(String eventLink, Boolean hasOddsCorner) {
         var publicPageUrl = parseAndValidateEventLink(eventLink).toString();
         var oddsPublicPageUrl = buildOddsPublicPageUrl(publicPageUrl);
@@ -128,7 +302,7 @@ public class MatchesService {
             logOddsStep(matchId, "readMatchPageInfo", stepStart);
 
             stepStart = System.nanoTime();
-            var teamStatsBody = contextApiClient.getOptional(page, teamStatsApiUrl, publicPageUrl, timeout);
+            var teamStatsBody = captureOptionalApiBody(page, teamStatsApiUrl, publicPageUrl, timeout);
             logOddsStep(matchId, "teamStats", stepStart, "found", teamStatsBody != null);
 
             stepStart = System.nanoTime();
@@ -171,7 +345,7 @@ public class MatchesService {
     }
 
     private Map<String, Object> toMapOrNull(JsonNode node) {
-        if (JsonRecords.isEmptyObject(node)) {
+        if (isEmptyObject(node)) {
             return null;
         }
         return OBJECT_MAPPER.convertValue(node, Map.class);
@@ -283,7 +457,7 @@ public class MatchesService {
 
     private JsonNode decodeOddsDetailBody(byte[] body) {
         var decoded = protobufService.decodeMatchOddsDetail(body);
-        return JsonRecords.isEmptyObject(decoded) ? null : decoded;
+        return isEmptyObject(decoded) ? null : decoded;
     }
 
     private byte[] captureOptionalApiBody(Page page, String apiUrl, String publicPageUrl, long timeout) {
@@ -304,7 +478,7 @@ public class MatchesService {
             long timeout
     ) {
         page.setDefaultTimeout(timeout);
-        var bodies = new java.util.ArrayList<byte[]>();
+        var bodies = new ArrayList<byte[]>();
         for (var apiUrl : apiUrls) {
             bodies.add(captureSingleApiBody(page, apiUrl, publicPageUrl, timeout));
         }
@@ -339,7 +513,7 @@ public class MatchesService {
                 () -> {
                     if (reload) {
                         page.reload(new Page.ReloadOptions()
-                                .setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED)
+                                .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
                                 .setTimeout(timeout));
                     } else {
                         PlaywrightUtil.navigateForApiCapture(page, publicPageUrl, timeout);
@@ -417,7 +591,7 @@ public class MatchesService {
         if (rawQuery == null || rawQuery.isBlank()) {
             return "https://www.aiscore.com/20180101";
         }
-        var date = java.util.Arrays.stream(rawQuery.split("&"))
+        var date = Arrays.stream(rawQuery.split("&"))
                 .map(part -> part.split("=", 2))
                 .filter(parts -> parts.length == 2 && "date".equals(parts[0]))
                 .map(parts -> parts[1])
@@ -457,7 +631,7 @@ public class MatchesService {
 
     private String buildOddsPublicPageUrl(String eventLink) {
         var url = URI.create(eventLink);
-        var segments = new java.util.ArrayList<>(List.of(url.getPath().split("/")));
+        var segments = new ArrayList<>(List.of(url.getPath().split("/")));
         segments.removeIf(String::isBlank);
         if (segments.isEmpty() || !"odds".equals(segments.getLast())) {
             segments.add("odds");
