@@ -17,7 +17,7 @@ public class AiscoreOddsDomInteractor {
 
     static final String BET365_LOOK_BOX_SELECTOR = ".flex.w100.borderBottom .lookBox.brb";
     static final String ODDS_MODAL_SELECTOR = ".el-dialog__wrapper.oddsDialogBox";
-    static final String MODAL_TAB_SELECTOR = ".oddsDialogBox .changTabBox .changeItem";
+    public static final String MODAL_TAB_SELECTOR = ".oddsDialogBox .changTabBox .changeItem";
 
     public static final List<DetailTab> DETAIL_TABS = List.of(
             new DetailTab("Asian Handicap", "asia"),
@@ -39,7 +39,12 @@ public class AiscoreOddsDomInteractor {
         } catch (TimeoutError ex) {
             throw new AiscoreBadGatewayException(
                     "AiScore odds provider look control was not found on page",
-                    Map.of("step", "openOddsModal")
+                    Map.of(
+                            "step", "openOddsModal",
+                            "selector", BET365_LOOK_BOX_SELECTOR,
+                            "url", page.url(),
+                            "timeoutMs", timeout
+                    )
             );
         }
         lookBox.scrollIntoViewIfNeeded();
@@ -54,9 +59,24 @@ public class AiscoreOddsDomInteractor {
                     "AiScore odds detail modal tabs were not found",
                     Map.of("step", "openOddsModal")
             );
-        } else {
-            tab.all().forEach(Locator::click);
         }
+    }
+
+    public void clickOddsDetailTab(Page page, DetailTab detailTab, long timeout) {
+        page.setDefaultTimeout(timeout);
+        Locator tab;
+        try {
+            tab = page.locator(MODAL_TAB_SELECTOR)
+                    .filter(new Locator.FilterOptions().setHasText(detailTab.tabLabel()))
+                    .first();
+            tab.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE).setTimeout(timeout));
+        } catch (TimeoutError ex) {
+            throw new AiscoreBadGatewayException(
+                    "AiScore odds detail modal tab was not found",
+                    Map.of("step", "clickOddsDetailTab", "oddsType", detailTab.oddsType())
+            );
+        }
+        tab.click();
     }
 
     /**
