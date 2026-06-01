@@ -105,7 +105,7 @@ public class EventSchedule {
         this.claimStaleAfterSeconds = Math.max(60, claimStaleAfterSeconds);
     }
 
-    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     @Transactional
     public void crawlFinishedEvents() {
         var sqlCheck = """

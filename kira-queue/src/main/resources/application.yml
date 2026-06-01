@@ -70,7 +70,7 @@ app:
   gateway:
     base-url: ${APP_GATEWAY_BASE_URL:http://192.168.2.221/gateway}
   kira-crawl:
-    base-url: ${APP_KIRA_CRAWL_BASE_URL:http://localhost:4000}
+    base-url: ${APP_KIRA_CRAWL_BASE_URL:http://localhost:4001}
     read-timeout-ms: ${APP_KIRA_CRAWL_READ_TIMEOUT_MS:300000}
 
 logging:

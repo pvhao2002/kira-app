@@ -35,7 +35,15 @@ public class PlaywrightBrowserSupport {
     private static final String DEFAULT_OPTIONS_CLOSED_COOKIE = "optionsClosed";
 
     public static Browser launchBrowser(Playwright playwright, boolean headless) {
-        return playwright.chromium().launch(launchOptions(headless));
+        return launchBrowser(playwright, headless, null);
+    }
+
+    public static Browser launchBrowser(Playwright playwright, boolean headless, String channel) {
+        var options = launchOptions(headless);
+        if (channel != null && !channel.isBlank()) {
+            options.setChannel(channel);
+        }
+        return playwright.chromium().launch(options);
     }
 
     public static BrowserContext createPreparedContext(Browser browser, PlaywrightProperties properties) {

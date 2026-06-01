@@ -35,6 +35,21 @@ class PlaywrightCrawlLanesTest {
     }
 
     @Test
+    void oddsLanesRoundRobinWhenConcurrencyAboveOne() {
+        lanes = new PlaywrightCrawlLanes(testPropertiesWithOddsConcurrency(3));
+
+        assertEquals(3, lanes.oddsLaneCount());
+        var first = lanes.lane(BrowserApiType.ODDS);
+        var second = lanes.lane(BrowserApiType.ODDS);
+        var third = lanes.lane(BrowserApiType.ODDS);
+        var fourth = lanes.lane(BrowserApiType.ODDS);
+
+        assertNotSame(first, second);
+        assertNotSame(second, third);
+        assertSame(first, fourth);
+    }
+
+    @Test
     void laneRejectsNullLookup() {
         lanes = new PlaywrightCrawlLanes(testProperties());
         assertThrows(IllegalArgumentException.class, () -> lanes.lane(null));
@@ -51,6 +66,10 @@ class PlaywrightCrawlLanesTest {
     }
 
     private static PlaywrightProperties testProperties() {
+        return testPropertiesWithOddsConcurrency(1);
+    }
+
+    private static PlaywrightProperties testPropertiesWithOddsConcurrency(int oddsConcurrency) {
         return new PlaywrightProperties(
                 true,
                 null,
@@ -64,7 +83,7 @@ class PlaywrightCrawlLanesTest {
                 "",
                 4000,
                 1,
-                1,
+                oddsConcurrency,
                 120_000L,
                 ""
         );

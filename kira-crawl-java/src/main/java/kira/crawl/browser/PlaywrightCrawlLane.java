@@ -4,6 +4,7 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.WaitUntilState;
 import kira.crawl.config.PlaywrightProperties;
 import kira.crawl.util.PlaywrightBrowserSupport;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import java.util.function.Supplier;
 public class PlaywrightCrawlLane implements AutoCloseable {
 
     private final BrowserApiType apiType;
+    private final int slot;
     private final PlaywrightProperties properties;
     private final ExecutorService driver;
     private final AtomicBoolean shutDown = new AtomicBoolean();
@@ -32,10 +34,18 @@ public class PlaywrightCrawlLane implements AutoCloseable {
     private BrowserContext context;
 
     public PlaywrightCrawlLane(BrowserApiType apiType, PlaywrightProperties properties) {
+        this(apiType, properties, 0);
+    }
+
+    public PlaywrightCrawlLane(BrowserApiType apiType, PlaywrightProperties properties, int slot) {
         this.apiType = apiType;
+        this.slot = slot;
         this.properties = properties;
         this.driver = Executors.newSingleThreadExecutor(r -> {
-            var thread = new Thread(r, "playwright-" + apiType.name().toLowerCase() + "-driver");
+            var name = apiType.name().toLowerCase()
+                    + (slot > 0 ? "-s" + slot : "")
+                    + "-driver";
+            var thread = new Thread(r, "playwright-" + name);
             thread.setDaemon(true);
             return thread;
         });
@@ -45,11 +55,34 @@ public class PlaywrightCrawlLane implements AutoCloseable {
         return apiType;
     }
 
+    int slot() {
+        return slot;
+    }
+
     void warmup() {
         call(() -> {
             ensureWarmContext();
+            if (apiType == BrowserApiType.ODDS) {
+                seedOddsLane(page -> page.navigate(
+                        "https://www.aiscore.com/",
+                        new Page.NavigateOptions()
+                                .setWaitUntil(WaitUntilState.COMMIT)
+                                .setTimeout(12_000)
+                ));
+            }
             return null;
         });
+    }
+
+    private void seedOddsLane(java.util.function.Consumer<Page> action) {
+        var page = context.newPage();
+        try {
+            action.accept(page);
+        } catch (RuntimeException ex) {
+            log.debug("ODDS lane seed navigation skipped slot={}: {}", slot, ex.getMessage());
+        } finally {
+            PlaywrightBrowserSupport.closePageQuietly(page);
+        }
     }
 
     <T> T withPage(
@@ -117,7 +150,8 @@ public class PlaywrightCrawlLane implements AutoCloseable {
             playwright = Playwright.create();
         }
         if (browser == null || !browser.isConnected()) {
-            browser = PlaywrightBrowserSupport.launchBrowser(playwright, properties.headless());
+            browser = PlaywrightBrowserSupport.launchBrowser(
+                    playwright, properties.headless(), properties.channel());
         }
         context = PlaywrightBrowserSupport.createPreparedContext(browser, properties);
     }

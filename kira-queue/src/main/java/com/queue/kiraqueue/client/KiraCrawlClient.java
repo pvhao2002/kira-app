@@ -39,7 +39,7 @@ public class KiraCrawlClient {
             throw new IllegalArgumentException("eventLink is required");
         }
 
-        var uriBuilder = UriComponentsBuilder.fromPath("/matches/v4/odds")
+        var uriBuilder = UriComponentsBuilder.fromPath("/matches/v5/odds")
                 .queryParam("event_link", eventLink);
         if (hasOddsCorner != null) {
             uriBuilder.queryParam("has_odds_corner", hasOddsCorner);

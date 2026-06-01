@@ -62,29 +62,8 @@ public class AiscoreOddsDomInteractor {
     /**
      * Triggers odds detail via in-page Vue method (faster than sequential DOM tab clicks).
      */
-    public byte[] captureOddsDetailViaEvaluate(
-            Page page,
-            String matchId,
-            String oddsType,
-            String apiUrl,
-            long timeout
-    ) {
+    public void warmOddsDetailComponent(Page page, long timeout) {
         page.setDefaultTimeout(timeout);
-        try {
-            Response response = page.waitForResponse(
-                    candidate -> ApiUrlMatcher.isSameApiRequest(candidate.url(), apiUrl),
-                    () -> triggerOddsDetailEvaluate(page, matchId, oddsType, timeout)
-            );
-            return requireOkBody(response, apiUrl);
-        } catch (TimeoutError ex) {
-            throw new AiscoreBadGatewayException(
-                    "AiScore API response was not found in page network traffic url (%s) of matchId %s and oddsType %s".formatted(apiUrl, matchId, oddsType),
-                    Map.of("apiUrl", apiUrl, "oddsType", oddsType)
-            );
-        }
-    }
-
-    private void triggerOddsDetailEvaluate(Page page, String matchId, String oddsType, long timeout) {
         page.waitForFunction(
                 """
                         () => {
@@ -106,6 +85,34 @@ public class AiscoreOddsDomInteractor {
                 null,
                 new Page.WaitForFunctionOptions().setTimeout(timeout)
         );
+    }
+
+    public byte[] captureOddsDetailViaEvaluate(
+            Page page,
+            String matchId,
+            String oddsType,
+            String apiUrl,
+            long timeout
+    ) {
+        page.setDefaultTimeout(timeout);
+        try {
+            Response response = page.waitForResponse(
+                    candidate -> ApiUrlMatcher.isSameApiRequest(candidate.url(), apiUrl),
+                    () -> triggerOddsDetailEvaluate(page, matchId, oddsType, false)
+            );
+            return requireOkBody(response, apiUrl);
+        } catch (TimeoutError ex) {
+            throw new AiscoreBadGatewayException(
+                    "AiScore API response was not found in page network traffic url (%s) of matchId %s and oddsType %s".formatted(apiUrl, matchId, oddsType),
+                    Map.of("apiUrl", apiUrl, "oddsType", oddsType)
+            );
+        }
+    }
+
+    private void triggerOddsDetailEvaluate(Page page, String matchId, String oddsType, boolean waitForComponent) {
+        if (waitForComponent) {
+            warmOddsDetailComponent(page, 2_500);
+        }
 
         page.evaluate(
                 """
