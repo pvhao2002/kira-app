@@ -17,6 +17,7 @@ import kira.crawl.dto.*;
 import kira.crawl.mapper.MatchMapper;
 import kira.crawl.mapper.OddsMapper;
 import kira.crawl.protobuf.AiscoreProtobufService;
+import kira.crawl.util.PlaywrightBrowserSupport;
 import kira.crawl.util.PlaywrightUtil;
 import kira.crawl.util.PlaywrightUtils;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,8 @@ public class MatchesService {
     public static final String TEAM_STATS_API_BASE_URL_V2 = "web/api/match/team_stats";
 
     public static final long TIME_OUT = 30000;
+    /** Per-step timeout for odds v5 (lean path; keep low for fast fail). */
+    public static final long ODDS_V5_STEP_TIMEOUT_MS = 8_000L;
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -114,6 +117,108 @@ public class MatchesService {
             }
         });
         return state.toDto();
+    }
+
+    /**
+     * Odds v5: one {@link PlaywrightUtils#withPlaywright} browser/context per request; wait for
+     * {@code odds_list} during lean navigation, then bet365-only context API detail fetches ({@code cid=2}).
+     * No DOM modal. Response shape matches v2.
+     */
+    public CrawlMatchOddsV2Dto getOddsV5(String eventLink, Boolean hasOddsCorner) {
+        var publicPageUrl = parseAndValidateEventLink(eventLink).toString();
+        var oddsPageUrl = buildOddsPublicPageUrl(publicPageUrl);
+        var matchId = extractMatchIdFromEventLink(publicPageUrl);
+        var timeout = Math.min(playwrightProperties.browserTimeoutMs(), ODDS_V5_STEP_TIMEOUT_MS);
+        var includeCorner = Boolean.TRUE.equals(hasOddsCorner);
+        var result = new AtomicReference<CrawlMatchOddsV2Dto>();
+        var capture = new MatchOddsV2CaptureState(matchId);
+
+        PlaywrightUtils.withPlaywright(oddsPageUrl, (page, referer) -> {
+            installOddsV5LeanNetwork(page);
+            page.setDefaultTimeout(timeout);
+            page.setDefaultNavigationTimeout(timeout);
+            page.onResponse(res -> handleOddsV5ResponseSafely(page, res, hasOddsCorner, capture));
+
+            byte[] oddsListBody;
+            try {
+                oddsListBody = captureSingleApiBody(page, buildOddsListApiUrl(matchId), referer, timeout);
+            } catch (RuntimeException ex) {
+                log.debug("getOddsV5 odds_list capture failed matchId={}: {}", matchId, ex.getMessage());
+                result.set(emptyOddsV2Dto());
+                return;
+            }
+
+            var oddsList = protobufService.decodeMatchOdds(oddsListBody);
+            if (!oddsMapper.hasBet365Company(oddsList) || !oddsMapper.hasAsiaMarketAndOverUnder(oddsList)) {
+                result.set(emptyOddsV2Dto());
+                return;
+            }
+
+            var oddsDetails = capture.oddsDone
+                    ? new OddsMapper.OddsDetails(capture.asia, null, capture.bs, capture.corner)
+                    : captureOddsDetailTabs(page, matchId, referer, timeout, includeCorner, false);
+            var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
+            if (timelineOdds.isEmpty()) {
+                result.set(emptyOddsV2Dto());
+                return;
+            }
+
+            var pageInfo = readMatchPageInfoBestEffort(page, Math.min(timeout, 1_000L));
+            var teamStatsBody = contextApiClient.getOptional(
+                    page, buildTeamStatsApiUrl(matchId), publicPageUrl, timeout);
+            result.set(buildOddsV2Dto(matchId, pageInfo, oddsDetails, timelineOdds, teamStatsBody));
+        }, ex -> {
+            if (ex instanceof TimeoutError) {
+                log.warn("getOddsV5 timed out matchId={} timeoutMs={}", matchId, timeout);
+                result.set(emptyOddsV2Dto());
+                return;
+            }
+            throw ex instanceof RuntimeException re ? re : new RuntimeException(ex);
+        });
+
+        return result.get() != null ? result.get() : emptyOddsV2Dto();
+    }
+
+    private void handleOddsV5ResponseSafely(
+            Page page,
+            Response response,
+            Boolean hasOddsCorner,
+            MatchOddsV2CaptureState state
+    ) {
+        var url = response.url();
+        if (url.contains(ODDS_DETAIL_API_BASE_URL_V2) && !isBet365OddsDetailUrl(url)) {
+            return;
+        }
+        if (url.contains(TEAM_STATS_API_BASE_URL_V2)) {
+            handleOddsResponseSafely(page, response, hasOddsCorner, state);
+            return;
+        }
+        if (url.contains(ODDS_DETAIL_API_BASE_URL_V2) || url.contains(ODDS_LIST_API_BASE_URL_V2)) {
+            handleOddsResponseSafely(page, response, hasOddsCorner, state);
+        }
+    }
+
+    private static boolean isBet365OddsDetailUrl(String url) {
+        return url.contains("cid=2") || url.contains("cid%3D2");
+    }
+
+    private void installOddsV5LeanNetwork(Page page) {
+        page.context().route("**/*", route -> {
+            if (PlaywrightBrowserSupport.shouldBlockResourceType(route.request().resourceType())) {
+                route.abort();
+                return;
+            }
+            route.resume();
+        });
+    }
+
+    private MatchPageInfo readMatchPageInfoBestEffort(Page page, long timeout) {
+        try {
+            return readMatchPageInfo(page, timeout);
+        } catch (RuntimeException ex) {
+            log.debug("getOddsV5 readMatchPageInfo skipped: {}", ex.getMessage());
+            return new MatchPageInfo("-", null, List.of(), List.of());
+        }
     }
 
     public CrawlMatchOddsV2Dto getOddsV4(String eventLink, Boolean hasOddsCorner) {

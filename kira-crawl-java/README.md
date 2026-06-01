@@ -127,6 +127,20 @@ Fixture query format: pipe-separated `eventLink,hasOddsCorner` pairs (`true` or 
 
 Response JSON includes `totalDurationMs`, `parallel`, `fixtureCount`, and per-link `eventLink`, `hasOddsCorner`, `durationMs`, `matchId`, `ok`, `error`.
 
+## Odds v5 API
+
+`GET /matches/v5/odds?event_link=...&has_odds_corner=true|false` — bet365-only (`cid=2`), one Playwright browser/context per request, network-first capture (target crawl &lt; 3s). Response shape matches v2 (`CrawlMatchOddsV2Dto`).
+
+```bash
+curl "http://localhost:4000/matches/v5/odds?event_link=https://www.aiscore.com/match-maccabi-tel-aviv-maccabi-haifa/edq09imvdooteqx&has_odds_corner=false"
+```
+
+Benchmark (same fixtures as v4):
+
+```bash
+curl "http://localhost:4000/test/matches/v5/benchmark"
+```
+
 ### 3 instances in parallel (shell)
 
 With three JVMs on ports 4001–4003:

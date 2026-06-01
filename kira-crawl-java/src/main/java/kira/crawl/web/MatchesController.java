@@ -104,6 +104,22 @@ public class MatchesController {
         );
     }
 
+    @GetMapping("v5/odds")
+    @Operation(summary = "Crawl bet365 odds (v5, network-first, one browser per request)")
+    public WebAsyncTask<Object> getOddsV5(@RequestParam(name = "event_link") String eventLink,
+                                          @RequestParam(name = "has_odds_corner", required = false) Boolean hasOddsCorner) {
+        var logParams = logParams(
+                "eventLinkSuffix", eventLinkSuffix(eventLink),
+                "hasOddsCorner", hasOddsCorner == null ? null : String.valueOf(hasOddsCorner)
+        );
+        return crawlTask(
+                "oddsV5",
+                playwrightProperties.oddsAsyncTimeoutMs(),
+                logParams,
+                () -> matchesService.getOddsV5(eventLink, hasOddsCorner)
+        );
+    }
+
     @GetMapping("/odds")
     @Operation(summary = "Crawl odds for a single match")
     public WebAsyncTask<Object> findMatchOdds(
