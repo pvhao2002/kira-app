@@ -62,8 +62,6 @@ public class PlaywrightBrowserSupport {
                 "--no-default-browser-check",
                 "--disable-infobars",
                 "--disable-dev-shm-usage",
-                "--disable-background-networking",
-                "--disable-renderer-backgrounding",
                 "--window-size=%d,%d".formatted(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
         ));
         if (headless) {

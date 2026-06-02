@@ -59,6 +59,8 @@ public class AiscoreOddsDomInteractor {
                     "AiScore odds detail modal tabs were not found",
                     Map.of("step", "openOddsModal")
             );
+        } else {
+            tab.all().forEach(Locator::click);
         }
     }
 
