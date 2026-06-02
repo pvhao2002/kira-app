@@ -31,7 +31,7 @@ public class PlaywrightUtils {
     /**
      * Launch options giống trình duyệt thật: tắt cờ automation, dùng Chrome nếu có.
      */
-    private static BrowserType.LaunchOptions launchOptions(boolean headless) {
+    public static BrowserType.LaunchOptions launchOptions(boolean headless) {
         return new BrowserType.LaunchOptions()
                 .setHeadless(headless)
                 .setArgs(List.of(
@@ -46,7 +46,7 @@ public class PlaywrightUtils {
     /**
      * Context options giống user thật: viewport, locale, timezone.
      */
-    private static Browser.NewContextOptions contextOptions() {
+    public static Browser.NewContextOptions contextOptions() {
         return new Browser.NewContextOptions()
                 .setUserAgent(USER_AGENT)
                 .setViewportSize(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
@@ -61,7 +61,7 @@ public class PlaywrightUtils {
     /**
      * Script chạy trước mỗi page: giảm phát hiện automation.
      */
-    private static final String INIT_SCRIPT_STEALTH = """
+    public static final String INIT_SCRIPT_STEALTH = """
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             window.chrome = window.chrome || { runtime: {} };
             """;
@@ -84,7 +84,7 @@ public class PlaywrightUtils {
     public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic, Consumer<Exception> errorHandler) {
         try (
                 var p = Playwright.create();
-                var b = p.chromium().launch(launchOptions(true));
+                var b = p.chromium().launch(launchOptions(false));
                 BrowserContext context = b.newContext(contextOptions())) {
             addDefaultContextCookies(context);
             context.addInitScript(INIT_SCRIPT_STEALTH);

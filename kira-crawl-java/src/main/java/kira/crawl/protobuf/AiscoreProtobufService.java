@@ -55,11 +55,21 @@ public class AiscoreProtobufService {
     }
 
     public JsonNode decodeMatchOddsDetail(byte[] body) {
+        if (body == null || body.length == 0) {
+            return JSON.nullNode();
+        }
         return decodeMessage("MatchOddsDetail", body);
     }
 
     public JsonNode decodeMatchTeamStats(byte[] body) {
+        if (body == null || body.length == 0) {
+            return JSON.nullNode();
+        }
         return decodeMessage("MatchTeamStats", body);
+    }
+
+    public JsonNode decodeWebMatchData(byte[] body) {
+        return decodeMessage("WebMatchData", body);
     }
 
     private JsonNode decodeMessage(String messageName, byte[] body) {

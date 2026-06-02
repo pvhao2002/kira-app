@@ -102,6 +102,13 @@ public class MatchMapper {
         );
     }
 
+    public CrawlEventResultDto mapEventResultFromCrawl(List<Integer> homeScores, List<Integer> awayScores, JsonNode teamStats) {
+        if (teamStats != null && !JsonRecords.isEmptyObject(teamStats)) {
+            return mapEventResultForDatabase(homeScores, awayScores, teamStats);
+        }
+        return mapResultForDatabase(homeScores, awayScores);
+    }
+
     public CrawlEventResultDto mapResultForDatabase(List<Integer> homeScores, List<Integer> awayScores) {
         var htHomeGoal = getScore(homeScores, 1);
         var htAwayGoal = getScore(awayScores, 1);

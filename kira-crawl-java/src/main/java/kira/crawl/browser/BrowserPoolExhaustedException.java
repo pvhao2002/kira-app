@@ -1,5 +1,8 @@
 package kira.crawl.browser;
 
+import lombok.Getter;
+
+@Getter
 public class BrowserPoolExhaustedException extends RuntimeException {
 
     private final BrowserApiType apiType;
@@ -9,7 +12,4 @@ public class BrowserPoolExhaustedException extends RuntimeException {
         this.apiType = apiType;
     }
 
-    public BrowserApiType getApiType() {
-        return apiType;
-    }
 }

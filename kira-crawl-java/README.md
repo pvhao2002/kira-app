@@ -23,19 +23,22 @@ Health: http://localhost:3000/actuator/health
 | Endpoint | Description |
 |----------|-------------|
 | `GET /matches?date=YYYYMMDD&sport_id=1&lang=2&tz=07:00` | Crawl match list for a date |
-| `GET /matches/odds?event_link=https://www.aiscore.com/...` | Crawl odds for one match |
+| `GET /matches/odds?event_link=https://www.aiscore.com/...` | Crawl odds for one match (v1: isolated Playwright + network capture) |
+| `GET /matches/odds/v2?event_link=https://www.aiscore.com/...` | Crawl odds for one match (v2: warm Playwright lane + console fetch, no per-request navigation) |
 | `GET /matches/odds?event_link=...&has_odds_corner=false` | Skip corner odds detail capture when the match has no corner market |
 
 ## Concurrency
 
-Production `/matches` and `/matches/odds` use **two dedicated Playwright crawl lanes** (`PlaywrightCrawlLanes`):
+Production `/matches` and `/matches/odds/v2` use **dedicated Playwright crawl lanes** (`PlaywrightCrawlLanes`):
 
 | Lane | Driver thread | API |
 |------|---------------|-----|
 | `playwright-matches-driver` | 1 warm browser context | `GET /matches` |
-| `playwright-odds-driver` | 1 warm browser context | `GET /matches/odds` |
+| `playwright-odds-driver` (×N, max 5) | N warm browser contexts | `GET /matches/odds/v2` |
 
-Each lane processes requests **sequentially** (one crawl at a time per API). The two lanes run **in parallel** — an odds crawl does not block a matches crawl. Browsers and contexts are warmed at startup; each request only opens/closes a page tab.
+`GET /matches/odds` (v1) still spins up an isolated Playwright instance per request.
+
+Each lane processes requests **sequentially** on its driver thread. ODDS lanes are **warmed to `https://www.aiscore.com/`** at startup; v2 crawls use in-page `fetch()` only (no navigation to match/odds pages). With `AISCORE_ODDS_CONCURRENCY=5`, up to **5 odds v2 crawls** run in parallel (round-robin across lanes). The matches lane runs in parallel with odds lanes.
 
 Non-essential assets (`image`, `font`, `media`) are blocked via lean network routing.
 
@@ -48,7 +51,7 @@ HTTP handlers use virtual threads (`spring.threads.virtual.enabled=true`); Playw
 
 `PLAYWRIGHT_UTIL_CONTEXT_POOL_SIZE` applies only to legacy `PlaywrightUtil.withCrawlPage` / dev helpers, not production crawl lanes.
 
-Legacy env vars `AISCORE_MATCHES_CONCURRENCY` / `AISCORE_ODDS_CONCURRENCY` and `AISCORE_PROFILE_BASE_DIR` are unused by the current crawl path.
+| `AISCORE_ODDS_CONCURRENCY` | `5` | Number of warm ODDS Playwright lanes for `/matches/odds/v2` (capped at 5) |
 
 ## Environment variables
 
@@ -113,33 +116,6 @@ curl "http://localhost:4000/test/matches/benchmark?base_url=http://localhost:400
 | `MATCHES_BENCHMARK_BASE_URL` | (empty) | Target base URL; if empty, uses `http://localhost:{server.port}` |
 
 Response JSON includes `totalDurationMs`, `baseUrl`, and per-date `durationMs`, `httpStatus`, `responseBytes`, `ok`, `error` (no full match payload).
-
-## Odds v4 benchmark
-
-Direct-service benchmark: **6 parallel calls** to `MatchesService.getOddsV4` (default fixtures are built-in AiScore match links with `hasOddsCorner` true/false). Measures per-link wall-clock `durationMs` under concurrent load on the shared Playwright driver.
-
-```bash
-curl "http://localhost:4000/test/matches/v4/benchmark"
-curl "http://localhost:4000/test/matches/v4/benchmark?fixtures=https://www.aiscore.com/match-sk-treibach-sc-gleisdorf/527r3i4954pu47e,true|https://www.aiscore.com/match-elfsborg-mjallby-aif/g6763i5lw3jio7r,false"
-```
-
-Fixture query format: pipe-separated `eventLink,hasOddsCorner` pairs (`true` or `false`). Override count: 1–10 fixtures.
-
-Response JSON includes `totalDurationMs`, `parallel`, `fixtureCount`, and per-link `eventLink`, `hasOddsCorner`, `durationMs`, `matchId`, `ok`, `error`.
-
-## Odds v5 API
-
-`GET /matches/v5/odds?event_link=...&has_odds_corner=true|false` — bet365-only (`cid=2`), one Playwright browser/context per request, network-first capture (target crawl &lt; 3s). Response shape matches v2 (`CrawlMatchOddsV2Dto`).
-
-```bash
-curl "http://localhost:4000/matches/v5/odds?event_link=https://www.aiscore.com/match-maccabi-tel-aviv-maccabi-haifa/edq09imvdooteqx&has_odds_corner=false"
-```
-
-Benchmark (same fixtures as v4):
-
-```bash
-curl "http://localhost:4000/test/matches/v5/benchmark"
-```
 
 ### 3 instances in parallel (shell)
 
