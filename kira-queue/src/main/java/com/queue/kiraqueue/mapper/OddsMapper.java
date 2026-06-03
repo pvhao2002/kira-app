@@ -1,12 +1,11 @@
-package kira.crawl.mapper;
+package com.queue.kiraqueue.mapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import kira.crawl.dto.CrawlOddsSnapshotDto;
-import kira.crawl.dto.CrawlOddsTimelineGroupDto;
-import kira.crawl.dto.CrawlOddsTimelineItemDto;
+import com.queue.kiraqueue.dto.aiscore.CrawlOddsSnapshotDto;
+import com.queue.kiraqueue.dto.aiscore.CrawlOddsTimelineGroupDto;
+import com.queue.kiraqueue.dto.aiscore.CrawlOddsTimelineItemDto;
+import com.queue.kiraqueue.util.JsonRecords;
 import org.springframework.stereotype.Component;
-
-import kira.crawl.util.JsonRecords;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -15,9 +14,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import static kira.crawl.util.JsonRecords.*;
+import static com.queue.kiraqueue.util.JsonRecords.*;
 
 @Component
 public class OddsMapper {

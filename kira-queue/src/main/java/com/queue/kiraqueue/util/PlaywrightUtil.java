@@ -31,7 +31,7 @@ public class PlaywrightUtil {
     /**
      * Launch options giống trình duyệt thật: tắt cờ automation, dùng Chrome nếu có.
      */
-    private static BrowserType.LaunchOptions launchOptions(boolean headless) {
+    public static BrowserType.LaunchOptions launchOptions(boolean headless) {
         var opts = new BrowserType.LaunchOptions()
                 .setHeadless(headless)
                 .setArgs(List.of(
@@ -52,7 +52,7 @@ public class PlaywrightUtil {
     /**
      * Context options giống user thật: viewport, locale, timezone.
      */
-    private static Browser.NewContextOptions contextOptions() {
+    public static Browser.NewContextOptions contextOptions() {
         return new Browser.NewContextOptions()
                 .setUserAgent(USER_AGENT)
                 .setViewportSize(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
@@ -67,7 +67,7 @@ public class PlaywrightUtil {
     /**
      * Script chạy trước mỗi page: giảm phát hiện automation.
      */
-    private static final String INIT_SCRIPT_STEALTH = """
+    public static final String INIT_SCRIPT_STEALTH = """
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             window.chrome = window.chrome || { runtime: {} };
             """;

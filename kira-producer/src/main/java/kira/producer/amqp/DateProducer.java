@@ -16,9 +16,4 @@ public class DateProducer {
         log.info("kira-producer >> Sending date for event crawling: " + date);
         rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY_DATE, date);
     }
-
-    public void sendDateTomorrow(String date) {
-        log.info("kira-producer >> Sending date for tomorrow event crawling: " + date);
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY_DATE_TOMORROW, date);
-    }
 }

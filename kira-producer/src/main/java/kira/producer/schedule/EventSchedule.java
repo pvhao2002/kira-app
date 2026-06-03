@@ -108,12 +108,6 @@ public class EventSchedule {
     @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     @Transactional
     public void crawlFinishedEvents() {
-        var sqlCheck = """
-                SELECT COUNT(1)
-                FROM crawl_date
-                WHERE status <> 'done'
-                """;
-        Integer pendingCrawlCount = jdbcTemplate.queryForObject(sqlCheck, new MapSqlParameterSource(), Integer.class);
         publishEvents(
                 "crawlFinishedEvents",
                 FINISHED_BATCH_LIMIT,
@@ -137,9 +131,10 @@ public class EventSchedule {
                     .formatted(jobName, RabbitMQConfig.QUEUE_ODD, QUEUE_MAX_MESSAGES));
             return;
         }
+        var finalLimit = batchLimit - queueBackpressureService.getQueueSize(RabbitMQConfig.QUEUE_ODD);
 
         var params = new MapSqlParameterSource()
-                .addValue("batch_limit", batchLimit)
+                .addValue("batch_limit", finalLimit)
                 .addValue("claimStaleAfterSeconds", claimStaleAfterSeconds);
 
         List<String> eventIds = jdbcTemplate.query(selectSql, params, (rs, rowNum) -> rs.getString("event_id"));

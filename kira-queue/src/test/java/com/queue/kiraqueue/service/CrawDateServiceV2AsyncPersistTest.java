@@ -1,7 +1,7 @@
 package com.queue.kiraqueue.service;
 
-import com.queue.kiraqueue.client.KiraCrawlClient;
-import com.queue.kiraqueue.dto.crawl.MatchesResponse;
+import com.queue.kiraqueue.crawl.DateCrawlService;
+import com.queue.kiraqueue.dto.aiscore.MatchesResponseDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,7 +33,7 @@ class CrawDateServiceV2AsyncPersistTest {
     private NamedParameterJdbcTemplate jdbcTemplate;
 
     @Mock
-    private KiraCrawlClient kiraCrawlClient;
+    private DateCrawlService dateCrawlService;
 
     @Mock
     private AiscoreMatchStatusLabelCache statusLabelCache;
@@ -59,10 +59,10 @@ class CrawDateServiceV2AsyncPersistTest {
             order.add("persist-finished");
         }, "test-persist").start();
 
-        when(kiraCrawlClient.fetchMatches("2025-05-25"))
-                .thenReturn(new MatchesResponse("2025-05-25", 1, 2, "07:00", 0, List.of()));
+        when(dateCrawlService.crawlDate("2025-05-25"))
+                .thenReturn(new MatchesResponseDto("2025-05-25", 1, 2, "07:00", 0, List.of(), null));
 
-        var service = new CrawDateServiceV2(jdbcTemplate, kiraCrawlClient, asyncExecutor, statusLabelCache);
+        var service = new CrawDateServiceV2(jdbcTemplate, dateCrawlService, asyncExecutor, statusLabelCache);
         service.crawlDate(List.of("2025-05-25"));
         order.add("crawl-returned");
 
@@ -87,10 +87,10 @@ class CrawDateServiceV2AsyncPersistTest {
         Executor inlineExecutor = Runnable::run;
         lenient().when(statusLabelCache.resolveStatus(any(), anyString()))
                 .thenAnswer(inv -> inv.getArgument(1) != null ? inv.getArgument(1) : "-");
-        when(kiraCrawlClient.fetchMatches("2025-05-25"))
+        when(dateCrawlService.crawlDate("2025-05-25"))
                 .thenThrow(new IllegalStateException("crawl down"));
 
-        var service = new CrawDateServiceV2(jdbcTemplate, kiraCrawlClient, inlineExecutor, statusLabelCache);
+        var service = new CrawDateServiceV2(jdbcTemplate, dateCrawlService, inlineExecutor, statusLabelCache);
         service.crawlDate(List.of("2025-05-25"));
 
         var paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);

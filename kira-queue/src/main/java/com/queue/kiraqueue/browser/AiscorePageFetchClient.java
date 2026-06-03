@@ -1,21 +1,24 @@
-package kira.crawl.browser;
+package com.queue.kiraqueue.browser;
 
 import com.microsoft.playwright.Page;
-import kira.crawl.config.PlaywrightProperties;
-import kira.crawl.service.AiscoreBadGatewayException;
+import com.queue.kiraqueue.config.AiscoreBadGatewayException;
+import com.queue.kiraqueue.config.PlaywrightProperties;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 /**
  * Fetches AiScore protobuf APIs via in-page {@code fetch()} (console evaluate).
  */
 @Component
 @RequiredArgsConstructor
+@Log
 public class AiscorePageFetchClient {
 
     public static final String ORIGIN = "https://www.aiscore.com";
@@ -117,6 +120,7 @@ public class AiscorePageFetchClient {
             );
             return decodeResultBody(result);
         } catch (RuntimeException ex) {
+            log.log(Level.WARNING, "Fetching AiScore API failed for url: " + apiUrl, ex);
             return null;
         }
     }

@@ -1,8 +1,8 @@
-package kira.crawl.mapper;
+package com.queue.kiraqueue.mapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import kira.crawl.dto.*;
-import kira.crawl.util.JsonRecords;
+import com.queue.kiraqueue.dto.aiscore.*;
+import com.queue.kiraqueue.util.JsonRecords;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -10,7 +10,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static kira.crawl.util.JsonRecords.*;
+import static com.queue.kiraqueue.util.JsonRecords.*;
+
 
 @Component
 public class MatchMapper {

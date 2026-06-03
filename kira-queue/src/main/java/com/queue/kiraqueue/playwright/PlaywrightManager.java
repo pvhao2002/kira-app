@@ -1,4 +1,4 @@
-package kira.crawl.playwright;
+package com.queue.kiraqueue.playwright;
 
 import org.springframework.stereotype.Service;
 
@@ -12,8 +12,8 @@ public class PlaywrightManager {
     private static final String EVENT_LANE = "event";
 
     public PlaywrightManager() {
-        laneMap.put(DATE_LANE, new PlaywrightLane());
-        laneMap.put(EVENT_LANE, new PlaywrightLane());
+        laneMap.put(DATE_LANE, new PlaywrightLane(DATE_LANE));
+        laneMap.put(EVENT_LANE, new PlaywrightLane(EVENT_LANE));
     }
 
     public PlaywrightLane getLane(String lane) {

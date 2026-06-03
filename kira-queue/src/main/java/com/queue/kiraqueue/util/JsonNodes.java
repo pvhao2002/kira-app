@@ -1,4 +1,4 @@
-package kira.crawl.util;
+package com.queue.kiraqueue.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;

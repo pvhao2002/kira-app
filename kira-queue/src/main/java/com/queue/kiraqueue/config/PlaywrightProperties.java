@@ -1,4 +1,4 @@
-package kira.crawl.config;
+package com.queue.kiraqueue.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

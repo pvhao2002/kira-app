@@ -1,12 +1,11 @@
-package kira.crawl.protobuf;
+package com.queue.kiraqueue.protobuf;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.queue.kiraqueue.config.AiscoreBadGatewayException;
 import jakarta.annotation.PostConstruct;
-import kira.crawl.service.AiscoreBadGatewayException;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -47,6 +46,9 @@ public class AiscoreProtobufService {
     }
 
     public JsonNode decodeMatchOdds(byte[] body) {
+        if (body == null || body.length == 0) {
+            return JSON.nullNode();
+        }
         return decodeMessage("MatchOdds", body);
     }
 

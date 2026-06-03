@@ -44,7 +44,7 @@ public class DateSchedule {
     public void crawlTomorrowEvent() {
         for (var date : List.of(DateUtil.getTomorrowDate())) {
             try {
-                dateProducer.sendDateTomorrow(date);
+                dateProducer.sendDate(date);
                 jdbcTemplate.update(
                         """
                                 insert into crawl_date (date, status, total_events) values (:date, 'picked', 0)

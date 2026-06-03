@@ -1,4 +1,4 @@
-package kira.crawl.service;
+package com.queue.kiraqueue.config;
 
 import java.util.Map;
 

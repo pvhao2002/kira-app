@@ -3,15 +3,12 @@ package kira.crawl.service;
 import kira.crawl.browser.AiscorePageFetchClient;
 import kira.crawl.dto.MatchesResponseDto;
 import kira.crawl.mapper.MatchMapper;
-import kira.crawl.playwright.PlaywrightLane;
 import kira.crawl.playwright.PlaywrightManager;
 import kira.crawl.protobuf.AiscoreProtobufService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
-import static kira.crawl.util.JsonRecords.*;
+import static kira.crawl.util.JsonRecords.asArray;
 
 @Service
 @RequiredArgsConstructor

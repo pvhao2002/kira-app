@@ -1,6 +1,6 @@
 package com.queue.kiraqueue.dto;
 
-import com.queue.kiraqueue.service.CrawDateService;
+import com.queue.kiraqueue.service.deprecated.CrawDateService;
 import com.queue.kiraqueue.util.CountryCodeShortUtil;
 import com.queue.kiraqueue.util.DateUtil;
 import com.queue.kiraqueue.util.PlaywrightUtil;

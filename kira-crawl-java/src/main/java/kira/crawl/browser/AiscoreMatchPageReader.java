@@ -1,4 +1,4 @@
-package com.queue.kiraqueue.browser;
+package kira.crawl.browser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,19 +7,18 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.RequestOptions;
 import com.microsoft.playwright.options.WaitUntilState;
-import com.queue.kiraqueue.config.PlaywrightProperties;
-import com.queue.kiraqueue.dto.aiscore.AiscoreMatchPageInfo;
-import com.queue.kiraqueue.protobuf.AiscoreProtobufService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import kira.crawl.config.PlaywrightProperties;
+import kira.crawl.dto.AiscoreMatchPageInfo;
+import kira.crawl.protobuf.AiscoreProtobufService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.queue.kiraqueue.util.JsonRecords.numberArray;
-import static com.queue.kiraqueue.util.JsonRecords.numberValue;
-
+import static kira.crawl.util.JsonRecords.numberArray;
+import static kira.crawl.util.JsonRecords.numberValue;
 
 @Component
 @RequiredArgsConstructor
@@ -222,7 +221,8 @@ public class AiscoreMatchPageReader {
         if (path == null || path.isBlank()) {
             return "/";
         }
-        return path.endsWith("/") && path.length() > 1 ? path.substring(0, path.length() - 1) : path;
+        var normalized = path.endsWith("/") && path.length() > 1 ? path.substring(0, path.length() - 1) : path;
+        return normalized.isEmpty() ? "/" : normalized;
     }
 
     private static boolean pageUrlContainsMatchId(Page page, String matchId) {

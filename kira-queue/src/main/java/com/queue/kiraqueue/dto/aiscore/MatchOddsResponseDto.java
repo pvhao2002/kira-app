@@ -1,4 +1,4 @@
-package kira.crawl.dto;
+package com.queue.kiraqueue.dto.aiscore;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -19,6 +19,7 @@ public record MatchOddsResponseDto(
     public boolean isEmpty() {
         return matchId == null || matchId.isBlank();
     }
+
     public static MatchOddsResponseDto empty() {
         return new MatchOddsResponseDto(null, null, null, List.of(), null, Map.of());
     }

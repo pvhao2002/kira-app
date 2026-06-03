@@ -52,17 +52,10 @@ public class EventCrawlService {
         }
         var oddsDetails = fetchOddsDetailTabs(page, matchId);
         var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
-        var teamStatsBody = aiscorePageFetchClient.fetchOptional(page, teamStatsUrl);
-        var teamStats = aiscoreProtobufService.decodeMatchTeamStats(teamStatsBody);
-        var eventResult = matchMapper.mapEventResultFromCrawl(
-                List.of(),
-                List.of(),
-                teamStats
-        );
         var response = new MatchOddsResponseDto(
                 matchId,
-                new CrawlMatchOddsEventDto(null, 0),
-                eventResult,
+                null,
+                null,
                 !timelineOdds.isEmpty()
                         ? oddsMapper.mapOddsForDatabase(oddsDetails)
                         : oddsMapper.mapOddsListForDatabase(oddsList),

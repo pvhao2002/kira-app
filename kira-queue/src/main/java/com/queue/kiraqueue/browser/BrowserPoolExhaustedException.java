@@ -1,4 +1,4 @@
-package kira.crawl.browser;
+package com.queue.kiraqueue.browser;
 
 import lombok.Getter;
 

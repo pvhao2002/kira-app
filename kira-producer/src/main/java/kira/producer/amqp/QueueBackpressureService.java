@@ -14,14 +14,18 @@ public class QueueBackpressureService {
     private final RabbitTemplate rabbitTemplate;
 
     public boolean isQueueOverLimit(String queueName, int maxMessages) {
-        Integer count = rabbitTemplate.execute(channel -> {
-            AMQP.Queue.DeclareOk declareOk = channel.queueDeclarePassive(queueName);
-            return declareOk == null ? null : declareOk.getMessageCount();
-        });
+        Integer count = getQueueSize(queueName);
         if (count == null) {
             log.warning("Cannot read message count for queue " + queueName + ", continue scheduling.");
             return false;
         }
         return count > maxMessages;
+    }
+
+    public Integer getQueueSize(String queueName) {
+        return rabbitTemplate.execute(channel -> {
+            AMQP.Queue.DeclareOk declareOk = channel.queueDeclarePassive(queueName);
+            return declareOk == null ? null : declareOk.getMessageCount();
+        });
     }
 }

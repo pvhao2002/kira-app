@@ -11,7 +11,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Component
 @RequiredArgsConstructor
 public class KiraCrawlClient {
-
     private final RestClient kiraCrawlRestClient;
 
     public MatchesResponse fetchMatches(String date) {

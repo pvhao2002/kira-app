@@ -1,22 +1,21 @@
-package kira.crawl.service;
+package com.queue.kiraqueue.crawl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.microsoft.playwright.Page;
-import kira.crawl.browser.AiscorePageFetchClient;
-import kira.crawl.dto.CrawlMatchOddsEventDto;
-import kira.crawl.dto.MatchOddsResponseDto;
-import kira.crawl.mapper.MatchMapper;
-import kira.crawl.mapper.OddsMapper;
-import kira.crawl.playwright.PlaywrightManager;
-import kira.crawl.protobuf.AiscoreProtobufService;
+import com.queue.kiraqueue.browser.AiscorePageFetchClient;
+import com.queue.kiraqueue.dto.aiscore.MatchOddsResponseDto;
+import com.queue.kiraqueue.mapper.OddsMapper;
+import com.queue.kiraqueue.playwright.PlaywrightLane;
+import com.queue.kiraqueue.playwright.PlaywrightManager;
+import com.queue.kiraqueue.protobuf.AiscoreProtobufService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 
-import static kira.crawl.util.JsonRecords.isEmptyObject;
+import static com.queue.kiraqueue.util.JsonRecords.isEmptyObject;
+
 
 @Service
 @RequiredArgsConstructor
@@ -25,22 +24,26 @@ public class EventCrawlService {
     private final PlaywrightManager playwrightManager;
     private final AiscorePageFetchClient aiscorePageFetchClient;
     private final AiscoreProtobufService aiscoreProtobufService;
-    private final MatchMapper matchMapper;
     private final OddsMapper oddsMapper;
 
     private static final String ODD_LIST = "https://api.aiscore.com/v1/web/api/match/odds_list?match_id=%s&code=195";
     private static final String ODD_DETAIL = "https://api.aiscore.com/v1/web/api/match/odds/detail?match_id=%s&cid=2&odds_type=%s";
-    private static final String TEAM_STATS = "https://api.aiscore.com/v1/web/api/match/team_stats?match_id=%s";
     private static final List<String> ODDS_TYPE_LIST = List.of("asia", "bs", "corner");
+    private static final double DEFAULT_WAIT_MS = 100;
 
-    public Object crawlEvent(String matchId) {
+    public MatchOddsResponseDto crawlEvent(String matchId) {
         long crawlStart = System.nanoTime();
         var lane = playwrightManager.getEventLane();
-        var page = lane.getPage();
         var oddListUrl = ODD_LIST.formatted(matchId);
-        var teamStatsUrl = TEAM_STATS.formatted(matchId);
-
-        var oddListBody = aiscorePageFetchClient.fetchOptional(page, oddListUrl);
+        var oddListBody = fetchOddsListWithRetry(lane, oddListUrl);
+        if (oddListBody == null || oddListBody.length == 0) {
+            log.warn(
+                    "MatchOdds timing summary matchId={} outcome=fetchFailed totalSec={}",
+                    matchId,
+                    formatDurationSec(crawlStart)
+            );
+            return MatchOddsResponseDto.empty();
+        }
         var oddsList = aiscoreProtobufService.decodeMatchOdds(oddListBody);
         if (!oddsMapper.hasBet365Company(oddsList)) {
             log.info(
@@ -48,9 +51,12 @@ public class EventCrawlService {
                     matchId,
                     formatDurationSec(crawlStart)
             );
-            return Map.of();
+            return MatchOddsResponseDto.empty();
         }
-        var oddsDetails = fetchOddsDetailTabs(page, matchId);
+        var oddsDetails = lane.withPage(page -> {
+            page.waitForTimeout(DEFAULT_WAIT_MS);
+            return fetchOddsDetailTabs(page, matchId);
+        });
         var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
         var response = new MatchOddsResponseDto(
                 matchId,
@@ -70,12 +76,22 @@ public class EventCrawlService {
         return response;
     }
 
-    private OddsMapper.OddsDetails fetchOddsDetailTabs(Page p, String matchId) {
+    private byte[] fetchOddsListWithRetry(PlaywrightLane lane, String oddListUrl) {
+        var body = lane.withPage(page -> aiscorePageFetchClient.fetchOptional(page, oddListUrl));
+        if (body != null && body.length > 0) {
+            return body;
+        }
+        lane.ensureReady();
+        return lane.withPage(page -> aiscorePageFetchClient.fetchOptional(page, oddListUrl));
+    }
+
+    private OddsMapper.OddsDetails fetchOddsDetailTabs(Page page, String matchId) {
         JsonNode asia = null;
         JsonNode bs = null;
         JsonNode corner = null;
         for (var type : ODDS_TYPE_LIST) {
-            var body = aiscorePageFetchClient.fetchOptional(p, ODD_DETAIL.formatted(matchId, type));
+            var body = aiscorePageFetchClient.fetchOptional(page, ODD_DETAIL.formatted(matchId, type));
+            page.waitForTimeout(DEFAULT_WAIT_MS);
             if (body == null) {
                 continue;
             }

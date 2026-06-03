@@ -1,7 +1,6 @@
-package kira.crawl.util;
+package com.queue.kiraqueue.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import java.util.ArrayList;
 import java.util.Iterator;

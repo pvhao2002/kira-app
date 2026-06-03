@@ -1,4 +1,4 @@
-package com.queue.kiraqueue.dto;
+package com.queue.kiraqueue.dto.aiscore;
 
 import java.util.List;
 

@@ -1,10 +1,9 @@
 package com.queue.kiraqueue.service;
 
-import com.queue.kiraqueue.client.KiraCrawlClient;
-import com.queue.kiraqueue.dto.crawl.CrawlMatchOddsEventDto;
-import com.queue.kiraqueue.dto.crawl.CrawlOddsTimelineGroupDto;
-import com.queue.kiraqueue.dto.crawl.CrawlOddsTimelineItemDto;
-import com.queue.kiraqueue.dto.crawl.MatchOddsResponse;
+import com.queue.kiraqueue.crawl.EventCrawlService;
+import com.queue.kiraqueue.dto.aiscore.CrawlOddsTimelineGroupDto;
+import com.queue.kiraqueue.dto.aiscore.CrawlOddsTimelineItemDto;
+import com.queue.kiraqueue.dto.aiscore.MatchOddsResponseDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -42,22 +41,19 @@ import static org.mockito.Mockito.when;
 class CrawEventServiceV2AsyncPersistTest {
 
     private static final long EVENT_ID = 42L;
-    private static final String LINK = "http://example.com/match";
+    private static final String LINK = "https://www.aiscore.com/match/home-away/m1";
 
     @Mock
     private NamedParameterJdbcTemplate jdbcTemplate;
 
     @Mock
-    private KiraCrawlClient kiraCrawlClient;
-
-    @Mock
-    private AiscoreMatchStatusLabelCache statusLabelCache;
+    private EventCrawlService eventCrawlService;
 
     @Test
     void processEvent_fetchSuccess_returnsBeforePersistCompletes() throws Exception {
         stubEventSelect();
-        when(kiraCrawlClient.fetchMatchOdds(LINK, false))
-                .thenReturn(new MatchOddsResponse("m1", null, null, List.of(), null));
+        when(eventCrawlService.crawlEvent("m1"))
+                .thenReturn(new MatchOddsResponseDto("m1", null, null, List.of(), null, null));
 
         var order = Collections.synchronizedList(new ArrayList<String>());
         var persistStarted = new CountDownLatch(1);
@@ -101,18 +97,19 @@ class CrawEventServiceV2AsyncPersistTest {
         stubEventSelect();
         var timeline = new CrawlOddsTimelineGroupDto(
                 List.of(new CrawlOddsTimelineItemDto(
-                        "hdc", "-0.5#+0.5", "1.03", "0.87", "1'", "2015-01-01T19:15:00+07:00"
+                        "hdc", "-0.5#+0.5", "1.03", "0.87", "1'", "2015-01-01T19:15:00+07:00", null, null
                 )),
                 List.of(),
                 List.of()
         );
-        when(kiraCrawlClient.fetchMatchOdds(LINK, false))
-                .thenReturn(new MatchOddsResponse(
+        when(eventCrawlService.crawlEvent("m1"))
+                .thenReturn(new MatchOddsResponseDto(
                         "vmqy9i4eeougk9r",
-                        new CrawlMatchOddsEventDto("FT", 8),
+                        null,
                         null,
                         List.of(),
-                        timeline
+                        timeline,
+                        null
                 ));
 
         var service = newService(Runnable::run);
@@ -125,8 +122,8 @@ class CrawEventServiceV2AsyncPersistTest {
     @Test
     void processEvent_persistFailure_marksClaimFailedAsync() throws Exception {
         stubEventSelect();
-        when(kiraCrawlClient.fetchMatchOdds(LINK, false))
-                .thenReturn(new MatchOddsResponse("m1", null, null, List.of(), null));
+        when(eventCrawlService.crawlEvent("m1"))
+                .thenReturn(new MatchOddsResponseDto("m1", null, null, List.of(), null, null));
         when(jdbcTemplate.update(anyString(), anyMap()))
                 .thenAnswer(invocation -> {
                     String sql = invocation.getArgument(0);
@@ -160,10 +157,9 @@ class CrawEventServiceV2AsyncPersistTest {
         };
         return new CrawEventServiceV2(
                 jdbcTemplate,
-                kiraCrawlClient,
+                eventCrawlService,
                 executor,
-                transactionManager,
-                statusLabelCache
+                transactionManager
         );
     }
 

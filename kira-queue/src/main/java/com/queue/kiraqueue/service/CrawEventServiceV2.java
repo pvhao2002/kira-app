@@ -1,13 +1,11 @@
 package com.queue.kiraqueue.service;
 
-import com.queue.kiraqueue.client.KiraCrawlClient;
 import com.queue.kiraqueue.config.CrawlPersistExecutorConfig;
-import com.queue.kiraqueue.dto.crawl.CrawlEventResultDto;
-import com.queue.kiraqueue.dto.crawl.CrawlMatchOddsEventDto;
-import com.queue.kiraqueue.dto.crawl.CrawlOddsSnapshotDto;
-import com.queue.kiraqueue.dto.crawl.CrawlOddsTimelineGroupDto;
-import com.queue.kiraqueue.dto.crawl.CrawlOddsTimelineItemDto;
-import com.queue.kiraqueue.dto.crawl.MatchOddsResponse;
+import com.queue.kiraqueue.crawl.EventCrawlService;
+import com.queue.kiraqueue.dto.aiscore.CrawlOddsSnapshotDto;
+import com.queue.kiraqueue.dto.aiscore.CrawlOddsTimelineGroupDto;
+import com.queue.kiraqueue.dto.aiscore.CrawlOddsTimelineItemDto;
+import com.queue.kiraqueue.dto.aiscore.MatchOddsResponseDto;
 import com.queue.kiraqueue.util.JdbcBatchUtils;
 import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -53,75 +51,11 @@ public class CrawEventServiceV2 {
             where e.event_id = :eventId
             """;
 
-    private static final String SQL_UPDATE_EVENT = """
-            update events
-            set status = :status,
-                status_id = :status_id
-            where event_id = :event_id
-            """;
-
     private static final String SQL_CLEAR_EVENT_ODDS_FLAGS = """
             update events
             set has_odds = false,
                 has_odds_corner = false
             where event_id = :event_id
-            """;
-
-    private static final String SQL_UPSERT_EVENT_RESULT = """
-            insert into event_result (
-                event_id,
-                ht_result, ht_goal_str, ft_result, ft_goal_str,
-                ht_home_goal, ht_away_goal, ft_home_goal, ft_away_goal,
-                ht_home_corner, ht_away_corner, ft_home_corner, ft_away_corner,
-                ht_home_yellow_card, ht_away_yellow_card, ft_home_yellow_card, ft_away_yellow_card,
-                ht_home_foul, ht_away_foul, ft_home_foul, ft_away_foul,
-                ht_home_offside, ht_away_offside, ft_home_offside, ft_away_offside,
-                ht_home_total_shot, ht_away_total_shot, ft_home_total_shot, ft_away_total_shot,
-                ht_home_shot_on_target, ht_away_shot_on_target, ft_home_shot_on_target, ft_away_shot_on_target
-            ) values (
-                :event_id,
-                :ht_result, :ht_goal_str, :ft_result, :ft_goal_str,
-                :ht_home_goal, :ht_away_goal, :ft_home_goal, :ft_away_goal,
-                :ht_home_corner, :ht_away_corner, :ft_home_corner, :ft_away_corner,
-                :ht_home_yellow_card, :ht_away_yellow_card, :ft_home_yellow_card, :ft_away_yellow_card,
-                :ht_home_foul, :ht_away_foul, :ft_home_foul, :ft_away_foul,
-                :ht_home_offside, :ht_away_offside, :ft_home_offside, :ft_away_offside,
-                :ht_home_total_shot, :ht_away_total_shot, :ft_home_total_shot, :ft_away_total_shot,
-                :ht_home_shot_on_target, :ht_away_shot_on_target, :ft_home_shot_on_target, :ft_away_shot_on_target
-            )
-            on duplicate key update
-                ht_result = values(ht_result),
-                ht_goal_str = values(ht_goal_str),
-                ft_result = values(ft_result),
-                ft_goal_str = values(ft_goal_str),
-                ht_home_goal = values(ht_home_goal),
-                ht_away_goal = values(ht_away_goal),
-                ft_home_goal = values(ft_home_goal),
-                ft_away_goal = values(ft_away_goal),
-                ht_home_corner = values(ht_home_corner),
-                ht_away_corner = values(ht_away_corner),
-                ft_home_corner = values(ft_home_corner),
-                ft_away_corner = values(ft_away_corner),
-                ht_home_yellow_card = values(ht_home_yellow_card),
-                ht_away_yellow_card = values(ht_away_yellow_card),
-                ft_home_yellow_card = values(ft_home_yellow_card),
-                ft_away_yellow_card = values(ft_away_yellow_card),
-                ht_home_foul = values(ht_home_foul),
-                ht_away_foul = values(ht_away_foul),
-                ft_home_foul = values(ft_home_foul),
-                ft_away_foul = values(ft_away_foul),
-                ht_home_offside = values(ht_home_offside),
-                ht_away_offside = values(ht_away_offside),
-                ft_home_offside = values(ft_home_offside),
-                ft_away_offside = values(ft_away_offside),
-                ht_home_total_shot = values(ht_home_total_shot),
-                ht_away_total_shot = values(ht_away_total_shot),
-                ft_home_total_shot = values(ft_home_total_shot),
-                ft_away_total_shot = values(ft_away_total_shot),
-                ht_home_shot_on_target = values(ht_home_shot_on_target),
-                ht_away_shot_on_target = values(ht_away_shot_on_target),
-                ft_home_shot_on_target = values(ft_home_shot_on_target),
-                ft_away_shot_on_target = values(ft_away_shot_on_target)
             """;
 
     private static final String SQL_DELETE_EVENT_ODDS = "delete from event_odds where event_id = :event_id";
@@ -164,23 +98,20 @@ public class CrawEventServiceV2 {
             """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final KiraCrawlClient kiraCrawlClient;
+    private final EventCrawlService eventCrawlService;
     private final Executor crawlPersistExecutor;
     private final TransactionTemplate transactionTemplate;
-    private final AiscoreMatchStatusLabelCache statusLabelCache;
 
     public CrawEventServiceV2(
             NamedParameterJdbcTemplate jdbcTemplate,
-            KiraCrawlClient kiraCrawlClient,
+            EventCrawlService eventCrawlService,
             @Qualifier(CrawlPersistExecutorConfig.CRAWL_PERSIST_EXECUTOR) Executor crawlPersistExecutor,
-            PlatformTransactionManager transactionManager,
-            AiscoreMatchStatusLabelCache statusLabelCache
+            PlatformTransactionManager transactionManager
     ) {
         this.jdbcTemplate = jdbcTemplate;
-        this.kiraCrawlClient = kiraCrawlClient;
+        this.eventCrawlService = eventCrawlService;
         this.crawlPersistExecutor = crawlPersistExecutor;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
-        this.statusLabelCache = statusLabelCache;
     }
 
     public boolean processEvent(long eventId) {
@@ -206,12 +137,16 @@ public class CrawEventServiceV2 {
         }
 
         try {
-            MatchOddsResponse response = kiraCrawlClient.fetchMatchOdds(
-                    eventRow.link(),
-                    eventRow.hasOddsCorner()
-            );
+            var matchId = extractMatchIdFromLink(eventRow.link());
+            if (!StringUtils.hasText(matchId)) {
+                log.warning("CrawEventServiceV2 >> cannot parse matchId from link: eventId=" + eventId);
+                failEventClaim(eventId);
+                return false;
+            }
+
+            MatchOddsResponseDto response = eventCrawlService.crawlEvent(matchId);
             if (response.isEmpty()) {
-                log.warning("CrawEventServiceV2 >> empty kira-crawl response (no Bet365?): eventId=" + eventId);
+                log.warning("CrawEventServiceV2 >> empty odds crawl response (no Bet365?): eventId=" + eventId);
                 recordMissingOdds(eventId);
                 failEventClaim(eventId);
                 return false;
@@ -226,7 +161,7 @@ public class CrawEventServiceV2 {
         }
     }
 
-    private void schedulePersist(long eventId, MatchOddsResponse response) {
+    private void schedulePersist(long eventId, MatchOddsResponseDto response) {
         crawlPersistExecutor.execute(() -> {
             try {
                 transactionTemplate.executeWithoutResult(status -> {
@@ -253,13 +188,20 @@ public class CrawEventServiceV2 {
         jdbcTemplate.update(SQL_COMPLETE_EVENT_CLAIM, Map.of("event_id", eventId));
     }
 
-    private void persistCrawlResult(long eventId, MatchOddsResponse response) {
-        updateEvent(eventId, response.event());
-        upsertEventResult(eventId, response.eventResult());
+    private void persistCrawlResult(long eventId, MatchOddsResponseDto response) {
         if (CollectionUtils.isEmpty(response.odds())) {
             clearEventOddsFlags(eventId);
         }
         persistOdds(eventId, response.odds(), response.oddsTimeline());
+    }
+
+    private static String extractMatchIdFromLink(String link) {
+        var trimmed = link.strip();
+        var lastSlash = trimmed.lastIndexOf('/');
+        if (lastSlash < 0 || lastSlash == trimmed.length() - 1) {
+            return null;
+        }
+        return trimmed.substring(lastSlash + 1);
     }
 
     private void clearEventOddsFlags(long eventId) {
@@ -309,28 +251,9 @@ public class CrawEventServiceV2 {
                 SQL_UPSERT_EVENT_DATA_ISSUE,
                 new MapSqlParameterSource("eventId", eventId)
                         .addValue("issueType", "missing_odds")
-                        .addValue("description", "No Bet365 odds from kira-crawl")
+                        .addValue("description", "No Bet365 odds from aiscore crawl")
                         .addValue("recordedAt", LocalDateTime.now())
         );
-    }
-
-    private void updateEvent(long eventId, CrawlMatchOddsEventDto event) {
-        if (event == null) {
-            return;
-        }
-        jdbcTemplate.update(
-                SQL_UPDATE_EVENT,
-                new MapSqlParameterSource("event_id", eventId)
-                        .addValue("status", statusLabelCache.resolveStatus(event.statusId(), event.status()))
-                        .addValue("status_id", event.statusId())
-        );
-    }
-
-    private void upsertEventResult(long eventId, CrawlEventResultDto result) {
-        if (result == null) {
-            return;
-        }
-        jdbcTemplate.update(SQL_UPSERT_EVENT_RESULT, toEventResultParams(eventId, result));
     }
 
     private void persistOdds(long eventId, List<CrawlOddsSnapshotDto> odds, CrawlOddsTimelineGroupDto timeline) {
@@ -399,42 +322,6 @@ public class CrawEventServiceV2 {
 
     private static String normalizeOddsType(String type) {
         return "ht".equals(type) ? "half-time" : type;
-    }
-
-    private static MapSqlParameterSource toEventResultParams(long eventId, CrawlEventResultDto result) {
-        return new MapSqlParameterSource("event_id", eventId)
-                .addValue("ht_result", result.htResult())
-                .addValue("ht_goal_str", result.htGoalStr())
-                .addValue("ft_result", result.ftResult())
-                .addValue("ft_goal_str", result.ftGoalStr())
-                .addValue("ht_home_goal", result.htHomeGoal())
-                .addValue("ht_away_goal", result.htAwayGoal())
-                .addValue("ft_home_goal", result.ftHomeGoal())
-                .addValue("ft_away_goal", result.ftAwayGoal())
-                .addValue("ht_home_corner", result.htHomeCorner())
-                .addValue("ht_away_corner", result.htAwayCorner())
-                .addValue("ft_home_corner", result.ftHomeCorner())
-                .addValue("ft_away_corner", result.ftAwayCorner())
-                .addValue("ht_home_yellow_card", result.htHomeYellowCard())
-                .addValue("ht_away_yellow_card", result.htAwayYellowCard())
-                .addValue("ft_home_yellow_card", result.ftHomeYellowCard())
-                .addValue("ft_away_yellow_card", result.ftAwayYellowCard())
-                .addValue("ht_home_foul", result.htHomeFoul())
-                .addValue("ht_away_foul", result.htAwayFoul())
-                .addValue("ft_home_foul", result.ftHomeFoul())
-                .addValue("ft_away_foul", result.ftAwayFoul())
-                .addValue("ht_home_offside", result.htHomeOffside())
-                .addValue("ht_away_offside", result.htAwayOffside())
-                .addValue("ft_home_offside", result.ftHomeOffside())
-                .addValue("ft_away_offside", result.ftAwayOffside())
-                .addValue("ht_home_total_shot", result.htHomeTotalShot())
-                .addValue("ht_away_total_shot", result.htAwayTotalShot())
-                .addValue("ft_home_total_shot", result.ftHomeTotalShot())
-                .addValue("ft_away_total_shot", result.ftAwayTotalShot())
-                .addValue("ht_home_shot_on_target", result.htHomeShotOnTarget())
-                .addValue("ht_away_shot_on_target", result.htAwayShotOnTarget())
-                .addValue("ft_home_shot_on_target", result.ftHomeShotOnTarget())
-                .addValue("ft_away_shot_on_target", result.ftAwayShotOnTarget());
     }
 
     private static LocalDateTime parseCrawledAt(String crawledAt, LocalDateTime fallback) {

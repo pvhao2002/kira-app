@@ -1,17 +1,14 @@
-package kira.crawl.service;
+package com.queue.kiraqueue.crawl;
 
-import kira.crawl.browser.AiscorePageFetchClient;
-import kira.crawl.dto.MatchesResponseDto;
-import kira.crawl.mapper.MatchMapper;
-import kira.crawl.playwright.PlaywrightLane;
-import kira.crawl.playwright.PlaywrightManager;
-import kira.crawl.protobuf.AiscoreProtobufService;
+import com.queue.kiraqueue.browser.AiscorePageFetchClient;
+import com.queue.kiraqueue.dto.aiscore.MatchesResponseDto;
+import com.queue.kiraqueue.mapper.MatchMapper;
+import com.queue.kiraqueue.playwright.PlaywrightManager;
+import com.queue.kiraqueue.protobuf.AiscoreProtobufService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
-import static kira.crawl.util.JsonRecords.*;
+import static com.queue.kiraqueue.util.JsonRecords.asArray;
 
 @Service
 @RequiredArgsConstructor
@@ -22,10 +19,10 @@ public class DateCrawlService {
     private final MatchMapper matchMapper;
     private static final String DATE_URL_TEMPLATE = "https://api.aiscore.com/v1/web/api/matches?lang=2&sport_id=1&date=%s&tz=07:00";
 
-    public Object crawlDate(String date) {
+    public MatchesResponseDto crawlDate(String date) {
         var lane = playwrightManager.getLaneByDate();
         var finalUrl = DATE_URL_TEMPLATE.formatted(date);
-        var body = aiscorePageFetchClient.fetchOptional(lane.getPage(), finalUrl);
+        var body = lane.withPage(page -> aiscorePageFetchClient.fetchOptional(page, finalUrl));
         var decoded = aiscoreProtobufService.decodeMatches(body);
         var matches = asArray(decoded.get("matches"));
         var events = matches.stream()

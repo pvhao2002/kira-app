@@ -13,15 +13,9 @@ import java.util.logging.Level;
 @Service
 @RequiredArgsConstructor
 public class EventConsumer {
-    public static final String QUEUE_EVENT_ODD_TOMORROW = "crawlOddForUpcomingEvent";
     public static final String QUEUE_EVENT_ODD = "event";
 
     private final CrawEventServiceV2 crawEventServiceV2;
-
-    @RabbitListener(queues = QUEUE_EVENT_ODD_TOMORROW, concurrency = "1")
-    public void handleEventTomorrow(String eventIds) {
-        processEventIds("handleEventTomorrow", eventIds);
-    }
 
     @RabbitListener(queues = QUEUE_EVENT_ODD, concurrency = "1")
     public void handleEvent(String eventIds) {

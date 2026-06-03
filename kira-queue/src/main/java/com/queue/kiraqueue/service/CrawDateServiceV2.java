@@ -1,12 +1,12 @@
 package com.queue.kiraqueue.service;
 
-import com.queue.kiraqueue.client.KiraCrawlClient;
 import com.queue.kiraqueue.config.CrawlPersistExecutorConfig;
-import com.queue.kiraqueue.dto.crawl.CrawledMatchBundle;
-import com.queue.kiraqueue.dto.crawl.CrawlEventDto;
-import com.queue.kiraqueue.dto.crawl.CrawlEventResultDto;
-import com.queue.kiraqueue.dto.crawl.CrawlLeagueDto;
-import com.queue.kiraqueue.dto.crawl.CrawlTeamDto;
+import com.queue.kiraqueue.crawl.DateCrawlService;
+import com.queue.kiraqueue.dto.aiscore.CrawledMatchBundleDto;
+import com.queue.kiraqueue.dto.aiscore.CrawlEventDto;
+import com.queue.kiraqueue.dto.aiscore.CrawlEventResultDto;
+import com.queue.kiraqueue.dto.aiscore.CrawlLeagueDto;
+import com.queue.kiraqueue.dto.aiscore.CrawlTeamDto;
 import com.queue.kiraqueue.util.JdbcBatchUtils;
 import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -146,18 +146,18 @@ public class CrawDateServiceV2 {
             """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final KiraCrawlClient kiraCrawlClient;
+    private final DateCrawlService dateCrawlService;
     private final Executor crawlPersistExecutor;
     private final AiscoreMatchStatusLabelCache statusLabelCache;
 
     public CrawDateServiceV2(
             NamedParameterJdbcTemplate jdbcTemplate,
-            KiraCrawlClient kiraCrawlClient,
+            DateCrawlService dateCrawlService,
             @Qualifier(CrawlPersistExecutorConfig.CRAWL_PERSIST_EXECUTOR) Executor crawlPersistExecutor,
             AiscoreMatchStatusLabelCache statusLabelCache
     ) {
         this.jdbcTemplate = jdbcTemplate;
-        this.kiraCrawlClient = kiraCrawlClient;
+        this.dateCrawlService = dateCrawlService;
         this.crawlPersistExecutor = crawlPersistExecutor;
         this.statusLabelCache = statusLabelCache;
     }
@@ -179,8 +179,8 @@ public class CrawDateServiceV2 {
             long startTime = System.currentTimeMillis();
             int fetchedEvents = 0;
             try {
-                var response = kiraCrawlClient.fetchMatches(date);
-                var events = response.events() == null ? List.<CrawledMatchBundle>of() : response.events();
+                var response = dateCrawlService.crawlDate(date);
+                var events = response.events() == null ? List.<CrawledMatchBundleDto>of() : response.events();
                 fetchedEvents = events.size();
                 schedulePersist(date, events);
             } catch (Exception ex) {
@@ -203,7 +203,7 @@ public class CrawDateServiceV2 {
         );
     }
 
-    private void schedulePersist(String date, List<CrawledMatchBundle> events) {
+    private void schedulePersist(String date, List<CrawledMatchBundleDto> events) {
         var eventsCopy = List.copyOf(events);
         int totalEvents = eventsCopy.size();
         crawlPersistExecutor.execute(() -> {
@@ -220,13 +220,13 @@ public class CrawDateServiceV2 {
         });
     }
 
-    private void persistEvents(List<CrawledMatchBundle> events) {
+    private void persistEvents(List<CrawledMatchBundleDto> events) {
         if (CollectionUtils.isEmpty(events)) {
             return;
         }
 
         Map<String, MapSqlParameterSource> leagueParamsByName = new LinkedHashMap<>();
-        for (CrawledMatchBundle bundle : events) {
+        for (CrawledMatchBundleDto bundle : events) {
             CrawlLeagueDto league = bundle.league();
             if (league == null || !StringUtils.hasText(league.leagueName())) {
                 continue;
@@ -236,7 +236,7 @@ public class CrawDateServiceV2 {
         JdbcBatchUtils.batchInsertSafe(jdbcTemplate, SQL_UPSERT_LEAGUE, new ArrayList<>(leagueParamsByName.values()));
 
         Map<String, MapSqlParameterSource> teamParamsByName = new LinkedHashMap<>();
-        for (CrawledMatchBundle bundle : events) {
+        for (CrawledMatchBundleDto bundle : events) {
             addTeamParams(teamParamsByName, bundle.homeTeam());
             addTeamParams(teamParamsByName, bundle.awayTeam());
         }
@@ -267,7 +267,7 @@ public class CrawDateServiceV2 {
         loadTeamIds(teamNames, teamExternalIds, teamIdByName, teamIdByExternalId);
 
         List<MapSqlParameterSource> eventParams = new ArrayList<>();
-        for (CrawledMatchBundle bundle : events) {
+        for (CrawledMatchBundleDto bundle : events) {
             CrawlEventDto event = bundle.event();
             CrawlLeagueDto league = bundle.league();
             CrawlTeamDto homeTeam = bundle.homeTeam();
@@ -293,7 +293,7 @@ public class CrawDateServiceV2 {
                 .collect(Collectors.toMap(arr -> (String) arr[0], arr -> (Long) arr[1], (a, b) -> a));
 
         List<MapSqlParameterSource> resultParams = new ArrayList<>();
-        for (CrawledMatchBundle bundle : events) {
+        for (CrawledMatchBundleDto bundle : events) {
             CrawlEventDto event = bundle.event();
             if (event == null || !StringUtils.hasText(event.externalId())) {
                 continue;

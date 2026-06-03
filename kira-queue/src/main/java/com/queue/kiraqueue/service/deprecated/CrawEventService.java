@@ -1,4 +1,4 @@
-package com.queue.kiraqueue.service;
+package com.queue.kiraqueue.service.deprecated;
 
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.ScreenshotType;
