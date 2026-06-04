@@ -108,6 +108,7 @@ public class AiscorePageFetchClient {
     }
 
     public byte[] fetchOptional(Page page, String apiUrl) {
+        page.waitForTimeout(200);
         return fetchOptional(page, apiUrl, ORIGIN);
     }
 
