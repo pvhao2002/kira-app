@@ -1,6 +1,5 @@
 package kira.datamanager.event;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -17,10 +16,10 @@ public class EventDataIssueRepository {
     private static final Set<String> ALLOWED_SORT_DIR = Set.of("asc", "desc");
     private static final Set<String> ALLOWED_ISSUE_TYPE = Set.of("missing_stats", "missing_odds", "cancelled");
 
-    private final JdbcClient readJdbcClient;
+    private final JdbcClient jdbcClient;
 
-    public EventDataIssueRepository(@Qualifier("readJdbcClient") JdbcClient readJdbcClient) {
-        this.readJdbcClient = readJdbcClient;
+    public EventDataIssueRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
     }
 
     public static boolean isAllowedSortBy(String sortBy) {
@@ -53,7 +52,7 @@ public class EventDataIssueRepository {
                 FROM event_data_issue edi
                 WHERE (:issueType IS NULL OR edi.issue_type = :issueType)
                 """;
-        var total = readJdbcClient.sql(countSql)
+        var total = jdbcClient.sql(countSql)
                 .param("issueType", normalizedIssueType)
                 .query((rs, rowNum) -> rs.getLong(1))
                 .single();
@@ -76,7 +75,7 @@ public class EventDataIssueRepository {
                 WHERE (:issueType IS NULL OR edi.issue_type = :issueType)
                 """ + " ORDER BY " + orderBy + " LIMIT :limit OFFSET :offset";
 
-        var content = readJdbcClient.sql(dataSql)
+        var content = jdbcClient.sql(dataSql)
                 .param("issueType", normalizedIssueType)
                 .param("limit", size)
                 .param("offset", page * size)
@@ -100,7 +99,7 @@ public class EventDataIssueRepository {
                   AND edi.recorded_at = :recordedAt
                 LIMIT 1
                 """;
-        return readJdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("eventId", eventId)
                 .param("issueType", issueType)
                 .param("recordedAt", recordedAt)

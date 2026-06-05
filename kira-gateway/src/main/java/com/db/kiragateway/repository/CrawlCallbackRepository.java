@@ -1,7 +1,5 @@
 package com.db.kiragateway.repository;
 
-import com.db.kiragateway.config.db.ReadDB;
-import com.db.kiragateway.config.db.WriteDB;
 import com.db.kiragateway.dto.*;
 import com.db.kiragateway.util.DateUtil;
 import com.db.kiragateway.util.JdbcBatchUtils;
@@ -20,13 +18,12 @@ import java.util.stream.Collectors;
 public class CrawlCallbackRepository {
 
     private static final Logger log = Logger.getLogger(CrawlCallbackRepository.class.getName());
-    private final NamedParameterJdbcTemplate writeJdbc;
-    private final JdbcClient readClient;
+    private final NamedParameterJdbcTemplate jdbc;
+    private final JdbcClient jdbcClient;
 
-    public CrawlCallbackRepository(@WriteDB NamedParameterJdbcTemplate writeJdbc,
-                                   @ReadDB JdbcClient readClient) {
-        this.writeJdbc = writeJdbc;
-        this.readClient = readClient;
+    public CrawlCallbackRepository(NamedParameterJdbcTemplate jdbc, JdbcClient jdbcClient) {
+        this.jdbc = jdbc;
+        this.jdbcClient = jdbcClient;
     }
 
     // ─── crawl_date ───
@@ -40,7 +37,7 @@ public class CrawlCallbackRepository {
             """;
 
     public void updateCrawlDateStatus(String date, String status, int totalEvents, String message) {
-        writeJdbc.update(SQL_UPDATE_CRAWL_DATE,
+        jdbc.update(SQL_UPDATE_CRAWL_DATE,
                 new MapSqlParameterSource("date", date)
                         .addValue("status", status)
                         .addValue("total_events", totalEvents)
@@ -59,12 +56,12 @@ public class CrawlCallbackRepository {
             "SELECT league_id, league_name FROM leagues WHERE league_name IN (:names)";
 
     public void batchInsertLeagues(List<MapSqlParameterSource> params) {
-        JdbcBatchUtils.batchInsertSafe(writeJdbc, SQL_INSERT_LEAGUE, params);
+        JdbcBatchUtils.batchInsertSafe(jdbc, SQL_INSERT_LEAGUE, params);
     }
 
     public Map<String, Integer> selectLeagueIdsByName(List<String> names) {
         if (names.isEmpty()) return Map.of();
-        return writeJdbc.query(SQL_SELECT_LEAGUES, Map.of("names", names),
+        return jdbc.query(SQL_SELECT_LEAGUES, Map.of("names", names),
                         (rs, rn) -> new Object[]{rs.getString("league_name"), rs.getInt("league_id")})
                 .stream()
                 .collect(Collectors.toMap(a -> (String) a[0], a -> (Integer) a[1], (x, y) -> x));
@@ -79,12 +76,12 @@ public class CrawlCallbackRepository {
             "SELECT team_id, team_name FROM teams WHERE team_name IN (:names)";
 
     public void batchInsertTeams(List<MapSqlParameterSource> params) {
-        JdbcBatchUtils.batchInsertSafe(writeJdbc, SQL_INSERT_TEAM, params);
+        JdbcBatchUtils.batchInsertSafe(jdbc, SQL_INSERT_TEAM, params);
     }
 
     public Map<String, Integer> selectTeamIdsByName(List<String> names) {
         if (names.isEmpty()) return Map.of();
-        return writeJdbc.query(SQL_SELECT_TEAMS, Map.of("names", names),
+        return jdbc.query(SQL_SELECT_TEAMS, Map.of("names", names),
                         (rs, rn) -> new Object[]{rs.getString("team_name"), rs.getInt("team_id")})
                 .stream()
                 .collect(Collectors.toMap(a -> (String) a[0], a -> (Integer) a[1], (x, y) -> x));
@@ -101,12 +98,12 @@ public class CrawlCallbackRepository {
             "SELECT event_id, external_id FROM events WHERE external_id IN (:exids)";
 
     public void batchInsertEvents(List<MapSqlParameterSource> params) {
-        JdbcBatchUtils.batchInsertSafe(writeJdbc, SQL_INSERT_EVENT, params);
+        JdbcBatchUtils.batchInsertSafe(jdbc, SQL_INSERT_EVENT, params);
     }
 
     public Map<String, Long> selectEventIdsByExternalId(List<String> externalIds) {
         if (externalIds.isEmpty()) return Map.of();
-        return writeJdbc.query(SQL_SELECT_EVENT_IDS, Map.of("exids", externalIds),
+        return jdbc.query(SQL_SELECT_EVENT_IDS, Map.of("exids", externalIds),
                         (rs, rn) -> new Object[]{rs.getString("external_id"), rs.getLong("event_id")})
                 .stream()
                 .collect(Collectors.toMap(a -> (String) a[0], a -> (Long) a[1], (x, y) -> x));
@@ -122,7 +119,7 @@ public class CrawlCallbackRepository {
             """;
 
     public void batchInsertEventResults(List<MapSqlParameterSource> params) {
-        JdbcBatchUtils.batchInsertSafe(writeJdbc, SQL_INSERT_EVENT_RESULT, params);
+        JdbcBatchUtils.batchInsertSafe(jdbc, SQL_INSERT_EVENT_RESULT, params);
     }
 
     private static final String SQL_UPDATE_EVENT_RESULT_STATS = """
@@ -152,7 +149,7 @@ public class CrawlCallbackRepository {
             p.addValue("ft_home_" + key, ftVal[0]);
             p.addValue("ft_away_" + key, ftVal[1]);
         }
-        writeJdbc.update(SQL_UPDATE_EVENT_RESULT_STATS, p);
+        jdbc.update(SQL_UPDATE_EVENT_RESULT_STATS, p);
     }
 
     // ─── event_odds + timeline ───
@@ -173,8 +170,8 @@ public class CrawlCallbackRepository {
 
     public void deleteOddsForEvent(long eventId) {
         var params = Map.<String, Object>of("event_id", eventId);
-        writeJdbc.update(SQL_DELETE_EVENT_ODDS_TIMELINE, params);
-        writeJdbc.update(SQL_DELETE_EVENT_ODDS, params);
+        jdbc.update(SQL_DELETE_EVENT_ODDS_TIMELINE, params);
+        jdbc.update(SQL_DELETE_EVENT_ODDS, params);
     }
 
     private static final Pattern LEADING_MINUTE = Pattern.compile("^\\s*(\\d+)");
@@ -198,7 +195,7 @@ public class CrawlCallbackRepository {
                             .addValue("crawled_at", crawledAt);
                 })
                 .toList();
-        JdbcBatchUtils.batchInsertSafe(writeJdbc, SQL_INSERT_EVENT_ODDS_TIMELINE, timelineParams);
+        JdbcBatchUtils.batchInsertSafe(jdbc, SQL_INSERT_EVENT_ODDS_TIMELINE, timelineParams);
 
         boolean hasPrematch = timeline.stream()
                 .anyMatch(t -> t.date() != null && !t.date().isBlank());
@@ -211,18 +208,18 @@ public class CrawlCallbackRepository {
                     .findFirst()
                     .orElse(timeline.getFirst());
             var last = timeline.getLast();
-            writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "open", market, last));
-            writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "pre-match", market, first));
+            jdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "open", market, last));
+            jdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "pre-match", market, first));
         } else {
-            writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "open", market, nullSnapshot));
-            writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "pre-match", market, nullSnapshot));
+            jdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "open", market, nullSnapshot));
+            jdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "pre-match", market, nullSnapshot));
         }
 
         var htExplicit = timeline.stream()
                 .filter(t -> t.matchMinute() != null && t.matchMinute().trim().equalsIgnoreCase("ht"))
                 .findFirst();
         if (htExplicit.isPresent()) {
-            writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "half-time", market, htExplicit.get()));
+            jdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "half-time", market, htExplicit.get()));
         } else {
             timeline.stream()
                     .filter(t -> t.date() == null || t.date().isBlank())
@@ -231,7 +228,7 @@ public class CrawlCallbackRepository {
                         return m >= 0 && m < 46;
                     })
                     .max(Comparator.comparingInt(t -> leadingMinute(t.matchMinute())))
-                    .ifPresent(ht -> writeJdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "half-time", market, ht)));
+                    .ifPresent(ht -> jdbc.update(SQL_INSERT_EVENT_ODDS, toEventOddsParams(eventId, "half-time", market, ht)));
         }
     }
 
@@ -265,12 +262,12 @@ public class CrawlCallbackRepository {
             "DELETE FROM event_crawl_failed WHERE event_id = :eventId";
 
     public void insertCrawlFail(long eventId, String type, String message) {
-        writeJdbc.update(SQL_INSERT_CRAWL_FAIL,
+        jdbc.update(SQL_INSERT_CRAWL_FAIL,
                 Map.of("eventId", eventId, "type", type, "message", message));
     }
 
     public void deleteCrawlFail(long eventId) {
-        writeJdbc.update(SQL_DELETE_CRAWL_FAIL, Map.of("eventId", eventId));
+        jdbc.update(SQL_DELETE_CRAWL_FAIL, Map.of("eventId", eventId));
     }
 
     // ─── event_data_issue ───
@@ -283,7 +280,7 @@ public class CrawlCallbackRepository {
             """;
 
     public void upsertEventDataIssue(long eventId, String issueType, String description, LocalDateTime recordedAt) {
-        writeJdbc.update(SQL_UPSERT_EVENT_DATA_ISSUE,
+        jdbc.update(SQL_UPSERT_EVENT_DATA_ISSUE,
                 new MapSqlParameterSource("eventId", eventId)
                         .addValue("issueType", issueType)
                         .addValue("description", description)
@@ -293,7 +290,7 @@ public class CrawlCallbackRepository {
     // ─── event info ───
 
     public Optional<EventInfoResponse> findEventInfo(long eventId) {
-        return readClient
+        return jdbcClient
                 .sql("SELECT event_id, link, event_name, status FROM events WHERE event_id = :eid")
                 .param("eid", eventId)
                 .query((rs, rn) -> new EventInfoResponse(

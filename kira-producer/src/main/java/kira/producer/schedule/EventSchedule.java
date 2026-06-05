@@ -44,7 +44,7 @@ public class EventSchedule {
                         ec.status = 'completed'
                      or (
                             ec.status = 'processing'
-                        and timestampdiff(second, ec.claimed_at, now()) < :claimStaleAfterSeconds
+                          -- and timestampdiff(second, ec.claimed_at, now()) < :claimStaleAfterSeconds
                         )
                   )
               )

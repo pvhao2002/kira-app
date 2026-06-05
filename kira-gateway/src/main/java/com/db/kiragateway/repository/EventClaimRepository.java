@@ -1,6 +1,5 @@
 package com.db.kiragateway.repository;
 
-import com.db.kiragateway.config.db.WriteDB;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -10,10 +9,10 @@ import java.util.Optional;
 @Repository
 public class EventClaimRepository {
 
-    private final JdbcClient writeJdbcClient;
+    private final JdbcClient jdbcClient;
 
-    public EventClaimRepository(@WriteDB JdbcClient writeJdbcClient) {
-        this.writeJdbcClient = writeJdbcClient;
+    public EventClaimRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
     }
 
     private static final String SQL_FILTER_NOT_CLAIMED = """
@@ -71,7 +70,7 @@ public class EventClaimRepository {
                 for update skip locked
                 """;
 
-        return writeJdbcClient
+        return jdbcClient
                 .sql(sql)
                 .param("claimStaleAfterSeconds", claimStaleAfterSeconds)
                 .query((rs, rowNum) -> new EventCandidate(
@@ -124,7 +123,7 @@ public class EventClaimRepository {
                 for update skip locked
                 """;
 
-        return writeJdbcClient
+        return jdbcClient
                 .sql(sql)
                 .param("claimStaleAfterSeconds", claimStaleAfterSeconds)
                 .query((rs, rowNum) -> new OddsEventCandidate(
@@ -151,7 +150,7 @@ public class EventClaimRepository {
                                         status = 'processing'
                 """;
 
-        writeJdbcClient
+        jdbcClient
                 .sql(sql)
                 .param("eventId", eventId)
                 .param("claimedBy", claimedBy)
@@ -163,7 +162,7 @@ public class EventClaimRepository {
      * Mark claim failed so the event can be picked again (e.g. after crawl failure).
      */
     public int markFailedByEventId(long eventId) {
-        return writeJdbcClient
+        return jdbcClient
                 .sql("""
                         UPDATE event_claim
                         SET status = 'failed'
@@ -174,7 +173,7 @@ public class EventClaimRepository {
     }
 
     public int completeClaimByEventId(long eventId) {
-        return writeJdbcClient
+        return jdbcClient
                 .sql("""
                         UPDATE event_claim
                         SET status = 'completed'
@@ -185,7 +184,7 @@ public class EventClaimRepository {
     }
 
     public int releaseClaimByEventId(long eventId) {
-        return writeJdbcClient
+        return jdbcClient
                 .sql("DELETE FROM event_claim WHERE event_id = :eventId")
                 .param("eventId", eventId)
                 .update();

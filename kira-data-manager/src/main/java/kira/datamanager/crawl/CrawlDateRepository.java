@@ -1,6 +1,5 @@
 package kira.datamanager.crawl;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -20,10 +19,10 @@ public class CrawlDateRepository {
     private static final Set<String> ALLOWED_SORT_DIR = Set.of("asc", "desc");
     private static final Set<String> ALLOWED_TOTAL_EVENT_FILTER = Set.of("all", "0");
 
-    private final JdbcClient readJdbcClient;
+    private final JdbcClient jdbcClient;
 
-    public CrawlDateRepository(@Qualifier("readJdbcClient") JdbcClient readJdbcClient) {
-        this.readJdbcClient = readJdbcClient;
+    public CrawlDateRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
     }
 
     public static boolean isAllowedStatus(String status) {
@@ -60,7 +59,7 @@ public class CrawlDateRepository {
         var orderBy = resolveOrderBy(sortBy, sortDir);
 
         var countSql = "SELECT COUNT(*) FROM crawl_date WHERE 1=1" + where.clause();
-        var countSpec = bindParams(readJdbcClient.sql(countSql), where);
+        var countSpec = bindParams(jdbcClient.sql(countSql), where);
         var total = countSpec.query((rs, rowNum) -> rs.getLong(1)).single();
 
         var dataSql = """
@@ -69,7 +68,7 @@ public class CrawlDateRepository {
                 WHERE 1=1
                 """ + where.clause() + " ORDER BY " + orderBy + " LIMIT :limit OFFSET :offset";
 
-        var dataSpec = bindParams(readJdbcClient.sql(dataSql), where)
+        var dataSpec = bindParams(jdbcClient.sql(dataSql), where)
                 .param("limit", size)
                 .param("offset", page * size);
 

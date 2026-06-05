@@ -15,16 +15,10 @@ spring:
 
 kira:
   datasource:
-    write:
-      url: jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&characterEncoding=utf8
-      username: ${DB_APP_USER:kira_user}
-      password: ${DB_APP_PASSWORD:kira_password}
-      driver-class-name: com.mysql.cj.jdbc.Driver
-    read:
-      url: jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3310}/${DB_NAME:kira}?useUnicode=true&characterEncoding=utf8
-      username: ${DB_APP_USER:kira_user}
-      password: ${DB_APP_PASSWORD:kira_password}
-      driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&characterEncoding=utf8
+    username: ${DB_APP_USER:kira_user}
+    password: ${DB_APP_PASSWORD:kira_password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
 logging:
   level:

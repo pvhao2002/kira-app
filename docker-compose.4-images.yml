@@ -1,0 +1,65 @@
+# Legacy split stack — khuyến nghị dùng docker-compose.prod.yml + .env.ec2
+# Chạy: docker compose --env-file .env.ec2 -f docker-compose.4-images.yml up -d
+
+x-shared-env: &shared-env
+  env_file:
+    - .env.ec2
+
+services:
+  kira-ui:
+    image: kira2308/kira-ui:latest
+    container_name: kira-ui
+    ports:
+      - "4200:80"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    restart: unless-stopped
+    networks:
+      - kira-app
+
+  kira-data-manager:
+    <<: *shared-env
+    image: kira2308/kira-data-manager:latest
+    container_name: kira-data-manager
+    ports:
+      - "7777:7777"
+    environment:
+      SERVER_PORT: "7777"
+      LOG_FILE: /app/logs/kira-data-manager.log
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: unless-stopped
+    networks:
+      - kira-app
+
+  kira-gateway:
+    <<: *shared-env
+    image: kira2308/kira-gateway:latest
+    container_name: kira-gateway
+    depends_on:
+      - kira-data-manager
+    ports:
+      - "6868:6868"
+    environment:
+      SERVER_PORT: "6868"
+      INSTANCE_ID: gateway-1
+      LOG_DIR: /app/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: unless-stopped
+    networks:
+      - kira-app
+
+networks:
+  kira-app:
+    driver: bridge

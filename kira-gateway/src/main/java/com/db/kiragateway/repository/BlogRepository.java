@@ -1,6 +1,5 @@
 package com.db.kiragateway.repository;
 
-import com.db.kiragateway.config.db.WriteDB;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -16,7 +15,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BlogRepository {
 
-    @WriteDB
     private final NamedParameterJdbcTemplate jdbc;
 
     public long insert(BlogInsertCommand command) {

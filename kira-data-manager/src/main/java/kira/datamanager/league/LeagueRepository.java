@@ -1,6 +1,5 @@
 package kira.datamanager.league;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -11,21 +10,17 @@ import java.util.List;
 @Repository
 public class LeagueRepository {
 
-    private final JdbcClient readJdbcClient;
-    private final JdbcClient writeJdbcClient;
+    private final JdbcClient jdbcClient;
 
-    public LeagueRepository(
-            @Qualifier("readJdbcClient") JdbcClient readJdbcClient,
-            @Qualifier("writeJdbcClient") JdbcClient writeJdbcClient) {
-        this.readJdbcClient = readJdbcClient;
-        this.writeJdbcClient = writeJdbcClient;
+    public LeagueRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
     }
 
     public LeaguePageResponse findPage(int page, int size, String q, Boolean isMain, String country) {
         var where = buildWhereClause(q, isMain, country);
 
         var countSql = "SELECT COUNT(*) FROM leagues WHERE 1=1" + where.clause();
-        var countSpec = bindParams(readJdbcClient.sql(countSql), where);
+        var countSpec = bindParams(jdbcClient.sql(countSql), where);
         var total = countSpec.query((rs, rowNum) -> rs.getLong(1)).single();
 
         var dataSql = """
@@ -35,7 +30,7 @@ public class LeagueRepository {
                 """ + where.clause()
                 + " ORDER BY is_main DESC, COALESCE(country, '') ASC, league_name ASC LIMIT :limit OFFSET :offset";
 
-        var dataSpec = bindParams(readJdbcClient.sql(dataSql), where)
+        var dataSpec = bindParams(jdbcClient.sql(dataSql), where)
                 .param("limit", size)
                 .param("offset", page * size);
 
@@ -51,7 +46,7 @@ public class LeagueRepository {
 
     public List<String> suggestLeagueNames(String q, int limit) {
         var pattern = "%" + q.trim() + "%";
-        return readJdbcClient.sql("""
+        return jdbcClient.sql("""
                         SELECT DISTINCT league_name FROM leagues
                         WHERE league_name LIKE :q
                         ORDER BY league_name
@@ -65,7 +60,7 @@ public class LeagueRepository {
 
     public List<String> suggestCountries(String q, int limit) {
         var pattern = "%" + q.trim() + "%";
-        return readJdbcClient.sql("""
+        return jdbcClient.sql("""
                         SELECT DISTINCT country FROM leagues
                         WHERE country IS NOT NULL AND country <> '' AND country LIKE :q
                         ORDER BY country
@@ -79,7 +74,7 @@ public class LeagueRepository {
 
     /** @return số dòng đã cập nhật (0 nếu không có league_id) */
     public int updateMain(int leagueId, boolean isMain) {
-        return writeJdbcClient.sql("""
+        return jdbcClient.sql("""
                         UPDATE leagues SET is_main = :isMain, updated_at = NOW()
                         WHERE league_id = :leagueId
                         """)

@@ -1,6 +1,5 @@
 package kira.datamanager.event;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -19,14 +18,14 @@ public class SoccerTeamRecentStatRepository {
             "FIRST_HALF_GOAL"
     );
 
-    private final JdbcClient readJdbcClient;
+    private final JdbcClient jdbcClient;
 
-    public SoccerTeamRecentStatRepository(@Qualifier("readJdbcClient") JdbcClient readJdbcClient) {
-        this.readJdbcClient = readJdbcClient;
+    public SoccerTeamRecentStatRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
     }
 
     public SoccerTeamRecentStatResponse findLatest() {
-        var rows = readJdbcClient.sql("""
+        var rows = jdbcClient.sql("""
                         SELECT metric_type,
                                rank_no,
                                team_id,

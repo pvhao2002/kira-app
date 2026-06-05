@@ -84,8 +84,6 @@ services:
       DB_APP_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       DB_PRIMARY_HOST: mysql
       DB_PRIMARY_PORT: "3306"
-      DB_REPLICA_HOST: mysql
-      DB_REPLICA_PORT: "3306"
       RABBIT_HOST: rabbitmq
       RABBIT_PORT: "5672"
       RABBIT_USERNAME: guest
@@ -119,8 +117,6 @@ services:
       DB_APP_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       DB_PRIMARY_HOST: mysql
       DB_PRIMARY_PORT: "3306"
-      DB_REPLICA_HOST: mysql
-      DB_REPLICA_PORT: "3306"
       RABBIT_HOST: rabbitmq
       RABBIT_PORT: "5672"
       RABBIT_USERNAME: guest
@@ -151,8 +147,6 @@ services:
       DB_APP_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       DB_PRIMARY_HOST: mysql
       DB_PRIMARY_PORT: "3306"
-      DB_REPLICA_HOST: mysql
-      DB_REPLICA_PORT: "3306"
     restart: unless-stopped
 
   kira-data-manager-2:
@@ -175,8 +169,6 @@ services:
       DB_APP_PASSWORD: "${DB_APP_PASSWORD:-kira_password}"
       DB_PRIMARY_HOST: mysql
       DB_PRIMARY_PORT: "3306"
-      DB_REPLICA_HOST: mysql
-      DB_REPLICA_PORT: "3306"
     restart: unless-stopped
 
   kira-producer:

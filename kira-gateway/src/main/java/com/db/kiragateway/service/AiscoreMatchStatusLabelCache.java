@@ -1,7 +1,6 @@
 package com.db.kiragateway.service;
 
 import jakarta.annotation.PostConstruct;
-import com.db.kiragateway.config.db.ReadDB;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -27,7 +26,7 @@ public class AiscoreMatchStatusLabelCache {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private Map<Integer, String> labelsByStatusId = Map.of();
 
-    public AiscoreMatchStatusLabelCache(@ReadDB NamedParameterJdbcTemplate jdbcTemplate) {
+    public AiscoreMatchStatusLabelCache(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 

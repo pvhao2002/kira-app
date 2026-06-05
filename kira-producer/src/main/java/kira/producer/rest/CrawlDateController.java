@@ -31,15 +31,6 @@ public class CrawlDateController {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "date must be yyyy-MM-dd"));
         }
 
-        Long count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM crawl_date WHERE date = :date",
-                Map.of("date", d),
-                Long.class
-        );
-        if (count == null || count == 0L) {
-            return ResponseEntity.status(404).body(Map.of("status", "error", "message", "crawl_date not found for date: " + d));
-        }
-
         try {
             dateProducer.sendDate(d);
         } catch (AmqpException ex) {
@@ -48,7 +39,10 @@ public class CrawlDateController {
         }
 
         jdbcTemplate.update(
-                "UPDATE crawl_date SET status = 'picked' WHERE date = :date",
+                """
+                        insert into crawl_date (date, status, total_events) values (:date, 'picked', 0)
+                        on duplicate key update status = 'picked'
+                        """,
                 Map.of("date", d)
         );
         return ResponseEntity.ok(Map.of("status", "ok", "date", d));

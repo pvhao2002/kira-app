@@ -1,7 +1,5 @@
 package com.db.kiragateway.useradmin.repository;
 
-import com.db.kiragateway.config.db.ReadDB;
-import com.db.kiragateway.config.db.WriteDB;
 import com.db.kiragateway.useradmin.model.UserAdminRow;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -15,19 +13,16 @@ import java.util.Optional;
 @Repository
 public class UserAdminRepository {
 
-    private final JdbcClient readJdbcClient;
-    private final JdbcClient writeJdbcClient;
+    private final JdbcClient jdbcClient;
 
-    public UserAdminRepository(@ReadDB JdbcClient readJdbcClient,
-                               @WriteDB JdbcClient writeJdbcClient) {
-        this.readJdbcClient = readJdbcClient;
-        this.writeJdbcClient = writeJdbcClient;
+    public UserAdminRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
     }
 
     public long count(String usernameLikePattern, String statusFilter, String roleFilter) {
         var where = buildWhereClause(usernameLikePattern, statusFilter, roleFilter);
         var sql = "select count(*) from users " + where.sql();
-        var spec = readJdbcClient.sql(sql);
+        var spec = jdbcClient.sql(sql);
         for (var p : where.params()) {
             spec = spec.param(p.name(), p.value());
         }
@@ -49,7 +44,7 @@ public class UserAdminRepository {
                 from users
                 """ + where.sql() + " order by " + orderByColumn + " " + orderDir + " limit :limit offset :offset";
 
-        var spec = readJdbcClient.sql(sql).param("limit", limit).param("offset", offset);
+        var spec = jdbcClient.sql(sql).param("limit", limit).param("offset", offset);
         for (var p : where.params()) {
             spec = spec.param(p.name(), p.value());
         }
@@ -85,21 +80,21 @@ public class UserAdminRepository {
                 where user_id = :userId
                 limit 1
                 """;
-        return readJdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("userId", userId)
                 .query(this::mapRow)
                 .optional();
     }
 
     public Optional<UserAdminRow> findByUsername(String username) {
-        return findByUsername(readJdbcClient, username);
+        return findByUsernameInternal(username);
     }
 
     public Optional<UserAdminRow> findByUsernameForWrite(String username) {
-        return findByUsername(writeJdbcClient, username);
+        return findByUsernameInternal(username);
     }
 
-    private Optional<UserAdminRow> findByUsername(JdbcClient jdbcClient, String username) {
+    private Optional<UserAdminRow> findByUsernameInternal(String username) {
         var sql = """
                 select user_id, username, status, role, avatar, created_at, updated_at
                 from users
@@ -113,14 +108,14 @@ public class UserAdminRepository {
     }
 
     public boolean existsByUsername(String username) {
-        return existsByUsername(readJdbcClient, username);
+        return existsByUsernameInternal(username);
     }
 
     public boolean existsByUsernameForWrite(String username) {
-        return existsByUsername(writeJdbcClient, username);
+        return existsByUsernameInternal(username);
     }
 
-    private boolean existsByUsername(JdbcClient jdbcClient, String username) {
+    private boolean existsByUsernameInternal(String username) {
         var sql = """
                 select 1 from users where username = :username limit 1
                 """;
@@ -136,7 +131,7 @@ public class UserAdminRepository {
                 insert into users (username, password, status, role, avatar)
                 values (:username, :password, :status, :role, null)
                 """;
-        return writeJdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("username", username)
                 .param("password", passwordHash)
                 .param("status", status)
@@ -152,19 +147,19 @@ public class UserAdminRepository {
             var sql = """
                     update users set role = :role, status = :status where user_id = :userId
                     """;
-            return writeJdbcClient.sql(sql)
+            return jdbcClient.sql(sql)
                     .param("role", role)
                     .param("status", status)
                     .param("userId", userId)
                     .update();
         }
         if (role != null) {
-            return writeJdbcClient.sql("update users set role = :role where user_id = :userId")
+            return jdbcClient.sql("update users set role = :role where user_id = :userId")
                     .param("role", role)
                     .param("userId", userId)
                     .update();
         }
-        return writeJdbcClient.sql("update users set status = :status where user_id = :userId")
+        return jdbcClient.sql("update users set status = :status where user_id = :userId")
                 .param("status", status)
                 .param("userId", userId)
                 .update();
@@ -174,14 +169,14 @@ public class UserAdminRepository {
         var sql = """
                 update users set password = :password where user_id = :userId
                 """;
-        return writeJdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("password", passwordHash)
                 .param("userId", userId)
                 .update();
     }
 
     public int deleteById(int userId) {
-        return writeJdbcClient.sql("delete from users where user_id = :userId")
+        return jdbcClient.sql("delete from users where user_id = :userId")
                 .param("userId", userId)
                 .update();
     }

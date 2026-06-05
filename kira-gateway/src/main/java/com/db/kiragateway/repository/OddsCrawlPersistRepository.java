@@ -1,7 +1,5 @@
 package com.db.kiragateway.repository;
 
-import com.db.kiragateway.config.db.ReadDB;
-import com.db.kiragateway.config.db.WriteDB;
 import com.db.kiragateway.dto.crawl.CrawlEventResultDto;
 import com.db.kiragateway.util.JdbcBatchUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -116,17 +114,14 @@ public class OddsCrawlPersistRepository {
             where e.event_id = :eventId
             """;
 
-    private final NamedParameterJdbcTemplate writeJdbc;
-    private final NamedParameterJdbcTemplate readJdbc;
+    private final NamedParameterJdbcTemplate jdbc;
 
-    public OddsCrawlPersistRepository(@WriteDB NamedParameterJdbcTemplate writeJdbc,
-                                      @ReadDB NamedParameterJdbcTemplate readJdbc) {
-        this.writeJdbc = writeJdbc;
-        this.readJdbc = readJdbc;
+    public OddsCrawlPersistRepository(NamedParameterJdbcTemplate jdbc) {
+        this.jdbc = jdbc;
     }
 
     public void updateEvent(long eventId, String status, Integer statusId) {
-        writeJdbc.update(
+        jdbc.update(
                 SQL_UPDATE_EVENT,
                 new MapSqlParameterSource("event_id", eventId)
                         .addValue("status", status)
@@ -135,28 +130,28 @@ public class OddsCrawlPersistRepository {
     }
 
     public void clearEventOddsFlags(long eventId) {
-        writeJdbc.update(SQL_CLEAR_EVENT_ODDS_FLAGS, Map.of("event_id", eventId));
+        jdbc.update(SQL_CLEAR_EVENT_ODDS_FLAGS, Map.of("event_id", eventId));
     }
 
     public void upsertEventResult(long eventId, CrawlEventResultDto result) {
-        writeJdbc.update(SQL_UPSERT_EVENT_RESULT, toEventResultParams(eventId, result));
+        jdbc.update(SQL_UPSERT_EVENT_RESULT, toEventResultParams(eventId, result));
     }
 
     public void deleteOddsForEvent(long eventId) {
-        writeJdbc.update(SQL_DELETE_EVENT_ODDS_TIMELINE, Map.of("event_id", eventId));
-        writeJdbc.update(SQL_DELETE_EVENT_ODDS, Map.of("event_id", eventId));
+        jdbc.update(SQL_DELETE_EVENT_ODDS_TIMELINE, Map.of("event_id", eventId));
+        jdbc.update(SQL_DELETE_EVENT_ODDS, Map.of("event_id", eventId));
     }
 
     public void batchInsertEventOdds(List<MapSqlParameterSource> params) {
-        JdbcBatchUtils.batchInsertSafe(writeJdbc, SQL_INSERT_EVENT_ODDS, params);
+        JdbcBatchUtils.batchInsertSafe(jdbc, SQL_INSERT_EVENT_ODDS, params);
     }
 
     public void batchInsertEventOddsTimeline(List<MapSqlParameterSource> params) {
-        JdbcBatchUtils.batchInsertSafe(writeJdbc, SQL_INSERT_EVENT_ODDS_TIMELINE, params);
+        JdbcBatchUtils.batchInsertSafe(jdbc, SQL_INSERT_EVENT_ODDS_TIMELINE, params);
     }
 
     public Optional<EventPlayState> findEventPlayState(long eventId) {
-        return readJdbc.query(
+        return jdbc.query(
                 SQL_SELECT_EVENT_PLAY_STATE,
                 Map.of("eventId", eventId),
                 (rs, rn) -> new EventPlayState(

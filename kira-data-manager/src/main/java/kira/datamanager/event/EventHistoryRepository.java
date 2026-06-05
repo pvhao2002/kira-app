@@ -1,6 +1,5 @@
 package kira.datamanager.event;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -16,10 +15,10 @@ import java.util.Map;
 @Repository
 public class EventHistoryRepository {
 
-    private final JdbcClient readJdbcClient;
+    private final JdbcClient jdbcClient;
 
-    public EventHistoryRepository(@Qualifier("readJdbcClient") JdbcClient readJdbcClient) {
-        this.readJdbcClient = readJdbcClient;
+    public EventHistoryRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
     }
 
     public EventHistoryPageResponse findPage(String date, String q, String league, int page, int size) {
@@ -28,14 +27,14 @@ public class EventHistoryRepository {
 
         var countSql = "SELECT COUNT(*) " + filterFrom + " WHERE 1=1" + where.clause();
 
-        var countSpec = bindParams(readJdbcClient.sql(countSql), where);
+        var countSpec = bindParams(jdbcClient.sql(countSql), where);
         var total = countSpec.query((rs, rowNum) -> rs.getLong(1)).single();
 
         // Query list of event IDs first (paginated), then fetch full data for those IDs.
         var idSql = "SELECT e.event_id " + filterFrom + " WHERE 1=1" + where.clause()
                 + " ORDER BY e.event_date ASC LIMIT :limit OFFSET :offset";
 
-        var idSpec = bindParams(readJdbcClient.sql(idSql), where)
+        var idSpec = bindParams(jdbcClient.sql(idSql), where)
                 .param("limit", size)
                 .param("offset", page * size);
         var ids = idSpec.query((rs, rowNum) -> rs.getLong(1)).list();
@@ -70,7 +69,7 @@ public class EventHistoryRepository {
                     WHERE e.event_id IN (:ids)
                     ORDER BY e.event_date ASC
                     """;
-            var eventRows = readJdbcClient.sql(eventSql)
+            var eventRows = jdbcClient.sql(eventSql)
                     .param("ids", ids)
                     .query(this::mapEventRow)
                     .list();
@@ -80,7 +79,7 @@ public class EventHistoryRepository {
                     FROM event_odds
                     WHERE event_id IN (:ids) AND type IN ('open', 'pre-match', 'half-time')
                     """;
-            var oddsRows = readJdbcClient.sql(oddsSql)
+            var oddsRows = jdbcClient.sql(oddsSql)
                     .param("ids", ids)
                     .query(this::mapOddsRow)
                     .list();
@@ -107,7 +106,7 @@ public class EventHistoryRepository {
                 WHERE event_id = :event_id
                 ORDER BY market, crawled_at ASC
                 """;
-        return readJdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("event_id", eventId)
                 .query(this::mapTimelineRow)
                 .list();

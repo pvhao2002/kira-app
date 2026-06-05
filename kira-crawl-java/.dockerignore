@@ -1,0 +1,7 @@
+target/
+logs/
+.playwright/
+.idea/
+*.iml
+.git/
+.gitignore

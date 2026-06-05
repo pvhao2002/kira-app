@@ -1,0 +1,29 @@
+# Legacy split stack — khuyến nghị dùng docker-compose.prod.yml + .env.ec2
+# Chạy sau stack 4-images: docker compose --env-file .env.ec2 -f docker-compose.crawl.yml up -d
+
+x-shared-env: &shared-env
+  env_file:
+    - .env.ec2
+
+services:
+  kira-crawl-java:
+    <<: *shared-env
+    image: kira2308/kira-crawl-java:latest
+    container_name: kira-crawl-java
+    restart: unless-stopped
+    ipc: host
+    ports:
+      - "127.0.0.1:4000:4000"
+    environment:
+      KIRA_CRAWL_PORT: "4000"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - kira-app
+
+networks:
+  kira-app:
+    external: true
+    name: kira-app_kira-app

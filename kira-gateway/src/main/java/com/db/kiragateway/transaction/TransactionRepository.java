@@ -1,6 +1,5 @@
 package com.db.kiragateway.transaction;
 
-import com.db.kiragateway.config.db.WriteDB;
 import com.db.kiragateway.transaction.dto.TransactionResponse;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -17,7 +16,7 @@ public class TransactionRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
 
-    public TransactionRepository(@WriteDB NamedParameterJdbcTemplate jdbc) {
+    public TransactionRepository(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 

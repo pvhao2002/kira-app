@@ -18,89 +18,40 @@ import javax.sql.DataSource;
 @EnableTransactionManagement
 public class DBConfiguration {
     @Bean
-    @Primary
-    public DataSourceTransactionManager writeTransactionManager(@WriteDB DataSource ds) {
-        var txManager = new DataSourceTransactionManager();
-        txManager.setDataSource(ds);
-        return txManager;
-    }
-
-    // ─── Write DB ───
-    @Bean
-    @WriteDB
-    @ConfigurationProperties(prefix = "application.datasource.primary")
-    public HikariConfig writeHikariConfig() {
+    @ConfigurationProperties(prefix = "application.datasource")
+    public HikariConfig hikariConfig() {
         return new HikariConfig();
     }
 
     @Bean
-    @WriteDB
     @Primary
-    public DataSource writeDataSource(@WriteDB HikariConfig config) {
-        return getDataSource(config);
-    }
-
-    private DataSource getDataSource(HikariConfig configuration) {
-        return new HikariDataSource(configuration);
+    public DataSource dataSource(HikariConfig config) {
+        return new HikariDataSource(config);
     }
 
     @Bean
-    @WriteDB
     @Primary
-    public JdbcTemplate writeJdbcTemplate(@WriteDB DataSource ds) {
-        return new JdbcTemplate(ds);
-    }
-
-    @Bean
-    @WriteDB
-    @Primary
-    public NamedParameterJdbcTemplate writeNamedParameterJdbcTemplate(@WriteDB DataSource ds) {
-        return new NamedParameterJdbcTemplate(this.writeJdbcTemplate(ds));
-    }
-
-    @Bean
-    @WriteDB
-    @Primary
-    public JdbcClient writeJdbcClient(@WriteDB DataSource ds) {
-        return JdbcClient.create(ds);
-    }
-
-    // ─── Read DB ───
-    @Bean
-    @ReadDB
-    @ConfigurationProperties(prefix = "application.datasource.replica")
-    public HikariConfig readHikariConfig() {
-        return new HikariConfig();
-    }
-
-    @Bean
-    @ReadDB
-    public DataSource readDataSource(@ReadDB HikariConfig config) {
-        return getDataSource(config);
-    }
-
-    @Bean
-    @ReadDB
-    public JdbcTemplate readJdbcTemplate(@ReadDB DataSource ds) {
-        return new JdbcTemplate(ds);
-    }
-
-    @Bean
-    @ReadDB
-    public NamedParameterJdbcTemplate readNamedParameterJdbcTemplate(@ReadDB DataSource ds) {
-        return new NamedParameterJdbcTemplate(this.readJdbcTemplate(ds));
-    }
-
-    @Bean
-    @ReadDB
-    public JdbcClient readJdbcClient(@ReadDB DataSource ds) {
-        return JdbcClient.create(ds);
-    }
-
-    @Bean
-    public DataSourceTransactionManager readTransactionManager(@ReadDB DataSource ds) {
+    public DataSourceTransactionManager transactionManager(DataSource dataSource) {
         var txManager = new DataSourceTransactionManager();
-        txManager.setDataSource(ds);
+        txManager.setDataSource(dataSource);
         return txManager;
+    }
+
+    @Bean
+    @Primary
+    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
+        return new JdbcTemplate(dataSource);
+    }
+
+    @Bean
+    @Primary
+    public NamedParameterJdbcTemplate namedParameterJdbcTemplate(JdbcTemplate jdbcTemplate) {
+        return new NamedParameterJdbcTemplate(jdbcTemplate);
+    }
+
+    @Bean
+    @Primary
+    public JdbcClient jdbcClient(DataSource dataSource) {
+        return JdbcClient.create(dataSource);
     }
 }

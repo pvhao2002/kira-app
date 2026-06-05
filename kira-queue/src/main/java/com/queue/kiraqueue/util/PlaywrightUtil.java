@@ -32,7 +32,7 @@ public class PlaywrightUtil {
      * Launch options giống trình duyệt thật: tắt cờ automation, dùng Chrome nếu có.
      */
     public static BrowserType.LaunchOptions launchOptions(boolean headless) {
-        var opts = new BrowserType.LaunchOptions()
+        return new BrowserType.LaunchOptions()
                 .setHeadless(headless)
                 .setArgs(List.of(
                         "--disable-blink-features=AutomationControlled",
@@ -41,12 +41,6 @@ public class PlaywrightUtil {
                         "--disable-infobars",
                         "--window-size=%d,%d".formatted(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
                 ));
-        try {
-            opts.setChannel("chrome");
-        } catch (Exception ignored) {
-            // Chrome chưa cài, dùng Chromium mặc định
-        }
-        return opts;
     }
 
     /**

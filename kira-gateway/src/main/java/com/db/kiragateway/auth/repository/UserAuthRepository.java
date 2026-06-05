@@ -1,8 +1,6 @@
 package com.db.kiragateway.auth.repository;
 
 import com.db.kiragateway.auth.model.UserCredential;
-import com.db.kiragateway.config.db.ReadDB;
-import com.db.kiragateway.config.db.WriteDB;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -11,13 +9,10 @@ import java.util.Optional;
 @Repository
 public class UserAuthRepository {
 
-    private final JdbcClient readJdbcClient;
-    private final JdbcClient writeJdbcClient;
+    private final JdbcClient jdbcClient;
 
-    public UserAuthRepository(@ReadDB JdbcClient readJdbcClient,
-                              @WriteDB JdbcClient writeJdbcClient) {
-        this.readJdbcClient = readJdbcClient;
-        this.writeJdbcClient = writeJdbcClient;
+    public UserAuthRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
     }
 
     public Optional<UserCredential> findByUsername(String username) {
@@ -28,7 +23,7 @@ public class UserAuthRepository {
                 limit 1
                 """;
 
-        return readJdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("username", username)
                 .query((rs, rowNum) -> mapUser(rs))
                 .optional();
@@ -42,7 +37,7 @@ public class UserAuthRepository {
                 limit 1
                 """;
 
-        return readJdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("userId", userId)
                 .query((rs, rowNum) -> mapUser(rs))
                 .optional();
@@ -54,7 +49,7 @@ public class UserAuthRepository {
                 values (:username, :password, :status, :role, :avatar)
                 """;
 
-        return writeJdbcClient
+        return jdbcClient
                 .sql(sql)
                 .param("username", username)
                 .param("password", passwordHash)
@@ -70,7 +65,7 @@ public class UserAuthRepository {
                 set password = :password
                 where username = :username
                 """;
-        return writeJdbcClient
+        return jdbcClient
                 .sql(sql)
                 .param("username", username)
                 .param("password", passwordHash)

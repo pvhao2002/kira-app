@@ -1,20 +1,9 @@
 application:
   datasource:
-    ex:
-      jdbc-url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
-      username: "${DB_APP_USER:kira_user}"
-      password: "${DB_APP_PASSWORD:kira_password}"
-      driver-class-name: com.mysql.cj.jdbc.Driver
-    primary:
-      jdbc-url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
-      username: "${DB_APP_USER:kira_user}"
-      password: "${DB_APP_PASSWORD:kira_password}"
-      driver-class-name: com.mysql.cj.jdbc.Driver
-    replica:
-      jdbc-url: "jdbc:mysql://${DB_REPLICA_HOST:localhost}:${DB_REPLICA_PORT:3310}/${DB_NAME:kira}?useUnicode=true"
-      username: "${DB_APP_USER:kira_user}"
-      password: "${DB_APP_PASSWORD:kira_password}"
-      driver-class-name: com.mysql.cj.jdbc.Driver
+    jdbc-url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
+    username: "${DB_APP_USER:kira_user}"
+    password: "${DB_APP_PASSWORD:kira_password}"
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
 spring:
   application:
@@ -35,6 +24,7 @@ spring:
     execution:
       pool:
         core-size: 36
+
 app:
   data-manager:
     base-url: ${APP_DATA_MANAGER_BASE_URL:http://localhost/data}
@@ -76,6 +66,7 @@ management:
   endpoint:
     shutdown:
       enabled: false
+
 server:
   port: 6868
   tomcat:

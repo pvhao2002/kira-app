@@ -48,6 +48,8 @@ kira:
 
 server:
   port: ${KIRA_PRODUCER_PORT:2311}
+  servlet:
+    context-path: /producer
 
 management:
   endpoints:

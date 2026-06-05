@@ -1,6 +1,5 @@
 package kira.datamanager.team;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -11,10 +10,10 @@ import java.util.List;
 @Repository
 public class TeamRepository {
 
-    private final JdbcClient readJdbcClient;
+    private final JdbcClient jdbcClient;
 
-    public TeamRepository(@Qualifier("readJdbcClient") JdbcClient readJdbcClient) {
-        this.readJdbcClient = readJdbcClient;
+    public TeamRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
     }
 
     public TeamPageResponse findPage(int page, int size, String q) {
@@ -26,7 +25,7 @@ public class TeamRepository {
         }
 
         var countSql = "SELECT COUNT(*) FROM teams WHERE 1=1" + where;
-        var countSpec = readJdbcClient.sql(countSql);
+        var countSpec = jdbcClient.sql(countSql);
         if (qNorm != null) {
             countSpec = countSpec.param("q", "%" + qNorm + "%");
         }
@@ -39,7 +38,7 @@ public class TeamRepository {
                 """ + where
                 + " ORDER BY team_name ASC LIMIT :limit OFFSET :offset";
 
-        var dataSpec = readJdbcClient.sql(dataSql)
+        var dataSpec = jdbcClient.sql(dataSql)
                 .param("limit", size)
                 .param("offset", page * size);
         if (qNorm != null) {
@@ -58,7 +57,7 @@ public class TeamRepository {
 
     public List<String> suggestTeamNames(String q, int limit) {
         var pattern = "%" + q.trim() + "%";
-        return readJdbcClient.sql("""
+        return jdbcClient.sql("""
                         SELECT DISTINCT team_name FROM teams
                         WHERE team_name LIKE :q
                         ORDER BY team_name

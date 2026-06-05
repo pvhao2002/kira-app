@@ -1,0 +1,100 @@
+services:
+  kira-ui:
+    image: kira2308/kira-ui:latest
+    container_name: kira-ui
+    ports:
+      - "4200:80"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    restart: unless-stopped
+    networks:
+      - kira-app
+
+  kira-data-manager:
+    image: kira2308/kira-data-manager:latest
+    container_name: kira-data-manager
+    ports:
+      - "7777:7777"
+    environment:
+      SERVER_PORT: "7777"
+      LOG_FILE: /app/logs/kira-data-manager.log
+      DB_NAME: ${DB_NAME}
+      DB_APP_USER: ${DB_APP_USER}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD}
+      DB_PRIMARY_HOST: ${DB_PRIMARY_HOST}
+      DB_PRIMARY_PORT: ${DB_PRIMARY_PORT}
+      DB_REPLICA_HOST: ${DB_REPLICA_HOST}
+      DB_REPLICA_PORT: ${DB_REPLICA_PORT}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: unless-stopped
+    networks:
+      - kira-app
+
+  kira-gateway:
+    image: kira2308/kira-gateway:latest
+    container_name: kira-gateway
+    depends_on:
+      - kira-data-manager
+    ports:
+      - "6868:6868"
+    environment:
+      SERVER_PORT: "6868"
+      INSTANCE_ID: gateway-1
+      LOG_DIR: /app/logs
+      DB_NAME: ${DB_NAME}
+      DB_APP_USER: ${DB_APP_USER}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD}
+      DB_PRIMARY_HOST: ${DB_PRIMARY_HOST}
+      DB_PRIMARY_PORT: ${DB_PRIMARY_PORT}
+      DB_REPLICA_HOST: ${DB_REPLICA_HOST}
+      DB_REPLICA_PORT: ${DB_REPLICA_PORT}
+      RABBIT_HOST: ${RABBIT_HOST}
+      RABBIT_PORT: ${RABBIT_PORT}
+      RABBIT_USERNAME: ${RABBIT_USERNAME}
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
+      RABBIT_VHOST: ${RABBIT_VHOST}
+      APP_DATA_MANAGER_BASE_URL: ${APP_DATA_MANAGER_BASE_URL}
+      APP_KIRA_PRODUCER_BASE_URL: ${APP_KIRA_PRODUCER_BASE_URL}
+      APP_SECURITY_COOKIE_SECURE: ${APP_SECURITY_COOKIE_SECURE}
+      APP_SECURITY_CORS_ALLOWED_ORIGINS: ${APP_SECURITY_CORS_ALLOWED_ORIGINS}
+      APP_SECURITY_JWT_SECRET: ${APP_SECURITY_JWT_SECRET}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: unless-stopped
+    networks:
+      - kira-app
+
+  kira-crawl-java:
+    image: kira2308/kira-crawl-java:latest
+    container_name: kira-crawl-java
+    ipc: host
+    ports:
+      - "127.0.0.1:4000:4000"
+    environment:
+      KIRA_CRAWL_PORT: "4000"
+      PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS}
+      PLAYWRIGHT_TEST_API_ENABLED: ${PLAYWRIGHT_TEST_API_ENABLED}
+      APP_GATEWAY_BASE_URL: ${APP_GATEWAY_BASE_URL}
+      AISCORE_COOKIE: ${AISCORE_COOKIE}
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    restart: unless-stopped
+    networks:
+      - kira-app
+
+networks:
+  kira-app:
+    driver: bridge
