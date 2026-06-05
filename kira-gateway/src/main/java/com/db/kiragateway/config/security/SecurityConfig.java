@@ -29,10 +29,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -93,19 +90,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource(AppSecurityProperties props) {
         var config = new CorsConfiguration();
         // Exact origins (e.g. http://localhost:4200) miss loopback aliases like http://127.0.2.3:4200 → CorsFilter 403.
-        var patterns = new ArrayList<String>();
-        patterns.add("http://localhost:*");
-        patterns.add("https://localhost:*");
-        patterns.add("http://127.*.*.*:*");
-        patterns.add("https://127.*.*.*:*");
-        if (props.getCors().getAllowedOrigins() != null) {
-            for (var o : props.getCors().getAllowedOrigins()) {
-                if (o != null && !o.isBlank() && !"*".equals(o.trim())) {
-                    patterns.add(o.trim());
-                }
-            }
-        }
-        config.setAllowedOriginPatterns(patterns);
+        config.setAllowedOriginPatterns(CorsOriginPatterns.buildAllowedOriginPatterns(props.getCors().getAllowedOrigins()));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-XSRF-TOKEN"));
         config.setAllowCredentials(true);
@@ -169,7 +154,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder(AppSecurityProperties props) {
-        var key = new SecretKeySpec(props.getJwt().getSecret().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        var key = JwtSigningKeySupport.hmacSha256Key(props.getJwt().getSecret());
         var decoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(props.getJwt().getIssuer());
         OAuth2TokenValidator<Jwt> withClockSkew = new JwtTimestampValidator(Duration.ofSeconds(30));
@@ -179,8 +164,8 @@ public class SecurityConfig {
 
     @Bean
     public JwtEncoder jwtEncoder(AppSecurityProperties props) {
-        var secret = props.getJwt().getSecret().getBytes(StandardCharsets.UTF_8);
-        return new NimbusJwtEncoder(new ImmutableSecret<SecurityContext>(secret));
+        var key = JwtSigningKeySupport.hmacSha256Key(props.getJwt().getSecret());
+        return new NimbusJwtEncoder(new ImmutableSecret<SecurityContext>(key));
     }
 
     @Bean

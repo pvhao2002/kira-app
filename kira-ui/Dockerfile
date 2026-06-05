@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 # ===========================
 # STAGE 1: Build Angular app
 # ===========================

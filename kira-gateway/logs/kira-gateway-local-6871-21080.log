@@ -1,0 +1,20 @@
+2026-06-05T17:42:30.491+07:00  INFO 21080 --- [kira-gateway] [main] c.db.kiragateway.KiraGatewayApplication  : Starting KiraGatewayApplication v0.0.1-SNAPSHOT using Java 25.0.1 with PID 21080 (D:\kira\kira-app\kira-gateway\target\kira-gateway-0.0.1-SNAPSHOT.jar started by Kira.Pham in D:\kira\kira-app\kira-gateway)
+2026-06-05T17:42:30.496+07:00  INFO 21080 --- [kira-gateway] [main] c.db.kiragateway.KiraGatewayApplication  : The following 1 profile is active: "composite"
+2026-06-05T17:42:34.688+07:00  INFO 21080 --- [kira-gateway] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JDBC repositories in DEFAULT mode.
+2026-06-05T17:42:34.749+07:00  INFO 21080 --- [kira-gateway] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 36 ms. Found 0 JDBC repository interfaces.
+2026-06-05T17:42:37.862+07:00  INFO 21080 --- [kira-gateway] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 6871 (http)
+2026-06-05T17:42:37.924+07:00  INFO 21080 --- [kira-gateway] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-05T17:42:37.925+07:00  INFO 21080 --- [kira-gateway] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.44]
+2026-06-05T17:42:38.059+07:00  INFO 21080 --- [kira-gateway] [main] o.a.c.c.C.[.[localhost].[/gateway]       : Initializing Spring embedded WebApplicationContext
+2026-06-05T17:42:38.060+07:00  INFO 21080 --- [kira-gateway] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 7331 ms
+2026-06-05T17:42:38.724+07:00  INFO 21080 --- [kira-gateway] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-05T17:42:40.346+07:00  INFO 21080 --- [kira-gateway] [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@5817f1ca
+2026-06-05T17:42:40.351+07:00  INFO 21080 --- [kira-gateway] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-06-05T17:42:41.580+07:00  INFO 21080 --- [kira-gateway] [main] c.d.k.s.AiscoreMatchStatusLabelCache     : Loaded 16 aiscore_match_status_ref labels (status_id, sport_id=1)
+2026-06-05T17:42:42.535+07:00  INFO 21080 --- [kira-gateway] [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-06-05T17:42:44.060+07:00  INFO 21080 --- [kira-gateway] [main] .w.s.a.s.AnnotationActionEndpointMapping : Supporting [WS-Addressing August 2004, WS-Addressing 1.0]
+2026-06-05T17:42:44.523+07:00  INFO 21080 --- [kira-gateway] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 6871 (http) with context path '/gateway'
+2026-06-05T17:42:44.572+07:00  INFO 21080 --- [kira-gateway] [main] c.db.kiragateway.KiraGatewayApplication  : Started KiraGatewayApplication in 18.016 seconds (process running for 19.717)
+2026-06-05T17:42:51.605+07:00  INFO 21080 --- [kira-gateway] [http-nio-6871-exec-2] o.a.c.c.C.[.[localhost].[/gateway]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-05T17:42:51.605+07:00  INFO 21080 --- [kira-gateway] [http-nio-6871-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-06-05T17:42:51.607+07:00  INFO 21080 --- [kira-gateway] [http-nio-6871-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms

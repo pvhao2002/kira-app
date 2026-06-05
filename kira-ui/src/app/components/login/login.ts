@@ -1,4 +1,5 @@
 import {ChangeDetectionStrategy, Component, inject, OnInit, signal} from '@angular/core';
+import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router} from '@angular/router';
 import {AuthService} from '../../config/AuthService';
 import {ToastService} from '../../config/ToastService';
@@ -6,6 +7,7 @@ import {Subscription, take} from 'rxjs';
 
 @Component({
   selector: 'app-login',
+  imports: [ReactiveFormsModule],
   templateUrl: './login.html',
   styleUrl: './login.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -15,10 +17,13 @@ export class Login implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
+  private readonly fb = inject(FormBuilder);
   private sessionCheckSubscription?: Subscription;
 
-  readonly username = signal('');
-  readonly password = signal('');
+  readonly form = this.fb.nonNullable.group({
+    username: ['', Validators.required],
+    password: ['', Validators.required],
+  });
   readonly showPassword = signal(false);
   readonly loading = signal(false);
 
@@ -33,13 +38,26 @@ export class Login implements OnInit {
   }
 
   onSubmit(): void {
-    if (!this.username().trim() || !this.password().trim() || this.loading()) {
+    if (this.loading()) {
+      return;
+    }
+
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.toast.error('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.');
+      return;
+    }
+
+    const {username, password} = this.form.getRawValue();
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername || !password.trim()) {
+      this.toast.error('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.');
       return;
     }
 
     this.sessionCheckSubscription?.unsubscribe();
     this.loading.set(true);
-    this.authService.login(this.username().trim(), this.password())
+    this.authService.login(trimmedUsername, password)
       .subscribe({
         next: () => {
           const returnUrl = this.resolveReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
