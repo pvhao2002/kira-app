@@ -1,6 +1,5 @@
 package com.queue.kiraqueue.dto;
 
-import com.queue.kiraqueue.service.deprecated.CrawDateService;
 import com.queue.kiraqueue.util.CountryCodeShortUtil;
 import com.queue.kiraqueue.util.DateUtil;
 import com.queue.kiraqueue.util.PlaywrightUtil;
@@ -110,20 +109,6 @@ public class EventHtml {
                 .addValue("htGoalStr", htScoreStr)
                 .addValue("ftResult", getResult(ftHomeScore, ftAwayScore))
                 .addValue("ftGoalStr", ftScoreStr);
-    }
-
-    public MapSqlParameterSource toParamInsertLeague() {
-        return new MapSqlParameterSource()
-                .addValue(CrawDateService.LEAGUE_NAME, this.getLeagueName())
-                .addValue(CrawDateService.LOGO_URL, this.getLeagueUrl())
-                .addValue("country", this.getCountryName())
-                .addValue(CrawDateService.COUNTRY_CODE_SHORT, CountryCodeShortUtil.toAlpha3(this.getCountryName()));
-    }
-
-    public MapSqlParameterSource toParamInsertTeam(boolean isHome) {
-        return new MapSqlParameterSource()
-                .addValue(CrawDateService.TEAM_NAME, isHome ? this.getHomeName() : this.getAwayName())
-                .addValue(CrawDateService.LOGO_URL, isHome ? this.getHomeUrl() : this.getAwayUrl());
     }
 
     public MapSqlParameterSource toParamInsertEvent(Integer leagueId, Integer homeId, Integer awayId) {
