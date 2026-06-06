@@ -1,24 +1,16 @@
-package kira.producer.util;
-
-import lombok.experimental.UtilityClass;
+package kira.datamanager.crawl;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-@UtilityClass
-public class DateUtil {
+public final class CrawlDateUtil {
 
     public static final String DATE_FORMAT_CRAWL = "yyyyMMdd";
 
     private static final DateTimeFormatter CRAWL_DATE = DateTimeFormatter.ofPattern(DATE_FORMAT_CRAWL);
     private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    public static String getTodayDate() {
-        return LocalDate.now().format(CRAWL_DATE);
-    }
-
-    public static String getTomorrowDate() {
-        return LocalDate.now().plusDays(1).format(CRAWL_DATE);
+    private CrawlDateUtil() {
     }
 
     public static LocalDate parseCrawlInputDate(String date) {

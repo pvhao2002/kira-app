@@ -13,6 +13,10 @@ spring:
   application:
     name: kira-data-manager
 
+app:
+  kira-producer:
+    base-url: ${APP_KIRA_PRODUCER_BASE_URL:http://localhost:2311}
+
 kira:
   datasource:
     url: jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&characterEncoding=utf8

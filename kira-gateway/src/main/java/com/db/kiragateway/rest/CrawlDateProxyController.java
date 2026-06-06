@@ -20,13 +20,9 @@ import java.util.Map;
 public class CrawlDateProxyController {
 
     private final RestClient dataManagerRestClient;
-    private final RestClient kiraProducerRestClient;
 
-    public CrawlDateProxyController(
-            @Qualifier("dataManagerRestClient") RestClient dataManagerRestClient,
-            @Qualifier("kiraProducerRestClient") RestClient kiraProducerRestClient) {
+    public CrawlDateProxyController(@Qualifier("dataManagerRestClient") RestClient dataManagerRestClient) {
         this.dataManagerRestClient = dataManagerRestClient;
-        this.kiraProducerRestClient = kiraProducerRestClient;
     }
 
     @GetMapping
@@ -80,10 +76,34 @@ public class CrawlDateProxyController {
     @SuppressWarnings("unchecked")
     public ResponseEntity<?> requeue(@PathVariable String date) {
         try {
-            Map<String, Object> body = kiraProducerRestClient.post()
+            Map<String, Object> body = dataManagerRestClient.post()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/producer/crawl-dates/{date}/requeue")
+                            .path("/crawl-dates/{date}/requeue")
                             .build(date))
+                    .retrieve()
+                    .body(Map.class);
+            return ResponseEntity.ok(body);
+        } catch (RestClientResponseException ex) {
+            Object errBody = ex.getResponseBodyAs(Map.class);
+            return ResponseEntity.status(ex.getStatusCode()).body(errBody != null ? errBody : Map.of("message", ex.getMessage()));
+        }
+    }
+
+    @PostMapping("/requeue-range")
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<?> requeueRange(
+            @RequestParam String fromDate,
+            @RequestParam String toDate
+    ) {
+        URI uri = UriComponentsBuilder.fromPath("/crawl-dates/requeue-range")
+                .queryParam("fromDate", fromDate)
+                .queryParam("toDate", toDate)
+                .build(true)
+                .toUri();
+
+        try {
+            Map<String, Object> body = dataManagerRestClient.post()
+                    .uri(uri)
                     .retrieve()
                     .body(Map.class);
             return ResponseEntity.ok(body);

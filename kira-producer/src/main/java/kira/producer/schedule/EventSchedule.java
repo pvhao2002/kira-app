@@ -40,20 +40,14 @@ public class EventSchedule {
               and not exists (
                 select 1 from event_claim ec
                 where ec.event_id = e.event_id
-                  and (
-                        ec.status = 'completed'
-                     or (
-                            ec.status = 'processing'
-                          -- and timestampdiff(second, ec.claimed_at, now()) < :claimStaleAfterSeconds
-                        )
-                  )
+                and ec.status in ('processing', 'completed')
               )
             """;
 
     private static final String SQL_SELECT_FINISHED_EVENTS = """
             select e.event_id
             from events e
-            left join aiscore_match_status_ref r
+            inner join aiscore_match_status_ref r
               on r.status_type = 'status_id'
              and r.code = e.status_id
              and r.sport_id = 1
@@ -72,7 +66,7 @@ public class EventSchedule {
     private static final String SQL_SELECT_LIVE_EVENTS = """
             select e.event_id
             from events e
-            left join aiscore_match_status_ref r
+            inner join aiscore_match_status_ref r
               on r.status_type = 'status_id'
              and r.code = e.status_id
              and r.sport_id = 1

@@ -33,6 +33,8 @@ yarn-error.*
 # local env files
 .env*.local
 .env
+app.env
+*.env
 
 # docker bind-mount data (mysql, rabbitmq)
 data/
@@ -93,3 +95,4 @@ build/
 # Gộp log từ IntelliJ (Promtail đọc từ đây)
 logs/*.log
 /logs
+app.env

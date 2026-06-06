@@ -334,7 +334,8 @@ create table event_odds_timeline
     created_at   datetime default now(),
     index idx_event_market (event_id, market),
     index idx_event_market_crawled (event_id, market, crawled_at),
-    index idx_event_market_line (event_id, market, line)
+    index idx_event_market_line (event_id, market, line),
+    index idx_event_odds_timeline_event_id (event_id)
 ) engine = InnoDB
   row_format = dynamic;
 

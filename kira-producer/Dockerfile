@@ -24,6 +24,8 @@ RUN jlink \
 
 FROM debian:bookworm-slim
 
+ARG DEBIAN_FRONTEND=noninteractive
+
 COPY --from=build /javaruntime /opt/jre-min
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -33,6 +35,7 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
 ENV PATH="/opt/jre-min/bin:$PATH"
+ENV LOG_FILE=/app/logs/kira-producer.log
 
 RUN useradd -m spring && chown -R spring:spring /app
 USER spring

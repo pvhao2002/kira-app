@@ -7,7 +7,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 128M
     restart: unless-stopped
     networks:
       - kira-app
@@ -32,7 +32,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 768M
     restart: unless-stopped
     networks:
       - kira-app
@@ -70,27 +70,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
-    restart: unless-stopped
-    networks:
-      - kira-app
-
-  kira-crawl-java:
-    image: kira2308/kira-crawl-java:latest
-    container_name: kira-crawl-java
-    ipc: host
-    ports:
-      - "127.0.0.1:4000:4000"
-    environment:
-      KIRA_CRAWL_PORT: "4000"
-      PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS}
-      PLAYWRIGHT_TEST_API_ENABLED: ${PLAYWRIGHT_TEST_API_ENABLED}
-      APP_GATEWAY_BASE_URL: ${APP_GATEWAY_BASE_URL}
-      AISCORE_COOKIE: ${AISCORE_COOKIE}
-    deploy:
-      resources:
-        limits:
-          memory: 2G
+          memory: 768M
     restart: unless-stopped
     networks:
       - kira-app

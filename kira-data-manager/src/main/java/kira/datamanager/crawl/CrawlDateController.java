@@ -2,6 +2,8 @@ package kira.datamanager.crawl;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,9 +15,11 @@ import java.util.Map;
 public class CrawlDateController {
 
     private final CrawlDateRepository crawlDateRepository;
+    private final CrawlDateRequeueService crawlDateRequeueService;
 
-    public CrawlDateController(CrawlDateRepository crawlDateRepository) {
+    public CrawlDateController(CrawlDateRepository crawlDateRepository, CrawlDateRequeueService crawlDateRequeueService) {
         this.crawlDateRepository = crawlDateRepository;
+        this.crawlDateRequeueService = crawlDateRequeueService;
     }
 
     @GetMapping("/crawl-dates")
@@ -63,5 +67,20 @@ public class CrawlDateController {
 
         var body = crawlDateRepository.findPage(page, size, status, date, dateFrom, dateTo, totalEvent, sortBy, sortDir);
         return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("/crawl-dates/{date}/requeue")
+    public ResponseEntity<Map<String, Object>> requeue(@PathVariable String date) {
+        var result = crawlDateRequeueService.requeueDate(date);
+        return ResponseEntity.status(result.status()).body(result.body());
+    }
+
+    @PostMapping("/crawl-dates/requeue-range")
+    public ResponseEntity<Map<String, Object>> requeueRange(
+            @RequestParam String fromDate,
+            @RequestParam String toDate
+    ) {
+        var result = crawlDateRequeueService.requeueDateRange(fromDate, toDate);
+        return ResponseEntity.status(result.status()).body(result.body());
     }
 }

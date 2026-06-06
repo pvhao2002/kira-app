@@ -8,6 +8,10 @@ on:
       - "kira-gateway/**"
       - "kira-data-manager/**"
       - "kira-crawl-java/**"
+      - "kira-producer/**"
+      - "kira-queue/**"
+      - "scripts/stack-producer-queue.yml"
+      - "scripts/build-producer-queue.sh"
       - "docker-compose*.yml"
       - "scripts/deploy-ec2.sh"
       - "scripts/ec2-bootstrap.sh"
@@ -19,6 +23,8 @@ on:
       - "kira-gateway/**"
       - "kira-data-manager/**"
       - "kira-crawl-java/**"
+      - "kira-producer/**"
+      - "kira-queue/**"
   workflow_dispatch:
     inputs:
       force_build_all:
@@ -49,6 +55,8 @@ jobs:
       kira-gateway: ${{ steps.filter.outputs.kira-gateway }}
       kira-data-manager: ${{ steps.filter.outputs.kira-data-manager }}
       kira-crawl-java: ${{ steps.filter.outputs.kira-crawl-java }}
+      kira-producer: ${{ steps.filter.outputs.kira-producer }}
+      kira-queue: ${{ steps.filter.outputs.kira-queue }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -63,6 +71,10 @@ jobs:
               - 'kira-data-manager/**'
             kira-crawl-java:
               - 'kira-crawl-java/**'
+            kira-producer:
+              - 'kira-producer/**'
+            kira-queue:
+              - 'kira-queue/**'
 
   build-kira-ui:
     needs: changes
@@ -156,12 +168,60 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  build-kira-producer:
+    needs: changes
+    if: >-
+      needs.changes.outputs.kira-producer == 'true'
+      || (github.event_name == 'workflow_dispatch' && inputs.force_build_all)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./kira-producer
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/kira-producer:latest
+            ${{ env.DOCKERHUB_USERNAME }}/kira-producer:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-kira-queue:
+    needs: changes
+    if: >-
+      needs.changes.outputs.kira-queue == 'true'
+      || (github.event_name == 'workflow_dispatch' && inputs.force_build_all)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./kira-queue
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/kira-queue:latest
+            ${{ env.DOCKERHUB_USERNAME }}/kira-queue:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   deploy:
     needs:
       - build-kira-ui
       - build-kira-gateway
       - build-kira-data-manager
       - build-kira-crawl-java
+      - build-kira-producer
+      - build-kira-queue
     if: >-
       always()
       && !cancelled()

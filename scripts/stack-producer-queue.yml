@@ -1,0 +1,85 @@
+x-kira-queue-base: &kira-queue-base
+  image: kira2308/kira-queue:latest
+  platform: ${DOCKER_PLATFORM:-linux/arm64}
+  ipc: host
+  environment: &kira-queue-env
+    LOG_DIR: /app/logs
+    DB_NAME: ${DB_NAME}
+    DB_APP_USER: ${DB_APP_USER}
+    DB_APP_PASSWORD: ${DB_APP_PASSWORD}
+    DB_PRIMARY_HOST: ${DB_PRIMARY_HOST}
+    DB_PRIMARY_PORT: ${DB_PRIMARY_PORT}
+    RABBIT_HOST: ${RABBIT_HOST}
+    RABBIT_PORT: ${RABBIT_PORT}
+    RABBIT_USERNAME: ${RABBIT_USERNAME}
+    RABBIT_PASSWORD: ${RABBIT_PASSWORD}
+    RABBIT_VHOST: ${RABBIT_VHOST}
+    APP_KIRA_CRAWL_BASE_URL: ${APP_KIRA_CRAWL_BASE_URL:-http://host.docker.internal:4000}
+    APP_GATEWAY_BASE_URL: ${APP_GATEWAY_BASE_URL:-http://host.docker.internal:6868/gateway}
+    PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS:-true}
+    PLAYWRIGHT_TEST_API_ENABLED: ${PLAYWRIGHT_TEST_API_ENABLED:-false}
+    AISCORE_COOKIE: ${AISCORE_COOKIE:-}
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  deploy:
+    resources:
+      limits:
+        memory: 2G
+  restart: unless-stopped
+  networks:
+    - kira-app
+
+services:
+  kira-producer:
+    image: kira2308/kira-producer:latest
+    platform: ${DOCKER_PLATFORM:-linux/arm64}
+    container_name: kira-producer
+    ports:
+      - "2311:2311"
+    environment:
+      KIRA_PRODUCER_PORT: "2311"
+      LOG_FILE: /app/logs/kira-producer.log
+      DB_NAME: ${DB_NAME}
+      DB_APP_USER: ${DB_APP_USER}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD}
+      DB_PRIMARY_HOST: ${DB_PRIMARY_HOST}
+      DB_PRIMARY_PORT: ${DB_PRIMARY_PORT}
+      RABBIT_HOST: ${RABBIT_HOST}
+      RABBIT_PORT: ${RABBIT_PORT}
+      RABBIT_USERNAME: ${RABBIT_USERNAME}
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
+      RABBIT_VHOST: ${RABBIT_VHOST}
+      KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED: ${KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED:-true}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    restart: unless-stopped
+    networks:
+      - kira-app
+
+  kira-queue-1:
+    <<: *kira-queue-base
+    container_name: kira-queue-1
+    ports:
+      - "2323:2323"
+    environment:
+      <<: *kira-queue-env
+      INSTANCE_ID: docker-1
+      KIRA_CRAWL_INSTANCE_ID: docker-1
+
+  kira-queue-2:
+    <<: *kira-queue-base
+    container_name: kira-queue-2
+    ports:
+      - "2324:2323"
+    environment:
+      <<: *kira-queue-env
+      INSTANCE_ID: docker-2
+      KIRA_CRAWL_INSTANCE_ID: docker-2
+
+networks:
+  kira-app:
+    driver: bridge

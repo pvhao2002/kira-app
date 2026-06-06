@@ -10,21 +10,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -33,7 +25,6 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,46 +41,15 @@ class CrawEventServiceV2AsyncPersistTest {
     private EventCrawlService eventCrawlService;
 
     @Test
-    void processEvent_fetchSuccess_returnsBeforePersistCompletes() throws Exception {
+    void processEvent_fetchSuccess_persistsOddsTimeline() throws Exception {
         stubEventSelect();
         when(eventCrawlService.crawlEvent("m1"))
                 .thenReturn(new MatchOddsResponseDto("m1", null, null, List.of(), null, null));
 
-        var order = Collections.synchronizedList(new ArrayList<String>());
-        var persistStarted = new CountDownLatch(1);
-        var allowPersist = new CountDownLatch(1);
+        var service = newService();
+        assertTrue(service.processEvent(EVENT_ID));
 
-        Executor asyncExecutor = task -> new Thread(() -> {
-            order.add("persist-started");
-            persistStarted.countDown();
-            try {
-                allowPersist.await(5, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
-            task.run();
-            order.add("persist-finished");
-        }, "test-persist").start();
-
-        var service = newService(asyncExecutor);
-        boolean success = service.processEvent(EVENT_ID);
-        order.add("process-returned");
-
-        assertTrue(success);
-        assertTrue(persistStarted.await(5, TimeUnit.SECONDS));
-        assertTrue(order.contains("process-returned"));
-
-        allowPersist.countDown();
-        Thread.sleep(200);
-        assertTrue(order.contains("persist-finished"), () -> "order=" + order);
-        assertTrue(
-                order.indexOf("process-returned") < order.indexOf("persist-finished"),
-                () -> "processEvent should return before persist completes: order=" + order
-        );
-
-        verify(jdbcTemplate, timeout(5000).atLeastOnce())
-                .update(contains("event_odds_timeline"), anyMap());
+        verify(jdbcTemplate).update(contains("event_odds_timeline"), anyMap());
     }
 
     @Test
@@ -112,15 +72,13 @@ class CrawEventServiceV2AsyncPersistTest {
                         null
                 ));
 
-        var service = newService(Runnable::run);
-        assertTrue(service.processEvent(EVENT_ID));
+        assertTrue(newService().processEvent(EVENT_ID));
 
-        verify(jdbcTemplate, timeout(5000))
-                .update(contains("has_odds = false"), eq(Map.of("event_id", EVENT_ID)));
+        verify(jdbcTemplate).update(contains("has_odds = false"), eq(Map.of("event_id", EVENT_ID)));
     }
 
     @Test
-    void processEvent_persistFailure_marksClaimFailedAsync() throws Exception {
+    void processEvent_persistFailure_marksClaimFailed() throws Exception {
         stubEventSelect();
         when(eventCrawlService.crawlEvent("m1"))
                 .thenReturn(new MatchOddsResponseDto("m1", null, null, List.of(), null, null));
@@ -133,52 +91,27 @@ class CrawEventServiceV2AsyncPersistTest {
                     throw new RuntimeException("db down");
                 });
 
-        var service = newService(Runnable::run);
-        assertTrue(service.processEvent(EVENT_ID));
+        assertFalse(newService().processEvent(EVENT_ID));
 
-        verify(jdbcTemplate, timeout(5000))
-                .update(contains("status = 'failed'"), eq(Map.of("event_id", EVENT_ID)));
+        verify(jdbcTemplate).update(contains("status = 'failed'"), eq(Map.of("event_id", EVENT_ID)));
     }
 
-    private CrawEventServiceV2 newService(Executor executor) {
-        PlatformTransactionManager transactionManager = new PlatformTransactionManager() {
-            @Override
-            public TransactionStatus getTransaction(TransactionDefinition definition) {
-                return new SimpleTransactionStatus();
-            }
-
-            @Override
-            public void commit(TransactionStatus status) {
-            }
-
-            @Override
-            public void rollback(TransactionStatus status) {
-            }
-        };
-        return new CrawEventServiceV2(
-                jdbcTemplate,
-                eventCrawlService,
-                executor,
-                transactionManager
-        );
+    private CrawEventServiceV2 newService() {
+        return new CrawEventServiceV2(jdbcTemplate, eventCrawlService);
     }
 
     @SuppressWarnings("unchecked")
     private void stubEventSelect() throws SQLException {
         lenient().when(jdbcTemplate.query(anyString(), anyMap(), any(RowMapper.class)))
                 .thenAnswer(invocation -> {
-                    String sql = invocation.getArgument(0);
                     RowMapper<Object> mapper = invocation.getArgument(2);
                     ResultSet rs = mock(ResultSet.class);
-                    if (sql.contains("event_id, link, has_odds_corner")) {
-                        when(rs.getLong("event_id")).thenReturn(EVENT_ID);
-                        when(rs.getString("link")).thenReturn(LINK);
-                        when(rs.getObject("has_odds_corner", Boolean.class)).thenReturn(false);
-                    } else {
-                        when(rs.getString("status")).thenReturn("FT");
-                        when(rs.getInt("is_terminal")).thenReturn(1);
-                        when(rs.getInt("is_in_play")).thenReturn(0);
-                    }
+                    when(rs.getLong("event_id")).thenReturn(EVENT_ID);
+                    when(rs.getString("link")).thenReturn(LINK);
+                    when(rs.getObject("has_odds_corner", Boolean.class)).thenReturn(false);
+                    when(rs.getString("status")).thenReturn("FT");
+                    when(rs.getInt("is_terminal")).thenReturn(1);
+                    when(rs.getInt("is_in_play")).thenReturn(0);
                     return List.of(mapper.mapRow(rs, 0));
                 });
     }

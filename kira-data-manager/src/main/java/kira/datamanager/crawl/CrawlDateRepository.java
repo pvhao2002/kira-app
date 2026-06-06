@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -21,8 +22,25 @@ public class CrawlDateRepository {
 
     private final JdbcClient jdbcClient;
 
+    private static final String SQL_MARK_PICKED = """
+            INSERT INTO crawl_date (date, status, total_events) VALUES (:date, 'picked', 0)
+            ON DUPLICATE KEY UPDATE status = 'picked'
+            """;
+
     public CrawlDateRepository(JdbcClient jdbcClient) {
         this.jdbcClient = jdbcClient;
+    }
+
+    public void markPicked(String date) {
+        jdbcClient.sql(SQL_MARK_PICKED)
+                .param("date", date)
+                .update();
+    }
+
+    public void markPickedBatch(List<String> dates) {
+        for (String date : dates) {
+            markPicked(date);
+        }
     }
 
     public static boolean isAllowedStatus(String status) {

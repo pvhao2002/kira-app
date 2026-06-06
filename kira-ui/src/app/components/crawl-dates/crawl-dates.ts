@@ -50,6 +50,7 @@ export class CrawlDates {
   readonly data = signal<CrawlDatePage | null>(null);
   /** ISO date (yyyy-MM-dd) đang gửi requeue, hoặc null. */
   readonly requeueingDate = signal<string | null>(null);
+  readonly requeueingRange = signal(false);
 
   readonly pageIndex = signal(0);
   readonly pageSize = signal(20);
@@ -142,6 +143,54 @@ export class CrawlDates {
     this.totalEventFilter.set('all');
     this.pageIndex.set(0);
     this.load();
+  }
+
+  canRequeueRange(): boolean {
+    return Boolean(this.fromDate().trim() && this.toDate().trim());
+  }
+
+  requeueRange(): void {
+    if (this.requeueingRange() || this.requeueingDate() !== null) {
+      return;
+    }
+    const from = this.fromDate().trim();
+    const to = this.toDate().trim();
+    if (!from || !to) {
+      this.toast.error('Chọn From date và To date trước khi crawl khoảng ngày.');
+      return;
+    }
+    if (from > to) {
+      this.toast.error('From date phải trước hoặc bằng To date.');
+      return;
+    }
+
+    this.requeueingRange.set(true);
+    const params = new HttpParams().set('fromDate', from).set('toDate', to);
+    this.http.post<{
+      status?: string;
+      enqueued?: number;
+      total?: number;
+      failed?: string[];
+      message?: string;
+    }>('/gateway/crawl-dates/requeue-range', null, {params}).subscribe({
+      next: body => {
+        this.requeueingRange.set(false);
+        const status = (body?.status ?? '').trim().toLowerCase();
+        if (status === 'partial') {
+          const failedCount = body.failed?.length ?? 0;
+          this.toast.error(`Đã enqueue ${body.enqueued ?? 0}/${body.total ?? 0} ngày. ${failedCount} ngày thất bại.`);
+        } else {
+          this.toast.success(`Đã đưa ${body.enqueued ?? 0} ngày vào hàng đợi crawl.`);
+        }
+        this.load();
+      },
+      error: err => {
+        this.requeueingRange.set(false);
+        const raw = err?.error?.message ?? err?.message ?? 'Không gửi được yêu cầu crawl khoảng ngày.';
+        const msg = typeof raw === 'string' ? raw : 'Không gửi được yêu cầu crawl khoảng ngày.';
+        this.toast.error(msg);
+      }
+    });
   }
 
   requeue(isoDate: string): void {

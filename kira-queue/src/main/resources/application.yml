@@ -1,6 +1,6 @@
 application:
   datasource:
-    jdbc-url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true"
+    jdbc-url: "jdbc:mysql://${DB_PRIMARY_HOST:localhost}:${DB_PRIMARY_PORT:3310}/${DB_NAME:kira}?useUnicode=true&createDatabaseIfNotExist=true&rewriteBatchedStatements=true&cachePrepStmts=true&useServerPrepStmts=true"
     username: "${DB_APP_USER:kira_user}"
     password: "${DB_APP_PASSWORD:kira_password}"
     driver-class-name: com.mysql.cj.jdbc.Driver

@@ -1,6 +1,5 @@
 package com.queue.kiraqueue.service;
 
-import com.queue.kiraqueue.config.CrawlPersistExecutorConfig;
 import com.queue.kiraqueue.crawl.EventCrawlService;
 import com.queue.kiraqueue.dto.aiscore.CrawlOddsSnapshotDto;
 import com.queue.kiraqueue.dto.aiscore.CrawlOddsTimelineGroupDto;
@@ -8,12 +7,9 @@ import com.queue.kiraqueue.dto.aiscore.CrawlOddsTimelineItemDto;
 import com.queue.kiraqueue.dto.aiscore.MatchOddsResponseDto;
 import com.queue.kiraqueue.util.JdbcBatchUtils;
 import lombok.extern.java.Log;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -23,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
 import java.util.logging.Level;
 
 @Log
@@ -34,13 +29,10 @@ public class CrawEventServiceV2 {
     private static final Set<String> IN_PLAY_STATUS_FALLBACK = Set.of("1H", "HT", "2H", "ET", "Penalties");
 
     private static final String SQL_SELECT_EVENT = """
-            select event_id, link, has_odds_corner
-            from events
-            where event_id = :eventId
-            """;
-
-    private static final String SQL_SELECT_EVENT_PLAY_STATE = """
-            select e.status,
+            select e.event_id,
+                   e.link,
+                   e.has_odds_corner,
+                   e.status,
                    coalesce(r.is_terminal, 0) as is_terminal,
                    coalesce(r.is_in_play, 0) as is_in_play
             from events e
@@ -62,12 +54,8 @@ public class CrawEventServiceV2 {
     private static final String SQL_DELETE_EVENT_ODDS_TIMELINE = "delete from event_odds_timeline where event_id = :event_id";
 
     private static final String SQL_INSERT_EVENT_ODDS = """
-            insert into event_odds (event_id, type, market, line, price_a, price_b)
+            insert ignore into event_odds (event_id, type, market, line, price_a, price_b)
             values (:event_id, :type, :market, :line, :price_a, :price_b)
-            on duplicate key update
-                line = values(line),
-                price_a = values(price_a),
-                price_b = values(price_b)
             """;
 
     private static final String SQL_INSERT_EVENT_ODDS_TIMELINE = """
@@ -99,19 +87,13 @@ public class CrawEventServiceV2 {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final EventCrawlService eventCrawlService;
-    private final Executor crawlPersistExecutor;
-    private final TransactionTemplate transactionTemplate;
 
     public CrawEventServiceV2(
             NamedParameterJdbcTemplate jdbcTemplate,
-            EventCrawlService eventCrawlService,
-            @Qualifier(CrawlPersistExecutorConfig.CRAWL_PERSIST_EXECUTOR) Executor crawlPersistExecutor,
-            PlatformTransactionManager transactionManager
+            EventCrawlService eventCrawlService
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.eventCrawlService = eventCrawlService;
-        this.crawlPersistExecutor = crawlPersistExecutor;
-        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     public boolean processEvent(long eventId) {
@@ -121,7 +103,10 @@ public class CrawEventServiceV2 {
                 (rs, rn) -> new EventRow(
                         rs.getLong("event_id"),
                         rs.getString("link"),
-                        rs.getObject("has_odds_corner", Boolean.class)
+                        rs.getObject("has_odds_corner", Boolean.class),
+                        rs.getString("status"),
+                        rs.getInt("is_terminal"),
+                        rs.getInt("is_in_play")
                 )
         ).stream().findFirst().orElse(null);
 
@@ -147,33 +132,17 @@ public class CrawEventServiceV2 {
             MatchOddsResponseDto response = eventCrawlService.crawlEvent(matchId);
             if (response.isEmpty()) {
                 log.warning("CrawEventServiceV2 >> empty odds crawl response (no Bet365?): eventId=" + eventId);
-                recordMissingOdds(eventId);
                 failEventClaim(eventId);
                 return false;
             }
-
-            schedulePersist(eventId, response);
+            persistCrawlResult(eventId, response);
+            handleClaimAfterSuccess(eventRow);
             return true;
         } catch (Exception ex) {
             log.log(Level.WARNING, "CrawEventServiceV2 >> failed eventId=" + eventId, ex);
             failEventClaim(eventId);
             return false;
         }
-    }
-
-    private void schedulePersist(long eventId, MatchOddsResponseDto response) {
-        crawlPersistExecutor.execute(() -> {
-            try {
-                transactionTemplate.executeWithoutResult(status -> {
-                    persistCrawlResult(eventId, response);
-                    handleClaimAfterSuccess(eventId);
-                });
-                log.info("CrawEventServiceV2 >> saved eventId=" + eventId + " matchId=" + response.matchId());
-            } catch (Exception ex) {
-                log.log(Level.WARNING, "persist failed eventId=" + eventId, ex);
-                failEventClaim(eventId);
-            }
-        });
     }
 
     public void failEventClaim(long eventId) {
@@ -208,24 +177,12 @@ public class CrawEventServiceV2 {
         jdbcTemplate.update(SQL_CLEAR_EVENT_ODDS_FLAGS, Map.of("event_id", eventId));
     }
 
-    private void handleClaimAfterSuccess(long eventId) {
-        if (shouldReleaseClaimAfterSuccess(loadEventPlayState(eventId))) {
-            releaseEventClaim(eventId);
+    private void handleClaimAfterSuccess(EventRow eventRow) {
+        if (shouldReleaseClaimAfterSuccess(eventRow.playState())) {
+            releaseEventClaim(eventRow.eventId());
         } else {
-            completeEventClaim(eventId);
+            completeEventClaim(eventRow.eventId());
         }
-    }
-
-    private EventPlayState loadEventPlayState(long eventId) {
-        return jdbcTemplate.query(
-                SQL_SELECT_EVENT_PLAY_STATE,
-                Map.of("eventId", eventId),
-                (rs, rn) -> new EventPlayState(
-                        rs.getString("status"),
-                        rs.getInt("is_terminal"),
-                        rs.getInt("is_in_play")
-                )
-        ).stream().findFirst().orElse(new EventPlayState("-", 0, 0));
     }
 
     private static boolean shouldReleaseClaimAfterSuccess(EventPlayState state) {
@@ -257,9 +214,18 @@ public class CrawEventServiceV2 {
     }
 
     private void persistOdds(long eventId, List<CrawlOddsSnapshotDto> odds, CrawlOddsTimelineGroupDto timeline) {
-        jdbcTemplate.update(SQL_DELETE_EVENT_ODDS_TIMELINE, Map.of("event_id", eventId));
-        jdbcTemplate.update(SQL_DELETE_EVENT_ODDS, Map.of("event_id", eventId));
+        long persistStart = System.nanoTime();
 
+        long deleteTimelineStart = System.nanoTime();
+        jdbcTemplate.update(SQL_DELETE_EVENT_ODDS_TIMELINE, Map.of("event_id", eventId));
+        long deleteTimelineMs = elapsedMillis(deleteTimelineStart);
+
+        long deleteOddsStart = System.nanoTime();
+        jdbcTemplate.update(SQL_DELETE_EVENT_ODDS, Map.of("event_id", eventId));
+        long deleteOddsMs = elapsedMillis(deleteOddsStart);
+
+        int oddsRows = 0;
+        long oddsMs = 0;
         if (!CollectionUtils.isEmpty(odds)) {
             var oddsParams = odds.stream()
                     .filter(o -> isSupportedMarket(o.market()))
@@ -272,13 +238,36 @@ public class CrawEventServiceV2 {
                             .addValue("price_a", o.priceA())
                             .addValue("price_b", o.priceB()))
                     .toList();
+            oddsRows = oddsParams.size();
+            long oddsStart = System.nanoTime();
             JdbcBatchUtils.batchInsertSafe(jdbcTemplate, SQL_INSERT_EVENT_ODDS, oddsParams);
+            oddsMs = elapsedMillis(oddsStart);
         }
 
         var timelineParams = flattenTimeline(eventId, timeline);
+        int timelineRows = timelineParams.size();
+        long timelineMs = 0;
         if (!timelineParams.isEmpty()) {
+            long timelineStart = System.nanoTime();
             JdbcBatchUtils.batchInsertSafe(jdbcTemplate, SQL_INSERT_EVENT_ODDS_TIMELINE, timelineParams);
+            timelineMs = elapsedMillis(timelineStart);
         }
+
+        log.info("persistOdds eventId=%d deleteTimelineMs=%d deleteOddsMs=%d oddsRows=%d oddsMs=%d timelineRows=%d timelineMs=%d totalMs=%d"
+                .formatted(
+                        eventId,
+                        deleteTimelineMs,
+                        deleteOddsMs,
+                        oddsRows,
+                        oddsMs,
+                        timelineRows,
+                        timelineMs,
+                        elapsedMillis(persistStart)
+                ));
+    }
+
+    private static long elapsedMillis(long startNano) {
+        return (System.nanoTime() - startNano) / 1_000_000L;
     }
 
     private List<MapSqlParameterSource> flattenTimeline(long eventId, CrawlOddsTimelineGroupDto timeline) {
@@ -335,7 +324,21 @@ public class CrawEventServiceV2 {
         }
     }
 
-    private record EventRow(long eventId, String link, Boolean hasOddsCorner) {
+    private record EventRow(
+            long eventId,
+            String link,
+            Boolean hasOddsCorner,
+            String status,
+            int isTerminal,
+            int isInPlay
+    ) {
+        EventPlayState playState() {
+            return new EventPlayState(
+                    status == null ? "-" : status,
+                    isTerminal,
+                    isInPlay
+            );
+        }
     }
 
     private record EventPlayState(String status, int isTerminal, int isInPlay) {

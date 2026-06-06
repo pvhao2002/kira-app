@@ -24,58 +24,83 @@
     </div>
 
     @if (filterMode() === 'advance') {
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-        <label class="flex flex-col gap-1 text-sm text-slate-300">
-          <span class="text-xs font-semibold uppercase text-slate-500">From date</span>
-          <input type="date"
-                 class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
-                 [value]="fromDate()"
-                 (input)="fromDate.set($any($event.target).value)"/>
-        </label>
+      <div class="space-y-5">
+        <div class="space-y-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Crawl theo khoảng ngày</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+            <label class="flex flex-col gap-1 text-sm text-slate-300">
+              <span class="text-xs font-semibold uppercase text-slate-500">From date</span>
+              <input type="date"
+                     class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
+                     [value]="fromDate()"
+                     (input)="fromDate.set($any($event.target).value)"/>
+            </label>
 
-        <label class="flex flex-col gap-1 text-sm text-slate-300">
-          <span class="text-xs font-semibold uppercase text-slate-500">To date</span>
-          <input type="date"
-                 class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
-                 [value]="toDate()"
-                 (input)="toDate.set($any($event.target).value)"/>
-        </label>
+            <label class="flex flex-col gap-1 text-sm text-slate-300">
+              <span class="text-xs font-semibold uppercase text-slate-500">To date</span>
+              <input type="date"
+                     class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
+                     [value]="toDate()"
+                     (input)="toDate.set($any($event.target).value)"/>
+            </label>
 
-        <label class="flex flex-col gap-1 text-sm text-slate-300">
-          <span class="text-xs font-semibold uppercase text-slate-500">Status</span>
-          <select class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
-                  [value]="statusFilter()"
-                  (change)="statusFilter.set($any($event.target).value)">
-            <option value="all">Tất cả</option>
-            <option value="pending">pending</option>
-            <option value="picked">picked</option>
-            <option value="in_progress">in_progress</option>
-            <option value="done">done</option>
-            <option value="failed">failed</option>
-          </select>
-        </label>
+            <button type="button"
+                    (click)="requeueRange()"
+                    [disabled]="!canRequeueRange() || requeueingRange() || requeueingDate() !== null"
+                    class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500
+                           disabled:opacity-40 disabled:cursor-not-allowed sm:col-span-2 lg:col-span-1">
+              @if (requeueingRange()) {
+                <span class="material-symbols-outlined text-base animate-spin">progress_activity</span>
+              } @else {
+                <span class="material-symbols-outlined text-base">date_range</span>
+              }
+              Crawl khoảng ngày
+            </button>
+          </div>
+        </div>
 
-        <label class="flex flex-col gap-1 text-sm text-slate-300">
-          <span class="text-xs font-semibold uppercase text-slate-500">Total event</span>
-          <select class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
-                  [value]="totalEventFilter()"
-                  (change)="totalEventFilter.set($any($event.target).value)">
-            <option value="all">Tất cả</option>
-            <option value="0">total event = 0</option>
-          </select>
-        </label>
+        <div class="border-t border-white/5 pt-5 space-y-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Lọc danh sách</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+            <label class="flex flex-col gap-1 text-sm text-slate-300">
+              <span class="text-xs font-semibold uppercase text-slate-500">Status</span>
+              <select class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
+                      [value]="statusFilter()"
+                      (change)="statusFilter.set($any($event.target).value)">
+                <option value="all">Tất cả</option>
+                <option value="pending">pending</option>
+                <option value="picked">picked</option>
+                <option value="in_progress">in_progress</option>
+                <option value="done">done</option>
+                <option value="failed">failed</option>
+              </select>
+            </label>
 
-        <div class="flex flex-wrap gap-2">
-          <button type="button"
-                  (click)="applyAdvancedFilters()"
-                  class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500">
-            Áp dụng
-          </button>
-          <button type="button"
-                  (click)="resetAdvancedFilters()"
-                  class="px-4 py-2 rounded-lg bg-slate-900 text-slate-300 text-sm font-semibold border border-white/10 hover:bg-slate-800">
-            Xóa lọc
-          </button>
+            <label class="flex flex-col gap-1 text-sm text-slate-300">
+              <span class="text-xs font-semibold uppercase text-slate-500">Total event</span>
+              <select class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
+                      [value]="totalEventFilter()"
+                      (change)="totalEventFilter.set($any($event.target).value)">
+                <option value="all">Tất cả</option>
+                <option value="0">total event = 0</option>
+              </select>
+            </label>
+
+            <div class="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
+              <button type="button"
+                      (click)="applyAdvancedFilters()"
+                      class="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500">
+                <span class="material-symbols-outlined text-base">filter_alt</span>
+                Áp dụng
+              </button>
+              <button type="button"
+                      (click)="resetAdvancedFilters()"
+                      class="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg bg-slate-900 text-slate-300 text-sm font-semibold border border-white/10 hover:bg-slate-800">
+                <span class="material-symbols-outlined text-base">filter_alt_off</span>
+                Xóa lọc
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     }
