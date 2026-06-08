@@ -4,6 +4,7 @@ import com.microsoft.playwright.Page;
 import kira.crawl.config.PlaywrightProperties;
 import kira.crawl.service.AiscoreBadGatewayException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Base64;
@@ -16,6 +17,7 @@ import java.util.Map;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class AiscorePageFetchClient {
 
     public static final String ORIGIN = "https://www.aiscore.com";
@@ -115,8 +117,23 @@ public class AiscorePageFetchClient {
                     SINGLE_FETCH_SCRIPT,
                     fetchParams(apiUrl, referer)
             );
-            return decodeResultBody(result);
+            var body = decodeResultBody(result);
+            var status = toInt(result.get("status"));
+            var bodyLen = toInt(result.get("bodyLen"));
+            if (body != null && body.length > 0) {
+                log.info("AiScore API fetch ok url={} status={} bodyLen={}", apiUrl, status, bodyLen);
+            } else {
+                log.warn(
+                        "AiScore API fetch failed url={} status={} bodyLen={} error={}",
+                        apiUrl,
+                        status,
+                        bodyLen,
+                        result.get("error")
+                );
+            }
+            return body;
         } catch (RuntimeException ex) {
+            log.warn("AiScore API fetch error url={}", apiUrl, ex);
             return null;
         }
     }
@@ -175,5 +192,9 @@ public class AiscorePageFetchClient {
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    private static int toInt(Object value) {
+        return value instanceof Number number ? number.intValue() : 0;
     }
 }

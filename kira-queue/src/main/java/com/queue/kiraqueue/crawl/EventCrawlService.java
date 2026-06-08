@@ -8,6 +8,7 @@ import com.queue.kiraqueue.mapper.OddsMapper;
 import com.queue.kiraqueue.playwright.PlaywrightLane;
 import com.queue.kiraqueue.playwright.PlaywrightManager;
 import com.queue.kiraqueue.protobuf.AiscoreProtobufService;
+import com.queue.kiraqueue.service.CrawEventServiceV2;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,11 +32,13 @@ public class EventCrawlService {
     private static final List<String> ODDS_TYPE_LIST = List.of("asia", "bs", "corner");
     private static final double DEFAULT_WAIT_MS = 100;
 
-    public MatchOddsResponseDto crawlEvent(String matchId) {
+    public MatchOddsResponseDto crawlEvent(String matchId, CrawEventServiceV2.EventRow event) {
         long crawlStart = System.nanoTime();
         var lane = playwrightManager.getEventLane();
+        var page = lane.getPage();
+
         var oddListUrl = ODD_LIST.formatted(matchId);
-        var oddListBody = fetchOddsListWithRetry(lane, oddListUrl);
+        var oddListBody = aiscorePageFetchClient.fetchOptional(page, oddListUrl);
         if (oddListBody == null || oddListBody.length == 0) {
             log.warn(
                     "MatchOdds timing summary matchId={} outcome=fetchFailed totalSec={}",
@@ -53,18 +56,13 @@ public class EventCrawlService {
             );
             return MatchOddsResponseDto.empty();
         }
-        var oddsDetails = lane.withPage(page -> {
-            page.waitForTimeout(DEFAULT_WAIT_MS);
-            return fetchOddsDetailTabs(page, matchId);
-        });
+        var oddsDetails = fetchOddsDetailTabs(page, event);
         var timelineOdds = oddsMapper.mapOddsTimelineForDatabase(oddsDetails);
         var response = new MatchOddsResponseDto(
                 matchId,
                 null,
                 null,
-                !timelineOdds.isEmpty()
-                        ? oddsMapper.mapOddsForDatabase(oddsDetails)
-                        : oddsMapper.mapOddsListForDatabase(oddsList),
+                oddsMapper.mapOddsListForDatabase(oddsList),
                 oddsMapper.groupOddsTimelineForResponse(timelineOdds),
                 null
         );
@@ -76,21 +74,15 @@ public class EventCrawlService {
         return response;
     }
 
-    private byte[] fetchOddsListWithRetry(PlaywrightLane lane, String oddListUrl) {
-        var body = lane.withPage(page -> aiscorePageFetchClient.fetchOptional(page, oddListUrl));
-        if (body != null && body.length > 0) {
-            return body;
-        }
-        lane.ensureReady();
-        return lane.withPage(page -> aiscorePageFetchClient.fetchOptional(page, oddListUrl));
-    }
-
-    private OddsMapper.OddsDetails fetchOddsDetailTabs(Page page, String matchId) {
+    private OddsMapper.OddsDetails fetchOddsDetailTabs(Page page, CrawEventServiceV2.EventRow event) {
         JsonNode asia = null;
         JsonNode bs = null;
         JsonNode corner = null;
         for (var type : ODDS_TYPE_LIST) {
-            var body = aiscorePageFetchClient.fetchOptional(page, ODD_DETAIL.formatted(matchId, type));
+            if (!event.hasOddsCorner() && type.equals("corner")) {
+                continue;
+            }
+            var body = aiscorePageFetchClient.fetchOptional(page, ODD_DETAIL.formatted(event.matchId(), type));
             page.waitForTimeout(DEFAULT_WAIT_MS);
             if (body == null) {
                 continue;

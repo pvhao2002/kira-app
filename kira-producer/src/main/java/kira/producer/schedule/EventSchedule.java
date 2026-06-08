@@ -29,11 +29,8 @@ public class EventSchedule {
     private static final String EVENT_CLAIM_BY = "kira-producer";
 
     private static final String SQL_UPSERT_EVENT_CLAIM = """
-            insert into event_claim (event_id, claimed_by, claimed_at, status)
+            insert ignore into event_claim (event_id, claimed_by, claimed_at, status)
             values (:eventId, :claimedBy, :claimedAt, 'processing')
-            on duplicate key update claimed_by = values(claimed_by),
-                                    claimed_at = values(claimed_at),
-                                    status = 'processing'
             """;
 
     private static final String SQL_FILTER_NOT_CLAIMED = """
@@ -47,17 +44,13 @@ public class EventSchedule {
     private static final String SQL_SELECT_FINISHED_EVENTS = """
             select e.event_id
             from events e
-            inner join aiscore_match_status_ref r
-              on r.status_type = 'status_id'
-             and r.code = e.status_id
-             and r.sport_id = 1
             where e.link is not null
-              and coalesce(e.has_odds, 0) = 1
-            """ + SQL_FILTER_NOT_CLAIMED + """
-              and (
-                    (r.ref_id is not null and r.is_terminal = 1 and r.code not in (9, 12))
-                 or (e.status_id is null and e.status = 'FT')
-              )
+              and e.has_odds
+              and not exists (select 1
+                              from event_claim ec
+                              where ec.event_id = e.event_id
+                                and ec.status in ('processing', 'completed', 'skipped'))
+              and (e.status = 'FT' or e.status_id in (8, 7, 5, 6))
             order by e.event_date desc, e.event_id desc
             limit :batch_limit
             for update skip locked

@@ -31,7 +31,8 @@ import java.time.LocalDateTime;
         indexes = {
                 @Index(name = "idx_claimed_by_claimed_at", columnList = "claimed_by, claimed_at"),
                 @Index(name = "idx_claimed_at", columnList = "claimed_at"),
-                @Index(name = "idx_event_claim_status_claimed_at", columnList = "status, claimed_at")
+                @Index(name = "idx_event_claim_status_claimed_at", columnList = "status, claimed_at"),
+                @Index(name = "idx_event_claim_event_status", columnList = "event_id, status"),
         })
 @Getter
 @Setter
@@ -49,6 +50,9 @@ public class EventClaim {
 
     @Column(name = "claimed_by", nullable = false, length = 100)
     private String claimedBy;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
 
     @Column(name = "claimed_at")
     private LocalDateTime claimedAt;

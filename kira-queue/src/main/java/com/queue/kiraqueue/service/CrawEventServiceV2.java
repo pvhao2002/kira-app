@@ -30,7 +30,9 @@ public class CrawEventServiceV2 {
 
     private static final String SQL_SELECT_EVENT = """
             select e.event_id,
+                   e.external_id                 match_id,
                    e.link,
+                   e.has_odds,
                    e.has_odds_corner,
                    e.status,
                    coalesce(r.is_terminal, 0) as is_terminal,
@@ -66,23 +68,11 @@ public class CrawEventServiceV2 {
     private static final String SQL_DELETE_EVENT_CLAIM =
             "delete from event_claim where event_id = :event_id";
 
-    private static final String SQL_FAIL_EVENT_CLAIM = """
+    private static final String SQL_UPDATE_EVENT_CLAIM = """
             update event_claim
-            set status = 'failed'
+            set status = :status,
+                description = :description
             where event_id = :event_id
-            """;
-
-    private static final String SQL_COMPLETE_EVENT_CLAIM = """
-            update event_claim
-            set status = 'completed'
-            where event_id = :event_id
-            """;
-
-    private static final String SQL_UPSERT_EVENT_DATA_ISSUE = """
-            insert into event_data_issue (event_id, issue_type, description, recorded_at)
-            values (:eventId, :issueType, :description, :recordedAt)
-            on duplicate key update description = values(description),
-                                    recorded_at = values(recorded_at)
             """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -96,65 +86,78 @@ public class CrawEventServiceV2 {
         this.eventCrawlService = eventCrawlService;
     }
 
-    public boolean processEvent(long eventId) {
+    public void processEvent(long eventId) {
         var eventRow = jdbcTemplate.query(
                 SQL_SELECT_EVENT,
                 Map.of("eventId", eventId),
                 (rs, rn) -> new EventRow(
                         rs.getLong("event_id"),
                         rs.getString("link"),
+                        rs.getBoolean("has_odds"),
                         rs.getObject("has_odds_corner", Boolean.class),
                         rs.getString("status"),
                         rs.getInt("is_terminal"),
-                        rs.getInt("is_in_play")
+                        rs.getInt("is_in_play"),
+                        rs.getString("match_id")
                 )
         ).stream().findFirst().orElse(null);
 
         if (eventRow == null) {
             log.warning("CrawEventServiceV2 >> event not found: " + eventId);
-            failEventClaim(eventId);
-            return false;
+            skippedEventClaim(eventId, "event not found");
+            return;
         }
         if (!StringUtils.hasText(eventRow.link())) {
             log.warning("CrawEventServiceV2 >> event has no link: " + eventId);
-            failEventClaim(eventId);
-            return false;
+            skippedEventClaim(eventId, "event has no link");
+            return;
+        }
+        if (!eventRow.hasOdds()) {
+            log.warning("CrawEventServiceV2 >> event no odds: " + eventId);
+            skippedEventClaim(eventId, "event has no odds");
+            return;
         }
 
         try {
             var matchId = extractMatchIdFromLink(eventRow.link());
             if (!StringUtils.hasText(matchId)) {
                 log.warning("CrawEventServiceV2 >> cannot parse matchId from link: eventId=" + eventId);
-                failEventClaim(eventId);
-                return false;
+                skippedEventClaim(eventId, "cannot parse matchId from link");
+                return;
             }
 
-            MatchOddsResponseDto response = eventCrawlService.crawlEvent(matchId);
+            MatchOddsResponseDto response = eventCrawlService.crawlEvent(matchId, eventRow);
             if (response.isEmpty()) {
                 log.warning("CrawEventServiceV2 >> empty odds crawl response (no Bet365?): eventId=" + eventId);
-                failEventClaim(eventId);
-                return false;
+                failEventClaim(eventId, "empty odds crawl response (no Bet365?)");
+                return;
             }
             persistCrawlResult(eventId, response);
             handleClaimAfterSuccess(eventRow);
-            return true;
         } catch (Exception ex) {
             log.log(Level.WARNING, "CrawEventServiceV2 >> failed eventId=" + eventId, ex);
-            failEventClaim(eventId);
-            return false;
+            failEventClaim(eventId, "exception: " + ex.getMessage());
         }
     }
 
-    public void failEventClaim(long eventId) {
-        jdbcTemplate.update(SQL_FAIL_EVENT_CLAIM, Map.of("event_id", eventId));
+    public void failEventClaim(long eventId, String des) {
+        updateEventClaim(eventId, "failed", des);
+    }
+
+    public void skippedEventClaim(long eventId, String des) {
+        updateEventClaim(eventId, "skipped", des);
+    }
+
+    public void updateEventClaim(long eventId, String status, String des) {
+        jdbcTemplate.update(SQL_UPDATE_EVENT_CLAIM, Map.of("event_id", eventId, "status", status, "description", des));
     }
 
     public void releaseEventClaim(long eventId) {
         jdbcTemplate.update(SQL_DELETE_EVENT_CLAIM, Map.of("event_id", eventId));
     }
 
-    private void completeEventClaim(long eventId) {
-        jdbcTemplate.update(SQL_COMPLETE_EVENT_CLAIM, Map.of("event_id", eventId));
+    private void completeEventClaim(long eventId, String des) {
+        updateEventClaim(eventId, "completed", des);
     }
 
     private void persistCrawlResult(long eventId, MatchOddsResponseDto response) {
@@ -181,7 +184,7 @@ public class CrawEventServiceV2 {
         if (shouldReleaseClaimAfterSuccess(eventRow.playState())) {
             releaseEventClaim(eventRow.eventId());
         } else {
-            completeEventClaim(eventRow.eventId());
+            completeEventClaim(eventRow.eventId(), "odds updated");
         }
     }
 
@@ -201,16 +204,6 @@ public class CrawEventServiceV2 {
             }
         }
         return false;
-    }
-
-    private void recordMissingOdds(long eventId) {
-        jdbcTemplate.update(
-                SQL_UPSERT_EVENT_DATA_ISSUE,
-                new MapSqlParameterSource("eventId", eventId)
-                        .addValue("issueType", "missing_odds")
-                        .addValue("description", "No Bet365 odds from aiscore crawl")
-                        .addValue("recordedAt", LocalDateTime.now())
-        );
     }
 
     private void persistOdds(long eventId, List<CrawlOddsSnapshotDto> odds, CrawlOddsTimelineGroupDto timeline) {
@@ -324,13 +317,15 @@ public class CrawEventServiceV2 {
         }
     }
 
-    private record EventRow(
+    public record EventRow(
             long eventId,
             String link,
+            Boolean hasOdds,
             Boolean hasOddsCorner,
             String status,
             int isTerminal,
-            int isInPlay
+            int isInPlay,
+            String matchId
     ) {
         EventPlayState playState() {
             return new EventPlayState(

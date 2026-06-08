@@ -3,6 +3,7 @@ package com.queue.kiraqueue.playwright;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.Route;
 import com.queue.kiraqueue.browser.AiscorePageFetchClient;
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -47,10 +48,13 @@ public class PlaywrightLane {
 
     private void initBrowser() {
         this.playwright = Playwright.create();
-        var browser = playwright.chromium().launch(launchOptions(true));
+        var browser = playwright.chromium().launch(launchOptions(false));
         this.browserContext = browser.newContext(contextOptions());
         this.browserContext.addInitScript(INIT_SCRIPT_STEALTH);
         this.page = browserContext.newPage();
+        // disable image, stylesheet, and font loading for better performance
+        this.page.route("**/*.{png,jpg,jpeg,gif,svg,css,woff,woff2,ttf,eot}", Route::abort);
+
         this.page.navigate(AiscorePageFetchClient.ORIGIN);
         log.info("Playwright lane %s ready".formatted(laneType));
     }

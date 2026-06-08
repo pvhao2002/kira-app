@@ -119,9 +119,13 @@ public class AiscorePageFetchClient {
                     SINGLE_FETCH_SCRIPT,
                     fetchParams(apiUrl, referer)
             );
-            return decodeResultBody(result);
+            var body = decodeResultBody(apiUrl, result);
+            if (body == null) {
+                log.warning("AiScore API fetch context url=" + apiUrl + " referer=" + referer);
+            }
+            return body;
         } catch (RuntimeException ex) {
-            log.log(Level.WARNING, "Fetching AiScore API failed for url: " + apiUrl, ex);
+            log.log(Level.WARNING, "AiScore API fetch error url=" + apiUrl + " referer=" + referer, ex);
             return null;
         }
     }
@@ -147,13 +151,15 @@ public class AiscorePageFetchClient {
             var bodies = new LinkedHashMap<String, byte[]>();
             for (var result : results) {
                 var key = String.valueOf(result.get("key"));
-                var body = decodeResultBody(result);
+                var apiUrl = urlsByKey.get(key);
+                var body = decodeResultBody(apiUrl, result);
                 if (body != null && body.length > 0) {
                     bodies.put(key, body);
                 }
             }
             return bodies;
         } catch (RuntimeException ex) {
+            log.log(Level.WARNING, "AiScore API parallel fetch error referer=" + referer, ex);
             return Map.of();
         }
     }
@@ -167,18 +173,44 @@ public class AiscorePageFetchClient {
         );
     }
 
-    private static byte[] decodeResultBody(Map<String, Object> result) {
+    private static byte[] decodeResultBody(String apiUrl, Map<String, Object> result) {
+        var status = toInt(result.get("status"));
+        var bodyLen = toInt(result.get("bodyLen"));
+        var error = result.get("error") != null ? String.valueOf(result.get("error")) : null;
+
         if (!Boolean.TRUE.equals(result.get("ok"))) {
+            log.warning(
+                    "AiScore API fetch failed url=" + apiUrl
+                            + " status=" + status
+                            + " bodyLen=" + bodyLen
+                            + " error=" + error
+            );
             return null;
         }
         var encoded = result.get("body");
         if (!(encoded instanceof String base64) || base64.isBlank()) {
+            log.warning(
+                    "AiScore API fetch returned empty body url=" + apiUrl
+                            + " status=" + status
+                            + " bodyLen=" + bodyLen
+            );
             return null;
         }
         try {
-            return Base64.getDecoder().decode(base64);
+            var body = Base64.getDecoder().decode(base64);
+            log.info("AiScore API fetch ok url=" + apiUrl + " status=" + status + " bodyLen=" + bodyLen);
+            return body;
         } catch (IllegalArgumentException ex) {
+            log.warning(
+                    "AiScore API fetch decode failed url=" + apiUrl
+                            + " status=" + status
+                            + " bodyLen=" + bodyLen
+            );
             return null;
         }
+    }
+
+    private static int toInt(Object value) {
+        return value instanceof Number number ? number.intValue() : 0;
     }
 }

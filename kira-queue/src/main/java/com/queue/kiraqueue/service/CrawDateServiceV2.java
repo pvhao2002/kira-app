@@ -1,15 +1,9 @@
 package com.queue.kiraqueue.service;
 
-import com.queue.kiraqueue.config.CrawlPersistExecutorConfig;
 import com.queue.kiraqueue.crawl.DateCrawlService;
-import com.queue.kiraqueue.dto.aiscore.CrawledMatchBundleDto;
-import com.queue.kiraqueue.dto.aiscore.CrawlEventDto;
-import com.queue.kiraqueue.dto.aiscore.CrawlEventResultDto;
-import com.queue.kiraqueue.dto.aiscore.CrawlLeagueDto;
-import com.queue.kiraqueue.dto.aiscore.CrawlTeamDto;
+import com.queue.kiraqueue.dto.aiscore.*;
 import com.queue.kiraqueue.util.JdbcBatchUtils;
 import lombok.extern.java.Log;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -18,13 +12,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.Executor;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -57,28 +45,15 @@ public class CrawDateServiceV2 {
             """;
 
     private static final String SQL_UPSERT_LEAGUE = """
-            insert into leagues (league_name, logo_url, country, country_code_short,
+            insert ignore into leagues (league_name, logo_url, country, country_code_short,
                                  external_id, has_stats, slug, sport_id, color)
             values (:league_name, :logo_url, :country, :country_code_short,
                     :external_id, :has_stats, :slug, :sport_id, :color)
-            on duplicate key update
-                logo_url = values(logo_url),
-                country = values(country),
-                country_code_short = values(country_code_short),
-                external_id = values(external_id),
-                has_stats = values(has_stats),
-                slug = values(slug),
-                sport_id = values(sport_id),
-                color = values(color)
             """;
 
     private static final String SQL_UPSERT_TEAM = """
-            insert into teams (team_name, logo_url, external_id, sport_id)
+            insert ignore into teams (team_name, logo_url, external_id, sport_id)
             values (:team_name, :logo_url, :external_id, :sport_id)
-            on duplicate key update
-                logo_url = values(logo_url),
-                external_id = values(external_id),
-                sport_id = values(sport_id)
             """;
 
     private static final String SQL_UPSERT_EVENT = """
@@ -138,27 +113,17 @@ public class CrawDateServiceV2 {
     private static final String SQL_SELECT_EVENT_IDS =
             "select event_id, external_id from events where external_id in (:exids)";
 
-    private static final String SQL_UPSERT_EVENT_DATA_ISSUE = """
-            insert into event_data_issue (event_id, issue_type, description, recorded_at)
-            values (:eventId, :issueType, :description, :recordedAt)
-            on duplicate key update description = values(description),
-                                    recorded_at = values(recorded_at)
-            """;
-
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final DateCrawlService dateCrawlService;
-    private final Executor crawlPersistExecutor;
     private final AiscoreMatchStatusLabelCache statusLabelCache;
 
     public CrawDateServiceV2(
             NamedParameterJdbcTemplate jdbcTemplate,
             DateCrawlService dateCrawlService,
-            @Qualifier(CrawlPersistExecutorConfig.CRAWL_PERSIST_EXECUTOR) Executor crawlPersistExecutor,
             AiscoreMatchStatusLabelCache statusLabelCache
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.dateCrawlService = dateCrawlService;
-        this.crawlPersistExecutor = crawlPersistExecutor;
         this.statusLabelCache = statusLabelCache;
     }
 
@@ -182,7 +147,11 @@ public class CrawDateServiceV2 {
                 var response = dateCrawlService.crawlDate(date);
                 var events = response.events() == null ? List.<CrawledMatchBundleDto>of() : response.events();
                 fetchedEvents = events.size();
-                schedulePersist(date, events);
+                long persistStart = System.currentTimeMillis();
+                persistEvents(events);
+                updateCrawlDateStatus(date, DONE, fetchedEvents, null);
+                log.info("CrawlDateV2 persist done for date=%s, %d events, took %.2f s".formatted(
+                        date, fetchedEvents, (System.currentTimeMillis() - persistStart) / 1000.0));
             } catch (Exception ex) {
                 log.log(Level.WARNING, "Error during crawlDateV2 fetch for date=" + date, ex);
                 updateCrawlDateStatus(date, FAILED, 0, ex.getMessage());
@@ -201,23 +170,6 @@ public class CrawDateServiceV2 {
                         .addValue(TOTAL_EVENTS, totalEvents)
                         .addValue(ERROR_MESSAGE, errorMessage)
         );
-    }
-
-    private void schedulePersist(String date, List<CrawledMatchBundleDto> events) {
-        var eventsCopy = List.copyOf(events);
-        int totalEvents = eventsCopy.size();
-        crawlPersistExecutor.execute(() -> {
-            long persistStart = System.currentTimeMillis();
-            try {
-                persistEvents(eventsCopy);
-                updateCrawlDateStatus(date, DONE, totalEvents, null);
-                log.info("CrawlDateV2 persist done for date=%s, %d events, took %.2f s".formatted(
-                        date, totalEvents, (System.currentTimeMillis() - persistStart) / 1000.0));
-            } catch (Exception ex) {
-                log.log(Level.WARNING, "persistEvents failed for date=" + date, ex);
-                updateCrawlDateStatus(date, FAILED, 0, ex.getMessage());
-            }
-        });
     }
 
     private void persistEvents(List<CrawledMatchBundleDto> events) {
@@ -303,9 +255,6 @@ public class CrawDateServiceV2 {
                 continue;
             }
             resultParams.add(toEventResultParams(eventId, bundle.result()));
-            if (isCancelled(event)) {
-                recordCancelledEvent(eventId);
-            }
         }
         JdbcBatchUtils.batchInsertSafe(jdbcTemplate, SQL_UPSERT_EVENT_RESULT, resultParams);
     }
@@ -482,15 +431,5 @@ public class CrawDateServiceV2 {
         }
         return "Canceled".equalsIgnoreCase(event.status())
                 || "CANCELLED".equalsIgnoreCase(event.status());
-    }
-
-    private void recordCancelledEvent(Long eventId) {
-        jdbcTemplate.update(
-                SQL_UPSERT_EVENT_DATA_ISSUE,
-                new MapSqlParameterSource("eventId", eventId)
-                        .addValue("issueType", "cancelled")
-                        .addValue("description", "Provider status is CANCELLED")
-                        .addValue("recordedAt", LocalDateTime.now())
-        );
     }
 }

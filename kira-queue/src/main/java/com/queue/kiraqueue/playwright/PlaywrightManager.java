@@ -12,7 +12,7 @@ public class PlaywrightManager {
     private static final String EVENT_LANE = "event";
 
     public PlaywrightManager() {
-//        laneMap.put(DATE_LANE, new PlaywrightLane(DATE_LANE));
+        laneMap.put(DATE_LANE, new PlaywrightLane(DATE_LANE));
         laneMap.put(EVENT_LANE, new PlaywrightLane(EVENT_LANE));
     }
 
