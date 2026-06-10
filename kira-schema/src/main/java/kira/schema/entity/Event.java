@@ -30,7 +30,6 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 public class Event {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "event_id")

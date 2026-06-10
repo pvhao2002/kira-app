@@ -59,6 +59,11 @@ public class DateSchedule {
         }
     }
 
+    @Scheduled(fixedDelay = 8, timeUnit = TimeUnit.MINUTES, initialDelay = 5)
+    public void refreshToday() {
+        dateProducer.sendDate(DateUtil.getTodayDate());
+    }
+
     @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void crawlByDate() {
         if (queueBackpressureService.isQueueOverLimit(RabbitMQConfig.QUEUE_DATE, QUEUE_MAX_MESSAGES)) {

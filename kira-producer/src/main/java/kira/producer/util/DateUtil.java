@@ -3,6 +3,7 @@ package kira.producer.util;
 import lombok.experimental.UtilityClass;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @UtilityClass
@@ -10,15 +11,16 @@ public class DateUtil {
 
     public static final String DATE_FORMAT_CRAWL = "yyyyMMdd";
 
+    private static final ZoneId HCM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final DateTimeFormatter CRAWL_DATE = DateTimeFormatter.ofPattern(DATE_FORMAT_CRAWL);
     private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
 
     public static String getTodayDate() {
-        return LocalDate.now().format(CRAWL_DATE);
+        return LocalDate.now(HCM_ZONE).format(CRAWL_DATE);
     }
 
     public static String getTomorrowDate() {
-        return LocalDate.now().plusDays(1).format(CRAWL_DATE);
+        return LocalDate.now(HCM_ZONE).plusDays(1).format(CRAWL_DATE);
     }
 
     public static LocalDate parseCrawlInputDate(String date) {
