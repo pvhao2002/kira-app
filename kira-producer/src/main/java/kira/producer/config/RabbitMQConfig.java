@@ -11,16 +11,12 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
     public static final String EXCHANGE = "crawl_exchange";
 
-    public static final String QUEUE_DATE_TOMORROW = "crawlTomorrowEvent";
     public static final String QUEUE_DATE = "crawlByDate";
-    public static final String QUEUE_ODD_TOMORROW = "crawlOddForUpcomingEvent";
-    public static final String QUEUE_ODD = "event";
+    public static final String QUEUE_EVENT = "event";
     public static final String QUEUE_PREDICTION = "prediction";
 
-    public static final String ROUTING_KEY_DATE_TOMORROW = "crawl.crawlTomorrowEvent";
     public static final String ROUTING_KEY_DATE = "crawl.crawlByDate";
-    public static final String ROUTING_KEY_ODD_TOMORROW = "crawl.crawlOddForUpcomingEvent";
-    public static final String ROUTING_KEY_ODD = "crawl.event";
+    public static final String ROUTING_KEY_EVENT = "crawl.event";
     public static final String ROUTING_KEY_PREDICTION = "crawl.prediction";
 
     @Bean
@@ -35,32 +31,12 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue queueOddEvents() {
-        return new Queue(QUEUE_ODD, true);
+        return new Queue(QUEUE_EVENT, true);
     }
 
     @Bean
     public Binding bindingOddEvents(Queue queueOddEvents, DirectExchange exchange) {
-        return BindingBuilder.bind(queueOddEvents).to(exchange).with(ROUTING_KEY_ODD);
-    }
-
-    @Bean
-    public Queue queueOddTomorrow() {
-        return new Queue(QUEUE_ODD_TOMORROW, true);
-    }
-
-    @Bean
-    public Binding bindingOddTomorrow(Queue queueOddTomorrow, DirectExchange exchange) {
-        return BindingBuilder.bind(queueOddTomorrow).to(exchange).with(ROUTING_KEY_ODD_TOMORROW);
-    }
-
-    @Bean
-    public Queue queueDateTomorrow() {
-        return new Queue(QUEUE_DATE_TOMORROW, true);
-    }
-
-    @Bean
-    public Binding bindingDateTomorrow(Queue queueDateTomorrow, DirectExchange exchange) {
-        return BindingBuilder.bind(queueDateTomorrow).to(exchange).with(ROUTING_KEY_DATE_TOMORROW);
+        return BindingBuilder.bind(queueOddEvents).to(exchange).with(ROUTING_KEY_EVENT);
     }
 
     @Bean

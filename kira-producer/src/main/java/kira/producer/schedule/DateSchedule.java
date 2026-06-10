@@ -35,9 +35,19 @@ public class DateSchedule {
             from crawl_date
             where false
                      or status in ('pending', 'failed')
-                     or (updated_at + interval 30 minute < now() and status <> 'done')
+                     or (updated_at + interval 120 minute < now() and status <> 'done')
                      or (total_events = 0 and status = 'done')
             limit 20
+            """;
+    private static final String SQL_MISSING_DATE = """
+            select distinct DATE_FORMAT(event_date, '%Y%m%d') AS evt_date
+            from (select event_date
+                  from events e
+                  where e.link is not null
+                    and coalesce(e.has_odds, 0) = 1
+                    and e.status_id in (1, 2, 3, 4)
+                    and e.event_date < date(convert_tz(now(), 'SYSTEM', '+07:00'))
+                  ) t
             """;
 
     @Scheduled(cron = "0 0 22 * * *", zone = "Asia/Ho_Chi_Minh")
@@ -55,6 +65,22 @@ public class DateSchedule {
                 log.info("DateSchedule >> Scheduled crawl for [%s] events.".formatted(date));
             } catch (Exception e) {
                 log.log(Level.WARNING, "DateSchedule: failed to send tomorrow date to queue: " + date, e);
+            }
+        }
+    }
+
+    @Scheduled(cron = "0 0 1,11,20 * * *", zone = "Asia/Ho_Chi_Minh")
+    public void crawlMissingDates() {
+        var list = jdbcTemplate.query(SQL_MISSING_DATE, (rs, i) -> rs.getString("evt_date"));
+        if (CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        for (var date : list) {
+            try {
+                dateProducer.sendDate(date);
+                log.info("DateSchedule >> Scheduled crawl for missing date [%s] events.".formatted(date));
+            } catch (Exception e) {
+                log.log(Level.WARNING, "DateSchedule: failed to send missing date to queue: " + date, e);
             }
         }
     }

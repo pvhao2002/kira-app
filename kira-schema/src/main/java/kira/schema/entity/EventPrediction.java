@@ -71,6 +71,9 @@ public class EventPrediction {
     @Column(name = "prematch_ou_price_b", precision = 10, scale = 2)
     private BigDecimal prematchOuPriceB;
 
+    @Column(name = "goal_str_pick", length = 100)
+    private String goalStrPick;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "hdc_pick", columnDefinition = "enum('HOME','AWAY','OVER','UNDER','DRAW','NONE')")
     private PredictionPick hdcPick;
@@ -95,11 +98,11 @@ public class EventPrediction {
     private String actualFtGoalStr;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "result_hdc", columnDefinition = "enum('WIN','LOSE','VOID','NONE')")
+    @Column(name = "result_hdc", columnDefinition = "enum('WIN','LOSE', 'DRAW','VOID','NONE')")
     private PredictionOutcome resultHdc;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "result_ou", columnDefinition = "enum('WIN','LOSE','VOID','NONE')")
+    @Column(name = "result_ou", columnDefinition = "enum('WIN','LOSE', 'DRAW','VOID','NONE')")
     private PredictionOutcome resultOu;
 
     @Column(name = "settled_at")

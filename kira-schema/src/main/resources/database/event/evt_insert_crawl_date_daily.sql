@@ -6,7 +6,7 @@ CREATE EVENT IF NOT EXISTS insert_crawl_date_daily
     DO
 BEGIN
         INSERT IGNORE INTO crawl_date(date)
-SELECT DATE_FORMAT(DATE_ADD('2015-01-01', INTERVAL n DAY), '%Y%m%d') AS formatted_date
+SELECT DATE_FORMAT(DATE_ADD('2018-01-01', INTERVAL n DAY), '%Y%m%d') AS formatted_date
 FROM (SELECT a.N + b.N * 10 + c.N * 100 + d.N * 1000 AS n
       FROM (SELECT 0 AS N
             UNION ALL
@@ -84,9 +84,9 @@ FROM (SELECT a.N + b.N * 10 + c.N * 100 + d.N * 1000 AS n
                            SELECT 8
                            UNION ALL
                            SELECT 9) d) numbers
-WHERE DATE_ADD('2015-01-01', INTERVAL n DAY) <= CURDATE()
+WHERE DATE_ADD('2018-01-01', INTERVAL n DAY) <= CURDATE()
   AND NOT EXISTS (SELECT 1
                   FROM events ea
-                  WHERE DATE(ea.event_date) = DATE_ADD('2015-01-01', INTERVAL n DAY))
+                  WHERE DATE(ea.event_date) = DATE_ADD('2018-01-01', INTERVAL n DAY))
 ORDER BY formatted_date;
 END //

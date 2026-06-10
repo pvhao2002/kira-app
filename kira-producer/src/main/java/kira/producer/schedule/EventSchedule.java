@@ -57,20 +57,16 @@ public class EventSchedule {
             """;
 
     private static final String SQL_SELECT_LIVE_EVENTS = """
-            select e.event_id
+            select event_id
             from events e
-            inner join aiscore_match_status_ref r
-              on r.status_type = 'status_id'
-             and r.code = e.status_id
-             and r.sport_id = 1
-            where e.link is not null
-              and coalesce(e.has_odds, 0) = 1
-            """ + SQL_FILTER_NOT_CLAIMED + """
-              and (
-                    (r.ref_id is not null and r.is_in_play = 1)
-                 or (e.status_id is null and e.status in ('1H', 'HT', '2H', 'ET', 'Penalties'))
-              )
-            order by e.event_date asc, e.event_id asc
+            where true
+              and e.link is not null
+              and e.has_odds
+              and e.has_odds_corner
+              and e.status_id in (1, 2, 3, 4)
+              and e.event_date > date(convert_tz(now(), 'SYSTEM', '+07:00')) - interval 1 second
+              and e.event_date < convert_tz(now(), 'SYSTEM', '+07:00') + interval 3 hour
+            order by e.event_date, e.event_id
             limit :batch_limit
             for update skip locked
             """;
@@ -102,23 +98,23 @@ public class EventSchedule {
         );
     }
 
-//    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES, initialDelay = 2)
-//    @Transactional
-//    public void crawlLiveEvents() {
-//        publishEvents(
-//                "crawlLiveEvents",
-//                LIVE_BATCH_LIMIT,
-//                SQL_SELECT_LIVE_EVENTS
-//        );
-//    }
+    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.MINUTES, initialDelay = 2)
+    @Transactional
+    public void crawlLiveEvents() {
+        publishEvents(
+                "crawlLiveEvents",
+                LIVE_BATCH_LIMIT,
+                SQL_SELECT_LIVE_EVENTS
+        );
+    }
 
     private void publishEvents(String jobName, int batchLimit, String selectSql) {
-        if (queueBackpressureService.isQueueOverLimit(RabbitMQConfig.QUEUE_ODD, QUEUE_MAX_MESSAGES)) {
+        if (queueBackpressureService.isQueueOverLimit(RabbitMQConfig.QUEUE_EVENT, QUEUE_MAX_MESSAGES)) {
             log.info("Skip %s because queue %s has more than %d messages."
-                    .formatted(jobName, RabbitMQConfig.QUEUE_ODD, QUEUE_MAX_MESSAGES));
+                    .formatted(jobName, RabbitMQConfig.QUEUE_EVENT, QUEUE_MAX_MESSAGES));
             return;
         }
-        var finalLimit = batchLimit - queueBackpressureService.getQueueSize(RabbitMQConfig.QUEUE_ODD);
+        var finalLimit = batchLimit - queueBackpressureService.getQueueSize(RabbitMQConfig.QUEUE_EVENT);
 
         var params = new MapSqlParameterSource()
                 .addValue("batch_limit", finalLimit)
