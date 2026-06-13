@@ -15,7 +15,7 @@ export class App {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
-  readonly isLoginPage = signal(false);
+  readonly isPublicPage = signal(false);
 
   constructor() {
     this.router.events
@@ -25,7 +25,8 @@ export class App {
       )
       .subscribe((event) => {
         const nav = event as NavigationEnd;
-        this.isLoginPage.set(nav.urlAfterRedirects.includes('/login'));
+        const url = nav.urlAfterRedirects;
+        this.isPublicPage.set(url === '/' || url === '' || url.includes('/login'));
         window.scrollTo(0, 0);
       });
   }
@@ -33,11 +34,11 @@ export class App {
   onLogout(): void {
     this.authService.logout().subscribe({
       next: () => {
-        void this.router.navigate(['/login']);
+        void this.router.navigate(['/']);
       },
       error: () => {
         this.authService.clearSession();
-        void this.router.navigate(['/login']);
+        void this.router.navigate(['/']);
       }
     });
   }

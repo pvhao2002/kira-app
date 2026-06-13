@@ -37,11 +37,20 @@ kira:
     crawl-schedule:
       date-enabled: ${KIRA_PRODUCER_CRAWL_SCHEDULE_DATE_ENABLED:${KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED:true}}
       event-enabled: ${KIRA_PRODUCER_CRAWL_SCHEDULE_EVENT_ENABLED:${KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED:true}}
-    prediction-backfill:
-      enabled: false
     predict-schedule:
-      odds-movement-enabled: false
-      base-data-enabled: false
+      enabled: ${KIRA_PRODUCER_PREDICT_SCHEDULE_ENABLED:true}
+      all-upcoming-enabled: ${KIRA_PRODUCER_PREDICT_ALL_UPCOMING_ENABLED:true}
+      all-upcoming-delay-ms: ${KIRA_PRODUCER_PREDICT_ALL_UPCOMING_DELAY_MS:1800000}
+      all-upcoming-initial-delay-ms: ${KIRA_PRODUCER_PREDICT_ALL_UPCOMING_INITIAL_DELAY_MS:300000}
+      near-upcoming-enabled: ${KIRA_PRODUCER_PREDICT_NEAR_UPCOMING_ENABLED:true}
+      near-upcoming-delay-ms: ${KIRA_PRODUCER_PREDICT_NEAR_UPCOMING_DELAY_MS:600000}
+      near-upcoming-initial-delay-ms: ${KIRA_PRODUCER_PREDICT_NEAR_UPCOMING_INITIAL_DELAY_MS:180000}
+      near-upcoming-window-hours: ${KIRA_PRODUCER_PREDICT_NEAR_UPCOMING_WINDOW_HOURS:3}
+    settle-schedule:
+      enabled: ${KIRA_PRODUCER_SETTLE_SCHEDULE_ENABLED:true}
+      delay-ms: ${KIRA_PRODUCER_SETTLE_SCHEDULE_DELAY_MS:600000}
+      initial-delay-ms: ${KIRA_PRODUCER_SETTLE_SCHEDULE_INITIAL_DELAY_MS:180000}
+      batch-limit: ${KIRA_PRODUCER_SETTLE_SCHEDULE_BATCH_LIMIT:500}
 
 
 server:

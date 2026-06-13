@@ -1,66 +1,73 @@
 package kira.producer.service;
 
-import kira.producer.amqp.PredictProducer;
-import kira.producer.dto.PredictJobMessage;
+import kira.producer.amqp.QueueBackpressureService;
+import kira.producer.config.RabbitMQConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 
-/**
- * Enqueues prediction jobs for finished events (async via RabbitMQ).
- * Settlement runs in kira-queue ({@code PredictionSettleSchedule}).
- * For synchronous full backfill, use kira-queue {@code PredictionBackfillService}.
- */
 @Log
 @Service
 @RequiredArgsConstructor
 public class PredictionBackfillService {
 
-    private static final String SQL_SELECT_FINISHED_EVENTS = """
+    private static final int BACKFILL_BATCH_SIZE = 1000;
+    private static final int PREDICT_QUEUE_MAX_MESSAGES = 500;
+
+    private static final String SQL_SELECT_BACKFILL_EVENTS = """
             select e.event_id
             from events e
-                     inner join event_result er on er.event_id = e.event_id
-            where er.ft_home_goal is not null
-              and er.ft_away_goal is not null
-              and (
-                    exists (select 1
-                            from aiscore_match_status_ref r
-                            where r.status_type = 'status_id'
-                              and r.code = e.status_id
-                              and r.sport_id = 1
-                              and r.is_terminal = 1
-                              and r.code not in (9, 12))
-                    or (e.status_id is null and e.status = 'FT')
-                )
-              and exists (select 1 from event_odds o where o.event_id = e.event_id and o.market = 'hdc' and o.type = 'open' and o.line is not null and o.line <> '')
-              and exists (select 1 from event_odds o where o.event_id = e.event_id and o.market = 'hdc' and o.type = 'pre-match' and o.line is not null and o.line <> '')
-              and exists (select 1 from event_odds o where o.event_id = e.event_id and o.market = 'ou' and o.type = 'open' and o.line is not null and o.line <> '')
-              and exists (select 1 from event_odds o where o.event_id = e.event_id and o.market = 'ou' and o.type = 'pre-match' and o.line is not null and o.line <> '')
-            order by e.event_date desc, e.event_id desc
-            limit :limit
+            where e.event_id > :max_event_id
+              and coalesce(e.has_odds, 0) = 1
+            """ + PredictEnqueueService.SQL_FILTER_HAS_HDC_OU_LINES + """
+            """ + PredictEnqueueService.SQL_FILTER_NOT_PENDING + """
+            """ + PredictEnqueueService.SQL_FILTER_NEEDS_FIRST_PREDICTION + """
+            order by e.event_id
+            limit :batch_limit
+            for update skip locked
             """;
 
-    private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final PredictProducer predictProducer;
+    private final PredictEnqueueService predictEnqueueService;
+    private final QueueBackpressureService queueBackpressureService;
 
-    public int enqueueBackfill(int limit) {
-        List<Long> eventIds = jdbcTemplate.query(
-                SQL_SELECT_FINISHED_EVENTS,
-                Map.of("limit", limit),
-                (rs, rowNum) -> rs.getLong("event_id")
-        );
-        for (Long eventId : eventIds) {
-            predictProducer.sendPredict(new PredictJobMessage(eventId, PredictJobMessage.VERSION_BASE_DATA));
-            predictProducer.sendPredict(new PredictJobMessage(eventId, PredictJobMessage.VERSION_ODDS_MOVEMENT));
+    @Async
+    public void enqueueBackfillAll(long startEventId) {
+        long cursor = Math.max(0, startEventId);
+        int totalEnqueued = 0;
+        int batchNo = 0;
+
+        while (true) {
+            if (queueBackpressureService.isQueueOverLimit(
+                    RabbitMQConfig.QUEUE_PREDICTION, PREDICT_QUEUE_MAX_MESSAGES)) {
+                log.info("Prediction backfill paused: queue over limit at cursor=" + cursor);
+                break;
+            }
+
+            var params = new MapSqlParameterSource()
+                    .addValue("max_event_id", cursor)
+                    .addValue("batch_limit", BACKFILL_BATCH_SIZE);
+
+            var result = predictEnqueueService.claimAndEnqueueFromQuery(
+                    "predictBackfill",
+                    SQL_SELECT_BACKFILL_EVENTS,
+                    params
+            );
+            if (result.count() == 0) {
+                break;
+            }
+
+            totalEnqueued += result.count();
+            batchNo++;
+            cursor = result.lastEventId();
+            log.log(Level.INFO, "Prediction backfill batch {0}: enqueued {1} events, cursor={2}",
+                    new Object[]{batchNo, result.count(), cursor});
         }
-        log.log(Level.INFO, "Enqueued prediction backfill for {0} events ({1} jobs)", new Object[]{
-                eventIds.size(), eventIds.size() * 2
-        });
-        return eventIds.size();
+
+        log.log(Level.INFO, "Prediction backfill finished: totalEnqueued={0}, lastCursor={1}",
+                new Object[]{totalEnqueued, cursor});
     }
 }

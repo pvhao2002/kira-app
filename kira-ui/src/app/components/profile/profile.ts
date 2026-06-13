@@ -34,11 +34,11 @@ export class Profile {
   logout(): void {
     this.authService.logout().subscribe({
       next: () => {
-        void this.router.navigate(['/login']);
+        void this.router.navigate(['/']);
       },
       error: () => {
         this.authService.clearSession();
-        void this.router.navigate(['/login']);
+        void this.router.navigate(['/']);
       }
     });
   }

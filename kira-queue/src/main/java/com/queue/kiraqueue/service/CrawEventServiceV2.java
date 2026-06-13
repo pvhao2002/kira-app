@@ -1,6 +1,7 @@
 package com.queue.kiraqueue.service;
 
 import com.queue.kiraqueue.crawl.EventCrawlService;
+import com.queue.kiraqueue.config.BusinessException;
 import com.queue.kiraqueue.dto.aiscore.CrawlOddsSnapshotDto;
 import com.queue.kiraqueue.dto.aiscore.CrawlOddsTimelineGroupDto;
 import com.queue.kiraqueue.dto.aiscore.CrawlOddsTimelineItemDto;
@@ -87,21 +88,7 @@ public class CrawEventServiceV2 {
     }
 
     public void processEvent(long eventId) {
-        var eventRow = jdbcTemplate.query(
-                SQL_SELECT_EVENT,
-                Map.of("eventId", eventId),
-                (rs, rn) -> new EventRow(
-                        rs.getLong("event_id"),
-                        rs.getString("link"),
-                        rs.getBoolean("has_odds"),
-                        rs.getObject("has_odds_corner", Boolean.class),
-                        rs.getString("status"),
-                        rs.getInt("is_terminal"),
-                        rs.getInt("is_in_play"),
-                        rs.getString("match_id")
-                )
-        ).stream().findFirst().orElse(null);
-
+        var eventRow = loadEventRow(eventId);
         if (eventRow == null) {
             log.warning("CrawEventServiceV2 >> event not found: " + eventId);
             skippedEventClaim(eventId, "event not found");
@@ -138,6 +125,53 @@ public class CrawEventServiceV2 {
             log.log(Level.WARNING, "CrawEventServiceV2 >> failed eventId=" + eventId, ex);
             failEventClaim(eventId, "exception: " + ex.getMessage());
         }
+    }
+
+    public RecrawlOddsResult recrawlOdds(long eventId) {
+        var eventRow = loadEventRow(eventId);
+        if (eventRow == null) {
+            throw BusinessException.notFound("Event not found: " + eventId);
+        }
+        if (!StringUtils.hasText(eventRow.link())) {
+            throw new BusinessException("Event has no link: " + eventId);
+        }
+
+        var matchId = extractMatchIdFromLink(eventRow.link());
+        if (!StringUtils.hasText(matchId)) {
+            throw new BusinessException("Cannot parse matchId from link: eventId=" + eventId);
+        }
+
+        try {
+            MatchOddsResponseDto response = eventCrawlService.crawlEvent(matchId, eventRow);
+            if (response.isEmpty()) {
+                throw new BusinessException("Empty odds crawl response (no Bet365?): eventId=" + eventId);
+            }
+            persistCrawlResult(eventId, response);
+            int oddsRowCount = response.odds() == null ? 0 : response.odds().size();
+            log.info("CrawEventServiceV2 >> recrawlOdds completed eventId=" + eventId + ", oddsRows=" + oddsRowCount);
+            return new RecrawlOddsResult(true, null, oddsRowCount);
+        } catch (BusinessException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new BusinessException("Recrawl failed for eventId=" + eventId + ": " + ex.getMessage(), ex);
+        }
+    }
+
+    private EventRow loadEventRow(long eventId) {
+        return jdbcTemplate.query(
+                SQL_SELECT_EVENT,
+                Map.of("eventId", eventId),
+                (rs, rn) -> new EventRow(
+                        rs.getLong("event_id"),
+                        rs.getString("link"),
+                        rs.getBoolean("has_odds"),
+                        rs.getObject("has_odds_corner", Boolean.class),
+                        rs.getString("status"),
+                        rs.getInt("is_terminal"),
+                        rs.getInt("is_in_play"),
+                        rs.getString("match_id")
+                )
+        ).stream().findFirst().orElse(null);
     }
 
     public void failEventClaim(long eventId, String des) {
@@ -337,5 +371,8 @@ public class CrawEventServiceV2 {
     }
 
     private record EventPlayState(String status, int isTerminal, int isInPlay) {
+    }
+
+    public record RecrawlOddsResult(boolean success, String message, int oddsRowCount) {
     }
 }

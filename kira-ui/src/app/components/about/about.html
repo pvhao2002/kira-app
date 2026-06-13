@@ -1,0 +1,288 @@
+<div #root class="min-h-screen bg-[#0b1121] text-white overflow-x-hidden">
+
+  <!-- Sticky Nav -->
+  <nav class="sticky top-0 z-50 bg-[#0b1121]/80 backdrop-blur-md border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2 group" (click)="$event.preventDefault(); scrollToSection('hero')">
+        <div class="size-9 rounded-lg bg-gradient-to-br from-[#f89820] via-[#5382a1] to-[#dd0031] flex items-center justify-center text-white text-sm font-black shadow-lg">
+          K
+        </div>
+        <span class="font-bold text-white tracking-tight">KIRA - 2002</span>
+      </a>
+      <div class="flex items-center gap-3 sm:gap-6 overflow-x-auto no-scrollbar max-w-[58vw] sm:max-w-none py-1">
+        @for (item of navItems; track item.id) {
+          <button type="button"
+                  (click)="scrollToSection(item.id)"
+                  [title]="item.labelVi"
+                  class="nav-link text-sm text-slate-400 hover:text-white transition-colors whitespace-nowrap shrink-0">
+            {{ item.labelEn }}
+          </button>
+        }
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero + Skills (float on animated background) -->
+  <section id="hero" class="relative min-h-[70vh] flex items-center px-6 py-10 lg:py-14 overflow-hidden">
+    <!-- Animated background -->
+    <div class="absolute inset-0 pointer-events-none">
+      <div class="hero-brand-gradient absolute inset-0"></div>
+
+      <div class="hero-orb-spring absolute -top-[10%] -left-[15%] w-[50%] h-[55%] rounded-full bg-[#6db33f]/10 blur-[110px]"></div>
+      <div class="hero-orb-spring-2 absolute bottom-[10%] left-[5%] w-[35%] h-[40%] rounded-full bg-[#6db33f]/6 blur-[90px]"></div>
+
+      <div class="hero-orb-angular absolute -top-[5%] -right-[15%] w-[50%] h-[55%] rounded-full bg-[#dd0031]/10 blur-[110px]"></div>
+      <div class="hero-orb-angular-2 absolute bottom-[5%] right-[5%] w-[40%] h-[45%] rounded-full bg-[#dd0031]/8 blur-[100px]"></div>
+
+      <div class="hero-grid absolute inset-0"
+           style="background-image: radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px); background-size: 40px 40px;"></div>
+
+      <!-- Floating symbols -->
+      <span class="floating-symbol absolute top-[15%] left-[10%] text-4xl font-mono text-[#6db33f]">{{ '{' }} {{ '}' }}</span>
+      <span class="floating-symbol absolute top-[25%] right-[15%] text-3xl font-mono text-[#dd0031]">&lt;/&gt;</span>
+      <span class="floating-symbol absolute bottom-[30%] left-[20%] text-2xl text-[#6db33f]">&#9749;</span>
+      <span class="floating-symbol absolute bottom-[20%] right-[25%] text-3xl font-mono text-[#dd0031]">( )</span>
+      <span class="floating-symbol absolute top-[50%] left-[5%] text-2xl text-[#6db33f]">{{ '[' }} {{ ']' }}</span>
+
+      <!-- Tech stack icons -->
+      @for (stack of heroStackIcons; track stack.name) {
+        <div class="hero-stack-icon absolute flex flex-col items-center gap-0.5 {{ stack.position }}"
+             [style.color]="stack.color"
+             [style.animation-delay]="stack.delay"
+             [style.animation-duration]="stack.duration">
+          <span class="material-symbols-outlined text-2xl sm:text-3xl">{{ stack.icon }}</span>
+          <span class="text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider opacity-80">{{ stack.name }}</span>
+        </div>
+      }
+    </div>
+
+    <div class="intro-split relative z-10 w-full max-w-6xl mx-auto">
+      <div class="grid lg:grid-cols-10 gap-6 lg:gap-8 items-start">
+
+        <!-- Left: Hero (7/10) -->
+        <div class="lg:col-span-7 text-left space-y-5">
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-slate-400">
+            <span class="size-2 rounded-full bg-[#6db33f] animate-pulse"></span>
+            Available for opportunities
+            <span class="text-slate-600">|</span>
+            Sẵn sàng cho cơ hội mới
+          </div>
+
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight">
+            <span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+              Phạm Văn Hào
+            </span>
+            <span class="block text-xl sm:text-2xl lg:text-3xl font-bold mt-2 text-[#f89820]">KIRA - 2002</span>
+          </h1>
+
+          <div class="h-10 flex items-center">
+            <p class="text-lg sm:text-xl text-slate-300 font-medium">
+              <span class="text-[#5382a1]">{{ typingText() }}</span>
+              @if (showCursor()) {
+                <span class="typing-cursor text-[#f89820]">|</span>
+              }
+            </p>
+          </div>
+
+          <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+            I am a <span class="text-[#f89820] font-medium">Java Developer</span> specializing in <span class="text-[#f89820] font-medium">data crawling</span> — building reliable systems to collect, process, and deliver data at scale.
+            <br>
+            <span class="text-slate-500">Tôi là <span class="text-[#f89820] font-medium">Lập trình viên Java Developer</span>, <span class="text-[#f89820] font-medium">chuyên về crawl dữ liệu</span> — xây dựng hệ thống thu thập, xử lý và cung cấp dữ liệu ổn định, hiệu quả.</span>
+          </p>
+
+          <div id="contact"
+               data-reveal
+               [class.revealed]="isSectionVisible('contact')"
+               class="space-y-2 pt-3 border-t border-white/10">
+            <h2 class="text-sm font-bold text-white">
+              Contact <span class="text-slate-500 font-normal text-xs">/ Liên hệ</span>
+            </h2>
+            <div class="space-y-1.5">
+              <a href="mailto:hao.phamvan2308@gmail.com"
+                 class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-xs min-w-0">
+                <span class="material-symbols-outlined text-base text-[#f89820] shrink-0">mail</span>
+                hao.phamvan2308@gmail.com
+              </a>
+              <a href="mailto:hideonbush8405@gmail.com"
+                 class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-xs min-w-0">
+                <span class="material-symbols-outlined text-base text-[#f89820] shrink-0">alternate_email</span>
+                hideonbush8405@gmail.com
+              </a>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              @for (link of socialLinks; track link.url) {
+                <a [href]="link.url"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-[#5382a1]/40 transition-all text-xs text-slate-400 hover:text-white">
+                  <span class="material-symbols-outlined text-base">{{ link.icon }}</span>
+                  {{ link.label }}
+                </a>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Skills (3/10) -->
+        <div class="lg:col-span-3">
+          <div id="skills"
+               data-reveal
+               [class.revealed]="isSectionVisible('skills')"
+               class="space-y-2">
+            <h2 class="text-sm font-bold text-white">
+              Skills <span class="text-slate-500 font-normal text-xs">/ Kỹ năng</span>
+            </h2>
+            <div class="grid grid-cols-2 gap-1.5">
+              @for (skill of skills; track skill.name) {
+                <div class="skill-card skill-card-compact skill-{{ skill.accent }} rounded-lg bg-[#0b1121]/60 border p-1.5 flex flex-col items-center gap-1 text-center transition-all">
+                  <div class="skill-icon size-6 shrink-0 rounded-md flex items-center justify-center">
+                    <span class="material-symbols-outlined text-sm">{{ skill.icon }}</span>
+                  </div>
+                  <span class="font-medium text-white text-[9px] leading-tight">{{ skill.name }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about"
+           data-reveal
+           [class.revealed]="isSectionVisible('about')"
+           class="max-w-5xl mx-auto px-6 py-20">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#5382a1]/50 to-transparent"></div>
+      <h2 class="text-2xl font-bold text-white whitespace-nowrap">
+        About <span class="text-slate-500 font-normal text-lg">/ Giới thiệu</span>
+      </h2>
+      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#5382a1]/50 to-transparent"></div>
+    </div>
+
+    <div class="space-y-6">
+      @for (para of aboutParagraphs; track para.en) {
+        <div class="rounded-2xl bg-[#0f172a]/80 border border-white/5 p-6 sm:p-8 space-y-3 hover:border-[#5382a1]/20 transition-colors">
+          <p class="text-slate-300 leading-relaxed">{{ para.en }}</p>
+          <p class="text-slate-500 leading-relaxed text-sm border-t border-white/5 pt-3">{{ para.vi }}</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Experience Section -->
+  <section id="experience"
+           data-reveal
+           [class.revealed]="isSectionVisible('experience')"
+           class="max-w-5xl mx-auto px-6 py-20">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#6db33f]/50 to-transparent"></div>
+      <h2 class="text-2xl font-bold text-white whitespace-nowrap">
+        Experience <span class="text-slate-500 font-normal text-lg">/ Kinh nghiệm</span>
+      </h2>
+      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#6db33f]/50 to-transparent"></div>
+    </div>
+
+    <div class="space-y-4">
+      @for (item of experienceItems; track item.en; let i = $index) {
+        <div class="flex gap-4 rounded-xl bg-[#0f172a]/80 border border-white/5 p-5 sm:p-6 hover:border-[#6db33f]/20 transition-colors group">
+          <div class="flex-shrink-0 size-10 rounded-lg bg-[#6db33f]/10 border border-[#6db33f]/20 flex items-center justify-center text-[#6db33f] font-bold text-sm">
+            {{ i + 1 }}
+          </div>
+          <div class="space-y-2 min-w-0">
+            <p class="text-slate-300 leading-relaxed">{{ item.en }}</p>
+            <p class="text-slate-500 text-sm leading-relaxed">{{ item.vi }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Projects Section -->
+  <section id="projects"
+           data-reveal
+           [class.revealed]="isSectionVisible('projects')"
+           class="max-w-5xl mx-auto px-6 py-20">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#dd0031]/50 to-transparent"></div>
+      <h2 class="text-2xl font-bold text-white whitespace-nowrap">
+        Projects <span class="text-slate-500 font-normal text-lg">/ Dự án</span>
+      </h2>
+      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#dd0031]/50 to-transparent"></div>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      @for (project of projects; track project.name) {
+        <div class="project-card rounded-2xl bg-[#0f172a] border border-white/5 p-6 space-y-4 flex flex-col">
+          <div class="flex items-center justify-between">
+            <span class="material-symbols-outlined text-[#5382a1]">folder_open</span>
+          </div>
+          <h3 class="font-bold text-white text-lg">{{ project.name }}</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">{{ project.descriptionEn }}</p>
+          <p class="text-slate-500 text-xs leading-relaxed">{{ project.descriptionVi }}</p>
+          <div class="flex flex-wrap gap-2">
+            @for (tech of project.tech; track tech) {
+              <span class="px-2.5 py-1 rounded-md bg-white/5 text-xs text-slate-400 border border-white/5">{{ tech }}</span>
+            }
+          </div>
+          <div class="flex flex-wrap gap-2 pt-2 mt-auto">
+            @if (project.repoLinks) {
+              @for (repo of project.repoLinks; track repo.url) {
+                <a [href]="repo.url"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-[#5382a1]/50 hover:bg-white/10 transition-all text-sm font-medium text-slate-300 hover:text-white">
+                  <span class="material-symbols-outlined text-base">code</span>
+                  {{ repo.label }}
+                  <span class="material-symbols-outlined text-sm text-slate-500">open_in_new</span>
+                </a>
+              }
+            } @else if (project.url) {
+              <a [href]="project.url"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-[#5382a1]/50 hover:bg-white/10 transition-all text-sm font-medium text-slate-300 hover:text-white">
+                <span class="material-symbols-outlined text-base">code</span>
+                GitHub
+                <span class="material-symbols-outlined text-sm text-slate-500">open_in_new</span>
+              </a>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Education & Footer -->
+  <section id="education" class="max-w-5xl mx-auto px-6 py-12 pb-32">
+    <div class="rounded-2xl bg-[#0f172a] border border-white/5 p-6 sm:p-8 space-y-4 max-w-2xl mx-auto">
+      <h3 class="font-semibold text-white flex items-center gap-2 text-sm">
+        <span class="material-symbols-outlined text-[#6db33f] text-lg">school</span>
+        Education / Học vấn
+      </h3>
+      <div class="space-y-2">
+        <p class="text-slate-300 leading-relaxed text-sm">
+          <span class="font-medium text-white">Ho Chi Minh City University of Technology and Education (HCMUTE)</span>
+          <br>
+          Bachelor of Information Technology
+        </p>
+        <p class="text-slate-500 text-xs leading-relaxed">
+          Trường Đại học Sư phạm Kỹ thuật TP.HCM (HCMUTE)
+          <br>
+          Cử nhân Công nghệ Thông tin
+        </p>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-slate-500">
+        <span class="material-symbols-outlined text-sm">location_on</span>
+        Ho Chi Minh City, Vietnam
+      </div>
+    </div>
+
+    <div class="mt-12 text-center text-xs text-slate-600 space-y-1">
+      <p>&copy; 2026 Phạm Văn Hào (KIRA - 2002). Built with Angular.</p>
+      <p>Fullstack Java Developer — Java, Spring Boot, Angular</p>
+    </div>
+  </section>
+</div>

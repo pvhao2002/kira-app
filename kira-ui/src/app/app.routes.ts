@@ -1,4 +1,5 @@
 import {Routes} from '@angular/router';
+import {About} from './components/about/about';
 import {Login} from './components/login/login';
 import {Dashboard} from './components/dashboard/dashboard';
 import {Matches} from './components/matches/matches';
@@ -26,12 +27,12 @@ import {EventProcessMq} from './components/event-process-mq/event-process-mq';
 import {authGuard} from './guards/auth.guard';
 
 export const routes: Routes = [
+  {path: '', component: About, pathMatch: 'full'},
   {path: 'login', component: Login},
   {
     path: '',
     canActivate: [authGuard],
     children: [
-      {path: '', redirectTo: 'dashboard', pathMatch: 'full'},
       {path: 'dashboard', component: Dashboard},
       {path: 'matches', component: Matches},
       {path: 'match/:id', component: MatchDetail},
@@ -57,5 +58,5 @@ export const routes: Routes = [
       {path: 'statistics', component: Statistics},
     ]
   },
-  {path: '**', redirectTo: 'dashboard'},
+  {path: '**', redirectTo: ''},
 ];

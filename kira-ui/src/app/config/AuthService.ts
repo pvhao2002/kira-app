@@ -63,11 +63,9 @@ export class AuthService {
       );
   }
 
-  handleUnauthorized(returnUrl?: string): void {
+  handleUnauthorized(): void {
     this.clearSession();
-    void this.router.navigate(['/login'], {
-      queryParams: returnUrl ? {returnUrl} : undefined
-    });
+    void this.router.navigate(['/']);
   }
 
   clearSession(): void {

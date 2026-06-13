@@ -16,10 +16,22 @@ public class RabbitMQConfig {
     public static final String QUEUE_DATE = "crawlByDate";
     public static final String QUEUE_EVENT = "event";
     public static final String QUEUE_PREDICTION = "prediction";
+    public static final String QUEUE_PREDICTION_SETTLE = "prediction-settle";
 
     public static final String ROUTING_KEY_DATE = "crawl.crawlByDate";
     public static final String ROUTING_KEY_ODD = "crawl.event";
     public static final String ROUTING_KEY_PREDICTION = "crawl.prediction";
+    public static final String ROUTING_KEY_PREDICTION_SETTLE = "crawl.prediction-settle";
+
+    @Bean
+    public Queue queuePredictionSettle() {
+        return new Queue(QUEUE_PREDICTION_SETTLE, true);
+    }
+
+    @Bean
+    public Binding bindingPredictionSettle(Queue queuePredictionSettle, DirectExchange exchange) {
+        return BindingBuilder.bind(queuePredictionSettle).to(exchange).with(ROUTING_KEY_PREDICTION_SETTLE);
+    }
 
     @Bean
     public Queue queuePrediction() {

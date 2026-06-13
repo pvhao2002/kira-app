@@ -1,8 +1,8 @@
-@if (!isLoginPage()) {
+@if (!isPublicPage()) {
   <header
     class="sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md border-b border-white/5 px-6 py-4 flex items-center justify-between shadow-lg">
     <div class="flex items-center gap-8">
-      <a routerLink="/" class="flex items-center gap-3 group">
+      <a routerLink="/dashboard" class="flex items-center gap-3 group">
         <div
           class="size-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
           <span class="material-symbols-outlined text-2xl">sports_soccer</span>
@@ -79,7 +79,7 @@
 }
 
 <!-- Mobile Nav (Bottom) -->
-@if (!isLoginPage()) {
+@if (!isPublicPage()) {
   <nav
     class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0f172a]/95 backdrop-blur-md border-t border-white/5 pb-safe pt-2 px-4 flex justify-between items-center">
     <a routerLink="/dashboard" routerLinkActive="text-blue-500"
@@ -116,6 +116,6 @@
 }
 
 <main class="w-full mx-auto"
-      [class.pb-24]="!isLoginPage()">
+      [class.pb-24]="!isPublicPage()">
   <router-outlet></router-outlet>
 </main>

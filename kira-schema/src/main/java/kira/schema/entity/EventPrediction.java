@@ -59,6 +59,18 @@ public class EventPrediction {
     @Column(name = "prematch_ou_line", length = 25)
     private String prematchOuLine;
 
+    @Column(name = "open_hdc_line", length = 25)
+    private String openHdcLine;
+
+    @Column(name = "open_ou_line", length = 25)
+    private String openOuLine;
+
+    @Column(name = "open_corner_line", length = 25)
+    private String openCornerLine;
+
+    @Column(name = "prematch_corner_line", length = 25)
+    private String prematchCornerLine;
+
     @Column(name = "prematch_hdc_price_a", precision = 10, scale = 2)
     private BigDecimal prematchHdcPriceA;
 

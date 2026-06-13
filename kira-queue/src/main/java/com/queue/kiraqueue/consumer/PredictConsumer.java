@@ -16,10 +16,13 @@ public class PredictConsumer {
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_PREDICTION, concurrency = "1")
     public void handlePredict(String payload) {
+        long startedAt = System.currentTimeMillis();
         try {
             predictService.predict(payload);
         } catch (Exception ex) {
             log.severe("Prediction job failed: " + ex.getMessage());
+        } finally {
+            log.fine(() -> "Prediction job finished in " + (System.currentTimeMillis() - startedAt) + "ms");
         }
     }
 }
