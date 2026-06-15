@@ -1,8 +1,9 @@
-import {ChangeDetectionStrategy, Component, DestroyRef, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal} from '@angular/core';
 import {NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet} from '@angular/router';
 import {filter} from 'rxjs';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AuthService} from './config/AuthService';
+import {MAIN_NAV_ITEMS} from './config/nav.config';
 
 @Component({
   selector: 'app-root',
@@ -13,9 +14,12 @@ import {AuthService} from './config/AuthService';
 })
 export class App {
   private readonly router = inject(Router);
-  private readonly authService = inject(AuthService);
+  readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   readonly isPublicPage = signal(false);
+  readonly visibleNavItems = computed(() =>
+    MAIN_NAV_ITEMS.filter((item) => this.authService.hasRole(...item.roles)),
+  );
 
   constructor() {
     this.router.events

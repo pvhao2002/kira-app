@@ -15,7 +15,6 @@ import {AddTransaction} from './components/add-transaction/add-transaction';
 import {Leagues} from './components/leagues/leagues';
 import {Notifications} from './components/notifications/notifications';
 import {Users} from './components/users/users';
-import {SqlEditor} from './components/sql-editor/sql-editor';
 import {SoccerHub} from './components/soccer-hub/soccer-hub';
 import {CrawlDates} from './components/crawl-dates/crawl-dates';
 import {Teams} from './components/teams/teams';
@@ -25,6 +24,9 @@ import {EventsHistory} from './components/events-history/events-history';
 import {Statistics} from './components/statistics/statistics';
 import {EventProcessMq} from './components/event-process-mq/event-process-mq';
 import {authGuard} from './guards/auth.guard';
+import {roleGuard} from './guards/role.guard';
+
+const adminOnly = {canActivate: [roleGuard], data: {roles: ['admin'] as const}};
 
 export const routes: Routes = [
   {path: '', component: About, pathMatch: 'full'},
@@ -34,28 +36,27 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {path: 'dashboard', component: Dashboard},
-      {path: 'matches', component: Matches},
-      {path: 'match/:id', component: MatchDetail},
-      {path: 'results', component: Results},
+      {path: 'matches', component: Matches, ...adminOnly},
+      {path: 'match/:id', component: MatchDetail, ...adminOnly},
+      {path: 'results', component: Results, ...adminOnly},
       {path: 'cards', component: Cards},
       {path: 'cards/add', component: AddCard},
       {path: 'cards/:creditCardId/payments', component: CardPayments},
       {path: 'profile', component: Profile},
-      {path: 'transactions', component: Transactions},
-      {path: 'tool', component: Tools},
-      {path: 'transactions/add', component: AddTransaction},
-      {path: 'leagues', component: Leagues},
-      {path: 'notifications', component: Notifications},
-      {path: 'users', component: Users},
-      {path: 'sql', component: SqlEditor},
-      {path: 'soccer', component: SoccerHub},
-      {path: 'crawl-dates', component: CrawlDates},
-      {path: 'event-data-issue', component: EventDataIssue},
-      {path: 'event-crawl-failed', component: EventCrawlFailed},
-      {path: 'event-process-mq', component: EventProcessMq},
-      {path: 'events-history', component: EventsHistory},
-      {path: 'teams', component: Teams},
-      {path: 'statistics', component: Statistics},
+      {path: 'transactions', component: Transactions, ...adminOnly},
+      {path: 'tool', component: Tools, ...adminOnly},
+      {path: 'transactions/add', component: AddTransaction, ...adminOnly},
+      {path: 'leagues', component: Leagues, ...adminOnly},
+      {path: 'notifications', component: Notifications, ...adminOnly},
+      {path: 'users', component: Users, ...adminOnly},
+      {path: 'soccer', component: SoccerHub, ...adminOnly},
+      {path: 'crawl-dates', component: CrawlDates, ...adminOnly},
+      {path: 'event-data-issue', component: EventDataIssue, ...adminOnly},
+      {path: 'event-crawl-failed', component: EventCrawlFailed, ...adminOnly},
+      {path: 'event-process-mq', component: EventProcessMq, ...adminOnly},
+      {path: 'events-history', component: EventsHistory, ...adminOnly},
+      {path: 'teams', component: Teams, ...adminOnly},
+      {path: 'statistics', component: Statistics, ...adminOnly},
     ]
   },
   {path: '**', redirectTo: ''},

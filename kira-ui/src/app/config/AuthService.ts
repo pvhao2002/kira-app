@@ -1,7 +1,8 @@
-import {inject, Injectable, signal} from '@angular/core';
+import {computed, inject, Injectable, signal} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {catchError, map, Observable, of, tap} from 'rxjs';
 import {Router} from '@angular/router';
+import {AppRole} from './nav.config';
 
 type SessionUser = {
   userId: number;
@@ -22,6 +23,17 @@ export class AuthService {
 
   readonly isAuthenticated = signal(false);
   readonly user = signal<SessionUser | null>(null);
+
+  readonly role = computed<AppRole>(() => {
+    const raw = this.user()?.role?.trim().toLowerCase();
+    return raw === 'admin' ? 'admin' : 'user';
+  });
+
+  readonly isAdmin = computed(() => this.role() === 'admin');
+
+  hasRole(...roles: AppRole[]): boolean {
+    return roles.includes(this.role());
+  }
 
   login(username: string, password: string): Observable<SessionUser> {
     return this.http.post<SessionResponse>('/gateway/auth/login', {username, password})

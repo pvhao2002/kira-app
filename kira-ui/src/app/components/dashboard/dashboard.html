@@ -3,290 +3,291 @@
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
       <h2 class="text-3xl font-bold tracking-tight text-white">Tổng quan</h2>
-      <p class="text-slate-400 mt-1">Chào mừng trở lại! Dưới đây là hiệu suất cá cược và tình hình tài chính của
-        bạn.</p>
+      @if (loading()) {
+        <p class="text-slate-400 mt-1">Đang tải dữ liệu...</p>
+      } @else if (data(); as d) {
+        <p class="text-slate-400 mt-1">
+          @if (authService.isAdmin()) {
+            Chào {{ d.username }}! Dưới đây là hiệu suất cá cược và tình hình tài chính của bạn.
+          } @else {
+            Chào {{ d.username }}! Dưới đây là tình hình tài chính và thẻ tín dụng của bạn.
+          }
+        </p>
+      }
     </div>
     <div class="flex gap-3">
-      <a routerLink="/matches"
-         class="flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition-colors border border-white/5">
-        <span class="material-symbols-outlined text-lg">add</span>
-        Thêm trận mới
-      </a>
-      <a routerLink="/transactions/add"
-        class="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white hover:bg-blue-400 transition-colors shadow-lg shadow-blue-500/20">
-        <span class="material-symbols-outlined text-lg">payments</span>
-        Thêm giao dịch
-      </a>
+      @if (authService.isAdmin()) {
+        <a routerLink="/matches"
+           class="flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition-colors border border-white/5">
+          <span class="material-symbols-outlined text-lg">add</span>
+          Thêm trận mới
+        </a>
+        <a routerLink="/transactions/add"
+          class="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white hover:bg-blue-400 transition-colors shadow-lg shadow-blue-500/20">
+          <span class="material-symbols-outlined text-lg">payments</span>
+          Thêm giao dịch
+        </a>
+      }
     </div>
   </div>
 
-  <!-- Stats Grid -->
-  <div>
-    <h3 class="mb-4 text-lg font-semibold text-white flex items-center gap-2">
-      <span class="material-symbols-outlined text-blue-400">monitoring</span>
-      Hiệu suất Bóng đá
-    </h3>
+  @if (error()) {
+    <div class="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300 text-sm">
+      {{ error() }}
+      <button type="button" class="ml-3 underline hover:text-red-200" (click)="reload()">Thử lại</button>
+    </div>
+  }
+
+  @if (loading()) {
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <!-- Stat Card 1 -->
-      <div
-        class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-slate-400">Tổng trận theo dõi</p>
-          <span
-            class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                        <span class="material-symbols-outlined text-[20px]">sports_soccer</span>
-                    </span>
-        </div>
-        <div class="mt-4 flex items-baseline gap-2">
-          <span class="text-3xl font-bold text-white">42</span>
-          <span class="text-sm font-medium text-slate-500">trận</span>
-        </div>
-        <div class="mt-2 flex items-center text-xs text-green-400">
-          <span class="material-symbols-outlined text-[16px] mr-1">trending_up</span>
-          <span>+5 trận tuần này</span>
-        </div>
-      </div>
-
-      <!-- Stat Card 2 -->
-      <div
-        class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-slate-400">Tỷ lệ thắng</p>
-          <span
-            class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                        <span class="material-symbols-outlined text-[20px]">emoji_events</span>
-                    </span>
-        </div>
-        <div class="mt-4 flex items-baseline gap-2">
-          <span class="text-3xl font-bold text-white">68%</span>
-        </div>
-        <div class="mt-2 w-full rounded-full bg-slate-900 h-1.5 overflow-hidden">
-          <div class="bg-blue-500 h-1.5 rounded-full" style="width: 68%"></div>
-        </div>
-        <p class="mt-2 text-xs text-slate-400">Cao hơn trung bình 12%</p>
-      </div>
-
-      <!-- Stat Card 3 -->
-      <div
-        class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-slate-400">Tổng lợi nhuận</p>
-          <span
-            class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                        <span class="material-symbols-outlined text-[20px]">attach_money</span>
-                    </span>
-        </div>
-        <div class="mt-4 flex items-baseline gap-2">
-          <span class="text-2xl font-bold text-green-400">+12.5tr</span>
-          <span class="text-sm font-medium text-slate-500">VND</span>
-        </div>
-        <div class="mt-2 flex items-center text-xs text-green-400">
-          <span class="material-symbols-outlined text-[16px] mr-1">arrow_outward</span>
-          <span>+15% so với tháng trước</span>
-        </div>
-      </div>
-
-      <!-- Stat Card 4 -->
-      <div
-        class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
-        <div class="flex items-center justify-between">
-          <p class="text-sm font-medium text-slate-400">Kết quả dự đoán</p>
-          <span
-            class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                        <span class="material-symbols-outlined text-[20px]">fact_check</span>
-                    </span>
-        </div>
-        <div class="mt-4 flex gap-4">
-          <div class="flex flex-col">
-            <span class="text-xl font-bold text-green-400">28</span>
-            <span class="text-xs text-slate-400">Thắng</span>
-          </div>
-          <div class="w-px bg-slate-700"></div>
-          <div class="flex flex-col">
-            <span class="text-xl font-bold text-red-500">14</span>
-            <span class="text-xs text-slate-400">Thua</span>
-          </div>
-        </div>
-        <p class="mt-2 text-xs text-slate-400">Dựa trên 42 trận đã chốt</p>
-      </div>
+      @for (_ of [1, 2, 3, 4]; track $index) {
+        <div class="rounded-xl bg-[#1e293b] p-6 border border-slate-700 animate-pulse h-36"></div>
+      }
     </div>
-  </div>
+  } @else if (data(); as d) {
 
-  <!-- Financial Cards -->
-  <div>
-    <h3 class="mb-4 text-lg font-semibold text-white flex items-center gap-2">
-      <span class="material-symbols-outlined text-yellow-500">credit_card</span>
-      Tài chính & Thẻ Tín dụng
-    </h3>
-    <div class="grid gap-4 md:grid-cols-2">
-      <!-- Credit Summary Card -->
-      <div
-        class="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 to-slate-900 p-6 shadow-sm border border-slate-700 group cursor-pointer"
-        routerLink="/cards">
-        <div
-          class="absolute right-0 top-0 h-32 w-32 -mr-8 -mt-8 rounded-full bg-blue-500/10 blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
-        <div class="flex items-start justify-between relative z-10">
-          <div>
-            <p class="text-sm font-medium text-blue-200">Tổng dư nợ thẻ tín dụng</p>
-            <h4 class="mt-2 text-3xl font-bold text-white">45.200.000 <span
-              class="text-lg font-normal text-slate-400">₫</span></h4>
-            <div class="mt-4 flex gap-2">
+    <!-- Soccer Stats (admin only) -->
+    @if (authService.isAdmin() && d.soccer; as soccer) {
+      <div>
+        <h3 class="mb-4 text-lg font-semibold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-blue-400">monitoring</span>
+          Hiệu suất Bóng đá
+        </h3>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-slate-400">Tổng trận theo dõi</p>
               <span
-                class="inline-flex items-center rounded-md bg-white/10 px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-white/10">VISA ending 4242</span>
+                class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]">sports_soccer</span>
+              </span>
+            </div>
+            <div class="mt-4 flex items-baseline gap-2">
+              <span class="text-3xl font-bold text-white">{{ soccer.trackedMatchCount }}</span>
+              <span class="text-sm font-medium text-slate-500">trận</span>
+            </div>
+            @if (soccer.trackedThisWeek > 0) {
+              <div class="mt-2 flex items-center text-xs text-green-400">
+                <span class="material-symbols-outlined text-[16px] mr-1">trending_up</span>
+                <span>+{{ soccer.trackedThisWeek }} trận tuần này</span>
+              </div>
+            }
+          </div>
+
+          <div
+            class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-slate-400">Tỷ lệ thắng</p>
               <span
-                class="inline-flex items-center rounded-md bg-white/10 px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-white/10">Mastercard ending 8821</span>
+                class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]">emoji_events</span>
+              </span>
+            </div>
+            <div class="mt-4 flex items-baseline gap-2">
+              <span class="text-3xl font-bold text-white">{{ soccer.winRatePercent }}%</span>
+            </div>
+            <div class="mt-2 w-full rounded-full bg-slate-900 h-1.5 overflow-hidden">
+              <div class="bg-blue-500 h-1.5 rounded-full" [style.width.%]="soccer.winRatePercent"></div>
+            </div>
+            <p class="mt-2 text-xs text-slate-400">{{ soccer.wins }} thắng / {{ soccer.losses }} thua</p>
+          </div>
+
+          <div
+            class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-slate-400">Tổng lợi nhuận</p>
+              <span
+                class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]">attach_money</span>
+              </span>
+            </div>
+            <div class="mt-4 flex items-baseline gap-2">
+              <span class="text-2xl font-bold"
+                    [class.text-green-400]="soccer.netProfit >= 0"
+                    [class.text-red-500]="soccer.netProfit < 0">
+                {{ soccer.netProfit >= 0 ? '+' : '' }}{{ formatVnd(soccer.netProfit) }}
+              </span>
+              <span class="text-sm font-medium text-slate-500">VND</span>
             </div>
           </div>
-          <div class="h-12 w-12 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500">
-            <span class="material-symbols-outlined">warning</span>
+
+          <div
+            class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-slate-400">Kết quả dự đoán</p>
+              <span
+                class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]">fact_check</span>
+              </span>
+            </div>
+            <div class="mt-4 flex gap-4">
+              <div class="flex flex-col">
+                <span class="text-xl font-bold text-green-400">{{ soccer.wins }}</span>
+                <span class="text-xs text-slate-400">Thắng</span>
+              </div>
+              <div class="w-px bg-slate-700"></div>
+              <div class="flex flex-col">
+                <span class="text-xl font-bold text-red-500">{{ soccer.losses }}</span>
+                <span class="text-xs text-slate-400">Thua</span>
+              </div>
+            </div>
+            <p class="mt-2 text-xs text-slate-400">Dựa trên {{ soccer.trackedMatchCount }} trận đã chốt</p>
           </div>
         </div>
       </div>
+    }
 
-      <!-- Statement Card -->
-      <div
-        class="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-900 to-slate-900 p-6 shadow-sm border border-slate-700">
-        <div class="absolute right-0 top-0 h-32 w-32 -mr-8 -mt-8 rounded-full bg-purple-500/10 blur-3xl"></div>
-        <div class="flex items-center justify-between mb-4 relative z-10">
-          <div>
-            <p class="text-sm font-medium text-indigo-200">Kỳ sao kê tiếp theo</p>
-            <h4 class="mt-2 text-2xl font-bold text-white">Ngày 25/10</h4>
-          </div>
-          <div class="flex flex-col items-end">
-            <span class="text-3xl font-bold text-blue-400">05</span>
-            <span class="text-xs text-slate-400 uppercase tracking-wider">Ngày còn lại</span>
-          </div>
-        </div>
-        <div class="w-full bg-slate-950 rounded-full h-2.5 mb-1 relative z-10">
-          <div class="bg-gradient-to-r from-yellow-500 to-red-500 h-2.5 rounded-full" style="width: 85%"></div>
-        </div>
-        <div class="flex justify-between text-xs text-slate-400 mt-2 relative z-10">
-          <span>Đã dùng: 85% hạn mức</span>
-          <span>Hạn mức: 50.000.000₫</span>
-        </div>
-      </div>
-    </div>
-  </div>
+    <!-- Financial Cards -->
+    <div>
+      <h3 class="mb-4 text-lg font-semibold text-white flex items-center gap-2">
+        <span class="material-symbols-outlined text-yellow-500">credit_card</span>
+        Tài chính & Thẻ Tín dụng
+      </h3>
 
-  <!-- Charts & Activity -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Chart Section -->
-    <div class="lg:col-span-2 rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700">
-      <div class="flex items-center justify-between mb-6">
-        <h3 class="text-lg font-semibold text-white">Biểu đồ lợi nhuận</h3>
-        <select
-          class="bg-slate-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 border-none">
-          <option>7 ngày qua</option>
-          <option>30 ngày qua</option>
-          <option>Năm nay</option>
-        </select>
-      </div>
-
-      <div class="relative h-64 w-full flex items-end justify-between gap-2 px-2 pt-8">
-        <!-- Grid Lines -->
-        <div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10 pb-6 pt-8 px-2">
-          <div class="w-full border-t border-slate-400"></div>
-          <div class="w-full border-t border-slate-400"></div>
-          <div class="w-full border-t border-slate-400"></div>
-          <div class="w-full border-t border-slate-400"></div>
-          <div class="w-full border-t border-slate-400"></div>
+      @if (d.finance.activeCardCount === 0) {
+        <div class="rounded-xl bg-[#1e293b] p-8 border border-slate-700 text-center">
+          <p class="text-slate-400 mb-4">Bạn chưa có thẻ tín dụng nào.</p>
+          <a routerLink="/cards"
+             class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white hover:bg-blue-400 transition-colors">
+            <span class="material-symbols-outlined text-lg">add_card</span>
+            Thêm thẻ tín dụng
+          </a>
         </div>
-
-        <!-- Bars -->
-        @for (val of [40, 65, 30, 80, 55, 45]; track $index) {
-          <div class="w-1/12 bg-slate-700 hover:bg-blue-500 transition-all rounded-t-md relative group"
-               [style.height.%]="val">
+      } @else {
+        <div class="grid gap-4 md:grid-cols-2">
+          <div
+            class="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 to-slate-900 p-6 shadow-sm border border-slate-700 group cursor-pointer"
+            routerLink="/cards">
             <div
-              class="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity font-bold whitespace-nowrap z-20">
-              {{ val * 100 }}K
+              class="absolute right-0 top-0 h-32 w-32 -mr-8 -mt-8 rounded-full bg-blue-500/10 blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
+            <div class="flex items-start justify-between relative z-10">
+              <div>
+                <p class="text-sm font-medium text-blue-200">Tổng dư nợ thẻ tín dụng</p>
+                <h4 class="mt-2 text-3xl font-bold text-white">
+                  {{ formatVnd(d.finance.totalOutstandingBalance) }}
+                  <span class="text-lg font-normal text-slate-400">₫</span>
+                </h4>
+                <div class="mt-4 flex flex-wrap gap-2">
+                  @for (card of d.finance.cardHighlights; track card.cardLabel + card.lastFour) {
+                    <span
+                      class="inline-flex items-center rounded-md bg-white/10 px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-white/10">
+                      {{ card.cardLabel }}@if (card.lastFour) { ending {{ card.lastFour }}}
+                    </span>
+                  }
+                </div>
+              </div>
+              <div class="h-12 w-12 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+                <span class="material-symbols-outlined">warning</span>
+              </div>
             </div>
+          </div>
+
+          <div
+            class="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-900 to-slate-900 p-6 shadow-sm border border-slate-700">
+            <div class="absolute right-0 top-0 h-32 w-32 -mr-8 -mt-8 rounded-full bg-purple-500/10 blur-3xl"></div>
+            <div class="flex items-center justify-between mb-4 relative z-10">
+              <div>
+                <p class="text-sm font-medium text-indigo-200">Kỳ sao kê tiếp theo</p>
+                <h4 class="mt-2 text-2xl font-bold text-white">Ngày {{ d.finance.nextDueLabel }}</h4>
+              </div>
+              <div class="flex flex-col items-end">
+                <span class="text-3xl font-bold text-blue-400">{{ d.finance.daysUntilDue | number:'2.0-0' }}</span>
+                <span class="text-xs text-slate-400 uppercase tracking-wider">Ngày còn lại</span>
+              </div>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-2.5 mb-1 relative z-10">
+              <div class="bg-gradient-to-r from-yellow-500 to-red-500 h-2.5 rounded-full"
+                   [style.width.%]="d.finance.utilizationPercent"></div>
+            </div>
+            <div class="flex justify-between text-xs text-slate-400 mt-2 relative z-10">
+              <span>Đã dùng: {{ d.finance.utilizationPercent }}% hạn mức</span>
+              <span>Hạn mức: {{ formatVnd(d.finance.totalCreditLimit) }}₫</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Charts & Activity -->
+    <div class="grid grid-cols-1 gap-6" [class.lg:grid-cols-3]="authService.isAdmin() && d.profitChart">
+      @if (authService.isAdmin() && d.profitChart; as chart) {
+        <div class="lg:col-span-2 rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-white">Biểu đồ lợi nhuận</h3>
+            <span class="text-sm text-slate-400">7 ngày qua</span>
+          </div>
+
+          <div class="relative h-64 w-full flex items-end justify-between gap-2 px-2 pt-8">
+            <div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10 pb-6 pt-8 px-2">
+              @for (_ of [1, 2, 3, 4, 5]; track $index) {
+                <div class="w-full border-t border-slate-400"></div>
+              }
+            </div>
+
+            @for (point of chart; track point.date) {
+              <div class="flex-1 rounded-t-md relative group transition-all"
+                   [class.bg-blue-500]="point.amount >= 0"
+                   [class.bg-red-500/70]="point.amount < 0"
+                   [class.bg-slate-700]="point.amount === 0"
+                   [style.height.%]="chartBarHeight(point)">
+                <div
+                  class="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity font-bold whitespace-nowrap z-20">
+                  {{ formatVnd(point.amount) }}
+                </div>
+              </div>
+            }
+          </div>
+          <div class="flex justify-between mt-4 text-xs text-slate-400 px-2 uppercase font-medium">
+            @for (point of chart; track point.date) {
+              <span>{{ point.label }}</span>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 flex flex-col"
+           [class.lg:col-span-1]="authService.isAdmin() && d.profitChart"
+           [class.col-span-full]="!authService.isAdmin() || !d.profitChart">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-white">Hoạt động gần đây</h3>
+          <a [routerLink]="activityAllLink()"
+             class="text-sm text-blue-400 hover:text-blue-300 font-medium cursor-pointer">Xem tất cả</a>
+        </div>
+
+        @if (d.recentActivity.length === 0) {
+          <p class="text-sm text-slate-400 text-center py-8">Chưa có hoạt động nào.</p>
+        } @else {
+          <div class="flex-1 overflow-y-auto space-y-1 custom-scrollbar">
+            @for (item of d.recentActivity; track item.occurredAt + item.title + item.type) {
+              <div
+                class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer group">
+                <div
+                  class="h-10 w-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shrink-0 group-hover:border-blue-500/50 transition-colors">
+                  <span class="material-symbols-outlined text-sm"
+                        [class.text-blue-500]="item.type === 'prediction' && item.positive"
+                        [class.text-red-500]="item.type === 'prediction' && !item.positive"
+                        [class.text-yellow-500]="item.type === 'card_payment'"
+                        [class.text-green-400]="item.type === 'transaction' && item.positive"
+                        [class.text-red-500]="item.type === 'transaction' && !item.positive">
+                    {{ activityIcon(item) }}
+                  </span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-white truncate">{{ item.title }}</p>
+                  <p class="text-xs text-slate-400 truncate">{{ item.subtitle }}</p>
+                </div>
+                <div class="text-right">
+                  <span class="block text-xs font-bold" [class]="activityAmountClass(item)">
+                    {{ activityAmountLabel(item) }}
+                  </span>
+                  <span class="block text-[10px] text-slate-500">{{ formatRelativeTime(item.occurredAt) }}</span>
+                </div>
+              </div>
+            }
           </div>
         }
-        <!-- Highlight Bar -->
-        <div class="w-1/12 bg-blue-500 rounded-t-md h-[75%] relative group shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-          <div
-            class="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 font-bold text-xs py-1 px-2 rounded z-20">
-            5.2M
-          </div>
-        </div>
-      </div>
-      <div class="flex justify-between mt-4 text-xs text-slate-400 px-2 uppercase font-medium">
-        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
       </div>
     </div>
-
-    <!-- Recent Activity -->
-    <div class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 flex flex-col">
-      <div class="flex items-center justify-between mb-6">
-        <h3 class="text-lg font-semibold text-white">Hoạt động gần đây</h3>
-        <a class="text-sm text-blue-400 hover:text-blue-300 font-medium cursor-pointer">Xem tất cả</a>
-      </div>
-      <div class="flex-1 overflow-y-auto space-y-1 custom-scrollbar">
-
-        <div
-          class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer group">
-          <div
-            class="h-10 w-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shrink-0 group-hover:border-blue-500/50 transition-colors">
-            <span class="material-symbols-outlined text-blue-500 text-sm">sports_soccer</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">Arsenal vs Man City</p>
-            <p class="text-xs text-slate-400 truncate">Dự đoán: Arsenal Thắng (2.10)</p>
-          </div>
-          <div class="text-right">
-            <span class="block text-xs font-bold text-green-400">+500K</span>
-            <span class="block text-[10px] text-slate-500">2h trước</span>
-          </div>
-        </div>
-
-        <div
-          class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer group">
-          <div
-            class="h-10 w-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shrink-0 group-hover:border-red-500/50 transition-colors">
-            <span class="material-symbols-outlined text-red-500 text-sm">sports_soccer</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">Chelsea vs Liverpool</p>
-            <p class="text-xs text-slate-400 truncate">Dự đoán: Tài 2.5 (1.85)</p>
-          </div>
-          <div class="text-right">
-            <span class="block text-xs font-bold text-red-500">-200K</span>
-            <span class="block text-[10px] text-slate-500">5h trước</span>
-          </div>
-        </div>
-
-        <div
-          class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer group">
-          <div
-            class="h-10 w-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shrink-0 group-hover:border-yellow-500/50 transition-colors">
-            <span class="material-symbols-outlined text-yellow-500 text-sm">credit_card</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">Thanh toán Spotify</p>
-            <p class="text-xs text-slate-400 truncate">Thẻ VISA ****4242</p>
-          </div>
-          <div class="text-right">
-            <span class="block text-xs font-bold text-white">-59K</span>
-            <span class="block text-[10px] text-slate-500">Hôm qua</span>
-          </div>
-        </div>
-
-        <div
-          class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer group">
-          <div
-            class="h-10 w-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center shrink-0 group-hover:border-blue-500/50 transition-colors">
-            <span class="material-symbols-outlined text-blue-500 text-sm">sports_soccer</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">Real Madrid vs Barca</p>
-            <p class="text-xs text-slate-400 truncate">Dự đoán: Real Madrid (1.95)</p>
-          </div>
-          <div class="text-right">
-            <span class="block text-xs font-bold text-green-400">+950K</span>
-            <span class="block text-[10px] text-slate-500">1 ngày trước</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  }
 </div>

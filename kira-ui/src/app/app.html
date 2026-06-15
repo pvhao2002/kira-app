@@ -14,42 +14,14 @@
       </a>
 
       <nav class="hidden lg:flex items-center p-1 bg-[#1e293b] rounded-xl border border-white/5">
-        <a routerLink="/dashboard" routerLinkActive="bg-blue-600 text-white shadow-md"
-           [routerLinkActiveOptions]="{exact: true}"
-           class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">home</span>
-          Home
-        </a>
-        <a routerLink="/soccer" routerLinkActive="bg-blue-600 text-white shadow-md"
-           class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">sports_soccer</span>
-          Soccer
-        </a>
-        <a routerLink="/cards" routerLinkActive="bg-blue-600 text-white shadow-md"
-           class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">credit_card</span>
-          Credit card
-        </a>
-        <a routerLink="/profile" routerLinkActive="bg-blue-600 text-white shadow-md"
-           class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">person</span>
-          Profile
-        </a>
-        <a routerLink="/users" routerLinkActive="bg-blue-600 text-white shadow-md"
-           class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">people</span>
-          Users
-        </a>
-        <a routerLink="/tool" routerLinkActive="bg-blue-600 text-white shadow-md"
-           class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">build</span>
-          Tool
-        </a>
-        <a routerLink="/sql" routerLinkActive="bg-blue-600 text-white shadow-md"
-           class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">code</span>
-          SQL
-        </a>
+        @for (item of visibleNavItems(); track item.path) {
+          <a [routerLink]="item.path" routerLinkActive="bg-blue-600 text-white shadow-md"
+             [routerLinkActiveOptions]="item.exact ? {exact: true} : {exact: false}"
+             class="px-5 py-2 rounded-lg text-slate-400 hover:text-white transition-all text-sm font-medium flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">{{ item.icon }}</span>
+            {{ item.label }}
+          </a>
+        }
       </nav>
     </div>
 
@@ -60,16 +32,18 @@
               title="Đăng xuất">
         <span class="material-symbols-outlined">logout</span>
       </button>
-      <a routerLink="/transactions"
-         class="text-slate-400 hover:text-blue-400 transition-colors p-2 rounded-full hover:bg-white/5 relative group"
-         title="Lịch sử giao dịch">
-        <span class="material-symbols-outlined">receipt_long</span>
-      </a>
-      <a routerLink="/notifications"
-         class="text-slate-400 hover:text-blue-400 transition-colors p-2 rounded-full hover:bg-white/5 relative">
-        <span class="material-symbols-outlined">notifications</span>
-        <span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full ring-2 ring-[#0f172a]"></span>
-      </a>
+      @if (authService.isAdmin()) {
+        <a routerLink="/transactions"
+           class="text-slate-400 hover:text-blue-400 transition-colors p-2 rounded-full hover:bg-white/5 relative group"
+           title="Lịch sử giao dịch">
+          <span class="material-symbols-outlined">receipt_long</span>
+        </a>
+        <a routerLink="/notifications"
+           class="text-slate-400 hover:text-blue-400 transition-colors p-2 rounded-full hover:bg-white/5 relative">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full ring-2 ring-[#0f172a]"></span>
+        </a>
+      }
       <a routerLink="/profile"
          class="size-9 rounded-full bg-slate-700 ring-2 ring-white/10 overflow-hidden cursor-pointer hover:ring-blue-500 transition-all">
         <img src="https://picsum.photos/seed/user/100/100" alt="User" class="w-full h-full object-cover">
@@ -82,36 +56,14 @@
 @if (!isPublicPage()) {
   <nav
     class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0f172a]/95 backdrop-blur-md border-t border-white/5 pb-safe pt-2 px-4 flex justify-between items-center">
-    <a routerLink="/dashboard" routerLinkActive="text-blue-500"
-       class="flex flex-col items-center p-2 text-slate-500 transition-colors">
-      <span class="material-symbols-outlined">home</span>
-      <span class="text-[10px] mt-1 font-medium">Home</span>
-    </a>
-    <a routerLink="/soccer" routerLinkActive="text-blue-500"
-       class="flex flex-col items-center p-2 text-slate-500 transition-colors">
-      <span class="material-symbols-outlined">sports_soccer</span>
-      <span class="text-[10px] mt-1 font-medium">Soccer</span>
-    </a>
-    <a routerLink="/cards" routerLinkActive="text-blue-500"
-       class="flex flex-col items-center p-2 text-slate-500 transition-colors">
-      <span class="material-symbols-outlined">credit_card</span>
-      <span class="text-[10px] mt-1 font-medium">Credit card</span>
-    </a>
-    <a routerLink="/profile" routerLinkActive="text-blue-500"
-       class="flex flex-col items-center p-2 text-slate-500 transition-colors">
-      <span class="material-symbols-outlined">person</span>
-      <span class="text-[10px] mt-1 font-medium">Profile</span>
-    </a>
-    <a routerLink="/tool" routerLinkActive="text-blue-500"
-       class="flex flex-col items-center p-2 text-slate-500 transition-colors">
-      <span class="material-symbols-outlined">build</span>
-      <span class="text-[10px] mt-1 font-medium">Tool</span>
-    </a>
-    <a routerLink="/sql" routerLinkActive="text-blue-500"
-       class="flex flex-col items-center p-2 text-slate-500 transition-colors">
-      <span class="material-symbols-outlined">code</span>
-      <span class="text-[10px] mt-1 font-medium">SQL</span>
-    </a>
+    @for (item of visibleNavItems(); track item.path) {
+      <a [routerLink]="item.path" routerLinkActive="text-blue-500"
+         [routerLinkActiveOptions]="item.exact ? {exact: true} : {exact: false}"
+         class="flex flex-col items-center p-2 text-slate-500 transition-colors">
+        <span class="material-symbols-outlined">{{ item.icon }}</span>
+        <span class="text-[10px] mt-1 font-medium">{{ item.label }}</span>
+      </a>
+    }
   </nav>
 }
 
