@@ -289,6 +289,9 @@ SSL/TLS mode: **Flexible** (Cloudflare ↔ visitor HTTPS; Cloudflare ↔ EC2 HTT
 ```bash
 sudo dnf install -y nginx
 sudo systemctl enable --now nginx
+
+# Xoá default site — nếu không, curl /healthz trả 404 và Cloudflare có thể 522
+sudo rm -f /etc/nginx/conf.d/default.conf
 ```
 
 Copy config từ repo (sau khi clone hoặc scp):
@@ -297,6 +300,15 @@ Copy config từ repo (sau khi clone hoặc scp):
 sudo cp /opt/kira-app/scripts/nginx-infra.conf /etc/nginx/conf.d/kira-infra.conf
 sudo nginx -t
 sudo systemctl reload nginx
+```
+
+> **Lưu ý:** Package `nginx` trên Amazon Linux tạo sẵn `/etc/nginx/conf.d/default.conf`. File này thường là `default_server` và **không có** `/healthz` → `curl http://127.0.0.1/healthz` trả **404** dù `kira-infra.conf` đã copy. Phải xoá `default.conf` trước khi reload.
+
+Xác nhận server block đang active:
+
+```bash
+ls /etc/nginx/conf.d/
+sudo nginx -T 2>/dev/null | grep -E 'listen 80|server_name|healthz'
 ```
 
 File [`scripts/nginx-infra.conf`](../scripts/nginx-infra.conf) gồm 2 `server` block:
@@ -309,8 +321,14 @@ File [`scripts/nginx-infra.conf`](../scripts/nginx-infra.conf) gồm 2 `server` 
 ### 7.3 Kiểm tra
 
 ```bash
+# Bắt buộc — phải OK trước khi test qua Cloudflare (tránh nhầm 522)
+curl -fsS http://127.0.0.1/healthz
+
 curl -fsS -H 'Host: portainer.kira.id.vn' http://127.0.0.1/ -o /dev/null -w '%{http_code}\n'
 curl -fsS -H 'Host: rabbit.kira.id.vn' http://127.0.0.1/ -o /dev/null -w '%{http_code}\n'
+
+# Từ máy local — nếu timeout ở đây thì sửa Security Group inbound :80
+curl -fsS http://<EC2_PUBLIC_IP>/healthz
 ```
 
 Trình duyệt:
@@ -381,6 +399,69 @@ docker network rm kira-app   # chỉ khi không còn container nào attach
 | Portainer không mở được :9443 | Kiểm tra EC2 SG inbound `9443`; hoặc dùng `https://portainer.kira.id.vn` qua Nginx (:80) |
 | `502` trên portainer/rabbit subdomain | `docker ps` — container đang chạy; `curl` upstream localhost (`9443` / `15672`) |
 | Nginx `duplicate map` khi reload | Chỉ copy `nginx-infra.conf` (một file), không copy thêm `nginx-rabbit.conf` cũ |
+| **Cloudflare 522** (Connection timed out) | Xem mục **9.1** bên dưới |
+| `curl /healthz` trả **404** | Chưa copy `kira-infra.conf` hoặc còn `default.conf` — xoá `default.conf`, copy lại config, reload nginx |
+
+### 9.1 Cloudflare Error 522 — Connection timed out
+
+**522** = Cloudflare **không kết nối được TCP tới EC2 cổng 80**. Lỗi này xảy ra *trước* khi Nginx proxy tới Portainer/Rabbit — không phải lỗi `9443`/`15672`.
+
+```text
+Browser ──HTTPS──► Cloudflare ──HTTP :80──► EC2 Nginx ──► Portainer/Rabbit
+                              ▲
+                         522 = fail tại đây
+```
+
+Chạy lần lượt **trên EC2** (SSH):
+
+```bash
+# 1) Nginx đang chạy và listen :80?
+sudo systemctl status nginx --no-pager
+sudo ss -tlnp | grep ':80 '
+
+# 2) Config hợp lệ?
+sudo nginx -t
+
+# 3) Test local (phải trả 200)
+curl -fsS http://127.0.0.1/healthz
+curl -fsS -H 'Host: portainer.kira.id.vn' http://127.0.0.1/ -o /dev/null -w '%{http_code}\n'
+
+# 4) Có container Docker chiếm :80? (xung đột với nginx host)
+docker ps --format '{{.Names}}\t{{.Ports}}' | grep ':80->' || true
+
+# 5) IP public của máy này (so với DNS Cloudflare)
+curl -s http://169.254.169.254/latest/meta-data/public-ipv4; echo
+```
+
+Chạy **từ máy local** (ngoài EC2):
+
+```bash
+# Thay <EC2_PUBLIC_IP> — phải trả "nginx ok"
+curl -v --max-time 10 http://<EC2_PUBLIC_IP>/healthz
+```
+
+| Kết quả | Nguyên nhân | Cách sửa |
+|---|---|---|
+| Local `curl 127.0.0.1/healthz` OK, **curl IP public timeout** | **Security Group** chưa mở inbound TCP **80** | AWS Console → EC2 → Security Group → Inbound: `HTTP 80` từ `0.0.0.0/0` |
+| `curl IP` timeout, nginx **không** listen `:80` | Nginx chưa cài / failed start | `sudo dnf install -y nginx`; `sudo nginx -t`; `sudo systemctl enable --now nginx` |
+| `nginx -t` fail `duplicate map` | Copy trùng file conf | Xoá file cũ trong `/etc/nginx/conf.d/`, chỉ giữ `kira-infra.conf` |
+| Docker container bind `:80` | Xung đột với nginx host | `docker stop kira-nginx` hoặc đổi port container — **chỉ một** process listen `:80` |
+| DNS A record ≠ IP bước 5 | Cloudflare trỏ sai máy | Cloudflare → DNS → `portainer` / `rabbit` A record = IP EC2 đúng |
+| EC2 không có public IP | Subnet private, không route | Gán Elastic IP hoặc dùng instance có public IP |
+
+**Cloudflare checklist:**
+
+1. DNS record `portainer` / `rabbit`: type **A**, content = **EC2 public IP**, proxy **ON** (orange cloud).
+2. SSL/TLS mode: **Flexible** (Cloudflare → origin dùng HTTP `:80`).
+3. Sau khi sửa SG/nginx: Cloudflare → **Caching → Purge Everything** (tuỳ chọn).
+
+**Phân biệt mã lỗi:**
+
+| Mã | Ý nghĩa |
+|---|---|
+| **522** | Cloudflare không connect được EC2 `:80` (SG / nginx down / sai IP) |
+| **502** | Nginx nhận request nhưng upstream (`9443`/`15672`) lỗi — kiểm tra `docker ps`, `curl localhost:9443` |
+| **525/526** | Lỗi SSL giữa Cloudflare ↔ origin — đổi SSL mode sang **Flexible** nếu origin chỉ HTTP |
 
 ---
 
