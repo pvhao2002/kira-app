@@ -148,22 +148,38 @@ docker volume create portainer_data
 
 docker run -d \
   -p 8000:8000 \
-  -p 9443:9443 \
+  -p 127.0.0.1:9000:9000 \
+  -p 127.0.0.1:9443:9443 \
   --name portainer \
   --restart=always \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v portainer_data:/data \
-  portainer/portainer-ce:latest
+  portainer/portainer-ce:latest \
+  --trusted-origins portainer.kira.id.vn
 ```
 
-1. Mở trình duyệt: `https://<EC2_PUBLIC_IP>:9443` (chấp nhận self-signed cert lần đầu).
-2. Tạo tài khoản admin.
+| Port | Mục đích |
+|---|---|
+| `9000` (localhost) | Nginx proxy domain → `http://127.0.0.1:9000` |
+| `9443` (localhost) | Debug trực tiếp qua IP (tuỳ chọn) |
+| `--trusted-origins` | Bắt buộc khi truy cập qua domain (tránh lỗi "Origin invalid") |
+
+1. Mở `https://portainer.kira.id.vn` (qua Nginx + Cloudflare) **hoặc** `https://<EC2_IP>:9443` tạm thời khi debug.
+2. Tạo tài khoản admin trong **5 phút** (timeout bảo mật).
 3. Chọn environment **local** (Docker socket trên máy EC2).
+
+Nếu Portainer đã chạy rồi, recreate giữ volume:
+
+```bash
+docker stop portainer && docker rm portainer
+# chạy lại lệnh docker run ở trên (volume portainer_data giữ nguyên)
+```
 
 Kiểm tra container:
 
 ```bash
 docker ps --filter name=portainer
+curl -fsS http://127.0.0.1:9000/api/status
 ```
 
 ---
@@ -315,7 +331,7 @@ File [`scripts/nginx-infra.conf`](../scripts/nginx-infra.conf) gồm 2 `server` 
 
 | Domain | Upstream |
 |---|---|
-| `portainer.kira.id.vn` | `https://127.0.0.1:9443` (WebSocket, `proxy_ssl_verify off`) |
+| `portainer.kira.id.vn` | `http://127.0.0.1:9000` (Portainer HTTP — cần `-p 127.0.0.1:9000:9000`) |
 | `rabbit.kira.id.vn` | `http://127.0.0.1:15672` |
 
 ### 7.3 Kiểm tra
@@ -401,6 +417,8 @@ docker network rm kira-app   # chỉ khi không còn container nào attach
 | Nginx `duplicate map` khi reload | Chỉ copy `nginx-infra.conf` (một file), không copy thêm `nginx-rabbit.conf` cũ |
 | **Cloudflare 522** (Connection timed out) | Xem mục **9.1** bên dưới |
 | `curl /healthz` trả **404** | Chưa copy `kira-infra.conf` hoặc còn `default.conf` — xoá `default.conf`, copy lại config, reload nginx |
+| **IP:9443 OK, domain không vào được** | Hai đường khác nhau — xem **9.2** |
+| Domain vào được nhưng **Origin invalid** / không login | Thêm `--trusted-origins portainer.kira.id.vn` + publish `:9000` + copy `nginx-infra.conf` mới |
 
 ### 9.1 Cloudflare Error 522 — Connection timed out
 
@@ -462,6 +480,43 @@ curl -v --max-time 10 http://<EC2_PUBLIC_IP>/healthz
 | **522** | Cloudflare không connect được EC2 `:80` (SG / nginx down / sai IP) |
 | **502** | Nginx nhận request nhưng upstream (`9443`/`15672`) lỗi — kiểm tra `docker ps`, `curl localhost:9443` |
 | **525/526** | Lỗi SSL giữa Cloudflare ↔ origin — đổi SSL mode sang **Flexible** nếu origin chỉ HTTP |
+
+### 9.2 IP:port OK nhưng domain không được
+
+Hai đường truy cập **khác nhau**:
+
+```text
+https://<IP>:9443     → thẳng Portainer (SG mở 9443) — KHÔNG qua Nginx/Cloudflare
+https://portainer.kira.id.vn → Cloudflare → EC2:80 → Nginx → Portainer:9000
+```
+
+| Triệu chứng domain | Nguyên nhân | Cách sửa |
+|---|---|---|
+| **522** / timeout | SG chưa mở **80** hoặc DNS sai IP | Mở inbound TCP 80; `dig +short portainer.kira.id.vn` = EC2 public IP |
+| Trang trắng / **Origin invalid** | Portainer chưa trust domain | Recreate với `--trusted-origins portainer.kira.id.vn` |
+| **502** Bad Gateway | Nginx không reach `:9000` | Publish `-p 127.0.0.1:9000:9000`; `curl http://127.0.0.1:9000/api/status` |
+
+Sau khi sửa, trên EC2:
+
+```bash
+cd ~/kira-app && git pull
+sudo cp scripts/nginx-infra.conf /etc/nginx/conf.d/kira-infra.conf
+sudo nginx -t && sudo systemctl reload nginx
+
+docker stop portainer && docker rm portainer
+docker run -d \
+  -p 8000:8000 \
+  -p 127.0.0.1:9000:9000 \
+  -p 127.0.0.1:9443:9443 \
+  --name portainer \
+  --restart=always \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v portainer_data:/data \
+  portainer/portainer-ce:latest \
+  --trusted-origins portainer.kira.id.vn
+
+curl -fsS -H 'Host: portainer.kira.id.vn' http://127.0.0.1/ -o /dev/null -w '%{http_code}\n'
+```
 
 ---
 
