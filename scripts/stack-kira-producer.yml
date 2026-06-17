@@ -1,0 +1,38 @@
+# Portainer stack — kira-producer (deploy sau stack RabbitMQ)
+# Yêu cầu: docker network create kira-app, RABBIT_HOST=rabbitmq
+
+services:
+  kira-producer:
+    image: kira2308/kira-producer:latest
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    container_name: kira-producer
+    ports:
+      - "2311:2311"
+    environment:
+      KIRA_PRODUCER_PORT: "2311"
+      LOG_FILE: /app/logs/kira-producer.log
+      DB_NAME: ${DB_NAME}
+      DB_APP_USER: ${DB_APP_USER}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD}
+      DB_PRIMARY_HOST: ${DB_PRIMARY_HOST}
+      DB_PRIMARY_PORT: ${DB_PRIMARY_PORT}
+      RABBIT_HOST: ${RABBIT_HOST:-rabbitmq}
+      RABBIT_PORT: ${RABBIT_PORT:-5672}
+      RABBIT_USERNAME: ${RABBIT_USERNAME}
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
+      RABBIT_VHOST: ${RABBIT_VHOST:-/}
+      KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED: ${KIRA_PRODUCER_CRAWL_SCHEDULE_ENABLED:-true}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    restart: unless-stopped
+    networks:
+      - kira-app
+
+networks:
+  kira-app:
+    external: true
+    name: kira-app

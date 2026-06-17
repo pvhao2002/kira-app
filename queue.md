@@ -322,7 +322,11 @@ PLATFORM=linux/amd64 PUSH=true ./scripts/build-producer-queue.sh
 
 ## Tham chiếu trong repo
 
+- Setup Portainer + RabbitMQ + kira-producer (EC2): `docs/portainer-ec2-setup.md`
 - Compose mẫu producer + queue: `scripts/stack-producer-queue.yml`
+- Stack RabbitMQ (Portainer): `scripts/stack-rabbitmq.yml`
+- Stack kira-producer (Portainer): `scripts/stack-kira-producer.yml`
 - Bootstrap EC2: `scripts/ec2-bootstrap.sh`
 - Build image AMD64: `scripts/build-producer-queue.sh`
+- Nginx infra (Portainer + RabbitMQ): `scripts/nginx-infra.conf`
 - Env production chung: `.env.ec2.example`

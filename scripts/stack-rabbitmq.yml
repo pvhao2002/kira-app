@@ -1,0 +1,27 @@
+# Portainer stack — RabbitMQ (deploy trước kira-producer)
+# Yêu cầu: docker network create kira-app
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST:-/}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    restart: unless-stopped
+    networks:
+      - kira-app
+
+volumes:
+  rabbitmq-data:
+
+networks:
+  kira-app:
+    external: true
+    name: kira-app

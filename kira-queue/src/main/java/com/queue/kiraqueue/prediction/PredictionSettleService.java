@@ -38,7 +38,8 @@ public class PredictionSettleService {
                               and r.sport_id = 1
                               and r.is_terminal = 1
                               and r.code not in (9, 12))
-                    or (e.status_id is null and e.status = 'FT')
+                    or e.status_id = 8
+                    or e.status = 'FT'
                 )
             """;
 
