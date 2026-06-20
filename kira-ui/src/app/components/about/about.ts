@@ -42,12 +42,6 @@ interface Project {
   repoLinks?: ProjectRepoLink[];
 }
 
-interface NavItem {
-  id: string;
-  labelEn: string;
-  labelVi: string;
-}
-
 interface HeroStackIcon {
   name: string;
   icon: string;
@@ -72,14 +66,6 @@ export class About implements OnInit, AfterViewInit {
   readonly showCursor = signal(true);
   readonly visibleSections = signal<Set<string>>(new Set());
 
-  readonly navItems: NavItem[] = [
-    {id: 'hero', labelEn: 'Home', labelVi: 'Trang chủ'},
-    {id: 'about', labelEn: 'About', labelVi: 'Giới thiệu'},
-    {id: 'experience', labelEn: 'Experience', labelVi: 'Kinh nghiệm'},
-    {id: 'projects', labelEn: 'Projects', labelVi: 'Dự án'},
-    {id: 'education', labelEn: 'Education', labelVi: 'Học vấn'},
-  ];
-
   readonly roles = [
     'Java Developer',
     'Lập trình viên Java Developer',
@@ -88,7 +74,6 @@ export class About implements OnInit, AfterViewInit {
   readonly socialLinks: SocialLink[] = [
     {label: 'GitHub', url: 'https://github.com/pvhao2002', icon: 'code'},
     {label: 'LinkedIn', url: 'https://www.linkedin.com/in/haopv23/', icon: 'work'},
-    {label: 'Facebook', url: 'https://www.facebook.com/kira.ph2308', icon: 'group'},
     {label: 'Email', url: 'mailto:hao.phamvan2308@gmail.com', icon: 'mail'},
   ];
 
@@ -161,19 +146,18 @@ export class About implements OnInit, AfterViewInit {
     },
   ];
 
-  readonly aboutParagraphs = [
-    {
-      en: 'I was born and raised in Thai Binh — a peaceful land that shaped my character from an early age. Later, I moved to Dong Nai to pursue my studies and build my life there. From a young age, I have carried a deep passion for programming — a dream that drives me to constantly learn, explore new technologies, and turn ideas into real-world solutions.',
-      vi: 'Tôi là người con xứ Thái Bình — vùng đất bình yên nơi tôi sinh ra và lớn lên, hun đúc nên tính cách từ nhỏ. Sau này, tôi đến Đồng Nai để học tập và sinh sống. Từ sớm, tôi đã mang trong mình ước mơ và đam mê mãnh liệt với ngành lập trình — thứ thôi thúc tôi không ngừng học hỏi, khám phá công nghệ mới và biến ý tưởng thành giải pháp thực tế.',
-    },
-    {
-      en: 'I am a passionate Java Developer, graduated in Information Technology from HCMUTE. I specialize in data crawling and backend development with Java & Spring Boot, building systems that collect and process data reliably for thousands of users.',
-      vi: 'Tôi là Java Developer đam mê công nghệ, tốt nghiệp CNTT tại HCMUTE. Tôi chuyên về crawl dữ liệu và phát triển backend với Java & Spring Boot, xây dựng hệ thống thu thập và xử lý dữ liệu ổn định cho hàng nghìn người dùng.',
-    },
-    {
-      en: 'I am highly responsible, a strong team player, and eager to learn new technologies. With a solid technical foundation and real-world experience, I am looking forward to taking on new challenges in an international environment where I can contribute meaningfully and grow my career in the long term.',
-      vi: 'Tôi là người có trách nhiệm cao, làm việc nhóm tốt và luôn sẵn sàng học hỏi công nghệ mới. Với nền tảng kỹ thuật vững chắc và kinh nghiệm thực tế, tôi mong muốn đón nhận những thử thách mới trong môi trường quốc tế để đóng góp ý nghĩa và phát triển sự nghiệp lâu dài.',
-    },
+  readonly aboutViParagraphs = [
+    'Tôi là Java Developer tốt nghiệp Công nghệ Thông tin tại HCMUTE, tập trung vào backend với Java, Spring Boot, Angular và các hệ thống xử lý dữ liệu thực tế.',
+    'Thế mạnh nổi bật của tôi là xây dựng các project crawl data trọn gói: từ phân tích nguồn dữ liệu, viết crawler, làm sạch dữ liệu, lưu trữ, đồng bộ API cho đến dựng giao diện quản trị hoặc sản phẩm hoàn chỉnh.',
+    'Tôi đã từng triển khai và phát triển các hệ thống liên quan đến nhiều lĩnh vực như bất động sản, đề thi tiếng Anh như TOEIC, IELTS, cùng dữ liệu trận đấu bóng đá và thể thao. Mục tiêu của tôi luôn là tạo ra hệ thống thu thập dữ liệu ổn định, dễ mở rộng và phục vụ tốt cho nhu cầu thực tế.',
+    'Nếu bạn cần viết tool, website hoặc app liên quan đến crawl data, xử lý dữ liệu, vận hành nội dung hay sản phẩm số hoàn chỉnh, tôi sẵn sàng đồng hành từ ý tưởng đến triển khai.',
+  ];
+
+  readonly aboutEnParagraphs = [
+    'I am a Java Developer with a degree in Information Technology from HCMUTE, focused on backend engineering with Java, Spring Boot, Angular, and production-ready data systems.',
+    'My strongest area is building end-to-end data crawling projects: analyzing data sources, implementing crawlers, cleaning and structuring data, storing it efficiently, exposing APIs, and delivering admin dashboards or complete products.',
+    'I have worked across multiple domains including real estate, English exam content such as TOEIC and IELTS, and football and sports match data. My goal is always to build crawling systems that are reliable, scalable, and truly useful for real-world business needs.',
+    'If you need a custom internal tool, website, or app related to data crawling, data processing, content operations, or a complete digital product, I am available to help from idea to deployment.',
   ];
 
   private roleIndex = 0;

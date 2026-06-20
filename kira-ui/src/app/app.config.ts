@@ -6,14 +6,12 @@ import {provideHttpClient, withFetch, withInterceptors} from '@angular/common/ht
 import {GlobalErrorHandler} from './config/GlobalErrorHandler';
 import {provideAnimations} from '@angular/platform-browser/animations';
 import {provideToastr} from 'ngx-toastr';
-import {provideClientHydration, withNoHttpTransferCache} from '@angular/platform-browser';
 import {authInterceptor} from './config/AuthInterceptor';
 import {httpErrorInterceptor} from './config/HttpErrorInterceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes, withHashLocation()),
-    provideClientHydration(withNoHttpTransferCache()),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor, httpErrorInterceptor])),
     provideAnimations(),
     {
@@ -30,5 +28,4 @@ export const appConfig: ApplicationConfig = {
     }),
   ]
 };
-
 

@@ -2,23 +2,13 @@
 
   <!-- Sticky Nav -->
   <nav class="sticky top-0 z-50 bg-[#0b1121]/80 backdrop-blur-md border-b border-white/5">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center">
       <a href="#" class="flex items-center gap-2 group" (click)="$event.preventDefault(); scrollToSection('hero')">
         <div class="size-9 rounded-lg bg-gradient-to-br from-[#f89820] via-[#5382a1] to-[#dd0031] flex items-center justify-center text-white text-sm font-black shadow-lg">
           K
         </div>
         <span class="font-bold text-white tracking-tight">KIRA - 2002</span>
       </a>
-      <div class="flex items-center gap-3 sm:gap-6 overflow-x-auto no-scrollbar max-w-[58vw] sm:max-w-none py-1">
-        @for (item of navItems; track item.id) {
-          <button type="button"
-                  (click)="scrollToSection(item.id)"
-                  [title]="item.labelVi"
-                  class="nav-link text-sm text-slate-400 hover:text-white transition-colors whitespace-nowrap shrink-0">
-            {{ item.labelEn }}
-          </button>
-        }
-      </div>
     </div>
   </nav>
 
@@ -62,7 +52,7 @@
         <!-- Left: Hero (7/10) -->
         <div class="lg:col-span-7 text-left space-y-5">
           <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight">
-            <span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+            <span class="text-white drop-shadow-[0_2px_16px_rgba(255,255,255,0.18)]">
               Phạm Văn Hào
             </span>
             <span class="block text-xl sm:text-2xl lg:text-3xl font-bold mt-2 text-[#f89820]">KIRA - 2002</span>
@@ -155,96 +145,28 @@
       <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#5382a1]/50 to-transparent"></div>
     </div>
 
-    <div class="space-y-6">
-      @for (para of aboutParagraphs; track para.en) {
-        <div class="rounded-2xl bg-[#0f172a]/80 border border-white/5 p-6 sm:p-8 space-y-3 hover:border-[#5382a1]/20 transition-colors">
-          <p class="text-slate-300 leading-relaxed">{{ para.en }}</p>
-          <p class="text-slate-500 leading-relaxed text-sm border-t border-white/5 pt-3">{{ para.vi }}</p>
+    <div class="rounded-2xl bg-[#0f172a]/80 border border-white/5 p-6 sm:p-8 hover:border-[#5382a1]/20 transition-colors">
+      <div class="grid gap-8 lg:grid-cols-2 lg:gap-10">
+        <div class="space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="h-px flex-1 bg-gradient-to-r from-[#5382a1]/50 to-transparent"></div>
+            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#5382a1]">Tiếng Việt</p>
+          </div>
+          @for (paragraph of aboutViParagraphs; track paragraph) {
+            <p class="text-slate-300 leading-relaxed text-sm sm:text-base">{{ paragraph }}</p>
+          }
         </div>
-      }
-    </div>
-  </section>
 
-  <!-- Experience Section -->
-  <section id="experience"
-           data-reveal
-           [class.revealed]="isSectionVisible('experience')"
-           class="max-w-5xl mx-auto px-6 py-20">
-    <div class="flex items-center gap-3 mb-8">
-      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#6db33f]/50 to-transparent"></div>
-      <h2 class="text-2xl font-bold text-white whitespace-nowrap">
-        Experience <span class="text-slate-500 font-normal text-lg">/ Kinh nghiệm</span>
-      </h2>
-      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#6db33f]/50 to-transparent"></div>
-    </div>
-
-    <div class="space-y-4">
-      @for (item of experienceItems; track item.en; let i = $index) {
-        <div class="flex gap-4 rounded-xl bg-[#0f172a]/80 border border-white/5 p-5 sm:p-6 hover:border-[#6db33f]/20 transition-colors group">
-          <div class="flex-shrink-0 size-10 rounded-lg bg-[#6db33f]/10 border border-[#6db33f]/20 flex items-center justify-center text-[#6db33f] font-bold text-sm">
-            {{ i + 1 }}
+        <div class="space-y-4">
+          <div class="flex items-center gap-3">
+            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#5382a1]">English</p>
+            <div class="h-px flex-1 bg-gradient-to-l from-[#5382a1]/50 to-transparent"></div>
           </div>
-          <div class="space-y-2 min-w-0">
-            <p class="text-slate-300 leading-relaxed">{{ item.en }}</p>
-            <p class="text-slate-500 text-sm leading-relaxed">{{ item.vi }}</p>
-          </div>
+          @for (paragraph of aboutEnParagraphs; track paragraph) {
+            <p class="text-slate-400 leading-relaxed text-sm sm:text-base">{{ paragraph }}</p>
+          }
         </div>
-      }
-    </div>
-  </section>
-
-  <!-- Projects Section -->
-  <section id="projects"
-           data-reveal
-           [class.revealed]="isSectionVisible('projects')"
-           class="max-w-5xl mx-auto px-6 py-20">
-    <div class="flex items-center gap-3 mb-8">
-      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#dd0031]/50 to-transparent"></div>
-      <h2 class="text-2xl font-bold text-white whitespace-nowrap">
-        Projects <span class="text-slate-500 font-normal text-lg">/ Dự án</span>
-      </h2>
-      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#dd0031]/50 to-transparent"></div>
-    </div>
-
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      @for (project of projects; track project.name) {
-        <div class="project-card rounded-2xl bg-[#0f172a] border border-white/5 p-6 space-y-4 flex flex-col">
-          <div class="flex items-center justify-between">
-            <span class="material-symbols-outlined text-[#5382a1]">folder_open</span>
-          </div>
-          <h3 class="font-bold text-white text-lg">{{ project.name }}</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">{{ project.descriptionEn }}</p>
-          <p class="text-slate-500 text-xs leading-relaxed">{{ project.descriptionVi }}</p>
-          <div class="flex flex-wrap gap-2">
-            @for (tech of project.tech; track tech) {
-              <span class="px-2.5 py-1 rounded-md bg-white/5 text-xs text-slate-400 border border-white/5">{{ tech }}</span>
-            }
-          </div>
-          <div class="flex flex-wrap gap-2 pt-2 mt-auto">
-            @if (project.repoLinks) {
-              @for (repo of project.repoLinks; track repo.url) {
-                <a [href]="repo.url"
-                   target="_blank"
-                   rel="noopener noreferrer"
-                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-[#5382a1]/50 hover:bg-white/10 transition-all text-sm font-medium text-slate-300 hover:text-white">
-                  <span class="material-symbols-outlined text-base">code</span>
-                  {{ repo.label }}
-                  <span class="material-symbols-outlined text-sm text-slate-500">open_in_new</span>
-                </a>
-              }
-            } @else if (project.url) {
-              <a [href]="project.url"
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-[#5382a1]/50 hover:bg-white/10 transition-all text-sm font-medium text-slate-300 hover:text-white">
-                <span class="material-symbols-outlined text-base">code</span>
-                GitHub
-                <span class="material-symbols-outlined text-sm text-slate-500">open_in_new</span>
-              </a>
-            }
-          </div>
-        </div>
-      }
+      </div>
     </div>
   </section>
 
