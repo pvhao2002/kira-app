@@ -44,14 +44,14 @@ export class Login implements OnInit {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.toast.error('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.');
+      this.toast.error('Please enter both username and password.');
       return;
     }
 
     const {username, password} = this.form.getRawValue();
     const trimmedUsername = username.trim();
     if (!trimmedUsername || !password.trim()) {
-      this.toast.error('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.');
+      this.toast.error('Please enter both username and password.');
       return;
     }
 
@@ -62,12 +62,12 @@ export class Login implements OnInit {
         next: () => {
           const returnUrl = this.resolveReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
           this.loading.set(false);
-          this.toast.success('Đăng nhập thành công');
+          this.toast.success('Signed in successfully');
           void this.router.navigateByUrl(returnUrl);
         },
         error: (err) => {
           this.loading.set(false);
-          const message = err?.error?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
+          const message = err?.error?.message || 'Sign-in failed. Please check your information.';
           this.toast.error(message);
         }
       });

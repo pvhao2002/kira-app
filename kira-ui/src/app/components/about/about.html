@@ -53,7 +53,7 @@
         <div class="lg:col-span-7 text-left space-y-5">
           <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight">
             <span class="text-white drop-shadow-[0_2px_16px_rgba(255,255,255,0.18)]">
-              Phạm Văn Hào
+              Pham Van Hao
             </span>
             <span class="block text-xl sm:text-2xl lg:text-3xl font-bold mt-2 text-[#f89820]">KIRA - 2002</span>
           </h1>
@@ -69,8 +69,6 @@
 
           <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
             I am a <span class="text-[#f89820] font-medium">Java Developer</span> specializing in <span class="text-[#f89820] font-medium">data crawling</span> — building reliable systems to collect, process, and deliver data at scale.
-            <br>
-            <span class="text-slate-500">Tôi là <span class="text-[#f89820] font-medium">Lập trình viên Java Developer</span>, <span class="text-[#f89820] font-medium">chuyên về crawl dữ liệu</span> — xây dựng hệ thống thu thập, xử lý và cung cấp dữ liệu ổn định, hiệu quả.</span>
           </p>
 
           <div id="contact"
@@ -78,7 +76,7 @@
                [class.revealed]="isSectionVisible('contact')"
                class="space-y-2 pt-3 border-t border-white/10">
             <h2 class="text-sm font-bold text-white">
-              Contact <span class="text-slate-500 font-normal text-xs">/ Liên hệ</span>
+              Contact
             </h2>
             <div class="space-y-1.5">
               <a href="mailto:hao.phamvan2308@gmail.com"
@@ -113,7 +111,7 @@
                [class.revealed]="isSectionVisible('skills')"
                class="space-y-2">
             <h2 class="text-sm font-bold text-white">
-              Skills <span class="text-slate-500 font-normal text-xs">/ Kỹ năng</span>
+              Skills
             </h2>
             <div class="grid grid-cols-2 gap-1.5">
               @for (skill of skills; track skill.name) {
@@ -140,32 +138,20 @@
     <div class="flex items-center gap-3 mb-8">
       <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#5382a1]/50 to-transparent"></div>
       <h2 class="text-2xl font-bold text-white whitespace-nowrap">
-        About <span class="text-slate-500 font-normal text-lg">/ Giới thiệu</span>
+        About
       </h2>
       <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#5382a1]/50 to-transparent"></div>
     </div>
 
     <div class="rounded-2xl bg-[#0f172a]/80 border border-white/5 p-6 sm:p-8 hover:border-[#5382a1]/20 transition-colors">
-      <div class="grid gap-8 lg:grid-cols-2 lg:gap-10">
-        <div class="space-y-4">
-          <div class="flex items-center gap-3">
-            <div class="h-px flex-1 bg-gradient-to-r from-[#5382a1]/50 to-transparent"></div>
-            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#5382a1]">Tiếng Việt</p>
-          </div>
-          @for (paragraph of aboutViParagraphs; track paragraph) {
-            <p class="text-slate-300 leading-relaxed text-sm sm:text-base">{{ paragraph }}</p>
-          }
+      <div class="space-y-4">
+        <div class="flex items-center gap-3">
+          <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#5382a1]">Profile</p>
+          <div class="h-px flex-1 bg-gradient-to-l from-[#5382a1]/50 to-transparent"></div>
         </div>
-
-        <div class="space-y-4">
-          <div class="flex items-center gap-3">
-            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#5382a1]">English</p>
-            <div class="h-px flex-1 bg-gradient-to-l from-[#5382a1]/50 to-transparent"></div>
-          </div>
-          @for (paragraph of aboutEnParagraphs; track paragraph) {
-            <p class="text-slate-400 leading-relaxed text-sm sm:text-base">{{ paragraph }}</p>
-          }
-        </div>
+        @for (paragraph of aboutEnParagraphs; track paragraph) {
+          <p class="text-slate-400 leading-relaxed text-sm sm:text-base">{{ paragraph }}</p>
+        }
       </div>
     </div>
   </section>
@@ -175,18 +161,13 @@
     <div class="rounded-2xl bg-[#0f172a] border border-white/5 p-6 sm:p-8 space-y-4 max-w-2xl mx-auto">
       <h3 class="font-semibold text-white flex items-center gap-2 text-sm">
         <span class="material-symbols-outlined text-[#6db33f] text-lg">school</span>
-        Education / Học vấn
+        Education
       </h3>
       <div class="space-y-2">
         <p class="text-slate-300 leading-relaxed text-sm">
           <span class="font-medium text-white">Ho Chi Minh City University of Technology and Education (HCMUTE)</span>
           <br>
           Bachelor of Information Technology
-        </p>
-        <p class="text-slate-500 text-xs leading-relaxed">
-          Trường Đại học Sư phạm Kỹ thuật TP.HCM (HCMUTE)
-          <br>
-          Cử nhân Công nghệ Thông tin
         </p>
       </div>
       <div class="flex items-center gap-2 text-xs text-slate-500">
@@ -196,7 +177,7 @@
     </div>
 
     <div class="mt-12 text-center text-xs text-slate-600 space-y-1">
-      <p>&copy; 2026 Phạm Văn Hào (KIRA - 2002). Built with Angular.</p>
+      <p>&copy; 2026 Pham Van Hao (KIRA - 2002). Built with Angular.</p>
       <p>Fullstack Java Developer — Java, Spring Boot, Angular</p>
     </div>
   </section>

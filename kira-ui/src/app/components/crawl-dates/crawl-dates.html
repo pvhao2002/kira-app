@@ -1,7 +1,7 @@
 <div class="max-w-[1100px] mx-auto p-6 space-y-6">
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-white">Crawl Date</h1>
-    <p class="text-slate-400 mt-2">Trạng thái crawl theo ngày.</p>
+    <h1 class="text-3xl font-bold tracking-tight text-white">Crawl Dates</h1>
+    <p class="text-slate-400 mt-2">Daily crawl status.</p>
   </div>
 
   <div class="rounded-xl border border-white/5 bg-[#1e293b] p-4 space-y-4">
@@ -26,7 +26,7 @@
     @if (filterMode() === 'advance') {
       <div class="space-y-5">
         <div class="space-y-3">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Crawl theo khoảng ngày</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Crawl Date Range</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] gap-3 items-end">
             <label class="flex flex-col gap-1 text-sm text-slate-300">
               <span class="text-xs font-semibold uppercase text-slate-500">From date</span>
@@ -54,20 +54,20 @@
               } @else {
                 <span class="material-symbols-outlined text-base">date_range</span>
               }
-              Crawl khoảng ngày
+              Crawl Date Range
             </button>
           </div>
         </div>
 
         <div class="border-t border-white/5 pt-5 space-y-3">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Lọc danh sách</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Filter List</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] gap-3 items-end">
             <label class="flex flex-col gap-1 text-sm text-slate-300">
               <span class="text-xs font-semibold uppercase text-slate-500">Status</span>
               <select class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
                       [value]="statusFilter()"
                       (change)="statusFilter.set($any($event.target).value)">
-                <option value="all">Tất cả</option>
+                <option value="all">All</option>
                 <option value="pending">pending</option>
                 <option value="picked">picked</option>
                 <option value="in_progress">in_progress</option>
@@ -81,7 +81,7 @@
               <select class="rounded-lg bg-slate-900 border border-white/10 px-3 py-2 text-sm text-white"
                       [value]="totalEventFilter()"
                       (change)="totalEventFilter.set($any($event.target).value)">
-                <option value="all">Tất cả</option>
+                <option value="all">All</option>
                 <option value="0">total event = 0</option>
               </select>
             </label>
@@ -91,13 +91,13 @@
                       (click)="applyAdvancedFilters()"
                       class="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500">
                 <span class="material-symbols-outlined text-base">filter_alt</span>
-                Áp dụng
+                Apply
               </button>
               <button type="button"
                       (click)="resetAdvancedFilters()"
                       class="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg bg-slate-900 text-slate-300 text-sm font-semibold border border-white/10 hover:bg-slate-800">
                 <span class="material-symbols-outlined text-base">filter_alt_off</span>
-                Xóa lọc
+                Clear filters
               </button>
             </div>
           </div>
@@ -109,7 +109,7 @@
   @if (loading()) {
     <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 flex flex-col items-center justify-center gap-3">
       <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
-      <p class="text-slate-400 text-sm">Đang tải…</p>
+      <p class="text-slate-400 text-sm">Loading...</p>
     </div>
   } @else if (error()) {
     <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
@@ -117,14 +117,14 @@
       <button type="button"
               (click)="load()"
               class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
-        Thử lại
+        Retry
       </button>
     </div>
   } @else if (data(); as page) {
     @if (page.content.length === 0) {
       <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 text-center">
         <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">calendar_month</span>
-        <p class="text-slate-400 text-sm">Không có bản ghi.</p>
+        <p class="text-slate-400 text-sm">No records found.</p>
       </div>
     } @else {
       <div class="rounded-xl border border-white/5 overflow-hidden bg-[#1e293b]">
@@ -138,11 +138,11 @@
                           class="inline-flex items-center gap-1 font-medium hover:text-white transition-colors"
                           [class.text-blue-400]="sortHeaderActive('date')"
                           [class.text-slate-400]="!sortHeaderActive('date')">
-                    Ngày
+                    Date
                     <span class="material-symbols-outlined text-base leading-none">{{ sortHeaderIcon('date') }}</span>
                   </button>
                 </th>
-                <th class="px-4 py-3">Trạng thái</th>
+                <th class="px-4 py-3">Status</th>
                 <th class="px-4 py-3 text-right">
                   <button type="button"
                           (click)="toggleSort('totalEvents')"
@@ -153,9 +153,9 @@
                     <span class="material-symbols-outlined text-base leading-none">{{ sortHeaderIcon('totalEvents') }}</span>
                   </button>
                 </th>
-                <th class="px-4 py-3 hidden md:table-cell">Tin nhắn</th>
-                <th class="px-4 py-3 hidden lg:table-cell">Cập nhật</th>
-                <th class="px-4 py-3 text-right w-[1%] whitespace-nowrap">Thao tác</th>
+                <th class="px-4 py-3 hidden md:table-cell">Message</th>
+                <th class="px-4 py-3 hidden lg:table-cell">Updated</th>
+                <th class="px-4 py-3 text-right w-[1%] whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
@@ -184,7 +184,7 @@
                       } @else {
                         <span class="material-symbols-outlined text-sm">replay</span>
                       }
-                      Crawl lại
+                      Crawl Again
                     </button>
                   </td>
                 </tr>
@@ -196,21 +196,21 @@
 
       <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400">
         <span>
-          Trang {{ page.page + 1 }} / {{ page.totalPages || 1 }}
-          · {{ page.totalElements | number }} bản ghi
+          Page {{ page.page + 1 }} / {{ page.totalPages || 1 }}
+          · {{ page.totalElements | number }} records
         </span>
         <div class="flex gap-2">
           <button type="button"
                   (click)="prev()"
                   [disabled]="page.page <= 0"
                   class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
-            Trước
+            Previous
           </button>
           <button type="button"
                   (click)="next()"
                   [disabled]="page.page >= page.totalPages - 1"
                   class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
-            Sau
+            Next
           </button>
         </div>
       </div>

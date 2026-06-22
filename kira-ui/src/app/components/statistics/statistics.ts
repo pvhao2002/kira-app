@@ -38,22 +38,22 @@ interface StatSection {
 const SECTION_META: Record<StatMetricType, Omit<StatSection, 'rows'>> = {
   TOTAL_GOALS_3_PLUS: {
     metricType: 'TOTAL_GOALS_3_PLUS',
-    title: 'Top 10 đội có trận từ 3 bàn trở lên',
-    description: 'Tỷ lệ trận trong 3 tháng gần nhất có tổng bàn thắng cả trận từ 3 bàn.',
+    title: 'Top 10 teams with matches of 3+ goals',
+    description: 'Share of matches in the last 3 months with 3+ total goals.',
     icon: 'scoreboard',
     accentClass: 'text-emerald-400',
   },
   TOTAL_CORNERS_10_PLUS: {
     metricType: 'TOTAL_CORNERS_10_PLUS',
-    title: 'Top 10 đội có trận từ 10 phạt góc trở lên',
-    description: 'Tỷ lệ trận trong 3 tháng gần nhất có tổng phạt góc cả trận từ 10 quả.',
+    title: 'Top 10 teams with matches of 10+ corners',
+    description: 'Share of matches in the last 3 months with 10+ total corners.',
     icon: 'sports',
     accentClass: 'text-amber-400',
   },
   FIRST_HALF_GOAL: {
     metricType: 'FIRST_HALF_GOAL',
-    title: 'Top 10 đội có bàn thắng ở H1',
-    description: 'Tỷ lệ trận trong 3 tháng gần nhất có ít nhất 1 bàn thắng trong hiệp 1.',
+    title: 'Top 10 teams with an H1 goal',
+    description: 'Share of matches in the last 3 months with at least 1 first-half goal.',
     icon: 'timer',
     accentClass: 'text-sky-400',
   },
@@ -115,8 +115,8 @@ export class Statistics {
         this.loading.set(false);
       },
       error: err => {
-        const msg = err?.error?.message ?? err?.message ?? 'Không tải được dữ liệu thống kê.';
-        this.error.set(typeof msg === 'string' ? msg : 'Không tải được dữ liệu thống kê.');
+        const msg = err?.error?.message ?? err?.message ?? 'Unable to load statistics data.';
+        this.error.set(typeof msg === 'string' ? msg : 'Unable to load statistics data.');
         this.loading.set(false);
       },
     });

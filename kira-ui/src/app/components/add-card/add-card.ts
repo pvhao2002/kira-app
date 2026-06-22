@@ -48,7 +48,7 @@ export class AddCard {
     const creditLimit = parseVndInput(v.creditLimitStr);
     const outstandingBalance = parseVndInput(v.outstandingBalanceStr);
     if (creditLimit <= 0) {
-      this.toast.error('Hạn mức phải lớn hơn 0.');
+      this.toast.error('Limit must be greater than 0.');
       return;
     }
     const lastFour = v.lastFour.trim();
@@ -68,13 +68,13 @@ export class AddCard {
       .subscribe({
         next: () => {
           this.saving.set(false);
-          this.toast.success('Đã lưu thẻ.');
+          this.toast.success('Card saved.');
           void this.router.navigateByUrl('/cards');
         },
         error: err => {
           this.saving.set(false);
-          const raw = err?.error?.message ?? err?.message ?? 'Không lưu được.';
-          this.toast.error(typeof raw === 'string' ? raw : 'Không lưu được.');
+          const raw = err?.error?.message ?? err?.message ?? 'Unable to save.';
+          this.toast.error(typeof raw === 'string' ? raw : 'Unable to save.');
         }
       });
   }

@@ -46,8 +46,8 @@ export class Dashboard {
     this.error.set(null);
     this.api.get().pipe(
       catchError(err => {
-        const msg = err?.error?.message ?? err?.message ?? 'Không tải được dữ liệu tổng quan.';
-        this.error.set(typeof msg === 'string' ? msg : 'Không tải được dữ liệu tổng quan.');
+        const msg = err?.error?.message ?? err?.message ?? 'Unable to load dashboard data.';
+        this.error.set(typeof msg === 'string' ? msg : 'Unable to load dashboard data.');
         return of<DashboardResponse | null>(null);
       })
     ).subscribe(res => {
@@ -77,17 +77,17 @@ export class Dashboard {
     const diffMs = Date.now() - at.getTime();
     const mins = Math.floor(diffMs / 60_000);
     if (mins < 1) {
-      return 'Vừa xong';
+      return 'Just now';
     }
     if (mins < 60) {
-      return `${mins} phút trước`;
+      return `${mins} minutes ago`;
     }
     const hours = Math.floor(mins / 60);
     if (hours < 24) {
-      return `${hours}h trước`;
+      return `${hours}h ago`;
     }
     const days = Math.floor(hours / 24);
-    return `${days} ngày trước`;
+    return `${days} days ago`;
   }
 
   activityIcon(item: DashboardActivityItem): string {
@@ -102,7 +102,7 @@ export class Dashboard {
 
   activityAmountLabel(item: DashboardActivityItem): string {
     if (item.type === 'prediction') {
-      return item.positive ? 'Thắng' : 'Thua';
+      return item.positive ? 'Win' : 'Loss';
     }
     const prefix = item.positive ? '+' : '-';
     return prefix + this.formatVnd(Math.abs(item.amount));

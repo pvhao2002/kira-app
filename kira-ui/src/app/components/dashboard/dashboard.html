@@ -2,15 +2,15 @@
   <!-- Header -->
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
-      <h2 class="text-3xl font-bold tracking-tight text-white">Tổng quan</h2>
+      <h2 class="text-3xl font-bold tracking-tight text-white">Overview</h2>
       @if (loading()) {
-        <p class="text-slate-400 mt-1">Đang tải dữ liệu...</p>
+        <p class="text-slate-400 mt-1">Loading data...</p>
       } @else if (data(); as d) {
         <p class="text-slate-400 mt-1">
           @if (authService.isAdmin()) {
-            Chào {{ d.username }}! Dưới đây là hiệu suất cá cược và tình hình tài chính của bạn.
+            Hello {{ d.username }}! Here is your betting performance and financial overview.
           } @else {
-            Chào {{ d.username }}! Dưới đây là tình hình tài chính và thẻ tín dụng của bạn.
+            Hello {{ d.username }}! Here is your financial and credit card overview.
           }
         </p>
       }
@@ -20,12 +20,12 @@
         <a routerLink="/matches"
            class="flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition-colors border border-white/5">
           <span class="material-symbols-outlined text-lg">add</span>
-          Thêm trận mới
+          Add New Match
         </a>
         <a routerLink="/transactions/add"
           class="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white hover:bg-blue-400 transition-colors shadow-lg shadow-blue-500/20">
           <span class="material-symbols-outlined text-lg">payments</span>
-          Thêm giao dịch
+          Add Transaction
         </a>
       }
     </div>
@@ -34,7 +34,7 @@
   @if (error()) {
     <div class="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300 text-sm">
       {{ error() }}
-      <button type="button" class="ml-3 underline hover:text-red-200" (click)="reload()">Thử lại</button>
+      <button type="button" class="ml-3 underline hover:text-red-200" (click)="reload()">Retry</button>
     </div>
   }
 
@@ -51,13 +51,13 @@
       <div>
         <h3 class="mb-4 text-lg font-semibold text-white flex items-center gap-2">
           <span class="material-symbols-outlined text-blue-400">monitoring</span>
-          Hiệu suất Bóng đá
+          Soccer Performance
         </h3>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div
             class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
             <div class="flex items-center justify-between">
-              <p class="text-sm font-medium text-slate-400">Tổng trận theo dõi</p>
+              <p class="text-sm font-medium text-slate-400">Tracked Matches</p>
               <span
                 class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
                 <span class="material-symbols-outlined text-[20px]">sports_soccer</span>
@@ -65,12 +65,12 @@
             </div>
             <div class="mt-4 flex items-baseline gap-2">
               <span class="text-3xl font-bold text-white">{{ soccer.trackedMatchCount }}</span>
-              <span class="text-sm font-medium text-slate-500">trận</span>
+              <span class="text-sm font-medium text-slate-500">matches</span>
             </div>
             @if (soccer.trackedThisWeek > 0) {
               <div class="mt-2 flex items-center text-xs text-green-400">
                 <span class="material-symbols-outlined text-[16px] mr-1">trending_up</span>
-                <span>+{{ soccer.trackedThisWeek }} trận tuần này</span>
+                <span>+{{ soccer.trackedThisWeek }} matches this week</span>
               </div>
             }
           </div>
@@ -78,7 +78,7 @@
           <div
             class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
             <div class="flex items-center justify-between">
-              <p class="text-sm font-medium text-slate-400">Tỷ lệ thắng</p>
+              <p class="text-sm font-medium text-slate-400">Win Rate</p>
               <span
                 class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
                 <span class="material-symbols-outlined text-[20px]">emoji_events</span>
@@ -90,13 +90,13 @@
             <div class="mt-2 w-full rounded-full bg-slate-900 h-1.5 overflow-hidden">
               <div class="bg-blue-500 h-1.5 rounded-full" [style.width.%]="soccer.winRatePercent"></div>
             </div>
-            <p class="mt-2 text-xs text-slate-400">{{ soccer.wins }} thắng / {{ soccer.losses }} thua</p>
+            <p class="mt-2 text-xs text-slate-400">{{ soccer.wins }} wins / {{ soccer.losses }} losses</p>
           </div>
 
           <div
             class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
             <div class="flex items-center justify-between">
-              <p class="text-sm font-medium text-slate-400">Tổng lợi nhuận</p>
+              <p class="text-sm font-medium text-slate-400">Total Profit</p>
               <span
                 class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
                 <span class="material-symbols-outlined text-[20px]">attach_money</span>
@@ -115,7 +115,7 @@
           <div
             class="rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700 hover:border-blue-500/50 transition-all group">
             <div class="flex items-center justify-between">
-              <p class="text-sm font-medium text-slate-400">Kết quả dự đoán</p>
+              <p class="text-sm font-medium text-slate-400">Prediction Results</p>
               <span
                 class="rounded bg-slate-800 p-1 text-white group-hover:bg-blue-500 group-hover:text-white transition-colors">
                 <span class="material-symbols-outlined text-[20px]">fact_check</span>
@@ -124,15 +124,15 @@
             <div class="mt-4 flex gap-4">
               <div class="flex flex-col">
                 <span class="text-xl font-bold text-green-400">{{ soccer.wins }}</span>
-                <span class="text-xs text-slate-400">Thắng</span>
+                <span class="text-xs text-slate-400">Win</span>
               </div>
               <div class="w-px bg-slate-700"></div>
               <div class="flex flex-col">
                 <span class="text-xl font-bold text-red-500">{{ soccer.losses }}</span>
-                <span class="text-xs text-slate-400">Thua</span>
+                <span class="text-xs text-slate-400">Loss</span>
               </div>
             </div>
-            <p class="mt-2 text-xs text-slate-400">Dựa trên {{ soccer.trackedMatchCount }} trận đã chốt</p>
+            <p class="mt-2 text-xs text-slate-400">Based on {{ soccer.trackedMatchCount }} matches settled</p>
           </div>
         </div>
       </div>
@@ -142,16 +142,16 @@
     <div>
       <h3 class="mb-4 text-lg font-semibold text-white flex items-center gap-2">
         <span class="material-symbols-outlined text-yellow-500">credit_card</span>
-        Tài chính & Thẻ Tín dụng
+        Finance & Credit Cards
       </h3>
 
       @if (d.finance.activeCardCount === 0) {
         <div class="rounded-xl bg-[#1e293b] p-8 border border-slate-700 text-center">
-          <p class="text-slate-400 mb-4">Bạn chưa có thẻ tín dụng nào.</p>
+          <p class="text-slate-400 mb-4">You do not have any credit cards yet.</p>
           <a routerLink="/cards"
              class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white hover:bg-blue-400 transition-colors">
             <span class="material-symbols-outlined text-lg">add_card</span>
-            Thêm thẻ tín dụng
+            Add Credit Card
           </a>
         </div>
       } @else {
@@ -163,7 +163,7 @@
               class="absolute right-0 top-0 h-32 w-32 -mr-8 -mt-8 rounded-full bg-blue-500/10 blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
             <div class="flex items-start justify-between relative z-10">
               <div>
-                <p class="text-sm font-medium text-blue-200">Tổng dư nợ thẻ tín dụng</p>
+                <p class="text-sm font-medium text-blue-200">Total Credit Card Balance</p>
                 <h4 class="mt-2 text-3xl font-bold text-white">
                   {{ formatVnd(d.finance.totalOutstandingBalance) }}
                   <span class="text-lg font-normal text-slate-400">₫</span>
@@ -172,7 +172,7 @@
                   @for (card of d.finance.cardHighlights; track card.cardLabel + card.lastFour) {
                     <span
                       class="inline-flex items-center rounded-md bg-white/10 px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-white/10">
-                      {{ card.cardLabel }}@if (card.lastFour) { ending {{ card.lastFour }}}
+                      {{ card.cardLabel }}@if (card.lastFour) { ending in {{ card.lastFour }}}
                     </span>
                   }
                 </div>
@@ -188,12 +188,12 @@
             <div class="absolute right-0 top-0 h-32 w-32 -mr-8 -mt-8 rounded-full bg-purple-500/10 blur-3xl"></div>
             <div class="flex items-center justify-between mb-4 relative z-10">
               <div>
-                <p class="text-sm font-medium text-indigo-200">Kỳ sao kê tiếp theo</p>
-                <h4 class="mt-2 text-2xl font-bold text-white">Ngày {{ d.finance.nextDueLabel }}</h4>
+                <p class="text-sm font-medium text-indigo-200">Next Statement Cycle</p>
+                <h4 class="mt-2 text-2xl font-bold text-white">{{ d.finance.nextDueLabel }}</h4>
               </div>
               <div class="flex flex-col items-end">
                 <span class="text-3xl font-bold text-blue-400">{{ d.finance.daysUntilDue | number:'2.0-0' }}</span>
-                <span class="text-xs text-slate-400 uppercase tracking-wider">Ngày còn lại</span>
+                <span class="text-xs text-slate-400 uppercase tracking-wider">Days Remaining</span>
               </div>
             </div>
             <div class="w-full bg-slate-950 rounded-full h-2.5 mb-1 relative z-10">
@@ -201,8 +201,8 @@
                    [style.width.%]="d.finance.utilizationPercent"></div>
             </div>
             <div class="flex justify-between text-xs text-slate-400 mt-2 relative z-10">
-              <span>Đã dùng: {{ d.finance.utilizationPercent }}% hạn mức</span>
-              <span>Hạn mức: {{ formatVnd(d.finance.totalCreditLimit) }}₫</span>
+              <span>Used: {{ d.finance.utilizationPercent }}% limit</span>
+              <span>Limit: {{ formatVnd(d.finance.totalCreditLimit) }}₫</span>
             </div>
           </div>
         </div>
@@ -214,8 +214,8 @@
       @if (authService.isAdmin() && d.profitChart; as chart) {
         <div class="lg:col-span-2 rounded-xl bg-[#1e293b] p-6 shadow-sm border border-slate-700">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold text-white">Biểu đồ lợi nhuận</h3>
-            <span class="text-sm text-slate-400">7 ngày qua</span>
+            <h3 class="text-lg font-semibold text-white">Profit Chart</h3>
+            <span class="text-sm text-slate-400">Last 7 days</span>
           </div>
 
           <div class="relative h-64 w-full flex items-end justify-between gap-2 px-2 pt-8">
@@ -250,13 +250,13 @@
            [class.lg:col-span-1]="authService.isAdmin() && d.profitChart"
            [class.col-span-full]="!authService.isAdmin() || !d.profitChart">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-white">Hoạt động gần đây</h3>
+          <h3 class="text-lg font-semibold text-white">Recent Activity</h3>
           <a [routerLink]="activityAllLink()"
-             class="text-sm text-blue-400 hover:text-blue-300 font-medium cursor-pointer">Xem tất cả</a>
+             class="text-sm text-blue-400 hover:text-blue-300 font-medium cursor-pointer">View All</a>
         </div>
 
         @if (d.recentActivity.length === 0) {
-          <p class="text-sm text-slate-400 text-center py-8">Chưa có hoạt động nào.</p>
+          <p class="text-sm text-slate-400 text-center py-8">No activity yet.</p>
         } @else {
           <div class="flex-1 overflow-y-auto space-y-1 custom-scrollbar">
             @for (item of d.recentActivity; track item.occurredAt + item.title + item.type) {

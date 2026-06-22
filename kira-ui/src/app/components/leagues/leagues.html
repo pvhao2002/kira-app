@@ -1,8 +1,8 @@
 <div class="flex-1 overflow-y-auto bg-[#0b1121] relative pb-24 lg:pb-10 min-h-screen">
   <div class="max-w-5xl mx-auto w-full px-4 py-8 lg:px-8">
     <div class="mb-6">
-      <h2 class="text-3xl font-bold text-white tracking-tight">Giải đấu</h2>
-      <p class="text-slate-400 mt-1 text-sm">Danh sách giải đấu — tìm kiếm và lọc theo quốc gia, giải chính.</p>
+      <h2 class="text-3xl font-bold text-white tracking-tight">Leagues</h2>
+      <p class="text-slate-400 mt-1 text-sm">League list - search and filter by country and main league.</p>
     </div>
 
     <div class="flex flex-col gap-4 mb-6">
@@ -14,7 +14,7 @@
           </span>
           <input
             class="w-full pl-10 pr-4 py-3 bg-[#1e293b] border border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-white placeholder:text-slate-500"
-            placeholder="Tên giải hoặc quốc gia..."
+            placeholder="League or country name..."
             type="search"
             autocomplete="off"
             [value]="draftQ()"
@@ -28,7 +28,7 @@
               @if (leagueNameSuggestLoading()) {
                 <div class="px-4 py-3 text-sm text-slate-400 flex items-center gap-2">
                   <span class="material-symbols-outlined text-[18px] animate-pulse">hourglass_empty</span>
-                  Đang tải…
+                  Loading...
                 </div>
               }
               @for (name of leagueNameSuggestions(); track name) {
@@ -49,7 +49,7 @@
           </span>
           <input
             class="w-full pl-10 pr-4 py-3 bg-[#1e293b] border border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-white placeholder:text-slate-500"
-            placeholder="Lọc quốc gia..."
+            placeholder="Filter country..."
             type="text"
             autocomplete="off"
             [value]="draftCountry()"
@@ -63,7 +63,7 @@
               @if (countrySuggestLoading()) {
                 <div class="px-4 py-3 text-sm text-slate-400 flex items-center gap-2">
                   <span class="material-symbols-outlined text-[18px] animate-pulse">hourglass_empty</span>
-                  Đang tải…
+                  Loading...
                 </div>
               }
               @for (c of countrySuggestions(); track c) {
@@ -80,7 +80,7 @@
         <button type="button"
                 (click)="applySearch()"
                 class="px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 shadow-lg shadow-blue-500/20 whitespace-nowrap">
-          Tìm
+          Search
         </button>
       </div>
 
@@ -95,7 +95,7 @@
                 [class.bg-[#1e293b]]="isMainFilter() !== 'all'"
                 [class.border-slate-700]="isMainFilter() !== 'all'"
                 [class.text-slate-300]="isMainFilter() !== 'all'">
-          Tất cả
+          All
         </button>
         <button type="button"
                 (click)="setMainFilter('main')"
@@ -105,7 +105,7 @@
                 [class.bg-[#1e293b]]="isMainFilter() !== 'main'"
                 [class.border-slate-700]="isMainFilter() !== 'main'"
                 [class.text-slate-300]="isMainFilter() !== 'main'">
-          Giải đấu chính
+          Main Leagues
         </button>
         <button type="button"
                 (click)="setMainFilter('nonmain')"
@@ -115,7 +115,7 @@
                 [class.bg-[#1e293b]]="isMainFilter() !== 'nonmain'"
                 [class.border-slate-700]="isMainFilter() !== 'nonmain'"
                 [class.text-slate-300]="isMainFilter() !== 'nonmain'">
-          Giải khác
+          Other Leagues
         </button>
       </div>
     </div>
@@ -129,7 +129,7 @@
     @if (loading()) {
       <div class="rounded-xl bg-[#1e293b] border border-slate-700 p-12 flex flex-col items-center justify-center gap-3">
         <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
-        <p class="text-slate-400 text-sm">Đang tải…</p>
+        <p class="text-slate-400 text-sm">Loading...</p>
       </div>
     } @else if (error()) {
       <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
@@ -137,14 +137,14 @@
         <button type="button"
                 (click)="load()"
                 class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
-          Thử lại
+          Retry
         </button>
       </div>
     } @else if (data(); as page) {
       @if (page.content.length === 0) {
         <div class="rounded-xl bg-[#1e293b] border border-slate-700 p-12 text-center">
           <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">emoji_events</span>
-          <p class="text-slate-400 text-sm">Không có giải đấu phù hợp.</p>
+          <p class="text-slate-400 text-sm">No matching leagues found.</p>
         </div>
       } @else {
         <div class="space-y-4">
@@ -181,7 +181,7 @@
                       <span
                         class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 uppercase tracking-wide border border-blue-500/20 shrink-0">
                         <span class="material-symbols-outlined text-[12px]">verified</span>
-                        Chính
+                        Main
                       </span>
                     }
                   </div>
@@ -190,8 +190,8 @@
                     <p class="truncate">{{ row.country ?? '—' }}</p>
                   </div>
                   <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-500">
-                    <span>Tạo: {{ row.createdAt ? (row.createdAt | date:'short') : '—' }}</span>
-                    <span>Cập nhật: {{ row.updatedAt ? (row.updatedAt | date:'short') : '—' }}</span>
+                    <span>Create: {{ row.createdAt ? (row.createdAt | date:'short') : '—' }}</span>
+                    <span>Updated: {{ row.updatedAt ? (row.updatedAt | date:'short') : '—' }}</span>
                   </div>
                 </div>
               </div>
@@ -201,21 +201,21 @@
                     <span class="material-symbols-outlined text-[18px]">event</span>
                     <span class="text-xl">{{ row.totalEvents | number }}</span>
                   </div>
-                  <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">Sự kiện</span>
+                  <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">Events</span>
                 </div>
                 @if (!row.isMain) {
                   <button type="button"
                           [disabled]="patchingId() !== null"
                           (click)="setMainLeague(row, true)"
                           class="px-3 py-2 rounded-lg bg-blue-600/90 text-white text-xs font-semibold hover:bg-blue-500 disabled:opacity-50 whitespace-nowrap">
-                    Đặt làm giải chính
+                    Set as Main League
                   </button>
                 } @else {
                   <button type="button"
                           [disabled]="patchingId() !== null"
                           (click)="setMainLeague(row, false)"
                           class="px-3 py-2 rounded-lg bg-slate-700 text-slate-200 text-xs font-semibold hover:bg-slate-600 border border-slate-600 disabled:opacity-50 whitespace-nowrap">
-                    Gỡ giải chính
+                    Unset Main League
                   </button>
                 }
               </div>
@@ -225,21 +225,21 @@
 
         <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400 mt-8">
           <span>
-            Trang {{ page.page + 1 }} / {{ page.totalPages || 1 }}
-            · {{ page.totalElements | number }} giải
+            Page {{ page.page + 1 }} / {{ page.totalPages || 1 }}
+            · {{ page.totalElements | number }} leagues
           </span>
           <div class="flex gap-2">
             <button type="button"
                     (click)="prev()"
                     [disabled]="page.page <= 0"
                     class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
-              Trước
+              Previous
             </button>
             <button type="button"
                     (click)="next()"
                     [disabled]="page.page >= page.totalPages - 1"
                     class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
-              Sau
+              Next
             </button>
           </div>
         </div>

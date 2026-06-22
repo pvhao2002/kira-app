@@ -17,9 +17,17 @@ export class App {
   readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   readonly isPublicPage = signal(false);
+  private readonly navbarAvatarLoadFailed = signal(false);
   readonly visibleNavItems = computed(() =>
     MAIN_NAV_ITEMS.filter((item) => this.authService.hasRole(...item.roles)),
   );
+  readonly navbarAvatarUrl = computed(() => {
+    if (this.navbarAvatarLoadFailed()) {
+      return null;
+    }
+    return this.authService.user()?.avatar?.trim() || null;
+  });
+  readonly navbarAvatarInitials = computed(() => this.getInitials(this.authService.user()?.username ?? 'User'));
 
   constructor() {
     this.router.events
@@ -45,5 +53,23 @@ export class App {
         void this.router.navigate(['/']);
       }
     });
+  }
+
+  onNavbarAvatarError(): void {
+    this.navbarAvatarLoadFailed.set(true);
+  }
+
+  private getInitials(name: string): string {
+    const parts = name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (parts.length === 0) {
+      return 'U';
+    }
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
 }

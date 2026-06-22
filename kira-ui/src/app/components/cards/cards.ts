@@ -38,8 +38,8 @@ export class Cards {
       summary: this.api.summary().pipe(catchError(() => of<CreditCardSummary | null>(null))),
       list: this.api.list().pipe(
         catchError(err => {
-          const msg = err?.error?.message ?? err?.message ?? 'Không tải được danh sách thẻ.';
-          this.error.set(typeof msg === 'string' ? msg : 'Không tải được danh sách thẻ.');
+          const msg = err?.error?.message ?? err?.message ?? 'Unable to load card list.';
+          this.error.set(typeof msg === 'string' ? msg : 'Unable to load card list.');
           return of<CreditCardDto[]>([]);
         })
       )
@@ -62,8 +62,8 @@ export class Cards {
       },
       error: err => {
         this.togglingId.set(null);
-        const raw = err?.error?.message ?? err?.message ?? 'Không cập nhật được.';
-        this.toast.error(typeof raw === 'string' ? raw : 'Không cập nhật được.');
+        const raw = err?.error?.message ?? err?.message ?? 'Unable to update.';
+        this.toast.error(typeof raw === 'string' ? raw : 'Unable to update.');
       }
     });
   }
@@ -80,24 +80,24 @@ export class Cards {
       },
       error: err => {
         this.togglingId.set(null);
-        const raw = err?.error?.message ?? err?.message ?? 'Không cập nhật được.';
-        this.toast.error(typeof raw === 'string' ? raw : 'Không cập nhật được.');
+        const raw = err?.error?.message ?? err?.message ?? 'Unable to update.';
+        this.toast.error(typeof raw === 'string' ? raw : 'Unable to update.');
       }
     });
   }
 
   deleteCard(card: CreditCardDto): void {
-    if (!globalThis.confirm(`Xóa thẻ "${card.cardLabel}"? Thao tác không hoàn tác.`)) {
+    if (!globalThis.confirm(`Delete card "${card.cardLabel}"? This action cannot be undone.`)) {
       return;
     }
     this.api.deleteCard(card.creditCardId).subscribe({
       next: () => {
-        this.toast.success('Đã xóa thẻ.');
+        this.toast.success('Card deleted.');
         this.reload();
       },
       error: err => {
-        const raw = err?.error?.message ?? err?.message ?? 'Không xóa được.';
-        this.toast.error(typeof raw === 'string' ? raw : 'Không xóa được.');
+        const raw = err?.error?.message ?? err?.message ?? 'Unable to delete.';
+        this.toast.error(typeof raw === 'string' ? raw : 'Unable to delete.');
       }
     });
   }

@@ -240,8 +240,8 @@ export class Leagues {
         },
         error: err => {
           this.patchingId.set(null);
-          const msg = err?.error?.message ?? err?.message ?? 'Không cập nhật được.';
-          this.patchError.set(typeof msg === 'string' ? msg : 'Không cập nhật được.');
+          const msg = err?.error?.message ?? err?.message ?? 'Unable to update.';
+          this.patchError.set(typeof msg === 'string' ? msg : 'Unable to update.');
         }
       });
   }
@@ -276,8 +276,8 @@ export class Leagues {
         this.loading.set(false);
       },
       error: err => {
-        const msg = err?.error?.message ?? err?.message ?? 'Không tải được dữ liệu.';
-        this.error.set(typeof msg === 'string' ? msg : 'Không tải được dữ liệu.');
+        const msg = err?.error?.message ?? err?.message ?? 'Unable to load data.';
+        this.error.set(typeof msg === 'string' ? msg : 'Unable to load data.');
         this.loading.set(false);
       }
     });

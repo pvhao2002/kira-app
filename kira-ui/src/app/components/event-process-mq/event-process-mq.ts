@@ -156,8 +156,8 @@ export class EventProcessMq {
         this.loading.set(false);
       },
       error: err => {
-        const msg = err?.error?.message ?? err?.message ?? 'Không tải được dữ liệu.';
-        this.error.set(typeof msg === 'string' ? msg : 'Không tải được dữ liệu.');
+        const msg = err?.error?.message ?? err?.message ?? 'Unable to load data.';
+        this.error.set(typeof msg === 'string' ? msg : 'Unable to load data.');
         this.loading.set(false);
       }
     });

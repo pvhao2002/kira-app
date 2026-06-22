@@ -25,7 +25,6 @@ interface Skill {
 
 interface ExperienceItem {
   en: string;
-  vi: string;
 }
 
 interface ProjectRepoLink {
@@ -36,7 +35,6 @@ interface ProjectRepoLink {
 interface Project {
   name: string;
   descriptionEn: string;
-  descriptionVi: string;
   tech: string[];
   url?: string;
   repoLinks?: ProjectRepoLink[];
@@ -68,7 +66,7 @@ export class About implements OnInit, AfterViewInit {
 
   readonly roles = [
     'Java Developer',
-    'Lập trình viên Java Developer',
+    'Data Crawling Specialist',
   ];
 
   readonly socialLinks: SocialLink[] = [
@@ -106,23 +104,18 @@ export class About implements OnInit, AfterViewInit {
   readonly experienceItems: ExperienceItem[] = [
     {
       en: 'Responsibility for mapping data and generating summarized data tables, with solutions to enhance performance and fallback plans.',
-      vi: 'Chịu trách nhiệm mapping dữ liệu và tạo bảng dữ liệu tổng hợp, đề xuất giải pháp tối ưu và kế hoạch dự phòng.',
     },
     {
       en: 'Developed and maintained Java and Spring Boot backend systems for data management, trading support, and financial reporting, ensuring regulatory compliance.',
-      vi: 'Phát triển và bảo trì hệ thống backend Java/Spring Boot cho quản lý dữ liệu, hỗ trợ giao dịch và báo cáo tài chính, đảm bảo tuân thủ quy định.',
     },
     {
       en: 'Created and maintained RESTful APIs and responsive Angular front-ends, improving system integration and user experience.',
-      vi: 'Xây dựng và duy trì RESTful API cùng giao diện Angular responsive, cải thiện tích hợp hệ thống và trải nghiệm người dùng.',
     },
     {
       en: 'Optimized database indexes and queries to improve query performance.',
-      vi: 'Tối ưu index và truy vấn cơ sở dữ liệu để cải thiện hiệu năng.',
     },
     {
       en: 'Supported migrating the entire system from legacy technology to modern stack, collaborating with cross-functional teams.',
-      vi: 'Hỗ trợ migrate toàn bộ hệ thống từ công nghệ cũ sang công nghệ mới, phối hợp với các team liên quan.',
     },
   ];
 
@@ -130,27 +123,18 @@ export class About implements OnInit, AfterViewInit {
     {
       name: 'Kira App',
       descriptionEn: 'Full-stack platform for sports data crawling, event management, predictions, and financial tools — Java microservices with Angular UI.',
-      descriptionVi: 'Nền tảng full-stack crawl dữ liệu thể thao, quản lý sự kiện, dự đoán và công cụ tài chính — Java microservices kết hợp Angular.',
       tech: ['Java', 'Spring Boot', 'Angular', 'RabbitMQ', 'MySQL'],
       url: 'https://github.com/pvhao2002/kira-app',
     },
     {
       name: 'Toeicute BE + FE',
       descriptionEn: 'TOEIC learning platform — Spring Boot backend and Angular front-end for practice tests and user management.',
-      descriptionVi: 'Nền tảng học TOEIC — backend Spring Boot và frontend Angular cho luyện đề thi và quản lý người dùng.',
       tech: ['Spring Boot', 'Angular', 'MySQL'],
       repoLinks: [
         {label: 'BE', url: 'https://github.com/pvhao2002/toeicute-be'},
         {label: 'FE', url: 'https://github.com/pvhao2002/toeicute-fe'},
       ],
     },
-  ];
-
-  readonly aboutViParagraphs = [
-    'Tôi là Java Developer tốt nghiệp Công nghệ Thông tin tại HCMUTE, tập trung vào backend với Java, Spring Boot, Angular và các hệ thống xử lý dữ liệu thực tế.',
-    'Thế mạnh nổi bật của tôi là xây dựng các project crawl data trọn gói: từ phân tích nguồn dữ liệu, viết crawler, làm sạch dữ liệu, lưu trữ, đồng bộ API cho đến dựng giao diện quản trị hoặc sản phẩm hoàn chỉnh.',
-    'Tôi đã từng triển khai và phát triển các hệ thống liên quan đến nhiều lĩnh vực như bất động sản, đề thi tiếng Anh như TOEIC, IELTS, cùng dữ liệu trận đấu bóng đá và thể thao. Mục tiêu của tôi luôn là tạo ra hệ thống thu thập dữ liệu ổn định, dễ mở rộng và phục vụ tốt cho nhu cầu thực tế.',
-    'Nếu bạn cần viết tool, website hoặc app liên quan đến crawl data, xử lý dữ liệu, vận hành nội dung hay sản phẩm số hoàn chỉnh, tôi sẵn sàng đồng hành từ ý tưởng đến triển khai.',
   ];
 
   readonly aboutEnParagraphs = [

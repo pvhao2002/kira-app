@@ -26,7 +26,7 @@ export type StatusFilter = 'all' | 'active' | 'locked' | 'pending';
 function errMsg(err: unknown): string {
   const e = err as { error?: { message?: string }; message?: string };
   const m = e?.error?.message ?? e?.message;
-  return typeof m === 'string' ? m : 'Có lỗi xảy ra.';
+  return typeof m === 'string' ? m : 'An error occurred.';
 }
 
 @Component({
@@ -81,13 +81,13 @@ export class Users {
   statusLabel(status: string | null | undefined): string {
     const s = (status || '').toLowerCase();
     if (s === 'active' || s === 'enabled') {
-      return 'Hoạt động';
+      return 'Active';
     }
     if (s === 'locked') {
-      return 'Bị khóa';
+      return 'Locked';
     }
     if (s === 'pending') {
-      return 'Chờ duyệt';
+      return 'Pending';
     }
     return status || '—';
   }
@@ -179,7 +179,7 @@ export class Users {
     const u = this.createUsername().trim();
     const p = this.createPassword();
     if (!u || p.length < 6) {
-      this.modalError.set('Nhập username và mật khẩu tối thiểu 6 ký tự.');
+      this.modalError.set('Enter a username and a password with at least 6 characters.');
       return;
     }
     this.modalError.set(null);
@@ -251,7 +251,7 @@ export class Users {
     }
     const p = this.resetPasswordValue();
     if (p.length < 6) {
-      this.modalError.set('Mật khẩu tối thiểu 6 ký tự.');
+      this.modalError.set('Password must be at least 6 characters.');
       return;
     }
     this.modalError.set(null);
@@ -292,7 +292,7 @@ export class Users {
   }
 
   remove(row: UserRow): void {
-    if (!confirm(`Xóa người dùng "${row.username}"?`)) {
+    if (!confirm(`Delete users "${row.username}"?`)) {
       return;
     }
     if (this.mutatingId() !== null) {

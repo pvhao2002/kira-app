@@ -17,12 +17,12 @@
         <span class="material-symbols-outlined text-4xl text-blue-500">sports_soccer</span>
       </div>
       <h1 class="text-2xl font-bold tracking-tight text-white">Kira Manager</h1>
-      <p class="text-sm text-slate-400">Đăng nhập để quản lý tài chính</p>
+      <p class="text-sm text-slate-400">Sign in to manage your finances</p>
     </div>
 
     <form class="flex flex-col gap-5 mt-2" [formGroup]="form" (ngSubmit)="onSubmit()">
       <div class="space-y-1.5">
-        <label class="text-sm font-semibold text-slate-300" for="login-username">Email hoặc Tên đăng nhập</label>
+        <label class="text-sm font-semibold text-slate-300" for="login-username">Email or Username</label>
         <div class="relative group">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <span class="material-symbols-outlined text-slate-500 group-focus-within:text-blue-500 transition-colors">mail</span>
@@ -37,7 +37,7 @@
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-semibold text-slate-300" for="login-password">Mật khẩu</label>
+        <label class="text-sm font-semibold text-slate-300" for="login-password">Password</label>
         <div class="relative group">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <span class="material-symbols-outlined text-slate-500 group-focus-within:text-blue-500 transition-colors">lock</span>
@@ -50,7 +50,7 @@
                  class="block w-full pl-10 pr-10 py-2.5 border border-slate-600 rounded-lg bg-[#334155] text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200"/>
           <button type="button"
                   (click)="togglePasswordVisibility()"
-                  [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
+                  [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
                   class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-300 transition-colors">
             <span class="material-symbols-outlined">{{ showPassword() ? 'visibility' : 'visibility_off' }}</span>
           </button>
@@ -60,7 +60,7 @@
       <button type="submit"
               [disabled]="loading()"
               class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 flex items-center justify-center gap-2">
-        <span>{{ loading() ? 'Đang đăng nhập...' : 'Đăng nhập' }}</span>
+        <span>{{ loading() ? 'Signing in...' : 'Sign In' }}</span>
         <span class="material-symbols-outlined text-lg">arrow_forward</span>
       </button>
     </form>
@@ -68,7 +68,7 @@
     <div class="relative flex py-2 items-center">
       <div class="flex-grow border-t border-slate-700"></div>
       <span
-        class="flex-shrink-0 mx-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Hoặc đăng nhập với</span>
+        class="flex-shrink-0 mx-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Or sign in with</span>
       <div class="flex-grow border-t border-slate-700"></div>
     </div>
 
@@ -85,6 +85,6 @@
       </button>
     </div>
 
-    <p class="mt-4 text-center text-xs text-slate-500">© 2024 Kira Manager. Bảo mật tuyệt đối.</p>
+    <p class="mt-4 text-center text-xs text-slate-500">© 2024 Kira Manager. Secure by design.</p>
   </div>
 </div>

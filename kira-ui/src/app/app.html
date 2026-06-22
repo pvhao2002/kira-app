@@ -29,13 +29,13 @@
       <button type="button"
               (click)="onLogout()"
               class="text-slate-400 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-white/5"
-              title="Đăng xuất">
+              title="Log out">
         <span class="material-symbols-outlined">logout</span>
       </button>
       @if (authService.isAdmin()) {
         <a routerLink="/transactions"
            class="text-slate-400 hover:text-blue-400 transition-colors p-2 rounded-full hover:bg-white/5 relative group"
-           title="Lịch sử giao dịch">
+           title="Transaction History">
           <span class="material-symbols-outlined">receipt_long</span>
         </a>
         <a routerLink="/notifications"
@@ -45,8 +45,16 @@
         </a>
       }
       <a routerLink="/profile"
-         class="size-9 rounded-full bg-slate-700 ring-2 ring-white/10 overflow-hidden cursor-pointer hover:ring-blue-500 transition-all">
-        <img src="https://picsum.photos/seed/user/100/100" alt="User" class="w-full h-full object-cover">
+         class="size-9 rounded-full bg-gradient-to-br from-blue-600 to-slate-800 ring-2 ring-white/10 overflow-hidden cursor-pointer hover:ring-blue-500 transition-all flex items-center justify-center text-xs font-bold uppercase text-white">
+        @if (navbarAvatarUrl(); as avatarUrl) {
+          <img
+            [src]="avatarUrl"
+            alt="User"
+            (error)="onNavbarAvatarError()"
+            class="w-full h-full object-cover">
+        } @else {
+          <span>{{ navbarAvatarInitials() }}</span>
+        }
       </a>
     </div>
   </header>

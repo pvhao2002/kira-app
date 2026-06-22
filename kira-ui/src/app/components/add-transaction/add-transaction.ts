@@ -64,7 +64,7 @@ export class AddTransaction implements OnDestroy {
       return;
     }
     if (!file.type.startsWith('image/')) {
-      this.toast.error('Vui lòng chọn file ảnh (JPG, PNG, WebP, GIF).');
+      this.toast.error('Please select an image file (JPG, PNG, WebP, GIF).');
       input.value = '';
       return;
     }
@@ -101,7 +101,7 @@ export class AddTransaction implements OnDestroy {
 
   submitReceipt(): void {
     if (!this.receiptDataUrl) {
-      this.toast.error('Chọn ảnh hóa đơn trước khi gửi.');
+      this.toast.error('Choose a receipt image before submitting.');
       return;
     }
     this.savingReceipt.set(true);
@@ -116,14 +116,14 @@ export class AddTransaction implements OnDestroy {
           this.savingReceipt.set(false);
           this.toast.success(
             res.pendingAiExtraction
-              ? 'Đã tải hóa đơn. Hệ thống sẽ trích xuất bằng AI (vài phút).'
-              : 'Đã tạo giao dịch từ hóa đơn.'
+              ? 'Receipt uploaded. The system will extract it with AI in a few minutes.'
+              : 'Transaction created from receipt.'
           );
           void this.router.navigateByUrl('/transactions');
         },
         error: err => {
           this.savingReceipt.set(false);
-          this.toast.error(this.apiErrorMessage(err, 'Không tải được hóa đơn.'));
+          this.toast.error(this.apiErrorMessage(err, 'Unable to upload receipt.'));
         }
       });
   }
@@ -136,7 +136,7 @@ export class AddTransaction implements OnDestroy {
     const v = this.manualForm.getRawValue();
     const amount = parseVndInput(v.amountStr);
     if (amount <= 0) {
-      this.toast.error('Số tiền phải lớn hơn 0.');
+      this.toast.error('Amount must be greater than 0.');
       return;
     }
     const transactionAt = `${v.transactionDate}T${v.transactionTime.length === 5 ? v.transactionTime + ':00' : v.transactionTime}`;
@@ -151,12 +151,12 @@ export class AddTransaction implements OnDestroy {
       .subscribe({
         next: () => {
           this.savingManual.set(false);
-          this.toast.success('Đã lưu giao dịch.');
+          this.toast.success('Transaction saved.');
           void this.router.navigateByUrl('/transactions');
         },
         error: err => {
           this.savingManual.set(false);
-          this.toast.error(this.apiErrorMessage(err, 'Không lưu được giao dịch.'));
+          this.toast.error(this.apiErrorMessage(err, 'Unable to save transaction.'));
         }
       });
   }

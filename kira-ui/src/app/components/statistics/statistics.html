@@ -4,17 +4,17 @@
       <a routerLink="/soccer"
          class="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-blue-300 mb-3">
         <span class="material-symbols-outlined text-base">arrow_back</span>
-        Về Soccer
+        Back to Soccer
       </a>
-      <h1 class="text-3xl font-bold tracking-tight text-white">Thống kê</h1>
+      <h1 class="text-3xl font-bold tracking-tight text-white">Statistics</h1>
       <p class="text-slate-400 mt-2">
-        Top đội trong 3 tháng gần nhất, chỉ tính trận có đủ odds open và pre-match cho hdc, ou, corner.
+        Top teams over the last 3 months, only counting matches with complete open and pre-match odds for HDC, O/U, and corners.
       </p>
       <p class="text-slate-500 text-xs mt-1">Timezone client: {{ clientTimeZone }}</p>
     </div>
 
     <div class="rounded-xl bg-[#1e293b] border border-white/5 px-4 py-3 min-w-[220px]">
-      <p class="text-xs uppercase tracking-wide text-slate-500">Cập nhật</p>
+      <p class="text-xs uppercase tracking-wide text-slate-500">Updated</p>
       <p class="text-sm text-white mt-1">{{ formatClientDate(latestComputedAt()) }}</p>
     </div>
   </div>
@@ -22,7 +22,7 @@
   @if (loading()) {
     <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 flex flex-col items-center justify-center gap-3">
       <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
-      <p class="text-slate-400 text-sm">Đang tải…</p>
+      <p class="text-slate-400 text-sm">Loading...</p>
     </div>
   } @else if (error(); as err) {
     <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
@@ -30,7 +30,7 @@
       <button type="button"
               (click)="load()"
               class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
-        Thử lại
+        Retry
       </button>
     </div>
   } @else {
@@ -49,7 +49,7 @@
             @if (section.rows[0]; as firstRow) {
               <div class="text-right text-xs text-slate-500">
                 <div>{{ formatDateOnly(firstRow.windowStart) }} - {{ formatDateOnly(firstRow.windowEnd) }}</div>
-                <div>Tối thiểu 5 trận hợp lệ</div>
+                <div>Minimum 5 valid matches</div>
               </div>
             }
           </div>
@@ -57,7 +57,7 @@
           @if (section.rows.length === 0) {
             <div class="p-10 text-center">
               <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">query_stats</span>
-              <p class="text-slate-400 text-sm">Chưa có dữ liệu thống kê cho mục này.</p>
+              <p class="text-slate-400 text-sm">No statistics data for this section yet.</p>
             </div>
           } @else {
             <div class="overflow-x-auto">
@@ -65,10 +65,10 @@
                 <thead class="bg-slate-900/50 text-slate-400 font-medium border-b border-white/5">
                   <tr>
                     <th class="px-4 py-3 w-[72px]">#</th>
-                    <th class="px-4 py-3 min-w-[220px]">Đội</th>
-                    <th class="px-4 py-3 text-right">% đạt</th>
-                    <th class="px-4 py-3 text-right">Trận đạt</th>
-                    <th class="px-4 py-3 text-right">Trận hợp lệ</th>
+                    <th class="px-4 py-3 min-w-[220px]">Team</th>
+                    <th class="px-4 py-3 text-right">% Hit</th>
+                    <th class="px-4 py-3 text-right">Hit Matches</th>
+                    <th class="px-4 py-3 text-right">Valid Matches</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">

@@ -6,7 +6,7 @@
         <div class="relative group shrink-0">
           <img
             [src]="avatarUrl()"
-            [alt]="'Avatar của ' + currentUser.username"
+            [alt]="'Avatar of ' + currentUser.username"
             (error)="onAvatarError()"
             class="size-28 lg:size-32 rounded-full border-4 border-slate-700 shadow-lg object-cover"
           />
@@ -23,7 +23,7 @@
             <div
               class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-900/20 text-green-400 text-xs font-bold border border-green-800/50">
               <span class="material-symbols-outlined text-[16px]">verified</span>
-              Đã xác thực
+              Verified
             </div>
           </div>
         </div>
@@ -36,19 +36,19 @@
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-white flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-500">edit_note</span>
-              Ghi chú cá nhân
+              Personal Notes
             </h3>
-            <span class="text-xs text-slate-500">Lưu cục bộ trong phiên hiện tại</span>
+            <span class="text-xs text-slate-500">Saved locally for the current session</span>
           </div>
           <div class="relative">
             <textarea
               class="w-full bg-[#0b1121] border border-slate-700 rounded-lg p-4 text-gray-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all resize-none h-48"
-              placeholder="Viết chiến thuật, ghi nhớ hoặc mục tiêu tài chính của bạn tại đây..."></textarea>
+              placeholder="Write strategies, reminders, or financial goals here..."></textarea>
             <div class="absolute bottom-3 right-3">
               <button
                 class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 text-sm">
                 <span class="material-symbols-outlined text-[18px]">save</span>
-                Lưu ghi chú
+                Save Note
               </button>
             </div>
           </div>
@@ -57,7 +57,7 @@
 
       <div class="lg:col-span-1">
         <div class="flex flex-col gap-2 sticky top-[100px]">
-          <h3 class="px-1 text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Bảo mật & Cài đặt</h3>
+          <h3 class="px-1 text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Security & Settings</h3>
           <div
             class="bg-[#1e293b] rounded-xl border border-slate-700 overflow-hidden divide-y divide-slate-700 shadow-sm">
             <button
@@ -67,7 +67,7 @@
                   class="size-8 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-blue-500/10 group-hover:text-blue-500 transition-colors text-slate-400">
                   <span class="material-symbols-outlined text-[20px]">lock</span>
                 </div>
-                <span class="text-gray-200 font-medium text-sm">Đổi mật khẩu</span>
+                <span class="text-gray-200 font-medium text-sm">Change Password</span>
               </div>
               <span class="material-symbols-outlined text-slate-500 text-[20px]">chevron_right</span>
             </button>
@@ -78,7 +78,7 @@
                   class="size-8 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-blue-500/10 group-hover:text-blue-500 transition-colors text-slate-400">
                   <span class="material-symbols-outlined text-[20px]">notifications</span>
                 </div>
-                <span class="text-gray-200 font-medium text-sm">Thông báo</span>
+                <span class="text-gray-200 font-medium text-sm">Notifications</span>
               </div>
               <span class="material-symbols-outlined text-slate-500 text-[20px]">chevron_right</span>
             </button>
@@ -87,7 +87,7 @@
             (click)="logout()"
             class="mt-4 w-full flex items-center justify-center gap-2 p-3 rounded-xl text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all font-semibold text-sm">
             <span class="material-symbols-outlined text-[20px]">logout</span>
-            Đăng xuất
+            Log out
           </button>
         </div>
       </div>
@@ -96,7 +96,7 @@
 } @else {
   <div class="max-w-4xl mx-auto w-full px-4 py-8 lg:px-8">
     <div class="bg-[#1e293b] rounded-xl p-6 border border-slate-700 text-slate-300">
-      Đang tải thông tin người dùng...
+      Loading user information...
     </div>
   </div>
 }

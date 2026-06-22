@@ -48,14 +48,14 @@ export class CrawlDates {
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly data = signal<CrawlDatePage | null>(null);
-  /** ISO date (yyyy-MM-dd) đang gửi requeue, hoặc null. */
+  /** ISO date (yyyy-MM-dd) currently being requeued, or null. */
   readonly requeueingDate = signal<string | null>(null);
   readonly requeueingRange = signal(false);
 
   readonly pageIndex = signal(0);
   readonly pageSize = signal(20);
 
-  /** Khớp mặc định API cũ: date giảm dần */
+  /** Matches the old API default: date descending. */
   readonly sortColumn = signal<CrawlDateSortColumn>('date');
   readonly sortDir = signal<'asc' | 'desc'>('desc');
   readonly filterMode = signal<CrawlDateFilterMode>('basic');
@@ -68,7 +68,7 @@ export class CrawlDates {
     this.load();
   }
 
-  /** yyyy-MM-dd, yyyyMMdd, hoặc ISO datetime -> dd-MM-yyyy; fallback nếu không khớp. */
+  /** yyyy-MM-dd, yyyyMMdd, or ISO datetime -> dd-MM-yyyy; fallback when not matched. */
   formatDisplayDate(iso: string): string {
     const raw = (iso ?? '').trim();
     if (!raw) {
@@ -156,11 +156,11 @@ export class CrawlDates {
     const from = this.fromDate().trim();
     const to = this.toDate().trim();
     if (!from || !to) {
-      this.toast.error('Chọn From date và To date trước khi crawl khoảng ngày.');
+      this.toast.error('Select From date and To date before crawling a date range.');
       return;
     }
     if (from > to) {
-      this.toast.error('From date phải trước hoặc bằng To date.');
+      this.toast.error('From date must be before or equal to To date.');
       return;
     }
 
@@ -178,16 +178,16 @@ export class CrawlDates {
         const status = (body?.status ?? '').trim().toLowerCase();
         if (status === 'partial') {
           const failedCount = body.failed?.length ?? 0;
-          this.toast.error(`Đã enqueue ${body.enqueued ?? 0}/${body.total ?? 0} ngày. ${failedCount} ngày thất bại.`);
+          this.toast.error(`Enqueued ${body.enqueued ?? 0}/${body.total ?? 0} days. ${failedCount} days failed.`);
         } else {
-          this.toast.success(`Đã đưa ${body.enqueued ?? 0} ngày vào hàng đợi crawl.`);
+          this.toast.success(`Added ${body.enqueued ?? 0} days to the crawl queue.`);
         }
         this.load();
       },
       error: err => {
         this.requeueingRange.set(false);
-        const raw = err?.error?.message ?? err?.message ?? 'Không gửi được yêu cầu crawl khoảng ngày.';
-        const msg = typeof raw === 'string' ? raw : 'Không gửi được yêu cầu crawl khoảng ngày.';
+        const raw = err?.error?.message ?? err?.message ?? 'Unable to send date range crawl request.';
+        const msg = typeof raw === 'string' ? raw : 'Unable to send date range crawl request.';
         this.toast.error(msg);
       }
     });
@@ -206,13 +206,13 @@ export class CrawlDates {
     this.http.post<{ status?: string; date?: string; message?: string }>(path, {}).subscribe({
       next: () => {
         this.requeueingDate.set(null);
-        this.toast.success('Đã đưa ngày vào hàng đợi crawl.');
+        this.toast.success('Added days to the crawl queue.');
         this.load();
       },
       error: err => {
         this.requeueingDate.set(null);
-        const raw = err?.error?.message ?? err?.message ?? 'Không gửi được yêu cầu crawl lại.';
-        const msg = typeof raw === 'string' ? raw : 'Không gửi được yêu cầu crawl lại.';
+        const raw = err?.error?.message ?? err?.message ?? 'Unable to send recrawl request.';
+        const msg = typeof raw === 'string' ? raw : 'Unable to send recrawl request.';
         this.toast.error(msg);
       }
     });
@@ -251,8 +251,8 @@ export class CrawlDates {
         this.loading.set(false);
       },
       error: err => {
-        const msg = err?.error?.message ?? err?.message ?? 'Không tải được dữ liệu.';
-        this.error.set(typeof msg === 'string' ? msg : 'Không tải được dữ liệu.');
+        const msg = err?.error?.message ?? err?.message ?? 'Unable to load data.';
+        this.error.set(typeof msg === 'string' ? msg : 'Unable to load data.');
         this.loading.set(false);
       }
     });

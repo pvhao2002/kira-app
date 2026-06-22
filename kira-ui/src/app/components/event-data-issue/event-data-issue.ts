@@ -125,7 +125,7 @@ export class EventDataIssue {
       next: body => {
         const src = this.resolveScreenshotSrc(body?.screenshot ?? null);
         if (!src) {
-          this.previewText.set('Không có screenshot cho bản ghi này.');
+          this.previewText.set('No screenshot is available for this record.');
           this.previewLoading.set(false);
           return;
         }
@@ -134,9 +134,9 @@ export class EventDataIssue {
       },
       error: err => {
         const message = err?.status === 404
-          ? 'Không tìm thấy screenshot cho bản ghi này.'
-          : (err?.error?.message ?? err?.message ?? 'Không tải được screenshot.');
-        this.previewText.set(typeof message === 'string' ? message : 'Không tải được screenshot.');
+          ? 'Screenshot not found for this record.'
+          : (err?.error?.message ?? err?.message ?? 'Unable to load screenshot.');
+        this.previewText.set(typeof message === 'string' ? message : 'Unable to load screenshot.');
         this.previewLoading.set(false);
       }
     });
@@ -233,8 +233,8 @@ export class EventDataIssue {
         this.loading.set(false);
       },
       error: err => {
-        const msg = err?.error?.message ?? err?.message ?? 'Không tải được dữ liệu.';
-        this.error.set(typeof msg === 'string' ? msg : 'Không tải được dữ liệu.');
+        const msg = err?.error?.message ?? err?.message ?? 'Unable to load data.';
+        this.error.set(typeof msg === 'string' ? msg : 'Unable to load data.');
         this.loading.set(false);
       }
     });

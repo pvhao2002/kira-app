@@ -6,10 +6,10 @@
           class="flex items-center justify-center rounded-full size-8 bg-[#0f172a] text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all border border-[#1e293b]">
           <span class="material-symbols-outlined text-lg">arrow_back</span>
         </div>
-        <span class="text-sm font-semibold text-blue-500 group-hover:text-blue-400 transition-colors">Quay lại danh sách</span>
+        <span class="text-sm font-semibold text-blue-500 group-hover:text-blue-400 transition-colors">Back to list</span>
       </a>
-      <h1 class="text-white text-3xl md:text-5xl font-extrabold tracking-tight">Thêm giao dịch với AI</h1>
-      <p class="text-slate-400 text-base md:text-lg">Sử dụng AI để tự động quét hóa đơn hoặc nhập thủ công.</p>
+      <h1 class="text-white text-3xl md:text-5xl font-extrabold tracking-tight">Add Transaction with AI</h1>
+      <p class="text-slate-400 text-base md:text-lg">Use AI to scan a receipt automatically or enter details manually.</p>
     </div>
   </div>
 
@@ -19,7 +19,7 @@
         <div class="p-6 border-b border-[#1e293b] flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="material-symbols-outlined text-purple-400">auto_fix_high</span>
-            <h3 class="text-white font-bold">Quét hóa đơn bằng AI</h3>
+            <h3 class="text-white font-bold">Scan Receipt with AI</h3>
           </div>
           <span
             class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px] font-bold uppercase tracking-wider">Premium</span>
@@ -38,13 +38,13 @@
                 class="mb-4 size-20 bg-purple-500/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                 <span class="material-symbols-outlined text-4xl text-purple-400">cloud_upload</span>
               </div>
-              <p class="text-white font-semibold text-center">Tải lên hoặc kéo thả ảnh</p>
-              <p class="text-slate-500 text-xs text-center mt-2 px-4 italic">JPG, PNG, WebP hoặc GIF</p>
+              <p class="text-white font-semibold text-center">Upload or drag an image</p>
+              <p class="text-slate-500 text-xs text-center mt-2 px-4 italic">JPG, PNG, WebP, or GIF</p>
             </div>
           </div>
 
           @if (receiptFileName()) {
-            <p class="text-slate-400 text-sm truncate" [title]="receiptFileName() ?? ''">Đã chọn: {{ receiptFileName() }}</p>
+            <p class="text-slate-400 text-sm truncate" [title]="receiptFileName() ?? ''">Selected: {{ receiptFileName() }}</p>
           }
 
           <button
@@ -53,10 +53,10 @@
             type="button"
             class="w-full h-12 rounded-xl bg-purple-500 hover:bg-purple-500/90 disabled:opacity-50 disabled:pointer-events-none text-white text-sm font-bold shadow-lg shadow-purple-500/20 transition-all flex items-center justify-center gap-2">
             @if (savingReceipt()) {
-              <span class="animate-pulse">Đang gửi...</span>
+              <span class="animate-pulse">Sending...</span>
             } @else {
               <span class="material-symbols-outlined text-[22px]">psychology</span>
-              Bắt đầu quét bằng AI
+              Start AI Scan
             }
           </button>
         </div>
@@ -67,14 +67,14 @@
           @if (receiptPreviewUrl(); as src) {
             <img
               [src]="src"
-              alt="Xem trước hóa đơn"
+              alt="Receipt preview"
               class="w-full h-full object-contain bg-black/40"
             />
           } @else {
             <div class="absolute inset-0 flex items-center justify-center bg-black/40">
               <div class="text-center">
                 <span class="material-symbols-outlined text-slate-500 text-3xl">image</span>
-                <p class="text-slate-500 text-xs font-medium mt-1">Chưa có ảnh xem trước</p>
+                <p class="text-slate-500 text-xs font-medium mt-1">No preview image yet</p>
               </div>
             </div>
           }
@@ -86,14 +86,14 @@
       <div class="bg-[#0f172a] rounded-2xl shadow-2xl border border-[#1e293b] overflow-hidden">
         <form class="flex flex-col" [formGroup]="manualForm" (ngSubmit)="submitManual()">
           <div class="p-6 md:p-8 border-b border-[#1e293b] bg-white/5">
-            <label class="block text-slate-400 text-xs font-bold uppercase tracking-[0.1em] mb-4">Loại giao dịch</label>
+            <label class="block text-slate-400 text-xs font-bold uppercase tracking-[0.1em] mb-4">Transaction Type</label>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <label class="cursor-pointer relative">
                 <input class="peer sr-only" formControlName="transactionType" type="radio" value="deposit"/>
                 <div
                   class="flex flex-col items-center justify-center py-5 px-2 rounded-xl border-2 border-transparent bg-[#050b18] text-slate-400 hover:bg-white/5 transition-all peer-checked:bg-blue-500/10 peer-checked:border-blue-500 peer-checked:text-blue-500">
                   <span class="material-symbols-outlined text-3xl mb-2">download</span>
-                  <span class="text-sm font-bold">Nạp tiền</span>
+                  <span class="text-sm font-bold">Deposit</span>
                 </div>
               </label>
               <label class="cursor-pointer relative">
@@ -101,7 +101,7 @@
                 <div
                   class="flex flex-col items-center justify-center py-5 px-2 rounded-xl border-2 border-transparent bg-[#050b18] text-slate-400 hover:bg-white/5 transition-all peer-checked:bg-rose-500/10 peer-checked:border-rose-500 peer-checked:text-rose-500">
                   <span class="material-symbols-outlined text-3xl mb-2">upload</span>
-                  <span class="text-sm font-bold">Rút tiền</span>
+                  <span class="text-sm font-bold">Withdrawal</span>
                 </div>
               </label>
               <label class="cursor-pointer relative">
@@ -109,7 +109,7 @@
                 <div
                   class="flex flex-col items-center justify-center py-5 px-2 rounded-xl border-2 border-transparent bg-[#050b18] text-slate-400 hover:bg-white/5 transition-all peer-checked:bg-emerald-500/10 peer-checked:border-emerald-500 peer-checked:text-emerald-500">
                   <span class="material-symbols-outlined text-3xl mb-2">card_giftcard</span>
-                  <span class="text-sm font-bold">Tiền thưởng</span>
+                  <span class="text-sm font-bold">Bonus</span>
                 </div>
               </label>
             </div>
@@ -118,7 +118,7 @@
           <div class="p-6 md:p-8 space-y-8">
             <div>
               <div class="flex justify-between items-center mb-3">
-                <label class="text-slate-300 text-sm font-bold">Số tiền (VNĐ)</label>
+                <label class="text-slate-300 text-sm font-bold">Amount (VND)</label>
               </div>
               <div class="relative group">
                 <span
@@ -134,7 +134,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <label class="block text-slate-300 text-sm font-bold mb-3">Ngày giao dịch</label>
+                <label class="block text-slate-300 text-sm font-bold mb-3">Transaction Date</label>
                 <div class="relative">
                   <input
                     type="date"
@@ -144,7 +144,7 @@
                 </div>
               </div>
               <div>
-                <label class="block text-slate-300 text-sm font-bold mb-3">Giờ giao dịch</label>
+                <label class="block text-slate-300 text-sm font-bold mb-3">Transaction time</label>
                 <div class="relative">
                   <input
                     type="time"
@@ -157,14 +157,14 @@
 
             <div>
               <div class="flex justify-between items-center mb-3">
-                <label class="text-slate-300 text-sm font-bold">Mô tả</label>
+                <label class="text-slate-300 text-sm font-bold">Description</label>
                 <span
-                  class="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-white/5 px-2.5 py-1 rounded-md">Tùy chọn</span>
+                  class="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-white/5 px-2.5 py-1 rounded-md">Optional</span>
               </div>
               <textarea
                 formControlName="description"
                 rows="3"
-                placeholder="Nhập ghi chú cho giao dịch này..."
+                placeholder="Enter a note for this transaction..."
                 class="w-full bg-[#050b18] border border-[#1e293b] text-white text-base rounded-xl px-5 py-4 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none placeholder:text-slate-600 min-h-[120px]"
               ></textarea>
             </div>
@@ -175,17 +175,17 @@
             <a
               routerLink="/transactions"
               class="w-full sm:w-auto px-8 h-12 rounded-xl border border-[#1e293b] bg-[#0f172a] text-slate-300 text-sm font-bold hover:bg-white/10 transition-colors focus:ring-4 focus:ring-white/5 inline-flex items-center justify-center">
-              Hủy bỏ
+              Cancel
             </a>
             <button
               [disabled]="savingManual()"
               type="submit"
               class="w-full sm:w-auto px-10 h-12 rounded-xl bg-blue-500 hover:bg-blue-400 disabled:opacity-50 disabled:pointer-events-none text-white text-sm font-bold shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-2 focus:ring-4 focus:ring-blue-500/40">
               @if (savingManual()) {
-                <span>Đang lưu...</span>
+                <span>Saving...</span>
               } @else {
                 <span class="material-symbols-outlined text-[22px]">save</span>
-                Lưu giao dịch
+                Save Transaction
               }
             </button>
           </div>

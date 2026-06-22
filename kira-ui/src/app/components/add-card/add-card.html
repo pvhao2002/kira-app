@@ -2,12 +2,12 @@
   <div class="mb-8 flex items-center gap-4">
     <a routerLink="/cards" class="flex items-center gap-2 text-white/50 hover:text-blue-500 transition-colors group">
       <span class="material-symbols-outlined text-xl group-hover:-translate-x-1 transition-transform">arrow_back</span>
-      <span class="font-medium">Quay lại danh sách thẻ</span>
+      <span class="font-medium">Back to card list</span>
     </a>
   </div>
 
   <div class="flex flex-col lg:flex-row gap-8 items-center justify-between mb-8">
-    <h1 class="text-2xl lg:text-3xl font-bold text-white">Thêm thẻ tín dụng mới</h1>
+    <h1 class="text-2xl lg:text-3xl font-bold text-white">Add New Credit Card</h1>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
@@ -24,7 +24,7 @@
         <div class="relative z-10 flex flex-col justify-between h-full p-6 sm:p-8 text-white">
           <div class="flex justify-between items-start gap-2">
             <div class="min-w-0">
-              <p class="text-[10px] text-blue-200/60 font-semibold tracking-widest uppercase mb-1">Ngân hàng</p>
+              <p class="text-[10px] text-blue-200/60 font-semibold tracking-widest uppercase mb-1">Bank</p>
               <p class="text-lg font-bold tracking-wide text-white truncate">{{ form.controls.bankName.value }}</p>
               <p class="text-xs text-blue-300/80 truncate mt-1">{{ form.controls.cardLabel.value }}</p>
             </div>
@@ -41,25 +41,25 @@
           </div>
           <div class="flex flex-col gap-5 mt-auto">
             <div>
-              <p class="text-[10px] text-blue-200/60 uppercase tracking-widest mb-0.5">Hạn mức</p>
+              <p class="text-[10px] text-blue-200/60 uppercase tracking-widest mb-0.5">Limit</p>
               <p class="text-2xl sm:text-3xl font-mono font-bold text-white tracking-tight drop-shadow-md">
                 {{ previewLimit() }}
                 <span class="text-lg align-top text-blue-500">₫</span></p>
             </div>
             <div class="flex justify-between items-end border-t border-white/10 pt-4 gap-2">
               <div class="min-w-0">
-                <p class="text-[9px] text-blue-200/60 uppercase tracking-widest mb-1">Chủ thẻ</p>
+                <p class="text-[9px] text-blue-200/60 uppercase tracking-widest mb-1">Cardholder</p>
                 <p class="font-medium tracking-widest uppercase text-sm sm:text-base text-white truncate">
                   {{ form.controls.cardholderName.value }}</p>
               </div>
               <div class="flex gap-4 text-right shrink-0">
                 <div>
-                  <p class="text-[9px] text-blue-200/60 uppercase mb-0.5">Sao kê</p>
-                  <p class="font-mono text-xs sm:text-sm">Ngày {{ form.controls.statementDay.value }}</p>
+                  <p class="text-[9px] text-blue-200/60 uppercase mb-0.5">Statement</p>
+                  <p class="font-mono text-xs sm:text-sm">Day {{ form.controls.statementDay.value }}</p>
                 </div>
                 <div>
-                  <p class="text-[9px] text-blue-200/60 uppercase mb-0.5">Hạn TT</p>
-                  <p class="font-mono text-xs sm:text-sm text-blue-500 font-bold">Ngày {{ form.controls.paymentDueDay.value | number: '2.0-0' }}</p>
+                  <p class="text-[9px] text-blue-200/60 uppercase mb-0.5">Due Date</p>
+                  <p class="font-mono text-xs sm:text-sm text-blue-500 font-bold">Day {{ form.controls.paymentDueDay.value | number: '2.0-0' }}</p>
                 </div>
               </div>
             </div>
@@ -70,7 +70,7 @@
       <div class="mt-6 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 text-center backdrop-blur-sm">
         <p class="text-sm text-blue-200/80">
           <span class="material-symbols-outlined text-base align-text-bottom mr-1">info</span>
-          Thẻ này dùng để theo dõi lịch sao kê và thanh toán do bạn nhập tay — không kết nối ngân hàng.
+          This card is used to manually track statement and payment schedules; it does not connect to a bank.
         </p>
       </div>
     </div>
@@ -84,25 +84,25 @@
             <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
               <span class="material-symbols-outlined text-blue-500 text-lg">credit_card</span>
             </div>
-            Thông tin thẻ
+            Card Information
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="md:col-span-2">
-              <label class="block text-blue-200/80 text-sm font-medium mb-2">Tên ngân hàng</label>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Bank name</label>
               <div class="relative group">
-                <input type="text" formControlName="bankName" placeholder="VD: TPBank, Techcombank..."
+                <input type="text" formControlName="bankName" placeholder="e.g. TPBank, Techcombank..."
                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"/>
                 <span
                   class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-blue-500 transition-colors pointer-events-none">account_balance</span>
               </div>
             </div>
             <div class="md:col-span-2">
-              <label class="block text-blue-200/80 text-sm font-medium mb-2">Tên hiển thị thẻ</label>
-              <input type="text" formControlName="cardLabel" placeholder="VD: Techcombank Visa"
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Card Display Name</label>
+              <input type="text" formControlName="cardLabel" placeholder="e.g. Techcombank Visa"
                      class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"/>
             </div>
             <div>
-              <label class="block text-blue-200/80 text-sm font-medium mb-2">Hạn mức tín dụng</label>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Credit Limit</label>
               <div class="relative group">
                 <input type="text" formControlName="creditLimitStr" placeholder="0"
                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"/>
@@ -110,7 +110,7 @@
               </div>
             </div>
             <div>
-              <label class="block text-blue-200/80 text-sm font-medium mb-2">Dư nợ hiện tại</label>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Current Balance</label>
               <div class="relative group">
                 <input type="text" formControlName="outstandingBalanceStr" placeholder="0"
                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono"/>
@@ -118,16 +118,16 @@
               </div>
             </div>
             <div>
-              <label class="block text-blue-200/80 text-sm font-medium mb-2">Tên chủ thẻ</label>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Cardholder Name</label>
               <div class="relative group">
-                <input type="text" formControlName="cardholderName" placeholder="NHAP TEN KHONG DAU"
+                <input type="text" formControlName="cardholderName" placeholder="CARDHOLDER NAME"
                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all uppercase"/>
                 <span
                   class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-blue-500 transition-colors pointer-events-none">person</span>
               </div>
             </div>
             <div>
-              <label class="block text-blue-200/80 text-sm font-medium mb-2">4 số cuối (tuỳ chọn)</label>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Last 4 digits (optional)</label>
               <input type="text" formControlName="lastFour" maxlength="4" inputmode="numeric" autocomplete="off"
                      placeholder="4582"
                      class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono tracking-widest"/>
@@ -141,16 +141,16 @@
             <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
               <span class="material-symbols-outlined text-blue-500 text-lg">calendar_month</span>
             </div>
-            Lịch thanh toán
+            Payment Schedule
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label class="block text-blue-200/80 text-sm font-medium mb-2">Ngày sao kê</label>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Statement Date</label>
               <div class="relative">
                 <select formControlName="statementDay"
                         class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer">
                   @for (d of dayOptions; track d) {
-                    <option [ngValue]="d">Ngày {{ d }} hàng tháng</option>
+                    <option [ngValue]="d">Day {{ d }} each month</option>
                   }
                 </select>
                 <span
@@ -158,12 +158,12 @@
               </div>
             </div>
             <div>
-              <label class="block text-blue-200/80 text-sm font-medium mb-2">Ngày thanh toán</label>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Payment Date</label>
               <div class="relative">
                 <select formControlName="paymentDueDay"
                         class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer">
                   @for (d of dayOptions; track d) {
-                    <option [ngValue]="d">Ngày {{ d }} hàng tháng</option>
+                    <option [ngValue]="d">Day {{ d }} each month</option>
                   }
                 </select>
                 <span
@@ -171,7 +171,7 @@
               </div>
             </div>
             <div>
-              <label class="block text-blue-200/80 text-sm font-medium mb-2">Giờ nhắc</label>
+              <label class="block text-blue-200/80 text-sm font-medium mb-2">Reminder time</label>
               <div class="relative">
                 <input type="time" formControlName="reminderTime"
                        class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all [color-scheme:dark]"/>
@@ -181,8 +181,8 @@
           <div class="mt-4 flex items-start gap-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
             <span class="material-symbols-outlined text-blue-500 text-lg mt-0.5">notifications_active</span>
             <p class="text-sm text-blue-200/80 leading-relaxed">
-              Gợi ý: đặt nhắc vào lúc <span class="font-bold text-white">{{ form.controls.reminderTime.value }}</span> ngày
-              <span class="font-bold text-white">{{ form.controls.paymentDueDay.value }}</span> hàng tháng (thông báo tự động có thể được bổ sung sau).
+              Suggestion: set a reminder at <span class="font-bold text-white">{{ form.controls.reminderTime.value }}</span> on day
+              <span class="font-bold text-white">{{ form.controls.paymentDueDay.value }}</span> each month (automatic notifications may be added later).
             </p>
           </div>
         </div>
@@ -192,9 +192,9 @@
                   class="w-full md:w-auto px-10 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
             <span class="material-symbols-outlined">save</span>
             @if (saving()) {
-              <span>Đang lưu…</span>
+              <span>Saving...</span>
             } @else {
-              <span>Lưu thẻ tín dụng</span>
+              <span>Save Credit Card</span>
             }
           </button>
         </div>

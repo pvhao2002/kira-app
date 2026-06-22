@@ -2,45 +2,45 @@
   <div class="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
     <a routerLink="/cards" class="flex items-center gap-2 text-white/50 hover:text-blue-500 transition-colors group w-fit">
       <span class="material-symbols-outlined text-xl group-hover:-translate-x-1 transition-transform">arrow_back</span>
-      <span class="font-medium">Danh sách thẻ</span>
+      <span class="font-medium">Card List</span>
     </a>
   </div>
 
   @if (loadingCard()) {
-    <div class="text-slate-400">Đang tải…</div>
+    <div class="text-slate-400">Loading...</div>
   } @else if (error()) {
     <div class="rounded-xl border border-red-500/30 bg-red-500/10 text-red-200 px-4 py-3">{{ error() }}</div>
   } @else if (card()) {
     <div class="rounded-2xl border border-slate-700 bg-[#151e32]/50 p-6">
       <h1 class="text-2xl font-bold text-white mb-1">{{ card()!.cardLabel }}</h1>
-      <p class="text-slate-400 text-sm">{{ card()!.bankName }} · Hạn mức {{ formatVnd(card()!.creditLimit) }} ₫</p>
+      <p class="text-slate-400 text-sm">{{ card()!.bankName }} · Limit {{ formatVnd(card()!.creditLimit) }} ₫</p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
       <div class="bg-[#0f172a] rounded-2xl p-6 border border-white/5 shadow-xl">
         <h2 class="text-white font-bold text-lg mb-4 flex items-center gap-2">
           <span class="material-symbols-outlined text-blue-500">add_circle</span>
-          Thêm thanh toán (nhập tay)
+          Add Payment (manual entry)
         </h2>
         <form [formGroup]="form" (ngSubmit)="submitPayment()" class="space-y-4">
           <div>
-            <label class="block text-blue-200/80 text-sm font-medium mb-2">Ngày thanh toán</label>
+            <label class="block text-blue-200/80 text-sm font-medium mb-2">Payment Date</label>
             <input type="date" formControlName="paidAt"
                    class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]"/>
           </div>
           <div>
-            <label class="block text-blue-200/80 text-sm font-medium mb-2">Số tiền (₫)</label>
+            <label class="block text-blue-200/80 text-sm font-medium mb-2">Amount (₫)</label>
             <input type="text" formControlName="amountStr" placeholder="1.000.000"
                    class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white font-mono"/>
           </div>
           <div>
-            <label class="block text-blue-200/80 text-sm font-medium mb-2">Ghi chú</label>
-            <input type="text" formControlName="note" placeholder="Tuỳ chọn"
+            <label class="block text-blue-200/80 text-sm font-medium mb-2">Note</label>
+            <input type="text" formControlName="note" placeholder="Optional"
                    class="w-full bg-[#020617] border border-slate-800 rounded-xl px-4 py-3.5 text-white"/>
           </div>
           <button type="submit" [disabled]="form.invalid"
                   class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold">
-            Thêm bản ghi
+            Add Record
           </button>
         </form>
       </div>
@@ -48,22 +48,22 @@
       <div class="bg-[#0f172a] rounded-2xl p-6 border border-white/5 shadow-xl min-h-[320px]">
         <h2 class="text-white font-bold text-lg mb-4 flex items-center gap-2">
           <span class="material-symbols-outlined text-blue-500">history</span>
-          Lịch sử thanh toán
+          Payment History
         </h2>
         @if (loadingPayments()) {
-          <div class="text-slate-500 py-8 text-center">Đang tải…</div>
+          <div class="text-slate-500 py-8 text-center">Loading...</div>
         } @else if (!pageData() || pageData()!.content.length === 0) {
           <div class="text-slate-500 py-8 text-center border border-dashed border-slate-700 rounded-xl">
-            Chưa có giao dịch nào.
+            No transactions yet.
           </div>
         } @else {
           <div class="overflow-x-auto rounded-xl border border-slate-700">
             <table class="w-full text-left text-sm">
               <thead class="bg-[#151e32] text-slate-400 text-xs uppercase">
               <tr>
-                <th class="p-3">Ngày</th>
-                <th class="p-3">Số tiền</th>
-                <th class="p-3">Ghi chú</th>
+                <th class="p-3">Date</th>
+                <th class="p-3">Amount</th>
+                <th class="p-3">Note</th>
                 <th class="p-3 text-right"></th>
               </tr>
               </thead>
@@ -76,7 +76,7 @@
                     <td class="p-3 text-right">
                       <button type="button" (click)="deletePayment(p.paymentId)" [disabled]="deletingId() === p.paymentId"
                               class="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">
-                        Xóa
+                        Delete
                       </button>
                     </td>
                   </tr>
@@ -87,11 +87,11 @@
           @if (pageData()!.totalPages > 1) {
             <div class="flex justify-between items-center mt-4 text-sm text-slate-400">
               <button type="button" (click)="prev()" [disabled]="pageIndex() <= 0"
-                      class="px-3 py-1 rounded-lg border border-slate-600 disabled:opacity-40">Trước
+                      class="px-3 py-1 rounded-lg border border-slate-600 disabled:opacity-40">Previous
               </button>
-              <span>Trang {{ pageIndex() + 1 }} / {{ pageData()!.totalPages }}</span>
+              <span>Page {{ pageIndex() + 1 }} / {{ pageData()!.totalPages }}</span>
               <button type="button" (click)="next()" [disabled]="pageIndex() >= pageData()!.totalPages - 1"
-                      class="px-3 py-1 rounded-lg border border-slate-600 disabled:opacity-40">Sau
+                      class="px-3 py-1 rounded-lg border border-slate-600 disabled:opacity-40">Next
               </button>
             </div>
           }

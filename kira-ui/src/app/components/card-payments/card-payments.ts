@@ -64,8 +64,8 @@ export class CardPayments implements OnDestroy {
                 this.loadingPayments.set(false);
                 this.card.set(null);
                 this.pageData.set(null);
-                const msg = err?.error?.message ?? err?.message ?? 'Không tải dữ liệu.';
-                this.error.set(typeof msg === 'string' ? msg : 'Không tải dữ liệu.');
+                const msg = err?.error?.message ?? err?.message ?? 'Unable to load data.';
+                this.error.set(typeof msg === 'string' ? msg : 'Unable to load data.');
                 return EMPTY;
               })
           );
@@ -106,8 +106,8 @@ export class CardPayments implements OnDestroy {
       },
       error: err => {
         this.loadingPayments.set(false);
-        const msg = err?.error?.message ?? err?.message ?? 'Không tải được lịch sử.';
-        this.toast.error(typeof msg === 'string' ? msg : 'Không tải được lịch sử.');
+        const msg = err?.error?.message ?? err?.message ?? 'Unable to load history.';
+        this.toast.error(typeof msg === 'string' ? msg : 'Unable to load history.');
       }
     });
   }
@@ -121,7 +121,7 @@ export class CardPayments implements OnDestroy {
     const v = this.form.getRawValue();
     const amount = parseVndInput(v.amountStr);
     if (amount <= 0) {
-      this.toast.error('Số tiền phải lớn hơn 0.');
+      this.toast.error('Amount must be greater than 0.');
       return;
     }
     this.api
@@ -132,13 +132,13 @@ export class CardPayments implements OnDestroy {
       })
       .subscribe({
         next: () => {
-          this.toast.success('Đã thêm thanh toán.');
+          this.toast.success('Payment added.');
           this.form.patchValue({amountStr: '', note: ''});
           this.reloadPayments();
         },
         error: err => {
-          const raw = err?.error?.message ?? err?.message ?? 'Không thêm được.';
-          this.toast.error(typeof raw === 'string' ? raw : 'Không thêm được.');
+          const raw = err?.error?.message ?? err?.message ?? 'Unable to add.';
+          this.toast.error(typeof raw === 'string' ? raw : 'Unable to add.');
         }
       });
   }
@@ -148,20 +148,20 @@ export class CardPayments implements OnDestroy {
     if (id == null) {
       return;
     }
-    if (!globalThis.confirm('Xóa bản ghi thanh toán này?')) {
+    if (!globalThis.confirm('Delete this payment record?')) {
       return;
     }
     this.deletingId.set(paymentId);
     this.api.deletePayment(id, paymentId).subscribe({
       next: () => {
         this.deletingId.set(null);
-        this.toast.success('Đã xóa.');
+        this.toast.success('Deleted.');
         this.reloadPayments();
       },
       error: err => {
         this.deletingId.set(null);
-        const raw = err?.error?.message ?? err?.message ?? 'Không xóa được.';
-        this.toast.error(typeof raw === 'string' ? raw : 'Không xóa được.');
+        const raw = err?.error?.message ?? err?.message ?? 'Unable to delete.';
+        this.toast.error(typeof raw === 'string' ? raw : 'Unable to delete.');
       }
     });
   }

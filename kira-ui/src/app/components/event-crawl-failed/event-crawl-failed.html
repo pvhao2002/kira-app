@@ -1,14 +1,14 @@
 <div class="max-w-[1200px] mx-auto p-6 space-y-6">
   <div>
     <h1 class="text-3xl font-bold tracking-tight text-white">Event crawl fail</h1>
-    <p class="text-slate-400 mt-2">Danh sách lỗi crawl event từ <code class="text-slate-500">event_crawl_failed</code>.</p>
+    <p class="text-slate-400 mt-2">List of event crawl failures from <code class="text-slate-500">event_crawl_failed</code>.</p>
     <p class="text-slate-500 text-xs mt-1">Timezone client: {{ clientTimeZone }}</p>
   </div>
 
   @if (loading()) {
     <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 flex flex-col items-center justify-center gap-3">
       <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
-      <p class="text-slate-400 text-sm">Đang tải…</p>
+      <p class="text-slate-400 text-sm">Loading...</p>
     </div>
   } @else if (error()) {
     <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
@@ -16,14 +16,14 @@
       <button type="button"
               (click)="load()"
               class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
-        Thử lại
+        Retry
       </button>
     </div>
   } @else if (data(); as page) {
     @if (page.content.length === 0) {
       <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 text-center">
         <span class="material-symbols-outlined text-5xl text-slate-600 mb-4 block">error</span>
-        <p class="text-slate-400 text-sm">Không có bản ghi.</p>
+        <p class="text-slate-400 text-sm">No records found.</p>
       </div>
     } @else {
       <div class="rounded-xl border border-white/5 overflow-hidden bg-[#1e293b]">
@@ -70,7 +70,7 @@
                       <button type="button"
                               (click)="openScreenshotPreview(row.screenshot)"
                               class="px-2.5 py-1 rounded-md bg-slate-800 border border-white/10 text-blue-300 hover:bg-slate-700">
-                        Mở
+                        Open
                       </button>
                     } @else {
                       <span class="text-slate-600">—</span>
@@ -106,21 +106,21 @@
 
       <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400">
         <span>
-          Trang {{ page.page + 1 }} / {{ page.totalPages || 1 }}
-          · {{ page.totalElements | number }} bản ghi
+          Page {{ page.page + 1 }} / {{ page.totalPages || 1 }}
+          · {{ page.totalElements | number }} records
         </span>
         <div class="flex gap-2">
           <button type="button"
                   (click)="prev()"
                   [disabled]="page.page <= 0"
                   class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
-            Trước
+            Previous
           </button>
           <button type="button"
                   (click)="next()"
                   [disabled]="page.page >= page.totalPages - 1"
                   class="px-3 py-1.5 rounded-lg bg-slate-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
-            Sau
+            Next
           </button>
         </div>
       </div>
@@ -137,7 +137,7 @@
         <button type="button"
                 (click)="closePreview()"
                 class="px-3 py-1 rounded-md bg-slate-800 text-slate-200 border border-white/10 hover:bg-slate-700">
-          Đóng
+          Close
         </button>
       </div>
       @if (previewImageSrc(); as src) {

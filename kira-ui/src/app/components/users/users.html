@@ -6,20 +6,20 @@
           <span class="material-symbols-outlined text-[18px] align-bottom">home</span>
         </a>
         <span>/</span>
-        <span>Quản trị</span>
+        <span>Admin</span>
         <span>/</span>
-        <span class="text-white font-medium">Người dùng</span>
+        <span class="text-white font-medium">Users</span>
       </div>
-      <h1 class="text-white text-3xl md:text-4xl font-black leading-tight tracking-tight">Quản lý người dùng</h1>
+      <h1 class="text-white text-3xl md:text-4xl font-black leading-tight tracking-tight">User Management</h1>
       <p class="text-slate-400 text-base font-normal leading-normal">
-        Danh sách và quản lý tài khoản (API qua gateway, yêu cầu quyền ADMIN).
+        List and manage accounts (API through gateway, requires ADMIN permission).
       </p>
     </div>
     <button type="button"
             (click)="openCreate()"
             class="flex shrink-0 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold leading-normal transition-all shadow-lg shadow-blue-600/20 active:scale-95">
       <span class="material-symbols-outlined text-[20px]">add</span>
-      <span class="truncate">Thêm người dùng mới</span>
+      <span class="truncate">Add New User</span>
     </button>
   </div>
 
@@ -32,7 +32,7 @@
         </div>
         <input
           class="w-full bg-transparent text-white border-none focus:ring-0 placeholder:text-slate-500 text-sm h-full"
-          placeholder="Tìm theo tên đăng nhập..."
+          placeholder="Search by username..."
           type="search"
           autocomplete="off"
           [value]="draftQ()"
@@ -43,19 +43,19 @@
     <div class="flex gap-2 flex-wrap items-center">
       <button type="button" (click)="applySearch()"
               class="h-9 px-4 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
-        Tìm
+        Search
       </button>
       <button type="button" (click)="setStatusFilter('all')" [class]="chipClass('all')">
-        <span>Tất cả</span>
+        <span>All</span>
       </button>
       <button type="button" (click)="setStatusFilter('active')" [class]="chipClass('active')">
-        <span>Hoạt động</span>
+        <span>Active</span>
       </button>
       <button type="button" (click)="setStatusFilter('locked')" [class]="chipClass('locked')">
-        <span>Đã khóa</span>
+        <span>Locked</span>
       </button>
       <button type="button" (click)="setStatusFilter('pending')" [class]="chipClass('pending')">
-        <span>Chờ duyệt</span>
+        <span>Pending</span>
       </button>
     </div>
   </div>
@@ -69,7 +69,7 @@
   @if (loading()) {
     <div class="rounded-xl bg-[#1e293b] border border-white/5 p-12 flex flex-col items-center justify-center gap-3">
       <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
-      <p class="text-slate-400 text-sm">Đang tải…</p>
+      <p class="text-slate-400 text-sm">Loading...</p>
     </div>
   } @else if (error(); as err) {
     <div class="rounded-xl bg-red-950/40 border border-red-500/30 p-6">
@@ -77,7 +77,7 @@
       <button type="button"
               (click)="load()"
               class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
-        Thử lại
+        Retry
       </button>
     </div>
   } @else if (data(); as page) {
@@ -88,18 +88,18 @@
             <thead>
             <tr class="bg-[#1e293b] border-b border-slate-700">
               <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-24">ID</th>
-              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Tên đăng nhập</th>
-              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-40">Trạng thái</th>
-              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-32">Vai trò</th>
-              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Ngày tạo</th>
-              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Cập nhật</th>
-              <th class="px-6 py-4 text-right text-slate-400 text-xs font-semibold uppercase tracking-wider w-52">Hành động</th>
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Username</th>
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-40">Status</th>
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider w-32">Role</th>
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Created</th>
+              <th class="px-6 py-4 text-left text-slate-400 text-xs font-semibold uppercase tracking-wider">Updated</th>
+              <th class="px-6 py-4 text-right text-slate-400 text-xs font-semibold uppercase tracking-wider w-52">Actions</th>
             </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
               @if (page.content.length === 0) {
                 <tr>
-                  <td colspan="7" class="px-6 py-12 text-center text-slate-400 text-sm">Không có người dùng.</td>
+                  <td colspan="7" class="px-6 py-12 text-center text-slate-400 text-sm">No users found.</td>
                 </tr>
               } @else {
                 @for (row of page.content; track row.userId) {
@@ -143,28 +143,28 @@
                                 [disabled]="mutatingId() !== null"
                                 (click)="toggleLock(row)"
                                 class="size-8 flex items-center justify-center rounded-lg border border-sky-500/25 bg-sky-500/10 text-sky-300 hover:border-sky-400/50 hover:bg-sky-500/20 hover:text-sky-100 transition-colors disabled:opacity-40"
-                                [title]="isLockedStatus(row.status) ? 'Mở khóa' : 'Khóa'">
+                                [title]="isLockedStatus(row.status) ? 'Unlock' : 'Lock'">
                           <span class="material-symbols-outlined text-[18px]">{{ isLockedStatus(row.status) ? 'lock_open' : 'lock' }}</span>
                         </button>
                         <button type="button"
                                 [disabled]="mutatingId() !== null"
                                 (click)="openResetPassword(row)"
                                 class="size-8 flex items-center justify-center rounded-lg border border-amber-500/25 bg-amber-500/10 text-amber-300 hover:border-amber-400/50 hover:bg-amber-500/20 hover:text-amber-100 transition-colors disabled:opacity-40"
-                                title="Đặt lại mật khẩu">
+                                title="Reset Password">
                           <span class="material-symbols-outlined text-[18px]">key</span>
                         </button>
                         <button type="button"
                                 [disabled]="mutatingId() !== null"
                                 (click)="openEdit(row)"
                                 class="size-8 flex items-center justify-center rounded-lg border border-indigo-500/25 bg-indigo-500/10 text-indigo-300 hover:border-indigo-400/50 hover:bg-indigo-500/20 hover:text-indigo-100 transition-colors disabled:opacity-40"
-                                title="Chỉnh sửa">
+                                title="Edit">
                           <span class="material-symbols-outlined text-[18px]">edit</span>
                         </button>
                         <button type="button"
                                 [disabled]="mutatingId() !== null"
                                 (click)="remove(row)"
                                 class="size-8 flex items-center justify-center rounded-lg border border-red-500/25 bg-red-500/10 text-red-300 hover:border-red-400/50 hover:bg-red-500/20 hover:text-red-100 transition-colors disabled:opacity-40"
-                                title="Xóa">
+                                title="Delete">
                           <span class="material-symbols-outlined text-[18px]">delete</span>
                         </button>
                       </div>
@@ -178,21 +178,21 @@
         <div
           class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-700 bg-[#1e293b] px-6 py-3 gap-4">
           <div class="text-xs text-slate-400">
-            Trang {{ page.page + 1 }} / {{ page.totalPages || 1 }}
-            · {{ page.totalElements | number }} người dùng
+            Page {{ page.page + 1 }} / {{ page.totalPages || 1 }}
+            · {{ page.totalElements | number }} users
           </div>
           <div class="flex items-center gap-2">
             <button type="button"
                     (click)="prev()"
                     [disabled]="page.page <= 0"
                     class="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
-              Trước
+              Previous
             </button>
             <button type="button"
                     (click)="next()"
                     [disabled]="page.totalPages <= 1 || page.page >= page.totalPages - 1"
                     class="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 border border-white/10">
-              Sau
+              Next
             </button>
           </div>
         </div>
@@ -211,13 +211,13 @@
         <h2 class="text-lg font-bold text-white">
           @switch (mode) {
             @case ('create') {
-              Thêm người dùng
+              Add User
             }
             @case ('edit') {
-              Chỉnh sửa
+              Edit
             }
             @case ('password') {
-              Đặt lại mật khẩu
+              Reset Password
             }
           }
         </h2>
@@ -237,12 +237,12 @@
             <input class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
                    [value]="createUsername()"
                    (input)="createUsername.set($any($event.target).value)"/>
-            <label class="block text-xs text-slate-400 uppercase font-semibold">Mật khẩu</label>
+            <label class="block text-xs text-slate-400 uppercase font-semibold">Password</label>
             <input type="password"
                    class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
                    [value]="createPassword()"
                    (input)="createPassword.set($any($event.target).value)"/>
-            <label class="block text-xs text-slate-400 uppercase font-semibold">Vai trò</label>
+            <label class="block text-xs text-slate-400 uppercase font-semibold">Role</label>
             <select class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
                     [value]="createRole()"
                     (change)="createRole.set($any($event.target).value)">
@@ -251,12 +251,12 @@
               <option value="moderator">moderator</option>
             </select>
             <div class="flex justify-end gap-2 pt-2">
-              <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm">Hủy</button>
+              <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm">Cancel</button>
               <button type="button"
                       [disabled]="mutatingId() !== null"
                       (click)="submitCreate()"
                       class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 disabled:opacity-50">
-                Tạo
+                Create
               </button>
             </div>
           </div>
@@ -264,8 +264,8 @@
         @case ('edit') {
           @if (editingUser(); as u) {
             <div class="space-y-3">
-              <p class="text-sm text-slate-400">Tài khoản: <span class="text-white font-medium">{{ u.username }}</span></p>
-              <label class="block text-xs text-slate-400 uppercase font-semibold">Vai trò</label>
+              <p class="text-sm text-slate-400">Account: <span class="text-white font-medium">{{ u.username }}</span></p>
+              <label class="block text-xs text-slate-400 uppercase font-semibold">Role</label>
               <select class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
                       [value]="editRole()"
                       (change)="editRole.set($any($event.target).value)">
@@ -273,7 +273,7 @@
                 <option value="admin">admin</option>
                 <option value="moderator">moderator</option>
               </select>
-              <label class="block text-xs text-slate-400 uppercase font-semibold">Trạng thái</label>
+              <label class="block text-xs text-slate-400 uppercase font-semibold">Status</label>
               <select class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
                       [value]="editStatus()"
                       (change)="editStatus.set($any($event.target).value)">
@@ -282,12 +282,12 @@
                 <option value="pending">pending</option>
               </select>
               <div class="flex justify-end gap-2 pt-2">
-                <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm">Hủy</button>
+                <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm">Cancel</button>
                 <button type="button"
                         [disabled]="mutatingId() !== null"
                         (click)="submitEdit()"
                         class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 disabled:opacity-50">
-                  Lưu
+                  Save
                 </button>
               </div>
             </div>
@@ -296,19 +296,19 @@
         @case ('password') {
           @if (editingUser(); as u) {
             <div class="space-y-3">
-              <p class="text-sm text-slate-400">Tài khoản: <span class="text-white font-medium">{{ u.username }}</span></p>
-              <label class="block text-xs text-slate-400 uppercase font-semibold">Mật khẩu mới</label>
+              <p class="text-sm text-slate-400">Account: <span class="text-white font-medium">{{ u.username }}</span></p>
+              <label class="block text-xs text-slate-400 uppercase font-semibold">New Password</label>
               <input type="password"
                      class="w-full rounded-lg bg-[#0b1121] border border-slate-600 px-3 py-2 text-sm text-white"
                      [value]="resetPasswordValue()"
                      (input)="resetPasswordValue.set($any($event.target).value)"/>
               <div class="flex justify-end gap-2 pt-2">
-                <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm">Hủy</button>
+                <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 text-sm">Cancel</button>
                 <button type="button"
                         [disabled]="mutatingId() !== null"
                         (click)="submitResetPassword()"
                         class="px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-500 disabled:opacity-50">
-                  Đặt lại
+                  Reset
                 </button>
               </div>
             </div>
