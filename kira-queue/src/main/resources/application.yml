@@ -53,6 +53,9 @@ server:
 
 kira:
   queue:
+    consumer:
+      date-enabled: ${KIRA_QUEUE_CONSUMER_DATE_ENABLED:${KIRA_QUEUE_CONSUMER_ENABLED:false}}
+      event-enabled: ${KIRA_QUEUE_CONSUMER_EVENT_ENABLED:${KIRA_QUEUE_CONSUMER_ENABLED:false}}
     crawl-persist:
       core-pool-size: 2
       max-pool-size: 4
@@ -98,4 +101,3 @@ app:
     acquire-timeout-ms: ${AISCORE_POOL_ACQUIRE_TIMEOUT_MS:120000}
     test-api-enabled: ${PLAYWRIGHT_TEST_API_ENABLED:true}
     matches-benchmark-base-url: ${MATCHES_BENCHMARK_BASE_URL:}
-

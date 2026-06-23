@@ -23,6 +23,8 @@ import {EventCrawlFailed} from './components/event-crawl-failed/event-crawl-fail
 import {EventsHistory} from './components/events-history/events-history';
 import {Statistics} from './components/statistics/statistics';
 import {EventProcessMq} from './components/event-process-mq/event-process-mq';
+import {TuViBeNgoc} from './components/tu-vi-be-ngoc/tu-vi-be-ngoc';
+import {TuViPvhao} from './components/tu-vi-pvhao/tu-vi-pvhao';
 import {authGuard} from './guards/auth.guard';
 import {roleGuard} from './guards/role.guard';
 
@@ -31,6 +33,8 @@ const adminOnly = {canActivate: [roleGuard], data: {roles: ['admin'] as const}};
 export const routes: Routes = [
   {path: '', component: About, pathMatch: 'full'},
   {path: 'login', component: Login},
+  {path: 'tu-vi/be-ngoc', component: TuViBeNgoc},
+  {path: 'tu-vi/pvhao', component: TuViPvhao},
   {
     path: '',
     canActivate: [authGuard],

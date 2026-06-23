@@ -46,6 +46,9 @@ kira:
       near-upcoming-delay-ms: ${KIRA_PRODUCER_PREDICT_NEAR_UPCOMING_DELAY_MS:600000}
       near-upcoming-initial-delay-ms: ${KIRA_PRODUCER_PREDICT_NEAR_UPCOMING_INITIAL_DELAY_MS:180000}
       near-upcoming-window-hours: ${KIRA_PRODUCER_PREDICT_NEAR_UPCOMING_WINDOW_HOURS:3}
+      backfill-enabled: ${KIRA_PRODUCER_PREDICT_BACKFILL_ENABLED:true}
+      backfill-delay-ms: ${KIRA_PRODUCER_PREDICT_BACKFILL_DELAY_MS:3600000}
+      backfill-initial-delay-ms: ${KIRA_PRODUCER_PREDICT_BACKFILL_INITIAL_DELAY_MS:600000}
     settle-schedule:
       enabled: ${KIRA_PRODUCER_SETTLE_SCHEDULE_ENABLED:true}
       delay-ms: ${KIRA_PRODUCER_SETTLE_SCHEDULE_DELAY_MS:600000}

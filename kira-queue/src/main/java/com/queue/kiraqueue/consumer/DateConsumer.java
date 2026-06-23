@@ -4,6 +4,7 @@ import com.queue.kiraqueue.service.CrawDateServiceV2;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -14,6 +15,7 @@ import java.util.logging.Level;
 @Log
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "kira.queue.consumer.date-enabled", havingValue = "true", matchIfMissing = true)
 public class DateConsumer {
     private final CrawDateServiceV2 crawDateServiceV2;
     public static final String QUEUE_DATE = "crawlByDate";

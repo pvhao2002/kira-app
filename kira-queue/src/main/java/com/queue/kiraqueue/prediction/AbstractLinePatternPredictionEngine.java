@@ -25,11 +25,15 @@ public abstract class AbstractLinePatternPredictionEngine {
         if (odds == null) {
             return support.buildSkippedResult("Event not found");
         }
+        return compute(odds);
+    }
 
+    public VersionPredictionResult compute(TargetEventOdds odds) {
         if (!hasRequiredData(odds)) {
             return support.buildSkippedResult(missingRequirementsMessage(odds));
         }
 
+        var eventId = odds.eventId() == null ? -1L : odds.eventId();
         var topScores = findTopScores(eventId, odds);
         if (topScores.isEmpty()) {
             return support.buildSkippedResult("No historical matches for odds pattern");

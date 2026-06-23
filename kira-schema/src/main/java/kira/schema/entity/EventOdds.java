@@ -28,7 +28,9 @@ import java.time.LocalDateTime;
         indexes = {
                 @Index(name = "idx_event_market", columnList = "event_id, type, market, line"),
                 @Index(name = "idx_event_odds_type_market_event", columnList = "type, market, event_id"),
-                @Index(name = "idx_event_odds_market_type_line_event", columnList = "market, type, line, event_id")
+                @Index(name = "idx_event_odds_market_type_line_event", columnList = "market, type, line, event_id"),
+                @Index(name = "event_odds_idx_countdistinct_market_type_", columnList = "market, type, line"),
+                @Index(name = "event_odds_idx_event_market_type_line", columnList = "event_id, market, type, line")
         })
 @Getter
 @Setter

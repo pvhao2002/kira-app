@@ -299,7 +299,8 @@ create table event_result
     ft_total_shot_on_target tinyint unsigned
         generated always as (coalesce(ft_home_shot_on_target, 0) + coalesce(ft_away_shot_on_target, 0)) stored,
     created_at              datetime default now(),
-    updated_at              datetime default now() on update now()
+    updated_at              datetime default now() on update now(),
+    index event_result_idx_ft_str (ft_goal_str)
 ) engine = InnoDB
   row_format = dynamic;
 
@@ -316,7 +317,9 @@ create table event_odds
     created_at datetime default now(),
     unique key uk_event_market_type (event_id, market, type),
     index idx_event_market (event_id, type, market, line),
-    index idx_event_odds_type_market_event (type, market, event_id)
+    index idx_event_odds_type_market_event (type, market, event_id),
+    index event_odds_idx_countdistinct_market_type_ (market, type, line),
+    index event_odds_idx_event_market_type_line (event_id, market, type, line)
 ) engine = InnoDB
   row_format = dynamic;
 

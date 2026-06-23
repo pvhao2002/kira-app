@@ -30,6 +30,11 @@ export class App {
   readonly navbarAvatarInitials = computed(() => this.getInitials(this.authService.user()?.username ?? 'User'));
 
   constructor() {
+    if (window.location.pathname.startsWith('/tu-vi/') && !window.location.hash) {
+      window.location.replace(`/#${window.location.pathname}`);
+      return;
+    }
+
     this.router.events
       .pipe(
         filter((event) => event instanceof NavigationEnd),
@@ -38,7 +43,9 @@ export class App {
       .subscribe((event) => {
         const nav = event as NavigationEnd;
         const url = nav.urlAfterRedirects;
-        this.isPublicPage.set(url === '/' || url === '' || url.includes('/login'));
+        this.isPublicPage.set(
+          url === '/' || url === '' || url.includes('/login') || url.includes('/tu-vi/'),
+        );
         window.scrollTo(0, 0);
       });
   }

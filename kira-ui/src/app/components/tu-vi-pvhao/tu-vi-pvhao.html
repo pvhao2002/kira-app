@@ -1,0 +1,127 @@
+<section class="tuvi-shell">
+  <div class="comic-sky" aria-hidden="true"></div>
+
+  <header class="tuvi-topbar">
+    <a routerLink="/" class="brand-mark" aria-label="Về trang chủ">
+      <span class="material-symbols-outlined">home</span>
+    </a>
+  </header>
+
+  @if (isLibrary()) {
+    <main class="library-stage">
+      <section class="library-hero">
+        <p class="library-kicker">Bộ truyện tham khảo / giải trí</p>
+        <h1>Tử Vi Phạm Văn Hào</h1>
+      </section>
+
+      <div class="story-grid" aria-label="Danh sách truyện tử vi">
+        @for (story of stories; track story.id) {
+          <button
+            type="button"
+            class="story-card tone-{{ story.tone }}"
+            (click)="openStory(story.id)"
+            [attr.aria-label]="'Mở truyện ' + story.title"
+          >
+            <span class="story-card-icon material-symbols-outlined">{{ story.icon }}</span>
+            <span class="story-card-body">
+              <span class="story-card-title">{{ story.title }}</span>
+              <span class="story-card-subtitle">{{ story.subtitle }}</span>
+              <span class="story-card-summary">{{ story.summary }}</span>
+              <span class="story-card-meta">
+                {{ story.pages.length }} trang
+                <span class="material-symbols-outlined">chevron_right</span>
+              </span>
+            </span>
+          </button>
+        }
+      </div>
+    </main>
+  } @else {
+    <main class="book-stage">
+      <div class="reader-breadcrumb">
+        <span class="reader-current">
+          <span class="material-symbols-outlined">auto_stories</span>
+          {{ activeStory().title }}
+        </span>
+        <span>{{ activeStory().subtitle }}</span>
+      </div>
+
+      <div class="book-shadow" aria-hidden="true"></div>
+
+      <article
+        class="comic-page tone-{{ activePage().tone }}"
+        [class.flip-next]="flipDirection() === 'next'"
+        [class.flip-prev]="flipDirection() === 'prev'"
+      >
+        <div class="page-corner" aria-hidden="true"></div>
+
+        <div class="page-header">
+          <p>{{ activePage().label }}</p>
+          <span>{{ activePage().kicker }}</span>
+        </div>
+
+        <h1>{{ activePage().title }}</h1>
+
+        <div class="panel-grid">
+          @for (panel of activePage().panels; track panel.title) {
+            <section class="comic-panel">
+              <div class="panel-icon">
+                <span class="material-symbols-outlined">{{ panel.icon }}</span>
+              </div>
+              <div>
+                <h2>{{ panel.title }}</h2>
+                <p>{{ panel.text }}</p>
+              </div>
+            </section>
+          }
+        </div>
+
+        <div class="keyword-strip" aria-label="Từ khóa">
+          @for (keyword of activePage().keywords; track keyword) {
+            <span>{{ keyword }}</span>
+          }
+        </div>
+      </article>
+    </main>
+
+    <nav class="book-controls" aria-label="Điều khiển truyện tranh">
+      <button type="button" (click)="closeStory()" title="Kệ truyện" aria-label="Kệ truyện">
+        <span class="material-symbols-outlined">auto_stories</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="goHome()"
+        [disabled]="currentPage() === 0"
+        title="Về bìa"
+        aria-label="Về bìa"
+      >
+        <span class="material-symbols-outlined">home</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="previous()"
+        [disabled]="currentPage() === 0"
+        title="Trang trước"
+        aria-label="Trang trước"
+      >
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+
+      <div class="progress-track" aria-hidden="true">
+        <span [style.width.%]="pageProgress()"></span>
+      </div>
+
+      <button
+        type="button"
+        (click)="next()"
+        [disabled]="currentPage() === activeStory().pages.length - 1"
+        title="Trang sau"
+        aria-label="Trang sau"
+      >
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </nav>
+  }
+</section>

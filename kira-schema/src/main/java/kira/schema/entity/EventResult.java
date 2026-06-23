@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import kira.schema.entity.enums.MatchOutcome;
 import lombok.Getter;
@@ -14,7 +15,11 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "event_result")
+@Table(
+        name = "event_result",
+        indexes = {
+                @Index(name = "event_result_idx_ft_str", columnList = "ft_goal_str")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
