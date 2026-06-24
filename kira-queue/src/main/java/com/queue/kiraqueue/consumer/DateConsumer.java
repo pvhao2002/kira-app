@@ -15,7 +15,7 @@ import java.util.logging.Level;
 @Log
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "kira.queue.consumer.date-enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "kira.queue.consumer.date-enabled", havingValue = "true")
 public class DateConsumer {
     private final CrawDateServiceV2 crawDateServiceV2;
     public static final String QUEUE_DATE = "crawlByDate";

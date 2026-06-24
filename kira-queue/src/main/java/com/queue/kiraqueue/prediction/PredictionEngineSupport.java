@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,30 +57,81 @@ public class PredictionEngineSupport {
             group by e.event_id, e.league_id
             """;
 
-    private static final String SQL_UPDATE_PREDICTION = """
-            update event_prediction
-            set status               = :status,
-                prematch_hdc_line    = :prematch_hdc_line,
-                prematch_ou_line     = :prematch_ou_line,
-                open_hdc_line        = :open_hdc_line,
-                open_ou_line         = :open_ou_line,
-                open_corner_line     = :open_corner_line,
-                prematch_corner_line = :prematch_corner_line,
-                prematch_hdc_price_a = :prematch_hdc_price_a,
-                prematch_hdc_price_b = :prematch_hdc_price_b,
-                prematch_ou_price_a  = :prematch_ou_price_a,
-                prematch_ou_price_b  = :prematch_ou_price_b,
-                goal_str_pick        = :goal_str_pick,
-                hdc_pick             = :hdc_pick,
-                ou_pick              = :ou_pick,
-                hdc_vote_count       = :hdc_vote_count,
-                ou_vote_count        = :ou_vote_count,
-                match_sample_count   = :match_sample_count,
-                error_message        = :error_message,
+    private static final String SQL_UPSERT_COMPLETED_PREDICTION = """
+            insert into event_prediction (
+                event_id,
+                prediction_version_id,
+                status,
+                prematch_hdc_line,
+                prematch_ou_line,
+                open_hdc_line,
+                open_ou_line,
+                open_corner_line,
+                prematch_corner_line,
+                prematch_hdc_price_a,
+                prematch_hdc_price_b,
+                prematch_ou_price_a,
+                prematch_ou_price_b,
+                goal_str_pick,
+                hdc_pick,
+                ou_pick,
+                hdc_vote_count,
+                ou_vote_count,
+                match_sample_count,
+                error_message
+            )
+            values (
+                :event_id,
+                :prediction_version_id,
+                'completed',
+                :prematch_hdc_line,
+                :prematch_ou_line,
+                :open_hdc_line,
+                :open_ou_line,
+                :open_corner_line,
+                :prematch_corner_line,
+                :prematch_hdc_price_a,
+                :prematch_hdc_price_b,
+                :prematch_ou_price_a,
+                :prematch_ou_price_b,
+                :goal_str_pick,
+                :hdc_pick,
+                :ou_pick,
+                :hdc_vote_count,
+                :ou_vote_count,
+                :match_sample_count,
+                null
+            )
+            on duplicate key update
+                status               = values(status),
+                prematch_hdc_line    = values(prematch_hdc_line),
+                prematch_ou_line     = values(prematch_ou_line),
+                open_hdc_line        = values(open_hdc_line),
+                open_ou_line         = values(open_ou_line),
+                open_corner_line     = values(open_corner_line),
+                prematch_corner_line = values(prematch_corner_line),
+                prematch_hdc_price_a = values(prematch_hdc_price_a),
+                prematch_hdc_price_b = values(prematch_hdc_price_b),
+                prematch_ou_price_a  = values(prematch_ou_price_a),
+                prematch_ou_price_b  = values(prematch_ou_price_b),
+                goal_str_pick        = values(goal_str_pick),
+                hdc_pick             = values(hdc_pick),
+                ou_pick              = values(ou_pick),
+                hdc_vote_count       = values(hdc_vote_count),
+                ou_vote_count        = values(ou_vote_count),
+                match_sample_count   = values(match_sample_count),
+                error_message        = null,
+                actual_ft_goal_str   = null,
+                result_hdc           = null,
+                result_ou            = null,
+                settled_at           = null,
                 updated_at           = current_timestamp
+            """;
+
+    private static final String SQL_DELETE_PREDICTION = """
+            delete from event_prediction
             where event_id = :event_id
               and prediction_version_id = :prediction_version_id
-              and status = 'pending'
             """;
 
     private static final String HASH = "#";
@@ -129,11 +181,16 @@ public class PredictionEngineSupport {
 
     public void updateCompleted(long eventId, long versionId, TargetEventOdds odds, List<ScoreMatchRow> topScores) {
         var result = buildCompletedResult(odds, topScores);
+        if (!hasAnyUsefulPick(result)) {
+            deletePrediction(eventId, versionId);
+            log.info(() -> "Skip persisting prediction without hdc/ou pick for event_id="
+                    + eventId + ", version_id=" + versionId);
+            return;
+        }
         var lineSnapshot = lineSnapshotValues(odds);
-        applyUpdate(new MapSqlParameterSource()
+        jdbcTemplate.update(SQL_UPSERT_COMPLETED_PREDICTION, new MapSqlParameterSource()
                 .addValue("event_id", eventId)
                 .addValue("prediction_version_id", versionId)
-                .addValue("status", "completed")
                 .addValue("prematch_hdc_line", lineSnapshot.get("prematch_hdc_line"))
                 .addValue("prematch_ou_line", lineSnapshot.get("prematch_ou_line"))
                 .addValue("open_hdc_line", lineSnapshot.get("open_hdc_line"))
@@ -149,8 +206,7 @@ public class PredictionEngineSupport {
                 .addValue("ou_pick", result.ouPick())
                 .addValue("hdc_vote_count", result.hdcVoteCount())
                 .addValue("ou_vote_count", result.ouVoteCount())
-                .addValue("match_sample_count", result.matchSampleCount())
-                .addValue("error_message", null));
+                .addValue("match_sample_count", result.matchSampleCount()));
     }
 
     public VersionPredictionResult buildCompletedResult(TargetEventOdds odds, List<ScoreMatchRow> topScores) {
@@ -198,46 +254,26 @@ public class PredictionEngineSupport {
     }
 
     public void updateSkipped(long eventId, long versionId, String message) {
-        applyUpdate(clearedPredictionParams(eventId, versionId, "skipped", message));
+        deletePrediction(eventId, versionId);
+        log.info(() -> "Skip persisting skipped prediction for event_id="
+                + eventId + ", version_id=" + versionId + ": " + message);
     }
 
     public void updateFailed(long eventId, long versionId, String message) {
-        applyUpdate(clearedPredictionParams(eventId, versionId, "failed", message));
-    }
-
-    private MapSqlParameterSource clearedPredictionParams(long eventId, long versionId, String status, String message) {
-        return new MapSqlParameterSource()
-                .addValue("event_id", eventId)
-                .addValue("prediction_version_id", versionId)
-                .addValue("status", status)
-                .addValue("prematch_hdc_line", null)
-                .addValue("prematch_ou_line", null)
-                .addValue("open_hdc_line", null)
-                .addValue("open_ou_line", null)
-                .addValue("open_corner_line", null)
-                .addValue("prematch_corner_line", null)
-                .addValue("prematch_hdc_price_a", null)
-                .addValue("prematch_hdc_price_b", null)
-                .addValue("prematch_ou_price_a", null)
-                .addValue("prematch_ou_price_b", null)
-                .addValue("goal_str_pick", null)
-                .addValue("hdc_pick", PredictionPick.NONE.name())
-                .addValue("ou_pick", PredictionPick.NONE.name())
-                .addValue("hdc_vote_count", null)
-                .addValue("ou_vote_count", null)
-                .addValue("match_sample_count", null)
-                .addValue("error_message", message);
+        deletePrediction(eventId, versionId);
+        log.info(() -> "Skip persisting failed prediction for event_id="
+                + eventId + ", version_id=" + versionId + ": " + message);
     }
 
     private Map<String, Object> lineSnapshotValues(TargetEventOdds odds) {
-        return Map.of(
-                "prematch_hdc_line", odds.prematchHdcLine(),
-                "prematch_ou_line", odds.prematchOuLine(),
-                "open_hdc_line", odds.openHdcLine(),
-                "open_ou_line", odds.openOuLine(),
-                "open_corner_line", hasCornerLines(odds) ? odds.openCornerLine() : null,
-                "prematch_corner_line", hasCornerLines(odds) ? odds.prematchCornerLine() : null
-        );
+        var values = new HashMap<String, Object>();
+        values.put("prematch_hdc_line", odds.prematchHdcLine());
+        values.put("prematch_ou_line", odds.prematchOuLine());
+        values.put("open_hdc_line", odds.openHdcLine());
+        values.put("open_ou_line", odds.openOuLine());
+        values.put("open_corner_line", hasCornerLines(odds) ? odds.openCornerLine() : null);
+        values.put("prematch_corner_line", hasCornerLines(odds) ? odds.prematchCornerLine() : null);
+        return values;
     }
 
     /** @deprecated use {@link #updateCompleted} */
@@ -342,11 +378,17 @@ public class PredictionEngineSupport {
                 && odds.prematchCornerPriceA() == null && odds.prematchCornerPriceB() == null;
     }
 
-    private void applyUpdate(MapSqlParameterSource params) {
-        int updated = jdbcTemplate.update(SQL_UPDATE_PREDICTION, params);
-        if (updated == 0) {
-            log.warning("No pending event_prediction row updated for event_id="
-                    + params.getValue("event_id") + ", version_id=" + params.getValue("prediction_version_id"));
-        }
+    private void deletePrediction(long eventId, long versionId) {
+        jdbcTemplate.update(SQL_DELETE_PREDICTION, new MapSqlParameterSource()
+                .addValue("event_id", eventId)
+                .addValue("prediction_version_id", versionId));
+    }
+
+    private static boolean hasAnyUsefulPick(VersionPredictionResult result) {
+        return isUsefulPick(result.hdcPick()) || isUsefulPick(result.ouPick());
+    }
+
+    private static boolean isUsefulPick(String pick) {
+        return pick != null && !pick.isBlank() && !PredictionPick.NONE.name().equals(pick);
     }
 }

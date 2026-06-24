@@ -13,7 +13,7 @@ import java.util.logging.Level;
 @Log
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "kira.queue.consumer.event-enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "kira.queue.consumer.event-enabled", havingValue = "true")
 public class EventConsumer {
     public static final String QUEUE_EVENT_ODD = "event";
 

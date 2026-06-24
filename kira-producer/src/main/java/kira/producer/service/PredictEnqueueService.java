@@ -2,7 +2,6 @@ package kira.producer.service;
 
 import kira.producer.amqp.PredictProducer;
 import kira.producer.dto.PredictJobMessage;
-import kira.producer.service.ActivePredictionVersionCache.ActiveVersion;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -13,9 +12,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 
 @Log
@@ -23,13 +20,7 @@ import java.util.logging.Level;
 @RequiredArgsConstructor
 public class PredictEnqueueService {
 
-    public static final String SQL_FILTER_NOT_PENDING = """
-              and not exists (
-                select 1 from event_prediction ep
-                where ep.event_id = e.event_id
-                  and ep.status = 'pending'
-              )
-            """;
+    public static final String SQL_FILTER_NOT_PENDING = "";
 
     public static final String SQL_LINES_CHANGED = """
                 coalesce(ep.open_hdc_line, '') <> coalesce((
@@ -117,7 +108,7 @@ public class PredictEnqueueService {
                     select 1 from event_prediction ep
                     where ep.event_id = e.event_id
                       and ep.prediction_version_id = pv.prediction_version_id
-                      and ep.status in ('pending', 'completed', 'skipped')
+                      and ep.status in ('completed', 'skipped')
                   )
               )
             """;
@@ -150,7 +141,7 @@ public class PredictEnqueueService {
                     select 1 from event_prediction ep
                     where ep.event_id = e.event_id
                       and ep.prediction_version_id = pv.prediction_version_id
-                      and ep.status in ('pending', 'completed', 'skipped')
+                      and ep.status in ('completed', 'skipped')
                   )
               )
               or (
@@ -184,35 +175,6 @@ public class PredictEnqueueService {
      */
     @Deprecated
     public static final String SQL_FILTER_HAS_ALL_ODDS_LINES = SQL_FILTER_HAS_HDC_OU_LINES;
-
-    private static final String SQL_RESET_FAILED = """
-            update event_prediction ep
-                inner join prediction_version pv on pv.prediction_version_id = ep.prediction_version_id
-            set ep.status = 'pending'
-            where ep.event_id = :event_id
-              and pv.is_active = 1
-              and ep.status = 'failed'
-            """;
-
-    private static final String SQL_RESET_COMPLETED_ON_LINE_CHANGE = """
-            update event_prediction ep
-                inner join events e on e.event_id = ep.event_id
-                inner join prediction_version pv on pv.prediction_version_id = ep.prediction_version_id
-            set ep.status = 'pending'
-            where ep.event_id = :event_id
-              and e.status_id = 1
-              and ep.status = 'completed'
-              and pv.is_active = 1
-              and pv.code in ('NO_PRICE', 'WITH_PRICE', 'WITH_LEAGUE_NO_PRICE')
-              and (
-            """ + SQL_LINES_CHANGED + """
-              )
-            """;
-
-    private static final String SQL_INSERT_PENDING = """
-            insert ignore into event_prediction (event_id, prediction_version_id, status)
-            values (:event_id, :prediction_version_id, 'pending')
-            """;
 
     public record EnqueueBatchResult(int count, long lastEventId) {
     }
@@ -256,20 +218,6 @@ public class PredictEnqueueService {
             log.warning("Skip " + jobName + ": no active prediction versions");
             return 0;
         }
-
-        var pendingParams = new ArrayList<MapSqlParameterSource>();
-        for (Long eventId : eventIds) {
-            jdbcTemplate.update(SQL_RESET_FAILED, Map.of("event_id", eventId));
-            if (mode == EnqueueMode.REPREDICT) {
-                jdbcTemplate.update(SQL_RESET_COMPLETED_ON_LINE_CHANGE, Map.of("event_id", eventId));
-            }
-            for (ActiveVersion version : activeVersions) {
-                pendingParams.add(new MapSqlParameterSource()
-                        .addValue("event_id", eventId)
-                        .addValue("prediction_version_id", version.predictionVersionId()));
-            }
-        }
-        jdbcTemplate.batchUpdate(SQL_INSERT_PENDING, pendingParams.toArray(MapSqlParameterSource[]::new));
 
         var enqueuedEventIds = List.copyOf(eventIds);
         registerAfterCommitPublish(jobName, enqueuedEventIds);

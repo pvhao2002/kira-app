@@ -11,21 +11,16 @@ public class PlaywrightManager {
     private static final String DATE_LANE = "date";
     private static final String EVENT_LANE = "event";
 
-    public PlaywrightManager() {
-        laneMap.put(DATE_LANE, new PlaywrightLane(DATE_LANE));
-        laneMap.put(EVENT_LANE, new PlaywrightLane(EVENT_LANE));
-    }
-
     public PlaywrightLane getLane(String lane) {
-        return laneMap.get(lane);
+        return laneMap.computeIfAbsent(lane, PlaywrightLane::new);
     }
 
     public PlaywrightLane getLaneByDate() {
-        return laneMap.get(DATE_LANE);
+        return getLane(DATE_LANE);
     }
 
     public PlaywrightLane getEventLane() {
-        return laneMap.get(EVENT_LANE);
+        return getLane(EVENT_LANE);
     }
 
     public void closeAllLanes() {

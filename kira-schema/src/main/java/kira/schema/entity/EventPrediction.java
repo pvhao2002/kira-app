@@ -110,11 +110,11 @@ public class EventPrediction {
     private String actualFtGoalStr;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "result_hdc", columnDefinition = "enum('WIN','LOSE', 'DRAW','VOID','NONE')")
+    @Column(name = "result_hdc", columnDefinition = "enum('WIN','LOSE','VOID','NONE')")
     private PredictionOutcome resultHdc;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "result_ou", columnDefinition = "enum('WIN','LOSE', 'DRAW','VOID','NONE')")
+    @Column(name = "result_ou", columnDefinition = "enum('WIN','LOSE','VOID','NONE')")
     private PredictionOutcome resultOu;
 
     @Column(name = "settled_at")

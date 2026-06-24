@@ -48,7 +48,7 @@ public class PlaywrightLane {
 
     private void initBrowser() {
         this.playwright = Playwright.create();
-        var browser = playwright.chromium().launch(launchOptions(false));
+        var browser = playwright.chromium().launch(launchOptions(true));
         this.browserContext = browser.newContext(contextOptions());
         this.browserContext.addInitScript(INIT_SCRIPT_STEALTH);
         this.page = browserContext.newPage();

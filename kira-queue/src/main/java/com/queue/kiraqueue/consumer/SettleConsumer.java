@@ -7,11 +7,15 @@ import com.queue.kiraqueue.prediction.PredictionSettleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+
+import java.util.logging.Level;
 
 @Log
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "kira.queue.consumer.settle-enabled", havingValue = "true")
 public class SettleConsumer {
 
     private final ObjectMapper objectMapper;
@@ -28,7 +32,7 @@ public class SettleConsumer {
             }
             predictionSettleService.settleEvent(eventId);
         } catch (Exception ex) {
-            log.severe("Settle job failed: " + ex.getMessage());
+            log.log(Level.SEVERE, "Settle job failed for payload: " + payload, ex);
         } finally {
             log.fine(() -> "Settle job finished in " + (System.currentTimeMillis() - startedAt) + "ms");
         }
