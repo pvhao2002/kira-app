@@ -134,8 +134,48 @@ public class PredictionEngineSupport {
               and prediction_version_id = :prediction_version_id
             """;
 
+    private static final String SQL_UPSERT_INCOMPLETE_PREDICTION = """
+            insert into event_prediction (
+                event_id,
+                prediction_version_id,
+                status,
+                error_message
+            )
+            select e.event_id,
+                   :prediction_version_id,
+                   :status,
+                   :error_message
+            from events e
+            where e.event_id = :event_id
+            on duplicate key update
+                status               = values(status),
+                prematch_hdc_line    = null,
+                prematch_ou_line     = null,
+                open_hdc_line        = null,
+                open_ou_line         = null,
+                open_corner_line     = null,
+                prematch_corner_line = null,
+                prematch_hdc_price_a = null,
+                prematch_hdc_price_b = null,
+                prematch_ou_price_a  = null,
+                prematch_ou_price_b  = null,
+                goal_str_pick        = null,
+                hdc_pick             = null,
+                ou_pick              = null,
+                hdc_vote_count       = null,
+                ou_vote_count        = null,
+                match_sample_count   = null,
+                error_message        = values(error_message),
+                actual_ft_goal_str   = null,
+                result_hdc           = null,
+                result_ou            = null,
+                settled_at           = null,
+                updated_at           = current_timestamp
+            """;
+
     private static final String HASH = "#";
     private static final String MINUS = "-";
+    private static final int ERROR_MESSAGE_MAX_LENGTH = 512;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
@@ -254,14 +294,14 @@ public class PredictionEngineSupport {
     }
 
     public void updateSkipped(long eventId, long versionId, String message) {
-        deletePrediction(eventId, versionId);
-        log.info(() -> "Skip persisting skipped prediction for event_id="
+        updateIncomplete(eventId, versionId, "skipped", message);
+        log.info(() -> "Persist skipped prediction for event_id="
                 + eventId + ", version_id=" + versionId + ": " + message);
     }
 
     public void updateFailed(long eventId, long versionId, String message) {
-        deletePrediction(eventId, versionId);
-        log.info(() -> "Skip persisting failed prediction for event_id="
+        updateIncomplete(eventId, versionId, "failed", message);
+        log.info(() -> "Persist failed prediction for event_id="
                 + eventId + ", version_id=" + versionId + ": " + message);
     }
 
@@ -382,6 +422,21 @@ public class PredictionEngineSupport {
         jdbcTemplate.update(SQL_DELETE_PREDICTION, new MapSqlParameterSource()
                 .addValue("event_id", eventId)
                 .addValue("prediction_version_id", versionId));
+    }
+
+    private void updateIncomplete(long eventId, long versionId, String status, String message) {
+        jdbcTemplate.update(SQL_UPSERT_INCOMPLETE_PREDICTION, new MapSqlParameterSource()
+                .addValue("event_id", eventId)
+                .addValue("prediction_version_id", versionId)
+                .addValue("status", status)
+                .addValue("error_message", truncateErrorMessage(message)));
+    }
+
+    private static String truncateErrorMessage(String message) {
+        if (message == null || message.length() <= ERROR_MESSAGE_MAX_LENGTH) {
+            return message;
+        }
+        return message.substring(0, ERROR_MESSAGE_MAX_LENGTH);
     }
 
     private static boolean hasAnyUsefulPick(VersionPredictionResult result) {
