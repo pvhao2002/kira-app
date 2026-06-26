@@ -1,5 +1,5 @@
 @if (user(); as currentUser) {
-  <div class="max-w-4xl mx-auto w-full px-4 py-8 lg:px-8">
+  <div class="max-w-6xl mx-auto w-full px-4 py-8 lg:px-8">
     <div class="bg-[#1e293b] rounded-xl p-6 lg:p-8 shadow-sm border border-slate-700 mb-6 relative overflow-hidden">
       <div class="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
       <div class="flex flex-col sm:flex-row items-center gap-8 relative z-10">
@@ -30,32 +30,339 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 space-y-6">
+    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
+      <div class="space-y-6 min-w-0">
         <section class="bg-[#1e293b] rounded-xl p-6 shadow-sm border border-slate-700">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-white flex items-center gap-2">
-              <span class="material-symbols-outlined text-blue-500">edit_note</span>
-              Personal Notes
-            </h3>
-            <span class="text-xs text-slate-500">Saved locally for the current session</span>
-          </div>
-          <div class="relative">
-            <textarea
-              class="w-full bg-[#0b1121] border border-slate-700 rounded-lg p-4 text-gray-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all resize-none h-48"
-              placeholder="Write strategies, reminders, or financial goals here..."></textarea>
-            <div class="absolute bottom-3 right-3">
+          <div class="flex flex-col 2xl:flex-row 2xl:items-center 2xl:justify-between gap-4 mb-6">
+            <div>
+              <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-blue-500">travel_explore</span>
+                Travel Checklist
+              </h3>
+              <p class="text-sm text-slate-400 mt-1">Plan by day or time slot before your trip.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3 w-full 2xl:w-auto">
+              <input
+                type="text"
+                [ngModel]="newPlanName()"
+                (ngModelChange)="newPlanName.set($event)"
+                (keyup.enter)="createPlan()"
+                class="h-11 min-w-0 sm:w-64 bg-[#0b1121] border border-slate-700 rounded-lg px-3 text-gray-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none"
+                placeholder="Plan name"
+              />
               <button
-                class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 text-sm">
-                <span class="material-symbols-outlined text-[18px]">save</span>
-                Save Note
+                type="button"
+                (click)="createPlan()"
+                [disabled]="savingPlan()"
+                class="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold px-4 transition-colors whitespace-nowrap">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                Create
               </button>
             </div>
           </div>
+
+          @if (checklistLoading()) {
+            <div class="rounded-lg border border-slate-700 bg-[#0b1121] px-4 py-8 text-center text-slate-400">
+              Loading travel checklist...
+            </div>
+          } @else if (checklistError()) {
+            <div class="rounded-lg border border-red-500/30 bg-red-500/10 text-red-200 px-4 py-3">
+              {{ checklistError() }}
+            </div>
+          } @else if (travelPlans().length === 0) {
+            <div class="rounded-lg border border-slate-700 bg-[#0b1121] px-6 py-10 text-center">
+              <span class="material-symbols-outlined text-blue-400 text-4xl mb-3">luggage</span>
+              <p class="text-white font-semibold">No travel plan yet</p>
+              <p class="text-sm text-slate-400 mt-1">Enter a plan name to start your checklist.</p>
+            </div>
+          } @else {
+            <div class="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-5">
+              <aside class="space-y-2">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Plans</p>
+                @for (plan of travelPlans(); track plan.planId) {
+                  <button
+                    type="button"
+                    (click)="selectedPlanId.set(plan.planId)"
+                    class="w-full rounded-lg border p-3 text-left transition-colors"
+                    [class.bg-blue-500/10]="selectedPlan()?.planId === plan.planId"
+                    [class.border-blue-500/40]="selectedPlan()?.planId === plan.planId"
+                    [class.bg-[#0b1121]]="selectedPlan()?.planId !== plan.planId"
+                    [class.border-slate-700]="selectedPlan()?.planId !== plan.planId">
+                    <span class="block text-sm font-semibold text-white truncate">{{ plan.planName }}</span>
+                    <span class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                      <span>{{ plan.groups.length }} groups</span>
+                      @if (plan.published) {
+                        <span class="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 font-semibold text-emerald-300">
+                          <span class="material-symbols-outlined text-[12px]">public</span>
+                          Public
+                        </span>
+                      }
+                    </span>
+                  </button>
+                }
+              </aside>
+
+              @if (selectedPlan(); as activePlan) {
+                <div class="min-w-0 space-y-5">
+                  <div class="rounded-lg border border-slate-700 bg-[#0b1121] p-4">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div class="min-w-0">
+                        <h4 class="text-xl font-bold text-white truncate">{{ activePlan.planName }}</h4>
+                        <p class="text-sm text-slate-400">
+                          {{ selectedPlanStats().checked }}/{{ selectedPlanStats().total }} details done
+                        </p>
+                      </div>
+                      <div class="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          (click)="togglePlanPublished(activePlan)"
+                          class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-slate-800 transition-colors"
+                          [class.border-emerald-500/30]="!activePlan.published"
+                          [class.text-emerald-300]="!activePlan.published"
+                          [class.border-amber-500/30]="activePlan.published"
+                          [class.text-amber-200]="activePlan.published">
+                          <span class="material-symbols-outlined text-[18px]">{{ activePlan.published ? 'visibility_off' : 'public' }}</span>
+                          {{ activePlan.published ? 'Unpublish' : 'Publish' }}
+                        </button>
+                        <button
+                          type="button"
+                          (click)="renamePlan(activePlan)"
+                          class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors">
+                          <span class="material-symbols-outlined text-[18px]">edit</span>
+                          Rename
+                        </button>
+                        <button
+                          type="button"
+                          (click)="deletePlan(activePlan)"
+                          class="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/10 transition-colors">
+                          <span class="material-symbols-outlined text-[18px]">delete</span>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="rounded-lg border border-slate-700 bg-[#0b1121] p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-[1fr_160px] gap-3">
+                      <input
+                        type="text"
+                        [ngModel]="groupTitle()"
+                        (ngModelChange)="groupTitle.set($event)"
+                        class="h-11 bg-[#111827] border border-slate-700 rounded-lg px-3 text-gray-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none"
+                        placeholder="Group title, e.g. Documents, Airport, Day 1"
+                      />
+                      <select
+                        [ngModel]="groupType()"
+                        (ngModelChange)="groupType.set($event)"
+                        class="h-11 bg-[#111827] border border-slate-700 rounded-lg px-3 text-gray-200 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none">
+                        <option value="DAY">By day</option>
+                        <option value="TIME_SLOT">By time</option>
+                      </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 mt-3">
+                      @if (groupType() === 'DAY') {
+                        <input
+                          type="date"
+                          [ngModel]="groupDate()"
+                          (ngModelChange)="groupDate.set($event)"
+                          class="h-11 bg-[#111827] border border-slate-700 rounded-lg px-3 text-gray-200 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none"
+                        />
+                        <div class="hidden md:block"></div>
+                      } @else {
+                        <input
+                          type="time"
+                          [ngModel]="groupStartTime()"
+                          (ngModelChange)="groupStartTime.set($event)"
+                          class="h-11 bg-[#111827] border border-slate-700 rounded-lg px-3 text-gray-200 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none"
+                        />
+                        <input
+                          type="time"
+                          [ngModel]="groupEndTime()"
+                          (ngModelChange)="groupEndTime.set($event)"
+                          class="h-11 bg-[#111827] border border-slate-700 rounded-lg px-3 text-gray-200 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none"
+                        />
+                      }
+                      <button
+                        type="button"
+                        (click)="createGroup()"
+                        [disabled]="savingGroup()"
+                        class="h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold px-4 transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">playlist_add</span>
+                        Add group
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="space-y-4">
+                    @if (activePlan.groups.length === 0) {
+                      <div class="rounded-lg border border-slate-700 bg-[#0b1121]/70 px-6 py-8 text-center text-slate-400">
+                        Add your first day or time slot group.
+                      </div>
+                    } @else {
+                      @for (group of activePlan.groups; track group.groupId) {
+                        <article class="rounded-lg border border-slate-700 bg-[#0b1121] overflow-hidden">
+                          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b border-slate-700">
+                            <div class="min-w-0">
+                              <div class="flex flex-wrap items-center gap-2">
+                                <span class="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-1 text-xs font-bold text-blue-300 border border-blue-500/20">
+                                  <span class="material-symbols-outlined text-[14px]">{{ isCheckListGroup(group) ? 'inventory_2' : group.scheduleType === 'DAY' ? 'calendar_today' : 'schedule' }}</span>
+                                  {{ groupScheduleLabel(group) }}
+                                </span>
+                                <span class="text-xs text-slate-500">{{ groupProgress(group) }}</span>
+                              </div>
+                              <h5 class="text-white font-bold mt-2 truncate">{{ group.title }}</h5>
+                            </div>
+                            @if (!isCheckListGroup(group)) {
+                            <div class="flex gap-2">
+                              <button
+                                type="button"
+                                (click)="editGroup(activePlan, group)"
+                                class="size-9 inline-flex items-center justify-center rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 transition-colors"
+                                title="Edit group">
+                                <span class="material-symbols-outlined text-[18px]">edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                (click)="deleteGroup(activePlan, group)"
+                                class="size-9 inline-flex items-center justify-center rounded-lg border border-red-500/30 text-red-300 hover:bg-red-500/10 transition-colors"
+                                title="Delete group">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                              </button>
+                            </div>
+                            }
+                          </div>
+
+                          <div class="divide-y divide-slate-800">
+                            @if (group.items.length === 0) {
+                              <div class="px-4 py-4 text-sm text-slate-500">No details yet.</div>
+                            } @else {
+                              @for (item of group.items; track item.itemId) {
+                                <div class="flex items-center gap-3 px-4 py-3">
+                                  <button
+                                    type="button"
+                                    (click)="toggleItem(activePlan, group, item)"
+                                    [disabled]="itemSavingId() === 'item-' + item.itemId"
+                                    class="size-8 shrink-0 inline-flex items-center justify-center rounded-lg border transition-colors disabled:opacity-50"
+                                    [class.border-emerald-500]="item.checked"
+                                    [class.bg-emerald-500/10]="item.checked"
+                                    [class.text-emerald-300]="item.checked"
+                                    [class.border-slate-600]="!item.checked"
+                                    [class.text-slate-400]="!item.checked">
+                                    <span class="material-symbols-outlined text-[18px]">{{ item.checked ? 'check' : 'radio_button_unchecked' }}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    (click)="editItem(activePlan, group, item)"
+                                    class="min-w-0 flex-1 text-left text-sm transition-colors"
+                                    [class.text-slate-500]="item.checked"
+                                    [class.line-through]="item.checked"
+                                    [class.text-slate-200]="!item.checked">
+                                    <span class="flex flex-wrap items-center gap-2">
+                                      @if (!isCheckListGroup(group) && item.activityTime) {
+                                        <span class="inline-flex items-center gap-1 rounded-md bg-slate-800 px-2 py-0.5 text-[11px] font-bold text-blue-200">
+                                          <span class="material-symbols-outlined text-[13px]">schedule</span>
+                                          {{ formatDisplayTime(item.activityTime) }}
+                                        </span>
+                                      }
+                                      <span class="font-semibold">{{ itemActivity(item) }}</span>
+                                      @if (!isCheckListGroup(group) && item.cost != null) {
+                                        <span class="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-bold text-amber-200">
+                                          {{ formatVnd(item.cost) }} VND
+                                        </span>
+                                      }
+                                    </span>
+                                    @if (!isCheckListGroup(group) && (item.address || item.note)) {
+                                      <span class="mt-1 flex flex-col gap-0.5 text-xs text-slate-400 no-underline">
+                                        @if (item.address) {
+                                          <span class="inline-flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[13px]">location_on</span>
+                                            {{ item.address }}
+                                          </span>
+                                        }
+                                        @if (item.note) {
+                                          <span class="inline-flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[13px]">notes</span>
+                                            {{ item.note }}
+                                          </span>
+                                        }
+                                      </span>
+                                    }
+                                  </button>
+                                  <button
+                                    type="button"
+                                    (click)="deleteItem(activePlan, group, item)"
+                                    class="size-8 shrink-0 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                                    title="Delete detail">
+                                    <span class="material-symbols-outlined text-[18px]">close</span>
+                                  </button>
+                                </div>
+                              }
+                            }
+                          </div>
+
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 bg-[#111827]/60">
+                            @if (!isCheckListGroup(group)) {
+                              <input
+                                type="time"
+                                [ngModel]="itemDraft(group.groupId).activityTime"
+                                (ngModelChange)="setItemDraft(group.groupId, 'activityTime', $event)"
+                                class="h-10 bg-[#0b1121] border border-slate-700 rounded-lg px-3 text-gray-200 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none"
+                              />
+                            }
+                            <input
+                              type="text"
+                              [ngModel]="itemDraft(group.groupId).activity"
+                              (ngModelChange)="setItemDraft(group.groupId, 'activity', $event)"
+                              (keyup.enter)="addItem(activePlan, group)"
+                              class="h-10 min-w-0 bg-[#0b1121] border border-slate-700 rounded-lg px-3 text-gray-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none"
+                              [placeholder]="isCheckListGroup(group) ? 'Item name' : 'Activity'"
+                            />
+                            @if (!isCheckListGroup(group)) {
+                              <input
+                                type="text"
+                                [ngModel]="itemDraft(group.groupId).address"
+                                (ngModelChange)="setItemDraft(group.groupId, 'address', $event)"
+                                class="h-10 min-w-0 bg-[#0b1121] border border-slate-700 rounded-lg px-3 text-gray-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none"
+                                placeholder="Address"
+                              />
+                              <input
+                                type="text"
+                                inputmode="numeric"
+                                [ngModel]="itemDraft(group.groupId).cost"
+                                (ngModelChange)="setItemDraft(group.groupId, 'cost', $event)"
+                                class="h-10 min-w-0 bg-[#0b1121] border border-slate-700 rounded-lg px-3 text-gray-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none"
+                                placeholder="Cost"
+                              />
+                              <input
+                                type="text"
+                                [ngModel]="itemDraft(group.groupId).note"
+                                (ngModelChange)="setItemDraft(group.groupId, 'note', $event)"
+                                class="h-10 min-w-0 sm:col-span-2 bg-[#0b1121] border border-slate-700 rounded-lg px-3 text-gray-200 placeholder-slate-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none"
+                                placeholder="Note"
+                              />
+                            }
+                            <button
+                              type="button"
+                              (click)="addItem(activePlan, group)"
+                              [disabled]="itemSavingId() === 'add-' + group.groupId"
+                              class="h-10 sm:col-span-2 inline-flex items-center justify-center gap-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-semibold px-4 transition-colors">
+                              <span class="material-symbols-outlined text-[18px]">add_task</span>
+                              Add
+                            </button>
+                          </div>
+                        </article>
+                      }
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </section>
       </div>
 
-      <div class="lg:col-span-1">
+      <div>
         <div class="flex flex-col gap-2 sticky top-[100px]">
           <h3 class="px-1 text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Security & Settings</h3>
           <div

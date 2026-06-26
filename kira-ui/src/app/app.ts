@@ -43,8 +43,14 @@ export class App {
       .subscribe((event) => {
         const nav = event as NavigationEnd;
         const url = nav.urlAfterRedirects;
+        const currentHref = window.location.href;
         this.isPublicPage.set(
-          url === '/' || url === '' || url.includes('/login') || url.includes('/tu-vi/'),
+          url === '/'
+          || url === ''
+          || url.includes('/login')
+          || url.includes('/tu-vi/')
+          || url.startsWith('/plan')
+          || currentHref.includes('#/plan'),
         );
         window.scrollTo(0, 0);
       });

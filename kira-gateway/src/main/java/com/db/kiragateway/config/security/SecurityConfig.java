@@ -74,6 +74,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/events/claim/next").permitAll()
                         .requestMatchers(HttpMethod.GET, "/events/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/export/kira-crawl").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/travel-checklists/public").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -107,8 +108,8 @@ public class SecurityConfig {
         defaultResolver.setAllowUriQueryParameter(false);
 
         return request -> {
-            // Stale/expired JWT in HttpOnly cookie breaks POST /auth/login (Resource Server validates before permitAll).
-            if (isPublicAuthPost(request)) {
+            // Stale/expired JWT in HttpOnly cookie breaks permitAll endpoints (Resource Server validates before permitAll).
+            if (isPublicAuthPost(request) || isPublicTravelChecklistGet(request)) {
                 return defaultResolver.resolve(request);
             }
             return readCookieToken(request, props.getCookie().getName())
@@ -129,6 +130,13 @@ public class SecurityConfig {
                 || "/auth/logout".equals(path)
                 || "/internal/auth/register".equals(path)
                 || "/internal/auth/password".equals(path);
+    }
+
+    private boolean isPublicTravelChecklistGet(HttpServletRequest request) {
+        if (!HttpMethod.GET.matches(request.getMethod())) {
+            return false;
+        }
+        return "/travel-checklists/public".equals(normalizeDispatchPath(request));
     }
 
     /**

@@ -1,0 +1,140 @@
+<main class="min-h-screen bg-[#0b1121] text-slate-100">
+  <section class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 lg:px-8">
+    <header class="flex flex-col gap-3 border-b border-slate-800 pb-6 md:flex-row md:items-end md:justify-between">
+      <div>
+        <div class="mb-3 inline-flex items-center gap-2 rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-200">
+          <span class="material-symbols-outlined text-[16px]">public</span>
+          Public itinerary
+        </div>
+        <h1 class="text-3xl font-bold text-white md:text-4xl">Travel Plans</h1>
+        <p class="mt-2 max-w-2xl text-sm text-slate-400">
+          Published travel checklists are available here without signing in.
+        </p>
+      </div>
+      <a
+        routerLink="/"
+        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-800">
+        <span class="material-symbols-outlined text-[18px]">home</span>
+        Home
+      </a>
+    </header>
+
+    @if (loading()) {
+      <div class="rounded-lg border border-slate-800 bg-[#111827] px-4 py-10 text-center text-slate-400">
+        Loading published travel plans...
+      </div>
+    } @else if (error()) {
+      <div class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-200">
+        {{ error() }}
+      </div>
+    } @else if (plans().length === 0) {
+      <div class="rounded-lg border border-slate-800 bg-[#111827] px-6 py-12 text-center">
+        <span class="material-symbols-outlined mb-3 text-5xl text-slate-500">travel_explore</span>
+        <p class="text-lg font-bold text-white">No published travel plans yet</p>
+        <p class="mt-2 text-sm text-slate-400">Publish a plan from Profile to show it here.</p>
+      </div>
+    } @else {
+      <div class="space-y-6">
+        @for (plan of plans(); track plan.planId) {
+          <article class="overflow-hidden rounded-lg border border-slate-800 bg-[#111827]">
+            <div class="flex flex-col gap-3 border-b border-slate-800 p-5 md:flex-row md:items-center md:justify-between">
+              <div class="min-w-0">
+                <h2 class="truncate text-2xl font-bold text-white">{{ plan.planName }}</h2>
+                <p class="mt-1 text-sm text-slate-400">
+                  {{ completedCount(plan) }}/{{ totalCount(plan) }} details done
+                </p>
+              </div>
+              <span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-emerald-300">
+                <span class="material-symbols-outlined text-[15px]">verified</span>
+                Published
+              </span>
+            </div>
+
+            @if (plan.groups.length === 0) {
+              <div class="px-5 py-8 text-sm text-slate-500">No itinerary groups yet.</div>
+            } @else {
+              <div class="divide-y divide-slate-800">
+                @for (group of plan.groups; track group.groupId) {
+                  <section class="p-5">
+                    <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div class="min-w-0">
+                        <div class="mb-2 inline-flex items-center gap-1.5 rounded-md border border-blue-500/20 bg-blue-500/10 px-2 py-1 text-xs font-bold text-blue-200">
+                          <span class="material-symbols-outlined text-[14px]">{{ groupIcon(group) }}</span>
+                          {{ groupScheduleLabel(group) }}
+                        </div>
+                        <h3 class="truncate text-lg font-bold text-white">{{ group.title }}</h3>
+                      </div>
+                      <span class="text-xs font-semibold text-slate-500">{{ group.items.length }} details</span>
+                    </div>
+
+                    @if (group.items.length === 0) {
+                      <div class="rounded-lg border border-dashed border-slate-700 px-4 py-5 text-sm text-slate-500">
+                        No details in this group.
+                      </div>
+                    } @else {
+                      <div class="space-y-3">
+                        @for (item of group.items; track item.itemId) {
+                          <div class="flex gap-3 rounded-lg border border-slate-800 bg-[#0b1121] p-4">
+                            <span
+                              class="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border"
+                              [class.border-emerald-500]="item.checked"
+                              [class.bg-emerald-500/10]="item.checked"
+                              [class.text-emerald-300]="item.checked"
+                              [class.border-slate-700]="!item.checked"
+                              [class.text-slate-500]="!item.checked">
+                              <span class="material-symbols-outlined text-[17px]">{{ item.checked ? 'check' : 'radio_button_unchecked' }}</span>
+                            </span>
+
+                            <div class="min-w-0 flex-1">
+                              <div class="flex flex-wrap items-center gap-2">
+                                @if (!isCheckListGroup(group) && itemTime(item)) {
+                                  <span class="inline-flex items-center gap-1 rounded-md bg-slate-800 px-2 py-0.5 text-[11px] font-bold text-blue-200">
+                                    <span class="material-symbols-outlined text-[13px]">schedule</span>
+                                    {{ itemTime(item) }}
+                                  </span>
+                                }
+                                <p
+                                  class="min-w-0 font-semibold"
+                                  [class.text-slate-500]="item.checked"
+                                  [class.line-through]="item.checked"
+                                  [class.text-slate-100]="!item.checked">
+                                  {{ itemActivity(item) }}
+                                </p>
+                                @if (!isCheckListGroup(group) && item.cost != null) {
+                                  <span class="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-bold text-amber-200">
+                                    {{ formatVnd(item.cost) }} VND
+                                  </span>
+                                }
+                              </div>
+
+                              @if (!isCheckListGroup(group) && (item.address || item.note)) {
+                                <div class="mt-2 grid gap-1 text-xs text-slate-400">
+                                  @if (item.address) {
+                                    <p class="flex min-w-0 items-start gap-1.5">
+                                      <span class="material-symbols-outlined mt-0.5 text-[14px]">location_on</span>
+                                      <span class="min-w-0 break-words">{{ item.address }}</span>
+                                    </p>
+                                  }
+                                  @if (item.note) {
+                                    <p class="flex min-w-0 items-start gap-1.5">
+                                      <span class="material-symbols-outlined mt-0.5 text-[14px]">notes</span>
+                                      <span class="min-w-0 break-words">{{ item.note }}</span>
+                                    </p>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </section>
+                }
+              </div>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+</main>
