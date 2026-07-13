@@ -1,107 +1,54 @@
 import {DecimalPipe} from '@angular/common';
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {FormsModule} from '@angular/forms';
 import {RouterLink} from '@angular/router';
+import {catchError, of} from 'rxjs';
+import {
+  PredictionLinePairStats,
+  PredictionPeriodStats,
+  PredictionStatisticsApiService,
+  PredictionStatisticsResponse
+} from '../../services/prediction-statistics-api.service';
 
-type StatMetricType = 'TOTAL_GOALS_3_PLUS' | 'TOTAL_CORNERS_10_PLUS' | 'FIRST_HALF_GOAL';
-
-interface SoccerTeamRecentStatRow {
-  rankNo: number;
-  teamId: number;
-  teamName: string;
-  eligibleMatchCount: number;
-  matchedMatchCount: number;
-  percentage: number;
-  windowStart: string | null;
-  windowEnd: string | null;
-  computedAt: string | null;
-}
-
-interface SoccerTeamRecentStatGroup {
-  metricType: StatMetricType;
-  rows: SoccerTeamRecentStatRow[];
-}
-
-interface SoccerTeamRecentStatResponse {
-  groups: SoccerTeamRecentStatGroup[];
-}
-
-interface StatSection {
-  metricType: StatMetricType;
-  title: string;
-  description: string;
-  icon: string;
-  accentClass: string;
-  rows: SoccerTeamRecentStatRow[];
-}
-
-const SECTION_META: Record<StatMetricType, Omit<StatSection, 'rows'>> = {
-  TOTAL_GOALS_3_PLUS: {
-    metricType: 'TOTAL_GOALS_3_PLUS',
-    title: 'Top 10 teams with matches of 3+ goals',
-    description: 'Share of matches in the last 3 months with 3+ total goals.',
-    icon: 'scoreboard',
-    accentClass: 'text-emerald-400',
-  },
-  TOTAL_CORNERS_10_PLUS: {
-    metricType: 'TOTAL_CORNERS_10_PLUS',
-    title: 'Top 10 teams with matches of 10+ corners',
-    description: 'Share of matches in the last 3 months with 10+ total corners.',
-    icon: 'sports',
-    accentClass: 'text-amber-400',
-  },
-  FIRST_HALF_GOAL: {
-    metricType: 'FIRST_HALF_GOAL',
-    title: 'Top 10 teams with an H1 goal',
-    description: 'Share of matches in the last 3 months with at least 1 first-half goal.',
-    icon: 'timer',
-    accentClass: 'text-sky-400',
-  },
-};
-
-const METRIC_ORDER: StatMetricType[] = [
-  'TOTAL_GOALS_3_PLUS',
-  'TOTAL_CORNERS_10_PLUS',
-  'FIRST_HALF_GOAL',
-];
+type PeriodMode = 'daily' | 'weekly' | 'monthly';
 
 @Component({
   selector: 'app-statistics',
-  imports: [DecimalPipe, RouterLink],
+  imports: [DecimalPipe, FormsModule, RouterLink],
   templateUrl: './statistics.html',
   styleUrl: './statistics.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Statistics {
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(PredictionStatisticsApiService);
 
-  readonly clientTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
-  readonly data = signal<SoccerTeamRecentStatResponse | null>(null);
+  readonly data = signal<PredictionStatisticsResponse | null>(null);
+  readonly periodMode = signal<PeriodMode>('daily');
+  readonly selectedVersionId = signal<number | null>(null);
+  readonly from = signal<string>('');
+  readonly to = signal<string>('');
+  readonly clientTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
 
-  readonly sections = computed<StatSection[]>(() => {
-    const groups = this.data()?.groups ?? [];
-    return METRIC_ORDER.map(metricType => {
-      const group = groups.find(item => item.metricType === metricType);
-      return {
-        ...SECTION_META[metricType],
-        rows: group?.rows ?? [],
-      };
-    });
+  readonly periodRows = computed(() => {
+    const body = this.data();
+    if (!body) {
+      return [];
+    }
+    return body[this.periodMode()] ?? [];
   });
 
-  readonly latestComputedAt = computed(() => {
-    for (const section of this.sections()) {
-      const computedAt = section.rows[0]?.computedAt;
-      if (computedAt) {
-        return computedAt;
-      }
+  readonly maxPeriodVolume = computed(() => {
+    const rows = this.periodRows();
+    if (rows.length === 0) {
+      return 1;
     }
-    return null;
+    return Math.max(...rows.map(row => row.totalWins + row.totalLosses + row.totalVoids), 1);
   });
 
   constructor() {
+    this.setQuickRange(90, false);
     this.load();
   }
 
@@ -109,16 +56,22 @@ export class Statistics {
     this.loading.set(true);
     this.error.set(null);
 
-    this.http.get<SoccerTeamRecentStatResponse>('/data/soccer/team-recent-stats').subscribe({
-      next: body => {
+    this.api.get({
+      versionId: this.selectedVersionId(),
+      from: this.from() || null,
+      to: this.to() || null,
+    }).pipe(
+      catchError(err => {
+        const msg = err?.error?.message ?? err?.message ?? 'Unable to load prediction statistics.';
+        this.error.set(typeof msg === 'string' ? msg : 'Unable to load prediction statistics.');
+        return of<PredictionStatisticsResponse | null>(null);
+      })
+    ).subscribe(body => {
+      if (body) {
         this.data.set(body);
-        this.loading.set(false);
-      },
-      error: err => {
-        const msg = err?.error?.message ?? err?.message ?? 'Unable to load statistics data.';
-        this.error.set(typeof msg === 'string' ? msg : 'Unable to load statistics data.');
-        this.loading.set(false);
-      },
+        this.selectedVersionId.set(body.selectedVersion.predictionVersionId);
+      }
+      this.loading.set(false);
     });
   }
 
@@ -157,8 +110,88 @@ export class Statistics {
     return `${day}-${month}-${year}`;
   }
 
-  rowTrack(row: SoccerTeamRecentStatRow): string {
+  rowTrack(row: {teamId: number; rankNo: number}): string {
     return `${row.teamId}-${row.rankNo}`;
+  }
+
+  setPeriodMode(mode: PeriodMode): void {
+    this.periodMode.set(mode);
+  }
+
+  setVersion(raw: string | number): void {
+    const id = Number(raw);
+    this.selectedVersionId.set(Number.isFinite(id) && id > 0 ? id : null);
+  }
+
+  setFrom(value: string): void {
+    this.from.set(value);
+  }
+
+  setTo(value: string): void {
+    this.to.set(value);
+  }
+
+  setQuickRange(days: number, reload = true): void {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(today.getDate() - days + 1);
+    this.from.set(this.toDateInput(start));
+    this.to.set(this.toDateInput(today));
+    if (reload) {
+      this.load();
+    }
+  }
+
+  clearRange(): void {
+    this.from.set('');
+    this.to.set('');
+    this.load();
+  }
+
+  periodLabel(): string {
+    return {
+      daily: 'Theo ngày',
+      weekly: 'Theo tuần',
+      monthly: 'Theo tháng',
+    }[this.periodMode()];
+  }
+
+  periodTrack(row: PredictionPeriodStats): string {
+    return `${this.periodMode()}-${row.periodStart}`;
+  }
+
+  lineTrack(row: PredictionLinePairStats): string {
+    return `${row.prematchHdcLine}-${row.prematchOuLine}-${row.openHdcLine}-${row.openOuLine}`;
+  }
+
+  barHeight(row: PredictionPeriodStats): number {
+    const total = row.totalWins + row.totalLosses + row.totalVoids;
+    return Math.max((total / this.maxPeriodVolume()) * 100, total > 0 ? 5 : 0);
+  }
+
+  segmentPercent(value: number, row: PredictionPeriodStats): number {
+    const total = row.totalWins + row.totalLosses + row.totalVoids;
+    if (total <= 0) {
+      return 0;
+    }
+    return (value / total) * 100;
+  }
+
+  formatDateTime(raw: string | null): string {
+    if (!raw) {
+      return '-';
+    }
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+      return raw;
+    }
+    return new Intl.DateTimeFormat('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(parsed);
   }
 
   private parseServerDate(raw: string | null): Date | null {
@@ -170,5 +203,12 @@ export class Statistics {
     const normalized = hasTimezone ? value : `${value}Z`;
     const parsed = new Date(normalized);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private toDateInput(date: Date): string {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 }

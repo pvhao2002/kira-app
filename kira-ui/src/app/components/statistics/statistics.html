@@ -1,3 +1,263 @@
+<div class="max-w-[1400px] mx-auto p-6 space-y-6">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <a routerLink="/soccer"
+         class="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-blue-300 mb-3">
+        <span class="material-symbols-outlined text-base">arrow_back</span>
+        Back to Soccer
+      </a>
+      <h1 class="text-3xl font-bold tracking-tight text-white">Prediction Statistics</h1>
+      <p class="text-slate-400 mt-2">
+        Thống kê thắng thua dự đoán, HDC, O/U và cặp line đúng đồng thời.
+      </p>
+    </div>
+
+    @if (data(); as body) {
+      <div class="rounded-lg bg-[#1e293b] border border-white/5 px-4 py-3 min-w-[240px]">
+        <p class="text-xs uppercase text-slate-500">Latest settled</p>
+        <p class="text-sm text-white mt-1">{{ formatDateTime(body.latestSettledAt) }}</p>
+        <p class="text-xs text-slate-500 mt-1">{{ body.selectedVersion.displayName }}</p>
+      </div>
+    }
+  </div>
+
+  <div class="grid gap-3 lg:grid-cols-[1fr_1fr_1fr_auto] rounded-lg bg-[#1e293b] border border-white/5 p-4">
+    <label class="text-sm text-slate-300">
+      <span class="block text-xs text-slate-500 mb-1">Version</span>
+      <select class="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+              [ngModel]="selectedVersionId()"
+              (ngModelChange)="setVersion($event); load()">
+        @for (version of data()?.versions ?? []; track version.predictionVersionId) {
+          <option [ngValue]="version.predictionVersionId">
+            {{ version.displayName }}@if (version.active) { * }
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="text-sm text-slate-300">
+      <span class="block text-xs text-slate-500 mb-1">From</span>
+      <input type="date"
+             class="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+             [ngModel]="from()"
+             (ngModelChange)="setFrom($event)">
+    </label>
+
+    <label class="text-sm text-slate-300">
+      <span class="block text-xs text-slate-500 mb-1">To</span>
+      <input type="date"
+             class="w-full rounded-md bg-slate-950 border border-slate-700 px-3 py-2 text-white"
+             [ngModel]="to()"
+             (ngModelChange)="setTo($event)">
+    </label>
+
+    <div class="flex flex-wrap items-end gap-2">
+      <button type="button"
+              (click)="setQuickRange(30)"
+              class="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">
+        30d
+      </button>
+      <button type="button"
+              (click)="setQuickRange(90)"
+              class="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">
+        90d
+      </button>
+      <button type="button"
+              (click)="clearRange()"
+              class="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">
+        All
+      </button>
+      <button type="button"
+              (click)="load()"
+              class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500">
+        Apply
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="rounded-lg bg-[#1e293b] border border-white/5 p-12 flex flex-col items-center justify-center gap-3">
+      <span class="material-symbols-outlined text-4xl text-slate-500 animate-pulse">hourglass_empty</span>
+      <p class="text-slate-400 text-sm">Loading...</p>
+    </div>
+  } @else if (error(); as err) {
+    <div class="rounded-lg bg-red-950/40 border border-red-500/30 p-6">
+      <p class="text-red-300 text-sm">{{ err }}</p>
+      <button type="button"
+              (click)="load()"
+              class="mt-4 px-4 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700 border border-white/10">
+        Retry
+      </button>
+    </div>
+  } @else if (data(); as body) {
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div class="rounded-lg bg-[#1e293b] border border-slate-700 p-5">
+        <p class="text-sm text-slate-400">Predictions</p>
+        <p class="mt-2 text-3xl font-bold text-white">{{ body.summary.predictionCount | number }}</p>
+        <p class="mt-1 text-xs text-slate-500">{{ body.summary.settledMarketCount | number }} settled markets</p>
+      </div>
+      <div class="rounded-lg bg-[#1e293b] border border-slate-700 p-5">
+        <p class="text-sm text-slate-400">Total W/L</p>
+        <p class="mt-2 text-3xl font-bold text-white">{{ body.summary.totalWinRate | number:'1.2-2' }}%</p>
+        <p class="mt-1 text-xs text-slate-500">{{ body.summary.totalWins }} win / {{ body.summary.totalLosses }} lose / {{ body.summary.totalVoids }} void</p>
+      </div>
+      <div class="rounded-lg bg-[#1e293b] border border-slate-700 p-5">
+        <p class="text-sm text-slate-400">HDC</p>
+        <p class="mt-2 text-3xl font-bold text-emerald-400">{{ body.summary.hdcWinRate | number:'1.2-2' }}%</p>
+        <p class="mt-1 text-xs text-slate-500">{{ body.summary.hdcWins }} win / {{ body.summary.hdcLosses }} lose</p>
+      </div>
+      <div class="rounded-lg bg-[#1e293b] border border-slate-700 p-5">
+        <p class="text-sm text-slate-400">O/U</p>
+        <p class="mt-2 text-3xl font-bold text-sky-400">{{ body.summary.ouWinRate | number:'1.2-2' }}%</p>
+        <p class="mt-1 text-xs text-slate-500">{{ body.summary.ouWins }} win / {{ body.summary.ouLosses }} lose</p>
+      </div>
+      <div class="rounded-lg bg-[#1e293b] border border-slate-700 p-5">
+        <p class="text-sm text-slate-400">Both HDC + O/U win</p>
+        <p class="mt-2 text-3xl font-bold text-amber-400">{{ body.summary.bothWinCount | number }}</p>
+        <p class="mt-1 text-xs text-slate-500">{{ body.summary.bothWinRate | number:'1.2-2' }}% of predictions</p>
+      </div>
+    </div>
+
+    <section class="rounded-lg bg-[#1e293b] border border-slate-700 overflow-hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3 p-5 border-b border-white/5">
+        <div>
+          <h2 class="text-xl font-semibold text-white">Win/Loss {{ periodLabel() }}</h2>
+          <p class="text-sm text-slate-400 mt-1">Thanh xanh là win, đỏ là lose, xám là void.</p>
+        </div>
+        <div class="inline-flex rounded-md border border-slate-700 overflow-hidden">
+          <button type="button"
+                  (click)="setPeriodMode('daily')"
+                  class="px-4 py-2 text-sm text-white"
+                  [class.bg-blue-600]="periodMode() === 'daily'"
+                  [class.bg-slate-900]="periodMode() !== 'daily'">
+            Day
+          </button>
+          <button type="button"
+                  (click)="setPeriodMode('weekly')"
+                  class="px-4 py-2 text-sm text-white border-l border-slate-700"
+                  [class.bg-blue-600]="periodMode() === 'weekly'"
+                  [class.bg-slate-900]="periodMode() !== 'weekly'">
+            Week
+          </button>
+          <button type="button"
+                  (click)="setPeriodMode('monthly')"
+                  class="px-4 py-2 text-sm text-white border-l border-slate-700"
+                  [class.bg-blue-600]="periodMode() === 'monthly'"
+                  [class.bg-slate-900]="periodMode() !== 'monthly'">
+            Month
+          </button>
+        </div>
+      </div>
+
+      @if (periodRows().length === 0) {
+        <div class="p-10 text-center text-slate-400">No settled prediction data.</div>
+      } @else {
+        <div class="p-5 overflow-x-auto">
+          <div class="min-w-[720px] h-72 flex items-end gap-2 border-b border-slate-700 pb-8">
+            @for (row of periodRows(); track periodTrack(row)) {
+              <div class="flex-1 min-w-8 h-full flex flex-col justify-end gap-2">
+                <div class="relative rounded-t-md overflow-hidden bg-slate-800"
+                     [style.height.%]="barHeight(row)">
+                  <div class="absolute bottom-0 left-0 right-0 bg-emerald-500"
+                       [style.height.%]="segmentPercent(row.totalWins, row)"></div>
+                  <div class="absolute left-0 right-0 bg-red-500"
+                       [style.bottom.%]="segmentPercent(row.totalWins, row)"
+                       [style.height.%]="segmentPercent(row.totalLosses, row)"></div>
+                  <div class="absolute left-0 right-0 top-0 bg-slate-500"
+                       [style.height.%]="segmentPercent(row.totalVoids, row)"></div>
+                </div>
+                <div class="text-[10px] text-slate-500 text-center truncate" [title]="row.label">{{ row.label }}</div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-900/60 text-slate-400 border-y border-white/5">
+              <tr>
+                <th class="px-4 py-3 min-w-32">Period</th>
+                <th class="px-4 py-3 text-right">Predictions</th>
+                <th class="px-4 py-3 text-right">Total W/L</th>
+                <th class="px-4 py-3 text-right">HDC</th>
+                <th class="px-4 py-3 text-right">O/U</th>
+                <th class="px-4 py-3 text-right">Both win</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              @for (row of periodRows(); track periodTrack(row)) {
+                <tr class="hover:bg-white/[0.03]">
+                  <td class="px-4 py-3 text-white">{{ row.label }}</td>
+                  <td class="px-4 py-3 text-right text-slate-300">{{ row.predictionCount | number }}</td>
+                  <td class="px-4 py-3 text-right">
+                    <div class="text-white">{{ row.totalWins }} / {{ row.totalLosses }}</div>
+                    <div class="text-xs text-slate-500">{{ row.totalWinRate | number:'1.2-2' }}%</div>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <div class="text-emerald-300">{{ row.hdcWins }} / {{ row.hdcLosses }}</div>
+                    <div class="text-xs text-slate-500">{{ row.hdcWinRate | number:'1.2-2' }}%</div>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <div class="text-sky-300">{{ row.ouWins }} / {{ row.ouLosses }}</div>
+                    <div class="text-xs text-slate-500">{{ row.ouWinRate | number:'1.2-2' }}%</div>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <div class="text-amber-300">{{ row.bothWinCount | number }}</div>
+                    <div class="text-xs text-slate-500">{{ row.bothWinRate | number:'1.2-2' }}%</div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="rounded-lg bg-[#1e293b] border border-slate-700 overflow-hidden">
+      <div class="p-5 border-b border-white/5">
+        <h2 class="text-xl font-semibold text-white">Line đúng cả HDC và O/U</h2>
+        <p class="text-sm text-slate-400 mt-1">Nhóm theo prematch line, kèm open line để đối chiếu biến động.</p>
+      </div>
+
+      @if (body.linePairs.length === 0) {
+        <div class="p-10 text-center text-slate-400">No line pair has both HDC and O/U win in this range.</div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-900/60 text-slate-400 border-b border-white/5">
+              <tr>
+                <th class="px-4 py-3">Prematch HDC</th>
+                <th class="px-4 py-3">Prematch O/U</th>
+                <th class="px-4 py-3">Open HDC</th>
+                <th class="px-4 py-3">Open O/U</th>
+                <th class="px-4 py-3 text-right">Both win</th>
+                <th class="px-4 py-3 text-right">Rate</th>
+                <th class="px-4 py-3 text-right">HDC picks</th>
+                <th class="px-4 py-3 text-right">O/U picks</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              @for (line of body.linePairs; track lineTrack(line)) {
+                <tr class="hover:bg-white/[0.03]">
+                  <td class="px-4 py-3 font-mono text-white">{{ line.prematchHdcLine }}</td>
+                  <td class="px-4 py-3 font-mono text-white">{{ line.prematchOuLine }}</td>
+                  <td class="px-4 py-3 font-mono text-slate-300">{{ line.openHdcLine }}</td>
+                  <td class="px-4 py-3 font-mono text-slate-300">{{ line.openOuLine }}</td>
+                  <td class="px-4 py-3 text-right text-amber-300">{{ line.bothWinCount }} / {{ line.bothSettledCount }}</td>
+                  <td class="px-4 py-3 text-right text-white">{{ line.bothWinRate | number:'1.2-2' }}%</td>
+                  <td class="px-4 py-3 text-right text-slate-300">Home {{ line.hdcHomePickCount }} / Away {{ line.hdcAwayPickCount }}</td>
+                  <td class="px-4 py-3 text-right text-slate-300">Over {{ line.ouOverPickCount }} / Under {{ line.ouUnderPickCount }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</div>
+
+<!--
 <div class="max-w-[1200px] mx-auto p-6 space-y-6">
   <div class="flex flex-wrap items-start justify-between gap-4">
     <div>
@@ -103,3 +363,4 @@
     </div>
   }
 </div>
+-->
