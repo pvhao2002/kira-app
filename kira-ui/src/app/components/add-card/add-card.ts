@@ -1,7 +1,7 @@
 import {DecimalPipe} from '@angular/common';
 import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
-import {Router, RouterLink} from '@angular/router';
+import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {CreditCardApiService} from '../../services/credit-card-api.service';
 import {ToastService} from '../../config/ToastService';
 import {formatVnd, parseVndInput} from '../../utils/format-vnd';
@@ -18,6 +18,10 @@ export class AddCard {
   private readonly api = inject(CreditCardApiService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  readonly creditCardId = Number(this.route.snapshot.paramMap.get('id') ?? 0);
+  readonly isEdit = this.creditCardId > 0;
 
   readonly saving = signal(false);
 
@@ -34,6 +38,25 @@ export class AddCard {
     paymentDueDay: [5, [Validators.required, Validators.min(1), Validators.max(31)]],
     reminderTime: ['09:00', [Validators.required, Validators.pattern(/^\d{2}:\d{2}(:\d{2})?$/)]]
   });
+
+  constructor() {
+    if (this.isEdit) {
+      this.api.get(this.creditCardId).subscribe({
+        next: card => this.form.patchValue({
+          bankName: card.bankName,
+          cardLabel: card.cardLabel,
+          lastFour: card.lastFour,
+          creditLimitStr: formatVnd(card.creditLimit),
+          outstandingBalanceStr: formatVnd(card.outstandingBalance),
+          cardholderName: card.cardholderName,
+          statementDay: card.statementDay,
+          paymentDueDay: card.paymentDueDay,
+          reminderTime: card.reminderTime,
+        }),
+        error: () => this.toast.error('Không thể tải thông tin thẻ.')
+      });
+    }
+  }
 
   previewLimit(): string {
     return formatVnd(parseVndInput(this.form.controls.creditLimitStr.value));
@@ -53,8 +76,7 @@ export class AddCard {
     }
     const lastFour = v.lastFour.trim();
     this.saving.set(true);
-    this.api
-      .create({
+    const payload = {
         bankName: v.bankName.trim(),
         cardLabel: v.cardLabel.trim(),
         lastFour: lastFour.length === 4 ? lastFour : undefined,
@@ -64,12 +86,14 @@ export class AddCard {
         statementDay: v.statementDay,
         paymentDueDay: v.paymentDueDay,
         reminderTime: v.reminderTime.trim().slice(0, 5)
-      })
+      };
+    const request = this.isEdit ? this.api.updateCard(this.creditCardId, payload) : this.api.create(payload);
+    request
       .subscribe({
         next: () => {
           this.saving.set(false);
-          this.toast.success('Card saved.');
-          void this.router.navigateByUrl('/cards');
+          this.toast.success(this.isEdit ? 'Đã cập nhật thẻ.' : 'Đã thêm thẻ.');
+          void this.router.navigateByUrl('/bank-card');
         },
         error: err => {
           this.saving.set(false);

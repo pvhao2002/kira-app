@@ -50,6 +50,7 @@ export interface CreditCardPaymentDto {
   amount: number;
   note: string | null;
   createdAt: string | null;
+  statementCycleId: number | null;
 }
 
 export interface PaymentPageDto {
@@ -63,6 +64,157 @@ export interface PaymentPageDto {
 export interface CreatePaymentPayload {
   paidAt: string;
   amount: number;
+  note?: string | null;
+  statementCycleId?: number | null;
+}
+
+export type CashbackStatus = 'PENDING' | 'RECEIVED' | 'CANCELLED';
+export type StatementStatus = 'NOT_ISSUED' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE';
+
+export interface OverviewSummaryDto {
+  totalOutstandingBalance: number;
+  pendingCashbackAmount: number;
+  investedCostAmount: number;
+  realizedNetProfit: number;
+  activeCardCount: number;
+  pendingCashbackCount: number;
+}
+
+export interface CashbackRuleDto {
+  cashbackRuleId: number;
+  creditCardId: number;
+  cardLabel: string;
+  bankName: string;
+  lastFour: string;
+  mccCategoryId: number;
+  mccCode: string;
+  categoryName: string;
+  cashbackRate: number;
+  monthlyCapAmount: number | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  active: boolean;
+  note: string | null;
+}
+
+export interface MccCategoryDto {
+  mccCategoryId: number;
+  mccCode: string;
+  categoryName: string;
+  description: string | null;
+  active: boolean;
+  activeRuleCount: number;
+  bestCashbackRate: number;
+  rules: CashbackRuleDto[];
+}
+
+export interface CashbackTransactionDto {
+  transactionId: number;
+  creditCardId: number;
+  cardLabel: string;
+  bankName: string;
+  lastFour: string;
+  mccCategoryId: number | null;
+  mccCode: string | null;
+  mccCategoryName: string | null;
+  transactionDate: string;
+  customerName: string | null;
+  billReference: string | null;
+  description: string | null;
+  spendAmount: number;
+  discountRate: number;
+  discountAmount: number;
+  cashbackRate: number;
+  monthlyCapAmount: number | null;
+  expectedCashbackAmount: number;
+  actualCashbackAmount: number | null;
+  projectedNetProfit: number;
+  realizedNetProfit: number | null;
+  cashbackDueDate: string | null;
+  cashbackReceivedAt: string | null;
+  status: CashbackStatus;
+  note: string | null;
+}
+
+export interface CashbackTransactionPageDto {
+  content: CashbackTransactionDto[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface StatementCycleDto {
+  statementCycleId: number;
+  creditCardId: number;
+  cardLabel: string;
+  bankName: string;
+  lastFour: string;
+  cycleMonth: string;
+  statementDate: string;
+  dueDate: string;
+  statementAmount: number | null;
+  paidAmount: number;
+  remainingAmount: number;
+  statementIssuedAt: string | null;
+  status: StatementStatus;
+  daysUntilDue: number;
+  note: string | null;
+}
+
+export interface StatementCyclePageDto {
+  content: StatementCycleDto[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface BankCardOverviewDto {
+  summary: OverviewSummaryDto;
+  cards: CreditCardDto[];
+  latestStatements: StatementCycleDto[];
+  dueStatements: StatementCycleDto[];
+  recentTransactions: CashbackTransactionDto[];
+  mccCoverage: MccCategoryDto[];
+}
+
+export interface CreateCashbackTransactionPayload {
+  creditCardId: number;
+  mccCategoryId?: number | null;
+  transactionDate: string;
+  customerName?: string | null;
+  billReference?: string | null;
+  description?: string | null;
+  spendAmount: number;
+  discountRate: number;
+  manualCashbackRate?: number | null;
+  cashbackDueDate?: string | null;
+  note?: string | null;
+}
+
+export interface CashbackRulePayload {
+  creditCardId: number;
+  cashbackRate: number;
+  monthlyCapAmount?: number | null;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  note?: string | null;
+}
+
+export interface CreateMccCategoryPayload {
+  mccCode: string;
+  categoryName: string;
+  description?: string | null;
+  rules?: CashbackRulePayload[];
+}
+
+export interface CreateStatementCyclePayload {
+  cycleMonth: string;
+  statementDate?: string | null;
+  dueDate?: string | null;
+  statementAmount?: number | null;
+  statementIssuedAt?: string | null;
   note?: string | null;
 }
 
@@ -106,5 +258,86 @@ export class CreditCardApiService {
 
   deleteCard(creditCardId: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${creditCardId}`);
+  }
+
+  updateCard(creditCardId: number, body: Partial<CreateCreditCardPayload>): Observable<CreditCardDto> {
+    return this.http.patch<CreditCardDto>(`${this.base}/${creditCardId}`, body);
+  }
+
+  overview(month?: string): Observable<BankCardOverviewDto> {
+    const params = month ? new HttpParams().set('month', month) : undefined;
+    return this.http.get<BankCardOverviewDto>(`${this.base}/overview`, {params});
+  }
+
+  cashbackTransactions(filters: {
+    cardId?: number | null;
+    mccCategoryId?: number | null;
+    status?: string | null;
+    from?: string | null;
+    to?: string | null;
+    page?: number;
+    size?: number;
+  } = {}): Observable<CashbackTransactionPageDto> {
+    let params = new HttpParams()
+      .set('page', String(filters.page ?? 0))
+      .set('size', String(filters.size ?? 20));
+    if (filters.cardId) params = params.set('cardId', String(filters.cardId));
+    if (filters.mccCategoryId) params = params.set('mccCategoryId', String(filters.mccCategoryId));
+    if (filters.status) params = params.set('status', filters.status);
+    if (filters.from) params = params.set('from', filters.from);
+    if (filters.to) params = params.set('to', filters.to);
+    return this.http.get<CashbackTransactionPageDto>(`${this.base}/cashback-transactions`, {params});
+  }
+
+  createCashbackTransaction(body: CreateCashbackTransactionPayload): Observable<CashbackTransactionDto> {
+    return this.http.post<CashbackTransactionDto>(`${this.base}/cashback-transactions`, body);
+  }
+
+  receiveCashback(transactionId: number, actualCashbackAmount: number, receivedAt: string): Observable<CashbackTransactionDto> {
+    return this.http.post<CashbackTransactionDto>(`${this.base}/cashback-transactions/${transactionId}/receive`, {
+      actualCashbackAmount,
+      receivedAt,
+    });
+  }
+
+  cancelCashback(transactionId: number): Observable<CashbackTransactionDto> {
+    return this.http.post<CashbackTransactionDto>(`${this.base}/cashback-transactions/${transactionId}/cancel`, {});
+  }
+
+  statementCycles(filters: {
+    cardId?: number | null;
+    status?: string | null;
+    month?: string | null;
+    page?: number;
+    size?: number;
+  } = {}): Observable<StatementCyclePageDto> {
+    let params = new HttpParams()
+      .set('page', String(filters.page ?? 0))
+      .set('size', String(filters.size ?? 20));
+    if (filters.cardId) params = params.set('cardId', String(filters.cardId));
+    if (filters.status) params = params.set('status', filters.status);
+    if (filters.month) params = params.set('month', filters.month);
+    return this.http.get<StatementCyclePageDto>(`${this.base}/statement-cycles`, {params});
+  }
+
+  createStatementCycle(creditCardId: number, body: CreateStatementCyclePayload): Observable<StatementCycleDto> {
+    return this.http.post<StatementCycleDto>(`${this.base}/${creditCardId}/statement-cycles`, body);
+  }
+
+  updateStatementCycle(creditCardId: number, cycleId: number, body: Partial<CreateStatementCyclePayload>): Observable<StatementCycleDto> {
+    return this.http.patch<StatementCycleDto>(`${this.base}/${creditCardId}/statement-cycles/${cycleId}`, body);
+  }
+
+  mccCategories(activeOnly = true): Observable<MccCategoryDto[]> {
+    const params = new HttpParams().set('activeOnly', String(activeOnly));
+    return this.http.get<MccCategoryDto[]>(`${this.base}/mcc-categories`, {params});
+  }
+
+  createMccCategory(body: CreateMccCategoryPayload): Observable<MccCategoryDto> {
+    return this.http.post<MccCategoryDto>(`${this.base}/mcc-categories`, body);
+  }
+
+  deactivateMccCategory(categoryId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/mcc-categories/${categoryId}`);
   }
 }

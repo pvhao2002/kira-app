@@ -25,9 +25,11 @@ public class CreditCardService {
     private static final DateTimeFormatter REMINDER_FMT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final CreditCardRepository repo;
+    private final CreditCardWorkspaceRepository workspaceRepo;
 
-    public CreditCardService(CreditCardRepository repo) {
+    public CreditCardService(CreditCardRepository repo, CreditCardWorkspaceRepository workspaceRepo) {
         this.repo = repo;
+        this.workspaceRepo = workspaceRepo;
     }
 
     public CreditCardSummaryResponse summary(int userId) {
@@ -150,7 +152,8 @@ public class CreditCardService {
                         r.paidAt(),
                         r.amount(),
                         r.note(),
-                        r.createdAt()
+                        r.createdAt(),
+                        r.statementCycleId()
                 ))
                 .toList();
         return new PaymentPageResponse(content, safePage, safeSize, total, totalPages);
@@ -159,11 +162,17 @@ public class CreditCardService {
     public CreditCardPaymentResponse addPayment(int userId, long creditCardId, CreatePaymentRequest req) {
         repo.findByIdAndUserId(creditCardId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        if (req.statementCycleId() != null) {
+            workspaceRepo.findStatementCycle(userId, creditCardId, req.statementCycleId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Statement cycle does not belong to this card"));
+        }
         String note = req.note() != null && !req.note().isBlank() ? req.note().trim() : null;
-        long pid = repo.insertPayment(creditCardId, userId, req.paidAt(), req.amount(), note);
+        long pid = repo.insertPayment(creditCardId, userId, req.paidAt(), req.amount(), note, req.statementCycleId());
         var row = repo.findPayment(pid, creditCardId, userId)
                 .orElseThrow(() -> new IllegalStateException("payment insert not readable"));
-        return new CreditCardPaymentResponse(row.paymentId(), row.paidAt(), row.amount(), row.note(), row.createdAt());
+        return new CreditCardPaymentResponse(row.paymentId(), row.paidAt(), row.amount(), row.note(), row.createdAt(),
+                row.statementCycleId());
     }
 
     public void deletePayment(int userId, long creditCardId, long paymentId) {

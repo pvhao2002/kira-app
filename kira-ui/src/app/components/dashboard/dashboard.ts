@@ -119,6 +119,6 @@ export class Dashboard {
   }
 
   activityAllLink(): string {
-    return this.authService.isAdmin() ? '/events-history' : '/cards';
+    return this.authService.isAdmin() ? '/events-history' : '/bank-card';
   }
 }

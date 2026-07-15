@@ -190,7 +190,7 @@ public class CreditCardRepository {
 
     public List<CreditCardPaymentRow> findPaymentsPage(long creditCardId, int userId, int offset, int limit) {
         var sql = """
-                select p.payment_id, p.paid_at, p.amount, p.note, p.created_at
+                select p.payment_id, p.paid_at, p.amount, p.note, p.created_at, p.statement_cycle_id
                 from credit_card_payments p
                 where p.credit_card_id = :cid and p.user_id = :uid
                 order by p.paid_at desc, p.payment_id desc
@@ -204,14 +204,17 @@ public class CreditCardRepository {
                 this::mapPayment);
     }
 
-    public long insertPayment(long creditCardId, int userId, LocalDate paidAt, BigDecimal amount, String note) {
+    public long insertPayment(long creditCardId, int userId, LocalDate paidAt, BigDecimal amount,
+                              String note, Long statementCycleId) {
         var sql = """
-                insert into credit_card_payments (credit_card_id, user_id, paid_at, amount, note, created_at)
-                values (:cid, :uid, :paid_at, :amount, :note, :ca)
+                insert into credit_card_payments
+                    (credit_card_id, user_id, statement_cycle_id, paid_at, amount, note, created_at)
+                values (:cid, :uid, :statement_cycle_id, :paid_at, :amount, :note, :ca)
                 """;
         var params = new MapSqlParameterSource()
                 .addValue("cid", creditCardId)
                 .addValue("uid", userId)
+                .addValue("statement_cycle_id", statementCycleId)
                 .addValue("paid_at", paidAt)
                 .addValue("amount", amount)
                 .addValue("note", note)
@@ -237,7 +240,7 @@ public class CreditCardRepository {
 
     public Optional<CreditCardPaymentRow> findPayment(long paymentId, long creditCardId, int userId) {
         var sql = """
-                select payment_id, paid_at, amount, note, created_at
+                select payment_id, paid_at, amount, note, created_at, statement_cycle_id
                 from credit_card_payments
                 where payment_id = :pid and credit_card_id = :cid and user_id = :uid
                 limit 1
@@ -282,7 +285,8 @@ public class CreditCardRepository {
                 paid != null ? paid.toLocalDate() : null,
                 rs.getBigDecimal("amount"),
                 rs.getString("note"),
-                ca != null ? ca.toLocalDateTime() : null
+                ca != null ? ca.toLocalDateTime() : null,
+                (Long) rs.getObject("statement_cycle_id")
         );
     }
 
@@ -294,7 +298,8 @@ public class CreditCardRepository {
             LocalDate paidAt,
             BigDecimal amount,
             String note,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            Long statementCycleId
     ) {
     }
 }

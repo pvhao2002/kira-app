@@ -11,7 +11,7 @@ export interface NavItem {
 export const MAIN_NAV_ITEMS: NavItem[] = [
   {label: 'Home', path: '/dashboard', icon: 'home', roles: ['admin', 'user'], exact: true},
   {label: 'Soccer', path: '/soccer', icon: 'sports_soccer', roles: ['admin']},
-  {label: 'Credit card', path: '/cards', icon: 'credit_card', roles: ['admin', 'user']},
+  {label: 'Bank card', path: '/bank-card', icon: 'credit_card', roles: ['admin', 'user']},
   {label: 'Profile', path: '/profile', icon: 'person', roles: ['admin', 'user']},
   {label: 'Users', path: '/users', icon: 'people', roles: ['admin']},
   {label: 'Tool', path: '/tool', icon: 'build', roles: ['admin']},

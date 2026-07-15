@@ -1,0 +1,9 @@
+<section class="bank-workspace">
+  <nav class="bank-subnav" aria-label="Điều hướng quản lý thẻ">
+    <a routerLink="/bank-card" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="bank-subnav-active">Tổng quan</a>
+    <a routerLink="/bank-card/transactions" routerLinkActive="bank-subnav-active">Chi tiêu & hoàn tiền</a>
+    <a routerLink="/bank-card/statements" routerLinkActive="bank-subnav-active">Sao kê</a>
+    <a routerLink="/bank-card/mcc" routerLinkActive="bank-subnav-active">MCC</a>
+  </nav>
+  <router-outlet></router-outlet>
+</section>

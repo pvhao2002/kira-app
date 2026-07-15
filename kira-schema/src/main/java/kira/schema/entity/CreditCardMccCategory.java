@@ -12,51 +12,46 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "credit_card_payments",
-        indexes = {
-                @Index(name = "idx_ccp_card", columnList = "credit_card_id"),
-                @Index(name = "idx_ccp_user", columnList = "user_id")
-        })
+@Table(name = "credit_card_mcc_categories",
+        indexes = @Index(name = "idx_cc_mcc_user_active", columnList = "user_id,active"),
+        uniqueConstraints = @UniqueConstraint(name = "uk_cc_mcc_user_code", columnNames = {"user_id", "mcc_code"}))
 @Getter
 @Setter
 @NoArgsConstructor
-public class CreditCardPayment {
+public class CreditCardMccCategory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "payment_id")
-    private Long paymentId;
-
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "credit_card_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private CreditCard creditCard;
+    @Column(name = "mcc_category_id")
+    private Long mccCategoryId;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "statement_cycle_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private CreditCardStatementCycle statementCycle;
+    @Column(name = "mcc_code", nullable = false, length = 4)
+    private String mccCode;
 
-    @Column(name = "paid_at", nullable = false)
-    private LocalDate paidAt;
-
-    @Column(nullable = false, precision = 15, scale = 2)
-    private BigDecimal amount = BigDecimal.ZERO;
+    @Column(name = "category_name", nullable = false, length = 160)
+    private String categoryName;
 
     @Column(columnDefinition = "TEXT")
-    private String note;
+    private String description;
+
+    @Column(nullable = false)
+    private Boolean active = true;
 
     @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+    private LocalDateTime updatedAt;
 }

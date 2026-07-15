@@ -3,9 +3,16 @@ import {About} from './components/about/about';
 import {Login} from './components/login/login';
 import {Dashboard} from './components/dashboard/dashboard';
 import {Matches} from './components/matches/matches';
-import {Cards} from './components/cards/cards';
 import {AddCard} from './components/add-card/add-card';
 import {CardPayments} from './components/card-payments/card-payments';
+import {BankCardShell} from './components/bank-card-shell/bank-card-shell';
+import {BankCardOverview} from './components/bank-card-overview/bank-card-overview';
+import {BankCardTransactions} from './components/bank-card-transactions/bank-card-transactions';
+import {BankCardTransactionForm} from './components/bank-card-transaction-form/bank-card-transaction-form';
+import {BankCardStatements} from './components/bank-card-statements/bank-card-statements';
+import {BankCardStatementForm} from './components/bank-card-statement-form/bank-card-statement-form';
+import {BankCardMcc} from './components/bank-card-mcc/bank-card-mcc';
+import {BankCardMccForm} from './components/bank-card-mcc-form/bank-card-mcc-form';
 import {Profile} from './components/profile/profile';
 import {Transactions} from './components/transactions/transactions';
 import {Results} from './components/results/results';
@@ -45,9 +52,25 @@ export const routes: Routes = [
       {path: 'matches', component: Matches, ...adminOnly},
       {path: 'match/:id', component: MatchDetail, ...adminOnly},
       {path: 'results', component: Results, ...adminOnly},
-      {path: 'cards', component: Cards},
-      {path: 'cards/add', component: AddCard},
-      {path: 'cards/:creditCardId/payments', component: CardPayments},
+      {
+        path: 'bank-card',
+        component: BankCardShell,
+        children: [
+          {path: '', component: BankCardOverview, pathMatch: 'full'},
+          {path: 'transactions', component: BankCardTransactions},
+          {path: 'transactions/new', component: BankCardTransactionForm},
+          {path: 'statements', component: BankCardStatements},
+          {path: 'statements/new', component: BankCardStatementForm},
+          {path: 'mcc', component: BankCardMcc},
+          {path: 'mcc/new', component: BankCardMccForm},
+          {path: 'cards/new', component: AddCard},
+          {path: 'cards/:id/edit', component: AddCard},
+          {path: 'cards/:creditCardId/payments', component: CardPayments},
+        ]
+      },
+      {path: 'cards', redirectTo: 'bank-card', pathMatch: 'full'},
+      {path: 'cards/add', redirectTo: 'bank-card/cards/new', pathMatch: 'full'},
+      {path: 'cards/:creditCardId/payments', redirectTo: 'bank-card/cards/:creditCardId/payments', pathMatch: 'full'},
       {path: 'profile', component: Profile},
       {path: 'transactions', component: Transactions, ...adminOnly},
       {path: 'tool', component: Tools, ...adminOnly},

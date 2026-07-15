@@ -9,6 +9,7 @@ public record CreditCardPaymentResponse(
         LocalDate paidAt,
         BigDecimal amount,
         String note,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Long statementCycleId
 ) {
 }

@@ -23,7 +23,7 @@
       </p>
     </div>
     <div class="flex justify-start lg:justify-end items-center h-full relative z-10">
-      <a routerLink="/cards/add"
+      <a routerLink="/bank-card/cards/new"
          class="flex w-full lg:w-auto cursor-pointer items-center justify-center rounded-xl h-14 px-8 bg-blue-600 hover:bg-blue-700 transition-all duration-300 text-white gap-3 text-base font-bold shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 hover:-translate-y-1">
         <span class="material-symbols-outlined">add_card</span>
         <span>Add New Credit Card</span>
@@ -151,7 +151,7 @@
                   </td>
                   <td class="p-5 text-right">
                     <div class="flex justify-end gap-2 flex-wrap">
-                      <a [routerLink]="['/cards', card.creditCardId, 'payments']"
+                      <a [routerLink]="['/bank-card/cards', card.creditCardId, 'payments']"
                          class="text-xs font-bold uppercase text-blue-400 hover:text-blue-300 px-2 py-1 rounded-lg border border-blue-500/30 hover:bg-blue-500/10 transition-colors">
                         Payment History
                       </a>
