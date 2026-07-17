@@ -33,12 +33,14 @@
     "@tailwindcss/postcss": "^4.1.18",
     "ngx-toastr": "^19.1.0",
     "rxjs": "~7.8.0",
+    "three": "^0.185.1",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@angular/build": "^21.0.4",
     "@angular/cli": "^21.0.4",
     "@angular/compiler-cli": "^21.0.0",
+    "@types/three": "^0.185.1",
     "autoprefixer": "^10.4.23",
     "jsdom": "^27.1.0",
     "postcss": "^8.5.6",

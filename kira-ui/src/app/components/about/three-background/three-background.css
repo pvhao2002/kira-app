@@ -1,0 +1,20 @@
+:host,
+.three-host {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.three-host {
+  background:
+    radial-gradient(circle at 88% 42%, rgba(42, 119, 180, 0.14), transparent 32%),
+    radial-gradient(circle at 14% 86%, rgba(21, 88, 151, 0.11), transparent 31%),
+    linear-gradient(145deg, rgba(4, 10, 22, 0.2), rgba(11, 17, 33, 0.05));
+}
+
+.three-host.webgl-fallback {
+  background:
+    radial-gradient(circle at 85% 34%, rgba(63, 137, 196, 0.2), transparent 31%),
+    radial-gradient(circle at 10% 84%, rgba(32, 99, 164, 0.15), transparent 29%),
+    repeating-radial-gradient(circle at 92% 50%, rgba(121, 184, 255, 0.06) 0 1px, transparent 1px 18px);
+}

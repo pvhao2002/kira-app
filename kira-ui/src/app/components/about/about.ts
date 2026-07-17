@@ -9,7 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {ThreeBackground} from './three-background/three-background';
 
 interface SocialLink {
   label: string;
@@ -40,18 +40,9 @@ interface Project {
   repoLinks?: ProjectRepoLink[];
 }
 
-interface HeroStackIcon {
-  name: string;
-  icon: string;
-  color: string;
-  position: string;
-  delay: string;
-  duration: string;
-}
-
 @Component({
   selector: 'app-about',
-  imports: [],
+  imports: [ThreeBackground],
   templateUrl: './about.html',
   styleUrl: './about.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -73,17 +64,6 @@ export class About implements OnInit, AfterViewInit {
     {label: 'GitHub', url: 'https://github.com/pvhao2002', icon: 'code'},
     {label: 'LinkedIn', url: 'https://www.linkedin.com/in/haopv23/', icon: 'work'},
     {label: 'Email', url: 'mailto:hao.phamvan2308@gmail.com', icon: 'mail'},
-  ];
-
-  readonly heroStackIcons: HeroStackIcon[] = [
-    {name: 'Java', icon: 'coffee', color: '#f89820', position: 'top-[6%] left-[4%]', delay: '0s', duration: '16s'},
-    {name: 'Spring', icon: 'eco', color: '#6db33f', position: 'top-[38%] left-[2%]', delay: '-3s', duration: '20s'},
-    {name: 'JPA', icon: 'storage', color: '#6db33f', position: 'bottom-[18%] left-[6%]', delay: '-6s', duration: '18s'},
-    {name: 'Angular', icon: 'web', color: '#dd0031', position: 'top-[10%] right-[5%]', delay: '-2s', duration: '17s'},
-    {name: 'TypeScript', icon: 'javascript', color: '#3178c6', position: 'top-[45%] right-[3%]', delay: '-5s', duration: '19s'},
-    {name: 'RxJS', icon: 'sync', color: '#dd0031', position: 'bottom-[12%] right-[6%]', delay: '-8s', duration: '21s'},
-    {name: 'MySQL', icon: 'database', color: '#00758f', position: 'bottom-[32%] left-[12%]', delay: '-4s', duration: '22s'},
-    {name: 'REST API', icon: 'api', color: '#5382a1', position: 'top-[62%] right-[10%]', delay: '-7s', duration: '15s'},
   ];
 
   readonly skills: Skill[] = [
