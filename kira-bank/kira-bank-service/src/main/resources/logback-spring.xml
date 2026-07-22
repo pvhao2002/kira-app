@@ -1,0 +1,5 @@
+<configuration>
+  <property name="PATTERN" value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} level=%level service=kira-bank-service traceId=%X{traceId:-} logger=%logger{36} msg=%msg%n"/>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender"><encoder><pattern>${PATTERN}</pattern></encoder></appender>
+  <root level="INFO"><appender-ref ref="CONSOLE"/></root>
+</configuration>

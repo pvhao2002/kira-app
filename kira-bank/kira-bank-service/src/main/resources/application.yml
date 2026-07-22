@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: kira-bank-service
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/kira_bank?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:kira_bank}
+    password: ${DB_PASSWORD:change-me}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+  servlet.multipart:
+    max-file-size: 10MB
+    max-request-size: 10MB
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-stacktrace: never
+management.endpoints.web.exposure.include: health,info
+app:
+  jwt:
+    secret: ${JWT_SECRET:development-secret-must-have-at-least-32-characters}
+    access-ttl: PT15M
+    refresh-ttl: P30D
+  cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  seed-development-users: ${SEED_DEVELOPMENT_USERS:true}
+  refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+ai:
+  enabled: false
+  base-url: ${AI_BASE_URL:}
+  api-key: ${AI_API_KEY:}
+  connect-timeout: 5s
+  read-timeout: 30s
+springdoc.swagger-ui.path: /swagger-ui.html
