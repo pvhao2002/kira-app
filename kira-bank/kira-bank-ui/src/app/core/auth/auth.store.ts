@@ -7,9 +7,9 @@ import {AuthResponse, Profile} from '../../shared/models/api.models';
 export class AuthStore {
   private readonly http = inject(HttpClient);
   private readonly tokenState = signal<string | null>(null);
+  readonly token = this.tokenState.asReadonly();
   private readonly userState = signal<Profile | null>(null);
   readonly user = this.userState.asReadonly();
-  readonly token = this.tokenState.asReadonly();
   readonly authenticated = computed(() => this.userState() !== null);
   readonly admin = computed(() => this.userState()?.roles.includes('ROLE_ADMIN') ?? false);
 

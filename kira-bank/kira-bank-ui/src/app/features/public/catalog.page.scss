@@ -1,3 +1,9 @@
-:host { display: block; min-height: 100vh; }
-.catalog-grid, .result-grid { align-items: stretch; }
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.catalog-grid, .result-grid {
+  align-items: stretch;
+}
 

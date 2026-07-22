@@ -11,17 +11,17 @@ type Row = Record<string, unknown>;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ResourcePage {
-  private readonly route = inject(ActivatedRoute);
-  private readonly api = inject(ApiService);
-  readonly title = this.route.snapshot.data['title'] as string;
-  readonly apiPath = this.route.snapshot.data['api'] as string;
-  readonly flow = this.route.snapshot.data['flow'] as string;
   readonly flowLabel = this.flow === 'credit' ? 'FLOW 1 · THẺ TÍN DỤNG' : this.flow === 'investment' ? 'FLOW 2 · ĐẦU TƯ WEBSITE' : 'HỆ THỐNG';
   readonly loading = signal(true);
   readonly rows = signal<Row[]>([]);
   readonly total = signal(0);
   readonly open = signal(false);
   readonly columns = signal<string[]>([]);
+  private readonly route = inject(ActivatedRoute);
+  readonly title = this.route.snapshot.data['title'] as string;
+  readonly apiPath = this.route.snapshot.data['api'] as string;
+  readonly flow = this.route.snapshot.data['flow'] as string;
+  private readonly api = inject(ApiService);
 
   constructor() {
     this.api.page<Row>(this.apiPath).subscribe({
@@ -35,7 +35,10 @@ export class ResourcePage {
     });
   }
 
-  label(column: string): string { return column.replace(/([A-Z])/g, ' $1').replace(/^./, value => value.toUpperCase()); }
+  label(column: string): string {
+    return column.replace(/([A-Z])/g, ' $1').replace(/^./, value => value.toUpperCase());
+  }
+
   display(value: unknown): string {
     if (typeof value === 'number') return value.toLocaleString('vi-VN');
     if (value === null || value === undefined) return '—';

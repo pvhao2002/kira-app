@@ -12,16 +12,16 @@ import {AuthStore} from '../../core/auth/auth.store';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AuthPage {
-  private readonly route = inject(ActivatedRoute);
-  private readonly auth = inject(AuthStore);
-  private readonly router = inject(Router);
   readonly loading = signal(false);
-  readonly isRegister = this.route.snapshot.data['mode'] === 'register';
   readonly form = new FormGroup({
     fullName: new FormControl('', {nonNullable: true, validators: this.isRegister ? [Validators.required] : []}),
     email: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.email]}),
     password: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.minLength(8)]})
   });
+  private readonly route = inject(ActivatedRoute);
+  readonly isRegister = this.route.snapshot.data['mode'] === 'register';
+  private readonly auth = inject(AuthStore);
+  private readonly router = inject(Router);
 
   submit(): void {
     if (this.form.invalid) return;

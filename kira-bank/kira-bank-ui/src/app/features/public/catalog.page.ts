@@ -12,9 +12,6 @@ import {Bank, Card, FinderResult, Mcc} from '../../shared/models/api.models';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CatalogPage {
-  private readonly route = inject(ActivatedRoute);
-  private readonly api = inject(ApiService);
-  readonly type = this.route.snapshot.data['type'] as string;
   readonly title = this.type === 'banks' ? 'Danh sách ngân hàng' : this.type === 'cards' ? 'Danh mục thẻ tín dụng' : this.type === 'mcc' ? 'Tra cứu mã MCC' : 'Cashback Finder';
   readonly search = new FormControl('', {nonNullable: true});
   readonly mccId = new FormControl(1, {nonNullable: true});
@@ -22,6 +19,9 @@ export class CatalogPage {
   readonly items = signal<(Bank | Card | Mcc)[]>([]);
   readonly mccs = signal<Mcc[]>([]);
   readonly results = signal<FinderResult[]>([]);
+  private readonly route = inject(ActivatedRoute);
+  readonly type = this.route.snapshot.data['type'] as string;
+  private readonly api = inject(ApiService);
 
   constructor() {
     this.load();
@@ -42,7 +42,15 @@ export class CatalogPage {
     this.api.finder(this.mccId.value, this.amount.value).subscribe(response => this.results.set(response));
   }
 
-  name(item: Bank | Card | Mcc): string { return 'name' in item ? item.name : item.cardName; }
-  code(item: Bank | Card | Mcc): string { return 'code' in item ? item.code : item.cardNetwork; }
-  description(item: Bank | Card | Mcc): string { return item.description; }
+  name(item: Bank | Card | Mcc): string {
+    return 'name' in item ? item.name : item.cardName;
+  }
+
+  code(item: Bank | Card | Mcc): string {
+    return 'code' in item ? item.code : item.cardNetwork;
+  }
+
+  description(item: Bank | Card | Mcc): string {
+    return item.description;
+  }
 }

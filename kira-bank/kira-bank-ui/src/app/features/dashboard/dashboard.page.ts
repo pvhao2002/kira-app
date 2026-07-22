@@ -1,6 +1,11 @@
 import {ChangeDetectionStrategy, Component} from '@angular/core';
 
-interface Kpi { label: string; value: string; trend: string; icon: string }
+interface Kpi {
+  label: string;
+  value: string;
+  trend: string;
+  icon: string
+}
 
 @Component({
   selector: 'app-dashboard',
