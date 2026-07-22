@@ -1,0 +1,32 @@
+<div class="app-layout" [class.sidebar-open]="menuOpen()">
+  <aside>
+    <a routerLink="/app" class="brand"><span class="brand-mark">K</span>Kira Bank</a>
+    <button class="close-menu" (click)="menuOpen.set(false)" aria-label="Đóng menu">×</button>
+    <nav class="side-nav">
+      <a routerLink="/app" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="active"><span>⌂</span>Tổng quan</a>
+      @for (group of nav; track group.label) {
+        <div class="nav-group"><small [class]="group.flow">{{ group.label }}</small>
+          @for (item of group.items; track item.path) { <a [routerLink]="item.path" routerLinkActive="active" (click)="menuOpen.set(false)"><span>{{ item.icon }}</span>{{ item.label }}</a> }
+        </div>
+      }
+    </nav>
+    <div class="secure-note"><span>◈</span><div><b>Kết nối bảo mật</b><small>Dữ liệu được bảo vệ</small></div></div>
+  </aside>
+
+  <div class="page-area">
+    <header class="topbar">
+      <button class="menu-button" (click)="menuOpen.set(true)" aria-label="Mở menu">☰</button>
+      <div class="global-search">⌕ <input placeholder="Tìm giao dịch, sao kê, nhiệm vụ…" aria-label="Tìm kiếm toàn cục"><kbd>⌘ K</kbd></div>
+      <div class="top-actions">
+        <button (click)="cycleTheme()" [attr.aria-label]="'Theme ' + theme()">{{ themeIcon() }}</button>
+        <a routerLink="/app/notifications" aria-label="Thông báo">♢<i></i></a>
+        <button class="avatar" (click)="userMenu.set(!userMenu())">{{ initials() }}</button>
+      </div>
+      @if (userMenu()) { <div class="user-menu"><b>{{ auth.user()?.fullName }}</b><small>{{ auth.user()?.email }}</small><a routerLink="/app/profile">Hồ sơ cá nhân</a><button (click)="logout()">Đăng xuất</button></div> }
+    </header>
+    <main class="app-main"><router-outlet /></main>
+  </div>
+
+  @if (menuOpen()) { <button class="overlay" (click)="menuOpen.set(false)" aria-label="Đóng menu"></button> }
+  @if (toast.current(); as currentToast) { <div class="toast" [class]="currentToast.kind">{{ currentToast.message }}</div> }
+</div>

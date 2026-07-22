@@ -1,0 +1,18 @@
+<main class="auth-wrap">
+  <a routerLink="/" class="brand"><span class="brand-mark">K</span>Kira Bank</a>
+  <section class="auth-card">
+    <span class="eyebrow">{{ isRegister ? 'Tạo không gian tài chính' : 'Chào mừng trở lại' }}</span>
+    <h1>{{ isRegister ? 'Bắt đầu với Kira Bank' : 'Đăng nhập tài khoản' }}</h1>
+    <p>{{ isRegister ? 'Miễn phí, riêng tư và sẵn sàng trong vài phút.' : 'Tiếp tục quản lý hai dòng tiền tách bạch.' }}</p>
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      @if (isRegister) {
+        <label>Họ và tên<input formControlName="fullName" autocomplete="name" placeholder="Nguyễn Văn A"></label>
+      }
+      <label>Email<input formControlName="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+      <label>Mật khẩu<input formControlName="password" type="password" autocomplete="current-password" placeholder="Tối thiểu 8 ký tự"></label>
+      @if (form.invalid && form.touched) { <div class="form-error">Vui lòng kiểm tra lại các trường bắt buộc.</div> }
+      <button class="btn primary submit" [disabled]="form.invalid || loading()">{{ loading() ? 'Đang xử lý…' : (isRegister ? 'Tạo tài khoản' : 'Đăng nhập') }}</button>
+    </form>
+    <p class="auth-swap">{{ isRegister ? 'Đã có tài khoản?' : 'Chưa có tài khoản?' }} <a [routerLink]="isRegister ? '/login' : '/register'">{{ isRegister ? 'Đăng nhập' : 'Đăng ký ngay' }}</a></p>
+  </section>
+</main>

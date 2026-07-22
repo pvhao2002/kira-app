@@ -1,6 +1,33 @@
-import { ChangeDetectionStrategy,Component,inject,signal } from '@angular/core';import { FormControl,FormGroup,ReactiveFormsModule,Validators } from '@angular/forms';import { ActivatedRoute,Router,RouterLink } from '@angular/router';import { finalize } from 'rxjs';import { AuthStore } from '../../core/auth/auth.store';
-@Component({selector:'app-auth',imports:[ReactiveFormsModule,RouterLink],template:`<main class="auth-wrap"><a routerLink="/" class="brand"><span class="brand-mark">K</span>Kira Bank</a><section class="auth-card"><span class="eyebrow">{{isRegister?'Tạo không gian tài chính':'Chào mừng trở lại'}}</span><h1>{{isRegister?'Bắt đầu với Kira Bank':'Đăng nhập tài khoản'}}</h1><p>{{isRegister?'Miễn phí, riêng tư và sẵn sàng trong vài phút.':'Tiếp tục quản lý hai dòng tiền tách bạch.'}}</p><form [formGroup]="form" (ngSubmit)="submit()">
-@if(isRegister){<label>Họ và tên<input formControlName="fullName" autocomplete="name" placeholder="Nguyễn Văn A"></label>}<label>Email<input formControlName="email" type="email" autocomplete="email" placeholder="you@example.com"></label><label>Mật khẩu<input formControlName="password" type="password" autocomplete="current-password" placeholder="Tối thiểu 8 ký tự"></label>
-@if(form.invalid&&form.touched){<div class="form-error">Vui lòng kiểm tra lại các trường bắt buộc.</div>}<button class="btn primary submit" [disabled]="form.invalid||loading()">{{loading()?'Đang xử lý…':(isRegister?'Tạo tài khoản':'Đăng nhập')}}</button></form><p class="auth-swap">{{isRegister?'Đã có tài khoản?':'Chưa có tài khoản?'}} <a [routerLink]="isRegister?'/login':'/register'">{{isRegister?'Đăng nhập':'Đăng ký ngay'}}</a></p></section></main>`,changeDetection:ChangeDetectionStrategy.OnPush})
-export class AuthPage{private route=inject(ActivatedRoute);private auth=inject(AuthStore);private router=inject(Router);readonly loading=signal(false);readonly isRegister=this.route.snapshot.data['mode']==='register';readonly form=new FormGroup({fullName:new FormControl('',{nonNullable:true,validators:this.isRegister?[Validators.required]:[]}),email:new FormControl('',{nonNullable:true,validators:[Validators.required,Validators.email]}),password:new FormControl('',{nonNullable:true,validators:[Validators.required,Validators.minLength(8)]})});submit():void{if(this.form.invalid)return;this.loading.set(true);const v=this.form.getRawValue();const request=this.isRegister?this.auth.register(v):this.auth.login(v);request.pipe(finalize(()=>this.loading.set(false))).subscribe(()=>this.router.navigateByUrl('/app'));}}
+import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
+import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {ActivatedRoute, Router, RouterLink} from '@angular/router';
+import {finalize} from 'rxjs';
+import {AuthStore} from '../../core/auth/auth.store';
 
+@Component({
+  selector: 'app-auth',
+  imports: [ReactiveFormsModule, RouterLink],
+  templateUrl: './auth.page.html',
+  styleUrl: './auth.page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class AuthPage {
+  private readonly route = inject(ActivatedRoute);
+  private readonly auth = inject(AuthStore);
+  private readonly router = inject(Router);
+  readonly loading = signal(false);
+  readonly isRegister = this.route.snapshot.data['mode'] === 'register';
+  readonly form = new FormGroup({
+    fullName: new FormControl('', {nonNullable: true, validators: this.isRegister ? [Validators.required] : []}),
+    email: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.email]}),
+    password: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.minLength(8)]})
+  });
+
+  submit(): void {
+    if (this.form.invalid) return;
+    this.loading.set(true);
+    const value = this.form.getRawValue();
+    const request = this.isRegister ? this.auth.register(value) : this.auth.login(value);
+    request.pipe(finalize(() => this.loading.set(false))).subscribe(() => this.router.navigateByUrl('/app'));
+  }
+}

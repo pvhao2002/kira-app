@@ -1,0 +1,33 @@
+<header class="public-nav">
+  <a routerLink="/" class="brand"><span class="brand-mark">K</span>Kira Bank</a>
+  <nav aria-label="Điều hướng danh mục"><a routerLink="/banks">Ngân hàng</a><a routerLink="/cards">Thẻ tín dụng</a><a routerLink="/mcc">MCC</a><a routerLink="/cashback-finder">Cashback Finder</a></nav>
+  <a routerLink="/login" class="btn primary">Đăng nhập</a>
+</header>
+
+<main class="catalog">
+  <span class="eyebrow">Dữ liệu công khai</span>
+  <h1>{{ title }}</h1>
+  <p>Tra cứu minh bạch, cập nhật theo điều kiện và thời hạn hiệu lực của từng chương trình.</p>
+  <div class="search-row"><input [formControl]="search" placeholder="Tìm theo tên hoặc mã…"><button class="btn primary" (click)="load()">Tìm kiếm</button></div>
+
+  @switch (type) {
+    @case ('finder') {
+      <section class="finder-panel">
+        <label>Chọn MCC<select [formControl]="mccId">@for (mcc of mccs(); track mcc.id) { <option [value]="mcc.id">{{ mcc.code }} — {{ mcc.name }}</option> }</select></label>
+        <label>Số tiền dự kiến<input type="number" [formControl]="amount"></label>
+        <button class="btn primary" (click)="find()">So sánh cashback</button>
+      </section>
+      <div class="result-grid">
+        @for (result of results(); track result.ruleId) {
+          <article class="result-card"><span class="pill">{{ result.card.cardNetwork }}</span><h2>{{ result.card.cardName }}</h2><strong>{{ result.estimatedCashback.toLocaleString('vi-VN') }} ₫</strong><p>{{ result.rate * 100 }}% · Hạn mức {{ result.cap?.toLocaleString('vi-VN') ?? 'Không giới hạn' }} ₫</p><small>{{ result.conditions }}</small></article>
+        } @empty { <div class="empty">Nhập thông tin để xem thẻ phù hợp nhất.</div> }
+      </div>
+    }
+    @default {
+      <div class="catalog-grid">
+        @for (item of items(); track item.id) { <article class="catalog-card"><span class="code">{{ code(item) }}</span><h2>{{ name(item) }}</h2><p>{{ description(item) }}</p><button class="text-link">Xem chi tiết →</button></article> }
+        @empty { <div class="empty">Không tìm thấy dữ liệu phù hợp.</div> }
+      </div>
+    }
+  }
+</main>

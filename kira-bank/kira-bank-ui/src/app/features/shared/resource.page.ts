@@ -1,4 +1,44 @@
-import { ChangeDetectionStrategy,Component,inject,signal } from '@angular/core';import { ActivatedRoute } from '@angular/router';import { ApiService } from '../../core/services/api.service';
-type Row=Record<string,unknown>;
-@Component({selector:'app-resource',template:`<section class="page-heading"><div><span class="eyebrow">{{flowLabel}}</span><h1>{{title}}</h1><p>Theo dõi, tìm kiếm và đối soát dữ liệu của riêng bạn.</p></div><button class="btn primary" (click)="open.set(true)">＋ Thêm mới</button></section><section class="panel data-panel"><div class="table-tools"><div class="search-box">⌕ <input placeholder="Tìm kiếm…"></div><button class="btn ghost">Bộ lọc</button><button class="btn ghost">Xuất dữ liệu</button></div>@if(loading()){<div class="skeleton table-skeleton"></div>}@else if(rows().length){<div class="responsive-table"><table><thead><tr>@for(col of columns();track col){<th>{{label(col)}}</th>}<th>Thao tác</th></tr></thead><tbody>@for(row of rows();track $index){<tr>@for(col of columns();track col){<td>@if(col==='status'){<span class="status">{{row[col]}}</span>}@else{ {{display(row[col])}} }</td>}<td><button class="icon-button">•••</button></td></tr>}</tbody></table></div><footer class="pagination"><span>{{rows().length}} / {{total()}} bản ghi</span><div><button disabled>‹</button><b>1</b><button>›</button></div></footer>}@else{<div class="empty-state"><span>☷</span><h2>Chưa có dữ liệu</h2><p>Thêm bản ghi đầu tiên để bắt đầu theo dõi và đối soát.</p><button class="btn primary" (click)="open.set(true)">Thêm mới</button></div>}</section>@if(open()){<div class="dialog-backdrop" (click)="open.set(false)"><section class="dialog" (click)="$event.stopPropagation()"><header><div><small>{{flowLabel}}</small><h2>Tạo bản ghi mới</h2></div><button (click)="open.set(false)">×</button></header><p>Form nghiệp vụ sẽ kiểm tra dữ liệu và gửi mọi phép tính tài chính về backend để xác nhận.</p><label>Tham chiếu<input placeholder="Mã tham chiếu duy nhất"></label><label>Ghi chú<textarea rows="4" placeholder="Thông tin bổ sung"></textarea></label><footer><button class="btn ghost" (click)="open.set(false)">Hủy</button><button class="btn primary">Lưu bản ghi</button></footer></section></div>}`,changeDetection:ChangeDetectionStrategy.OnPush})
-export class ResourcePage{private route=inject(ActivatedRoute);private api=inject(ApiService);readonly title=this.route.snapshot.data['title']as string;readonly apiPath=this.route.snapshot.data['api']as string;readonly flow=this.route.snapshot.data['flow']as string;readonly flowLabel=this.flow==='credit'?'FLOW 1 · THẺ TÍN DỤNG':this.flow==='investment'?'FLOW 2 · ĐẦU TƯ WEBSITE':'HỆ THỐNG';readonly loading=signal(true);readonly rows=signal<Row[]>([]);readonly total=signal(0);readonly open=signal(false);readonly columns=signal<string[]>([]);constructor(){this.api.page<Row>(this.apiPath).subscribe({next:r=>{this.rows.set(r.data);this.total.set(r.meta.totalElements);this.columns.set(r.data[0]?Object.keys(r.data[0]).filter(x=>!['note','deletedAt'].includes(x)).slice(0,6):[]);this.loading.set(false);},error:()=>this.loading.set(false)});}label(c:string):string{return c.replace(/([A-Z])/g,' $1').replace(/^./,x=>x.toUpperCase());}display(v:unknown):string{if(typeof v==='number')return v.toLocaleString('vi-VN');if(v===null||v===undefined)return '—';return String(v);}}
+import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
+import {ApiService} from '../../core/services/api.service';
+
+type Row = Record<string, unknown>;
+
+@Component({
+  selector: 'app-resource',
+  templateUrl: './resource.page.html',
+  styleUrl: './resource.page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class ResourcePage {
+  private readonly route = inject(ActivatedRoute);
+  private readonly api = inject(ApiService);
+  readonly title = this.route.snapshot.data['title'] as string;
+  readonly apiPath = this.route.snapshot.data['api'] as string;
+  readonly flow = this.route.snapshot.data['flow'] as string;
+  readonly flowLabel = this.flow === 'credit' ? 'FLOW 1 · THẺ TÍN DỤNG' : this.flow === 'investment' ? 'FLOW 2 · ĐẦU TƯ WEBSITE' : 'HỆ THỐNG';
+  readonly loading = signal(true);
+  readonly rows = signal<Row[]>([]);
+  readonly total = signal(0);
+  readonly open = signal(false);
+  readonly columns = signal<string[]>([]);
+
+  constructor() {
+    this.api.page<Row>(this.apiPath).subscribe({
+      next: response => {
+        this.rows.set(response.data);
+        this.total.set(response.meta.totalElements);
+        this.columns.set(response.data[0] ? Object.keys(response.data[0]).filter(column => !['note', 'deletedAt'].includes(column)).slice(0, 6) : []);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false)
+    });
+  }
+
+  label(column: string): string { return column.replace(/([A-Z])/g, ' $1').replace(/^./, value => value.toUpperCase()); }
+  display(value: unknown): string {
+    if (typeof value === 'number') return value.toLocaleString('vi-VN');
+    if (value === null || value === undefined) return '—';
+    return String(value);
+  }
+}

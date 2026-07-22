@@ -1,0 +1,50 @@
+<header class="public-nav">
+  <a routerLink="/" class="brand"><span class="brand-mark">K</span>Kira Bank</a>
+  <nav aria-label="Điều hướng công khai">
+    <a routerLink="/banks">Ngân hàng</a>
+    <a routerLink="/cards">Thẻ tín dụng</a>
+    <a routerLink="/mcc">Tra cứu MCC</a>
+    <a routerLink="/cashback-finder">Cashback Finder</a>
+  </nav>
+  <div class="nav-actions">
+    <a routerLink="/login" class="btn ghost">Đăng nhập</a>
+    <a routerLink="/register" class="btn primary">Bắt đầu miễn phí</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">Tài chính rõ ràng · Quyết định tự tin</span>
+      <h1>Kiểm soát dòng tiền.<br><span>Tối ưu từng lợi ích.</span></h1>
+      <p>Kira Bank gom việc theo dõi thẻ tín dụng và hoạt động đầu tư vào một không gian an toàn — nhưng giữ Capital, Profit, Reward và Cashback đúng bản chất.</p>
+      <div class="hero-actions">
+        <a routerLink="/register" class="btn primary large">Tạo tài khoản <span>→</span></a>
+        <a routerLink="/cashback-finder" class="btn ghost large">Tìm thẻ hoàn tiền</a>
+      </div>
+      <div class="trust">
+        <span>✓ Không lưu số thẻ đầy đủ</span>
+        <span>✓ Dữ liệu tách biệt theo người dùng</span>
+        <span>✓ Ledger chống ghi nhận trùng</span>
+      </div>
+    </div>
+    <div class="preview-card">
+      <div class="preview-top"><div><small>Tổng quan tháng 7</small><h3>Hiệu suất tài chính</h3></div><span class="live">● Đã cập nhật</span></div>
+      <div class="mini-kpis">
+        <article><small>Cashback đã nhận</small><strong>5.240.000 ₫</strong><em>+12,4%</em></article>
+        <article><small>Profit đầu tư</small><strong>8.650.000 ₫</strong><em>+8,7%</em></article>
+      </div>
+      <div class="chart"><div class="bars">@for (height of chartHeights; track $index) { <i [style.height.px]="height"></i> }</div></div>
+      <div class="separation">
+        <span class="dot credit"></span><div><b>Thẻ tín dụng</b><small>Cashback và dư nợ</small></div>
+        <span class="dot invest"></span><div><b>Đầu tư website</b><small>Capital, Profit, Reward</small></div>
+      </div>
+    </div>
+  </section>
+  <section class="value-grid">
+    <article><span>01</span><h2>Tách bạch hai dòng tiền</h2><p>Không bao giờ trộn cashback ngân hàng với reward đầu tư hoặc coi capital hoàn lại là lợi nhuận.</p></article>
+    <article><span>02</span><h2>Đối soát đến từng giao dịch</h2><p>Sao kê, thanh toán nhiều lần, settlement và ledger đều có lịch sử minh bạch.</p></article>
+    <article><span>03</span><h2>Bảo mật từ nền tảng</h2><p>JWT rotation, ownership check và audit log bảo vệ mọi dữ liệu tài chính cá nhân.</p></article>
+  </section>
+</main>
+<footer>© 2026 Kira Bank · Quản lý tài chính có nguyên tắc</footer>
