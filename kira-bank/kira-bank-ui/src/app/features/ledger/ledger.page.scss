@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+.account-filter {
+  width: min(300px, 100%);
+}
+
+.account-filter span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.account-filter select {
+  width: 100%;
+}
+
+.resource-notice {
+  margin: -10px 0 18px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--blue) 6%, var(--surface));
+  color: var(--muted);
+  font-size: 12px;
+}

@@ -1,15 +1,23 @@
 <section class="page-heading">
-  <div><span class="eyebrow">{{ flowLabel }}</span>
+  <div>
+    <span class="eyebrow">{{ flowLabel }}</span>
     <h1>{{ title }}</h1>
-    <p>Theo dõi, tìm kiếm và đối soát dữ liệu của riêng bạn.</p></div>
-  <button (click)="open.set(true)" class="btn primary">＋ Thêm mới</button>
+    <p>{{ i18n.t('resource.description') }}</p>
+  </div>
+  @if (definition.create) {
+    <button (click)="openCreate()" class="btn primary" type="button">＋ {{ i18n.t('common.addNew') }}</button>
+  }
 </section>
+
+@if (definition.readOnlyKey) {
+  <div class="resource-notice">ⓘ {{ i18n.t(definition.readOnlyKey) }}</div>
+}
 
 <section class="panel data-panel">
   <div class="table-tools">
-    <div class="search-box">⌕ <input placeholder="Tìm kiếm…"></div>
-    <button class="btn ghost">Bộ lọc</button>
-    <button class="btn ghost">Xuất dữ liệu</button>
+    <div class="search-box">⌕ <input [placeholder]="i18n.t('resource.searchPlaceholder')"></div>
+    <button class="btn ghost" type="button">{{ i18n.t('common.filter') }}</button>
+    <button class="btn ghost" type="button">{{ i18n.t('common.export') }}</button>
   </div>
   @if (loading()) {
     <div class="skeleton table-skeleton"></div>
@@ -17,60 +25,132 @@
     <div class="responsive-table">
       <table>
         <thead>
-        <tr>@for (column of columns(); track column) {
-          <th>{{ label(column) }}</th>
-        }
-          <th>Thao tác</th>
+        <tr>
+          @for (column of columns(); track column) {
+            <th>{{ label(column) }}</th>
+          }
+          @if (definition.edit || availableActions.length) {
+            <th>{{ i18n.t('common.actions') }}</th>
+          }
         </tr>
         </thead>
         <tbody>
-          @for (row of rows(); track $index) {
-            <tr>@for (column of columns(); track column) {
-              <td>@if (column === 'status') {
-                <span class="status">{{ row[column] }}</span>
-              } @else {
-                {{ display(row[column]) }}
-              }</td>
-            }
-              <td>
-                <button class="icon-button">•••</button>
-              </td>
+          @for (row of rows(); track row['id'] ?? $index) {
+            <tr>
+              @for (column of columns(); track column) {
+                <td>
+                  @if (column === 'status') {
+                    <span class="status">{{ row[column] }}</span>
+                  } @else {
+                    {{ display(row[column]) }}
+                  }
+                </td>
+              }
+              @if (definition.edit || availableActions.length) {
+                <td>
+                  <div class="row-actions">
+                    @if (definition.edit) {
+                      <button (click)="openEdit(row)"
+                              [attr.aria-label]="i18n.t('common.edit')"
+                              class="icon-button"
+                              type="button">{{ i18n.t('common.edit') }}</button>
+                    }
+                    @for (action of availableActions; track action.key) {
+                      @if (isActionVisible(action, row)) {
+                        <button (click)="openAction(action, row)"
+                                class="icon-button"
+                                type="button">{{ i18n.t(action.labelKey) }}</button>
+                      }
+                    }
+                  </div>
+                </td>
+              }
             </tr>
           }
         </tbody>
       </table>
     </div>
-    <footer class="pagination"><span>{{ rows().length }} / {{ total() }} bản ghi</span>
+    <footer class="pagination">
+      <span>{{ i18n.t('resource.recordCount', {shown: rows().length, total: total()}) }}</span>
       <div>
-        <button disabled>‹</button>
+        <button [attr.aria-label]="i18n.t('common.previous')" disabled>‹</button>
         <b>1</b>
-        <button>›</button>
+        <button [attr.aria-label]="i18n.t('common.next')">›</button>
       </div>
     </footer>
   } @else {
-    <div class="empty-state"><span>☷</span>
-      <h2>Chưa có dữ liệu</h2>
-      <p>Thêm bản ghi đầu tiên để bắt đầu theo dõi và đối soát.</p>
-      <button (click)="open.set(true)" class="btn primary">Thêm mới</button>
+    <div class="empty-state">
+      <span>☷</span>
+      <h2>{{ i18n.t('resource.emptyTitle') }}</h2>
+      <p>{{ definition.create ? i18n.t('resource.emptyBody') : i18n.t('resource.emptyReadOnlyBody') }}</p>
+      @if (definition.create) {
+        <button (click)="openCreate()" class="btn primary" type="button">{{ i18n.t('common.addNew') }}</button>
+      }
     </div>
   }
 </section>
 
-@if (open()) {
-  <div (click)="open.set(false)" class="dialog-backdrop">
-    <section (click)="$event.stopPropagation()" class="dialog">
-      <header>
-        <div><small>{{ flowLabel }}</small>
-          <h2>Tạo bản ghi mới</h2></div>
-        <button (click)="open.set(false)">×</button>
-      </header>
-      <p>Form nghiệp vụ sẽ kiểm tra dữ liệu và gửi mọi phép tính tài chính về backend để xác nhận.</p>
-      <label>Tham chiếu<input placeholder="Mã tham chiếu duy nhất"></label><label>Ghi chú<textarea placeholder="Thông tin bổ sung"
-                                                                                                   rows="4"></textarea></label>
-      <footer>
-        <button (click)="open.set(false)" class="btn ghost">Hủy</button>
-        <button class="btn primary">Lưu bản ghi</button>
-      </footer>
+@if (loadingDetail()) {
+  <div class="dialog-backdrop">
+    <section class="dialog detail-loading">
+      <div class="skeleton"></div>
     </section>
+  </div>
+}
+
+@if (open() && activeForm(); as definitionForm) {
+  <div (click)="closeDialog()" class="dialog-backdrop">
+    <form (click)="$event.stopPropagation()"
+          (ngSubmit)="submit()"
+          [formGroup]="form"
+          class="dialog resource-dialog">
+      <header>
+        <div>
+          <small>{{ flowLabel }}</small>
+          <h2>{{ i18n.t(definitionForm.titleKey) }}</h2>
+        </div>
+        <button (click)="closeDialog()" [attr.aria-label]="i18n.t('common.close')" type="button">×</button>
+      </header>
+      <p>{{ i18n.t(definitionForm.descriptionKey) }}</p>
+
+      <div class="resource-form-grid">
+        @for (field of definitionForm.fields; track field.name) {
+          <label [class.full-width]="field.type === 'textarea'">
+            <span>{{ i18n.t(field.labelKey) }} @if (field.required) { <b>*</b> }</span>
+            @if (field.type === 'textarea') {
+              <textarea [formControlName]="field.name" rows="4"></textarea>
+            } @else if (field.type === 'select') {
+              <select [formControlName]="field.name">
+                <option [ngValue]="null">{{ i18n.t('form.selectPlaceholder') }}</option>
+                @for (option of options(field); track option.value) {
+                  <option [ngValue]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            } @else {
+              <input [attr.max]="field.max ?? null"
+                     [attr.maxlength]="field.maxLength ?? null"
+                     [attr.min]="field.min ?? null"
+                     [attr.step]="field.type === 'number' ? '1' : field.type === 'percentage' ? '0.01' : field.type === 'money' ? '0.01' : null"
+                     [formControlName]="field.name"
+                     [type]="field.type === 'date' ? 'date' : field.type === 'datetime' ? 'datetime-local' : ['number', 'money', 'percentage'].includes(field.type) ? 'number' : 'text'">
+            }
+            @if (fieldError(field)) {
+              <small class="field-error">{{ fieldError(field) }}</small>
+            }
+          </label>
+        }
+      </div>
+
+      @if (formError()) {
+        <div class="form-error">{{ formError() }}</div>
+      }
+
+      <footer>
+        <button (click)="closeDialog()" class="btn ghost" type="button">{{ i18n.t('common.cancel') }}</button>
+        <button [disabled]="saving()" class="btn primary" type="submit">
+          {{ saving() ? i18n.t('form.saving') : i18n.t('common.save') }}
+        </button>
+      </footer>
+    </form>
   </div>
 }

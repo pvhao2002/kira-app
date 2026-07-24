@@ -49,6 +49,28 @@ public class CreditCardService {
         return page(x);
     }
 
+    @Transactional(readOnly = true)
+    public CardResponse card(Long user, Long id) {
+        return cardDto(ownCard(id, user));
+    }
+
+    @Transactional
+    public CardResponse updateCard(Long user, Long id, UpdateCardRequest r) {
+        UserCreditCard c = ownCard(id, user);
+        if (c.getVersion() != r.version())
+            throw new ApiException(HttpStatus.CONFLICT, "CARD_VERSION_CONFLICT", "Dữ liệu thẻ đã được cập nhật ở phiên khác");
+        if (!java.util.Set.of("ACTIVE", "INACTIVE", "CLOSED").contains(r.status()))
+            throw invalid("INVALID_CARD_STATUS", "Trạng thái thẻ không hợp lệ");
+        c.setNickname(r.nickname());
+        c.setLastFour(r.lastFour());
+        c.setCreditLimit(money(r.creditLimit()));
+        c.setStatementDay(r.statementDay());
+        c.setDueDay(r.dueDay());
+        c.setNote(r.note());
+        c.setStatus(r.status());
+        return cardDto(c);
+    }
+
     @Transactional
     public CardTransaction transaction(Long user, TransactionRequest r) {
         ownCard(r.userCardId(), user);
@@ -189,7 +211,8 @@ public class CreditCardService {
     }
 
     private CardResponse cardDto(UserCreditCard c) {
-        return new CardResponse(c.getId(), c.getCardCatalogId(), c.getNickname(), c.getLastFour(), c.getCreditLimit(), c.getCurrency(), c.getStatementDay(), c.getDueDay(), c.getStatus(), c.getVersion());
+        return new CardResponse(c.getId(), c.getCardCatalogId(), c.getNickname(), c.getLastFour(), c.getCreditLimit(),
+                c.getCurrency(), c.getStatementDay(), c.getDueDay(), c.getStatus(), c.getNote(), c.getVersion());
     }
 
     private StatementResponse statementDto(Statement s) {

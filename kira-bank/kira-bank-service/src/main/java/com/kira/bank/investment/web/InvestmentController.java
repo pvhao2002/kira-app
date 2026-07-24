@@ -28,6 +28,16 @@ public class InvestmentController {
         return service.accounts(user, p);
     }
 
+    @GetMapping("/accounts/{id}")
+    Object account(@AuthenticationPrincipal Long user, @PathVariable Long id) {
+        return service.accountDetails(user, id);
+    }
+
+    @PutMapping("/accounts/{id}")
+    Object updateAccount(@AuthenticationPrincipal Long user, @PathVariable Long id, @Valid @RequestBody UpdateAccountRequest r) {
+        return service.updateAccount(user, id, r);
+    }
+
     @GetMapping("/platforms")
     Object platforms(@PageableDefault(size = 20, sort = "name") Pageable p) {
         return service.platforms(p);

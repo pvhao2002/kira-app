@@ -1,0 +1,50 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('resource.flowInvestment') }}</span>
+    <h1>{{ i18n.t('route.investmentLedger') }}</h1>
+    <p>{{ i18n.t('ledger.description') }}</p>
+  </div>
+  <label class="account-filter">
+    <span>{{ i18n.t('field.account') }}</span>
+    <select (change)="load()" [formControl]="accountId">
+      @for (account of accounts(); track account['id']) {
+        <option [ngValue]="account['id']">{{ account['accountName'] }}</option>
+      }
+    </select>
+  </label>
+</section>
+
+<div class="resource-notice">ⓘ {{ i18n.t('resource.ledgerReadOnly') }}</div>
+
+<section class="panel data-panel">
+  @if (loading()) {
+    <div class="skeleton table-skeleton"></div>
+  } @else if (rows().length) {
+    <div class="responsive-table">
+      <table>
+        <thead>
+        <tr>
+          @for (column of columns; track column) {
+            <th>{{ label(column) }}</th>
+          }
+        </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row['id']) {
+            <tr>
+              @for (column of columns; track column) {
+                <td>{{ display(row[column]) }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="empty-state">
+      <span>≡</span>
+      <h2>{{ i18n.t('resource.emptyTitle') }}</h2>
+      <p>{{ i18n.t('ledger.empty') }}</p>
+    </div>
+  }
+</section>

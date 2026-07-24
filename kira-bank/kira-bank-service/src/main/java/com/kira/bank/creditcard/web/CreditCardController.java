@@ -28,6 +28,16 @@ public class CreditCardController {
         return service.cards(u, p);
     }
 
+    @GetMapping("/credit-cards/{id}")
+    Object card(@AuthenticationPrincipal Long u, @PathVariable Long id) {
+        return service.card(u, id);
+    }
+
+    @PutMapping("/credit-cards/{id}")
+    Object updateCard(@AuthenticationPrincipal Long u, @PathVariable Long id, @Valid @RequestBody UpdateCardRequest r) {
+        return service.updateCard(u, id, r);
+    }
+
     @PostMapping("/card-transactions")
     @ResponseStatus(HttpStatus.CREATED)
     Object tx(@AuthenticationPrincipal Long u, @Valid @RequestBody TransactionRequest r) {

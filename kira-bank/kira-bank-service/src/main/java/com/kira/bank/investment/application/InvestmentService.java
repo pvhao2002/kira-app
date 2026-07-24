@@ -47,6 +47,25 @@ public class InvestmentService {
     }
 
     @Transactional(readOnly = true)
+    public AccountResponse accountDetails(Long userId, Long id) {
+        return dto(account(id, userId));
+    }
+
+    @Transactional
+    public AccountResponse updateAccount(Long userId, Long id, UpdateAccountRequest r) {
+        InvestmentAccount a = account(id, userId);
+        if (a.getVersion() != r.version())
+            throw new ApiException(HttpStatus.CONFLICT, "ACCOUNT_VERSION_CONFLICT", "Dữ liệu tài khoản đã được cập nhật ở phiên khác");
+        if (!java.util.Set.of("ACTIVE", "INACTIVE", "CLOSED").contains(r.status()))
+            throw bad("INVALID_ACCOUNT_STATUS", "Trạng thái tài khoản không hợp lệ");
+        a.setAccountName(r.accountName());
+        a.setExternalAccountCode(r.externalAccountCode());
+        a.setNote(r.note());
+        a.setStatus(r.status());
+        return dto(a);
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<InvestmentPlatform> platforms(Pageable p) {
         return page(platforms.findByActiveTrueAndDeletedAtIsNull(p));
     }
@@ -310,7 +329,10 @@ public class InvestmentService {
     }
 
     private AccountResponse dto(InvestmentAccount a) {
-        return new AccountResponse(a.getId(), a.getPlatformId(), a.getAccountName(), a.getExternalAccountCode(), a.getCurrency(), a.getCurrentBalance(), a.getAvailableCapital(), a.getLockedCapital(), a.getAccumulatedProfit(), a.getAccumulatedReward(), a.getReservedWithdrawal(), a.getStatus(), a.getVersion());
+        return new AccountResponse(a.getId(), a.getPlatformId(), a.getAccountName(), a.getExternalAccountCode(),
+                a.getCurrency(), a.getCurrentBalance(), a.getAvailableCapital(), a.getLockedCapital(),
+                a.getAccumulatedProfit(), a.getAccumulatedReward(), a.getReservedWithdrawal(), a.getStatus(),
+                a.getNote(), a.getVersion());
     }
 
     private BigDecimal money(BigDecimal n) {

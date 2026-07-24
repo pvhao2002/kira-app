@@ -1,0 +1,80 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('resource.flowSystem') }}</span>
+    <h1>{{ i18n.t('settings.title') }}</h1>
+    <p>{{ i18n.t('settings.description') }}</p>
+  </div>
+</section>
+
+<div class="settings-grid">
+  <form (ngSubmit)="saveProfile()" [formGroup]="profileForm" class="panel settings-card">
+    <header>
+      <div>
+        <h2>{{ i18n.t('settings.profileTitle') }}</h2>
+        <p>{{ i18n.t('settings.profileDescription') }}</p>
+      </div>
+    </header>
+    <label>
+      <span>{{ i18n.t('field.email') }}</span>
+      <input [value]="email()" disabled type="email">
+    </label>
+    <label>
+      <span>{{ i18n.t('field.fullName') }} *</span>
+      <input formControlName="fullName" type="text">
+    </label>
+    <label>
+      <span>{{ i18n.t('settings.phone') }}</span>
+      <input formControlName="phone" type="tel">
+    </label>
+    <footer>
+      <button [disabled]="savingProfile()" class="btn primary" type="submit">
+        {{ savingProfile() ? i18n.t('form.saving') : i18n.t('settings.saveProfile') }}
+      </button>
+    </footer>
+  </form>
+
+  <form (ngSubmit)="changePassword()" [formGroup]="passwordForm" class="panel settings-card">
+    <header>
+      <div>
+        <h2>{{ i18n.t('settings.securityTitle') }}</h2>
+        <p>{{ i18n.t('settings.securityDescription') }}</p>
+      </div>
+    </header>
+    <label>
+      <span>{{ i18n.t('settings.currentPassword') }} *</span>
+      <input autocomplete="current-password" formControlName="currentPassword" type="password">
+    </label>
+    <label>
+      <span>{{ i18n.t('settings.newPassword') }} *</span>
+      <input autocomplete="new-password" formControlName="newPassword" type="password">
+    </label>
+    <label>
+      <span>{{ i18n.t('settings.confirmPassword') }} *</span>
+      <input autocomplete="new-password" formControlName="confirmPassword" type="password">
+      @if (passwordForm.controls.confirmPassword.errors?.['mismatch']) {
+        <small class="field-error">{{ i18n.t('settings.passwordMismatch') }}</small>
+      }
+    </label>
+    <footer>
+      <button [disabled]="savingPassword()" class="btn primary" type="submit">
+        {{ savingPassword() ? i18n.t('form.saving') : i18n.t('settings.changePassword') }}
+      </button>
+    </footer>
+  </form>
+
+  <section class="panel settings-card appearance-card">
+    <header>
+      <div>
+        <h2>{{ i18n.t('settings.appearanceTitle') }}</h2>
+        <p>{{ i18n.t('settings.appearanceDescription') }}</p>
+      </div>
+    </header>
+    <div class="setting-row">
+      <div>
+        <strong>{{ i18n.t('settings.language') }}</strong>
+        <small>{{ i18n.t('settings.languageDescription') }}</small>
+      </div>
+      <app-language-switcher/>
+    </div>
+  </section>
+</div>

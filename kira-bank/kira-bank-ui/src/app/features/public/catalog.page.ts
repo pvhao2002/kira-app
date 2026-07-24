@@ -2,17 +2,19 @@ import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core'
 import {FormControl, ReactiveFormsModule} from '@angular/forms';
 import {ActivatedRoute, RouterLink} from '@angular/router';
 import {ApiService} from '../../core/services/api.service';
+import {LanguageService} from '../../core/i18n/language.service';
+import {LanguageSwitcherComponent} from '../../shared/language-switcher/language-switcher';
 import {Bank, Card, FinderResult, Mcc} from '../../shared/models/api.models';
 
 @Component({
   selector: 'app-catalog',
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, LanguageSwitcherComponent],
   templateUrl: './catalog.page.html',
   styleUrl: './catalog.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CatalogPage {
-  readonly title = this.type === 'banks' ? 'Danh sách ngân hàng' : this.type === 'cards' ? 'Danh mục thẻ tín dụng' : this.type === 'mcc' ? 'Tra cứu mã MCC' : 'Cashback Finder';
+  readonly i18n = inject(LanguageService);
   readonly search = new FormControl('', {nonNullable: true});
   readonly mccId = new FormControl(1, {nonNullable: true});
   readonly amount = new FormControl(1_000_000, {nonNullable: true});
@@ -29,6 +31,13 @@ export class CatalogPage {
       this.mccs.set(response.data);
       if (response.data[0]) this.mccId.setValue(response.data[0].id);
     });
+  }
+
+  get title(): string {
+    const key = this.type === 'banks' ? 'catalog.titleBanks'
+      : this.type === 'cards' ? 'catalog.titleCards'
+        : this.type === 'mcc' ? 'catalog.titleMcc' : 'catalog.titleFinder';
+    return this.i18n.t(key);
   }
 
   load(): void {

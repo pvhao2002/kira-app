@@ -27,8 +27,20 @@ export class ApiService {
     return this.http.get<PageResponse<T>>(`/api/v1/${path}`, {params: {page, size}});
   }
 
+  get<T>(path: string): Observable<T> {
+    return this.http.get<T>(`/api/v1/${path}`);
+  }
+
   post<T>(path: string, body: unknown, idempotent = false): Observable<T> {
     return this.http.post<T>(`/api/v1/${path}`, body, {headers: idempotent ? {'Idempotency-Key': crypto.randomUUID()} : undefined});
+  }
+
+  put<T>(path: string, body: unknown): Observable<T> {
+    return this.http.put<T>(`/api/v1/${path}`, body);
+  }
+
+  patch<T>(path: string, body: unknown = {}): Observable<T> {
+    return this.http.patch<T>(`/api/v1/${path}`, body);
   }
 
   summary(): Observable<DashboardSummary> {

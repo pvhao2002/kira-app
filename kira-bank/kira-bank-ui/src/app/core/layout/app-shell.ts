@@ -1,76 +1,81 @@
-import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, ElementRef, HostListener, inject, signal, viewChild} from '@angular/core';
 import {Router, RouterLink, RouterLinkActive, RouterOutlet} from '@angular/router';
 import {AuthStore} from '../auth/auth.store';
+import {LanguageService} from '../i18n/language.service';
+import {TranslationKey} from '../i18n/translations';
 import {ToastService} from '../services/toast.service';
+import {LanguageSwitcherComponent} from '../../shared/language-switcher/language-switcher';
 
 interface NavItem {
-  label: string;
+  labelKey: TranslationKey;
   icon: string;
   path: string
 }
 
 interface NavGroup {
-  label: string;
+  labelKey: TranslationKey;
   flow: 'credit' | 'investment' | 'system';
   items: NavItem[]
 }
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LanguageSwitcherComponent],
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppShell {
   readonly auth = inject(AuthStore);
+  readonly i18n = inject(LanguageService);
   readonly toast = inject(ToastService);
   readonly menuOpen = signal(false);
   readonly userMenu = signal(false);
   readonly theme = signal<'light' | 'dark' | 'system'>((localStorage.getItem('kira-theme') as 'light' | 'dark' | 'system') || 'system');
   readonly themeIcon = computed(() => this.theme() === 'dark' ? '☾' : this.theme() === 'light' ? '☀' : '◐');
+  readonly globalSearchInput = viewChild<ElementRef<HTMLInputElement>>('globalSearchInput');
   readonly initials = computed(() => this.auth.user()?.fullName.split(' ').slice(-2).map(part => part[0]).join('').toUpperCase() ?? 'KB');
   readonly nav: NavGroup[] = [
     {
-      label: 'THẺ TÍN DỤNG', flow: 'credit', items: [
-        {label: 'Dashboard', icon: '▦', path: '/app/credit-card/dashboard'}, {
-          label: 'Thẻ của tôi',
+      labelKey: 'shell.groupCredit', flow: 'credit', items: [
+        {labelKey: 'shell.dashboard', icon: '▦', path: '/app/credit-card/dashboard'}, {
+          labelKey: 'shell.myCards',
           icon: '▭',
           path: '/app/credit-cards'
         },
-        {label: 'Giao dịch', icon: '↔', path: '/app/card-transactions'}, {
-          label: 'Sao kê',
+        {labelKey: 'shell.transactions', icon: '↔', path: '/app/card-transactions'}, {
+          labelKey: 'shell.statements',
           icon: '▤',
           path: '/app/statements'
         },
-        {label: 'Thanh toán', icon: '✓', path: '/app/payments'}, {label: 'Cashback', icon: '◇', path: '/app/cashbacks'},
-        {label: 'Hóa đơn chiết khấu', icon: '%', path: '/app/discount-invoices'}
+        {labelKey: 'shell.payments', icon: '✓', path: '/app/payments'}, {labelKey: 'shell.cashback', icon: '◇', path: '/app/cashbacks'},
+        {labelKey: 'shell.discountInvoices', icon: '%', path: '/app/discount-invoices'}
       ]
     },
     {
-      label: 'ĐẦU TƯ WEBSITE', flow: 'investment', items: [
-        {label: 'Dashboard', icon: '▦', path: '/app/investment/dashboard'}, {
-          label: 'Tài khoản',
+      labelKey: 'shell.groupInvestment', flow: 'investment', items: [
+        {labelKey: 'shell.dashboard', icon: '▦', path: '/app/investment/dashboard'}, {
+          labelKey: 'shell.accounts',
           icon: '◉',
           path: '/app/investment/accounts'
         },
-        {label: 'Nạp tiền', icon: '↓', path: '/app/investment/deposits'}, {
-          label: 'Nhiệm vụ',
+        {labelKey: 'shell.deposits', icon: '↓', path: '/app/investment/deposits'}, {
+          labelKey: 'shell.tasks',
           icon: '☷',
           path: '/app/investment/tasks'
         },
-        {label: 'Reward', icon: '☆', path: '/app/investment/rewards'}, {
-          label: 'Rút tiền',
+        {labelKey: 'shell.rewards', icon: '☆', path: '/app/investment/rewards'}, {
+          labelKey: 'shell.withdrawals',
           icon: '↑',
           path: '/app/investment/withdrawals'
         },
-        {label: 'Ledger', icon: '≡', path: '/app/investment/ledger'}
+        {labelKey: 'shell.ledger', icon: '≡', path: '/app/investment/ledger'}
       ]
     },
     {
-      label: 'HỆ THỐNG', flow: 'system', items: [
-        {label: 'Thông báo', icon: '♢', path: '/app/notifications'}, {
-          label: 'Cài đặt',
+      labelKey: 'shell.groupSystem', flow: 'system', items: [
+        {labelKey: 'shell.notifications', icon: '♢', path: '/app/notifications'}, {
+          labelKey: 'shell.settings',
           icon: '⚙',
           path: '/app/settings'
         }
@@ -78,9 +83,20 @@ export class AppShell {
     }
   ];
   private readonly router = inject(Router);
+  private readonly systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
+  private readonly systemThemeListener = () => {
+    if (this.theme() === 'system') {
+      this.applyTheme();
+    }
+  };
 
   constructor() {
+    this.systemTheme.addEventListener('change', this.systemThemeListener);
     this.applyTheme();
+  }
+
+  ngOnDestroy(): void {
+    this.systemTheme.removeEventListener('change', this.systemThemeListener);
   }
 
   cycleTheme(): void {
@@ -90,11 +106,27 @@ export class AppShell {
     this.applyTheme();
   }
 
+  @HostListener('document:keydown', ['$event'])
+  focusGlobalSearch(event: KeyboardEvent): void {
+    const target = event.target;
+    const isEditing = target instanceof HTMLElement
+      && target.matches('input, textarea, select, [contenteditable="true"]');
+
+    if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || isEditing) {
+      return;
+    }
+
+    event.preventDefault();
+    this.globalSearchInput()?.nativeElement.focus();
+  }
+
   logout(): void {
     this.auth.logout().subscribe(() => this.router.navigateByUrl('/'));
   }
 
   private applyTheme(): void {
-    document.documentElement.dataset['theme'] = this.theme();
+    const preference = this.theme();
+    document.documentElement.dataset['theme'] =
+      preference === 'system' ? (this.systemTheme.matches ? 'dark' : 'light') : preference;
   }
 }

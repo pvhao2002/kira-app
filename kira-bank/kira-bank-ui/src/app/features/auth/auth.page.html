@@ -1,25 +1,28 @@
 <main class="auth-wrap">
   <a class="brand" routerLink="/"><span class="brand-mark">K</span>Kira Bank</a>
+  <app-language-switcher class="auth-language-switcher"/>
   <section class="auth-card">
-    <span class="eyebrow">{{ isRegister ? 'Tạo không gian tài chính' : 'Chào mừng trở lại' }}</span>
-    <h1>{{ isRegister ? 'Bắt đầu với Kira Bank' : 'Đăng nhập tài khoản' }}</h1>
-    <p>{{ isRegister ? 'Miễn phí, riêng tư và sẵn sàng trong vài phút.' : 'Tiếp tục quản lý hai dòng tiền tách bạch.' }}</p>
+    <span class="eyebrow">{{ i18n.t(isRegister ? 'auth.registerEyebrow' : 'auth.loginEyebrow') }}</span>
+    <h1>{{ i18n.t(isRegister ? 'auth.registerTitle' : 'auth.loginTitle') }}</h1>
+    <p>{{ i18n.t(isRegister ? 'auth.registerDescription' : 'auth.loginDescription') }}</p>
     <form (ngSubmit)="submit()" [formGroup]="form">
       @if (isRegister) {
-        <label>Họ và tên<input autocomplete="name" formControlName="fullName" placeholder="Nguyễn Văn A"></label>
+        <label>{{ i18n.t('auth.fullName') }}<input [placeholder]="i18n.t('auth.fullNamePlaceholder')" autocomplete="name"
+                                                 formControlName="fullName"></label>
       }
-      <label>Email<input autocomplete="email" formControlName="email" placeholder="you@example.com"
-                         type="email"></label>
-      <label>Mật khẩu<input autocomplete="current-password" formControlName="password" placeholder="Tối thiểu 8 ký tự"
-                            type="password"></label>
+      <label>{{ i18n.t('auth.email') }}<input autocomplete="email" formControlName="email" placeholder="you@example.com"
+                                             type="email"></label>
+      <label>{{ i18n.t('auth.password') }}<input [placeholder]="i18n.t('auth.passwordPlaceholder')"
+                                                autocomplete="current-password" formControlName="password"
+                                                type="password"></label>
       @if (form.invalid && form.touched) {
-        <div class="form-error">Vui lòng kiểm tra lại các trường bắt buộc.</div>
+        <div class="form-error">{{ i18n.t('auth.validationError') }}</div>
       }
       <button [disabled]="form.invalid || loading()"
-              class="btn primary submit">{{ loading() ? 'Đang xử lý…' : (isRegister ? 'Tạo tài khoản' : 'Đăng nhập') }}
+              class="btn primary submit">{{ i18n.t(loading() ? 'auth.processing' : (isRegister ? 'auth.createAccount' : 'common.login')) }}
       </button>
     </form>
-    <p class="auth-swap">{{ isRegister ? 'Đã có tài khoản?' : 'Chưa có tài khoản?' }} <a
-      [routerLink]="isRegister ? '/login' : '/register'">{{ isRegister ? 'Đăng nhập' : 'Đăng ký ngay' }}</a></p>
+    <p class="auth-swap">{{ i18n.t(isRegister ? 'auth.haveAccount' : 'auth.noAccount') }} <a
+      [routerLink]="isRegister ? '/login' : '/register'">{{ i18n.t(isRegister ? 'common.login' : 'auth.registerNow') }}</a></p>
   </section>
 </main>

@@ -15,8 +15,14 @@ public final class CreditCardDtos {
                                     @Min(1) @Max(31) int dueDay, String note) {
     }
 
+    public record UpdateCardRequest(@NotBlank String nickname, @Pattern(regexp = "\\d{4}") String lastFour,
+                                    @NotNull @Positive BigDecimal creditLimit, @Min(1) @Max(31) int statementDay,
+                                    @Min(1) @Max(31) int dueDay, String note,
+                                    @NotBlank String status, @NotNull @PositiveOrZero Long version) {
+    }
+
     public record CardResponse(Long id, Long cardCatalogId, String nickname, String lastFour, BigDecimal creditLimit,
-                               String currency, int statementDay, int dueDay, String status, long version) {
+                               String currency, int statementDay, int dueDay, String status, String note, long version) {
     }
 
     public record TransactionRequest(@NotNull Long userCardId, @NotNull Instant transactionDate, @NotNull Long mccId,
@@ -59,4 +65,3 @@ public final class CreditCardDtos {
                                   String status) {
     }
 }
-

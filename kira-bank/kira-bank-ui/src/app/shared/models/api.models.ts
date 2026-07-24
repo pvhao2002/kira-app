@@ -26,9 +26,17 @@ export interface AuthResponse {
 
 export interface Bank {
   id: number;
+  vietqrId: number | null;
   code: string;
   name: string;
   shortName: string;
+  logoUrl: string | null;
+  bin: string | null;
+  swiftCode: string | null;
+  transferSupported: boolean;
+  lookupSupported: boolean;
+  website: string | null;
+  hotline: string | null;
   brandColor: string;
   description: string
 }

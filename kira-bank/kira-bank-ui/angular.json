@@ -7,7 +7,7 @@
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
-          "style": "css",
+          "style": "scss",
           "skipTests": false
         }
       },
@@ -51,6 +51,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.js"
+          },
           "configurations": {
             "production": {
               "buildTarget": "kira-bank-ui:build:production"
@@ -69,5 +72,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "a382dbec-87ed-4595-8f95-346db8104f55"
   }
 }

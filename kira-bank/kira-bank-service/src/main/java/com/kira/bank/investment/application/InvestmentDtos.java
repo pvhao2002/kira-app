@@ -14,10 +14,16 @@ public final class InvestmentDtos {
                                        @Pattern(regexp = "[A-Z]{3}") String currency, @Size(max = 1000) String note) {
     }
 
+    public record UpdateAccountRequest(@NotBlank @Size(max = 150) String accountName,
+                                       @Size(max = 100) String externalAccountCode,
+                                       @Size(max = 1000) String note, @NotBlank String status,
+                                       @NotNull @PositiveOrZero Long version) {
+    }
+
     public record AccountResponse(Long id, Long platformId, String accountName, String externalAccountCode,
                                   String currency, BigDecimal currentBalance, BigDecimal availableCapital,
                                   BigDecimal lockedCapital, BigDecimal accumulatedProfit, BigDecimal accumulatedReward,
-                                  BigDecimal reservedWithdrawal, String status, long version) {
+                                  BigDecimal reservedWithdrawal, String status, String note, long version) {
     }
 
     public record DepositRequest(@NotNull Long accountId, @NotNull @Positive BigDecimal amount,

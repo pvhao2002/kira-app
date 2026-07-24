@@ -1,35 +1,39 @@
 <header class="public-nav">
   <a class="brand" routerLink="/"><span class="brand-mark">K</span>Kira Bank</a>
-  <nav aria-label="Điều hướng danh mục"><a routerLink="/banks">Ngân hàng</a><a routerLink="/cards">Thẻ tín dụng</a><a
-    routerLink="/mcc">MCC</a><a routerLink="/cashback-finder">Cashback Finder</a></nav>
-  <a class="btn primary" routerLink="/login">Đăng nhập</a>
+  <nav [attr.aria-label]="i18n.t('catalog.navigation')"><a routerLink="/banks">{{ i18n.t('public.banks') }}</a><a
+    routerLink="/cards">{{ i18n.t('public.creditCards') }}</a><a
+    routerLink="/mcc">MCC</a><a routerLink="/cashback-finder">{{ i18n.t('public.cashbackFinder') }}</a></nav>
+  <div class="nav-actions">
+    <app-language-switcher/>
+    <a class="btn primary" routerLink="/login">{{ i18n.t('common.login') }}</a>
+  </div>
 </header>
 
 <main class="catalog">
-  <span class="eyebrow">Dữ liệu công khai</span>
+  <span class="eyebrow">{{ i18n.t('catalog.publicData') }}</span>
   <h1>{{ title }}</h1>
-  <p>Tra cứu minh bạch, cập nhật theo điều kiện và thời hạn hiệu lực của từng chương trình.</p>
-  <div class="search-row"><input [formControl]="search" placeholder="Tìm theo tên hoặc mã…">
-    <button (click)="load()" class="btn primary">Tìm kiếm</button>
+  <p>{{ i18n.t('catalog.description') }}</p>
+  <div class="search-row"><input [formControl]="search" [placeholder]="i18n.t('catalog.searchPlaceholder')">
+    <button (click)="load()" class="btn primary">{{ i18n.t('common.search') }}</button>
   </div>
 
   @switch (type) {
     @case ('finder') {
       <section class="finder-panel">
-        <label>Chọn MCC<select [formControl]="mccId">@for (mcc of mccs(); track mcc.id) {
+        <label>{{ i18n.t('catalog.selectMcc') }}<select [formControl]="mccId">@for (mcc of mccs(); track mcc.id) {
           <option [value]="mcc.id">{{ mcc.code }} — {{ mcc.name }}</option>
         }</select></label>
-        <label>Số tiền dự kiến<input [formControl]="amount" type="number"></label>
-        <button (click)="find()" class="btn primary">So sánh cashback</button>
+        <label>{{ i18n.t('catalog.expectedAmount') }}<input [formControl]="amount" type="number"></label>
+        <button (click)="find()" class="btn primary">{{ i18n.t('catalog.compareCashback') }}</button>
       </section>
       <div class="result-grid">
         @for (result of results(); track result.ruleId) {
           <article class="result-card"><span class="pill">{{ result.card.cardNetwork }}</span>
             <h2>{{ result.card.cardName }}</h2><strong>{{ result.estimatedCashback.toLocaleString('vi-VN') }} ₫</strong>
-            <p>{{ result.rate * 100 }}% · Hạn mức {{ result.cap?.toLocaleString('vi-VN') ?? 'Không giới hạn' }} ₫</p>
+            <p>{{ result.rate * 100 }}% · {{ i18n.t('catalog.cap') }} {{ result.cap?.toLocaleString('vi-VN') ?? i18n.t('common.noLimit') }} ₫</p>
             <small>{{ result.conditions }}</small></article>
         } @empty {
-          <div class="empty">Nhập thông tin để xem thẻ phù hợp nhất.</div>
+          <div class="empty">{{ i18n.t('catalog.finderEmpty') }}</div>
         }
       </div>
     }
@@ -39,10 +43,10 @@
           <article class="catalog-card"><span class="code">{{ code(item) }}</span>
             <h2>{{ name(item) }}</h2>
             <p>{{ description(item) }}</p>
-            <button class="text-link">Xem chi tiết →</button>
+            <button class="text-link">{{ i18n.t('common.viewDetails') }}</button>
           </article>
         } @empty {
-          <div class="empty">Không tìm thấy dữ liệu phù hợp.</div>
+          <div class="empty">{{ i18n.t('catalog.noResults') }}</div>
         }
       </div>
     }

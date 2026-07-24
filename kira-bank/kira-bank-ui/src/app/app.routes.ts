@@ -1,5 +1,5 @@
 import {Routes} from '@angular/router';
-import {authGuard, adminGuard} from './core/guards/auth.guards';
+import {adminGuard, authGuard} from './core/guards/auth.guards';
 
 export const routes: Routes = [
   {path: '', loadComponent: () => import('./features/public/landing.page').then(m => m.LandingPage)},
@@ -37,35 +37,34 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () => import('./features/dashboard/dashboard.page').then(m => m.DashboardPage),
-        data: {title: 'Tổng quan'}
+        data: {titleKey: 'route.overview'}
       },
       {
         path: 'credit-card/dashboard',
         loadComponent: () => import('./features/dashboard/dashboard.page').then(m => m.DashboardPage),
-        data: {title: 'Dashboard thẻ tín dụng'}
+        data: {titleKey: 'route.creditDashboard'}
       },
       {
         path: 'investment/dashboard',
         loadComponent: () => import('./features/dashboard/dashboard.page').then(m => m.DashboardPage),
-        data: {title: 'Dashboard đầu tư'}
+        data: {titleKey: 'route.investmentDashboard'}
       },
       ...resourceRoutes(),
       {
         path: 'admin/users',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage),
-        data: {title: 'Quản lý người dùng', api: 'admin/users', flow: 'system'}
+        data: {resourceKey: 'adminUsers'}
       },
       {
         path: 'admin/banks',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage),
-        data: {title: 'Quản lý ngân hàng', api: 'admin/banks', flow: 'system'}
+        data: {resourceKey: 'adminBanks'}
       },
       {
         path: 'profile',
-        loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage),
-        data: {title: 'Hồ sơ cá nhân', api: 'auth/profile', flow: 'system'}
+        loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage)
       }
     ]
   }, {path: '**', redirectTo: ''}
@@ -75,43 +74,45 @@ function resourceRoutes(): Routes {
   return [
     {
       path: 'credit-cards',
-      data: {title: 'Thẻ của tôi', api: 'credit-cards', flow: 'credit'}
+      data: {resourceKey: 'creditCards'}
     }, {
       path: 'card-transactions',
-      data: {title: 'Giao dịch thẻ', api: 'card-transactions', flow: 'credit'}
-    }, {path: 'statements', data: {title: 'Sao kê', api: 'statements', flow: 'credit'}}, {
+      data: {resourceKey: 'cardTransactions'}
+    }, {path: 'statements', data: {resourceKey: 'statements'}}, {
       path: 'payments',
-      data: {title: 'Thanh toán', api: 'payments', flow: 'credit'}
-    }, {path: 'cashbacks', data: {title: 'Cashback', api: 'cashbacks', flow: 'credit'}}, {
+      data: {resourceKey: 'payments'}
+    }, {path: 'cashbacks', data: {resourceKey: 'cashbacks'}}, {
       path: 'discount-invoices',
-      data: {title: 'Hóa đơn chiết khấu', api: 'discount-invoices', flow: 'credit'}
-    }, {path: 'reports/credit-card', data: {title: 'Báo cáo thẻ tín dụng', api: 'reports/credit-card', flow: 'credit'}},
+      data: {resourceKey: 'discountInvoices'}
+    }, {path: 'reports/credit-card', data: {resourceKey: 'creditReports'}},
     {
       path: 'investment/platforms',
-      data: {title: 'Nền tảng đầu tư', api: 'investment/platforms', flow: 'investment'}
+      data: {resourceKey: 'investmentPlatforms'}
     }, {
       path: 'investment/accounts',
-      data: {title: 'Tài khoản đầu tư', api: 'investment/accounts', flow: 'investment'}
+      data: {resourceKey: 'investmentAccounts'}
     }, {
       path: 'investment/deposits',
-      data: {title: 'Nạp tiền', api: 'investment/deposits', flow: 'investment'}
+      data: {resourceKey: 'investmentDeposits'}
     }, {
       path: 'investment/tasks',
-      data: {title: 'Nhiệm vụ đầu tư', api: 'investment/tasks', flow: 'investment'}
+      data: {resourceKey: 'investmentTasks'}
     }, {
       path: 'investment/rewards',
-      data: {title: 'Reward', api: 'investment/rewards', flow: 'investment'}
+      data: {resourceKey: 'investmentRewards'}
     }, {
       path: 'investment/withdrawals',
-      data: {title: 'Rút tiền', api: 'investment/withdrawals', flow: 'investment'}
+      data: {resourceKey: 'investmentWithdrawals'}
     }, {
       path: 'investment/ledger',
-      data: {title: 'Investment Ledger', api: 'investment/ledger', flow: 'investment'}
-    }, {path: 'reports/investment', data: {title: 'Báo cáo đầu tư', api: 'reports/investment', flow: 'investment'}},
-    {path: 'notifications', data: {title: 'Thông báo', api: 'notifications', flow: 'system'}}, {
+      loadComponent: () => import('./features/ledger/ledger.page').then(m => m.LedgerPage)
+    }, {path: 'reports/investment', data: {resourceKey: 'investmentReports'}},
+    {path: 'notifications', data: {resourceKey: 'notifications'}}, {
       path: 'settings',
-      data: {title: 'Cài đặt', api: 'settings', flow: 'system'}
+      loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage)
     }
-  ].map(r => ({...r, loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage)}));
+  ].map(r => r.loadComponent ? r : ({
+    ...r,
+    loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage)
+  }));
 }
-

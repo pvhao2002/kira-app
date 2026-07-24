@@ -621,6 +621,8 @@ input:focus, select:focus, textarea:focus {
 }
 
 .global-search input {
+  flex: 1;
+  min-width: 0;
   border: 0;
   background: transparent;
   padding: 2px;
@@ -628,6 +630,11 @@ input:focus, select:focus, textarea:focus {
 }
 
 .global-search kbd {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  line-height: 1;
   font-size: 10px;
   border: 1px solid #d6dde5;
   background: #fff;
@@ -642,7 +649,7 @@ input:focus, select:focus, textarea:focus {
   gap: 8px
 }
 
-.top-actions button, .top-actions > a {
+.top-actions > button, .top-actions > a {
   width: 35px;
   height: 35px;
   display: grid;
@@ -668,6 +675,13 @@ input:focus, select:focus, textarea:focus {
   color: #096dcc;
   font-size: 11px;
   font-weight: 800
+}
+
+.auth-language-switcher {
+  position: absolute;
+  top: 30px;
+  right: 5vw;
+  z-index: 5
 }
 
 .menu-button {
@@ -1142,6 +1156,7 @@ td:first-child {
   --border: #263c54;
   --muted: #96a8bc;
   --navy: #edf6ff;
+  --shadow: 0 14px 40px rgba(0, 0, 0, .28);
   background: #091a2b
 }
 
@@ -1150,19 +1165,95 @@ html[data-theme=dark] body {
   color: #e7eef7
 }
 
-html[data-theme=dark] .topbar, html[data-theme=dark] .panel, html[data-theme=dark] .kpi, html[data-theme=dark] .dialog {
+html[data-theme=dark] .topbar,
+html[data-theme=dark] .panel,
+html[data-theme=dark] .kpi,
+html[data-theme=dark] .dialog,
+html[data-theme=dark] .user-menu {
   background: #10263e;
   color: #e7eef7
 }
 
-html[data-theme=dark] .kpi strong, html[data-theme=dark] .page-heading h1 {
+html[data-theme=dark] .kpi strong,
+html[data-theme=dark] .page-heading h1,
+html[data-theme=dark] .section-title h2,
+html[data-theme=dark] .panel h3,
+html[data-theme=dark] .due-row strong,
+html[data-theme=dark] td {
   color: #f2f7fc
 }
 
-html[data-theme=dark] input, html[data-theme=dark] select, html[data-theme=dark] textarea {
+html[data-theme=dark] input,
+html[data-theme=dark] select,
+html[data-theme=dark] textarea {
   background: #0b2036;
   color: #fff;
   border-color: #31465b
+}
+
+html[data-theme=dark] .global-search,
+html[data-theme=dark] .search-box,
+html[data-theme=dark] .top-actions > button,
+html[data-theme=dark] .top-actions > a,
+html[data-theme=dark] .dialog header button {
+  background: #0b2036;
+  color: #c7d5e5;
+  border-color: #263c54
+}
+
+html[data-theme=dark] .global-search input,
+html[data-theme=dark] .search-box input {
+  background: transparent
+}
+
+html[data-theme=dark] .global-search kbd,
+html[data-theme=dark] .btn:not(.primary),
+html[data-theme=dark] .pagination button,
+html[data-theme=dark] .pagination b {
+  background: #142b42;
+  color: #dce7f2;
+  border-color: #31485f
+}
+
+html[data-theme=dark] .top-actions .avatar {
+  background: #163d63;
+  color: #8cc6ff
+}
+
+html[data-theme=dark] .flow-icon,
+html[data-theme=dark] .kpi > span {
+  background: #102f4f;
+  color: #77b8ff
+}
+
+html[data-theme=dark] .invest-section .flow-icon,
+html[data-theme=dark] .invest-section .kpi > span {
+  background: #0c3a35;
+  color: #62d8c0
+}
+
+html[data-theme=dark] .line-chart svg {
+  background: repeating-linear-gradient(to bottom, #294057 0 1px, transparent 1px 42px)
+}
+
+html[data-theme=dark] .due-row,
+html[data-theme=dark] td {
+  border-color: #263c54
+}
+
+html[data-theme=dark] th {
+  background: #0b2036;
+  color: #9fb1c4
+}
+
+html[data-theme=dark] .status {
+  background: #123a34;
+  color: #68dec3
+}
+
+html[data-theme=dark] .skeleton {
+  background: linear-gradient(90deg, #10263e 25%, #1a344c 50%, #10263e 75%);
+  background-size: 200% 100%
 }
 
 @media (max-width: 1050px) {
@@ -1336,6 +1427,11 @@ html[data-theme=dark] input, html[data-theme=dark] select, html[data-theme=dark]
 
   .auth-card {
     padding: 28px
+  }
+
+  .auth-language-switcher {
+    top: 22px;
+    right: 16px
   }
 
   .dialog {

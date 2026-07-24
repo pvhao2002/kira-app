@@ -1,14 +1,16 @@
 spring:
   application:
     name: kira-bank-service
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/kira_bank?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
-    username: ${DB_USERNAME:kira_bank}
-    password: ${DB_PASSWORD:change-me}
+    url: ${DB_URL:jdbc:mysql://localhost:3310/kira_bank?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:1234}
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate.jdbc.time_zone: UTC
   flyway:
@@ -20,7 +22,7 @@ server:
   port: ${SERVER_PORT:8080}
   error:
     include-stacktrace: never
-management.endpoints.web.exposure.include: health,info
+management.endpoints.web.exposure.include: info
 app:
   jwt:
     secret: ${JWT_SECRET:development-secret-must-have-at-least-32-characters}

@@ -1,4 +1,15 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  HostListener,
+  inject,
+  signal,
+  viewChild
+} from '@angular/core';
+import {LanguageService} from '../../core/i18n/language.service';
+import {TranslationKey} from '../../core/i18n/translations';
 
 interface Kpi {
   label: string;
@@ -7,6 +18,8 @@ interface Kpi {
   icon: string
 }
 
+type DateRange = 7 | 30 | 90;
+
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.page.html',
@@ -14,21 +27,61 @@ interface Kpi {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardPage {
-  readonly credit: Kpi[] = [
-    {label: 'Tổng chi tiêu', value: '42.680.000 ₫', trend: '↑ 8,2% tháng này', icon: '▭'},
-    {label: 'Dư nợ sao kê', value: '18.250.000 ₫', trend: '2 sao kê đang mở', icon: '▤'},
-    {label: 'Cashback đang chờ', value: '1.840.000 ₫', trend: '4 khoản chờ nhận', icon: '◇'},
-    {label: 'Cashback đã nhận', value: '5.240.000 ₫', trend: '↑ 12,4% tháng này', icon: '✓'}
+  readonly i18n = inject(LanguageService);
+  readonly dateRangeOpen = signal(false);
+  readonly selectedDateRange = signal<DateRange>(30);
+  readonly dateRangePicker = viewChild<ElementRef<HTMLElement>>('dateRangePicker');
+  readonly dateRangeTrigger = viewChild<ElementRef<HTMLButtonElement>>('dateRangeTrigger');
+  readonly dateRangeOptions: {days: DateRange; labelKey: TranslationKey}[] = [
+    {days: 7, labelKey: 'dashboard.last7Days'},
+    {days: 30, labelKey: 'dashboard.last30Days'},
+    {days: 90, labelKey: 'dashboard.last90Days'}
   ];
-  readonly invest: Kpi[] = [
-    {label: 'Available Capital', value: '68.400.000 ₫', trend: '62% tổng số dư', icon: '◉'},
-    {label: 'Locked Capital', value: '32.000.000 ₫', trend: '5 nhiệm vụ đang chạy', icon: '▣'},
-    {label: 'Profit đã nhận', value: '8.650.000 ₫', trend: '↑ 8,7% tháng này', icon: '↗'},
-    {label: 'Reward đã nhận', value: '2.180.000 ₫', trend: '3 khoản tháng này', icon: '☆'}
-  ];
-  readonly dues = [
-    {bank: 'Vietcombank', card: '4821', date: 'Hạn 24/07', amount: '8.450.000 ₫', color: '#087f5b'},
-    {bank: 'Techcombank', card: '7290', date: 'Hạn 27/07', amount: '6.800.000 ₫', color: '#dc2626'},
-    {bank: 'VPBank', card: '3155', date: 'Hạn 29/07', amount: '3.000.000 ₫', color: '#15803d'}
-  ];
+  readonly credit = computed<Kpi[]>(() => [
+    {label: this.i18n.t('dashboard.totalSpending'), value: '42.680.000 ₫', trend: this.i18n.t('dashboard.trendThisMonth'), icon: '▭'},
+    {label: this.i18n.t('dashboard.statementBalance'), value: '18.250.000 ₫', trend: this.i18n.t('dashboard.trendOpenStatements'), icon: '▤'},
+    {label: this.i18n.t('dashboard.pendingCashback'), value: '1.840.000 ₫', trend: this.i18n.t('dashboard.trendPendingItems'), icon: '◇'},
+    {label: this.i18n.t('dashboard.receivedCashback'), value: '5.240.000 ₫', trend: this.i18n.t('dashboard.trendCashbackMonth'), icon: '✓'}
+  ]);
+  readonly invest = computed<Kpi[]>(() => [
+    {label: this.i18n.t('dashboard.availableCapital'), value: '68.400.000 ₫', trend: this.i18n.t('dashboard.trendTotalBalance'), icon: '◉'},
+    {label: this.i18n.t('dashboard.lockedCapital'), value: '32.000.000 ₫', trend: this.i18n.t('dashboard.trendActiveTasks'), icon: '▣'},
+    {label: this.i18n.t('dashboard.receivedProfit'), value: '8.650.000 ₫', trend: this.i18n.t('dashboard.trendProfitMonth'), icon: '↗'},
+    {label: this.i18n.t('dashboard.receivedReward'), value: '2.180.000 ₫', trend: this.i18n.t('dashboard.trendRewardMonth'), icon: '☆'}
+  ]);
+  readonly dues = computed(() => [
+    {bank: 'Vietcombank', card: '4821', date: this.i18n.t('dashboard.dueDate24'), amount: '8.450.000 ₫', color: '#087f5b'},
+    {bank: 'Techcombank', card: '7290', date: this.i18n.t('dashboard.dueDate27'), amount: '6.800.000 ₫', color: '#dc2626'},
+    {bank: 'VPBank', card: '3155', date: this.i18n.t('dashboard.dueDate29'), amount: '3.000.000 ₫', color: '#15803d'}
+  ]);
+
+  dateRangeLabel(): string {
+    return this.i18n.t(this.dateRangeOptions.find(option => option.days === this.selectedDateRange())!.labelKey);
+  }
+
+  toggleDateRange(event: MouseEvent): void {
+    event.stopPropagation();
+    this.dateRangeOpen.update(open => !open);
+  }
+
+  selectDateRange(days: DateRange): void {
+    this.selectedDateRange.set(days);
+    this.dateRangeOpen.set(false);
+    this.dateRangeTrigger()?.nativeElement.focus();
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeDateRangeOnOutsideClick(event: MouseEvent): void {
+    if (!this.dateRangePicker()?.nativeElement.contains(event.target as Node)) {
+      this.dateRangeOpen.set(false);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  closeDateRangeOnEscape(): void {
+    if (this.dateRangeOpen()) {
+      this.dateRangeOpen.set(false);
+      this.dateRangeTrigger()?.nativeElement.focus();
+    }
+  }
 }

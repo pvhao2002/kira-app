@@ -10,10 +10,15 @@ import lombok.Setter;
 @Entity
 @Table(name = "banks")
 public class Bank extends AuditedEntity {
+    private Long vietqrId;
     private String code;
     private String name;
     private String shortName;
     private String logoUrl;
+    private String bin;
+    private String swiftCode;
+    private boolean transferSupported;
+    private boolean lookupSupported;
     private String website;
     private String hotline;
     private String brandColor;
@@ -21,4 +26,3 @@ public class Bank extends AuditedEntity {
     private String description;
     private boolean active;
 }
-

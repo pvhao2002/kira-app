@@ -1,38 +1,39 @@
 <div [class.sidebar-open]="menuOpen()" class="app-layout">
   <aside>
     <a class="brand" routerLink="/app"><span class="brand-mark">K</span>Kira Bank</a>
-    <button (click)="menuOpen.set(false)" aria-label="Đóng menu" class="close-menu">×</button>
+    <button (click)="menuOpen.set(false)" [attr.aria-label]="i18n.t('shell.closeMenu')" class="close-menu">×</button>
     <nav class="side-nav">
-      <a [routerLinkActiveOptions]="{exact: true}" routerLink="/app" routerLinkActive="active"><span>⌂</span>Tổng
-        quan</a>
-      @for (group of nav; track group.label) {
-        <div class="nav-group"><small [class]="group.flow">{{ group.label }}</small>
+      <a [routerLinkActiveOptions]="{exact: true}" routerLink="/app" routerLinkActive="active"><span>⌂</span>{{ i18n.t('shell.overview') }}</a>
+      @for (group of nav; track group.labelKey) {
+        <div class="nav-group"><small [class]="group.flow">{{ i18n.t(group.labelKey) }}</small>
           @for (item of group.items; track item.path) {
             <a (click)="menuOpen.set(false)" [routerLink]="item.path"
-               routerLinkActive="active"><span>{{ item.icon }}</span>{{ item.label }}</a>
+               routerLinkActive="active"><span>{{ item.icon }}</span>{{ i18n.t(item.labelKey) }}</a>
           }
         </div>
       }
     </nav>
     <div class="secure-note"><span>◈</span>
-      <div><b>Kết nối bảo mật</b><small>Dữ liệu được bảo vệ</small></div>
+      <div><b>{{ i18n.t('shell.secureConnection') }}</b><small>{{ i18n.t('shell.dataProtected') }}</small></div>
     </div>
   </aside>
 
   <div class="page-area">
     <header class="topbar">
-      <button (click)="menuOpen.set(true)" aria-label="Mở menu" class="menu-button">☰</button>
-      <div class="global-search">⌕ <input aria-label="Tìm kiếm toàn cục" placeholder="Tìm giao dịch, sao kê, nhiệm vụ…"><kbd>⌘
-        K</kbd></div>
+      <button (click)="menuOpen.set(true)" [attr.aria-label]="i18n.t('shell.openMenu')" class="menu-button">☰</button>
+      <div class="global-search">⌕ <input #globalSearchInput aria-keyshortcuts="/"
+                                         [attr.aria-label]="i18n.t('shell.searchLabel')"
+                                         [placeholder]="i18n.t('shell.searchPlaceholder')"><kbd>/</kbd></div>
       <div class="top-actions">
-        <button (click)="cycleTheme()" [attr.aria-label]="'Theme ' + theme()">{{ themeIcon() }}</button>
-        <a aria-label="Thông báo" routerLink="/app/notifications">♢<i></i></a>
+        <app-language-switcher/>
+        <button (click)="cycleTheme()" [attr.aria-label]="i18n.t('theme.label') + ' ' + theme()">{{ themeIcon() }}</button>
+        <a [attr.aria-label]="i18n.t('shell.notifications')" routerLink="/app/notifications">♢<i></i></a>
         <button (click)="userMenu.set(!userMenu())" class="avatar">{{ initials() }}</button>
       </div>
       @if (userMenu()) {
         <div class="user-menu"><b>{{ auth.user()?.fullName }}</b><small>{{ auth.user()?.email }}</small><a
-          routerLink="/app/profile">Hồ sơ cá nhân</a>
-          <button (click)="logout()">Đăng xuất</button>
+          routerLink="/app/profile">{{ i18n.t('shell.profile') }}</a>
+          <button (click)="logout()">{{ i18n.t('shell.logout') }}</button>
         </div>
       }
     </header>
@@ -42,7 +43,7 @@
   </div>
 
   @if (menuOpen()) {
-    <button (click)="menuOpen.set(false)" aria-label="Đóng menu" class="overlay"></button>
+    <button (click)="menuOpen.set(false)" [attr.aria-label]="i18n.t('shell.closeMenu')" class="overlay"></button>
   }
   @if (toast.current(); as currentToast) {
     <div [class]="currentToast.kind" class="toast">{{ currentToast.message }}</div>
