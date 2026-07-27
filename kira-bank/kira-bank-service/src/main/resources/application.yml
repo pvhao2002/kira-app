@@ -22,7 +22,7 @@ server:
   port: ${SERVER_PORT:8080}
   error:
     include-stacktrace: never
-management.endpoints.web.exposure.include: info
+management.endpoints.web.exposure.include: health,info
 app:
   jwt:
     secret: ${JWT_SECRET:development-secret-must-have-at-least-32-characters}
