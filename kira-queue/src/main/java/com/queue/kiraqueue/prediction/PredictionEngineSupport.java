@@ -9,6 +9,7 @@ import lombok.extern.java.Log;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -132,6 +133,58 @@ public class PredictionEngineSupport {
             delete from event_prediction
             where event_id = :event_id
               and prediction_version_id = :prediction_version_id
+            """;
+
+    private static final String SQL_LOCK_EVENT = """
+            select event_id
+            from events
+            where event_id = :event_id
+            for update
+            """;
+
+    private static final String SQL_HAS_CURRENT_PREDICTION_ROWS = """
+            select 1
+            from event_prediction ep
+                   inner join prediction_version pv
+                              on pv.prediction_version_id = ep.prediction_version_id
+            where ep.event_id = :event_id
+              and pv.is_active = 1
+              and pv.code in ('NO_PRICE', 'WITH_PRICE', 'WITH_LEAGUE_NO_PRICE')
+            limit 1
+            """;
+
+    private static final String SQL_DELETE_EVENT_ODDS = """
+            delete from event_odds
+            where event_id = :event_id
+            """;
+
+    private static final String SQL_DELETE_EVENT_ODDS_TIMELINE = """
+            delete from event_odds_timeline
+            where event_id = :event_id
+            """;
+
+    private static final String SQL_DELETE_EVENT_RESULT = """
+            delete from event_result
+            where event_id = :event_id
+            """;
+
+    private static final String SQL_DELETE_EVENT_CRAWL_FAILED = """
+            delete from event_crawl_failed
+            where event_id = :event_id
+            """;
+
+    private static final String SQL_DELETE_EVENT_IF_NO_CURRENT_PREDICTIONS = """
+            delete from events
+            where event_id = :event_id
+              and not exists (
+                select 1
+                from event_prediction ep
+                       inner join prediction_version pv
+                                  on pv.prediction_version_id = ep.prediction_version_id
+                where ep.event_id = events.event_id
+                  and pv.is_active = 1
+                  and pv.code in ('NO_PRICE', 'WITH_PRICE', 'WITH_LEAGUE_NO_PRICE')
+              )
             """;
 
     private static final String SQL_UPSERT_INCOMPLETE_PREDICTION = """
@@ -303,6 +356,39 @@ public class PredictionEngineSupport {
         updateIncomplete(eventId, versionId, "failed", message);
         log.info(() -> "Persist failed prediction for event_id="
                 + eventId + ", version_id=" + versionId + ": " + message);
+    }
+
+    @Transactional
+    public boolean deleteEventIfNoCurrentPredictionRows(long eventId) {
+        var params = new MapSqlParameterSource("event_id", eventId);
+        var lockedEventIds = jdbcTemplate.query(
+                SQL_LOCK_EVENT,
+                params,
+                (rs, rowNum) -> rs.getLong("event_id")
+        );
+        if (lockedEventIds.isEmpty()) {
+            return false;
+        }
+        var currentPredictionRows = jdbcTemplate.query(
+                SQL_HAS_CURRENT_PREDICTION_ROWS,
+                params,
+                (rs, rowNum) -> rs.getInt(1)
+        );
+        if (!currentPredictionRows.isEmpty()) {
+            return false;
+        }
+
+        jdbcTemplate.update(SQL_DELETE_EVENT_ODDS, params);
+        jdbcTemplate.update(SQL_DELETE_EVENT_ODDS_TIMELINE, params);
+        jdbcTemplate.update(SQL_DELETE_EVENT_RESULT, params);
+        jdbcTemplate.update(SQL_DELETE_EVENT_CRAWL_FAILED, params);
+
+        int deleted = jdbcTemplate.update(SQL_DELETE_EVENT_IF_NO_CURRENT_PREDICTIONS, params);
+        if (deleted > 0) {
+            log.info(() -> "Deleted event without current prediction rows: event_id=" + eventId);
+            return true;
+        }
+        return false;
     }
 
     private Map<String, Object> lineSnapshotValues(TargetEventOdds odds) {

@@ -174,10 +174,10 @@ public class EventSchedule {
         );
     }
 
-    @Scheduled(
-            fixedDelayString = "${kira.producer.predict-schedule.all-upcoming-delay-ms:1800000}",
-            initialDelayString = "${kira.producer.predict-schedule.all-upcoming-initial-delay-ms:300000}"
-    )
+//    @Scheduled(
+//            fixedDelayString = "${kira.producer.predict-schedule.all-upcoming-delay-ms:1800000}",
+//            initialDelayString = "${kira.producer.predict-schedule.all-upcoming-initial-delay-ms:300000}"
+//    )
     @Transactional
     public void predictAllUpcomingEvents() {
         if (!predictScheduleEnabled || !allUpcomingEnabled) {
@@ -190,10 +190,10 @@ public class EventSchedule {
         );
     }
 
-    @Scheduled(
-            fixedDelayString = "${kira.producer.predict-schedule.near-upcoming-delay-ms:600000}",
-            initialDelayString = "${kira.producer.predict-schedule.near-upcoming-initial-delay-ms:180000}"
-    )
+//    @Scheduled(
+//            fixedDelayString = "${kira.producer.predict-schedule.near-upcoming-delay-ms:600000}",
+//            initialDelayString = "${kira.producer.predict-schedule.near-upcoming-initial-delay-ms:180000}"
+//    )
     @Transactional
     public void predictNearUpcomingEvents() {
         if (!predictScheduleEnabled || !nearUpcomingEnabled) {

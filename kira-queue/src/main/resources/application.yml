@@ -57,6 +57,8 @@ kira:
       date-enabled: ${KIRA_QUEUE_CONSUMER_DATE_ENABLED:${KIRA_QUEUE_CONSUMER_ENABLED:false}}
       event-enabled: ${KIRA_QUEUE_CONSUMER_EVENT_ENABLED:${KIRA_QUEUE_CONSUMER_ENABLED:false}}
       predict-enabled: ${KIRA_QUEUE_CONSUMER_PREDICT_ENABLED:${KIRA_QUEUE_CONSUMER_ENABLED:false}}
+      predict-concurrency: ${KIRA_QUEUE_PREDICT_CONCURRENCY:8}
+      predict-prefetch: ${KIRA_QUEUE_PREDICT_PREFETCH:${KIRA_QUEUE_PREDICT_CONCURRENCY:8}}
       settle-enabled: ${KIRA_QUEUE_CONSUMER_SETTLE_ENABLED:${KIRA_QUEUE_CONSUMER_ENABLED:false}}
     crawl-persist:
       core-pool-size: 2

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.queue.kiraqueue.dto.PredictJobMessage;
 import com.queue.kiraqueue.prediction.ActivePredictionVersionCache;
 import com.queue.kiraqueue.prediction.PredictionEngineRegistry;
+import com.queue.kiraqueue.prediction.PredictionEngineSupport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ public class PredictService {
     private final ObjectMapper objectMapper;
     private final ActivePredictionVersionCache versionCache;
     private final PredictionEngineRegistry engineRegistry;
+    private final PredictionEngineSupport predictionEngineSupport;
 
     public void predict(String payload) {
         var job = parseJob(payload);
@@ -31,9 +33,16 @@ public class PredictService {
             return;
         }
 
-        versionCache.getActiveVersions().stream()
+        var activeVersions = versionCache.getActiveVersions().stream()
                 .sorted(Comparator.comparingLong(ActivePredictionVersionCache.ActiveVersion::predictionVersionId))
-                .forEach(version -> runVersion(job.eventId(), version.code()));
+                .toList();
+        if (activeVersions.isEmpty()) {
+            log.warning("Skip prediction cleanup for event_id=" + job.eventId() + ": no active prediction versions");
+            return;
+        }
+
+        activeVersions.forEach(version -> runVersion(job.eventId(), version.code()));
+        predictionEngineSupport.deleteEventIfNoCurrentPredictionRows(job.eventId());
     }
 
     private void runVersion(long eventId, String versionCode) {

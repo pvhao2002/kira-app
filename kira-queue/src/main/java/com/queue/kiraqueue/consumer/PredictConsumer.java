@@ -18,7 +18,10 @@ public class PredictConsumer {
 
     private final PredictService predictService;
 
-    @RabbitListener(queues = RabbitMQConfig.QUEUE_PREDICTION, concurrency = "1")
+    @RabbitListener(
+            queues = RabbitMQConfig.QUEUE_PREDICTION,
+            containerFactory = RabbitMQConfig.PREDICTION_LISTENER_CONTAINER_FACTORY
+    )
     public void handlePredict(String payload) {
         long startedAt = System.currentTimeMillis();
         try {

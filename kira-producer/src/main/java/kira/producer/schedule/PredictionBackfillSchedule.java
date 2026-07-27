@@ -21,8 +21,8 @@ public class PredictionBackfillSchedule {
     private boolean backfillEnabled;
 
     @Scheduled(
-            fixedDelayString = "${kira.producer.predict-schedule.backfill-delay-ms:3600000}",
-            initialDelayString = "${kira.producer.predict-schedule.backfill-initial-delay-ms:600000}"
+            fixedDelayString = "${kira.producer.predict-schedule.backfill-delay-ms:3600}",
+            initialDelayString = "${kira.producer.predict-schedule.backfill-initial-delay-ms:6000}"
     )
     public void predictMissingEvents() {
         if (!predictScheduleEnabled || !backfillEnabled) {
