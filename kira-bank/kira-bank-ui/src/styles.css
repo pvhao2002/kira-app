@@ -1,10 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  font-family: Inter, "Segoe UI", sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #142033;
   background: #f5f7fa;
   font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   --navy: #071b33;
   --blue: #0878ff;
   --teal: #00a98f;
@@ -21,7 +24,8 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: #f5f7fa
+  background: #f5f7fa;
+  font-family: inherit;
 }
 
 a {
@@ -608,40 +612,6 @@ input:focus, select:focus, textarea:focus {
   z-index: 10
 }
 
-.global-search {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: #8b98a8;
-  background: #f6f8fa;
-  border: 1px solid #edf0f4;
-  border-radius: 8px;
-  padding: 6px 9px;
-  width: 390px
-}
-
-.global-search input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  padding: 2px;
-  box-shadow: none
-}
-
-.global-search kbd {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  white-space: nowrap;
-  line-height: 1;
-  font-size: 10px;
-  border: 1px solid #d6dde5;
-  background: #fff;
-  padding: 3px 6px;
-  border-radius: 4px
-}
-
 .top-actions {
   margin-left: auto;
   display: flex;
@@ -1183,12 +1153,114 @@ html[data-theme=dark] td {
   color: #f2f7fc
 }
 
-html[data-theme=dark] input,
+/* Custom Dropdown Selection Styling */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230878ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px 16px;
+  padding-right: 40px !important;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background-color: var(--surface);
+  color: #0f172a;
+  font-size: 13.5px;
+  font-weight: 600;
+  height: 44px;
+  padding-left: 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+select:hover {
+  border-color: #0878ff;
+  box-shadow: 0 4px 12px rgba(8, 120, 255, 0.1);
+}
+
+select:focus {
+  outline: none;
+  border-color: #0878ff;
+  box-shadow: 0 0 0 3.5px rgba(8, 120, 255, 0.18);
+}
+
+select option {
+  padding: 12px;
+  background-color: #ffffff;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+/* General Input & Textarea Styling */
+input:not([type=checkbox]):not([type=radio]), textarea {
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background-color: var(--surface);
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 14px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+textarea {
+  height: auto;
+  padding: 12px 14px;
+}
+
+input:not([type=checkbox]):not([type=radio]):focus, textarea:focus {
+  outline: none;
+  border-color: #0878ff;
+  box-shadow: 0 0 0 3.5px rgba(8, 120, 255, 0.18);
+}
+
+/* Dark Mode Overrides for High Contrast & Readability */
+html[data-theme=dark] label,
+html[data-theme=dark] .resource-form-grid label > span,
+html[data-theme=dark] .dialog label,
+html[data-theme=dark] form label {
+  color: #f8fafc !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme=dark] input:not([type=checkbox]):not([type=radio]),
 html[data-theme=dark] select,
 html[data-theme=dark] textarea {
-  background: #0b2036;
-  color: #fff;
-  border-color: #31465b
+  background-color: #0b1828 !important;
+  color: #ffffff !important;
+  border-color: #2b476b !important;
+}
+
+html[data-theme=dark] select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+html[data-theme=dark] input::placeholder,
+html[data-theme=dark] textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html[data-theme=dark] input:hover,
+html[data-theme=dark] select:hover,
+html[data-theme=dark] textarea:hover {
+  border-color: #38bdf8 !important;
+}
+
+html[data-theme=dark] input:focus,
+html[data-theme=dark] select:focus,
+html[data-theme=dark] textarea:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.22) !important;
+}
+
+html[data-theme=dark] select option {
+  background-color: #0d1e33 !important;
+  color: #f8fafc !important;
 }
 
 html[data-theme=dark] .global-search,
@@ -1441,4 +1513,250 @@ html[data-theme=dark] .skeleton {
   .public-nav .brand {
     font-size: 17px
   }
+}
+
+/* ==========================================================================
+   GLOBAL & RESOURCE & CATALOG SEARCH FORMS (Modern Redesign)
+   ========================================================================== */
+.global-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 12px;
+  height: 40px;
+  width: 400px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.global-search:hover {
+  border-color: #0878ff;
+  background: #f8fafc;
+}
+
+.global-search:focus-within {
+  border-color: #0878ff;
+  background: #ffffff;
+  box-shadow: 0 0 0 3.5px rgba(8, 120, 255, 0.18);
+}
+
+.global-search .search-icon {
+  color: #0878ff;
+  flex-shrink: 0;
+}
+
+.global-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0 !important;
+  background: transparent !important;
+  height: 100% !important;
+  padding: 0 !important;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #0f172a !important;
+  box-shadow: none !important;
+}
+
+.global-search input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.global-search .shortcut-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+/* Table Search Box & General Search Inputs */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 0 14px;
+  height: 42px;
+  width: 320px;
+  transition: all 0.2s ease;
+}
+
+.search-box:hover {
+  border-color: #0878ff;
+}
+
+.search-box:focus-within {
+  border-color: #0878ff;
+  background: #ffffff;
+  box-shadow: 0 0 0 3.5px rgba(8, 120, 255, 0.18);
+}
+
+.search-box .search-icon {
+  color: #0878ff;
+  flex-shrink: 0;
+}
+
+.search-box input {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  background: transparent !important;
+  height: 100% !important;
+  padding: 0 !important;
+  font-size: 13.5px;
+  color: #0f172a !important;
+  box-shadow: none !important;
+}
+
+/* Catalog Page Search Row */
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  max-width: 640px;
+}
+
+.search-input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 16px;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.search-input-wrapper:hover {
+  border-color: #0878ff;
+}
+
+.search-input-wrapper:focus-within {
+  border-color: #0878ff;
+  background: #ffffff;
+  box-shadow: 0 0 0 3.5px rgba(8, 120, 255, 0.18);
+}
+
+.search-input-wrapper .search-icon {
+  color: #0878ff;
+  flex-shrink: 0;
+}
+
+.search-input-wrapper input {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  background: transparent !important;
+  height: 100% !important;
+  padding: 0 !important;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a !important;
+  box-shadow: none !important;
+}
+
+.search-btn {
+  height: 46px;
+  padding: 0 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* Dark Mode Overrides for Search Forms */
+html[data-theme=dark] .global-search,
+html[data-theme=dark] .search-box,
+html[data-theme=dark] .search-input-wrapper {
+  background: #0b1828 !important;
+  border-color: #2b476b !important;
+  color: #ffffff !important;
+}
+
+html[data-theme=dark] .global-search:hover,
+html[data-theme=dark] .search-box:hover,
+html[data-theme=dark] .search-input-wrapper:hover {
+  border-color: #38bdf8 !important;
+}
+
+html[data-theme=dark] .global-search:focus-within,
+html[data-theme=dark] .search-box:focus-within,
+html[data-theme=dark] .search-input-wrapper:focus-within {
+  border-color: #38bdf8 !important;
+  background: #0d1e33 !important;
+  box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.22) !important;
+}
+
+html[data-theme=dark] .global-search .search-icon,
+html[data-theme=dark] .search-box .search-icon,
+html[data-theme=dark] .search-input-wrapper .search-icon {
+  color: #38bdf8 !important;
+}
+
+html[data-theme=dark] .global-search input,
+html[data-theme=dark] .search-box input,
+html[data-theme=dark] .search-input-wrapper input {
+  color: #ffffff !important;
+}
+
+html[data-theme=dark] .global-search input::placeholder,
+html[data-theme=dark] .search-box input::placeholder,
+html[data-theme=dark] .search-input-wrapper input::placeholder {
+  color: #94a3b8 !important;
+}
+
+html[data-theme=dark] .global-search .shortcut-badge {
+  background: #1e3a5f;
+  border-color: #2b476b;
+  color: #cbd5e1;
+}
+
+/* ==========================================================================
+   TRANSPARENT BACKGROUND & CLEAN SINGLE FOCUS ON SEARCH INPUTS
+   ========================================================================== */
+.global-search input,
+.search-box input,
+.search-input-wrapper input,
+.table-tools input,
+.global-search input:hover,
+.search-box input:hover,
+.search-input-wrapper input:hover,
+.table-tools input:hover,
+.global-search input:focus,
+.search-box input:focus,
+.search-input-wrapper input:focus,
+.table-tools input:focus,
+html[data-theme=dark] .global-search input,
+html[data-theme=dark] .search-box input,
+html[data-theme=dark] .search-input-wrapper input,
+html[data-theme=dark] .table-tools input,
+html[data-theme=dark] .global-search input:hover,
+html[data-theme=dark] .search-box input:hover,
+html[data-theme=dark] .search-input-wrapper input:hover,
+html[data-theme=dark] .table-tools input:hover,
+html[data-theme=dark] .global-search input:focus,
+html[data-theme=dark] .search-box input:focus,
+html[data-theme=dark] .search-input-wrapper input:focus,
+html[data-theme=dark] .table-tools input:focus {
+  background: transparent !important;
+  background-color: transparent !important;
+  outline: 0 !important;
+  border: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }

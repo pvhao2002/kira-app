@@ -1,0 +1,97 @@
+<div class="credit-card-widget {{ cardThemeClass() }}">
+  <!-- Background Card Image Overlay if provided -->
+  @if (cardImage()) {
+    <div class="card-art-bg" [style.background-image]="'url(' + cardImage() + ')'"></div>
+  }
+  <!-- Shimmer Overlay & Background Grid -->
+  <div class="card-shimmer"></div>
+  <div class="card-pattern"></div>
+
+  <!-- Card Header: Bank Name & Tier / Network Pill -->
+  <div class="card-header">
+    <div class="bank-info">
+      @if (bankLogo()) {
+        <img [src]="bankLogo()" class="bank-logo-img" alt="">
+      }
+      <div class="bank-title-group">
+        <span class="bank-name">{{ displayBank() }}</span>
+        <span class="card-subtitle">{{ displayCardName() }}</span>
+      </div>
+    </div>
+    @if (normalizedTier()) {
+      <span class="tier-badge">
+        <span class="sparkle">✦</span> {{ normalizedTier() }}
+      </span>
+    }
+  </div>
+
+  <!-- Card Middle: Chip & Contactless Pay -->
+  <div class="card-middle">
+    <div class="emv-chip">
+      <div class="chip-line horizontal-top"></div>
+      <div class="chip-line horizontal-bottom"></div>
+      <div class="chip-line vertical"></div>
+      <div class="chip-core"></div>
+    </div>
+    <svg class="contactless-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12A2.5 2.5 0 0 0 8.5 9.5"/>
+      <path d="M12.5 17.5A6.5 6.5 0 0 0 16 12A6.5 6.5 0 0 0 12.5 6.5"/>
+      <path d="M16.5 20.5A10.5 10.5 0 0 0 21 12A10.5 10.5 0 0 0 16.5 3.5"/>
+    </svg>
+  </div>
+
+  <!-- Card Number -->
+  <div class="card-number">
+    <span class="num-group">••••</span>
+    <span class="num-group">••••</span>
+    <span class="num-group">••••</span>
+    <span class="num-group last-four">{{ displayLastFour() }}</span>
+  </div>
+
+  <!-- Card Footer: Holder, Dates & Network Logo -->
+  <div class="card-footer">
+    <div class="holder-and-dates">
+      <div class="holder-details">
+        <span class="label">CARD HOLDER</span>
+        <span class="val holder-name">{{ displayNickname() }}</span>
+      </div>
+      <div class="date-details">
+        <span class="label">STMT / DUE</span>
+        <span class="val date-val">{{ displayStatement() }} / {{ displayDue() }}</span>
+      </div>
+    </div>
+
+    <!-- Network Badges -->
+    <div class="network-logo">
+      @if (normalizedNetwork() === 'VISA') {
+        <span class="visa-logo">VISA</span>
+      } @else if (normalizedNetwork() === 'MASTERCARD') {
+        <div class="mastercard-logo">
+          <span class="circle red"></span>
+          <span class="circle yellow"></span>
+        </div>
+      } @else if (normalizedNetwork() === 'JCB') {
+        <div class="jcb-logo">
+          <span class="jcb-bar blue">J</span>
+          <span class="jcb-bar red">C</span>
+          <span class="jcb-bar green">B</span>
+        </div>
+      } @else if (normalizedNetwork() === 'AMEX') {
+        <span class="amex-logo">AMEX</span>
+      } @else if (normalizedNetwork() === 'NAPAS') {
+        <span class="napas-logo">napas</span>
+      } @else {
+        <div class="generic-card-logo">
+          <span class="circle"></span>
+          <span class="circle outline"></span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Limit Banner Pill -->
+  <div class="limit-banner">
+    <small>Hạn mức tín dụng:</small>
+    <strong>{{ displayLimit() }}</strong>
+  </div>
+</div>

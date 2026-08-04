@@ -18,6 +18,7 @@
     <jjwt.version>0.12.6</jjwt.version>
     <springdoc.version>2.8.13</springdoc.version>
     <testcontainers.version>1.21.3</testcontainers.version>
+    <aws.sdk.version>2.31.59</aws.sdk.version>
   </properties>
   <dependencies>
     <dependency>
@@ -102,6 +103,11 @@
       <artifactId>mysql</artifactId>
       <version>${testcontainers.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+      <version>${aws.sdk.version}</version>
     </dependency>
   </dependencies>
   <build>

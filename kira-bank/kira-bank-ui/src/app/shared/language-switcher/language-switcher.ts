@@ -11,19 +11,25 @@ import {LanguageService, SupportedLanguage} from '../../core/i18n/language.servi
               [attr.aria-label]="i18n.t('language.change')"
               aria-haspopup="listbox"
               class="language-trigger"
+              [class.is-open]="open()"
               type="button">
-        {{ i18n.language().toUpperCase() }} <span aria-hidden="true">⌄</span>
+        <svg class="globe-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        <span class="lang-code">{{ i18n.language().toUpperCase() }}</span>
+        <svg class="chevron-icon" [class.rotated]="open()" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
       </button>
       @if (open()) {
         <div [attr.aria-label]="i18n.t('language.change')" class="language-menu" role="listbox">
           @for (option of options; track option.value) {
             <button (click)="select(option.value)"
                     [attr.aria-selected]="i18n.language() === option.value"
+                    class="menu-option"
+                    [class.active]="i18n.language() === option.value"
                     role="option"
                     type="button">
-              <span>{{ option.code }}</span>{{ i18n.t(option.labelKey) }}
+              <span class="flag-badge">{{ option.code }}</span>
+              <span class="label">{{ i18n.t(option.labelKey) }}</span>
               @if (i18n.language() === option.value) {
-                <b aria-hidden="true">✓</b>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               }
             </button>
           }
@@ -33,67 +39,139 @@ import {LanguageService, SupportedLanguage} from '../../core/i18n/language.servi
   `,
   styles: `
     :host {
-      display: block;
+      display: inline-block;
+      position: relative;
+    }
+
+    .language-switcher {
       position: relative;
     }
 
     .language-trigger {
-      min-width: 58px;
-      height: 35px;
+      height: 38px;
+      padding: 0 14px;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 5px;
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      background: var(--surface);
-      color: inherit;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .4px;
-      white-space: nowrap;
+      gap: 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      background: #ffffff;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .language-trigger:hover {
+      border-color: #0878ff;
+      color: #0878ff;
+      background: #f8fafc;
+      box-shadow: 0 4px 12px rgba(8, 120, 255, 0.12);
+    }
+
+    .language-trigger.is-open {
+      border-color: #0878ff;
+      color: #0878ff;
+      box-shadow: 0 0 0 3px rgba(8, 120, 255, 0.15);
+    }
+
+    .globe-icon {
+      color: #0878ff;
+      flex-shrink: 0;
+    }
+
+    .lang-code {
+      letter-spacing: 0.5px;
+    }
+
+    .chevron-icon {
+      color: #94a3b8;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .chevron-icon.rotated {
+      transform: rotate(180deg);
+      color: #0878ff;
     }
 
     .language-menu {
       position: absolute;
-      z-index: 50;
+      z-index: 100;
       top: calc(100% + 8px);
       right: 0;
-      width: 180px;
+      width: 190px;
       padding: 6px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--surface);
-      box-shadow: var(--shadow);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.04);
+      animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .language-menu button {
+    @keyframes dropdownFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .menu-option {
       width: 100%;
-      display: grid;
-      grid-template-columns: 28px 1fr auto;
+      display: flex;
       align-items: center;
-      gap: 8px;
-      border: 0;
-      border-radius: 7px;
-      padding: 9px 10px;
+      gap: 10px;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 12px;
       background: transparent;
-      color: inherit;
+      color: #334155;
       text-align: left;
-      font-size: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
     }
 
-    .language-menu button:hover,
-    .language-menu button[aria-selected="true"] {
-      background: color-mix(in srgb, var(--blue) 12%, var(--surface));
+    .menu-option:hover {
+      background: #f1f5f9;
+      color: #0f172a;
     }
 
-    .language-menu span {
-      color: var(--blue);
+    .menu-option.active {
+      background: rgba(8, 120, 255, 0.08);
+      color: #0878ff;
+      font-weight: 700;
+    }
+
+    .flag-badge {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 22px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      color: #0878ff;
+      font-size: 11px;
       font-weight: 800;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
     }
 
-    .language-menu b {
-      color: var(--teal);
+    .label {
+      flex-grow: 1;
+    }
+
+    .check-icon {
+      color: #0878ff;
+      flex-shrink: 0;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush

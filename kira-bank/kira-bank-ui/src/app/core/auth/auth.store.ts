@@ -17,10 +17,6 @@ export class AuthStore {
     return this.http.post<AuthResponse>('/api/v1/auth/login', body, {withCredentials: true}).pipe(tap(r => this.accept(r)));
   }
 
-  register(body: { email: string; password: string; fullName: string }): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>('/api/v1/auth/register', body, {withCredentials: true}).pipe(tap(r => this.accept(r)));
-  }
-
   refresh(): Observable<AuthResponse> {
     return this.http.post<AuthResponse>('/api/v1/auth/refresh', {}, {withCredentials: true}).pipe(tap(r => this.accept(r)));
   }

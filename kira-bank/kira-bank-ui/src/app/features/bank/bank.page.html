@@ -1,0 +1,317 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('bank.eyebrow') }}</span>
+    <h1>{{ i18n.t('bank.title') }}</h1>
+    <p>{{ i18n.t('bank.description') }}</p>
+  </div>
+  <div class="header-actions">
+    <button (click)="openAddBank()" class="btn secondary" type="button">
+      <span>🏦</span> {{ i18n.t('bank.addBank') }}
+    </button>
+    <button (click)="openAddCard()" class="btn primary" type="button">
+      <span>💳</span> {{ i18n.t('bank.addCard') }}
+    </button>
+  </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="bank-stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon bank-icon">🏦</div>
+    <div class="stat-content">
+      <small>{{ i18n.t('bank.statBanks') }}</small>
+      <strong>{{ banks().length }}</strong>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon card-icon">💳</div>
+    <div class="stat-content">
+      <small>{{ i18n.t('bank.statCards') }}</small>
+      <strong>{{ cards().length }}</strong>
+    </div>
+  </div>
+</section>
+
+<!-- Filter & Search Toolbar -->
+<section class="panel filter-section">
+  <div class="search-and-tabs">
+    <div class="search-box">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" [placeholder]="i18n.t('bank.searchPlaceholder')">
+    </div>
+
+    <!-- Bank Chips -->
+    <div class="bank-chips-bar">
+      <button (click)="selectBank('ALL')" [class.active]="selectedBankId() === 'ALL'" class="bank-chip">
+        {{ i18n.t('bank.allBanks') }} ({{ banks().length }})
+      </button>
+      @for (bank of filteredBanks(); track bank.id) {
+        <button (click)="selectBank(bank.id)" [class.active]="selectedBankId() === bank.id" class="bank-chip">
+          @if (bank.logoUrl) {
+            <img [src]="bank.logoUrl" class="chip-logo" alt="">
+          }
+          <span>{{ bank.shortName || bank.code }}</span>
+          <span class="count-badge">{{ getCardsCountForBank(bank.id) }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Bank Cards Directory Overview -->
+<section class="section-container">
+  <div class="section-header">
+    <h2>{{ i18n.t('bank.sectionBanks') }}</h2>
+    <span>{{ i18n.t('bank.bankCount', {n: filteredBanks().length}) }}</span>
+  </div>
+
+  <div class="bank-cards-grid">
+    @for (bank of filteredBanks(); track bank.id) {
+      <article class="bank-card" [class.selected]="selectedBankId() === bank.id" (click)="selectBank(bank.id)">
+        <div class="bank-card-header">
+          <div class="bank-brand">
+            @if (bank.logoUrl) {
+              <img [src]="bank.logoUrl" class="bank-logo" alt="">
+            } @else {
+              <div class="bank-logo-fallback">{{ bank.code.slice(0, 3) }}</div>
+            }
+            <div class="bank-titles">
+              <h3>{{ bank.shortName || bank.name }}</h3>
+              <span class="bank-code-tag">{{ bank.code }}</span>
+            </div>
+          </div>
+          <span class="cards-count-pill">{{ i18n.t('bank.cardTypesCount', {n: getCardsCountForBank(bank.id)}) }}</span>
+        </div>
+
+        <p class="bank-full-name">{{ bank.name }}</p>
+
+        <div class="bank-footer-info">
+          @if (bank.hotline) {
+            <span class="info-item">📞 {{ bank.hotline }}</span>
+          }
+          @if (bank.website) {
+            <a [href]="bank.website" target="_blank" (click)="$event.stopPropagation()" class="info-item link">🌐 {{ i18n.t('bank.website') }}</a>
+          }
+          <button (click)="openAddCard(bank.id); $event.stopPropagation()" class="add-card-btn" [title]="i18n.t('bank.addCardForBank')">
+            ＋ {{ i18n.t('bank.addCardForBank') }}
+          </button>
+        </div>
+      </article>
+    }
+  </div>
+</section>
+
+<!-- Card Types Catalog Section -->
+<section class="section-container card-types-section">
+  <div class="section-header">
+    <div>
+      <h2>
+        {{ i18n.t('bank.sectionCards') }}
+        @if (selectedBank()) {
+          <span>— {{ selectedBank()?.shortName }}</span>
+        }
+      </h2>
+      <p>{{ i18n.t('bank.cardSectionDesc') }}</p>
+    </div>
+    <button (click)="openAddCard()" class="btn primary" type="button">
+      ＋ {{ i18n.t('bank.addCardType') }}
+    </button>
+  </div>
+
+  @if (filteredCards().length) {
+    <div class="card-types-grid">
+      @for (cardItem of filteredCards(); track cardItem.id) {
+        <article class="card-item-box">
+          <div class="card-image-wrapper">
+            @if (cardItem.imageUrl) {
+              <img [src]="cardItem.imageUrl" class="card-img" alt="">
+            } @else {
+              <div class="card-img-placeholder">
+                <span>💳</span>
+                <small>{{ cardItem.cardNetwork }}</small>
+              </div>
+            }
+            <span class="network-badge {{ cardItem.cardNetwork.toLowerCase() }}">{{ cardItem.cardNetwork }}</span>
+          </div>
+
+          <div class="card-item-details">
+            <div class="card-item-header">
+              <small class="bank-badge">{{ cardItem.bankName }}</small>
+              <span class="tier-pill">{{ cardItem.cardTier }}</span>
+            </div>
+            <h3>{{ cardItem.cardName }}</h3>
+            <span class="card-code-sub">{{ cardItem.cardCode }}</span>
+
+            <div class="card-specs">
+              <div class="spec-row">
+                <span>{{ i18n.t('bank.annualFee') }}:</span>
+                <strong>{{ cardItem.annualFee ? formatMoney(cardItem.annualFee) + ' ₫/năm' : i18n.t('bank.free') }}</strong>
+              </div>
+              <div class="spec-row">
+                <span>{{ i18n.t('bank.cashbackLimit') }}:</span>
+                <strong class="cashback-val">{{ cardItem.cashbackLimit ? formatMoney(cardItem.cashbackLimit) + ' ₫' : i18n.t('bank.noLimit') }}</strong>
+              </div>
+            </div>
+
+            @if (cardItem.description) {
+              <p class="card-desc">{{ cardItem.description }}</p>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <span>💳</span>
+      <h3>{{ i18n.t('bank.emptyCards') }}</h3>
+      <p>{{ i18n.t('bank.emptyCardsDesc') }}</p>
+      <button (click)="openAddCard()" class="btn primary" type="button">{{ i18n.t('bank.emptyCardsBtn') }}</button>
+    </div>
+  }
+</section>
+
+<!-- Dialog 1: Add Bank Modal -->
+@if (openBankDialog()) {
+  <div (click)="closeBankDialog()" class="dialog-backdrop">
+    <form (click)="$event.stopPropagation()" (ngSubmit)="submitBank()" [formGroup]="bankForm" class="dialog bank-dialog">
+      <header>
+        <div>
+          <small>{{ i18n.t('bank.dialogBankEyebrow') }}</small>
+          <h2>{{ i18n.t('bank.dialogBankTitle') }}</h2>
+        </div>
+        <button (click)="closeBankDialog()" type="button">×</button>
+      </header>
+      <p>{{ i18n.t('bank.dialogBankDesc') }}</p>
+
+      <div class="dialog-form-grid">
+        <label>
+          <span>{{ i18n.t('bank.fieldCode') }} <b>*</b></span>
+          <input formControlName="code" [placeholder]="i18n.t('bank.fieldCodePlaceholder')">
+        </label>
+        <label>
+          <span>{{ i18n.t('bank.fieldShortName') }} <b>*</b></span>
+          <input formControlName="shortName" [placeholder]="i18n.t('bank.fieldShortNamePlaceholder')">
+        </label>
+        <label class="full-width">
+          <span>{{ i18n.t('bank.fieldFullName') }} <b>*</b></span>
+          <input formControlName="name" [placeholder]="i18n.t('bank.fieldFullNamePlaceholder')">
+        </label>
+        <label class="full-width">
+          <span>{{ i18n.t('bank.fieldLogoUrl') }}</span>
+          <input formControlName="logoUrl" placeholder="https://domain.com/logo.png">
+        </label>
+        <label>
+          <span>{{ i18n.t('bank.fieldHotline') }}</span>
+          <input formControlName="hotline" [placeholder]="i18n.t('bank.fieldHotlinePlaceholder')">
+        </label>
+        <label>
+          <span>{{ i18n.t('bank.fieldWebsite') }}</span>
+          <input formControlName="website" [placeholder]="i18n.t('bank.fieldWebsitePlaceholder')">
+        </label>
+      </div>
+
+      <footer>
+        <button (click)="closeBankDialog()" class="btn ghost" type="button">{{ i18n.t('common.cancel') }}</button>
+        <button class="btn primary" type="submit">{{ i18n.t('bank.saveBank') }}</button>
+      </footer>
+    </form>
+  </div>
+}
+
+<!-- Dialog 2: Add Card Type Modal -->
+@if (openCardDialog()) {
+  <div (click)="closeCardDialog()" class="dialog-backdrop">
+    <form (click)="$event.stopPropagation()" (ngSubmit)="submitCard()" [formGroup]="cardForm" class="dialog card-dialog">
+      <header>
+        <div>
+          <small>{{ i18n.t('bank.dialogCardEyebrow') }}</small>
+          <h2>{{ i18n.t('bank.dialogCardTitle') }}</h2>
+        </div>
+        <button (click)="closeCardDialog()" type="button">×</button>
+      </header>
+      <p>{{ i18n.t('bank.dialogCardDesc') }}</p>
+
+      <div class="card-dialog-layout">
+        <!-- Live Preview Left Column -->
+        <div class="preview-col">
+          <span class="preview-label">{{ i18n.t('bank.previewLabel') }}</span>
+          <app-credit-card-preview
+            [bankName]="cardPreviewBankName()"
+            [bankLogo]="cardPreviewBankLogo()"
+            [cardName]="cardFormValues()['cardName'] || 'Everyday Cashback'"
+            [cardImage]="cardFormValues()['imageUrl']"
+            [cardNetwork]="cardFormValues()['cardNetwork'] || 'VISA'"
+            [cardTier]="cardFormValues()['cardTier'] || 'SIGNATURE'"
+            [creditLimit]="cardFormValues()['cashbackLimit'] || 50000000"
+          ></app-credit-card-preview>
+        </div>
+
+        <!-- Form Right Column -->
+        <div class="form-col">
+          <div class="dialog-form-grid">
+            <label class="full-width">
+              <span>{{ i18n.t('bank.fieldBank') }} <b>*</b></span>
+              <app-custom-select
+                formControlName="bankId"
+                [options]="bankOptions()"
+                [placeholder]="i18n.t('bank.fieldBankPlaceholder')"
+              ></app-custom-select>
+            </label>
+
+            <label class="full-width">
+              <span>{{ i18n.t('bank.fieldCardName') }} <b>*</b></span>
+              <input formControlName="cardName" [placeholder]="i18n.t('bank.fieldCardNamePlaceholder')">
+            </label>
+
+            <label>
+              <span>{{ i18n.t('bank.fieldCardCode') }} <b>*</b></span>
+              <input formControlName="cardCode" [placeholder]="i18n.t('bank.fieldCardCodePlaceholder')">
+            </label>
+
+            <label>
+              <span>{{ i18n.t('bank.fieldNetwork') }} <b>*</b></span>
+              <select formControlName="cardNetwork">
+                <option value="VISA">VISA</option>
+                <option value="MASTERCARD">MASTERCARD</option>
+                <option value="JCB">JCB</option>
+                <option value="NAPAS">NAPAS</option>
+                <option value="AMEX">AMERICAN EXPRESS</option>
+              </select>
+            </label>
+
+            <label>
+              <span>{{ i18n.t('bank.fieldTier') }} <b>*</b></span>
+              <select formControlName="cardTier">
+                <option value="SIGNATURE">SIGNATURE</option>
+                <option value="PLATINUM">PLATINUM</option>
+                <option value="INFINITE">INFINITE</option>
+                <option value="GOLD">GOLD</option>
+                <option value="STANDARD">STANDARD</option>
+              </select>
+            </label>
+
+            <label>
+              <span>{{ i18n.t('bank.fieldAnnualFee') }}</span>
+              <input type="number" formControlName="annualFee" placeholder="0">
+            </label>
+
+            <label class="full-width">
+              <span>{{ i18n.t('bank.fieldImageUrl') }}</span>
+              <input formControlName="imageUrl" [placeholder]="i18n.t('bank.fieldImageUrlPlaceholder')">
+            </label>
+
+            <label class="full-width">
+              <span>{{ i18n.t('bank.fieldDescription') }}</span>
+              <textarea formControlName="description" rows="3" [placeholder]="i18n.t('bank.fieldDescriptionPlaceholder')"></textarea>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <button (click)="closeCardDialog()" class="btn ghost" type="button">{{ i18n.t('common.cancel') }}</button>
+        <button class="btn primary" type="submit">{{ i18n.t('bank.saveCard') }}</button>
+      </footer>
+    </form>
+  </div>
+}

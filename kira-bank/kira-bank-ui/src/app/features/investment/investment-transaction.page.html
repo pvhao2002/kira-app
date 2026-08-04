@@ -1,0 +1,136 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('resource.flowInvestment') }}</span>
+    <h1>{{ i18n.t('route.addInvestmentTransaction') }}</h1>
+    <p>Upload ảnh giao dịch để AI tạo draft. Bạn luôn xem và xác nhận trước khi ghi nhận giao dịch.</p>
+  </div>
+</section>
+
+<div class="transaction-grid">
+  <section class="panel ai-panel">
+    <header class="panel-header">
+      <div class="header-icon teal">AI</div>
+      <div>
+        <h3>Ảnh giao dịch AI</h3>
+        <p>JPEG, PNG hoặc WebP; tối đa 10 MB. AI chạy theo job mỗi 3 giờ.</p>
+      </div>
+    </header>
+
+    <div
+      class="dropzone"
+      [class.is-uploading]="uploadingAi()"
+      [class.has-image]="uploadedImageUrl() !== null"
+      (dragover)="onDragOver($event)"
+      (drop)="onDrop($event)"
+      (click)="fileInput.click()">
+      <input #fileInput type="file" accept="image/jpeg,image/png,image/webp" (change)="onFileSelected($event)" style="display: none;">
+
+      @if (uploadingAi()) {
+        <div class="upload-spinner-state">
+          <span class="spinner"></span>
+          <span>Đang lưu ảnh vào hàng đợi AI...</span>
+        </div>
+      } @else if (uploadedImageUrl()) {
+        <div class="preview-container">
+          <img [src]="uploadedImageUrl()" alt="Transaction receipt" class="receipt-preview">
+          <div class="preview-badge">{{ uploadStatus() === 'READY' ? 'Sẵn sàng duyệt' : 'Đang chờ AI' }}</div>
+        </div>
+      } @else {
+        <div class="dropzone-content">
+          <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+          <p class="prompt-text">Kéo thả hoặc chọn ảnh hóa đơn/chuyển khoản</p>
+          <span class="browse-btn">Chọn ảnh</span>
+        </div>
+      }
+    </div>
+
+    <div class="draft-section">
+      <div class="draft-heading">
+        <h4>Draft AI của bạn</h4>
+        <button type="button" class="text-button" (click)="loadDrafts()">Làm mới</button>
+      </div>
+      @if (loadingDrafts()) {
+        <p class="draft-empty">Đang tải draft...</p>
+      } @else if (drafts().length === 0) {
+        <p class="draft-empty">Chưa có ảnh nào chờ AI xử lý.</p>
+      } @else {
+        <div class="draft-list">
+          @for (draft of drafts(); track draft.attachmentId) {
+            <article class="draft-item" [class.selected]="selectedAttachmentId() === draft.attachmentId">
+              <img [src]="draft.contentUrl" alt="Ảnh giao dịch">
+              <div class="draft-detail">
+                <strong>{{ draft.originalName }}</strong>
+                <span class="draft-status" [class.ready]="draft.aiStatus === 'READY'" [class.failed]="draft.aiStatus === 'FAILED'">
+                  {{ statusLabel(draft.aiStatus) }}
+                </span>
+                @if (draft.draft?.amount != null) {
+                  <small>{{ draft.draft?.amount | number:'1.0-4' }} · {{ draft.draft?.type ?? 'Chưa rõ loại' }}</small>
+                } @else if (draft.aiError) {
+                  <small>{{ draft.aiError }}</small>
+                }
+              </div>
+              @if (draft.aiStatus === 'READY') {
+                <button type="button" class="draft-action" (click)="selectDraft(draft)">Dùng draft</button>
+              } @else if (draft.aiStatus === 'FAILED') {
+                <button type="button" class="draft-action" (click)="retryDraft(draft)">Thử lại</button>
+              }
+            </article>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="panel form-panel">
+    <header class="panel-header">
+      <div class="header-icon blue">✓</div>
+      <div>
+        <h3>{{ i18n.t('transaction.manualTitle') }}</h3>
+        <p>Kiểm tra và chỉnh sửa dữ liệu trước khi xác nhận.</p>
+      </div>
+    </header>
+
+    @if (errorMsg()) {
+      <div class="form-error-alert">{{ errorMsg() }}</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="transaction-form">
+      <div class="form-field">
+        <label>{{ i18n.t('transaction.accountLabel') }} <b>*</b></label>
+        <app-custom-select formControlName="accountId" [options]="accountOptions()" placeholder="Chọn tài khoản..."></app-custom-select>
+        @if (form.controls.accountId.invalid && form.controls.accountId.touched) {
+          <span class="field-error">Vui lòng chọn tài khoản</span>
+        }
+      </div>
+
+      <div class="form-field">
+        <label>{{ i18n.t('transaction.typeLabel') }} <b>*</b></label>
+        <app-custom-select formControlName="type" [options]="typeOptions" placeholder="Chọn loại giao dịch..."></app-custom-select>
+      </div>
+
+      <div class="form-field">
+        <label>{{ i18n.t('transaction.amountLabel') }} <b>*</b></label>
+        <div class="input-with-symbol"><input type="number" formControlName="amount" placeholder="0" min="0.0001" step="1000"><span class="symbol">₫</span></div>
+        @if (form.controls.amount.invalid && form.controls.amount.touched) {
+          <span class="field-error">Vui lòng nhập số tiền hợp lệ</span>
+        }
+      </div>
+
+      <div class="form-field">
+        <label>{{ i18n.t('transaction.datetimeLabel') }} <b>*</b></label>
+        <app-custom-datepicker formControlName="datetime" mode="datetime"></app-custom-datepicker>
+      </div>
+
+      <div class="form-field full-width">
+        <label>{{ i18n.t('transaction.descriptionLabel') }}</label>
+        <textarea formControlName="description" rows="3" placeholder="Ghi chú giao dịch..."></textarea>
+      </div>
+
+      <div class="form-actions full-width">
+        <button type="submit" class="btn primary submit-btn" [disabled]="form.invalid || submitting()">
+          @if (submitting()) {<span class="spinner"></span><span>Đang ghi nhận...</span>} @else {<span>{{ i18n.t('transaction.submitBtn') }}</span>}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

@@ -8,6 +8,7 @@ import {
   signal,
   viewChild
 } from '@angular/core';
+import {RouterLink} from '@angular/router';
 import {LanguageService} from '../../core/i18n/language.service';
 import {TranslationKey} from '../../core/i18n/translations';
 
@@ -22,6 +23,7 @@ type DateRange = 7 | 30 | 90;
 
 @Component({
   selector: 'app-dashboard',
+  imports: [RouterLink],
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

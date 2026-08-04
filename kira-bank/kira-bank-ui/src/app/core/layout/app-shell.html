@@ -4,7 +4,7 @@
     <button (click)="menuOpen.set(false)" [attr.aria-label]="i18n.t('shell.closeMenu')" class="close-menu">×</button>
     <nav class="side-nav">
       <a [routerLinkActiveOptions]="{exact: true}" routerLink="/app" routerLinkActive="active"><span>⌂</span>{{ i18n.t('shell.overview') }}</a>
-      @for (group of nav; track group.labelKey) {
+      @for (group of nav(); track group.labelKey) {
         <div class="nav-group"><small [class]="group.flow">{{ i18n.t(group.labelKey) }}</small>
           @for (item of group.items; track item.path) {
             <a (click)="menuOpen.set(false)" [routerLink]="item.path"
@@ -21,9 +21,13 @@
   <div class="page-area">
     <header class="topbar">
       <button (click)="menuOpen.set(true)" [attr.aria-label]="i18n.t('shell.openMenu')" class="menu-button">☰</button>
-      <div class="global-search">⌕ <input #globalSearchInput aria-keyshortcuts="/"
-                                         [attr.aria-label]="i18n.t('shell.searchLabel')"
-                                         [placeholder]="i18n.t('shell.searchPlaceholder')"><kbd>/</kbd></div>
+      <div class="global-search">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input #globalSearchInput aria-keyshortcuts="/"
+               [attr.aria-label]="i18n.t('shell.searchLabel')"
+               [placeholder]="i18n.t('shell.searchPlaceholder')">
+        <kbd class="shortcut-badge">/</kbd>
+      </div>
       <div class="top-actions">
         <app-language-switcher/>
         <button (click)="cycleTheme()" [attr.aria-label]="i18n.t('theme.label') + ' ' + theme()">{{ themeIcon() }}</button>

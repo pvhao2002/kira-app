@@ -31,10 +31,25 @@ app:
   cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   seed-development-users: ${SEED_DEVELOPMENT_USERS:true}
   refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+r2:
+  account-id: ${R2_ACCOUNT_ID:}
+  access-key-id: ${R2_ACCESS_KEY_ID:}
+  secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+  bucket-name: ${R2_BUCKET_NAME:kira-bank-attachments}
+  public-url: ${R2_PUBLIC_URL:}
 ai:
-  enabled: false
-  base-url: ${AI_BASE_URL:}
-  api-key: ${AI_API_KEY:}
+  enabled: ${AI_ENABLED:false}
+  base-url: ${AI_BASE_URL:https://api.cloudflare.com/client/v4/accounts}
+  account-id: ${CLOUDFLARE_ACCOUNT_ID:}
+  api-token: ${CLOUDFLARE_AI_API_TOKEN:}
+  model: "${AI_MODEL:@cf/moonshotai/kimi-k2.7-code}"
   connect-timeout: 5s
-  read-timeout: 30s
+  read-timeout: 120s
+  job:
+    batch-size: ${AI_BATCH_SIZE:3}
+    max-attempts: ${AI_MAX_ATTEMPTS:3}
+    retry-delay: ${AI_RETRY_DELAY:PT3H}
+    processing-timeout: ${AI_PROCESSING_TIMEOUT:PT30M}
+    cron: "${AI_JOB_CRON:0 0 */3 * * *}"
+    time-zone: "${AI_JOB_TIME_ZONE:Asia/Bangkok}"
 springdoc.swagger-ui.path: /swagger-ui.html

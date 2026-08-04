@@ -1,0 +1,394 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.credit-card-widget {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 1.586 / 1;
+  border-radius: 18px;
+  padding: 22px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  color: #ffffff;
+  box-shadow:
+    0 20px 40px -15px rgba(15, 23, 42, 0.4),
+    0 1px 3px rgba(255, 255, 255, 0.1) inset,
+    0 -1px 2px rgba(0, 0, 0, 0.3) inset;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+  user-select: none;
+  margin: 0 auto;
+
+  &:hover {
+    transform: translateY(-4px) rotateX(4deg) rotateY(-4deg) scale(1.02);
+    box-shadow:
+      0 28px 50px -12px rgba(15, 23, 42, 0.55),
+      0 1px 5px rgba(255, 255, 255, 0.25) inset;
+
+    .card-shimmer {
+      transform: translateX(120%) rotate(25deg);
+    }
+  }
+}
+
+/* Color & Gradient Themes */
+.theme-signature {
+  background: linear-gradient(135deg, #0b0f19 0%, #161e2e 50%, #0b0f19 100%);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+
+  .tier-badge {
+    background: linear-gradient(135deg, #fef08a 0%, #eab308 100%);
+    color: #1e1b4b;
+    font-weight: 800;
+  }
+}
+
+.theme-platinum {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  .tier-badge {
+    background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+    color: #0f172a;
+  }
+}
+
+.theme-gold {
+  background: linear-gradient(135deg, #78350f 0%, #b45309 50%, #d97706 100%);
+  border: 1px solid rgba(254, 240, 138, 0.4);
+
+  .tier-badge {
+    background: #fef08a;
+    color: #78350f;
+  }
+}
+
+.theme-visa {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #3730a3 100%);
+  border: 1px solid rgba(129, 140, 248, 0.3);
+}
+
+.theme-mastercard {
+  background: linear-gradient(135deg, #18181b 0%, #27272a 50%, #3f3f46 100%);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.theme-jcb {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #065f46 100%);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.theme-default {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Patterns and Shimmer */
+.card-art-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.45;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.card-pattern {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.07) 0%, transparent 40%),
+    radial-gradient(circle at 10% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.card-shimmer {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 45%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 55%
+  );
+  transform: translateX(-100%) rotate(25deg);
+  transition: transform 0.8s ease;
+  pointer-events: none;
+}
+
+/* Header */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 2;
+}
+
+.bank-info {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  .bank-logo-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: 6px;
+    background: #ffffff;
+    padding: 3px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+
+  .bank-title-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bank-name {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+
+  .card-subtitle {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.5px;
+    margin-top: 1px;
+  }
+}
+
+.tier-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+
+  .sparkle {
+    font-size: 8px;
+  }
+}
+
+/* Middle: Chip & Contactless */
+.card-middle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 2;
+  margin-top: -4px;
+
+  .emv-chip {
+    position: relative;
+    width: 40px;
+    height: 28px;
+    border-radius: 5px;
+    background: linear-gradient(135deg, #fef08a 0%, #eab308 50%, #ca8a04 100%);
+    border: 1px solid #a16207;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+
+    .chip-line {
+      position: absolute;
+      background: rgba(161, 98, 7, 0.6);
+      &.horizontal-top { top: 33%; left: 0; right: 0; height: 1px; }
+      &.horizontal-bottom { bottom: 33%; left: 0; right: 0; height: 1px; }
+      &.vertical { left: 45%; top: 0; bottom: 0; width: 1px; }
+    }
+
+    .chip-core {
+      position: absolute;
+      top: 25%;
+      left: 20%;
+      width: 50%;
+      height: 50%;
+      border: 1px solid rgba(161, 98, 7, 0.6);
+      border-radius: 2px;
+    }
+  }
+
+  .contactless-icon {
+    width: 20px;
+    height: 20px;
+    color: rgba(255, 255, 255, 0.75);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  }
+}
+
+/* Card Number */
+.card-number {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  display: flex;
+  gap: 12px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 2px rgba(255, 255, 255, 0.3);
+  z-index: 2;
+  margin: 6px 0;
+
+  .last-four {
+    color: #fef08a;
+  }
+}
+
+/* Footer */
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  z-index: 2;
+}
+
+.holder-and-dates {
+  display: flex;
+  gap: 20px;
+
+  .label {
+    display: block;
+    font-size: 7.5px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.55);
+    letter-spacing: 0.8px;
+    margin-bottom: 2px;
+  }
+
+  .val {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+
+    &.holder-name {
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+/* Network Logos */
+.network-logo {
+  display: flex;
+  align-items: center;
+
+  .visa-logo {
+    font-size: 20px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: -1px;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  }
+
+  .mastercard-logo {
+    display: flex;
+    align-items: center;
+
+    .circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      &.red { background: #ef4444; margin-right: -8px; opacity: 0.95; }
+      &.yellow { background: #eab308; opacity: 0.95; }
+    }
+  }
+
+  .jcb-logo {
+    display: flex;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+
+    .jcb-bar {
+      padding: 2px 5px;
+      font-size: 10px;
+      font-weight: 900;
+      color: #ffffff;
+      &.blue { background: #1d4ed8; }
+      &.red { background: #dc2626; }
+      &.green { background: #15803d; }
+    }
+  }
+
+  .amex-logo {
+    font-weight: 800;
+    font-size: 12px;
+    background: #0284c7;
+    padding: 3px 6px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+  }
+
+  .napas-logo {
+    font-weight: 800;
+    font-size: 13px;
+    font-style: italic;
+    color: #0284c7;
+    background: #ffffff;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .generic-card-logo {
+    display: flex;
+    gap: 4px;
+    .circle {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      &.outline { background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.8); }
+    }
+  }
+}
+
+/* Limit Banner Pill */
+.limit-banner {
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+
+  small {
+    font-size: 9.5px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+  }
+
+  strong {
+    font-size: 11.5px;
+    color: #fef08a;
+    font-weight: 700;
+  }
+}

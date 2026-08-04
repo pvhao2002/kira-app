@@ -6,11 +6,7 @@
   </div>
   <label class="account-filter">
     <span>{{ i18n.t('field.account') }}</span>
-    <select (change)="load()" [formControl]="accountId">
-      @for (account of accounts(); track account['id']) {
-        <option [ngValue]="account['id']">{{ account['accountName'] }}</option>
-      }
-    </select>
+    <app-custom-select [formControl]="accountId" [options]="accountOptions()"></app-custom-select>
   </label>
 </section>
 

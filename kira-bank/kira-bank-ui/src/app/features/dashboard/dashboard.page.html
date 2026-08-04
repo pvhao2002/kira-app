@@ -33,10 +33,9 @@
 <section class="flow-section credit-section">
   <div class="section-title">
     <div><span class="flow-icon">▭</span>
-      <div><small>FLOW 1</small>
-        <h2>{{ i18n.t('dashboard.flowCredit') }}</h2></div>
+      <div><h2>{{ i18n.t('dashboard.flowCredit') }}</h2></div>
     </div>
-    <a>{{ i18n.t('dashboard.goToDashboard') }}</a></div>
+    <a routerLink="/app/credit-card/dashboard">{{ i18n.t('dashboard.goToDashboard') }}</a></div>
   <div class="kpi-grid">@for (kpi of credit(); track kpi.label) {
     <article class="kpi">
       <span>{{ kpi.icon }}</span><small>{{ kpi.label }}</small><strong>{{ kpi.value }}</strong><em>{{ kpi.trend }}</em>
@@ -69,7 +68,7 @@
       <header>
         <div><h3>{{ i18n.t('dashboard.dueSoon') }}</h3>
           <p>{{ i18n.t('dashboard.next7Days') }}</p></div>
-        <a>{{ i18n.t('dashboard.viewAll') }}</a></header>
+        <a routerLink="/app/statements">{{ i18n.t('dashboard.viewAll') }}</a></header>
       @for (due of dues(); track due.bank) {
         <div class="due-row"><span [style.background]="due.color">{{ due.bank[0] }}</span>
           <div><b>{{ due.bank }}</b><small>•••• {{ due.card }} · {{ due.date }}</small></div>
@@ -82,10 +81,9 @@
 <section class="flow-section invest-section">
   <div class="section-title">
     <div><span class="flow-icon">↗</span>
-      <div><small>FLOW 2</small>
-        <h2>{{ i18n.t('dashboard.flowInvestment') }}</h2></div>
+      <div><h2>{{ i18n.t('dashboard.flowInvestment') }}</h2></div>
     </div>
-    <a>{{ i18n.t('dashboard.goToDashboard') }}</a></div>
+    <a routerLink="/app/investment/dashboard">{{ i18n.t('dashboard.goToDashboard') }}</a></div>
   <div class="kpi-grid">@for (kpi of invest(); track kpi.label) {
     <article class="kpi">
       <span>{{ kpi.icon }}</span><small>{{ kpi.label }}</small><strong>{{ kpi.value }}</strong><em>{{ kpi.trend }}</em>

@@ -7,12 +7,12 @@ import {Bank, Card, DashboardSummary, FinderResult, Mcc, PageResponse} from '../
 export class ApiService {
   private http = inject(HttpClient);
 
-  banks(search = ''): Observable<PageResponse<Bank>> {
-    return this.http.get<PageResponse<Bank>>('/api/v1/public/banks', {params: {search}});
+  banks(search = '', page = 0, size = 20): Observable<PageResponse<Bank>> {
+    return this.http.get<PageResponse<Bank>>('/api/v1/public/banks', {params: {search, page, size}});
   }
 
-  cards(search = ''): Observable<PageResponse<Card>> {
-    return this.http.get<PageResponse<Card>>('/api/v1/public/cards', {params: {search}});
+  cards(search = '', page = 0, size = 20): Observable<PageResponse<Card>> {
+    return this.http.get<PageResponse<Card>>('/api/v1/public/cards', {params: {search, page, size}});
   }
 
   mccs(search = ''): Observable<PageResponse<Mcc>> {

@@ -45,6 +45,23 @@ public class AuthService {
     }
 
     @Transactional
+    public ProfileResponse createUser(CreateUserRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        if (users.existsByEmailIgnoreCase(email))
+            throw new ApiException(HttpStatus.CONFLICT, "EMAIL_EXISTS", "Email đã được sử dụng");
+        User user = new User();
+        user.setEmail(email);
+        user.setPasswordHash(encoder.encode(request.password()));
+        user.setFullName(request.fullName().trim());
+        user.setPhone(request.phone());
+        user.getRoles().add(roles.findByName("ROLE_USER").orElseThrow());
+        if (request.roles() != null && request.roles().contains("ROLE_ADMIN"))
+            user.getRoles().add(roles.findByName("ROLE_ADMIN").orElseThrow());
+        users.save(user);
+        return profile(user);
+    }
+
+    @Transactional
     public Session login(LoginRequest request) {
         User user = users.findByEmailIgnoreCaseAndDeletedAtIsNull(request.email()).orElseThrow(this::badCredentials);
         if (!"ACTIVE".equals(user.getStatus()) || !encoder.matches(request.password(), user.getPasswordHash()))

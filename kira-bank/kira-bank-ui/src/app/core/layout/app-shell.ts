@@ -35,53 +35,47 @@ export class AppShell {
   readonly themeIcon = computed(() => this.theme() === 'dark' ? '☾' : this.theme() === 'light' ? '☀' : '◐');
   readonly globalSearchInput = viewChild<ElementRef<HTMLInputElement>>('globalSearchInput');
   readonly initials = computed(() => this.auth.user()?.fullName.split(' ').slice(-2).map(part => part[0]).join('').toUpperCase() ?? 'KB');
-  readonly nav: NavGroup[] = [
-    {
-      labelKey: 'shell.groupCredit', flow: 'credit', items: [
-        {labelKey: 'shell.dashboard', icon: '▦', path: '/app/credit-card/dashboard'}, {
-          labelKey: 'shell.myCards',
-          icon: '▭',
-          path: '/app/credit-cards'
-        },
-        {labelKey: 'shell.transactions', icon: '↔', path: '/app/card-transactions'}, {
-          labelKey: 'shell.statements',
-          icon: '▤',
-          path: '/app/statements'
-        },
-        {labelKey: 'shell.payments', icon: '✓', path: '/app/payments'}, {labelKey: 'shell.cashback', icon: '◇', path: '/app/cashbacks'},
-        {labelKey: 'shell.discountInvoices', icon: '%', path: '/app/discount-invoices'}
-      ]
-    },
-    {
-      labelKey: 'shell.groupInvestment', flow: 'investment', items: [
-        {labelKey: 'shell.dashboard', icon: '▦', path: '/app/investment/dashboard'}, {
-          labelKey: 'shell.accounts',
-          icon: '◉',
-          path: '/app/investment/accounts'
-        },
-        {labelKey: 'shell.deposits', icon: '↓', path: '/app/investment/deposits'}, {
-          labelKey: 'shell.tasks',
-          icon: '☷',
-          path: '/app/investment/tasks'
-        },
-        {labelKey: 'shell.rewards', icon: '☆', path: '/app/investment/rewards'}, {
-          labelKey: 'shell.withdrawals',
-          icon: '↑',
-          path: '/app/investment/withdrawals'
-        },
-        {labelKey: 'shell.ledger', icon: '≡', path: '/app/investment/ledger'}
-      ]
-    },
-    {
-      labelKey: 'shell.groupSystem', flow: 'system', items: [
-        {labelKey: 'shell.notifications', icon: '♢', path: '/app/notifications'}, {
-          labelKey: 'shell.settings',
-          icon: '⚙',
-          path: '/app/settings'
-        }
-      ]
+  readonly nav = computed<NavGroup[]>(() => {
+    const groups: NavGroup[] = [
+      {
+        labelKey: 'shell.groupCredit', flow: 'credit', items: [
+          {labelKey: 'shell.dashboard', icon: '▦', path: '/app/credit-card/dashboard'},
+          {labelKey: 'shell.myCards', icon: '▭', path: '/app/credit-cards'},
+          {labelKey: 'shell.banks', icon: '🏦', path: '/app/banks'},
+          {labelKey: 'shell.transactions', icon: '↔', path: '/app/card-transactions'},
+          {labelKey: 'shell.statements', icon: '▤', path: '/app/statements'},
+          {labelKey: 'shell.payments', icon: '✓', path: '/app/payments'},
+          {labelKey: 'shell.cashback', icon: '◇', path: '/app/cashbacks'},
+          {labelKey: 'shell.discountInvoices', icon: '%', path: '/app/discount-invoices'}
+        ]
+      },
+      {
+        labelKey: 'shell.groupInvestment', flow: 'investment', items: [
+          {labelKey: 'shell.dashboard', icon: '▦', path: '/app/investment/dashboard'},
+          {labelKey: 'shell.accounts', icon: '◉', path: '/app/investment/accounts'},
+          {labelKey: 'shell.addTransaction', icon: '＋', path: '/app/investment/add-transaction'}
+        ]
+      }
+    ];
+
+    if (this.auth.admin()) {
+      groups.push({
+        labelKey: 'shell.groupAdmin', flow: 'system', items: [
+          {labelKey: 'shell.adminUsers', icon: '👥', path: '/app/admin/users'},
+          {labelKey: 'shell.adminBanks', icon: '🏦', path: '/app/admin/banks'}
+        ]
+      });
     }
-  ];
+
+    groups.push({
+      labelKey: 'shell.groupSystem', flow: 'system', items: [
+        {labelKey: 'shell.notifications', icon: '♢', path: '/app/notifications'},
+        {labelKey: 'shell.settings', icon: '⚙', path: '/app/settings'}
+      ]
+    });
+
+    return groups;
+  });
   private readonly router = inject(Router);
   private readonly systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
   private readonly systemThemeListener = () => {

@@ -1,5 +1,6 @@
 package com.kira.bank.investment.application;
 
+import com.kira.bank.attachment.application.AttachmentService;
 import com.kira.bank.investment.domain.*;
 import com.kira.bank.investment.infrastructure.*;
 import com.kira.bank.shared.web.ApiException;
@@ -11,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.*;
 import java.time.Instant;
+import java.util.Locale;
+import java.util.UUID;
 
 import static com.kira.bank.investment.application.InvestmentDtos.*;
 import static com.kira.bank.shared.web.ApiTypes.*;
@@ -27,16 +30,21 @@ public class InvestmentService {
     private final LedgerRepository ledger;
     private final InvestmentPlatformRepository platforms;
     private final InvestmentRewardRepository rewards;
+    private final AttachmentService attachments;
 
     @Transactional
     public AccountResponse createAccount(Long userId, CreateAccountRequest r) {
         InvestmentAccount a = new InvestmentAccount();
         a.setUserId(userId);
-        a.setPlatformId(r.platformId());
+        a.setPlatformId(r.platformId() == null ? 1L : r.platformId());
+        a.setAccountCode(r.accountCode());
         a.setAccountName(r.accountName());
-        a.setExternalAccountCode(r.externalAccountCode());
+        a.setAccountUsername(r.accountUsername());
+        a.setAccountEmail(r.accountEmail());
+        a.setPhoneNumber(r.phoneNumber());
+        a.setRegisterDate(r.registerDate());
+        a.setAccountPassword(r.accountPassword());
         a.setCurrency(r.currency() == null ? "VND" : r.currency());
-        a.setNote(r.note());
         return dto(accounts.save(a));
     }
 
@@ -58,11 +66,17 @@ public class InvestmentService {
             throw new ApiException(HttpStatus.CONFLICT, "ACCOUNT_VERSION_CONFLICT", "Dữ liệu tài khoản đã được cập nhật ở phiên khác");
         if (!java.util.Set.of("ACTIVE", "INACTIVE", "CLOSED").contains(r.status()))
             throw bad("INVALID_ACCOUNT_STATUS", "Trạng thái tài khoản không hợp lệ");
+        a.setAccountCode(r.accountCode());
         a.setAccountName(r.accountName());
         a.setExternalAccountCode(r.externalAccountCode());
-        a.setNote(r.note());
+        a.setAccountUsername(r.accountUsername());
+        a.setAccountEmail(r.accountEmail());
+        a.setPhoneNumber(r.phoneNumber());
+        a.setRegisterDate(r.registerDate());
+        a.setAccountPassword(r.accountPassword());
         a.setStatus(r.status());
-        return dto(a);
+        a.setNote(r.note());
+        return dto(accounts.save(a));
     }
 
     @Transactional(readOnly = true)
@@ -98,6 +112,9 @@ public class InvestmentService {
             var reward = old.get();
             return new OperationResponse(reward.getId(), reward.getStatus(), dto(account(reward.getInvestmentAccountId(), user)));
         }
+        if (r.attachmentId() != null) {
+            attachments.requireReadyForConfirmation(user, r.attachmentId());
+        }
         InvestmentAccount a = account(r.accountId(), user);
         if (r.taskId() != null) task(r.taskId(), user);
         InvestmentReward reward = new InvestmentReward();
@@ -106,17 +123,76 @@ public class InvestmentService {
         reward.setInvestmentTaskId(r.taskId());
         reward.setRewardType(r.rewardType());
         reward.setRewardSource(r.rewardSource());
-        reward.setRewardDate(Instant.now());
+        reward.setRewardDate(r.transactionDate() == null ? Instant.now() : r.transactionDate());
         reward.setAmount(money(r.amount()));
         reward.setStatus("RECEIVED");
         reward.setConditionDescription(r.conditionDescription());
         reward.setNote(r.note());
+        reward.setAttachmentId(r.attachmentId());
         reward.setIdempotencyKey(key);
         rewards.save(reward);
         a.setAvailableCapital(money(a.getAvailableCapital().add(r.amount())));
         a.setAccumulatedReward(money(a.getAccumulatedReward().add(r.amount())));
         change(a, "REWARD", money(r.amount()), "REWARD", reward.getId(), key, "Reward nhận riêng");
+        if (r.attachmentId() != null) {
+            attachments.markConfirmed(user, r.attachmentId());
+        }
         return new OperationResponse(reward.getId(), reward.getStatus(), dto(a));
+    }
+
+    @Transactional
+    public OperationResponse createTransaction(Long userId, String key, CreateTransactionRequest r) {
+        Long attachmentId = r.attachmentId();
+        if (attachmentId != null) {
+            attachments.requireReadyForConfirmation(userId, attachmentId);
+        }
+        String k = attachmentId != null ? "attachment:" + attachmentId
+                : (key != null && !key.isBlank()) ? key : UUID.randomUUID().toString();
+        String type = r.type() == null ? "DEPOSIT" : r.type().toUpperCase(Locale.ROOT);
+        String note = r.description() != null ? r.description() : "";
+        if (attachmentId != null) {
+            note = (note.isBlank() ? "" : note + "\n") + "[Attachment: " + attachmentId + "]";
+        }
+
+        OperationResponse response;
+        if ("WITHDRAWAL".equals(type)) {
+            response = requestWithdrawal(userId, k, new WithdrawalRequest(
+                    r.accountId(),
+                    r.amount(),
+                    BigDecimal.ZERO,
+                    "EXTERNAL_BANK",
+                    "TX-" + System.currentTimeMillis(),
+                    attachmentId,
+                    r.transactionDate()
+            ));
+        } else if ("BONUS".equals(type) || "REWARD".equals(type)) {
+            response = reward(userId, k, new RewardRequest(
+                    r.accountId(),
+                    null,
+                    "BONUS",
+                    "INVESTMENT_BONUS",
+                    r.amount(),
+                    note,
+                    note,
+                    attachmentId,
+                    r.transactionDate()
+            ));
+        } else {
+            response = completeDeposit(userId, k, new DepositRequest(
+                    r.accountId(),
+                    r.amount(),
+                    BigDecimal.ZERO,
+                    "TX-" + System.currentTimeMillis(),
+                    "BANK_TRANSFER",
+                    note,
+                    attachmentId,
+                    r.transactionDate()
+            ));
+        }
+        if (attachmentId != null) {
+            attachments.markConfirmed(userId, attachmentId);
+        }
+        return response;
     }
 
     @Transactional
@@ -127,13 +203,16 @@ public class InvestmentService {
             InvestmentDeposit d = prior.get();
             return new OperationResponse(d.getId(), d.getStatus(), dto(account(d.getInvestmentAccountId(), userId)));
         }
+        if (r.attachmentId() != null) {
+            attachments.requireReadyForConfirmation(userId, r.attachmentId());
+        }
         InvestmentAccount a = account(r.accountId(), userId);
         BigDecimal net = money(r.amount().subtract(r.fee()));
         if (net.signum() <= 0) throw bad("INVALID_NET_AMOUNT", "Số tiền thực nhận phải lớn hơn 0");
         InvestmentDeposit d = new InvestmentDeposit();
         d.setUserId(userId);
         d.setInvestmentAccountId(a.getId());
-        d.setDepositDate(Instant.now());
+        d.setDepositDate(r.transactionDate() == null ? Instant.now() : r.transactionDate());
         d.setAmount(money(r.amount()));
         d.setFee(money(r.fee()));
         d.setNetReceivedAmount(net);
@@ -141,12 +220,16 @@ public class InvestmentService {
         d.setReferenceNumber(r.referenceNumber());
         d.setStatus("COMPLETED");
         d.setNote(r.note());
+        d.setAttachmentId(r.attachmentId());
         d.setIdempotencyKey(key);
         deposits.save(d);
         change(a, "DEPOSIT", net, "DEPOSIT", d.getId(), key, "Nạp tiền hoàn tất");
         a.setAvailableCapital(money(a.getAvailableCapital().add(net)));
         if (r.fee().signum() > 0)
             append(a, "DEPOSIT_FEE", money(r.fee().negate()), "DEPOSIT", d.getId(), key + ":fee", "Phí nạp tiền");
+        if (r.attachmentId() != null) {
+            attachments.markConfirmed(userId, r.attachmentId());
+        }
         return new OperationResponse(d.getId(), d.getStatus(), dto(a));
     }
 
@@ -241,6 +324,9 @@ public class InvestmentService {
             var w = prior.get();
             return new OperationResponse(w.getId(), w.getStatus(), dto(account(w.getInvestmentAccountId(), userId)));
         }
+        if (r.attachmentId() != null) {
+            attachments.requireReadyForConfirmation(userId, r.attachmentId());
+        }
         InvestmentAccount a = account(r.accountId(), userId);
         BigDecimal amount = money(r.requestedAmount());
         if (a.getAvailableCapital().compareTo(amount) < 0)
@@ -248,18 +334,22 @@ public class InvestmentService {
         InvestmentWithdrawal w = new InvestmentWithdrawal();
         w.setUserId(userId);
         w.setInvestmentAccountId(a.getId());
-        w.setRequestedDate(Instant.now());
+        w.setRequestedDate(r.transactionDate() == null ? Instant.now() : r.transactionDate());
         w.setRequestedAmount(amount);
         w.setWithdrawalFee(money(r.fee()));
         w.setExpectedNetAmount(money(amount.subtract(r.fee())));
         w.setDestinationAccount(r.destinationAccount());
         w.setReferenceNumber(r.referenceNumber());
         w.setStatus("PENDING_APPROVAL");
+        w.setAttachmentId(r.attachmentId());
         w.setIdempotencyKey(key);
         withdrawals.save(w);
         a.setAvailableCapital(money(a.getAvailableCapital().subtract(amount)));
         a.setReservedWithdrawal(money(a.getReservedWithdrawal().add(amount)));
         append(a, "WITHDRAWAL_RESERVE", amount.negate(), "WITHDRAWAL", w.getId(), key, "Giữ số dư chờ rút");
+        if (r.attachmentId() != null) {
+            attachments.markConfirmed(userId, r.attachmentId());
+        }
         return new OperationResponse(w.getId(), w.getStatus(), dto(a));
     }
 
@@ -329,10 +419,13 @@ public class InvestmentService {
     }
 
     private AccountResponse dto(InvestmentAccount a) {
-        return new AccountResponse(a.getId(), a.getPlatformId(), a.getAccountName(), a.getExternalAccountCode(),
+        return new AccountResponse(
+                a.getId(), a.getPlatformId(), a.getAccountCode(), a.getAccountName(), a.getExternalAccountCode(),
+                a.getAccountUsername(), a.getAccountEmail(), a.getPhoneNumber(), a.getRegisterDate(), a.getAccountPassword(),
                 a.getCurrency(), a.getCurrentBalance(), a.getAvailableCapital(), a.getLockedCapital(),
                 a.getAccumulatedProfit(), a.getAccumulatedReward(), a.getReservedWithdrawal(), a.getStatus(),
-                a.getNote(), a.getVersion());
+                a.getNote(), a.getVersion()
+        );
     }
 
     private BigDecimal money(BigDecimal n) {

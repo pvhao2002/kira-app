@@ -84,11 +84,14 @@ const cardFields: ResourceField[] = [
 ];
 
 const accountFields: ResourceField[] = [
-  {name: 'platformId', labelKey: 'field.platform', type: 'select', lookup: 'platforms', required: true, readonlyOnEdit: true},
+  {name: 'accountCode', labelKey: 'field.accountCode', type: 'text', required: true, maxLength: 100},
   {name: 'accountName', labelKey: 'field.accountName', type: 'text', required: true, maxLength: 150},
-  {name: 'externalAccountCode', labelKey: 'field.externalAccountCode', type: 'text', maxLength: 100},
-  {name: 'currency', labelKey: 'field.currency', type: 'select', options: currencyOptions, defaultValue: 'VND', readonlyOnEdit: true},
-  {name: 'note', labelKey: 'field.note', type: 'textarea', maxLength: 1000}
+  {name: 'accountUsername', labelKey: 'field.accountUsername', type: 'text', required: true, maxLength: 100},
+  {name: 'accountEmail', labelKey: 'field.accountEmail', type: 'text', required: true, maxLength: 150},
+  {name: 'phoneNumber', labelKey: 'field.phoneNumber', type: 'text', required: true, maxLength: 50},
+  {name: 'registerDate', labelKey: 'field.registerDate', type: 'date', required: true},
+  {name: 'accountPassword', labelKey: 'field.accountPassword', type: 'text', required: true, maxLength: 100},
+  {name: 'currency', labelKey: 'field.currency', type: 'select', options: currencyOptions, defaultValue: 'VND', required: true, readonlyOnEdit: true}
 ];
 
 export const resourceDefinitions: Record<string, ResourceDefinition> = {
@@ -244,134 +247,13 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
       method: 'put',
       path: row => `investment/accounts/${row!['id']}`,
       detailPath: row => `investment/accounts/${row['id']}`,
-      stripFields: ['platformId', 'currency'],
+      stripFields: ['currency'],
       fields: [
         ...accountFields,
         {name: 'status', labelKey: 'field.status', type: 'select', options: statusOptions, required: true},
         {name: 'version', labelKey: 'field.version', type: 'number', required: true}
       ]
     }
-  },
-  investmentDeposits: {
-    key: 'investmentDeposits',
-    titleKey: 'route.investmentDeposits',
-    apiPath: 'investment/deposits',
-    flow: 'investment',
-    create: {
-      titleKey: 'form.addDeposit',
-      descriptionKey: 'form.addDepositDescription',
-      method: 'post',
-      path: () => 'investment/deposits/completed',
-      idempotent: true,
-      fields: [
-        {name: 'accountId', labelKey: 'field.account', type: 'select', lookup: 'accounts', required: true},
-        {name: 'amount', labelKey: 'field.amount', type: 'money', required: true, min: 0.0001},
-        {name: 'fee', labelKey: 'field.fee', type: 'money', required: true, min: 0, defaultValue: 0},
-        {name: 'paymentMethod', labelKey: 'field.paymentMethod', type: 'select', options: paymentMethodOptions},
-        {name: 'referenceNumber', labelKey: 'field.referenceNumber', type: 'text', required: true, maxLength: 100},
-        {name: 'note', labelKey: 'field.note', type: 'textarea', maxLength: 1000}
-      ]
-    }
-  },
-  investmentTasks: {
-    key: 'investmentTasks',
-    titleKey: 'route.investmentTasks',
-    apiPath: 'investment/tasks',
-    flow: 'investment',
-    create: {
-      titleKey: 'form.addTask',
-      descriptionKey: 'form.addTaskDescription',
-      method: 'post',
-      path: () => 'investment/tasks/allocate',
-      idempotent: true,
-      fields: [
-        {name: 'accountId', labelKey: 'field.account', type: 'select', lookup: 'accounts', required: true},
-        {name: 'taskCode', labelKey: 'field.taskCode', type: 'text', required: true, maxLength: 100},
-        {name: 'taskName', labelKey: 'field.taskName', type: 'text', required: true, maxLength: 180},
-        {name: 'taskType', labelKey: 'field.taskType', type: 'text', maxLength: 60},
-        {name: 'allocatedCapital', labelKey: 'field.allocatedCapital', type: 'money', required: true, min: 0.0001},
-        {name: 'expectedProfit', labelKey: 'field.expectedProfit', type: 'money', min: 0, defaultValue: 0},
-        {name: 'expectedReward', labelKey: 'field.expectedReward', type: 'money', min: 0, defaultValue: 0},
-        {name: 'expectedCompletionDate', labelKey: 'field.expectedCompletionDate', type: 'datetime'}
-      ]
-    },
-    actions: [{
-      key: 'settle',
-      labelKey: 'action.settle',
-      visible: row => ['IN_PROGRESS', 'WAITING_SETTLEMENT'].includes(String(row['status'])),
-      form: {
-        titleKey: 'form.settleTask',
-        descriptionKey: 'form.settleTaskDescription',
-        method: 'post',
-        path: row => `investment/tasks/${row!['id']}/settlements`,
-        idempotent: true,
-        fields: [
-          {name: 'totalReceived', labelKey: 'field.totalReceived', type: 'money', required: true, min: 0, defaultValue: 0},
-          {name: 'capitalReturned', labelKey: 'field.capitalReturned', type: 'money', required: true, min: 0, defaultValue: 0},
-          {name: 'profitReceived', labelKey: 'field.profitReceived', type: 'money', required: true, min: 0, defaultValue: 0},
-          {name: 'rewardReceived', labelKey: 'field.rewardReceived', type: 'money', required: true, min: 0, defaultValue: 0},
-          {name: 'fee', labelKey: 'field.fee', type: 'money', required: true, min: 0, defaultValue: 0},
-          {name: 'referenceNumber', labelKey: 'field.referenceNumber', type: 'text', required: true, maxLength: 100}
-        ]
-      }
-    }]
-  },
-  investmentRewards: {
-    key: 'investmentRewards',
-    titleKey: 'route.investmentRewards',
-    apiPath: 'investment/rewards',
-    flow: 'investment',
-    create: {
-      titleKey: 'form.addReward',
-      descriptionKey: 'form.addRewardDescription',
-      method: 'post',
-      path: () => 'investment/rewards',
-      idempotent: true,
-      fields: [
-        {name: 'accountId', labelKey: 'field.account', type: 'select', lookup: 'accounts', required: true},
-        {name: 'taskId', labelKey: 'field.task', type: 'select', lookup: 'tasks'},
-        {name: 'rewardType', labelKey: 'field.rewardType', type: 'text', required: true, maxLength: 40},
-        {name: 'rewardSource', labelKey: 'field.rewardSource', type: 'text', maxLength: 150},
-        {name: 'amount', labelKey: 'field.amount', type: 'money', required: true, min: 0.0001},
-        {name: 'conditionDescription', labelKey: 'field.conditionDescription', type: 'textarea'},
-        {name: 'note', labelKey: 'field.note', type: 'textarea', maxLength: 1000}
-      ]
-    }
-  },
-  investmentWithdrawals: {
-    key: 'investmentWithdrawals',
-    titleKey: 'route.investmentWithdrawals',
-    apiPath: 'investment/withdrawals',
-    flow: 'investment',
-    create: {
-      titleKey: 'form.addWithdrawal',
-      descriptionKey: 'form.addWithdrawalDescription',
-      method: 'post',
-      path: () => 'investment/withdrawals',
-      idempotent: true,
-      fields: [
-        {name: 'accountId', labelKey: 'field.account', type: 'select', lookup: 'accounts', required: true},
-        {name: 'requestedAmount', labelKey: 'field.requestedAmount', type: 'money', required: true, min: 0.0001},
-        {name: 'fee', labelKey: 'field.fee', type: 'money', required: true, min: 0, defaultValue: 0},
-        {name: 'destinationAccount', labelKey: 'field.destinationAccount', type: 'text', required: true, maxLength: 180},
-        {name: 'referenceNumber', labelKey: 'field.referenceNumber', type: 'text', required: true, maxLength: 100}
-      ]
-    },
-    actions: [{
-      key: 'complete',
-      labelKey: 'action.complete',
-      method: 'post',
-      path: row => `investment/withdrawals/${row['id']}/complete`,
-      confirmKey: 'action.confirmCompleteWithdrawal',
-      visible: row => ['PENDING_APPROVAL', 'PROCESSING'].includes(String(row['status']))
-    }]
-  },
-  investmentLedger: {
-    key: 'investmentLedger',
-    titleKey: 'route.investmentLedger',
-    apiPath: 'investment/accounts/0/ledger',
-    flow: 'investment',
-    readOnlyKey: 'resource.ledgerReadOnly'
   },
   notifications: {
     key: 'notifications',

@@ -8,8 +8,7 @@
   </nav>
   <div class="nav-actions">
     <app-language-switcher/>
-    <a class="btn ghost" routerLink="/login">{{ i18n.t('common.login') }}</a>
-    <a class="btn primary" routerLink="/register">{{ i18n.t('common.startFree') }}</a>
+    <a class="btn primary" routerLink="/login">{{ i18n.t('common.login') }}</a>
   </div>
 </header>
 
@@ -20,7 +19,7 @@
       <h1>{{ i18n.t('landing.titleLine1') }}<br><span>{{ i18n.t('landing.titleLine2') }}</span></h1>
       <p>{{ i18n.t('landing.description') }}</p>
       <div class="hero-actions">
-        <a class="btn primary large" routerLink="/register">{{ i18n.t('landing.createAccount') }} <span>→</span></a>
+        <a class="btn primary large" routerLink="/login">{{ i18n.t('common.login') }} <span>→</span></a>
         <a class="btn ghost large" routerLink="/cashback-finder">{{ i18n.t('landing.findCashbackCard') }}</a>
       </div>
       <div class="trust">

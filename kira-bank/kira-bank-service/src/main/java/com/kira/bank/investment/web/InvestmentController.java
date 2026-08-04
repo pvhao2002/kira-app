@@ -93,6 +93,16 @@ public class InvestmentController {
         return service.completeWithdrawal(user, id);
     }
 
+    @PostMapping("/transactions")
+    @ResponseStatus(HttpStatus.CREATED)
+    Object transaction(
+            @AuthenticationPrincipal Long user,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key,
+            @Valid @RequestBody CreateTransactionRequest r
+    ) {
+        return service.createTransaction(user, key, r);
+    }
+
     @GetMapping("/accounts/{id}/ledger")
     Object ledger(@AuthenticationPrincipal Long user, @PathVariable Long id, @PageableDefault(size = 50, sort = "entryDate", direction = Sort.Direction.DESC) Pageable p) {
         return service.ledger(user, id, p);

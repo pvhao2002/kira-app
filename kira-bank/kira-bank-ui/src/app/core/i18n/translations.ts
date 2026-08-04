@@ -73,6 +73,19 @@ export const englishTranslations = {
   'auth.password': 'Password',
   'auth.passwordPlaceholder': 'At least 8 characters',
   'auth.validationError': 'Please check the required fields.',
+  'auth.invalidCredentials': 'Incorrect email or password.',
+  'auth.invalidEmail': 'Please enter a valid email address.',
+  'auth.invalidPassword': 'Password must be at least 8 characters.',
+  'auth.adminNotice': 'Accounts are issued by an Administrator. Contact your Admin if you need access.',
+  'auth.heroTitle': 'Financial Flow & Asset Balance Management',
+  'auth.heroDescription': 'Track credit cards, optimize cashback, and manage investment portfolios — with bank-grade security.',
+  'auth.featureSeparationTitle': 'Smart Cash Flow Separation',
+  'auth.featureSeparationDesc': 'Keep Capital, Profit, and Cashback strictly isolated',
+  'auth.featureSecurityTitle': '256-bit Security',
+  'auth.featureSecurityDesc': 'End-to-end encrypted data with JWT Rotation',
+  'auth.systemOperational': 'System operational · Encrypted SSL',
+  'auth.showPassword': 'Show password',
+  'auth.hidePassword': 'Hide password',
   'auth.processing': 'Processing…',
   'auth.createAccount': 'Create account',
   'auth.haveAccount': 'Already have an account?',
@@ -82,21 +95,38 @@ export const englishTranslations = {
   'shell.openMenu': 'Open menu',
   'shell.overview': 'Overview',
   'shell.groupCredit': 'CREDIT CARDS',
-  'shell.groupInvestment': 'WEBSITE INVESTMENTS',
+  'shell.groupInvestment': 'INVESTMENTS',
+  'shell.groupAdmin': 'ADMINISTRATION',
+  'shell.adminUsers': 'User Management',
+  'shell.adminBanks': 'Bank Directory',
   'shell.groupSystem': 'SYSTEM',
   'shell.dashboard': 'Dashboard',
   'shell.myCards': 'My cards',
+  'shell.banks': 'Banks & Card Types',
   'shell.transactions': 'Transactions',
   'shell.statements': 'Statements',
   'shell.payments': 'Payments',
   'shell.cashback': 'Cashback',
   'shell.discountInvoices': 'Discount invoices',
   'shell.accounts': 'Accounts',
-  'shell.deposits': 'Deposits',
-  'shell.tasks': 'Tasks',
-  'shell.rewards': 'Rewards',
-  'shell.withdrawals': 'Withdrawals',
-  'shell.ledger': 'Ledger',
+  'shell.addTransaction': 'Add transaction',
+  'route.addInvestmentTransaction': 'Add Investment Transaction',
+  'transaction.aiDetectTitle': 'AI Intelligent Image Detection',
+  'transaction.aiDetectDesc': 'Upload receipt, invoice, or screenshot. AI automatically extracts amount, date, description & type.',
+  'transaction.uploadPrompt': 'Drag & drop bill image or click to browse',
+  'transaction.supportedFormats': 'Supports JPEG, PNG, WebP or PDF (up to 10MB)',
+  'transaction.aiSuccess': 'AI successfully detected transaction details!',
+  'transaction.manualTitle': 'Transaction Details',
+  'transaction.typeDeposit': 'Deposit',
+  'transaction.typeWithdrawal': 'Withdrawal',
+  'transaction.typeBonus': 'Bonus / Reward',
+  'transaction.typeLabel': 'Transaction Type',
+  'transaction.accountLabel': 'Investment Account',
+  'transaction.amountLabel': 'Amount',
+  'transaction.datetimeLabel': 'Date & Time',
+  'transaction.descriptionLabel': 'Description / Note',
+  'transaction.submitBtn': 'Record Transaction',
+  'transaction.successMsg': 'Transaction recorded successfully!',
   'shell.notifications': 'Notifications',
   'shell.settings': 'Settings',
   'shell.secureConnection': 'Secure connection',
@@ -112,8 +142,8 @@ export const englishTranslations = {
   'dashboard.last7Days': 'Last 7 days',
   'dashboard.last30Days': 'Last 30 days',
   'dashboard.last90Days': 'Last 90 days',
-  'dashboard.flowCredit': 'Credit cards',
-  'dashboard.flowInvestment': 'Website investments',
+  'dashboard.flowCredit': 'Credit Cards',
+  'dashboard.flowInvestment': 'Investments',
   'dashboard.goToDashboard': 'Go to dashboard →',
   'dashboard.totalSpending': 'Total spending',
   'dashboard.statementBalance': 'Statement balance',
@@ -147,8 +177,8 @@ export const englishTranslations = {
   'dashboard.dueDate24': 'Due 24/07',
   'dashboard.dueDate27': 'Due 27/07',
   'dashboard.dueDate29': 'Due 29/07',
-  'resource.flowCredit': 'FLOW 1 · CREDIT CARDS',
-  'resource.flowInvestment': 'FLOW 2 · WEBSITE INVESTMENTS',
+  'resource.flowCredit': 'CREDIT CARDS',
+  'resource.flowInvestment': 'INVESTMENTS',
   'resource.flowSystem': 'SYSTEM',
   'resource.description': 'Track, search and reconcile your own data.',
   'resource.searchPlaceholder': 'Search…',
@@ -275,8 +305,8 @@ export const englishTranslations = {
   'field.bankName': 'Bank',
   'field.cardName': 'Card',
   'field.reference': 'Reference'
-  ,'field.cardCatalog': 'Card catalog'
-  ,'field.nickname': 'Nickname'
+  ,'field.cardCatalog': 'Loại thẻ'
+  ,'field.nickname': 'Card holder'
   ,'field.lastFour': 'Last four digits'
   ,'field.creditLimit': 'Credit limit'
   ,'field.statementDay': 'Statement day'
@@ -311,7 +341,13 @@ export const englishTranslations = {
   ,'field.cashbackRate': 'Cashback rate (%)'
   ,'field.actualCashback': 'Actual cashback'
   ,'field.platform': 'Platform'
+  ,'field.accountCode': 'Account code'
   ,'field.accountName': 'Account name'
+  ,'field.accountUsername': 'Account username'
+  ,'field.accountEmail': 'Account email'
+  ,'field.phoneNumber': 'Phone number'
+  ,'field.registerDate': 'Register date'
+  ,'field.accountPassword': 'Account password'
   ,'field.externalAccountCode': 'External account code'
   ,'field.account': 'Investment account'
   ,'field.fee': 'Fee'
@@ -332,6 +368,78 @@ export const englishTranslations = {
   ,'field.conditionDescription': 'Conditions'
   ,'field.requestedAmount': 'Requested amount'
   ,'field.destinationAccount': 'Destination account'
+  ,'datepicker.selectDate': 'Select date'
+  ,'datepicker.selectDateTime': 'Select date & time'
+  ,'datepicker.selectDatePlaceholder': 'Select date...'
+  ,'datepicker.selectDateTimePlaceholder': 'Select date & time...'
+  ,'datepicker.today': 'Today'
+  ,'datepicker.plus1Day': '+1 Day'
+  ,'datepicker.plus7Days': '+7 Days'
+  ,'datepicker.plus30Days': '+30 Days'
+  ,'datepicker.endOfMonth': 'End of month'
+  ,'datepicker.prevMonth': 'Previous month'
+  ,'datepicker.nextMonth': 'Next month'
+  ,'datepicker.timeTitle': 'Time (HH:mm)'
+  ,'datepicker.clear': 'Clear'
+  ,'datepicker.apply': 'Apply'
+  ,'bank.eyebrow': 'System Management'
+  ,'bank.title': 'Banks & Card Types'
+  ,'bank.description': 'Manage the list of partner banks and credit card types belonging to each bank.'
+  ,'bank.addBank': 'Add bank'
+  ,'bank.addCard': 'Add new card type'
+  ,'bank.statBanks': 'Total banks'
+  ,'bank.statCards': 'Total credit card types'
+  ,'bank.searchPlaceholder': 'Search banks by name or code…'
+  ,'bank.allBanks': 'All banks'
+  ,'bank.sectionBanks': 'Partner Bank Directory'
+  ,'bank.bankCount': '{n} banks'
+  ,'bank.cardTypesCount': '{n} card types'
+  ,'bank.website': 'Website'
+  ,'bank.addCardForBank': 'Add card'
+  ,'bank.sectionCards': 'Card Type List'
+  ,'bank.cardSectionDesc': 'Credit card products listed in the system.'
+  ,'bank.addCardType': 'Add card type'
+  ,'bank.annualFee': 'Annual fee'
+  ,'bank.annualFeeValue': '{fee} ₫/yr'
+  ,'bank.free': 'Free'
+  ,'bank.cashbackLimit': 'Max cashback cap'
+  ,'bank.noLimit': 'No limit'
+  ,'bank.emptyCards': 'No card types yet'
+  ,'bank.emptyCardsDesc': 'This bank has no registered credit card types in the system.'
+  ,'bank.emptyCardsBtn': 'Add card type now'
+  ,'bank.dialogBankEyebrow': 'Bank Management'
+  ,'bank.dialogBankTitle': 'Add new bank'
+  ,'bank.dialogBankDesc': 'Enter the bank information to create a catalog of credit card types.'
+  ,'bank.fieldCode': 'Bank Code'
+  ,'bank.fieldCodePlaceholder': 'e.g. TCB, VCB, VPB…'
+  ,'bank.fieldShortName': 'Short Name'
+  ,'bank.fieldShortNamePlaceholder': 'e.g. Techcombank, Vietcombank…'
+  ,'bank.fieldFullName': 'Full bank name'
+  ,'bank.fieldFullNamePlaceholder': 'e.g. Vietnam Technological and Commercial Bank…'
+  ,'bank.fieldLogoUrl': 'Bank logo link (URL)'
+  ,'bank.fieldHotline': 'Hotline'
+  ,'bank.fieldHotlinePlaceholder': '1900xxxx'
+  ,'bank.fieldWebsite': 'Website'
+  ,'bank.fieldWebsitePlaceholder': 'https://bank.com.vn'
+  ,'bank.saveBank': 'Save bank'
+  ,'bank.dialogCardEyebrow': 'Card Catalog'
+  ,'bank.dialogCardTitle': 'Add new card type'
+  ,'bank.dialogCardDesc': 'Create a new credit card product for a partner bank.'
+  ,'bank.previewLabel': '✨ Live card preview'
+  ,'bank.fieldBank': 'Bank'
+  ,'bank.fieldBankPlaceholder': 'Select issuing bank'
+  ,'bank.fieldCardName': 'Card Name'
+  ,'bank.fieldCardNamePlaceholder': 'e.g. Everyday Cashback, Signature Platinum…'
+  ,'bank.fieldCardCode': 'Card Code'
+  ,'bank.fieldCardCodePlaceholder': 'e.g. TCB_EVERYDAY_VISA'
+  ,'bank.fieldNetwork': 'Payment Network'
+  ,'bank.fieldTier': 'Card Tier'
+  ,'bank.fieldAnnualFee': 'Annual Fee (₫/yr)'
+  ,'bank.fieldImageUrl': 'Card image link (Image URL)'
+  ,'bank.fieldImageUrlPlaceholder': 'https://domain.com/card-image.png'
+  ,'bank.fieldDescription': 'Benefits & privileges description'
+  ,'bank.fieldDescriptionPlaceholder': 'Enter a summary of cashback privileges, limits…'
+  ,'bank.saveCard': 'Save card type'
 } as const;
 
 export type TranslationKey = keyof typeof englishTranslations;
@@ -411,6 +519,19 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'auth.password': 'Mật khẩu',
   'auth.passwordPlaceholder': 'Tối thiểu 8 ký tự',
   'auth.validationError': 'Vui lòng kiểm tra lại các trường bắt buộc.',
+  'auth.invalidCredentials': 'Email hoặc mật khẩu không đúng.',
+  'auth.invalidEmail': 'Vui lòng nhập email hợp lệ.',
+  'auth.invalidPassword': 'Mật khẩu phải có ít nhất 8 ký tự.',
+  'auth.adminNotice': 'Tài khoản do Quản trị viên (Admin) cấp. Vui lòng liên hệ Admin nếu bạn chưa có tài khoản.',
+  'auth.heroTitle': 'Quản lý Dòng tiền & Cân đối Tài chính',
+  'auth.heroDescription': 'Hệ thống theo dõi thẻ tín dụng, tối ưu Cashback và quản lý danh mục đầu tư tập trung — Bảo mật theo chuẩn ngân hàng.',
+  'auth.featureSeparationTitle': 'Tách biệt dòng tiền',
+  'auth.featureSeparationDesc': 'Phân định rõ Rút vốn, Lợi nhuận và Cashback',
+  'auth.featureSecurityTitle': 'Bảo mật 256-bit',
+  'auth.featureSecurityDesc': 'Dữ liệu mã hóa end-to-end, JWT Rotation',
+  'auth.systemOperational': 'Hệ thống hoạt động bình thường · Mã hóa SSL',
+  'auth.showPassword': 'Hiện mật khẩu',
+  'auth.hidePassword': 'Ẩn mật khẩu',
   'auth.processing': 'Đang xử lý…',
   'auth.createAccount': 'Tạo tài khoản',
   'auth.haveAccount': 'Đã có tài khoản?',
@@ -420,21 +541,38 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'shell.openMenu': 'Mở menu',
   'shell.overview': 'Tổng quan',
   'shell.groupCredit': 'THẺ TÍN DỤNG',
-  'shell.groupInvestment': 'ĐẦU TƯ WEBSITE',
+  'shell.groupInvestment': 'ĐẦU TƯ',
+  'shell.groupAdmin': 'QUẢN TRỊ HỆ THỐNG',
+  'shell.adminUsers': 'Quản lý Người dùng',
+  'shell.adminBanks': 'Danh mục Ngân hàng',
   'shell.groupSystem': 'HỆ THỐNG',
   'shell.dashboard': 'Dashboard',
   'shell.myCards': 'Thẻ của tôi',
+  'shell.banks': 'Ngân hàng & Loại thẻ',
   'shell.transactions': 'Giao dịch',
   'shell.statements': 'Sao kê',
   'shell.payments': 'Thanh toán',
   'shell.cashback': 'Cashback',
   'shell.discountInvoices': 'Hóa đơn chiết khấu',
   'shell.accounts': 'Tài khoản',
-  'shell.deposits': 'Nạp tiền',
-  'shell.tasks': 'Nhiệm vụ',
-  'shell.rewards': 'Reward',
-  'shell.withdrawals': 'Rút tiền',
-  'shell.ledger': 'Ledger',
+  'shell.addTransaction': 'Thêm giao dịch',
+  'route.addInvestmentTransaction': 'Thêm Giao dịch Đầu tư',
+  'transaction.aiDetectTitle': 'AI Nhận diện Hóa đơn / Ảnh giao dịch',
+  'transaction.aiDetectDesc': 'Tải ảnh biên lai hoặc màn hình chuyển khoản. AI sẽ tự động đọc Số tiền, Ngày giờ, Loại giao dịch và Mô tả.',
+  'transaction.uploadPrompt': 'Kéo thả ảnh hóa đơn vào đây hoặc bấm để chọn tệp',
+  'transaction.supportedFormats': 'Hỗ trợ định dạng JPEG, PNG, WebP hoặc PDF (Tối đa 10MB)',
+  'transaction.aiSuccess': 'AI đã trích xuất thành công thông tin giao dịch!',
+  'transaction.manualTitle': 'Chi tiết Giao dịch',
+  'transaction.typeDeposit': 'Nạp tiền (Deposit)',
+  'transaction.typeWithdrawal': 'Rút tiền (Withdrawal)',
+  'transaction.typeBonus': 'Thưởng / Lợi nhuận (Bonus)',
+  'transaction.typeLabel': 'Loại giao dịch',
+  'transaction.accountLabel': 'Tài khoản Đầu tư',
+  'transaction.amountLabel': 'Số tiền',
+  'transaction.datetimeLabel': 'Ngày & Giờ giao dịch',
+  'transaction.descriptionLabel': 'Mô tả / Ghi chú',
+  'transaction.submitBtn': 'Ghi nhận Giao dịch',
+  'transaction.successMsg': 'Đã ghi nhận giao dịch đầu tư thành công!',
   'shell.notifications': 'Thông báo',
   'shell.settings': 'Cài đặt',
   'shell.secureConnection': 'Kết nối bảo mật',
@@ -451,7 +589,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'dashboard.last30Days': '30 ngày gần nhất',
   'dashboard.last90Days': '90 ngày gần nhất',
   'dashboard.flowCredit': 'Thẻ tín dụng',
-  'dashboard.flowInvestment': 'Đầu tư website',
+  'dashboard.flowInvestment': 'Đầu tư',
   'dashboard.goToDashboard': 'Đi đến dashboard →',
   'dashboard.totalSpending': 'Tổng chi tiêu',
   'dashboard.statementBalance': 'Dư nợ sao kê',
@@ -485,8 +623,8 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'dashboard.dueDate24': 'Hạn 24/07',
   'dashboard.dueDate27': 'Hạn 27/07',
   'dashboard.dueDate29': 'Hạn 29/07',
-  'resource.flowCredit': 'FLOW 1 · THẺ TÍN DỤNG',
-  'resource.flowInvestment': 'FLOW 2 · ĐẦU TƯ WEBSITE',
+  'resource.flowCredit': 'THẺ TÍN DỤNG',
+  'resource.flowInvestment': 'ĐẦU TƯ',
   'resource.flowSystem': 'HỆ THỐNG',
   'resource.description': 'Theo dõi, tìm kiếm và đối soát dữ liệu của riêng bạn.',
   'resource.searchPlaceholder': 'Tìm kiếm…',
@@ -613,8 +751,8 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'field.bankName': 'Ngân hàng',
   'field.cardName': 'Thẻ',
   'field.reference': 'Tham chiếu'
-  ,'field.cardCatalog': 'Danh mục thẻ'
-  ,'field.nickname': 'Tên gợi nhớ'
+  ,'field.cardCatalog': 'Loại thẻ'
+  ,'field.nickname': 'Card holder (Chủ thẻ)'
   ,'field.lastFour': 'Bốn số cuối'
   ,'field.creditLimit': 'Hạn mức tín dụng'
   ,'field.statementDay': 'Ngày sao kê'
@@ -649,7 +787,13 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'field.cashbackRate': 'Tỷ lệ cashback (%)'
   ,'field.actualCashback': 'Cashback thực nhận'
   ,'field.platform': 'Nền tảng'
+  ,'field.accountCode': 'Mã tài khoản'
   ,'field.accountName': 'Tên tài khoản'
+  ,'field.accountUsername': 'Tên đăng nhập'
+  ,'field.accountEmail': 'Email đăng ký'
+  ,'field.phoneNumber': 'Số điện thoại'
+  ,'field.registerDate': 'Ngày đăng ký'
+  ,'field.accountPassword': 'Mật khẩu tài khoản'
   ,'field.externalAccountCode': 'Mã tài khoản ngoài'
   ,'field.account': 'Tài khoản đầu tư'
   ,'field.fee': 'Phí'
@@ -670,6 +814,78 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'field.conditionDescription': 'Điều kiện'
   ,'field.requestedAmount': 'Số tiền yêu cầu'
   ,'field.destinationAccount': 'Tài khoản nhận'
+  ,'datepicker.selectDate': 'Chọn ngày'
+  ,'datepicker.selectDateTime': 'Chọn ngày & giờ'
+  ,'datepicker.selectDatePlaceholder': 'Chọn ngày...'
+  ,'datepicker.selectDateTimePlaceholder': 'Chọn ngày & giờ...'
+  ,'datepicker.today': 'Hôm nay'
+  ,'datepicker.plus1Day': '+1 ngày'
+  ,'datepicker.plus7Days': '+7 ngày'
+  ,'datepicker.plus30Days': '+30 ngày'
+  ,'datepicker.endOfMonth': 'Cuối tháng'
+  ,'datepicker.prevMonth': 'Tháng trước'
+  ,'datepicker.nextMonth': 'Tháng sau'
+  ,'datepicker.timeTitle': 'Thời gian (Giờ : Phút)'
+  ,'datepicker.clear': 'Xóa'
+  ,'datepicker.apply': 'Áp dụng'
+  ,'bank.eyebrow': 'Quản lý hệ thống'
+  ,'bank.title': 'Ngân hàng & Loại thẻ'
+  ,'bank.description': 'Quản lý danh sách các Ngân hàng đối tác và các Loại thẻ tín dụng thuộc từng ngân hàng.'
+  ,'bank.addBank': 'Thêm ngân hàng'
+  ,'bank.addCard': 'Thêm loại thẻ mới'
+  ,'bank.statBanks': 'Tổng ngân hàng'
+  ,'bank.statCards': 'Tổng loại thẻ tín dụng'
+  ,'bank.searchPlaceholder': 'Tìm kiếm ngân hàng theo tên hoặc mã…'
+  ,'bank.allBanks': 'Tất cả ngân hàng'
+  ,'bank.sectionBanks': 'Danh mục Ngân hàng đối tác'
+  ,'bank.bankCount': '{n} ngân hàng'
+  ,'bank.cardTypesCount': '{n} loại thẻ'
+  ,'bank.website': 'Website'
+  ,'bank.addCardForBank': 'Thêm thẻ'
+  ,'bank.sectionCards': 'Danh sách loại thẻ'
+  ,'bank.cardSectionDesc': 'Các sản phẩm thẻ tín dụng được niêm yết trong hệ thống.'
+  ,'bank.addCardType': 'Thêm loại thẻ'
+  ,'bank.annualFee': 'Phí thường niên'
+  ,'bank.annualFeeValue': '{fee} ₫/năm'
+  ,'bank.free': 'Miễn phí'
+  ,'bank.cashbackLimit': 'Hạn mức hoàn tiền max'
+  ,'bank.noLimit': 'Không giới hạn'
+  ,'bank.emptyCards': 'Chưa có loại thẻ nào'
+  ,'bank.emptyCardsDesc': 'Ngân hàng này chưa có loại thẻ tín dụng nào được đăng ký trong hệ thống.'
+  ,'bank.emptyCardsBtn': 'Thêm loại thẻ ngay'
+  ,'bank.dialogBankEyebrow': 'Quản lý Ngân hàng'
+  ,'bank.dialogBankTitle': 'Thêm ngân hàng mới'
+  ,'bank.dialogBankDesc': 'Nhập thông tin ngân hàng mới để tạo danh mục các loại thẻ tín dụng.'
+  ,'bank.fieldCode': 'Mã ngân hàng (Code)'
+  ,'bank.fieldCodePlaceholder': 'Ví dụ: TCB, VCB, VPB…'
+  ,'bank.fieldShortName': 'Tên viết tắt (Short Name)'
+  ,'bank.fieldShortNamePlaceholder': 'Ví dụ: Techcombank, Vietcombank…'
+  ,'bank.fieldFullName': 'Tên đầy đủ ngân hàng'
+  ,'bank.fieldFullNamePlaceholder': 'Ví dụ: Ngân hàng TMCP Kỹ Thương Việt Nam…'
+  ,'bank.fieldLogoUrl': 'Link Logo Ngân hàng (URL)'
+  ,'bank.fieldHotline': 'Số hotline'
+  ,'bank.fieldHotlinePlaceholder': '1900xxxx'
+  ,'bank.fieldWebsite': 'Website'
+  ,'bank.fieldWebsitePlaceholder': 'https://bank.com.vn'
+  ,'bank.saveBank': 'Lưu ngân hàng'
+  ,'bank.dialogCardEyebrow': 'Danh mục Thẻ'
+  ,'bank.dialogCardTitle': 'Thêm loại thẻ mới'
+  ,'bank.dialogCardDesc': 'Tạo một sản phẩm loại thẻ tín dụng mới cho ngân hàng đối tác.'
+  ,'bank.previewLabel': '✨ Xem trước thẻ trực quan'
+  ,'bank.fieldBank': 'Ngân hàng'
+  ,'bank.fieldBankPlaceholder': 'Chọn ngân hàng phát hành'
+  ,'bank.fieldCardName': 'Tên loại thẻ (Card Name)'
+  ,'bank.fieldCardNamePlaceholder': 'Ví dụ: Everyday Cashback, Signature Platinum…'
+  ,'bank.fieldCardCode': 'Mã loại thẻ (Card Code)'
+  ,'bank.fieldCardCodePlaceholder': 'Ví dụ: TCB_EVERYDAY_VISA'
+  ,'bank.fieldNetwork': 'Mạng thanh toán (Network)'
+  ,'bank.fieldTier': 'Hạng thẻ (Tier)'
+  ,'bank.fieldAnnualFee': 'Phí thường niên (₫/năm)'
+  ,'bank.fieldImageUrl': 'Link hình ảnh loại thẻ (Image URL)'
+  ,'bank.fieldImageUrlPlaceholder': 'https://domain.com/card-image.png'
+  ,'bank.fieldDescription': 'Mô tả ưu đãi & đặc quyền'
+  ,'bank.fieldDescriptionPlaceholder': 'Nhập tóm tắt đặc quyền hoàn tiền, hạn mức…'
+  ,'bank.saveCard': 'Lưu loại thẻ'
 };
 
 export const translations = {

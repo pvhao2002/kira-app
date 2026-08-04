@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$ApiUrl = 'https://api.vietqr.io/v2/banks',
+    [string]$MomoApiUrl = 'https://payment.momo.vn/v2/gateway/api/bankcodes',
     [string]$ContainerName = 'kira-mysql',
     [string]$Database = 'kira_bank',
     [string]$DbUser = 'root',
@@ -25,6 +26,22 @@ function ConvertTo-SqlString {
     return "'" + $normalized.Replace("'", "''") + "'"
 }
 
+function Invoke-Utf8Json {
+    param([Parameter(Mandatory)][string]$Uri)
+
+    Add-Type -AssemblyName System.Net.Http
+    $client = [Net.Http.HttpClient]::new()
+    $client.Timeout = [TimeSpan]::FromSeconds(30)
+    try {
+        $bytes = $client.GetByteArrayAsync($Uri).GetAwaiter().GetResult()
+        $json = [Text.UTF8Encoding]::new($false).GetString($bytes)
+        return $json | ConvertFrom-Json
+    }
+    finally {
+        $client.Dispose()
+    }
+}
+
 function Get-DatabasePassword {
     if (-not [string]::IsNullOrWhiteSpace($env:DB_PASSWORD)) {
         return $env:DB_PASSWORD
@@ -41,7 +58,10 @@ function Get-DatabasePassword {
 }
 
 function New-UpsertSql {
-    param([Parameter(Mandatory)][object[]]$Banks)
+    param(
+        [Parameter(Mandatory)][object[]]$Banks,
+        [Parameter(Mandatory)][object[]]$MomoBanks
+    )
 
     $rows = foreach ($bank in ($Banks | Sort-Object { [long]$_.id })) {
         $shortName = if (-not [string]::IsNullOrWhiteSpace([string]$bank.shortName)) {
@@ -68,6 +88,18 @@ function New-UpsertSql {
     }
 
     $values = $rows -join ",`n"
+    $momoRows = foreach ($bank in ($MomoBanks | Sort-Object code)) {
+        '  SELECT {0} AS code, {1} AS name, {2} AS short_name, {3} AS logo_url, {4} AS bin, {5} AS transfer_supported' -f @(
+            (ConvertTo-SqlString $bank.code),
+            (ConvertTo-SqlString $bank.name),
+            (ConvertTo-SqlString $bank.shortName),
+            (ConvertTo-SqlString $bank.bankLogoUrl),
+            (ConvertTo-SqlString $bank.bin),
+            $(if ($bank.isDisburse) { 1 } else { 0 })
+        )
+    }
+    $momoValues = $momoRows -join "`n  UNION ALL`n"
+
     return @"
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -112,6 +144,33 @@ ON DUPLICATE KEY UPDATE
   lookup_supported = VALUES(lookup_supported),
   active = VALUES(active);
 
+INSERT INTO banks (
+  code,
+  name,
+  short_name,
+  logo_url,
+  bin,
+  transfer_supported,
+  lookup_supported,
+  active
+)
+SELECT
+  COALESCE(existing.code, source.code),
+  COALESCE(existing.name, source.name),
+  COALESCE(existing.short_name, source.short_name),
+  source.logo_url,
+  COALESCE(existing.bin, source.bin),
+  COALESCE(existing.transfer_supported, source.transfer_supported),
+  COALESCE(existing.lookup_supported, FALSE),
+  COALESCE(existing.active, TRUE)
+FROM (
+$momoValues
+) source
+LEFT JOIN banks existing ON existing.bin = source.bin
+ON DUPLICATE KEY UPDATE
+  version = IF(NOT (banks.logo_url <=> VALUES(logo_url)), banks.version + 1, banks.version),
+  logo_url = VALUES(logo_url);
+
 COMMIT;
 "@
 }
@@ -151,7 +210,43 @@ if ($duplicateCodes.Count -gt 0 -or $duplicateIds.Count -gt 0) {
     throw 'VietQR returned duplicate bank codes or ids.'
 }
 
-$sql = New-UpsertSql -Banks $banks
+Write-Host "Fetching MoMo banks from $MomoApiUrl ..."
+$momoResponse = Invoke-Utf8Json -Uri $MomoApiUrl
+$momoBanks = @(
+    foreach ($property in $momoResponse.PSObject.Properties) {
+        [pscustomobject]@{
+            code = $property.Name
+            bin = [string]$property.Value.bin
+            shortName = [string]$property.Value.shortName
+            name = [string]$property.Value.name
+            bankLogoUrl = [string]$property.Value.bankLogoUrl
+            isDisburse = [bool]$property.Value.isDisburse
+        }
+    }
+)
+
+if ($momoBanks.Count -eq 0) {
+    throw 'MoMo returned an empty bank list.'
+}
+
+foreach ($bank in $momoBanks) {
+    $missingRequiredValue = [string]::IsNullOrWhiteSpace([string]$bank.code) -or
+        [string]::IsNullOrWhiteSpace([string]$bank.name) -or
+        [string]::IsNullOrWhiteSpace([string]$bank.shortName) -or
+        [string]::IsNullOrWhiteSpace([string]$bank.bankLogoUrl) -or
+        [string]::IsNullOrWhiteSpace([string]$bank.bin)
+    if ($missingRequiredValue) {
+        throw "MoMo bank '$($bank.code)' is missing a required code, name, short name, logo URL, or BIN."
+    }
+}
+
+$duplicateMomoCodes = @($momoBanks | Group-Object code | Where-Object Count -gt 1)
+$duplicateMomoBins = @($momoBanks | Group-Object bin | Where-Object Count -gt 1)
+if ($duplicateMomoCodes.Count -gt 0 -or $duplicateMomoBins.Count -gt 0) {
+    throw 'MoMo returned duplicate bank codes or BINs.'
+}
+
+$sql = New-UpsertSql -Banks $banks -MomoBanks $momoBanks
 if (-not [string]::IsNullOrWhiteSpace($OutputSql)) {
     $outputPath = [IO.Path]::GetFullPath($OutputSql)
     $outputDirectory = Split-Path -Parent $outputPath
@@ -159,7 +254,7 @@ if (-not [string]::IsNullOrWhiteSpace($OutputSql)) {
         New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
     }
     [IO.File]::WriteAllText($outputPath, $sql, [Text.UTF8Encoding]::new($false))
-    Write-Host "Generated $($banks.Count) VietQR bank rows in $outputPath"
+    Write-Host "Generated $($banks.Count) VietQR and $($momoBanks.Count) MoMo bank rows in $outputPath"
 }
 
 if (-not $Apply) {
@@ -206,4 +301,4 @@ finally {
     $password = $null
 }
 
-Write-Host "Synchronized $($banks.Count) VietQR banks into $Database."
+Write-Host "Synchronized $($banks.Count) VietQR and $($momoBanks.Count) MoMo bank rows into $Database."

@@ -15,13 +15,60 @@
 
 <section class="panel data-panel">
   <div class="table-tools">
-    <div class="search-box">⌕ <input [placeholder]="i18n.t('resource.searchPlaceholder')"></div>
-    <button class="btn ghost" type="button">{{ i18n.t('common.filter') }}</button>
-    <button class="btn ghost" type="button">{{ i18n.t('common.export') }}</button>
+    <div class="search-box">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" [placeholder]="i18n.t('resource.searchPlaceholder')">
+    </div>
+    <div class="tool-actions">
+      <button (click)="toggleFilter()" [class.active]="showFilterPanel() || selectedStatus() !== 'ALL'" class="btn tool-btn" type="button">
+        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <span>{{ i18n.t('common.filter') }}</span>
+      </button>
+      <button (click)="exportData()" class="btn tool-btn" type="button">
+        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y1="3"/></svg>
+        <span>{{ i18n.t('common.export') }}</span>
+      </button>
+    </div>
   </div>
+
+  @if (showFilterPanel()) {
+    <div class="filter-panel">
+      <div class="filter-group">
+        <span class="filter-label">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          Trạng thái:
+        </span>
+        <div class="filter-chips">
+          <button (click)="setStatusFilter('ALL')" [class.active]="selectedStatus() === 'ALL'" class="chip">
+            Tất cả
+          </button>
+          <button (click)="setStatusFilter('ACTIVE')" [class.active]="selectedStatus() === 'ACTIVE'" class="chip active-chip">
+            <span class="dot active"></span> ACTIVE
+          </button>
+          <button (click)="setStatusFilter('INACTIVE')" [class.active]="selectedStatus() === 'INACTIVE'" class="chip inactive-chip">
+            <span class="dot inactive"></span> INACTIVE
+          </button>
+          <button (click)="setStatusFilter('CLOSED')" [class.active]="selectedStatus() === 'CLOSED'" class="chip closed-chip">
+            <span class="dot closed"></span> CLOSED
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-meta">
+        <span class="count-badge">{{ filteredRows().length }} / {{ rows().length }} bản ghi</span>
+        @if (isFilterActive) {
+          <button (click)="resetFilters()" class="reset-btn" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Đặt lại
+          </button>
+        }
+      </div>
+    </div>
+  }
+
   @if (loading()) {
     <div class="skeleton table-skeleton"></div>
-  } @else if (rows().length) {
+  } @else if (filteredRows().length) {
     <div class="responsive-table">
       <table>
         <thead>
@@ -35,7 +82,7 @@
         </tr>
         </thead>
         <tbody>
-          @for (row of rows(); track row['id'] ?? $index) {
+          @for (row of filteredRows(); track row['id'] ?? $index) {
             <tr>
               @for (column of columns(); track column) {
                 <td>
@@ -103,7 +150,8 @@
     <form (click)="$event.stopPropagation()"
           (ngSubmit)="submit()"
           [formGroup]="form"
-          class="dialog resource-dialog">
+          class="dialog resource-dialog"
+          [class.credit-card-dialog]="definition.key === 'creditCards'">
       <header>
         <div>
           <small>{{ flowLabel }}</small>
@@ -113,33 +161,90 @@
       </header>
       <p>{{ i18n.t(definitionForm.descriptionKey) }}</p>
 
-      <div class="resource-form-grid">
-        @for (field of definitionForm.fields; track field.name) {
-          <label [class.full-width]="field.type === 'textarea'">
-            <span>{{ i18n.t(field.labelKey) }} @if (field.required) { <b>*</b> }</span>
-            @if (field.type === 'textarea') {
-              <textarea [formControlName]="field.name" rows="4"></textarea>
-            } @else if (field.type === 'select') {
-              <select [formControlName]="field.name">
-                <option [ngValue]="null">{{ i18n.t('form.selectPlaceholder') }}</option>
-                @for (option of options(field); track option.value) {
-                  <option [ngValue]="option.value">{{ option.label }}</option>
-                }
-              </select>
-            } @else {
-              <input [attr.max]="field.max ?? null"
-                     [attr.maxlength]="field.maxLength ?? null"
-                     [attr.min]="field.min ?? null"
-                     [attr.step]="field.type === 'number' ? '1' : field.type === 'percentage' ? '0.01' : field.type === 'money' ? '0.01' : null"
-                     [formControlName]="field.name"
-                     [type]="field.type === 'date' ? 'date' : field.type === 'datetime' ? 'datetime-local' : ['number', 'money', 'percentage'].includes(field.type) ? 'number' : 'text'">
-            }
-            @if (fieldError(field)) {
-              <small class="field-error">{{ fieldError(field) }}</small>
-            }
-          </label>
-        }
-      </div>
+      @if (definition.key === 'creditCards') {
+        <div class="card-dialog-layout">
+          <div class="preview-column">
+            <span class="preview-section-title">✨ {{ i18n.t('landing.monthOverview') ? 'Xem trước thẻ trực quan' : 'Live Card Preview' }}</span>
+            <app-credit-card-preview
+              [bankName]="cardPreviewBank()"
+              [cardName]="cardPreviewName()"
+              [cardImage]="cardPreviewImage()"
+              [cardNetwork]="cardPreviewNetwork()"
+              [cardTier]="cardPreviewTier()"
+              [nickname]="cardPreviewNickname()"
+              [lastFour]="cardPreviewLastFour()"
+              [creditLimit]="cardPreviewCreditLimit()"
+              [statementDay]="cardPreviewStatementDay()"
+              [dueDay]="cardPreviewDueDay()"
+            ></app-credit-card-preview>
+          </div>
+          <div class="form-column">
+            <div class="resource-form-grid">
+              @for (field of definitionForm.fields; track field.name) {
+                <label [class.full-width]="field.type === 'textarea'">
+                  <span>{{ i18n.t(field.labelKey) }} @if (field.required) { <b>*</b> }</span>
+                  @if (field.type === 'textarea') {
+                    <textarea [formControlName]="field.name" rows="4"></textarea>
+                  } @else if (field.type === 'select') {
+                    <app-custom-select
+                      [formControlName]="field.name"
+                      [options]="options(field)"
+                      [placeholder]="i18n.t('form.selectPlaceholder')"
+                    ></app-custom-select>
+                  } @else if (field.type === 'date' || field.type === 'datetime') {
+                    <app-custom-datepicker
+                      [formControlName]="field.name"
+                      [mode]="field.type === 'datetime' ? 'datetime' : 'date'"
+                    ></app-custom-datepicker>
+                  } @else {
+                    <input [attr.max]="field.max ?? null"
+                           [attr.maxlength]="field.maxLength ?? null"
+                           [attr.min]="field.min ?? null"
+                           [attr.step]="field.type === 'number' ? '1' : field.type === 'percentage' ? '0.01' : field.type === 'money' ? '0.01' : null"
+                           [formControlName]="field.name"
+                           [type]="['number', 'money', 'percentage'].includes(field.type) ? 'number' : 'text'">
+                  }
+                  @if (fieldError(field)) {
+                    <small class="field-error">{{ fieldError(field) }}</small>
+                  }
+                </label>
+              }
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="resource-form-grid">
+          @for (field of definitionForm.fields; track field.name) {
+            <label [class.full-width]="field.type === 'textarea'">
+              <span>{{ i18n.t(field.labelKey) }} @if (field.required) { <b>*</b> }</span>
+              @if (field.type === 'textarea') {
+                <textarea [formControlName]="field.name" rows="4"></textarea>
+              } @else if (field.type === 'select') {
+                <app-custom-select
+                  [formControlName]="field.name"
+                  [options]="options(field)"
+                  [placeholder]="i18n.t('form.selectPlaceholder')"
+                ></app-custom-select>
+              } @else if (field.type === 'date' || field.type === 'datetime') {
+                <app-custom-datepicker
+                  [formControlName]="field.name"
+                  [mode]="field.type === 'datetime' ? 'datetime' : 'date'"
+                ></app-custom-datepicker>
+              } @else {
+                <input [attr.max]="field.max ?? null"
+                       [attr.maxlength]="field.maxLength ?? null"
+                       [attr.min]="field.min ?? null"
+                       [attr.step]="field.type === 'number' ? '1' : field.type === 'percentage' ? '0.01' : field.type === 'money' ? '0.01' : null"
+                       [formControlName]="field.name"
+                       [type]="['number', 'money', 'percentage'].includes(field.type) ? 'number' : 'text'">
+              }
+              @if (fieldError(field)) {
+                <small class="field-error">{{ fieldError(field) }}</small>
+              }
+            </label>
+          }
+        </div>
+      }
 
       @if (formError()) {
         <div class="form-error">{{ formError() }}</div>

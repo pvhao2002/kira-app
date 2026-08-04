@@ -3,11 +3,14 @@ import {FormControl, ReactiveFormsModule} from '@angular/forms';
 import {LanguageService} from '../../core/i18n/language.service';
 import {ApiService} from '../../core/services/api.service';
 
+import {CustomSelectComponent, SelectOption} from '../../shared/custom-select/custom-select';
+import {computed} from '@angular/core';
+
 type Row = Record<string, unknown>;
 
 @Component({
   selector: 'app-ledger',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CustomSelectComponent],
   templateUrl: './ledger.page.html',
   styleUrl: './ledger.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -15,6 +18,9 @@ type Row = Record<string, unknown>;
 export class LedgerPage {
   readonly i18n = inject(LanguageService);
   readonly accounts = signal<Row[]>([]);
+  readonly accountOptions = computed<SelectOption[]>(() =>
+    this.accounts().map(a => ({ value: a['id'], label: String(a['accountName'] ?? '') }))
+  );
   readonly rows = signal<Row[]>([]);
   readonly loading = signal(false);
   readonly accountId = new FormControl<number | null>(null);
@@ -22,12 +28,12 @@ export class LedgerPage {
   private readonly api = inject(ApiService);
 
   constructor() {
+    this.accountId.valueChanges.subscribe(() => this.load());
     this.api.page<Row>('investment/accounts', 0, 100).subscribe(response => {
       this.accounts.set(response.data);
       const first = response.data[0]?.['id'];
       if (typeof first === 'number') {
         this.accountId.setValue(first);
-        this.load();
       }
     });
   }

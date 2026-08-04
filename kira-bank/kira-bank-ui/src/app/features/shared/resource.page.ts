@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators} from '@angular/forms';
 import {ActivatedRoute} from '@angular/router';
 import {finalize} from 'rxjs';
@@ -18,6 +18,10 @@ import {
 
 type Row = Record<string, unknown>;
 
+import {CustomSelectComponent} from '../../shared/custom-select/custom-select';
+import {CustomDatepickerComponent} from '../../shared/custom-datepicker/custom-datepicker';
+import {CreditCardPreviewComponent} from '../../shared/credit-card-preview/credit-card-preview';
+
 interface LookupOption {
   value: string | number;
   label: string;
@@ -25,7 +29,7 @@ interface LookupOption {
 
 @Component({
   selector: 'app-resource',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CustomSelectComponent, CustomDatepickerComponent, CreditCardPreviewComponent],
   templateUrl: './resource.page.html',
   styleUrl: './resource.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -42,9 +46,16 @@ export class ResourcePage {
   readonly selectedRow = signal<Row | null>(null);
   readonly editing = signal(false);
   readonly lookups = signal<Record<string, LookupOption[]>>({});
+  readonly rawLookups = signal<Record<string, Row[]>>({});
+  readonly formValues = signal<Record<string, unknown>>({});
   readonly formError = signal('');
   form = new FormGroup<Record<string, FormControl<unknown>>>({});
   readonly i18n = inject(LanguageService);
+  private formSub?: any;
+
+  readonly searchQuery = signal('');
+  readonly showFilterPanel = signal(false);
+  readonly selectedStatus = signal('ALL');
 
   private readonly route = inject(ActivatedRoute);
   readonly definition = resourceDefinitions[this.route.snapshot.data['resourceKey'] as string] as ResourceDefinition;
@@ -54,8 +65,68 @@ export class ResourcePage {
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
 
+  readonly filteredRows = computed(() => {
+    let list = this.rows();
+    const query = this.searchQuery().toLowerCase().trim();
+    const status = this.selectedStatus();
+
+    if (status !== 'ALL') {
+      list = list.filter(row => String(row['status'] ?? '').toUpperCase() === status);
+    }
+
+    if (!query) return list;
+
+    return list.filter(row =>
+      Object.values(row).some(val =>
+        val !== null && val !== undefined && String(val).toLowerCase().includes(query)
+      )
+    );
+  });
+
   constructor() {
     this.loadRows();
+  }
+
+  resetFilters(): void {
+    this.searchQuery.set('');
+    this.selectedStatus.set('ALL');
+  }
+
+  get isFilterActive(): boolean {
+    return this.selectedStatus() !== 'ALL' || this.searchQuery().trim().length > 0;
+  }
+
+  toggleFilter(): void {
+    this.showFilterPanel.set(!this.showFilterPanel());
+  }
+
+  setStatusFilter(status: string): void {
+    this.selectedStatus.set(status);
+  }
+
+  exportData(): void {
+    const list = this.filteredRows();
+    if (!list.length) {
+      this.toast.show('No data available to export', 'info');
+      return;
+    }
+
+    const cols = this.columns();
+    const headers = cols.map(c => this.label(c)).join(',');
+    const rowsCsv = list.map((row: Row) =>
+      cols.map(c => `"${String(row[c] ?? '').replaceAll('"', '""')}"`).join(',')
+    ).join('\n');
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + headers + '\n' + rowsCsv;
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${this.definition.key}_export.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.toast.show('Data exported to CSV successfully', 'success');
   }
 
   get availableActions(): ResourceActionDefinition[] {
@@ -111,7 +182,6 @@ export class ResourcePage {
   }
 
   closeDialog(): void {
-    if (this.form.dirty && !window.confirm(this.i18n.t('form.confirmDiscard'))) return;
     this.open.set(false);
     this.activeForm.set(null);
     this.selectedRow.set(null);
@@ -202,21 +272,51 @@ export class ResourcePage {
       controls[field.name] = control;
     }
     this.form = new FormGroup(controls);
+    this.formValues.set(this.form.getRawValue());
+    this.formSub?.unsubscribe();
+    this.formSub = this.form.valueChanges.subscribe(() => {
+      this.formValues.set(this.form.getRawValue());
+    });
     this.loadLookups(definition.fields);
     this.form.markAsPristine();
     this.open.set(true);
   }
+
+  readonly selectedCatalogCard = computed(() => {
+    const formVals = this.formValues();
+    const catalogId = formVals['cardCatalogId'] ?? this.selectedRow()?.[ 'cardCatalogId'];
+    if (!catalogId) return null;
+    const list = this.rawLookups()['catalogCards'] ?? [];
+    return list.find(c => String(c['id']) === String(catalogId)) ?? null;
+  });
+
+  readonly cardPreviewBank = computed(() => String(this.selectedCatalogCard()?.[ 'bankName'] ?? ''));
+  readonly cardPreviewName = computed(() => String(this.selectedCatalogCard()?.[ 'cardName'] ?? ''));
+  readonly cardPreviewImage = computed(() => String(this.selectedCatalogCard()?.[ 'imageUrl'] ?? ''));
+  readonly cardPreviewNetwork = computed(() => String(this.selectedCatalogCard()?.[ 'cardNetwork'] ?? ''));
+  readonly cardPreviewTier = computed(() => String(this.selectedCatalogCard()?.[ 'cardTier'] ?? ''));
+  readonly cardPreviewNickname = computed(() => String(this.formValues()['nickname'] ?? ''));
+  readonly cardPreviewLastFour = computed(() => String(this.formValues()['lastFour'] ?? ''));
+  readonly cardPreviewCreditLimit = computed(() => this.formValues()['creditLimit'] as number | string | null);
+  readonly cardPreviewStatementDay = computed(() => this.formValues()['statementDay'] as number | string | null);
+  readonly cardPreviewDueDay = computed(() => this.formValues()['dueDay'] as number | string | null);
 
   private loadLookups(fields: ResourceField[]): void {
     const keys = [...new Set(fields.map(field => field.lookup).filter((key): key is LookupKey => !!key))];
     for (const key of keys) {
       if (this.lookups()[key]) continue;
       this.api.page<Row>(this.lookupPath(key), 0, 100).subscribe({
-        next: response => this.lookups.update(current => ({
-          ...current,
-          [key]: response.data.map(row => this.lookupOption(key, row))
-        })),
-        error: () => this.lookups.update(current => ({...current, [key]: []}))
+        next: response => {
+          this.rawLookups.update(current => ({...current, [key]: response.data}));
+          this.lookups.update(current => ({
+            ...current,
+            [key]: response.data.map(row => this.lookupOption(key, row))
+          }));
+        },
+        error: () => {
+          this.rawLookups.update(current => ({...current, [key]: []}));
+          this.lookups.update(current => ({...current, [key]: []}));
+        }
       });
     }
   }
@@ -234,7 +334,7 @@ export class ResourcePage {
     }[key];
   }
 
-  private lookupOption(key: LookupKey, row: Row): LookupOption {
+  private lookupOption(key: LookupKey, row: Row): any {
     const value = row['id'] as string | number;
     const label = {
       catalogCards: `${row['bankName'] ?? ''} · ${row['cardName'] ?? row['cardCode'] ?? value}`,
@@ -246,7 +346,9 @@ export class ResourcePage {
       accounts: String(row['accountName'] ?? row['externalAccountCode'] ?? value),
       tasks: String(row['taskName'] ?? row['taskCode'] ?? value)
     }[key];
-    return {value, label};
+    const iconUrl = key === 'catalogCards' ? (row['imageUrl'] as string || undefined) : undefined;
+    const sublabel = key === 'catalogCards' ? `${row['cardNetwork'] ?? ''} ${row['cardTier'] ?? ''}`.trim() : undefined;
+    return {value, label, iconUrl, sublabel};
   }
 
   private serialize(fields: ResourceField[], raw: Record<string, unknown>): Record<string, unknown> {

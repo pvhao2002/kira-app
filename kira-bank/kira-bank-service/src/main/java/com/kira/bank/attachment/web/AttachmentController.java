@@ -1,59 +1,71 @@
 package com.kira.bank.attachment.web;
 
-import com.kira.bank.ai.*;
-import com.kira.bank.shared.web.ApiException;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import com.kira.bank.attachment.application.AttachmentService;
+import com.kira.bank.attachment.domain.AttachmentAiStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
-import java.nio.file.*;
-import java.security.*;
-import java.util.*;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import static com.kira.bank.attachment.application.AttachmentDtos.AttachmentResponse;
+import static com.kira.bank.shared.web.ApiTypes.PageMeta;
+import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 
 @RestController
 @RequestMapping("/api/v1/attachments")
+@RequiredArgsConstructor
 public class AttachmentController {
-    private static final Set<String> ALLOWED = Set.of("image/jpeg", "image/png", "image/webp", "application/pdf");
-    private final Path root;
-    private final AiDocumentService ai;
-
-    AttachmentController(@Value("${app.upload-dir:${java.io.tmpdir}/kira-bank-uploads}") String dir, AiDocumentService ai) throws IOException {
-        this.root = Paths.get(dir).toAbsolutePath().normalize();
-        Files.createDirectories(root);
-        this.ai = ai;
-    }
+    private final AttachmentService attachments;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    Object upload(@AuthenticationPrincipal Long user, @RequestParam String flow, @RequestParam String documentType, @RequestPart MultipartFile file) throws Exception {
-        if (file.isEmpty() || file.getSize() > 10 * 1024 * 1024)
-            throw bad("INVALID_FILE_SIZE", "File phải có dung lượng từ 1 byte đến 10 MB");
-        if (!ALLOWED.contains(file.getContentType()))
-            throw bad("INVALID_FILE_TYPE", "Chỉ hỗ trợ JPEG, PNG, WebP hoặc PDF");
-        String ext = switch (file.getContentType()) {
-            case "image/jpeg" -> ".jpg";
-            case "image/png" -> ".png";
-            case "image/webp" -> ".webp";
-            default -> ".pdf";
-        };
-        String key = user + "/" + UUID.randomUUID() + ext;
-        Path target = root.resolve(key).normalize();
-        if (!target.startsWith(root)) throw bad("INVALID_PATH", "Đường dẫn lưu trữ không hợp lệ");
-        Files.createDirectories(target.getParent());
-        try (InputStream in = file.getInputStream()) {
-            Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
-        }
-        return Map.of("storageKey", key, "originalName", Optional.ofNullable(file.getOriginalFilename()).orElse("document"), "mimeType", file.getContentType(), "size", file.getSize(), "sha256", sha256(target), "flow", flow, "documentType", documentType, "ai", ai.analyze(key, documentType));
+    AttachmentResponse upload(
+            @AuthenticationPrincipal Long user,
+            @RequestParam String flow,
+            @RequestParam String documentType,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        return attachments.upload(user, flow, documentType, file);
     }
 
-    private String sha256(Path p) throws Exception {
-        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(p)));
+    @GetMapping
+    PageResponse<AttachmentResponse> listDrafts(
+            @AuthenticationPrincipal Long user,
+            @RequestParam(defaultValue = "PENDING,PROCESSING,READY,FAILED") List<AttachmentAiStatus> statuses,
+            @PageableDefault(size = 50) Pageable pageable
+    ) {
+        Page<AttachmentResponse> page = attachments.listDrafts(user, statuses, pageable);
+        return new PageResponse<>(page.getContent(), new PageMeta(
+                page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages()));
     }
 
-    private ApiException bad(String c, String m) {
-        return new ApiException(HttpStatus.BAD_REQUEST, c, m);
+    @GetMapping("/{id}/content")
+    ResponseEntity<byte[]> content(@AuthenticationPrincipal Long user, @PathVariable Long id) {
+        AttachmentService.AttachmentContent content = attachments.content(user, id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(content.mimeType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                        .filename(content.originalName(), StandardCharsets.UTF_8).build().toString())
+                .body(content.bytes());
+    }
+
+    @PostMapping("/{id}/retry")
+    AttachmentResponse retry(@AuthenticationPrincipal Long user, @PathVariable Long id) {
+        return attachments.retry(user, id);
     }
 }
-

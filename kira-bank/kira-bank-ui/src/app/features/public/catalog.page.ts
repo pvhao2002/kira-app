@@ -6,9 +6,12 @@ import {LanguageService} from '../../core/i18n/language.service';
 import {LanguageSwitcherComponent} from '../../shared/language-switcher/language-switcher';
 import {Bank, Card, FinderResult, Mcc} from '../../shared/models/api.models';
 
+import {CustomSelectComponent, SelectOption} from '../../shared/custom-select/custom-select';
+import {computed} from '@angular/core';
+
 @Component({
   selector: 'app-catalog',
-  imports: [RouterLink, ReactiveFormsModule, LanguageSwitcherComponent],
+  imports: [RouterLink, ReactiveFormsModule, LanguageSwitcherComponent, CustomSelectComponent],
   templateUrl: './catalog.page.html',
   styleUrl: './catalog.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -20,6 +23,9 @@ export class CatalogPage {
   readonly amount = new FormControl(1_000_000, {nonNullable: true});
   readonly items = signal<(Bank | Card | Mcc)[]>([]);
   readonly mccs = signal<Mcc[]>([]);
+  readonly mccOptions = computed<SelectOption[]>(() =>
+    this.mccs().map(m => ({ value: m.id, label: `${m.code} — ${m.name}` }))
+  );
   readonly results = signal<FinderResult[]>([]);
   private readonly route = inject(ActivatedRoute);
   readonly type = this.route.snapshot.data['type'] as string;

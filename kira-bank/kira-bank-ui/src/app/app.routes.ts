@@ -2,32 +2,11 @@ import {Routes} from '@angular/router';
 import {adminGuard, authGuard} from './core/guards/auth.guards';
 
 export const routes: Routes = [
-  {path: '', loadComponent: () => import('./features/public/landing.page').then(m => m.LandingPage)},
+  {path: '', redirectTo: 'login', pathMatch: 'full'},
   {
     path: 'login',
     loadComponent: () => import('./features/auth/auth.page').then(m => m.AuthPage),
     data: {mode: 'login'}
-  }, {
-    path: 'register',
-    loadComponent: () => import('./features/auth/auth.page').then(m => m.AuthPage),
-    data: {mode: 'register'}
-  },
-  {
-    path: 'banks',
-    loadComponent: () => import('./features/public/catalog.page').then(m => m.CatalogPage),
-    data: {type: 'banks'}
-  }, {
-    path: 'cards',
-    loadComponent: () => import('./features/public/catalog.page').then(m => m.CatalogPage),
-    data: {type: 'cards'}
-  }, {
-    path: 'mcc',
-    loadComponent: () => import('./features/public/catalog.page').then(m => m.CatalogPage),
-    data: {type: 'mcc'}
-  }, {
-    path: 'cashback-finder',
-    loadComponent: () => import('./features/public/catalog.page').then(m => m.CatalogPage),
-    data: {type: 'finder'}
   },
   {
     path: 'app',
@@ -67,11 +46,15 @@ export const routes: Routes = [
         loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage)
       }
     ]
-  }, {path: '**', redirectTo: ''}
+  }, {path: '**', redirectTo: 'login'}
 ];
 
 function resourceRoutes(): Routes {
   return [
+    {
+      path: 'banks',
+      loadComponent: () => import('./features/bank/bank.page').then(m => m.BankPage)
+    },
     {
       path: 'credit-cards',
       data: {resourceKey: 'creditCards'}
@@ -92,21 +75,10 @@ function resourceRoutes(): Routes {
       path: 'investment/accounts',
       data: {resourceKey: 'investmentAccounts'}
     }, {
-      path: 'investment/deposits',
-      data: {resourceKey: 'investmentDeposits'}
-    }, {
-      path: 'investment/tasks',
-      data: {resourceKey: 'investmentTasks'}
-    }, {
-      path: 'investment/rewards',
-      data: {resourceKey: 'investmentRewards'}
-    }, {
-      path: 'investment/withdrawals',
-      data: {resourceKey: 'investmentWithdrawals'}
-    }, {
-      path: 'investment/ledger',
-      loadComponent: () => import('./features/ledger/ledger.page').then(m => m.LedgerPage)
-    }, {path: 'reports/investment', data: {resourceKey: 'investmentReports'}},
+      path: 'investment/add-transaction',
+      loadComponent: () => import('./features/investment/investment-transaction.page').then(m => m.InvestmentTransactionPage),
+      data: {titleKey: 'route.addInvestmentTransaction'}
+    },
     {path: 'notifications', data: {resourceKey: 'notifications'}}, {
       path: 'settings',
       loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage)

@@ -14,10 +14,16 @@ import java.math.BigDecimal;
 public class InvestmentAccount extends AuditedEntity {
     @Column(name = "user_id", nullable = false)
     private Long userId;
-    @Column(name = "platform_id", nullable = false)
-    private Long platformId;
+    @Column(name = "platform_id", nullable = true)
+    private Long platformId = 1L;
+    private String accountCode;
     private String accountName;
     private String externalAccountCode;
+    private String accountUsername;
+    private String accountEmail;
+    private String phoneNumber;
+    private java.time.Instant registerDate;
+    private String accountPassword;
     private String currency = "VND";
     private BigDecimal currentBalance = BigDecimal.ZERO;
     private BigDecimal availableCapital = BigDecimal.ZERO;
