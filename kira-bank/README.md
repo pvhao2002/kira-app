@@ -65,7 +65,7 @@ Chỉ được tạo khi `app.seed-development-users=true` (mặc định develo
 ## API chính
 
 - Identity: `/api/v1/auth/register`, `/login`, `/refresh`, `/logout`, `/profile`, `/change-password`.
-- Public: `/api/v1/public/banks`, `/cards`, `/mccs`, `/cashback-finder`.
+- Public: `/api/v1/public/banks`, `/mccs`.
 - Flow 1: `/credit-cards`, `/card-transactions`, `/statements`, `/statements/{id}/payments`, `/discount-invoices`.
 - Flow 2: `/investment/accounts`, `/deposits/completed`, `/tasks/allocate`, `/tasks/{id}/settlements`, `/withdrawals`, `/accounts/{id}/ledger`.
 - Shared: `/attachments` (upload/review; AI không tự lưu dữ liệu tài chính).
@@ -74,6 +74,7 @@ Chỉ được tạo khi `app.seed-development-users=true` (mặc định develo
 
 - `V1__initial_schema.sql`: 33 bảng identity, Flow 1, Flow 2 và shared; foreign key, unique/check constraint và index.
 - `V2__seed_public_catalog.sql`: roles, ngân hàng/thẻ/MCC/rule/platform/settings mẫu. User development được hash và tạo bởi application runner, không hard-code vào production migration.
+- `V6__link_user_credit_cards_to_banks.sql`: chuyển thẻ người dùng sang liên kết trực tiếp với ngân hàng, sau đó xóa Card Catalog và cashback rules.
 
 ## Troubleshooting
 

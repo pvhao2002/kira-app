@@ -9,5 +9,7 @@ import java.util.Optional;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByUserIdAndIdempotencyKey(Long userId, String key);
 
+    boolean existsByStatementIdAndDeletedAtIsNull(Long statementId);
+
     Page<Payment> findByUserIdAndDeletedAtIsNull(Long userId, Pageable p);
 }

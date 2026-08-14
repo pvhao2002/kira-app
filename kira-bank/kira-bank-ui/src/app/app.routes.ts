@@ -50,7 +50,7 @@ export const routes: Routes = [
 ];
 
 function resourceRoutes(): Routes {
-  return [
+  const definitions: Routes = [
     {
       path: 'banks',
       loadComponent: () => import('./features/bank/bank.page').then(m => m.BankPage)
@@ -58,16 +58,13 @@ function resourceRoutes(): Routes {
     {
       path: 'credit-cards',
       data: {resourceKey: 'creditCards'}
-    }, {
-      path: 'card-transactions',
-      data: {resourceKey: 'cardTransactions'}
-    }, {path: 'statements', data: {resourceKey: 'statements'}}, {
-      path: 'payments',
-      data: {resourceKey: 'payments'}
-    }, {path: 'cashbacks', data: {resourceKey: 'cashbacks'}}, {
-      path: 'discount-invoices',
-      data: {resourceKey: 'discountInvoices'}
-    }, {path: 'reports/credit-card', data: {resourceKey: 'creditReports'}},
+    },
+    {path: 'card-transactions', redirectTo: 'credit-cards', pathMatch: 'full'},
+    {path: 'statements', redirectTo: 'credit-cards', pathMatch: 'full'},
+    {path: 'payments', redirectTo: 'credit-cards', pathMatch: 'full'},
+    {path: 'cashbacks', redirectTo: 'credit-cards', pathMatch: 'full'},
+    {path: 'discount-invoices', redirectTo: 'credit-cards', pathMatch: 'full'},
+    {path: 'reports/credit-card', data: {resourceKey: 'creditReports'}},
     {
       path: 'investment/platforms',
       data: {resourceKey: 'investmentPlatforms'}
@@ -83,7 +80,9 @@ function resourceRoutes(): Routes {
       path: 'settings',
       loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage)
     }
-  ].map(r => r.loadComponent ? r : ({
+  ];
+
+  return definitions.map(r => r.loadComponent || r.redirectTo ? r : ({
     ...r,
     loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage)
   }));

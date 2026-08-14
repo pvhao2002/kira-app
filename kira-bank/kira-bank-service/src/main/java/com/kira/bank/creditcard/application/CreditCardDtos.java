@@ -9,7 +9,7 @@ public final class CreditCardDtos {
     private CreditCardDtos() {
     }
 
-    public record CreateCardRequest(@NotNull Long cardCatalogId, @NotBlank String nickname,
+    public record CreateCardRequest(@NotNull Long bankId, @NotBlank String nickname,
                                     @Pattern(regexp = "\\d{4}") String lastFour,
                                     @NotNull @Positive BigDecimal creditLimit, @Min(1) @Max(31) int statementDay,
                                     @Min(1) @Max(31) int dueDay, String note) {
@@ -21,8 +21,23 @@ public final class CreditCardDtos {
                                     @NotBlank String status, @NotNull @PositiveOrZero Long version) {
     }
 
-    public record CardResponse(Long id, Long cardCatalogId, String nickname, String lastFour, BigDecimal creditLimit,
-                               String currency, int statementDay, int dueDay, String status, String note, long version) {
+    public record CardResponse(Long id, Long bankId, String bankName, String bankLogoUrl, String nickname,
+                               String lastFour, BigDecimal creditLimit, String currency, int statementDay,
+                               int dueDay, String status, String note, long version,
+                               Long billingCycleId, LocalDate statementDate, LocalDate paymentDueDate,
+                               BigDecimal statementBalance, BigDecimal minimumPayment,
+                               String billingStatus, long billingVersion) {
+    }
+
+    public record BillingCycleUpdateRequest(@NotNull @Positive BigDecimal statementBalance,
+                                            @NotNull @Positive BigDecimal minimumPayment,
+                                            @NotBlank String paymentStatus,
+                                            @NotNull @PositiveOrZero Long version) {
+    }
+
+    public record BillingCycleResponse(Long billingCycleId, LocalDate statementDate, LocalDate paymentDueDate,
+                                       BigDecimal statementBalance, BigDecimal minimumPayment,
+                                       String billingStatus, long billingVersion) {
     }
 
     public record TransactionRequest(@NotNull Long userCardId, @NotNull Instant transactionDate, @NotNull Long mccId,

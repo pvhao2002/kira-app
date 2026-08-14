@@ -83,10 +83,36 @@
         </thead>
         <tbody>
           @for (row of filteredRows(); track row['id'] ?? $index) {
-            <tr>
+            <tr [class]="rowClass(row)">
               @for (column of columns(); track column) {
                 <td>
-                  @if (column === 'status') {
+                  @if (columnKind(column) === 'bank') {
+                    <span class="bank-table-cell">
+                      @if (columnImage(row, column); as logoUrl) {
+                        <img [src]="logoUrl" (error)="hideBrokenImage($event)" alt="">
+                      }
+                      <span class="bank-table-copy">
+                        <span>{{ display(row[column]) }}</span>
+                        @if (columnSecondary(row, column); as secondary) {
+                          <small>•••• {{ secondary }}</small>
+                        }
+                      </span>
+                    </span>
+                  } @else if (columnKind(column) === 'money') {
+                    {{ displayMoney(row, column) }}
+                  } @else if (columnKind(column) === 'dayOfMonth') {
+                    {{ displayDay(row[column]) }}
+                  } @else if (columnKind(column) === 'billing') {
+                    <span class="billing-table-cell">
+                      <span [class]="billingClass(row)">{{ billingLabel(row) }}</span>
+                      @if (billingBalance(row); as balance) {
+                        <small>{{ balance }}</small>
+                      }
+                      @if (billingDueDate(row); as dueDate) {
+                        <small>{{ i18n.t('billing.dueOn', {date: dueDate}) }}</small>
+                      }
+                    </span>
+                  } @else if (columnKind(column) === 'status') {
                     <span class="status">{{ row[column] }}</span>
                   } @else {
                     {{ display(row[column]) }}
@@ -161,16 +187,13 @@
       </header>
       <p>{{ i18n.t(definitionForm.descriptionKey) }}</p>
 
-      @if (definition.key === 'creditCards') {
+      @if (definitionForm.layout === 'creditCard') {
         <div class="card-dialog-layout">
           <div class="preview-column">
             <span class="preview-section-title">✨ {{ i18n.t('landing.monthOverview') ? 'Xem trước thẻ trực quan' : 'Live Card Preview' }}</span>
             <app-credit-card-preview
+              [bankLogo]="cardPreviewBankLogo()"
               [bankName]="cardPreviewBank()"
-              [cardName]="cardPreviewName()"
-              [cardImage]="cardPreviewImage()"
-              [cardNetwork]="cardPreviewNetwork()"
-              [cardTier]="cardPreviewTier()"
               [nickname]="cardPreviewNickname()"
               [lastFour]="cardPreviewLastFour()"
               [creditLimit]="cardPreviewCreditLimit()"
@@ -181,9 +204,11 @@
           <div class="form-column">
             <div class="resource-form-grid">
               @for (field of definitionForm.fields; track field.name) {
-                <label [class.full-width]="field.type === 'textarea'">
+                <label [class.full-width]="field.type === 'textarea'" [class.hidden-field]="field.type === 'hidden'">
                   <span>{{ i18n.t(field.labelKey) }} @if (field.required) { <b>*</b> }</span>
-                  @if (field.type === 'textarea') {
+                  @if (field.type === 'hidden') {
+                    <input [formControlName]="field.name" type="hidden">
+                  } @else if (field.type === 'textarea') {
                     <textarea [formControlName]="field.name" rows="4"></textarea>
                   } @else if (field.type === 'select') {
                     <app-custom-select
@@ -215,9 +240,11 @@
       } @else {
         <div class="resource-form-grid">
           @for (field of definitionForm.fields; track field.name) {
-            <label [class.full-width]="field.type === 'textarea'">
+            <label [class.full-width]="field.type === 'textarea'" [class.hidden-field]="field.type === 'hidden'">
               <span>{{ i18n.t(field.labelKey) }} @if (field.required) { <b>*</b> }</span>
-              @if (field.type === 'textarea') {
+              @if (field.type === 'hidden') {
+                <input [formControlName]="field.name" type="hidden">
+              } @else if (field.type === 'textarea') {
                 <textarea [formControlName]="field.name" rows="4"></textarea>
               } @else if (field.type === 'select') {
                 <app-custom-select
@@ -244,6 +271,10 @@
             </label>
           }
         </div>
+      }
+
+      @if (billingAmountError()) {
+        <div class="form-error inline-validation">{{ billingAmountError() }}</div>
       }
 
       @if (formError()) {

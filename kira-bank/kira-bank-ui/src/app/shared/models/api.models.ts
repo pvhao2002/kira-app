@@ -50,32 +50,27 @@ export interface Mcc {
   merchantType: string
 }
 
-export interface Card {
+export interface UserCreditCard {
   id: number;
   bankId: number;
   bankName: string;
-  cardName: string;
-  cardCode: string;
-  cardNetwork: string;
-  cardTier: string;
-  annualFee: number;
+  bankLogoUrl: string | null;
+  nickname: string;
+  lastFour: string | null;
+  creditLimit: number;
   currency: string;
-  cashbackLimit: number;
-  cashbackCondition: string;
-  description: string;
-  imageUrl: string
-}
-
-export interface FinderResult {
-  ruleId: number;
-  card: Card;
-  mcc: Mcc;
-  rate: number;
-  estimatedCashback: number;
-  cap: number | null;
-  eligibleAmount: number;
-  conditions: string;
-  exclusions: string
+  statementDay: number;
+  dueDay: number;
+  status: string;
+  note: string | null;
+  version: number;
+  billingCycleId: number | null;
+  statementDate: string | null;
+  paymentDueDate: string | null;
+  statementBalance: number | null;
+  minimumPayment: number | null;
+  billingStatus: 'NOT_DUE' | 'NEEDS_INPUT' | 'UNPAID' | 'OVERDUE' | 'PAID';
+  billingVersion: number
 }
 
 export interface ApiError {

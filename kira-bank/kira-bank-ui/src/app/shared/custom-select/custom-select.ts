@@ -67,10 +67,13 @@ export interface SelectOption {
 
           <div class="options-list">
             @for (opt of filteredOptions(); track opt.value) {
-              <div
+              <button
+                type="button"
+                role="option"
                 class="option-item"
+                [attr.aria-selected]="isSelected(opt.value)"
                 [class.is-selected]="isSelected(opt.value)"
-                (click)="selectOption(opt)">
+                (click)="selectOption(opt, $event)">
                 @if (opt.iconUrl) {
                   <img [src]="opt.iconUrl" class="option-icon-img" alt="">
                 }
@@ -83,7 +86,7 @@ export interface SelectOption {
                 @if (isSelected(opt.value)) {
                   <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                 }
-              </div>
+              </button>
             } @empty {
               <div class="no-options">No matching options</div>
             }
@@ -198,6 +201,9 @@ export interface SelectOption {
       display: flex;
       align-items: center;
       gap: 8px;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       padding: 8px 10px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
@@ -210,7 +216,10 @@ export interface SelectOption {
       }
 
       input {
-        width: 100%;
+        flex: 1;
+        min-width: 0;
+        width: auto;
+        box-sizing: border-box;
         border: none;
         background: transparent;
         outline: none;
@@ -254,8 +263,13 @@ export interface SelectOption {
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+      width: 100%;
       padding: 9px 12px;
+      border: 0;
       border-radius: 9px;
+      background: transparent;
+      text-align: left;
+      font-family: inherit;
       font-size: 13px;
       color: #334155;
       font-weight: 500;
@@ -427,7 +441,8 @@ export class CustomSelectComponent implements ControlValueAccessor {
     }
   }
 
-  selectOption(opt: SelectOption): void {
+  selectOption(opt: SelectOption, event?: MouseEvent): void {
+    event?.stopPropagation();
     this.selectedValue.set(opt.value);
     this.onChange(opt.value);
     this.onTouched();

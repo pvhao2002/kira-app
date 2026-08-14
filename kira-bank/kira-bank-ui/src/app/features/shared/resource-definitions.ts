@@ -1,8 +1,16 @@
 export type ResourceFlow = 'credit' | 'investment' | 'system';
-export type ResourceFieldType = 'text' | 'textarea' | 'number' | 'money' | 'percentage' | 'date' | 'datetime' | 'select';
-export type LookupKey = 'catalogCards' | 'userCards' | 'mccs' | 'statements' | 'serviceProviders'
-  | 'platforms' | 'accounts' | 'tasks';
+export type ResourceFieldType = 'text' | 'textarea' | 'number' | 'money' | 'percentage' | 'date' | 'datetime' | 'select' | 'hidden';
+export type LookupKey = 'banks' | 'platforms' | 'accounts' | 'tasks';
 export type RequestMethod = 'post' | 'put' | 'patch';
+export type ResourceColumnKind = 'text' | 'status' | 'bank' | 'money' | 'dayOfMonth' | 'billing';
+
+export interface ResourceColumn {
+  name: string;
+  kind?: ResourceColumnKind;
+  imageField?: string;
+  secondaryField?: string;
+  currencyField?: string;
+}
 
 export interface SelectOption {
   value: string | number;
@@ -11,6 +19,7 @@ export interface SelectOption {
 
 export interface ResourceField {
   name: string;
+  sourceField?: string;
   labelKey: string;
   type: ResourceFieldType;
   required?: boolean;
@@ -31,6 +40,8 @@ export interface ResourceFormDefinition {
   path: (row: Record<string, unknown> | null, values: Record<string, unknown>) => string;
   detailPath?: (row: Record<string, unknown>) => string;
   idempotent?: boolean;
+  layout?: 'creditCard';
+  validation?: 'billingCycle';
   stripFields?: string[];
   fields: ResourceField[];
 }
@@ -54,17 +65,13 @@ export interface ResourceDefinition {
   edit?: ResourceFormDefinition;
   actions?: ResourceActionDefinition[];
   readOnlyKey?: string;
+  columns?: ResourceColumn[];
+  rowHighlightField?: string;
 }
 
 const currencyOptions: SelectOption[] = [
   {value: 'VND', labelKey: 'option.currencyVnd'},
   {value: 'USD', labelKey: 'option.currencyUsd'}
-];
-
-const paymentMethodOptions: SelectOption[] = [
-  {value: 'BANK_TRANSFER', labelKey: 'option.bankTransfer'},
-  {value: 'CASH', labelKey: 'option.cash'},
-  {value: 'E_WALLET', labelKey: 'option.eWallet'}
 ];
 
 const statusOptions: SelectOption[] = [
@@ -74,7 +81,7 @@ const statusOptions: SelectOption[] = [
 ];
 
 const cardFields: ResourceField[] = [
-  {name: 'cardCatalogId', labelKey: 'field.cardCatalog', type: 'select', lookup: 'catalogCards', required: true, readonlyOnEdit: true},
+  {name: 'bankId', labelKey: 'field.bankId', type: 'select', lookup: 'banks', required: true, readonlyOnEdit: true},
   {name: 'nickname', labelKey: 'field.nickname', type: 'text', required: true, maxLength: 100},
   {name: 'lastFour', labelKey: 'field.lastFour', type: 'text', pattern: '^\\d{4}$', maxLength: 4},
   {name: 'creditLimit', labelKey: 'field.creditLimit', type: 'money', required: true, min: 0.0001},
@@ -82,6 +89,30 @@ const cardFields: ResourceField[] = [
   {name: 'dueDay', labelKey: 'field.dueDay', type: 'number', required: true, min: 1, max: 31},
   {name: 'note', labelKey: 'field.note', type: 'textarea', maxLength: 1000}
 ];
+
+const billingCycleForm: ResourceFormDefinition = {
+  titleKey: 'form.billingCycle',
+  descriptionKey: 'form.billingCycleDescription',
+  method: 'put',
+  path: row => `credit-cards/${row!['id']}/billing-cycle`,
+  validation: 'billingCycle',
+  fields: [
+    {name: 'statementBalance', labelKey: 'field.statementBalance', type: 'money', required: true, min: 0.0001},
+    {name: 'minimumPayment', labelKey: 'field.minimumPayment', type: 'money', required: true, min: 0.0001},
+    {
+      name: 'paymentStatus',
+      labelKey: 'field.paymentStatus',
+      type: 'select',
+      required: true,
+      defaultValue: 'UNPAID',
+      options: [
+        {value: 'UNPAID', labelKey: 'billing.unpaid'},
+        {value: 'PAID', labelKey: 'billing.paid'}
+      ]
+    },
+    {name: 'version', sourceField: 'billingVersion', labelKey: 'field.version', type: 'hidden', required: true}
+  ]
+};
 
 const accountFields: ResourceField[] = [
   {name: 'accountCode', labelKey: 'field.accountCode', type: 'text', required: true, maxLength: 100},
@@ -100,11 +131,22 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
     titleKey: 'route.myCards',
     apiPath: 'credit-cards',
     flow: 'credit',
+    rowHighlightField: 'billingStatus',
+    columns: [
+      {name: 'bankName', kind: 'bank', imageField: 'bankLogoUrl', secondaryField: 'lastFour'},
+      {name: 'nickname'},
+      {name: 'creditLimit', kind: 'money', currencyField: 'currency'},
+      {name: 'statementDay', kind: 'dayOfMonth'},
+      {name: 'dueDay', kind: 'dayOfMonth'},
+      {name: 'billingStatus', kind: 'billing', currencyField: 'currency'},
+      {name: 'status', kind: 'status'}
+    ],
     create: {
       titleKey: 'form.addCard',
       descriptionKey: 'form.addCardDescription',
       method: 'post',
       path: () => 'credit-cards',
+      layout: 'creditCard',
       fields: cardFields
     },
     edit: {
@@ -113,114 +155,28 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
       method: 'put',
       path: row => `credit-cards/${row!['id']}`,
       detailPath: row => `credit-cards/${row['id']}`,
-      stripFields: ['cardCatalogId'],
+      stripFields: ['bankId'],
+      layout: 'creditCard',
       fields: [
         ...cardFields,
         {name: 'status', labelKey: 'field.status', type: 'select', options: statusOptions, required: true},
         {name: 'version', labelKey: 'field.version', type: 'number', required: true}
       ]
-    }
-  },
-  cardTransactions: {
-    key: 'cardTransactions',
-    titleKey: 'route.cardTransactions',
-    apiPath: 'card-transactions',
-    flow: 'credit',
-    create: {
-      titleKey: 'form.addTransaction',
-      descriptionKey: 'form.addTransactionDescription',
-      method: 'post',
-      path: () => 'card-transactions',
-      fields: [
-        {name: 'userCardId', labelKey: 'field.card', type: 'select', lookup: 'userCards', required: true},
-        {name: 'transactionDate', labelKey: 'field.transactionDate', type: 'datetime', required: true},
-        {name: 'mccId', labelKey: 'field.mcc', type: 'select', lookup: 'mccs', required: true},
-        {name: 'amount', labelKey: 'field.amount', type: 'money', required: true, min: 0.0001},
-        {name: 'currency', labelKey: 'field.currency', type: 'select', options: currencyOptions, defaultValue: 'VND'},
-        {name: 'referenceNumber', labelKey: 'field.referenceNumber', type: 'text', required: true, maxLength: 100},
-        {name: 'description', labelKey: 'field.description', type: 'text', maxLength: 500},
-        {name: 'note', labelKey: 'field.note', type: 'textarea', maxLength: 1000}
-      ]
-    }
-  },
-  statements: {
-    key: 'statements',
-    titleKey: 'route.statements',
-    apiPath: 'statements',
-    flow: 'credit',
-    create: {
-      titleKey: 'form.addStatement',
-      descriptionKey: 'form.addStatementDescription',
-      method: 'post',
-      path: () => 'statements',
-      fields: [
-        {name: 'userCardId', labelKey: 'field.card', type: 'select', lookup: 'userCards', required: true},
-        {name: 'periodStart', labelKey: 'field.periodStart', type: 'date', required: true},
-        {name: 'periodEnd', labelKey: 'field.periodEnd', type: 'date', required: true},
-        {name: 'statementDate', labelKey: 'field.statementDate', type: 'date', required: true},
-        {name: 'dueDate', labelKey: 'field.dueDate', type: 'date', required: true},
-        {name: 'openingBalance', labelKey: 'field.openingBalance', type: 'money', required: true, min: 0, defaultValue: 0},
-        {name: 'totalSpending', labelKey: 'field.totalSpending', type: 'money', required: true, min: 0, defaultValue: 0},
-        {name: 'totalRefund', labelKey: 'field.totalRefund', type: 'money', required: true, min: 0, defaultValue: 0},
-        {name: 'totalFee', labelKey: 'field.totalFee', type: 'money', required: true, min: 0, defaultValue: 0},
-        {name: 'totalInterest', labelKey: 'field.totalInterest', type: 'money', required: true, min: 0, defaultValue: 0},
-        {name: 'minimumPayment', labelKey: 'field.minimumPayment', type: 'money', required: true, min: 0, defaultValue: 0}
-      ]
-    }
-  },
-  payments: {
-    key: 'payments',
-    titleKey: 'route.payments',
-    apiPath: 'payments',
-    flow: 'credit',
-    create: {
-      titleKey: 'form.addPayment',
-      descriptionKey: 'form.addPaymentDescription',
-      method: 'post',
-      path: (_row, values) => `statements/${values['statementId']}/payments`,
-      idempotent: true,
-      stripFields: ['statementId'],
-      fields: [
-        {name: 'statementId', labelKey: 'field.statement', type: 'select', lookup: 'statements', required: true},
-        {name: 'amount', labelKey: 'field.amount', type: 'money', required: true, min: 0.0001},
-        {name: 'paymentMethod', labelKey: 'field.paymentMethod', type: 'select', options: paymentMethodOptions, required: true},
-        {name: 'sourceAccount', labelKey: 'field.sourceAccount', type: 'text', maxLength: 100},
-        {name: 'referenceNumber', labelKey: 'field.referenceNumber', type: 'text', required: true, maxLength: 100},
-        {name: 'note', labelKey: 'field.note', type: 'textarea', maxLength: 1000}
-      ]
-    }
-  },
-  cashbacks: {
-    key: 'cashbacks',
-    titleKey: 'route.cashbacks',
-    apiPath: 'cashbacks',
-    flow: 'credit',
-    readOnlyKey: 'resource.generatedReadOnly'
-  },
-  discountInvoices: {
-    key: 'discountInvoices',
-    titleKey: 'route.discountInvoices',
-    apiPath: 'discount-invoices',
-    flow: 'credit',
-    create: {
-      titleKey: 'form.addInvoice',
-      descriptionKey: 'form.addInvoiceDescription',
-      method: 'post',
-      path: () => 'discount-invoices',
-      fields: [
-        {name: 'userCardId', labelKey: 'field.card', type: 'select', lookup: 'userCards', required: true},
-        {name: 'serviceProviderId', labelKey: 'field.serviceProvider', type: 'select', lookup: 'serviceProviders', required: true},
-        {name: 'invoiceNumber', labelKey: 'field.invoiceNumber', type: 'text', required: true, maxLength: 100},
-        {name: 'invoiceDate', labelKey: 'field.invoiceDate', type: 'date', required: true},
-        {name: 'invoiceAmount', labelKey: 'field.invoiceAmount', type: 'money', required: true, min: 0.0001},
-        {name: 'amountPaid', labelKey: 'field.amountPaid', type: 'money', required: true, min: 0.0001},
-        {name: 'serviceDiscountRate', labelKey: 'field.serviceDiscountRate', type: 'percentage', required: true, min: 0, defaultValue: 0},
-        {name: 'additionalFee', labelKey: 'field.additionalFee', type: 'money', required: true, min: 0, defaultValue: 0},
-        {name: 'cashbackRate', labelKey: 'field.cashbackRate', type: 'percentage', required: true, min: 0, defaultValue: 0},
-        {name: 'actualCashback', labelKey: 'field.actualCashback', type: 'money', min: 0, defaultValue: 0},
-        {name: 'note', labelKey: 'field.note', type: 'textarea', maxLength: 1000}
-      ]
-    }
+    },
+    actions: [
+      {
+        key: 'enterBillingCycle',
+        labelKey: 'action.enterStatement',
+        form: billingCycleForm,
+        visible: row => row['billingStatus'] === 'NEEDS_INPUT'
+      },
+      {
+        key: 'updateBillingCycle',
+        labelKey: 'action.updatePayment',
+        form: billingCycleForm,
+        visible: row => row['billingStatus'] === 'UNPAID' || row['billingStatus'] === 'OVERDUE'
+      }
+    ]
   },
   investmentPlatforms: {
     key: 'investmentPlatforms',

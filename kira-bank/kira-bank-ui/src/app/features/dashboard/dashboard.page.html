@@ -68,7 +68,7 @@
       <header>
         <div><h3>{{ i18n.t('dashboard.dueSoon') }}</h3>
           <p>{{ i18n.t('dashboard.next7Days') }}</p></div>
-        <a routerLink="/app/statements">{{ i18n.t('dashboard.viewAll') }}</a></header>
+        <a routerLink="/app/credit-cards">{{ i18n.t('dashboard.viewAll') }}</a></header>
       @for (due of dues(); track due.bank) {
         <div class="due-row"><span [style.background]="due.color">{{ due.bank[0] }}</span>
           <div><b>{{ due.bank }}</b><small>•••• {{ due.card }} · {{ due.date }}</small></div>

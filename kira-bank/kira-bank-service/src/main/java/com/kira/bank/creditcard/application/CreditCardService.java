@@ -21,37 +21,45 @@ import static com.kira.bank.shared.web.ApiTypes.*;
 public class CreditCardService {
     private static final BigDecimal TOLERANCE = new BigDecimal("0.01");
     private final UserCreditCardRepository cards;
-    private final CardCatalogRepository catalog;
+    private final BankRepository banks;
     private final CardTransactionRepository transactions;
     private final StatementRepository statements;
     private final PaymentRepository payments;
     private final DiscountInvoiceRepository invoices;
     private final CashbackRecordRepository cashbacks;
+    private final MonthlyStatementService monthlyStatements;
 
     @Transactional
     public CardResponse createCard(Long user, CreateCardRequest r) {
-        catalog.findById(r.cardCatalogId()).filter(c -> c.isActive() && c.getDeletedAt() == null).orElseThrow(() -> missing("CARD_CATALOG_NOT_FOUND"));
+        var bank = banks.findById(r.bankId())
+                .filter(candidate -> candidate.isActive() && candidate.getDeletedAt() == null)
+                .orElseThrow(() -> missing("BANK_NOT_FOUND"));
         UserCreditCard c = new UserCreditCard();
         c.setUserId(user);
-        c.setCardCatalogId(r.cardCatalogId());
+        c.setBank(bank);
         c.setNickname(r.nickname());
         c.setLastFour(r.lastFour());
         c.setCreditLimit(money(r.creditLimit()));
         c.setStatementDay(r.statementDay());
         c.setDueDay(r.dueDay());
         c.setNote(r.note());
+        c.setCreatedBy(user);
+        c.setUpdatedBy(user);
         return cardDto(cards.save(c));
     }
 
     @Transactional(readOnly = true)
     public PageResponse<CardResponse> cards(Long user, Pageable p) {
-        Page<CardResponse> x = cards.findByUserIdAndDeletedAtIsNull(user, p).map(this::cardDto);
+        Page<UserCreditCard> cardPage = cards.findByUserIdAndDeletedAtIsNull(user, p);
+        var cycles = monthlyStatements.currentCycles(user, cardPage.getContent());
+        Page<CardResponse> x = cardPage.map(card -> cardDto(card, cycles.get(card.getId())));
         return page(x);
     }
 
     @Transactional(readOnly = true)
     public CardResponse card(Long user, Long id) {
-        return cardDto(ownCard(id, user));
+        UserCreditCard card = ownCard(id, user);
+        return cardDto(card, monthlyStatements.currentCycle(user, card));
     }
 
     @Transactional
@@ -68,7 +76,8 @@ public class CreditCardService {
         c.setDueDay(r.dueDay());
         c.setNote(r.note());
         c.setStatus(r.status());
-        return cardDto(c);
+        c.setUpdatedBy(user);
+        return cardDto(c, monthlyStatements.currentCycle(user, c));
     }
 
     @Transactional
@@ -211,8 +220,17 @@ public class CreditCardService {
     }
 
     private CardResponse cardDto(UserCreditCard c) {
-        return new CardResponse(c.getId(), c.getCardCatalogId(), c.getNickname(), c.getLastFour(), c.getCreditLimit(),
-                c.getCurrency(), c.getStatementDay(), c.getDueDay(), c.getStatus(), c.getNote(), c.getVersion());
+        return cardDto(c, monthlyStatements.currentCycle(c.getUserId(), c));
+    }
+
+    private CardResponse cardDto(UserCreditCard c, BillingCycleResponse billing) {
+        String bankName = c.getBank().getShortName() == null || c.getBank().getShortName().isBlank()
+                ? c.getBank().getName() : c.getBank().getShortName();
+        return new CardResponse(c.getId(), c.getBank().getId(), bankName, c.getBank().getLogoUrl(), c.getNickname(),
+                c.getLastFour(), c.getCreditLimit(), c.getCurrency(), c.getStatementDay(),
+                c.getDueDay(), c.getStatus(), c.getNote(), c.getVersion(),
+                billing.billingCycleId(), billing.statementDate(), billing.paymentDueDate(),
+                billing.statementBalance(), billing.minimumPayment(), billing.billingStatus(), billing.billingVersion());
     }
 
     private StatementResponse statementDto(Statement s) {

@@ -3,9 +3,7 @@
 ```mermaid
 erDiagram
  users ||--o{ user_credit_cards : owns
- banks ||--o{ credit_card_catalogs : issues
- credit_card_catalogs ||--o{ user_credit_cards : based_on
- mccs ||--o{ cashback_rules : qualifies
+ banks ||--o{ user_credit_cards : issues
  user_credit_cards ||--o{ card_transactions : contains
  user_credit_cards ||--o{ statements : receives
  statements ||--o{ payments : paid_by
@@ -18,4 +16,3 @@ erDiagram
 ```
 
 Không có foreign key giữa bảng nghiệp vụ Flow 1 và Flow 2.
-

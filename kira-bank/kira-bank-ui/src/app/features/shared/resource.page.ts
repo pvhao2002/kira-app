@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators} from '@angular/forms';
 import {ActivatedRoute} from '@angular/router';
-import {finalize} from 'rxjs';
+import {EMPTY, expand, finalize, map, Observable, reduce} from 'rxjs';
 import {LanguageService} from '../../core/i18n/language.service';
 import {TranslationKey} from '../../core/i18n/translations';
 import {ApiService} from '../../core/services/api.service';
@@ -10,6 +10,7 @@ import {
   LookupKey,
   RequestMethod,
   ResourceActionDefinition,
+  ResourceColumnKind,
   ResourceDefinition,
   ResourceField,
   ResourceFormDefinition,
@@ -25,6 +26,8 @@ import {CreditCardPreviewComponent} from '../../shared/credit-card-preview/credi
 interface LookupOption {
   value: string | number;
   label: string;
+  iconUrl?: string;
+  sublabel?: string;
 }
 
 @Component({
@@ -169,7 +172,7 @@ export class ResourcePage {
     if (action.form) {
       this.editing.set(false);
       this.selectedRow.set(row);
-      this.openForm(action.form, null);
+      this.openForm(action.form, row);
       return;
     }
     if (!action.method || !action.path) return;
@@ -230,6 +233,81 @@ export class ResourcePage {
     return String(value);
   }
 
+  columnKind(column: string): ResourceColumnKind {
+    return this.definition.columns?.find(item => item.name === column)?.kind
+      ?? (column === 'status' ? 'status' : 'text');
+  }
+
+  columnImage(row: Row, column: string): string {
+    const imageField = this.definition.columns?.find(item => item.name === column)?.imageField;
+    const value = imageField ? row[imageField] : null;
+    return typeof value === 'string' ? value : '';
+  }
+
+  columnSecondary(row: Row, column: string): string {
+    const secondaryField = this.definition.columns?.find(item => item.name === column)?.secondaryField;
+    const value = secondaryField ? row[secondaryField] : null;
+    return value === null || value === undefined || value === '' ? '' : String(value);
+  }
+
+  displayMoney(row: Row, column: string): string {
+    const value = row[column];
+    if (value === null || value === undefined || value === '') return '—';
+    const amount = typeof value === 'number' ? value : Number(value);
+    if (!Number.isFinite(amount)) return this.display(value);
+    const definition = this.definition.columns?.find(item => item.name === column);
+    const currency = definition?.currencyField ? row[definition.currencyField] : null;
+    const locale = this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
+    const formatted = amount.toLocaleString(locale, {maximumFractionDigits: 4});
+    return currency ? `${formatted} ${String(currency)}` : formatted;
+  }
+
+  displayDay(value: unknown): string {
+    if (value === null || value === undefined || value === '') return '—';
+    return this.i18n.t('format.dayOfMonth', {value: String(value)});
+  }
+
+  billingLabel(row: Row): string {
+    const status = String(row['billingStatus'] ?? 'NOT_DUE').toLowerCase();
+    return this.i18n.t(`billing.${status}`);
+  }
+
+  billingClass(row: Row): string {
+    return `billing-badge billing-${String(row['billingStatus'] ?? 'NOT_DUE').toLowerCase().replaceAll('_', '-')}`;
+  }
+
+  billingBalance(row: Row): string {
+    const value = row['statementBalance'];
+    if (value === null || value === undefined || Number(value) === 0) return '';
+    const locale = this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
+    const formatted = Number(value).toLocaleString(locale, {maximumFractionDigits: 4});
+    return row['currency'] ? `${formatted} ${String(row['currency'])}` : formatted;
+  }
+
+  billingDueDate(row: Row): string {
+    const value = row['paymentDueDate'];
+    if (!value) return '';
+    return new Intl.DateTimeFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US').format(
+      new Date(`${String(value)}T00:00:00`)
+    );
+  }
+
+  rowClass(row: Row): string {
+    const field = this.definition.rowHighlightField;
+    if (!field) return '';
+    const status = String(row[field] ?? 'NOT_DUE').toLowerCase().replaceAll('_', '-');
+    return ['needs-input', 'unpaid', 'overdue'].includes(status) ? `billing-row billing-${status}` : '';
+  }
+
+  billingAmountError(): string {
+    if (!this.form.hasError('minimumPaymentExceedsBalance') || !this.form.controls['minimumPayment']?.touched) return '';
+    return this.i18n.t('form.minimumPaymentExceedsBalance');
+  }
+
+  hideBrokenImage(event: Event): void {
+    (event.target as HTMLImageElement).hidden = true;
+  }
+
   private loadRows(): void {
     if (!this.apiPath) {
       this.rows.set([]);
@@ -246,9 +324,12 @@ export class ResourcePage {
         const hiddenColumns = new Set([
           'id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy', 'deletedAt', 'version', 'note'
         ]);
-        this.columns.set(response.data[0]
-          ? Object.keys(response.data[0]).filter(column => !hiddenColumns.has(column)).slice(0, 7)
-          : []);
+        const configuredColumns = this.definition.columns?.map(column => column.name) ?? [];
+        this.columns.set(configuredColumns.length
+          ? configuredColumns
+          : response.data[0]
+            ? Object.keys(response.data[0]).filter(column => !hiddenColumns.has(column)).slice(0, 7)
+            : []);
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
@@ -266,12 +347,23 @@ export class ResourcePage {
       if (field.max !== undefined) validators.push(Validators.max(field.max));
       if (field.maxLength !== undefined) validators.push(Validators.maxLength(field.maxLength));
       if (field.pattern) validators.push(Validators.pattern(field.pattern));
-      const initial = this.deserializeValue(field, values?.[field.name] ?? field.defaultValue ?? '');
+      const sourceField = field.sourceField ?? field.name;
+      const initial = this.deserializeValue(field, values?.[sourceField] ?? field.defaultValue ?? '');
       const control = new FormControl<unknown>(initial, validators);
       if (this.editing() && field.readonlyOnEdit) control.disable();
       controls[field.name] = control;
     }
     this.form = new FormGroup(controls);
+    if (definition.validation === 'billingCycle') {
+      this.form.addValidators(group => {
+        const balance = Number(group.get('statementBalance')?.value);
+        const minimum = Number(group.get('minimumPayment')?.value);
+        return Number.isFinite(balance) && Number.isFinite(minimum) && minimum > balance
+          ? {minimumPaymentExceedsBalance: true}
+          : null;
+      });
+      this.form.updateValueAndValidity({emitEvent: false});
+    }
     this.formValues.set(this.form.getRawValue());
     this.formSub?.unsubscribe();
     this.formSub = this.form.valueChanges.subscribe(() => {
@@ -282,19 +374,18 @@ export class ResourcePage {
     this.open.set(true);
   }
 
-  readonly selectedCatalogCard = computed(() => {
+  readonly selectedBank = computed(() => {
     const formVals = this.formValues();
-    const catalogId = formVals['cardCatalogId'] ?? this.selectedRow()?.[ 'cardCatalogId'];
-    if (!catalogId) return null;
-    const list = this.rawLookups()['catalogCards'] ?? [];
-    return list.find(c => String(c['id']) === String(catalogId)) ?? null;
+    const bankId = formVals['bankId'] ?? this.selectedRow()?.['bankId'];
+    if (!bankId) return null;
+    const list = this.rawLookups()['banks'] ?? [];
+    return list.find(bank => String(bank['id']) === String(bankId)) ?? null;
   });
 
-  readonly cardPreviewBank = computed(() => String(this.selectedCatalogCard()?.[ 'bankName'] ?? ''));
-  readonly cardPreviewName = computed(() => String(this.selectedCatalogCard()?.[ 'cardName'] ?? ''));
-  readonly cardPreviewImage = computed(() => String(this.selectedCatalogCard()?.[ 'imageUrl'] ?? ''));
-  readonly cardPreviewNetwork = computed(() => String(this.selectedCatalogCard()?.[ 'cardNetwork'] ?? ''));
-  readonly cardPreviewTier = computed(() => String(this.selectedCatalogCard()?.[ 'cardTier'] ?? ''));
+  readonly cardPreviewBank = computed(() => String(
+    this.selectedBank()?.['shortName'] ?? this.selectedBank()?.['name'] ?? ''
+  ));
+  readonly cardPreviewBankLogo = computed(() => String(this.selectedBank()?.['logoUrl'] ?? ''));
   readonly cardPreviewNickname = computed(() => String(this.formValues()['nickname'] ?? ''));
   readonly cardPreviewLastFour = computed(() => String(this.formValues()['lastFour'] ?? ''));
   readonly cardPreviewCreditLimit = computed(() => this.formValues()['creditLimit'] as number | string | null);
@@ -305,12 +396,12 @@ export class ResourcePage {
     const keys = [...new Set(fields.map(field => field.lookup).filter((key): key is LookupKey => !!key))];
     for (const key of keys) {
       if (this.lookups()[key]) continue;
-      this.api.page<Row>(this.lookupPath(key), 0, 100).subscribe({
-        next: response => {
-          this.rawLookups.update(current => ({...current, [key]: response.data}));
+      this.loadLookupRows(key).subscribe({
+        next: rows => {
+          this.rawLookups.update(current => ({...current, [key]: rows}));
           this.lookups.update(current => ({
             ...current,
-            [key]: response.data.map(row => this.lookupOption(key, row))
+            [key]: rows.map(row => this.lookupOption(key, row))
           }));
         },
         error: () => {
@@ -323,31 +414,36 @@ export class ResourcePage {
 
   private lookupPath(key: LookupKey): string {
     return {
-      catalogCards: 'public/cards',
-      userCards: 'credit-cards',
-      mccs: 'public/mccs',
-      statements: 'statements',
-      serviceProviders: 'service-providers',
+      banks: 'public/banks',
       platforms: 'investment/platforms',
       accounts: 'investment/accounts',
       tasks: 'investment/tasks'
     }[key];
   }
 
-  private lookupOption(key: LookupKey, row: Row): any {
+  private loadLookupRows(key: LookupKey): Observable<Row[]> {
+    const firstPage = this.api.page<Row>(this.lookupPath(key), 0, 100);
+    if (key !== 'banks') return firstPage.pipe(map(response => response.data));
+
+    return firstPage.pipe(
+      expand(response => response.meta.page + 1 < response.meta.totalPages
+        ? this.api.page<Row>(this.lookupPath(key), response.meta.page + 1, 100)
+        : EMPTY),
+      map(response => response.data),
+      reduce((all: Row[], pageRows: Row[]) => [...all, ...pageRows], [])
+    );
+  }
+
+  private lookupOption(key: LookupKey, row: Row): LookupOption {
     const value = row['id'] as string | number;
     const label = {
-      catalogCards: `${row['bankName'] ?? ''} · ${row['cardName'] ?? row['cardCode'] ?? value}`,
-      userCards: `${row['nickname'] ?? value}${row['lastFour'] ? ` · •••• ${row['lastFour']}` : ''}`,
-      mccs: `${row['code'] ?? ''} · ${row['name'] ?? value}`,
-      statements: `#${value} · ${row['remainingAmount'] ?? row['statementBalance'] ?? ''}`,
-      serviceProviders: String(row['name'] ?? value),
+      banks: String(row['shortName'] ?? row['name'] ?? value),
       platforms: String(row['name'] ?? row['code'] ?? value),
       accounts: String(row['accountName'] ?? row['externalAccountCode'] ?? value),
       tasks: String(row['taskName'] ?? row['taskCode'] ?? value)
     }[key];
-    const iconUrl = key === 'catalogCards' ? (row['imageUrl'] as string || undefined) : undefined;
-    const sublabel = key === 'catalogCards' ? `${row['cardNetwork'] ?? ''} ${row['cardTier'] ?? ''}`.trim() : undefined;
+    const iconUrl = key === 'banks' ? (row['logoUrl'] as string || undefined) : undefined;
+    const sublabel = key === 'banks' ? String(row['code'] ?? '') || undefined : undefined;
     return {value, label, iconUrl, sublabel};
   }
 

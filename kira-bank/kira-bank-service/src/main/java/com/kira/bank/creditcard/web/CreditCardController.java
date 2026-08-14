@@ -1,6 +1,7 @@
 package com.kira.bank.creditcard.web;
 
 import com.kira.bank.creditcard.application.CreditCardService;
+import com.kira.bank.creditcard.application.MonthlyStatementService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -16,6 +17,7 @@ import static com.kira.bank.creditcard.application.CreditCardDtos.*;
 @RequiredArgsConstructor
 public class CreditCardController {
     private final CreditCardService service;
+    private final MonthlyStatementService monthlyStatements;
 
     @PostMapping("/credit-cards")
     @ResponseStatus(HttpStatus.CREATED)
@@ -36,6 +38,12 @@ public class CreditCardController {
     @PutMapping("/credit-cards/{id}")
     Object updateCard(@AuthenticationPrincipal Long u, @PathVariable Long id, @Valid @RequestBody UpdateCardRequest r) {
         return service.updateCard(u, id, r);
+    }
+
+    @PutMapping("/credit-cards/{id}/billing-cycle")
+    Object updateBillingCycle(@AuthenticationPrincipal Long u, @PathVariable Long id,
+                              @Valid @RequestBody BillingCycleUpdateRequest r) {
+        return monthlyStatements.updateCurrentCycle(u, id, r);
     }
 
     @PostMapping("/card-transactions")

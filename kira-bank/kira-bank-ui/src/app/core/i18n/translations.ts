@@ -23,13 +23,11 @@ export const englishTranslations = {
   'public.banks': 'Banks',
   'public.creditCards': 'Credit cards',
   'public.mccLookup': 'MCC lookup',
-  'public.cashbackFinder': 'Cashback Finder',
   'landing.eyebrow': 'Clear finances · Confident decisions',
   'landing.titleLine1': 'Control your cash flow.',
   'landing.titleLine2': 'Optimize every benefit.',
   'landing.description': 'Kira Bank brings credit-card tracking and website investments into one secure space — while keeping Capital, Profit, Reward and Cashback true to their purpose.',
   'landing.createAccount': 'Create account',
-  'landing.findCashbackCard': 'Find a cashback card',
   'landing.trustNoCard': 'Never stores full card numbers',
   'landing.trustPrivate': 'Data is isolated per user',
   'landing.trustLedger': 'Ledger prevents duplicate entries',
@@ -51,16 +49,9 @@ export const englishTranslations = {
   'catalog.publicData': 'Public data',
   'catalog.description': 'Transparent lookup, updated according to each program’s conditions and validity period.',
   'catalog.searchPlaceholder': 'Search by name or code…',
-  'catalog.selectMcc': 'Select MCC',
-  'catalog.expectedAmount': 'Expected amount',
-  'catalog.compareCashback': 'Compare cashback',
-  'catalog.cap': 'Cap',
-  'catalog.finderEmpty': 'Enter your details to see the best matching card.',
   'catalog.noResults': 'No matching data found.',
   'catalog.titleBanks': 'Bank directory',
-  'catalog.titleCards': 'Credit card catalog',
   'catalog.titleMcc': 'MCC code lookup',
-  'catalog.titleFinder': 'Cashback Finder',
   'auth.registerEyebrow': 'Create your financial space',
   'auth.loginEyebrow': 'Welcome back',
   'auth.registerTitle': 'Get started with Kira Bank',
@@ -102,12 +93,7 @@ export const englishTranslations = {
   'shell.groupSystem': 'SYSTEM',
   'shell.dashboard': 'Dashboard',
   'shell.myCards': 'My cards',
-  'shell.banks': 'Banks & Card Types',
-  'shell.transactions': 'Transactions',
-  'shell.statements': 'Statements',
-  'shell.payments': 'Payments',
-  'shell.cashback': 'Cashback',
-  'shell.discountInvoices': 'Discount invoices',
+  'shell.banks': 'Bank directory',
   'shell.accounts': 'Accounts',
   'shell.addTransaction': 'Add transaction',
   'route.addInvestmentTransaction': 'Add Investment Transaction',
@@ -210,17 +196,12 @@ export const englishTranslations = {
   'form.saved': 'Saved successfully.',
   'form.saveFailed': 'Unable to save this record.',
   'form.addCard': 'Add a credit card',
-  'form.addCardDescription': 'Choose a card from the catalog and enter the details of your own card.',
+  'form.addCardDescription': 'Choose the issuing bank and enter the remaining card details.',
   'form.editCard': 'Edit credit card',
-  'form.editCardDescription': 'Update card settings without changing its catalog identity.',
-  'form.addTransaction': 'Add card transaction',
-  'form.addTransactionDescription': 'Record the transaction details used for reconciliation and cashback calculation.',
-  'form.addStatement': 'Add statement',
-  'form.addStatementDescription': 'Enter the statement period and financial totals. The backend calculates the balance.',
-  'form.addPayment': 'Record a payment',
-  'form.addPaymentDescription': 'Select an unpaid statement and record the payment reference.',
-  'form.addInvoice': 'Add discount invoice',
-  'form.addInvoiceDescription': 'Enter the invoice, discount and cashback values used to calculate profit.',
+  'form.editCardDescription': 'Update card settings without changing the issuing bank.',
+  'form.billingCycle': 'Update monthly statement',
+  'form.billingCycleDescription': 'Enter the statement amounts and confirm whether the full balance has been paid.',
+  'form.minimumPaymentExceedsBalance': 'Minimum payment cannot exceed the statement balance.',
   'form.addAccount': 'Add investment account',
   'form.addAccountDescription': 'Connect an account to an available investment platform.',
   'form.editAccount': 'Edit investment account',
@@ -238,12 +219,11 @@ export const englishTranslations = {
   'action.settle': 'Settle',
   'action.complete': 'Complete',
   'action.markRead': 'Mark as read',
+  'action.enterStatement': 'Enter statement',
+  'action.updatePayment': 'Update payment',
   'action.confirmCompleteWithdrawal': 'Complete this withdrawal? This updates the account ledger.',
   'option.currencyVnd': 'VND — Vietnamese đồng',
   'option.currencyUsd': 'USD — US dollar',
-  'option.bankTransfer': 'Bank transfer',
-  'option.cash': 'Cash',
-  'option.eWallet': 'E-wallet',
   'option.active': 'Active',
   'option.inactive': 'Inactive',
   'option.closed': 'Closed',
@@ -276,11 +256,6 @@ export const englishTranslations = {
   'route.adminBanks': 'Bank management',
   'route.profile': 'Profile',
   'route.myCards': 'My cards',
-  'route.cardTransactions': 'Card transactions',
-  'route.statements': 'Statements',
-  'route.payments': 'Payments',
-  'route.cashbacks': 'Cashbacks',
-  'route.discountInvoices': 'Discount invoices',
   'route.creditReports': 'Credit card reports',
   'route.investmentPlatforms': 'Investment platforms',
   'route.investmentAccounts': 'Investment accounts',
@@ -305,41 +280,27 @@ export const englishTranslations = {
   'field.bankName': 'Bank',
   'field.cardName': 'Card',
   'field.reference': 'Reference'
-  ,'field.cardCatalog': 'Loại thẻ'
+  ,'field.bankId': 'Bank'
   ,'field.nickname': 'Card holder'
   ,'field.lastFour': 'Last four digits'
   ,'field.creditLimit': 'Credit limit'
   ,'field.statementDay': 'Statement day'
-  ,'field.dueDay': 'Due day'
+  ,'field.dueDay': 'Payment day'
+  ,'field.billingStatus': 'Current billing cycle'
+  ,'field.statementBalance': 'Statement balance'
+  ,'field.minimumPayment': 'Minimum payment'
+  ,'field.paymentStatus': 'Payment status'
+  ,'format.dayOfMonth': 'Day {value}'
+  ,'billing.not_due': 'Not due'
+  ,'billing.needs_input': 'Needs statement input'
+  ,'billing.unpaid': 'Unpaid'
+  ,'billing.overdue': 'Overdue'
+  ,'billing.paid': 'Paid'
+  ,'billing.dueOn': 'Due {date}'
   ,'field.note': 'Note'
   ,'field.version': 'Version'
-  ,'field.card': 'Card'
-  ,'field.transactionDate': 'Transaction date'
-  ,'field.mcc': 'MCC'
   ,'field.currency': 'Currency'
   ,'field.referenceNumber': 'Reference number'
-  ,'field.periodStart': 'Period start'
-  ,'field.periodEnd': 'Period end'
-  ,'field.statementDate': 'Statement date'
-  ,'field.dueDate': 'Due date'
-  ,'field.openingBalance': 'Opening balance'
-  ,'field.totalSpending': 'Total spending'
-  ,'field.totalRefund': 'Total refund'
-  ,'field.totalFee': 'Total fee'
-  ,'field.totalInterest': 'Total interest'
-  ,'field.minimumPayment': 'Minimum payment'
-  ,'field.statement': 'Statement'
-  ,'field.paymentMethod': 'Payment method'
-  ,'field.sourceAccount': 'Source account'
-  ,'field.serviceProvider': 'Service provider'
-  ,'field.invoiceNumber': 'Invoice number'
-  ,'field.invoiceDate': 'Invoice date'
-  ,'field.invoiceAmount': 'Invoice amount'
-  ,'field.amountPaid': 'Amount paid'
-  ,'field.serviceDiscountRate': 'Service discount (%)'
-  ,'field.additionalFee': 'Additional fee'
-  ,'field.cashbackRate': 'Cashback rate (%)'
-  ,'field.actualCashback': 'Actual cashback'
   ,'field.platform': 'Platform'
   ,'field.accountCode': 'Account code'
   ,'field.accountName': 'Account name'
@@ -383,33 +344,18 @@ export const englishTranslations = {
   ,'datepicker.clear': 'Clear'
   ,'datepicker.apply': 'Apply'
   ,'bank.eyebrow': 'System Management'
-  ,'bank.title': 'Banks & Card Types'
-  ,'bank.description': 'Manage the list of partner banks and credit card types belonging to each bank.'
+  ,'bank.title': 'Banks'
+  ,'bank.description': 'Browse and manage the partner bank directory.'
   ,'bank.addBank': 'Add bank'
-  ,'bank.addCard': 'Add new card type'
   ,'bank.statBanks': 'Total banks'
-  ,'bank.statCards': 'Total credit card types'
   ,'bank.searchPlaceholder': 'Search banks by name or code…'
   ,'bank.allBanks': 'All banks'
   ,'bank.sectionBanks': 'Partner Bank Directory'
   ,'bank.bankCount': '{n} banks'
-  ,'bank.cardTypesCount': '{n} card types'
   ,'bank.website': 'Website'
-  ,'bank.addCardForBank': 'Add card'
-  ,'bank.sectionCards': 'Card Type List'
-  ,'bank.cardSectionDesc': 'Credit card products listed in the system.'
-  ,'bank.addCardType': 'Add card type'
-  ,'bank.annualFee': 'Annual fee'
-  ,'bank.annualFeeValue': '{fee} ₫/yr'
-  ,'bank.free': 'Free'
-  ,'bank.cashbackLimit': 'Max cashback cap'
-  ,'bank.noLimit': 'No limit'
-  ,'bank.emptyCards': 'No card types yet'
-  ,'bank.emptyCardsDesc': 'This bank has no registered credit card types in the system.'
-  ,'bank.emptyCardsBtn': 'Add card type now'
   ,'bank.dialogBankEyebrow': 'Bank Management'
   ,'bank.dialogBankTitle': 'Add new bank'
-  ,'bank.dialogBankDesc': 'Enter the bank information to create a catalog of credit card types.'
+  ,'bank.dialogBankDesc': 'Enter the information for the new partner bank.'
   ,'bank.fieldCode': 'Bank Code'
   ,'bank.fieldCodePlaceholder': 'e.g. TCB, VCB, VPB…'
   ,'bank.fieldShortName': 'Short Name'
@@ -422,24 +368,6 @@ export const englishTranslations = {
   ,'bank.fieldWebsite': 'Website'
   ,'bank.fieldWebsitePlaceholder': 'https://bank.com.vn'
   ,'bank.saveBank': 'Save bank'
-  ,'bank.dialogCardEyebrow': 'Card Catalog'
-  ,'bank.dialogCardTitle': 'Add new card type'
-  ,'bank.dialogCardDesc': 'Create a new credit card product for a partner bank.'
-  ,'bank.previewLabel': '✨ Live card preview'
-  ,'bank.fieldBank': 'Bank'
-  ,'bank.fieldBankPlaceholder': 'Select issuing bank'
-  ,'bank.fieldCardName': 'Card Name'
-  ,'bank.fieldCardNamePlaceholder': 'e.g. Everyday Cashback, Signature Platinum…'
-  ,'bank.fieldCardCode': 'Card Code'
-  ,'bank.fieldCardCodePlaceholder': 'e.g. TCB_EVERYDAY_VISA'
-  ,'bank.fieldNetwork': 'Payment Network'
-  ,'bank.fieldTier': 'Card Tier'
-  ,'bank.fieldAnnualFee': 'Annual Fee (₫/yr)'
-  ,'bank.fieldImageUrl': 'Card image link (Image URL)'
-  ,'bank.fieldImageUrlPlaceholder': 'https://domain.com/card-image.png'
-  ,'bank.fieldDescription': 'Benefits & privileges description'
-  ,'bank.fieldDescriptionPlaceholder': 'Enter a summary of cashback privileges, limits…'
-  ,'bank.saveCard': 'Save card type'
 } as const;
 
 export type TranslationKey = keyof typeof englishTranslations;
@@ -469,13 +397,11 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'public.banks': 'Ngân hàng',
   'public.creditCards': 'Thẻ tín dụng',
   'public.mccLookup': 'Tra cứu MCC',
-  'public.cashbackFinder': 'Cashback Finder',
   'landing.eyebrow': 'Tài chính rõ ràng · Quyết định tự tin',
   'landing.titleLine1': 'Kiểm soát dòng tiền.',
   'landing.titleLine2': 'Tối ưu từng lợi ích.',
   'landing.description': 'Kira Bank gom việc theo dõi thẻ tín dụng và hoạt động đầu tư website vào một không gian an toàn — nhưng giữ Capital, Profit, Reward và Cashback đúng bản chất.',
   'landing.createAccount': 'Tạo tài khoản',
-  'landing.findCashbackCard': 'Tìm thẻ hoàn tiền',
   'landing.trustNoCard': 'Không lưu số thẻ đầy đủ',
   'landing.trustPrivate': 'Dữ liệu tách biệt theo người dùng',
   'landing.trustLedger': 'Ledger chống ghi nhận trùng',
@@ -497,16 +423,9 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'catalog.publicData': 'Dữ liệu công khai',
   'catalog.description': 'Tra cứu minh bạch, cập nhật theo điều kiện và thời hạn hiệu lực của từng chương trình.',
   'catalog.searchPlaceholder': 'Tìm theo tên hoặc mã…',
-  'catalog.selectMcc': 'Chọn MCC',
-  'catalog.expectedAmount': 'Số tiền dự kiến',
-  'catalog.compareCashback': 'So sánh cashback',
-  'catalog.cap': 'Hạn mức',
-  'catalog.finderEmpty': 'Nhập thông tin để xem thẻ phù hợp nhất.',
   'catalog.noResults': 'Không tìm thấy dữ liệu phù hợp.',
   'catalog.titleBanks': 'Danh sách ngân hàng',
-  'catalog.titleCards': 'Danh mục thẻ tín dụng',
   'catalog.titleMcc': 'Tra cứu mã MCC',
-  'catalog.titleFinder': 'Cashback Finder',
   'auth.registerEyebrow': 'Tạo không gian tài chính',
   'auth.loginEyebrow': 'Chào mừng trở lại',
   'auth.registerTitle': 'Bắt đầu với Kira Bank',
@@ -548,12 +467,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'shell.groupSystem': 'HỆ THỐNG',
   'shell.dashboard': 'Dashboard',
   'shell.myCards': 'Thẻ của tôi',
-  'shell.banks': 'Ngân hàng & Loại thẻ',
-  'shell.transactions': 'Giao dịch',
-  'shell.statements': 'Sao kê',
-  'shell.payments': 'Thanh toán',
-  'shell.cashback': 'Cashback',
-  'shell.discountInvoices': 'Hóa đơn chiết khấu',
+  'shell.banks': 'Danh sách ngân hàng',
   'shell.accounts': 'Tài khoản',
   'shell.addTransaction': 'Thêm giao dịch',
   'route.addInvestmentTransaction': 'Thêm Giao dịch Đầu tư',
@@ -656,17 +570,12 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'form.saved': 'Đã lưu thành công.',
   'form.saveFailed': 'Không thể lưu bản ghi.',
   'form.addCard': 'Thêm thẻ tín dụng',
-  'form.addCardDescription': 'Chọn thẻ trong danh mục và nhập thông tin thẻ của bạn.',
+  'form.addCardDescription': 'Chọn ngân hàng phát hành và nhập các thông tin còn lại của thẻ.',
   'form.editCard': 'Sửa thẻ tín dụng',
-  'form.editCardDescription': 'Cập nhật thiết lập thẻ mà không thay đổi danh mục gốc.',
-  'form.addTransaction': 'Thêm giao dịch thẻ',
-  'form.addTransactionDescription': 'Ghi nhận thông tin dùng để đối soát và tính cashback.',
-  'form.addStatement': 'Thêm sao kê',
-  'form.addStatementDescription': 'Nhập kỳ sao kê và các tổng tiền. Backend sẽ tính số dư.',
-  'form.addPayment': 'Ghi nhận thanh toán',
-  'form.addPaymentDescription': 'Chọn sao kê chưa thanh toán và nhập mã tham chiếu.',
-  'form.addInvoice': 'Thêm hóa đơn chiết khấu',
-  'form.addInvoiceDescription': 'Nhập hóa đơn, chiết khấu và cashback để tính lợi nhuận.',
+  'form.editCardDescription': 'Cập nhật thiết lập thẻ mà không thay đổi ngân hàng phát hành.',
+  'form.billingCycle': 'Cập nhật sao kê tháng',
+  'form.billingCycleDescription': 'Nhập số tiền sao kê và xác nhận đã thanh toán toàn bộ dư nợ hay chưa.',
+  'form.minimumPaymentExceedsBalance': 'Mức thanh toán tối thiểu không được lớn hơn tổng dư nợ sao kê.',
   'form.addAccount': 'Thêm tài khoản đầu tư',
   'form.addAccountDescription': 'Kết nối tài khoản với một nền tảng đầu tư.',
   'form.editAccount': 'Sửa tài khoản đầu tư',
@@ -684,12 +593,11 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'action.settle': 'Quyết toán',
   'action.complete': 'Hoàn tất',
   'action.markRead': 'Đánh dấu đã đọc',
+  'action.enterStatement': 'Nhập sao kê',
+  'action.updatePayment': 'Cập nhật thanh toán',
   'action.confirmCompleteWithdrawal': 'Hoàn tất khoản rút này? Ledger của tài khoản sẽ được cập nhật.',
   'option.currencyVnd': 'VND — Việt Nam đồng',
   'option.currencyUsd': 'USD — Đô la Mỹ',
-  'option.bankTransfer': 'Chuyển khoản ngân hàng',
-  'option.cash': 'Tiền mặt',
-  'option.eWallet': 'Ví điện tử',
   'option.active': 'Hoạt động',
   'option.inactive': 'Không hoạt động',
   'option.closed': 'Đã đóng',
@@ -722,11 +630,6 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'route.adminBanks': 'Quản lý ngân hàng',
   'route.profile': 'Hồ sơ cá nhân',
   'route.myCards': 'Thẻ của tôi',
-  'route.cardTransactions': 'Giao dịch thẻ',
-  'route.statements': 'Sao kê',
-  'route.payments': 'Thanh toán',
-  'route.cashbacks': 'Cashback',
-  'route.discountInvoices': 'Hóa đơn chiết khấu',
   'route.creditReports': 'Báo cáo thẻ tín dụng',
   'route.investmentPlatforms': 'Nền tảng đầu tư',
   'route.investmentAccounts': 'Tài khoản đầu tư',
@@ -751,41 +654,27 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'field.bankName': 'Ngân hàng',
   'field.cardName': 'Thẻ',
   'field.reference': 'Tham chiếu'
-  ,'field.cardCatalog': 'Loại thẻ'
+  ,'field.bankId': 'Ngân hàng'
   ,'field.nickname': 'Card holder (Chủ thẻ)'
   ,'field.lastFour': 'Bốn số cuối'
   ,'field.creditLimit': 'Hạn mức tín dụng'
   ,'field.statementDay': 'Ngày sao kê'
-  ,'field.dueDay': 'Ngày đến hạn'
+  ,'field.dueDay': 'Ngày thanh toán'
+  ,'field.billingStatus': 'Kỳ thanh toán hiện tại'
+  ,'field.statementBalance': 'Tổng dư nợ sao kê'
+  ,'field.minimumPayment': 'Mức thanh toán tối thiểu'
+  ,'field.paymentStatus': 'Trạng thái thanh toán'
+  ,'format.dayOfMonth': 'Ngày {value}'
+  ,'billing.not_due': 'Chưa đến ngày sao kê'
+  ,'billing.needs_input': 'Cần nhập sao kê'
+  ,'billing.unpaid': 'Chưa thanh toán'
+  ,'billing.overdue': 'Quá hạn'
+  ,'billing.paid': 'Đã thanh toán'
+  ,'billing.dueOn': 'Hạn {date}'
   ,'field.note': 'Ghi chú'
   ,'field.version': 'Phiên bản'
-  ,'field.card': 'Thẻ'
-  ,'field.transactionDate': 'Ngày giao dịch'
-  ,'field.mcc': 'MCC'
   ,'field.currency': 'Tiền tệ'
   ,'field.referenceNumber': 'Mã tham chiếu'
-  ,'field.periodStart': 'Bắt đầu kỳ'
-  ,'field.periodEnd': 'Kết thúc kỳ'
-  ,'field.statementDate': 'Ngày sao kê'
-  ,'field.dueDate': 'Ngày đến hạn'
-  ,'field.openingBalance': 'Dư đầu kỳ'
-  ,'field.totalSpending': 'Tổng chi tiêu'
-  ,'field.totalRefund': 'Tổng hoàn tiền'
-  ,'field.totalFee': 'Tổng phí'
-  ,'field.totalInterest': 'Tổng lãi'
-  ,'field.minimumPayment': 'Thanh toán tối thiểu'
-  ,'field.statement': 'Sao kê'
-  ,'field.paymentMethod': 'Phương thức thanh toán'
-  ,'field.sourceAccount': 'Tài khoản nguồn'
-  ,'field.serviceProvider': 'Nhà cung cấp dịch vụ'
-  ,'field.invoiceNumber': 'Số hóa đơn'
-  ,'field.invoiceDate': 'Ngày hóa đơn'
-  ,'field.invoiceAmount': 'Giá trị hóa đơn'
-  ,'field.amountPaid': 'Số tiền đã trả'
-  ,'field.serviceDiscountRate': 'Chiết khấu dịch vụ (%)'
-  ,'field.additionalFee': 'Phụ phí'
-  ,'field.cashbackRate': 'Tỷ lệ cashback (%)'
-  ,'field.actualCashback': 'Cashback thực nhận'
   ,'field.platform': 'Nền tảng'
   ,'field.accountCode': 'Mã tài khoản'
   ,'field.accountName': 'Tên tài khoản'
@@ -829,33 +718,18 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'datepicker.clear': 'Xóa'
   ,'datepicker.apply': 'Áp dụng'
   ,'bank.eyebrow': 'Quản lý hệ thống'
-  ,'bank.title': 'Ngân hàng & Loại thẻ'
-  ,'bank.description': 'Quản lý danh sách các Ngân hàng đối tác và các Loại thẻ tín dụng thuộc từng ngân hàng.'
+  ,'bank.title': 'Ngân hàng'
+  ,'bank.description': 'Tra cứu và quản lý danh sách ngân hàng đối tác.'
   ,'bank.addBank': 'Thêm ngân hàng'
-  ,'bank.addCard': 'Thêm loại thẻ mới'
   ,'bank.statBanks': 'Tổng ngân hàng'
-  ,'bank.statCards': 'Tổng loại thẻ tín dụng'
   ,'bank.searchPlaceholder': 'Tìm kiếm ngân hàng theo tên hoặc mã…'
   ,'bank.allBanks': 'Tất cả ngân hàng'
   ,'bank.sectionBanks': 'Danh mục Ngân hàng đối tác'
   ,'bank.bankCount': '{n} ngân hàng'
-  ,'bank.cardTypesCount': '{n} loại thẻ'
   ,'bank.website': 'Website'
-  ,'bank.addCardForBank': 'Thêm thẻ'
-  ,'bank.sectionCards': 'Danh sách loại thẻ'
-  ,'bank.cardSectionDesc': 'Các sản phẩm thẻ tín dụng được niêm yết trong hệ thống.'
-  ,'bank.addCardType': 'Thêm loại thẻ'
-  ,'bank.annualFee': 'Phí thường niên'
-  ,'bank.annualFeeValue': '{fee} ₫/năm'
-  ,'bank.free': 'Miễn phí'
-  ,'bank.cashbackLimit': 'Hạn mức hoàn tiền max'
-  ,'bank.noLimit': 'Không giới hạn'
-  ,'bank.emptyCards': 'Chưa có loại thẻ nào'
-  ,'bank.emptyCardsDesc': 'Ngân hàng này chưa có loại thẻ tín dụng nào được đăng ký trong hệ thống.'
-  ,'bank.emptyCardsBtn': 'Thêm loại thẻ ngay'
   ,'bank.dialogBankEyebrow': 'Quản lý Ngân hàng'
   ,'bank.dialogBankTitle': 'Thêm ngân hàng mới'
-  ,'bank.dialogBankDesc': 'Nhập thông tin ngân hàng mới để tạo danh mục các loại thẻ tín dụng.'
+  ,'bank.dialogBankDesc': 'Nhập thông tin cho ngân hàng đối tác mới.'
   ,'bank.fieldCode': 'Mã ngân hàng (Code)'
   ,'bank.fieldCodePlaceholder': 'Ví dụ: TCB, VCB, VPB…'
   ,'bank.fieldShortName': 'Tên viết tắt (Short Name)'
@@ -868,24 +742,6 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'bank.fieldWebsite': 'Website'
   ,'bank.fieldWebsitePlaceholder': 'https://bank.com.vn'
   ,'bank.saveBank': 'Lưu ngân hàng'
-  ,'bank.dialogCardEyebrow': 'Danh mục Thẻ'
-  ,'bank.dialogCardTitle': 'Thêm loại thẻ mới'
-  ,'bank.dialogCardDesc': 'Tạo một sản phẩm loại thẻ tín dụng mới cho ngân hàng đối tác.'
-  ,'bank.previewLabel': '✨ Xem trước thẻ trực quan'
-  ,'bank.fieldBank': 'Ngân hàng'
-  ,'bank.fieldBankPlaceholder': 'Chọn ngân hàng phát hành'
-  ,'bank.fieldCardName': 'Tên loại thẻ (Card Name)'
-  ,'bank.fieldCardNamePlaceholder': 'Ví dụ: Everyday Cashback, Signature Platinum…'
-  ,'bank.fieldCardCode': 'Mã loại thẻ (Card Code)'
-  ,'bank.fieldCardCodePlaceholder': 'Ví dụ: TCB_EVERYDAY_VISA'
-  ,'bank.fieldNetwork': 'Mạng thanh toán (Network)'
-  ,'bank.fieldTier': 'Hạng thẻ (Tier)'
-  ,'bank.fieldAnnualFee': 'Phí thường niên (₫/năm)'
-  ,'bank.fieldImageUrl': 'Link hình ảnh loại thẻ (Image URL)'
-  ,'bank.fieldImageUrlPlaceholder': 'https://domain.com/card-image.png'
-  ,'bank.fieldDescription': 'Mô tả ưu đãi & đặc quyền'
-  ,'bank.fieldDescriptionPlaceholder': 'Nhập tóm tắt đặc quyền hoàn tiền, hạn mức…'
-  ,'bank.saveCard': 'Lưu loại thẻ'
 };
 
 export const translations = {

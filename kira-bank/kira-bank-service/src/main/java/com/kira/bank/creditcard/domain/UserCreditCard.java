@@ -1,5 +1,6 @@
 package com.kira.bank.creditcard.domain;
 
+import com.kira.bank.publiccatalog.domain.Bank;
 import com.kira.bank.shared.domain.AuditedEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -13,7 +14,10 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "user_credit_cards")
 public class UserCreditCard extends AuditedEntity {
-    private Long userId, cardCatalogId;
+    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "bank_id", nullable = false)
+    private Bank bank;
     private String nickname, lastFour;
     private BigDecimal creditLimit;
     private String currency = "VND";
@@ -23,4 +27,3 @@ public class UserCreditCard extends AuditedEntity {
     @Column(columnDefinition = "TEXT")
     private String note;
 }
-

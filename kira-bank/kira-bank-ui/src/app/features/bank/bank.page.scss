@@ -5,14 +5,11 @@
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
 }
 
-/* Stats Counter Grid */
 .bank-stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: minmax(240px, 360px);
   margin-bottom: 24px;
 }
 
@@ -25,46 +22,36 @@
   border: 1.5px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow);
-
-  .stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-
-    &.bank-icon {
-      background: rgba(8, 120, 255, 0.12);
-      color: #0878ff;
-    }
-
-    &.card-icon {
-      background: rgba(22, 163, 74, 0.12);
-      color: #16a34a;
-    }
-  }
-
-  .stat-content {
-    display: flex;
-    flex-direction: column;
-
-    small {
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    strong {
-      font-size: 24px;
-      font-weight: 800;
-      color: var(--navy);
-    }
-  }
 }
 
-/* Filter & Chips */
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(8, 120, 255, 0.12);
+  font-size: 22px;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-content small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stat-content strong {
+  color: var(--navy);
+  font-size: 24px;
+  font-weight: 800;
+}
+
 .filter-section {
   padding: 16px 20px;
   margin-bottom: 28px;
@@ -73,66 +60,8 @@
 .search-and-tabs {
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 
-.bank-chips-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
-.bank-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: 1.5px solid var(--border);
-  background: var(--surface);
-  color: var(--navy);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-  .chip-logo {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-    border-radius: 3px;
-  }
-
-  .count-badge {
-    background: var(--chip-badge-bg, rgba(100, 116, 139, 0.12));
-    color: var(--muted);
-    font-size: 11px;
-    padding: 2px 7px;
-    border-radius: 10px;
-  }
-
-  &:hover {
-    border-color: #0878ff;
-    color: #0878ff;
-    transform: translateY(-1px);
-  }
-
-  &.active {
-    background: #0878ff;
-    border-color: #0878ff;
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(8, 120, 255, 0.25);
-
-    .count-badge {
-      background: rgba(255, 255, 255, 0.25);
-      color: #ffffff;
-    }
-  }
-}
-
-/* Section Header */
 .section-container {
   margin-bottom: 32px;
 }
@@ -142,25 +71,14 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 18px;
-
-  h2 {
-    font-size: 18px;
-    font-weight: 800;
-    color: var(--navy);
-
-    span {
-      color: #0878ff;
-    }
-  }
-
-  p {
-    font-size: 13px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
 }
 
-/* Bank Cards Grid */
+.section-header h2 {
+  color: var(--navy);
+  font-size: 18px;
+  font-weight: 800;
+}
+
 .bank-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -168,98 +86,82 @@
 }
 
 .bank-card {
-  padding: 20px;
-  border-radius: 16px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
+  padding: 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
 
-  &:hover {
-    transform: translateY(-3px);
-    border-color: #0878ff;
-    box-shadow: var(--shadow);
-  }
+.bank-card:hover {
+  transform: translateY(-3px);
+  border-color: #0878ff;
+  box-shadow: var(--shadow);
+}
 
-  &.selected {
-    border-color: #0878ff;
-    background: var(--bank-card-selected-bg, rgba(8, 120, 255, 0.06));
-    box-shadow: 0 8px 20px rgba(8, 120, 255, 0.12);
-  }
+.bank-card-header,
+.bank-brand {
+  display: flex;
+  align-items: center;
 }
 
 .bank-card-header {
-  display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
   margin-bottom: 12px;
 }
 
 .bank-brand {
-  display: flex;
-  align-items: center;
   gap: 12px;
-
-  .bank-logo {
-    width: 42px;
-    height: 42px;
-    object-fit: contain;
-    border-radius: 10px;
-    background: var(--surface);
-    padding: 4px;
-    border: 1px solid var(--border);
-  }
-
-  .bank-logo-fallback {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: #0878ff;
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .bank-titles {
-    h3 {
-      font-size: 15px;
-      font-weight: 800;
-      color: var(--navy);
-      margin: 0 0 2px;
-    }
-
-    .bank-code-tag {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      background: var(--tag-bg, rgba(100, 116, 139, 0.1));
-      padding: 2px 7px;
-      border-radius: 6px;
-    }
-  }
 }
 
-.cards-count-pill {
-  font-size: 11.5px;
+.bank-logo,
+.bank-logo-fallback {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+}
+
+.bank-logo {
+  object-fit: contain;
+  padding: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.bank-logo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0878ff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.bank-titles h3 {
+  margin: 0 0 2px;
+  color: var(--navy);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.bank-code-tag {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--muted);
+  font-size: 11px;
   font-weight: 700;
-  color: #0878ff;
-  background: rgba(8, 120, 255, 0.12);
-  padding: 4px 10px;
-  border-radius: 12px;
 }
 
 .bank-full-name {
-  font-size: 12.5px;
-  color: var(--muted);
-  line-height: 1.4;
-  margin-bottom: 16px;
   flex: 1;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.4;
 }
 
 .bank-footer-info {
@@ -270,224 +172,25 @@
   padding-top: 12px;
   border-top: 1px solid var(--border);
   font-size: 12px;
-
-  .info-item {
-    color: var(--muted);
-    font-weight: 500;
-
-    &.link {
-      color: #0878ff;
-      text-decoration: none;
-      font-weight: 600;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  }
-
-  .add-card-btn {
-    padding: 5px 12px;
-    border-radius: 8px;
-    border: none;
-    background: #0878ff;
-    color: #ffffff;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.15s ease;
-
-    &:hover {
-      background: #0264d8;
-    }
-  }
 }
 
-/* Card Types Catalog Grid */
-.card-types-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 22px;
-}
-
-.card-item-box {
-  border-radius: 18px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  transition: all 0.25s ease;
-  display: flex;
-  flex-direction: column;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15);
-    border-color: rgba(8, 120, 255, 0.4);
-  }
-}
-
-.card-image-wrapper {
-  position: relative;
-  width: 100%;
-  height: 180px;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-
-  .card-img {
-    width: 85%;
-    height: 85%;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4));
-
-    &:hover {
-      transform: scale(1.05);
-    }
-  }
-
-  .card-img-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: #ffffff;
-    span { font-size: 40px; }
-    small { font-size: 12px; font-weight: 700; opacity: 0.7; }
-  }
-
-  .network-badge {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 900;
-    color: #ffffff;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(8px);
-    letter-spacing: 0.8px;
-
-    &.visa { background: rgba(30, 27, 75, 0.85); color: #818cf8; }
-    &.mastercard { background: rgba(244, 63, 94, 0.85); color: #ffffff; }
-    &.jcb { background: rgba(6, 78, 59, 0.85); color: #34d399; }
-  }
-}
-
-.card-item-details {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.card-item-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-
-  .bank-badge {
-    font-size: 11.5px;
-    font-weight: 700;
-    color: var(--muted);
-  }
-
-  .tier-pill {
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.8px;
-    padding: 3px 8px;
-    border-radius: 10px;
-    background: rgba(234, 179, 8, 0.15);
-    color: var(--tier-pill-color, #a16207);
-  }
-}
-
-.card-item-details h3 {
-  font-size: 16.5px;
-  font-weight: 800;
-  color: var(--navy);
-  margin: 0 0 2px;
-}
-
-.card-code-sub {
-  font-size: 11px;
-  font-family: monospace;
+.info-item {
   color: var(--muted);
-  margin-bottom: 14px;
+  font-weight: 500;
 }
 
-.card-specs {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  background: var(--specs-bg, rgba(100, 116, 139, 0.06));
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  margin-bottom: 12px;
-
-  .spec-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-
-    span { color: var(--muted); }
-    strong { color: var(--navy); font-weight: 700; }
-    .cashback-val { color: #16a34a; }
-  }
+.info-item.link {
+  color: #0878ff;
+  font-weight: 600;
+  text-decoration: none;
 }
 
-.card-desc {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.4;
-  margin: 0;
+.info-item.link:hover {
+  text-decoration: underline;
 }
 
-/* Dialog Styles */
 .bank-dialog {
   width: min(540px, calc(100vw - 32px));
-}
-
-.card-dialog {
-  width: min(940px, calc(100vw - 32px));
-  box-sizing: border-box;
-  top: 20px;
-  height: calc(100vh - 40px);
-  max-height: none;
-  overflow-y: hidden;
-  display: flex;
-  flex-direction: column;
-
-  > header {
-    flex-shrink: 0;
-  }
-
-  // scrollable body (everything between header and footer)
-  > p {
-    flex-shrink: 0;
-  }
-
-  .card-dialog-layout {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding-right: 4px; // avoid scrollbar overlap
-  }
-
-  > footer {
-    position: static;
-    flex-shrink: 0;
-    margin-top: 0;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-    background: var(--surface);
-  }
 }
 
 .dialog-form-grid {
@@ -495,108 +198,58 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-top: 18px;
-
-  label {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-
-    span {
-      font-size: 12.5px;
-      font-weight: 700;
-      color: var(--navy);
-
-      b { color: #dc2626; }
-    }
-
-    input, select, textarea {
-      width: 100%;
-      height: 42px;
-      padding: 0 14px;
-      border-radius: 10px;
-      border: 1.5px solid var(--border);
-      background: var(--surface);
-      font-size: 13.5px;
-      color: var(--navy);
-      outline: none;
-      transition: border-color 0.2s ease;
-
-      &:focus {
-        border-color: #0878ff;
-        box-shadow: 0 0 0 3px rgba(8, 120, 255, 0.15);
-      }
-    }
-
-    textarea {
-      height: auto;
-      padding: 10px 14px;
-    }
-
-    &.full-width {
-      grid-column: 1 / -1;
-    }
-  }
 }
 
-.card-dialog-layout {
-  display: grid;
-  grid-template-columns: 350px 1fr;
-  gap: 28px;
-  padding: 20px 0 8px;
-  align-items: start;
-
-  .preview-col {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    position: sticky;
-    top: 0; // stays visible while form scrolls
-
-    .preview-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--muted);
-    }
-  }
-
-  .form-col {
-    min-width: 0;
-
-    .dialog-form-grid {
-      margin-top: 0;
-    }
-  }
+.dialog-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-/* Dark mode overrides for bank page specifics */
-html[data-theme=dark] {
-  .tier-pill {
-    background: rgba(234, 179, 8, 0.2);
-    color: #facc15;
-  }
-
-  .card-specs {
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .bank-chip {
-    .count-badge {
-      background: rgba(150, 168, 188, 0.15);
-    }
-  }
-
-  .bank-card.selected {
-    background: rgba(8, 120, 255, 0.1);
-  }
+.dialog-form-grid label.full-width {
+  grid-column: 1 / -1;
 }
 
-@media (max-width: 860px) {
-  .card-dialog-layout {
+.dialog-form-grid label > span {
+  color: var(--navy);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.dialog-form-grid label > span b {
+  color: #dc2626;
+}
+
+.dialog-form-grid input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  background: var(--surface);
+  color: var(--navy);
+  font-size: 13.5px;
+}
+
+.dialog-form-grid input:focus {
+  border-color: #0878ff;
+  box-shadow: 0 0 0 3px rgba(8, 120, 255, 0.15);
+}
+
+@media (max-width: 640px) {
+  .bank-stats-grid,
+  .dialog-form-grid {
     grid-template-columns: 1fr;
+  }
 
-    .preview-col {
-      max-width: 360px;
-      margin: 0 auto;
-    }
+  .dialog-form-grid label.full-width {
+    grid-column: auto;
+  }
+
+  .section-header,
+  .bank-footer-info {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

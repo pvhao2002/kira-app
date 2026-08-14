@@ -1,8 +1,9 @@
 <header class="public-nav">
   <a class="brand" routerLink="/"><span class="brand-mark">K</span>Kira Bank</a>
-  <nav [attr.aria-label]="i18n.t('catalog.navigation')"><a routerLink="/banks">{{ i18n.t('public.banks') }}</a><a
-    routerLink="/cards">{{ i18n.t('public.creditCards') }}</a><a
-    routerLink="/mcc">MCC</a><a routerLink="/cashback-finder">{{ i18n.t('public.cashbackFinder') }}</a></nav>
+  <nav [attr.aria-label]="i18n.t('catalog.navigation')">
+    <a routerLink="/banks">{{ i18n.t('public.banks') }}</a>
+    <a routerLink="/mcc">{{ i18n.t('public.mccLookup') }}</a>
+  </nav>
   <div class="nav-actions">
     <app-language-switcher/>
     <a class="btn primary" routerLink="/login">{{ i18n.t('common.login') }}</a>
@@ -21,38 +22,15 @@
     <button (click)="load()" class="btn primary search-btn">{{ i18n.t('common.search') }}</button>
   </div>
 
-  @switch (type) {
-    @case ('finder') {
-      <section class="finder-panel">
-        <label>{{ i18n.t('catalog.selectMcc') }}
-          <app-custom-select [formControl]="mccId" [options]="mccOptions()"></app-custom-select>
-        </label>
-        <label>{{ i18n.t('catalog.expectedAmount') }}<input [formControl]="amount" type="number"></label>
-        <button (click)="find()" class="btn primary">{{ i18n.t('catalog.compareCashback') }}</button>
-      </section>
-      <div class="result-grid">
-        @for (result of results(); track result.ruleId) {
-          <article class="result-card"><span class="pill">{{ result.card.cardNetwork }}</span>
-            <h2>{{ result.card.cardName }}</h2><strong>{{ result.estimatedCashback.toLocaleString('vi-VN') }} ₫</strong>
-            <p>{{ result.rate * 100 }}% · {{ i18n.t('catalog.cap') }} {{ result.cap?.toLocaleString('vi-VN') ?? i18n.t('common.noLimit') }} ₫</p>
-            <small>{{ result.conditions }}</small></article>
-        } @empty {
-          <div class="empty">{{ i18n.t('catalog.finderEmpty') }}</div>
-        }
-      </div>
+  <div class="catalog-grid">
+    @for (item of items(); track item.id) {
+      <article class="catalog-card"><span class="code">{{ code(item) }}</span>
+        <h2>{{ name(item) }}</h2>
+        <p>{{ description(item) }}</p>
+        <button class="text-link">{{ i18n.t('common.viewDetails') }}</button>
+      </article>
+    } @empty {
+      <div class="empty">{{ i18n.t('catalog.noResults') }}</div>
     }
-    @default {
-      <div class="catalog-grid">
-        @for (item of items(); track item.id) {
-          <article class="catalog-card"><span class="code">{{ code(item) }}</span>
-            <h2>{{ name(item) }}</h2>
-            <p>{{ description(item) }}</p>
-            <button class="text-link">{{ i18n.t('common.viewDetails') }}</button>
-          </article>
-        } @empty {
-          <div class="empty">{{ i18n.t('catalog.noResults') }}</div>
-        }
-      </div>
-    }
-  }
+  </div>
 </main>

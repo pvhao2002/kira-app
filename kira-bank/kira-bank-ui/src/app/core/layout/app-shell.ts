@@ -41,12 +41,7 @@ export class AppShell {
         labelKey: 'shell.groupCredit', flow: 'credit', items: [
           {labelKey: 'shell.dashboard', icon: '▦', path: '/app/credit-card/dashboard'},
           {labelKey: 'shell.myCards', icon: '▭', path: '/app/credit-cards'},
-          {labelKey: 'shell.banks', icon: '🏦', path: '/app/banks'},
-          {labelKey: 'shell.transactions', icon: '↔', path: '/app/card-transactions'},
-          {labelKey: 'shell.statements', icon: '▤', path: '/app/statements'},
-          {labelKey: 'shell.payments', icon: '✓', path: '/app/payments'},
-          {labelKey: 'shell.cashback', icon: '◇', path: '/app/cashbacks'},
-          {labelKey: 'shell.discountInvoices', icon: '%', path: '/app/discount-invoices'}
+          {labelKey: 'shell.banks', icon: '🏦', path: '/app/banks'}
         ]
       },
       {

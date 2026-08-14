@@ -32,16 +32,16 @@ app:
   seed-development-users: ${SEED_DEVELOPMENT_USERS:true}
   refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
 r2:
-  account-id: ${R2_ACCOUNT_ID:}
-  access-key-id: ${R2_ACCESS_KEY_ID:}
-  secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+  account-id: ${R2_ACCOUNT_ID:test}
+  access-key-id: ${R2_ACCESS_KEY_ID:test}
+  secret-access-key: ${R2_SECRET_ACCESS_KEY:test}
   bucket-name: ${R2_BUCKET_NAME:kira-bank-attachments}
-  public-url: ${R2_PUBLIC_URL:}
+  public-url: ${R2_PUBLIC_URL:test}
 ai:
   enabled: ${AI_ENABLED:false}
   base-url: ${AI_BASE_URL:https://api.cloudflare.com/client/v4/accounts}
-  account-id: ${CLOUDFLARE_ACCOUNT_ID:}
-  api-token: ${CLOUDFLARE_AI_API_TOKEN:}
+  account-id: ${CLOUDFLARE_ACCOUNT_ID:test}
+  api-token: ${CLOUDFLARE_AI_API_TOKEN:test}
   model: "${AI_MODEL:@cf/moonshotai/kimi-k2.7-code}"
   connect-timeout: 5s
   read-timeout: 120s
