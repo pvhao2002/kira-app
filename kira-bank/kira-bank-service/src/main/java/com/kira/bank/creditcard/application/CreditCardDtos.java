@@ -3,7 +3,8 @@ package com.kira.bank.creditcard.application;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
 
 public final class CreditCardDtos {
     private CreditCardDtos() {
@@ -18,18 +19,30 @@ public final class CreditCardDtos {
     public record UpdateCardRequest(@NotBlank String nickname, @Pattern(regexp = "\\d{4}") String lastFour,
                                     @NotNull @Positive BigDecimal creditLimit, @Min(1) @Max(31) int statementDay,
                                     @Min(1) @Max(31) int dueDay, String note,
-                                    @NotBlank String status, @NotNull @PositiveOrZero Long version) {
+                                    @NotBlank String status, @NotNull @PositiveOrZero Long version,
+                                    @NotNull @PositiveOrZero Long creditLimitVersion) {
     }
 
     public record CardResponse(Long id, Long bankId, String bankName, String bankLogoUrl, String nickname,
-                               String lastFour, BigDecimal creditLimit, String currency, int statementDay,
+                               String lastFour, BigDecimal creditLimit, long creditLimitVersion,
+                               BigDecimal currentBalance,
+                               String currency, int statementDay,
                                int dueDay, String status, String note, long version,
                                Long billingCycleId, LocalDate statementDate, LocalDate paymentDueDate,
                                BigDecimal statementBalance, BigDecimal minimumPayment,
                                String billingStatus, long billingVersion) {
     }
 
-    public record BillingCycleUpdateRequest(@NotNull @Positive BigDecimal statementBalance,
+    public record BankCreditLimitUpdateRequest(@NotNull @Positive BigDecimal creditLimit,
+                                               @NotNull @PositiveOrZero Long version) {
+    }
+
+    public record BankCreditLimitResponse(Long bankId, String bankName, String bankLogoUrl,
+                                          BigDecimal creditLimit, String currency, long version) {
+    }
+
+    public record BillingCycleUpdateRequest(@Positive Long billingCycleId,
+                                            @NotNull @Positive BigDecimal statementBalance,
                                             @NotNull @Positive BigDecimal minimumPayment,
                                             @NotBlank String paymentStatus,
                                             @NotNull @PositiveOrZero Long version) {

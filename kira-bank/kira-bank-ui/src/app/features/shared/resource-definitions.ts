@@ -97,6 +97,7 @@ const billingCycleForm: ResourceFormDefinition = {
   path: row => `credit-cards/${row!['id']}/billing-cycle`,
   validation: 'billingCycle',
   fields: [
+    {name: 'billingCycleId', labelKey: 'field.billingStatus', type: 'hidden'},
     {name: 'statementBalance', labelKey: 'field.statementBalance', type: 'money', required: true, min: 0.0001},
     {name: 'minimumPayment', labelKey: 'field.minimumPayment', type: 'money', required: true, min: 0.0001},
     {
@@ -136,6 +137,7 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
       {name: 'bankName', kind: 'bank', imageField: 'bankLogoUrl', secondaryField: 'lastFour'},
       {name: 'nickname'},
       {name: 'creditLimit', kind: 'money', currencyField: 'currency'},
+      {name: 'currentBalance', kind: 'money', currencyField: 'currency'},
       {name: 'statementDay', kind: 'dayOfMonth'},
       {name: 'dueDay', kind: 'dayOfMonth'},
       {name: 'billingStatus', kind: 'billing', currencyField: 'currency'},
@@ -160,6 +162,7 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
       fields: [
         ...cardFields,
         {name: 'status', labelKey: 'field.status', type: 'select', options: statusOptions, required: true},
+        {name: 'creditLimitVersion', labelKey: 'field.version', type: 'hidden', required: true},
         {name: 'version', labelKey: 'field.version', type: 'number', required: true}
       ]
     },

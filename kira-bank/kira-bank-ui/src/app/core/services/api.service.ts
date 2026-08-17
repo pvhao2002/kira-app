@@ -1,7 +1,14 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
-import {Bank, DashboardSummary, Mcc, PageResponse} from '../../shared/models/api.models';
+import {
+  Bank,
+  CreditCardBankLimit,
+  CreditCardDashboard,
+  DashboardSummary,
+  Mcc,
+  PageResponse
+} from '../../shared/models/api.models';
 
 @Injectable({providedIn: 'root'})
 export class ApiService {
@@ -15,8 +22,8 @@ export class ApiService {
     return this.http.get<PageResponse<Mcc>>('/api/v1/public/mccs', {params: {search}});
   }
 
-  page<T>(path: string, page = 0, size = 20): Observable<PageResponse<T>> {
-    return this.http.get<PageResponse<T>>(`/api/v1/${path}`, {params: {page, size}});
+  page<T>(path: string, page = 0, size = 20, search = ''): Observable<PageResponse<T>> {
+    return this.http.get<PageResponse<T>>(`/api/v1/${path}`, {params: {page, size, search}});
   }
 
   get<T>(path: string): Observable<T> {
@@ -37,5 +44,17 @@ export class ApiService {
 
   summary(): Observable<DashboardSummary> {
     return this.http.get<DashboardSummary>('/api/v1/dashboards/summary');
+  }
+
+  creditCardDashboard(): Observable<CreditCardDashboard> {
+    return this.http.get<CreditCardDashboard>('/api/v1/dashboards/credit-cards');
+  }
+
+  creditCardBankLimits(): Observable<CreditCardBankLimit[]> {
+    return this.http.get<CreditCardBankLimit[]>('/api/v1/credit-card-bank-limits');
+  }
+
+  updateCreditCardBankLimit(bankId: number, creditLimit: number, version: number): Observable<CreditCardBankLimit> {
+    return this.http.put<CreditCardBankLimit>(`/api/v1/credit-card-bank-limits/${bankId}`, {creditLimit, version});
   }
 }

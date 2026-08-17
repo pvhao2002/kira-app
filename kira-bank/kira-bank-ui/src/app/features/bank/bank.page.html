@@ -4,11 +4,13 @@
     <h1>{{ i18n.t('bank.title') }}</h1>
     <p>{{ i18n.t('bank.description') }}</p>
   </div>
-  <div class="header-actions">
-    <button (click)="openAddBank()" class="btn primary" type="button">
-      <span aria-hidden="true">🏦</span> {{ i18n.t('bank.addBank') }}
-    </button>
-  </div>
+  @if (auth.admin()) {
+    <div class="header-actions">
+      <button (click)="openAddBank()" class="btn primary" type="button">
+        <span aria-hidden="true">🏦</span> {{ i18n.t('bank.addBank') }}
+      </button>
+    </div>
+  }
 </section>
 
 <section class="bank-stats-grid">
@@ -25,7 +27,7 @@
   <div class="search-and-tabs">
     <div class="search-box">
       <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" [placeholder]="i18n.t('bank.searchPlaceholder')">
+      <input [value]="searchQuery()" (input)="onSearchInput($any($event.target).value)" [placeholder]="i18n.t('bank.searchPlaceholder')">
     </div>
   </div>
 </section>
@@ -68,7 +70,7 @@
   </div>
 </section>
 
-@if (openBankDialog()) {
+@if (auth.admin() && openBankDialog()) {
   <div (click)="closeBankDialog()" class="dialog-backdrop">
     <form (click)="$event.stopPropagation()" (ngSubmit)="submitBank()" [formGroup]="bankForm" class="dialog bank-dialog">
       <header>

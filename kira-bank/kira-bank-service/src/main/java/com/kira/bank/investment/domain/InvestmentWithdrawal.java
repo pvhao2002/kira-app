@@ -1,12 +1,15 @@
 package com.kira.bank.investment.domain;
 
 import com.kira.bank.shared.domain.AuditedEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
 
 @Getter
 @Setter

@@ -3,9 +3,10 @@ package com.kira.bank.investment.web;
 import com.kira.bank.investment.application.InvestmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,8 +25,9 @@ public class InvestmentController {
     }
 
     @GetMapping("/accounts")
-    Object accounts(@AuthenticationPrincipal Long user, @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable p) {
-        return service.accounts(user, p);
+    Object accounts(@AuthenticationPrincipal Long user, @RequestParam(defaultValue = "") String search,
+                    @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable p) {
+        return service.accounts(user, search, p);
     }
 
     @GetMapping("/accounts/{id}")
@@ -96,9 +98,9 @@ public class InvestmentController {
     @PostMapping("/transactions")
     @ResponseStatus(HttpStatus.CREATED)
     Object transaction(
-            @AuthenticationPrincipal Long user,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key,
-            @Valid @RequestBody CreateTransactionRequest r
+        @AuthenticationPrincipal Long user,
+        @RequestHeader(value = "Idempotency-Key", required = false) String key,
+        @Valid @RequestBody CreateTransactionRequest r
     ) {
         return service.createTransaction(user, key, r);
     }

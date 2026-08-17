@@ -20,10 +20,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.kira.bank.creditcard.application.CreditCardDtos.BillingCycleResponse;
@@ -60,14 +57,17 @@ public class MonthlyStatementService {
         LocalDate today = today();
         YearMonth month = YearMonth.from(today);
         var ids = userCards.stream().map(UserCreditCard::getId).toList();
-        Map<Long, Statement> byCard = statements
-                .findByUserIdAndUserCardIdInAndStatementDateBetweenAndDeletedAtIsNull(
-                        userId, ids, month.atDay(1), month.atEndOfMonth())
-                .stream()
-                .collect(Collectors.toMap(Statement::getUserCardId, Function.identity(),
-                        (first, second) -> first.getStatementDate().isAfter(second.getStatementDate()) ? first : second));
+        Map<Long, Statement> outstandingByCard = new HashMap<>();
+        statements.findOutstandingForCards(userId, ids)
+            .forEach(statement -> outstandingByCard.putIfAbsent(statement.getUserCardId(), statement));
+        Map<Long, Statement> currentByCard = statements
+            .findByUserIdAndUserCardIdInAndStatementDateBetweenAndDeletedAtIsNull(
+                userId, ids, month.atDay(1), month.atEndOfMonth())
+            .stream()
+            .collect(Collectors.toMap(Statement::getUserCardId, statement -> statement, this::latest));
         return userCards.stream().collect(Collectors.toMap(UserCreditCard::getId,
-                card -> response(card, byCard.get(card.getId()), today)));
+            card -> response(card, outstandingByCard.getOrDefault(
+                card.getId(), currentByCard.get(card.getId())), today)));
     }
 
     @Transactional(readOnly = true)
@@ -76,25 +76,39 @@ public class MonthlyStatementService {
             throw missing("USER_CARD_NOT_FOUND");
         }
         LocalDate today = today();
-        Statement statement = currentStatement(card.getId(), YearMonth.from(today));
+        Statement statement = selectedStatement(userId, card, today);
         return response(card, statement, today);
     }
 
     @Transactional
     public BillingCycleResponse updateCurrentCycle(Long userId, Long cardId, BillingCycleUpdateRequest request) {
         UserCreditCard card = cards.findByIdAndUserIdAndDeletedAtIsNull(cardId, userId)
-                .orElseThrow(() -> missing("USER_CARD_NOT_FOUND"));
+            .orElseThrow(() -> missing("USER_CARD_NOT_FOUND"));
         LocalDate today = today();
-        Statement statement = ensureCycle(card, today);
+        Statement statement;
+        if (request.billingCycleId() != null) {
+            statement = statements.findByIdAndUserIdAndUserCardIdAndDeletedAtIsNull(
+                    request.billingCycleId(), userId, cardId)
+                .orElseThrow(() -> missing("STATEMENT_NOT_FOUND"));
+        } else {
+            if (!statements.findOutstandingForCards(userId, List.of(cardId)).isEmpty()) {
+                throw new ApiException(HttpStatus.CONFLICT, "BILLING_CYCLE_ID_REQUIRED",
+                    "Billing cycle changed; reload the page and try again");
+            }
+            statement = ensureCycle(card, today);
+        }
         if (statement == null) {
             throw invalid("STATEMENT_NOT_DUE", "Chưa đến ngày sao kê của thẻ");
         }
         if (statement.getVersion() != request.version()) {
             throw new ApiException(HttpStatus.CONFLICT, "STATEMENT_VERSION_CONFLICT",
-                    "Dữ liệu sao kê đã được cập nhật ở phiên khác");
+                "Dữ liệu sao kê đã được cập nhật ở phiên khác");
         }
         if (PAID.equals(statement.getStatus())) {
             throw invalid("STATEMENT_ALREADY_PAID", "Sao kê đã được thanh toán");
+        }
+        if (!isOutstanding(statement)) {
+            throw invalid("STATEMENT_NOT_ACTIONABLE", "Statement no longer requires payment");
         }
         if (payments.existsByStatementIdAndDeletedAtIsNull(statement.getId())) {
             throw invalid("STATEMENT_HAS_PAYMENT", "Không thể sửa số tiền của sao kê đã có thanh toán");
@@ -155,7 +169,30 @@ public class MonthlyStatementService {
 
     private Statement currentStatement(Long cardId, YearMonth month) {
         return statements.findFirstByUserCardIdAndStatementDateBetweenAndDeletedAtIsNullOrderByStatementDateDesc(
-                cardId, month.atDay(1), month.atEndOfMonth()).orElse(null);
+            cardId, month.atDay(1), month.atEndOfMonth()).orElse(null);
+    }
+
+    private Statement selectedStatement(Long userId, UserCreditCard card, LocalDate today) {
+        List<Statement> outstanding = statements.findOutstandingForCards(userId, List.of(card.getId()));
+        return outstanding.isEmpty()
+            ? currentStatement(card.getId(), YearMonth.from(today))
+            : outstanding.getFirst();
+    }
+
+    private Statement latest(Statement first, Statement second) {
+        int dateOrder = first.getStatementDate().compareTo(second.getStatementDate());
+        if (dateOrder != 0) {
+            return dateOrder > 0 ? first : second;
+        }
+        return first.getId() > second.getId() ? first : second;
+    }
+
+    private boolean isOutstanding(Statement statement) {
+        if (NEEDS_INPUT.equals(statement.getStatus())) {
+            return true;
+        }
+        return List.of(OPEN, "UNPAID", "PARTIALLY_PAID").contains(statement.getStatus())
+            && statement.getRemainingAmount().signum() > 0;
     }
 
     private BillingCycleResponse response(UserCreditCard card, Statement statement, LocalDate today) {
@@ -164,7 +201,7 @@ public class MonthlyStatementService {
         String status;
         if (statement == null) {
             status = !"ACTIVE".equals(card.getStatus()) || today.isBefore(expectedStatementDate)
-                    ? "NOT_DUE" : NEEDS_INPUT;
+                ? "NOT_DUE" : NEEDS_INPUT;
         } else if (PAID.equals(statement.getStatus())) {
             status = PAID;
         } else if (NEEDS_INPUT.equals(statement.getStatus())) {
@@ -174,10 +211,10 @@ public class MonthlyStatementService {
         }
         boolean hasAmount = statement != null && !NEEDS_INPUT.equals(statement.getStatus());
         return new BillingCycleResponse(statement == null ? null : statement.getId(),
-                statement == null ? expectedStatementDate : statement.getStatementDate(), paymentDueDate,
-                hasAmount ? statement.getStatementBalance() : null,
-                hasAmount ? statement.getMinimumPayment() : null,
-                status, statement == null ? 0 : statement.getVersion());
+            statement == null ? expectedStatementDate : statement.getStatementDate(), paymentDueDate,
+            hasAmount ? statement.getStatementBalance() : null,
+            hasAmount ? statement.getMinimumPayment() : null,
+            status, statement == null ? 0 : statement.getVersion());
     }
 
     private void createFullPayment(Long userId, Statement statement, BigDecimal amount) {
@@ -202,7 +239,7 @@ public class MonthlyStatementService {
         YearMonth statementMonth = YearMonth.from(statementDate);
         LocalDate sameMonth = dayOfMonth(statementMonth, card.getDueDay());
         return sameMonth.isAfter(statementDate)
-                ? sameMonth : dayOfMonth(statementMonth.plusMonths(1), card.getDueDay());
+            ? sameMonth : dayOfMonth(statementMonth.plusMonths(1), card.getDueDay());
     }
 
     private LocalDate dayOfMonth(YearMonth month, int day) {

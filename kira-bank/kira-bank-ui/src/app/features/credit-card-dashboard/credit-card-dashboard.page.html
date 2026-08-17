@@ -1,0 +1,218 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('creditDashboard.eyebrow') }}</span>
+    <h1>{{ i18n.t('creditDashboard.title') }}</h1>
+    <p>{{ i18n.t('creditDashboard.description') }}</p>
+  </div>
+</section>
+
+@if (loading()) {
+  <section class="dashboard-loading" aria-busy="true">
+    <div class="skeleton kpi-skeleton"></div>
+    <div class="skeleton kpi-skeleton"></div>
+    <div class="skeleton kpi-skeleton"></div>
+    <div class="skeleton kpi-skeleton"></div>
+    <div class="skeleton content-skeleton"></div>
+  </section>
+} @else if (error()) {
+  <section class="empty-state panel" role="alert">
+    <span aria-hidden="true">!</span>
+    <h2>{{ i18n.t('creditDashboard.errorTitle') }}</h2>
+    <button (click)="load()" class="btn primary" type="button">{{ i18n.t('creditDashboard.retry') }}</button>
+  </section>
+} @else if (data(); as dashboard) {
+  @if (dashboard.banks.length === 0) {
+    <section class="empty-state panel">
+      <span aria-hidden="true">◇</span>
+      <h2>{{ i18n.t('creditDashboard.emptyTitle') }}</h2>
+      <p>{{ i18n.t('creditDashboard.emptyDescription') }}</p>
+    </section>
+  } @else {
+    <section class="debt-kpis" aria-label="Summary">
+      <article class="debt-kpi statement-kpi">
+        <small>{{ i18n.t('creditDashboard.totalStatementDebt') }}</small>
+        <strong>{{ formatMoney(dashboard.totalStatementDebt, dashboard.currency) }}</strong>
+      </article>
+      <article class="debt-kpi current-kpi">
+        <small>{{ i18n.t('creditDashboard.currentBalance') }}</small>
+        <strong>{{ formatMoney(dashboard.currentBalance, dashboard.currency) }}</strong>
+        <span>{{ i18n.t('creditDashboard.utilization', {value: formatRate(dashboard.utilizationRate)}) }}</span>
+      </article>
+      <article class="debt-kpi">
+        <small>{{ i18n.t('creditDashboard.totalCreditLimit') }}</small>
+        <strong>{{ formatMoney(dashboard.totalCreditLimit, dashboard.currency) }}</strong>
+      </article>
+      <article class="debt-kpi" [class.negative]="dashboard.availableCredit < 0">
+        <small>{{ i18n.t('creditDashboard.availableCredit') }}</small>
+        <strong>{{ formatMoney(dashboard.availableCredit, dashboard.currency) }}</strong>
+        @if (dashboard.availableCredit < 0) {
+          <span>{{ i18n.t('creditDashboard.overLimit') }}</span>
+        }
+      </article>
+    </section>
+
+    <section class="panel usage-panel">
+      <header>
+        <div>
+          <h2>{{ i18n.t('creditDashboard.usageByBank') }}</h2>
+          <p>{{ i18n.t('creditDashboard.usageByBankDescription') }}</p>
+        </div>
+      </header>
+      <div class="usage-chart" role="group" [attr.aria-label]="i18n.t('creditDashboard.chartAria')">
+        @for (bank of dashboard.banks; track bank.bankId) {
+          <div class="usage-row" [class.over-limit]="bank.utilizationRate > 100">
+            <div class="usage-bank">
+              @if (bank.bankLogoUrl) {
+                <span class="bank-logo-wrap">
+                  <img (error)="hideBrokenLogo($event)" [src]="bank.bankLogoUrl" alt="">
+                </span>
+              }
+              <div>
+                <strong>{{ bank.bankName }}</strong>
+                <small>{{ i18n.t('creditDashboard.cards', {count: bank.cardCount}) }}</small>
+              </div>
+            </div>
+            <div class="usage-values">
+              <strong>{{ formatMoney(bank.currentBalance, bank.currency) }}</strong>
+              <span>/ {{ formatMoney(bank.totalCreditLimit, bank.currency) }}</span>
+              <b>{{ formatRate(bank.utilizationRate) }}%</b>
+            </div>
+            <div class="usage-track"
+                 role="progressbar"
+                 [attr.aria-valuemin]="0"
+                 [attr.aria-valuemax]="100"
+                 [attr.aria-valuenow]="barWidth(bank.utilizationRate)">
+              <span [style.width.%]="barWidth(bank.utilizationRate)"></span>
+            </div>
+            @if (bank.utilizationRate > 100) {
+              <small class="over-limit-label">{{ i18n.t('creditDashboard.overLimit') }}</small>
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="panel detail-panel">
+      <header>
+        <div>
+          <h2>{{ i18n.t('creditDashboard.debtDetail') }}</h2>
+          <p>{{ i18n.t('creditDashboard.debtDetailDescription') }}</p>
+        </div>
+      </header>
+      <div class="responsive-table">
+        <table>
+          <thead>
+          <tr>
+            <th>{{ i18n.t('creditDashboard.bankCard') }}</th>
+            <th>{{ i18n.t('creditDashboard.statementDebt') }}</th>
+            <th>{{ i18n.t('creditDashboard.currentBalance') }}</th>
+            <th>{{ i18n.t('creditDashboard.creditLimit') }}</th>
+            <th>{{ i18n.t('creditDashboard.available') }}</th>
+            <th>{{ i18n.t('creditDashboard.utilizationColumn') }}</th>
+            <th>{{ i18n.t('creditDashboard.status') }}</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (bank of dashboard.banks; track bank.bankId) {
+              <tr class="bank-row" [class.expanded]="expandedBanks().has(bank.bankId)">
+                <td>
+                  <button (click)="toggleBank(bank.bankId)"
+                          [attr.aria-expanded]="expandedBanks().has(bank.bankId)"
+                          [attr.aria-label]="i18n.t(expandedBanks().has(bank.bankId) ? 'creditDashboard.collapseBank' : 'creditDashboard.expandBank', {bank: bank.bankName})"
+                          class="bank-disclosure"
+                          type="button">
+                    <svg aria-hidden="true" viewBox="0 0 20 20">
+                      <path d="m7 5 5 5-5 5"/>
+                    </svg>
+                    @if (bank.bankLogoUrl) {
+                      <span class="table-bank-logo">
+                        <img (error)="hideBrokenLogo($event)" [src]="bank.bankLogoUrl" alt="">
+                      </span>
+                    }
+                    <span><b>{{ bank.bankName }}</b><small>{{ i18n.t('creditDashboard.cards', {count: bank.cardCount}) }}</small></span>
+                  </button>
+                </td>
+                <td>{{ formatMoney(bank.statementDebt, bank.currency) }}</td>
+                <td class="current-value">{{ formatMoney(bank.currentBalance, bank.currency) }}</td>
+                <td>{{ formatMoney(bank.totalCreditLimit, bank.currency) }}</td>
+                <td [class.negative-value]="bank.availableCredit < 0">{{ formatMoney(bank.availableCredit, bank.currency) }}</td>
+                <td><span class="rate-value" [class.over]="bank.utilizationRate > 100">{{ formatRate(bank.utilizationRate) }}%</span></td>
+                <td>
+                  <button (click)="openLimitEditor(bank)" class="limit-action" type="button">
+                    {{ i18n.t('creditDashboard.editLimit') }}
+                  </button>
+                </td>
+              </tr>
+              @if (expandedBanks().has(bank.bankId)) {
+                @for (card of bank.cards; track card.id) {
+                  <tr class="card-row">
+                    <td>
+                      <div class="card-identity">
+                        <span aria-hidden="true"></span>
+                        <div><b>{{ card.nickname }}</b>
+                          @if (card.lastFour) {
+                            <small>{{ i18n.t('creditDashboard.lastFour', {value: card.lastFour}) }}</small>
+                          }
+                        </div>
+                      </div>
+                    </td>
+                    <td>{{ formatMoney(card.statementDebt, card.currency) }}</td>
+                    <td><span class="shared-value">{{ i18n.t('creditDashboard.sharedBalance') }}</span></td>
+                    <td><span class="shared-value">{{ i18n.t('creditDashboard.sharedLimit') }}</span></td>
+                    <td><span class="shared-value">{{ i18n.t('creditDashboard.sharedLimit') }}</span></td>
+                    <td><span class="shared-value">{{ i18n.t('creditDashboard.sharedLimit') }}</span></td>
+                    <td><span class="status">{{ card.status }}</span></td>
+                  </tr>
+                }
+              }
+            }
+          </tbody>
+          <tfoot>
+          <tr class="total-row">
+            <td>{{ i18n.t('creditDashboard.totalAllBanks') }}</td>
+            <td>{{ formatMoney(dashboard.totalStatementDebt, dashboard.currency) }}</td>
+            <td class="current-value">{{ formatMoney(dashboard.currentBalance, dashboard.currency) }}</td>
+            <td>{{ formatMoney(dashboard.totalCreditLimit, dashboard.currency) }}</td>
+            <td [class.negative-value]="dashboard.availableCredit < 0">{{ formatMoney(dashboard.availableCredit, dashboard.currency) }}</td>
+            <td><span class="rate-value" [class.over]="dashboard.utilizationRate > 100">{{ formatRate(dashboard.utilizationRate) }}%</span></td>
+            <td>—</td>
+          </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  }
+}
+
+@if (editingLimitBank(); as bank) {
+  <div (click)="closeLimitEditor()" class="dialog-backdrop">
+    <form (click)="$event.stopPropagation()" (submit)="saveLimit($event)" class="dialog limit-dialog">
+      <header>
+        <div>
+          <small>{{ i18n.t('creditDashboard.sharedLimit') }}</small>
+          <h2>{{ i18n.t('creditDashboard.editLimitFor', {bank: bank.bankName}) }}</h2>
+        </div>
+        <button (click)="closeLimitEditor()" [attr.aria-label]="i18n.t('common.close')" type="button">×</button>
+      </header>
+      <p>{{ i18n.t('creditDashboard.editLimitDescription') }}</p>
+      <label class="limit-field">
+        <span>{{ i18n.t('field.creditLimit') }} <b>*</b></span>
+        <input #limitInput
+               (input)="limitValue.set(limitInput.valueAsNumber)"
+               [value]="limitValue()"
+               min="0.01"
+               step="0.01"
+               type="number">
+      </label>
+      @if (limitError()) {
+        <div class="form-error">{{ limitError() }}</div>
+      }
+      <footer>
+        <button (click)="closeLimitEditor()" class="btn ghost" type="button">{{ i18n.t('common.cancel') }}</button>
+        <button [disabled]="limitSaving()" class="btn primary" type="submit">
+          {{ limitSaving() ? i18n.t('form.saving') : i18n.t('common.save') }}
+        </button>
+      </footer>
+    </form>
+  </div>
+}

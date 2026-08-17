@@ -24,13 +24,13 @@ public class CatalogService {
     private final CatalogMapper mapper;
 
     public PageResponse<BankDto> banks(String q, Pageable p) {
-        return page(banks.findByActiveTrueAndNameContainingIgnoreCase(q, p).map(mapper::toDto));
+        return page(banks.search(q == null ? "" : q.trim(), p).map(mapper::toDto));
     }
 
     public BankDto bank(long id) {
         return mapper.toDto(banks.findById(id)
-                .filter(b -> b.isActive() && b.getDeletedAt() == null)
-                .orElseThrow(() -> notFound("BANK_NOT_FOUND")));
+            .filter(b -> b.isActive() && b.getDeletedAt() == null)
+            .orElseThrow(() -> notFound("BANK_NOT_FOUND")));
     }
 
     public PageResponse<MccDto> mccs(String q, String category, Pageable p) {
@@ -39,13 +39,13 @@ public class CatalogService {
 
     public MccDto mcc(long id) {
         return mapper.toDto(mccs.findById(id)
-                .filter(m -> m.isActive() && m.getDeletedAt() == null)
-                .orElseThrow(() -> notFound("MCC_NOT_FOUND")));
+            .filter(m -> m.isActive() && m.getDeletedAt() == null)
+            .orElseThrow(() -> notFound("MCC_NOT_FOUND")));
     }
 
     private <T> PageResponse<T> page(Page<T> p) {
         return new PageResponse<>(p.getContent(),
-                new PageMeta(p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages()));
+            new PageMeta(p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages()));
     }
 
     private ApiException notFound(String code) {

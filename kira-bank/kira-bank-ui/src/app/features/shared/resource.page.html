@@ -17,7 +17,7 @@
   <div class="table-tools">
     <div class="search-box">
       <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" [placeholder]="i18n.t('resource.searchPlaceholder')">
+      <input [value]="searchQuery()" (input)="onSearchInput($any($event.target).value)" [placeholder]="i18n.t('resource.searchPlaceholder')">
     </div>
     <div class="tool-actions">
       <button (click)="toggleFilter()" [class.active]="showFilterPanel() || selectedStatus() !== 'ALL'" class="btn tool-btn" type="button">
@@ -107,6 +107,9 @@
                       <span [class]="billingClass(row)">{{ billingLabel(row) }}</span>
                       @if (billingBalance(row); as balance) {
                         <small>{{ balance }}</small>
+                      }
+                      @if (billingStatementDate(row); as statementDate) {
+                        <small>{{ i18n.t('billing.statementOn', {date: statementDate}) }}</small>
                       }
                       @if (billingDueDate(row); as dueDate) {
                         <small>{{ i18n.t('billing.dueOn', {date: dueDate}) }}</small>
@@ -231,6 +234,9 @@
                   }
                   @if (fieldError(field)) {
                     <small class="field-error">{{ fieldError(field) }}</small>
+                  }
+                  @if (field.name === 'creditLimit' && (editing() || sharedCreditLimit())) {
+                    <small class="field-hint">{{ i18n.t(editing() ? 'form.sharedCreditLimitEditHint' : 'form.sharedCreditLimitExistingHint') }}</small>
                   }
                 </label>
               }

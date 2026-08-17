@@ -1,7 +1,8 @@
 package com.kira.bank.notification.infrastructure;
 
 import com.kira.bank.notification.domain.Notification;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

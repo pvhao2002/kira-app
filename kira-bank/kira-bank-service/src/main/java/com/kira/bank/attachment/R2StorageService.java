@@ -25,18 +25,18 @@ public class R2StorageService {
      */
     public void upload(String key, byte[] data, String contentType) {
         PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(r2Properties.bucketName())
-                .key(key)
-                .contentType(contentType)
-                .contentLength((long) data.length)
-                .build();
+            .bucket(r2Properties.bucketName())
+            .key(key)
+            .contentType(contentType)
+            .contentLength((long) data.length)
+            .build();
         r2S3Client.putObject(request, RequestBody.fromBytes(data));
     }
 
     public byte[] download(String key) {
         return r2S3Client.getObject(
-                GetObjectRequest.builder().bucket(r2Properties.bucketName()).key(key).build(),
-                ResponseTransformer.toBytes()
+            GetObjectRequest.builder().bucket(r2Properties.bucketName()).key(key).build(),
+            ResponseTransformer.toBytes()
         ).asByteArray();
     }
 

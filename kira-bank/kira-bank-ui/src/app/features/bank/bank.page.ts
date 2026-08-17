@@ -1,6 +1,9 @@
-import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {EMPTY, expand, Observable, reduce} from 'rxjs';
+import {ActivatedRoute, Router} from '@angular/router';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {debounceTime, distinctUntilChanged, EMPTY, expand, Observable, reduce, Subject} from 'rxjs';
+import {AuthStore} from '../../core/auth/auth.store';
 import {ApiService} from '../../core/services/api.service';
 import {LanguageService} from '../../core/i18n/language.service';
 import {ToastService} from '../../core/services/toast.service';
@@ -17,6 +20,11 @@ export class BankPage {
   private static readonly PAGE_SIZE = 100;
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly searchChanges = new Subject<string>();
+  readonly auth = inject(AuthStore);
   readonly i18n = inject(LanguageService);
 
   readonly loading = signal(true);
@@ -45,12 +53,32 @@ export class BankPage {
   });
 
   constructor() {
-    this.loadData();
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+      this.searchQuery.set(params.get('search') ?? '');
+      this.loadData();
+    });
+    this.searchChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(search => {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {search: search || null},
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    });
+  }
+
+  onSearchInput(value: string): void {
+    this.searchQuery.set(value);
+    this.searchChanges.next(value.trim());
   }
 
   loadData(): void {
     this.loading.set(true);
-    this.loadAllPages((page, size) => this.api.banks('', page, size)).subscribe({
+    this.loadAllPages((page, size) => this.api.banks(this.searchQuery().trim(), page, size)).subscribe({
       next: banks => {
         this.banks.set(banks);
         this.loading.set(false);
@@ -69,6 +97,8 @@ export class BankPage {
   }
 
   openAddBank(): void {
+    if (!this.auth.admin()) return;
+
     this.bankForm.reset({
       code: '',
       name: '',
@@ -86,6 +116,11 @@ export class BankPage {
   }
 
   submitBank(): void {
+    if (!this.auth.admin()) {
+      this.closeBankDialog();
+      return;
+    }
+
     if (this.bankForm.invalid) {
       this.bankForm.markAllAsTouched();
       return;

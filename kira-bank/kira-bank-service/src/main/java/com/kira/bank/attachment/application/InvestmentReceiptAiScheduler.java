@@ -9,12 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
@@ -52,7 +47,7 @@ public class InvestmentReceiptAiScheduler {
         for (Attachment attachment : claimed) {
             try {
                 documents.add(new AiDocumentService.AiInputDocument(
-                        attachment.getId(), attachment.getMimeType(), storage.download(attachment.getStorageKey())));
+                    attachment.getId(), attachment.getMimeType(), storage.download(attachment.getStorageKey())));
             } catch (RuntimeException ex) {
                 attachments.markRetryOrFailed(attachment.getId(), "ATTACHMENT_STORAGE_UNAVAILABLE");
                 log.warn("Unable to read attachment {} for AI processing", attachment.getId());

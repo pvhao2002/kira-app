@@ -10,22 +10,18 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class AiDocumentService {
     private static final String SYSTEM_PROMPT = """
-            You extract investment transaction details from receipt images. Return JSON only in this shape:
-            {"results":[{"attachmentId":number,"type":"DEPOSIT|WITHDRAWAL|BONUS|null","amount":number|null,
-            "transactionDate":"ISO-8601 timestamp|null","description":"string|null","confidence":number,
-            "uncertainFields":["string"],"validationWarnings":["string"]}]}. Return exactly one item for every supplied attachmentId.
-            Never invent values. Use null and add a validation warning when a field cannot be read with confidence.
-            """;
+        You extract investment transaction details from receipt images. Return JSON only in this shape:
+        {"results":[{"attachmentId":number,"type":"DEPOSIT|WITHDRAWAL|BONUS|null","amount":number|null,
+        "transactionDate":"ISO-8601 timestamp|null","description":"string|null","confidence":number,
+        "uncertainFields":["string"],"validationWarnings":["string"]}]}. Return exactly one item for every supplied attachmentId.
+        Never invent values. Use null and add a validation warning when a field cannot be read with confidence.
+        """;
 
     private final AiProviderConfiguration config;
     private final RestClient cloudflareAiRestClient;
@@ -48,8 +44,8 @@ public class AiDocumentService {
         }
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("messages", List.of(
-                Map.of("role", "system", "content", SYSTEM_PROMPT),
-                Map.of("role", "user", "content", content)
+            Map.of("role", "system", "content", SYSTEM_PROMPT),
+            Map.of("role", "user", "content", content)
         ));
         body.put("response_format", Map.of("type", "json_object"));
         body.put("temperature", 0);
@@ -57,12 +53,12 @@ public class AiDocumentService {
 
         try {
             String response = cloudflareAiRestClient.post()
-                    .uri("/{accountId}/ai/run/" + config.model(), config.accountId())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .header("Authorization", "Bearer " + config.apiToken())
-                    .body(body)
-                    .retrieve()
-                    .body(String.class);
+                .uri("/{accountId}/ai/run/" + config.model(), config.accountId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + config.apiToken())
+                .body(body)
+                .retrieve()
+                .body(String.class);
             return new AiBatchResponse(response, extractResults(response));
         } catch (RestClientResponseException ex) {
             throw new AiProviderException("Cloudflare AI returned HTTP " + ex.getStatusCode().value(), ex);
@@ -99,14 +95,14 @@ public class AiDocumentService {
     }
 
     public record AiExtraction(
-            Long attachmentId,
-            String type,
-            BigDecimal amount,
-            String transactionDate,
-            String description,
-            Double confidence,
-            List<String> uncertainFields,
-            List<String> validationWarnings
+        Long attachmentId,
+        String type,
+        BigDecimal amount,
+        String transactionDate,
+        String description,
+        Double confidence,
+        List<String> uncertainFields,
+        List<String> validationWarnings
     ) {
     }
 

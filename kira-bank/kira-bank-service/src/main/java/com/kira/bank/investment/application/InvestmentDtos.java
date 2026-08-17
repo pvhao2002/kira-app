@@ -10,38 +10,41 @@ public final class InvestmentDtos {
     }
 
     public record CreateAccountRequest(
-            Long platformId,
-            @NotBlank @Size(max = 100) String accountCode,
-            @NotBlank @Size(max = 150) String accountName,
-            @NotBlank @Size(max = 100) String accountUsername,
-            @NotBlank @Size(max = 150) String accountEmail,
-            @NotBlank @Size(max = 50) String phoneNumber,
-            @NotNull Instant registerDate,
-            @NotBlank @Size(max = 100) String accountPassword,
-            @Pattern(regexp = "[A-Z]{3}") String currency
-    ) {}
+        Long platformId,
+        @NotBlank @Size(max = 100) String accountCode,
+        @NotBlank @Size(max = 150) String accountName,
+        @NotBlank @Size(max = 100) String accountUsername,
+        @NotBlank @Size(max = 150) String accountEmail,
+        @NotBlank @Size(max = 50) String phoneNumber,
+        @NotNull Instant registerDate,
+        @NotBlank @Size(max = 100) String accountPassword,
+        @Pattern(regexp = "[A-Z]{3}") String currency
+    ) {
+    }
 
     public record UpdateAccountRequest(
-            @Size(max = 100) String accountCode,
-            @NotBlank @Size(max = 150) String accountName,
-            @Size(max = 100) String externalAccountCode,
-            @Size(max = 100) String accountUsername,
-            @Size(max = 150) String accountEmail,
-            @Size(max = 50) String phoneNumber,
-            Instant registerDate,
-            @Size(max = 100) String accountPassword,
-            @Size(max = 1000) String note,
-            @NotBlank String status,
-            @NotNull @PositiveOrZero Long version
-    ) {}
+        @Size(max = 100) String accountCode,
+        @NotBlank @Size(max = 150) String accountName,
+        @Size(max = 100) String externalAccountCode,
+        @Size(max = 100) String accountUsername,
+        @Size(max = 150) String accountEmail,
+        @Size(max = 50) String phoneNumber,
+        Instant registerDate,
+        @Size(max = 100) String accountPassword,
+        @Size(max = 1000) String note,
+        @NotBlank String status,
+        @NotNull @PositiveOrZero Long version
+    ) {
+    }
 
     public record AccountResponse(
-            Long id, Long platformId, String accountCode, String accountName, String externalAccountCode,
-            String accountUsername, String accountEmail, String phoneNumber, Instant registerDate, String accountPassword,
-            String currency, BigDecimal currentBalance, BigDecimal availableCapital,
-            BigDecimal lockedCapital, BigDecimal accumulatedProfit, BigDecimal accumulatedReward,
-            BigDecimal reservedWithdrawal, String status, String note, long version
-    ) {}
+        Long id, Long platformId, String accountCode, String accountName, String externalAccountCode,
+        String accountUsername, String accountEmail, String phoneNumber, Instant registerDate, String accountPassword,
+        String currency, BigDecimal currentBalance, BigDecimal availableCapital,
+        BigDecimal lockedCapital, BigDecimal accumulatedProfit, BigDecimal accumulatedReward,
+        BigDecimal reservedWithdrawal, String status, String note, long version
+    ) {
+    }
 
     public record DepositRequest(@NotNull Long accountId, @NotNull @Positive BigDecimal amount,
                                  @NotNull @PositiveOrZero BigDecimal fee, @NotBlank String referenceNumber,
@@ -73,13 +76,14 @@ public final class InvestmentDtos {
     }
 
     public record CreateTransactionRequest(
-            @NotNull Long accountId,
-            @NotBlank String type, // DEPOSIT, WITHDRAWAL, BONUS
-            @NotNull @Positive BigDecimal amount,
-            Instant transactionDate,
-            @Size(max = 1000) String description,
-            Long attachmentId
-    ) {}
+        @NotNull Long accountId,
+        @NotBlank String type, // DEPOSIT, WITHDRAWAL, BONUS
+        @NotNull @Positive BigDecimal amount,
+        Instant transactionDate,
+        @Size(max = 1000) String description,
+        Long attachmentId
+    ) {
+    }
 
     public record OperationResponse(Long id, String status, AccountResponse account) {
     }

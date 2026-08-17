@@ -11,12 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -35,33 +30,33 @@ public class AttachmentController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     AttachmentResponse upload(
-            @AuthenticationPrincipal Long user,
-            @RequestParam String flow,
-            @RequestParam String documentType,
-            @RequestParam("file") MultipartFile file
+        @AuthenticationPrincipal Long user,
+        @RequestParam String flow,
+        @RequestParam String documentType,
+        @RequestParam("file") MultipartFile file
     ) throws IOException {
         return attachments.upload(user, flow, documentType, file);
     }
 
     @GetMapping
     PageResponse<AttachmentResponse> listDrafts(
-            @AuthenticationPrincipal Long user,
-            @RequestParam(defaultValue = "PENDING,PROCESSING,READY,FAILED") List<AttachmentAiStatus> statuses,
-            @PageableDefault(size = 50) Pageable pageable
+        @AuthenticationPrincipal Long user,
+        @RequestParam(defaultValue = "PENDING,PROCESSING,READY,FAILED") List<AttachmentAiStatus> statuses,
+        @PageableDefault(size = 50) Pageable pageable
     ) {
         Page<AttachmentResponse> page = attachments.listDrafts(user, statuses, pageable);
         return new PageResponse<>(page.getContent(), new PageMeta(
-                page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages()));
+            page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages()));
     }
 
     @GetMapping("/{id}/content")
     ResponseEntity<byte[]> content(@AuthenticationPrincipal Long user, @PathVariable Long id) {
         AttachmentService.AttachmentContent content = attachments.content(user, id);
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(content.mimeType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
-                        .filename(content.originalName(), StandardCharsets.UTF_8).build().toString())
-                .body(content.bytes());
+            .contentType(MediaType.parseMediaType(content.mimeType()))
+            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                .filename(content.originalName(), StandardCharsets.UTF_8).build().toString())
+            .body(content.bytes());
     }
 
     @PostMapping("/{id}/retry")

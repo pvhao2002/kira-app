@@ -21,12 +21,63 @@
   <div class="page-area">
     <header class="topbar">
       <button (click)="menuOpen.set(true)" [attr.aria-label]="i18n.t('shell.openMenu')" class="menu-button">☰</button>
-      <div class="global-search">
-        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input #globalSearchInput aria-keyshortcuts="/"
-               [attr.aria-label]="i18n.t('shell.searchLabel')"
-               [placeholder]="i18n.t('shell.searchPlaceholder')">
-        <kbd class="shortcut-badge">/</kbd>
+      <div #globalSearchRoot class="global-search-shell">
+        <div class="global-search">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input #globalSearchInput aria-keyshortcuts="/" aria-autocomplete="list" aria-controls="global-search-results"
+                 role="combobox"
+                 [attr.aria-activedescendant]="activeSearchDescendant()"
+                 [attr.aria-expanded]="searchOpen()"
+                 [attr.aria-label]="i18n.t('shell.searchLabel')"
+                 [placeholder]="i18n.t('shell.searchPlaceholder')"
+                 [value]="searchQuery()"
+                 (focus)="openGlobalSearch()"
+                 (input)="updateGlobalSearch($any($event.target).value)"
+                 (keydown)="handleGlobalSearchKeydown($event)">
+          <kbd class="shortcut-badge">/</kbd>
+        </div>
+        @if (searchOpen()) {
+          <div id="global-search-results" class="global-search-results" role="listbox"
+               [attr.aria-label]="i18n.t('shell.searchResults')">
+            @for (group of searchGroups(); track group.key) {
+              <section class="global-search-group" role="group" [attr.aria-label]="i18n.t(group.key)">
+                <h3>{{ i18n.t(group.key) }}</h3>
+                @for (result of group.results; track result.id) {
+                  <button type="button" role="option" class="global-search-result"
+                          [id]="result.id"
+                          [class.selected]="isSearchResultSelected(result)"
+                          [attr.aria-selected]="isSearchResultSelected(result)"
+                          (click)="selectSearchResult(result)">
+                    <span class="global-search-result-icon">
+                      @if (result.imageUrl) {
+                        <img [src]="result.imageUrl" alt="" (error)="hideBrokenSearchImage($event)">
+                      } @else {
+                        {{ result.icon }}
+                      }
+                    </span>
+                    <span class="global-search-result-copy">
+                      <strong>{{ result.title }}</strong>
+                      <small>{{ result.subtitle }}</small>
+                    </span>
+                    <span class="global-search-enter">↵</span>
+                  </button>
+                }
+              </section>
+            }
+            @if (searchLoading()) {
+              <div class="global-search-state"><span class="search-spinner"></span>{{ i18n.t('shell.searchLoading') }}</div>
+            }
+            @if (searchPartialError()) {
+              <div class="global-search-state search-warning">{{ i18n.t('shell.searchPartialError') }}</div>
+            }
+            @if (!searchLoading() && searchQuery().trim().length >= 2 && selectableSearchResults().length === 0) {
+              <div class="global-search-state">{{ i18n.t('shell.searchEmpty') }}</div>
+            }
+            @if (searchQuery().trim().length < 2) {
+              <div class="global-search-hint">{{ i18n.t('shell.searchHint') }}</div>
+            }
+          </div>
+        }
       </div>
       <div class="top-actions">
         <app-language-switcher/>

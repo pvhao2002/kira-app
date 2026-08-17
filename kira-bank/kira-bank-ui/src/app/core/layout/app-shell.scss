@@ -7,3 +7,218 @@
   padding-bottom: 12px;
 }
 
+.global-search-shell {
+  position: relative;
+  width: 400px;
+  max-width: calc(100vw - 330px);
+}
+
+.global-search-shell .global-search {
+  width: 100%;
+}
+
+.global-search-results {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 0;
+  z-index: 40;
+  width: min(540px, calc(100vw - 36px));
+  max-height: min(620px, calc(100vh - 92px));
+  overflow-y: auto;
+  padding: 8px;
+  color: #0f172a;
+  background: #fff;
+  border: 1px solid #dbe3ee;
+  border-radius: 14px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, .18);
+}
+
+.global-search-group + .global-search-group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #edf1f6;
+}
+
+.global-search-group h3 {
+  margin: 0;
+  padding: 7px 10px 5px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.global-search-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 8px 10px;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.global-search-result:hover,
+.global-search-result.selected {
+  color: #075fc4;
+  background: #eef6ff;
+}
+
+.global-search-result-icon {
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  place-items: center;
+  color: #0878ff;
+  background: #e8f2ff;
+  border-radius: 9px;
+}
+
+.global-search-result-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+  background: #fff;
+}
+
+.global-search-result-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 3px;
+}
+
+.global-search-result-copy strong,
+.global-search-result-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.global-search-result-copy strong {
+  font-size: 13px;
+}
+
+.global-search-result-copy small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.global-search-enter {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.global-search-state,
+.global-search-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px;
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.global-search-hint {
+  min-height: auto;
+  border-top: 1px solid #edf1f6;
+}
+
+.search-warning {
+  color: #a16207;
+  background: #fffbeb;
+  border-radius: 8px;
+}
+
+.search-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #bfd7f5;
+  border-top-color: #0878ff;
+  border-radius: 50%;
+  animation: global-search-spin .7s linear infinite;
+}
+
+@keyframes global-search-spin {
+  to { transform: rotate(360deg); }
+}
+
+:host-context(html[data-theme=dark]) .global-search-results {
+  color: #e5edf8;
+  background: #0d1e33;
+  border-color: #2b476b;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .4);
+}
+
+:host-context(html[data-theme=dark]) .global-search-group + .global-search-group,
+:host-context(html[data-theme=dark]) .global-search-hint {
+  border-color: #203a59;
+}
+
+:host-context(html[data-theme=dark]) .global-search-result:hover,
+:host-context(html[data-theme=dark]) .global-search-result.selected {
+  color: #7dd3fc;
+  background: #163252;
+}
+
+:host-context(html[data-theme=dark]) .global-search-result-icon {
+  color: #7dd3fc;
+  background: #193858;
+}
+
+:host-context(html[data-theme=dark]) .search-warning {
+  color: #fde68a;
+  background: #422d0a;
+}
+
+@media (max-width: 1050px) {
+  .global-search-shell {
+    flex: 1;
+    width: auto;
+    max-width: 400px;
+    margin-left: 12px;
+  }
+
+  .global-search-shell .global-search {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 650px) {
+  .global-search-shell {
+    min-width: 0;
+    max-width: none;
+    margin-left: 8px;
+  }
+
+  .global-search-shell .global-search {
+    display: flex;
+    height: 38px;
+    padding: 0 9px;
+  }
+
+  .global-search-shell .shortcut-badge {
+    display: none;
+  }
+
+  .global-search-results {
+    position: fixed;
+    top: 62px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-height: calc(100vh - 74px);
+  }
+}

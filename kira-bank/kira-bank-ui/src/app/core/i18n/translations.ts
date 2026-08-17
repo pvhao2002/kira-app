@@ -118,7 +118,17 @@ export const englishTranslations = {
   'shell.secureConnection': 'Secure connection',
   'shell.dataProtected': 'Your data is protected',
   'shell.searchLabel': 'Global search',
-  'shell.searchPlaceholder': 'Search transactions, statements, tasks…',
+  'shell.searchPlaceholder': 'Search pages, cards, banks, accounts…',
+  'shell.searchResults': 'Global search results',
+  'shell.searchGroupPages': 'Pages',
+  'shell.searchGroupCards': 'Credit cards',
+  'shell.searchGroupBanks': 'Banks',
+  'shell.searchGroupAccounts': 'Investment accounts',
+  'shell.searchOpenPage': 'Open page',
+  'shell.searchLoading': 'Searching…',
+  'shell.searchEmpty': 'No matching results',
+  'shell.searchHint': 'Type at least 2 characters to search your data',
+  'shell.searchPartialError': 'Some data sources could not be searched.',
   'shell.profile': 'Profile',
   'shell.logout': 'Log out',
   'dashboard.date': 'Wednesday, July 22',
@@ -199,6 +209,8 @@ export const englishTranslations = {
   'form.addCardDescription': 'Choose the issuing bank and enter the remaining card details.',
   'form.editCard': 'Edit credit card',
   'form.editCardDescription': 'Update card settings without changing the issuing bank.',
+  'form.sharedCreditLimitExistingHint': 'This bank already has a shared limit. All cards from this bank use the same limit.',
+  'form.sharedCreditLimitEditHint': 'Changing this value updates the shared limit for every card from this bank.',
   'form.billingCycle': 'Update monthly statement',
   'form.billingCycleDescription': 'Enter the statement amounts and confirm whether the full balance has been paid.',
   'form.minimumPaymentExceedsBalance': 'Minimum payment cannot exceed the statement balance.',
@@ -296,6 +308,7 @@ export const englishTranslations = {
   ,'billing.unpaid': 'Unpaid'
   ,'billing.overdue': 'Overdue'
   ,'billing.paid': 'Paid'
+  ,'billing.statementOn': 'Statement {date}'
   ,'billing.dueOn': 'Due {date}'
   ,'field.note': 'Note'
   ,'field.version': 'Version'
@@ -367,6 +380,41 @@ export const englishTranslations = {
   ,'bank.fieldHotlinePlaceholder': '1900xxxx'
   ,'bank.fieldWebsite': 'Website'
   ,'bank.fieldWebsitePlaceholder': 'https://bank.com.vn'
+  ,'field.currentBalance': 'Shared current balance'
+  ,'creditDashboard.eyebrow': 'CREDIT CARDS'
+  ,'creditDashboard.title': 'Credit card debt overview'
+  ,'creditDashboard.description': 'See statement debt, current balance and credit usage by bank.'
+  ,'creditDashboard.totalStatementDebt': 'Total statement debt'
+  ,'creditDashboard.currentBalance': 'Current balance'
+  ,'creditDashboard.totalCreditLimit': 'Total credit limit'
+  ,'creditDashboard.availableCredit': 'Available credit'
+  ,'creditDashboard.utilization': '{value}% used'
+  ,'creditDashboard.usageByBank': 'Credit usage by bank'
+  ,'creditDashboard.usageByBankDescription': 'Current balance compared with total credit limit'
+  ,'creditDashboard.chartAria': 'Current balance divided by total credit limit for each bank'
+  ,'creditDashboard.debtDetail': 'Debt details'
+  ,'creditDashboard.debtDetailDescription': 'Expand a bank to see each credit card.'
+  ,'creditDashboard.bankCard': 'Bank / Card'
+  ,'creditDashboard.statementDebt': 'Statement debt'
+  ,'creditDashboard.creditLimit': 'Credit limit'
+  ,'creditDashboard.available': 'Available'
+  ,'creditDashboard.utilizationColumn': 'Utilization'
+  ,'creditDashboard.status': 'Status'
+  ,'creditDashboard.cards': '{count} cards'
+  ,'creditDashboard.lastFour': '•••• {value}'
+  ,'creditDashboard.overLimit': 'Over limit'
+  ,'creditDashboard.sharedLimit': 'Shared'
+  ,'creditDashboard.sharedBalance': 'Shared'
+  ,'creditDashboard.editLimit': 'Edit limit'
+  ,'creditDashboard.editLimitFor': 'Edit {bank} shared limit'
+  ,'creditDashboard.editLimitDescription': 'This limit is shared by every card from this bank.'
+  ,'creditDashboard.totalAllBanks': 'Total — all banks'
+  ,'creditDashboard.expandBank': 'Show cards for {bank}'
+  ,'creditDashboard.collapseBank': 'Hide cards for {bank}'
+  ,'creditDashboard.emptyTitle': 'No credit card data yet'
+  ,'creditDashboard.emptyDescription': 'Add a credit card to start tracking your balances.'
+  ,'creditDashboard.errorTitle': 'Could not load credit card debt'
+  ,'creditDashboard.retry': 'Try again'
   ,'bank.saveBank': 'Save bank'
 } as const;
 
@@ -492,7 +540,17 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'shell.secureConnection': 'Kết nối bảo mật',
   'shell.dataProtected': 'Dữ liệu được bảo vệ',
   'shell.searchLabel': 'Tìm kiếm toàn cục',
-  'shell.searchPlaceholder': 'Tìm giao dịch, sao kê, nhiệm vụ…',
+  'shell.searchPlaceholder': 'Tìm trang, thẻ, ngân hàng, tài khoản…',
+  'shell.searchResults': 'Kết quả tìm kiếm toàn cục',
+  'shell.searchGroupPages': 'Trang',
+  'shell.searchGroupCards': 'Thẻ tín dụng',
+  'shell.searchGroupBanks': 'Ngân hàng',
+  'shell.searchGroupAccounts': 'Tài khoản đầu tư',
+  'shell.searchOpenPage': 'Mở trang',
+  'shell.searchLoading': 'Đang tìm kiếm…',
+  'shell.searchEmpty': 'Không tìm thấy kết quả phù hợp',
+  'shell.searchHint': 'Nhập ít nhất 2 ký tự để tìm dữ liệu',
+  'shell.searchPartialError': 'Không thể tìm kiếm từ một số nguồn dữ liệu.',
   'shell.profile': 'Hồ sơ cá nhân',
   'shell.logout': 'Đăng xuất',
   'dashboard.date': 'Thứ Tư, 22 tháng 7',
@@ -573,6 +631,8 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'form.addCardDescription': 'Chọn ngân hàng phát hành và nhập các thông tin còn lại của thẻ.',
   'form.editCard': 'Sửa thẻ tín dụng',
   'form.editCardDescription': 'Cập nhật thiết lập thẻ mà không thay đổi ngân hàng phát hành.',
+  'form.sharedCreditLimitExistingHint': 'Ngân hàng này đã có hạn mức chung. Tất cả thẻ của ngân hàng cùng sử dụng hạn mức này.',
+  'form.sharedCreditLimitEditHint': 'Thay đổi giá trị này sẽ cập nhật hạn mức chung cho mọi thẻ của ngân hàng.',
   'form.billingCycle': 'Cập nhật sao kê tháng',
   'form.billingCycleDescription': 'Nhập số tiền sao kê và xác nhận đã thanh toán toàn bộ dư nợ hay chưa.',
   'form.minimumPaymentExceedsBalance': 'Mức thanh toán tối thiểu không được lớn hơn tổng dư nợ sao kê.',
@@ -670,6 +730,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'billing.unpaid': 'Chưa thanh toán'
   ,'billing.overdue': 'Quá hạn'
   ,'billing.paid': 'Đã thanh toán'
+  ,'billing.statementOn': 'Sao kê {date}'
   ,'billing.dueOn': 'Hạn {date}'
   ,'field.note': 'Ghi chú'
   ,'field.version': 'Phiên bản'
@@ -741,6 +802,41 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'bank.fieldHotlinePlaceholder': '1900xxxx'
   ,'bank.fieldWebsite': 'Website'
   ,'bank.fieldWebsitePlaceholder': 'https://bank.com.vn'
+  ,'field.currentBalance': 'Dư nợ hiện tại dùng chung'
+  ,'creditDashboard.eyebrow': 'THẺ TÍN DỤNG'
+  ,'creditDashboard.title': 'Tổng quan dư nợ thẻ'
+  ,'creditDashboard.description': 'Theo dõi dư nợ sao kê, dư nợ hiện tại và mức sử dụng theo ngân hàng.'
+  ,'creditDashboard.totalStatementDebt': 'Tổng dư nợ sao kê'
+  ,'creditDashboard.currentBalance': 'Dư nợ hiện tại'
+  ,'creditDashboard.totalCreditLimit': 'Tổng hạn mức'
+  ,'creditDashboard.availableCredit': 'Hạn mức còn lại'
+  ,'creditDashboard.utilization': 'Đã dùng {value}%'
+  ,'creditDashboard.usageByBank': 'Mức sử dụng theo ngân hàng'
+  ,'creditDashboard.usageByBankDescription': 'Dư nợ hiện tại trên tổng hạn mức tín dụng'
+  ,'creditDashboard.chartAria': 'Dư nợ hiện tại chia cho tổng hạn mức của từng ngân hàng'
+  ,'creditDashboard.debtDetail': 'Chi tiết dư nợ'
+  ,'creditDashboard.debtDetailDescription': 'Mở rộng ngân hàng để xem từng thẻ tín dụng.'
+  ,'creditDashboard.bankCard': 'Ngân hàng / Thẻ'
+  ,'creditDashboard.statementDebt': 'Dư nợ sao kê'
+  ,'creditDashboard.creditLimit': 'Hạn mức'
+  ,'creditDashboard.available': 'Còn lại'
+  ,'creditDashboard.utilizationColumn': 'Mức sử dụng'
+  ,'creditDashboard.status': 'Trạng thái'
+  ,'creditDashboard.cards': '{count} thẻ'
+  ,'creditDashboard.lastFour': '•••• {value}'
+  ,'creditDashboard.overLimit': 'Vượt hạn mức'
+  ,'creditDashboard.sharedLimit': 'Dùng chung'
+  ,'creditDashboard.sharedBalance': 'Dùng chung'
+  ,'creditDashboard.editLimit': 'Sửa hạn mức'
+  ,'creditDashboard.editLimitFor': 'Sửa hạn mức chung của {bank}'
+  ,'creditDashboard.editLimitDescription': 'Hạn mức này được dùng chung cho tất cả thẻ thuộc ngân hàng.'
+  ,'creditDashboard.totalAllBanks': 'Tổng tất cả ngân hàng'
+  ,'creditDashboard.expandBank': 'Hiện các thẻ của {bank}'
+  ,'creditDashboard.collapseBank': 'Ẩn các thẻ của {bank}'
+  ,'creditDashboard.emptyTitle': 'Chưa có dữ liệu thẻ tín dụng'
+  ,'creditDashboard.emptyDescription': 'Thêm thẻ tín dụng để bắt đầu theo dõi dư nợ.'
+  ,'creditDashboard.errorTitle': 'Không thể tải dữ liệu dư nợ thẻ'
+  ,'creditDashboard.retry': 'Thử lại'
   ,'bank.saveBank': 'Lưu ngân hàng'
 };
 

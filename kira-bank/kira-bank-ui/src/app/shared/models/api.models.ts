@@ -58,6 +58,8 @@ export interface UserCreditCard {
   nickname: string;
   lastFour: string | null;
   creditLimit: number;
+  creditLimitVersion: number;
+  currentBalance: number;
   currency: string;
   statementDay: number;
   dueDay: number;
@@ -97,4 +99,47 @@ export interface DashboardSummary {
     reward: number;
     pendingWithdrawal: number
   }
+}
+
+export interface CreditCardDebtCard {
+  id: number;
+  nickname: string;
+  lastFour: string | null;
+  status: string;
+  statementDebt: number;
+  currency: string
+}
+
+export interface CreditCardDebtBank {
+  bankId: number;
+  bankName: string;
+  bankLogoUrl: string | null;
+  cardCount: number;
+  totalCreditLimit: number;
+  creditLimitVersion: number;
+  statementDebt: number;
+  currentBalance: number;
+  availableCredit: number;
+  utilizationRate: number;
+  currency: string;
+  cards: CreditCardDebtCard[]
+}
+
+export interface CreditCardBankLimit {
+  bankId: number;
+  bankName: string;
+  bankLogoUrl: string | null;
+  creditLimit: number;
+  currency: string;
+  version: number
+}
+
+export interface CreditCardDashboard {
+  totalCreditLimit: number;
+  totalStatementDebt: number;
+  currentBalance: number;
+  availableCredit: number;
+  utilizationRate: number;
+  currency: string;
+  banks: CreditCardDebtBank[]
 }

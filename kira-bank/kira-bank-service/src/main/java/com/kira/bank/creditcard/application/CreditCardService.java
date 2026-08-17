@@ -2,25 +2,30 @@ package com.kira.bank.creditcard.application;
 
 import com.kira.bank.creditcard.domain.*;
 import com.kira.bank.creditcard.infrastructure.*;
-import com.kira.bank.publiccatalog.infrastructure.*;
-import com.kira.bank.shared.web.*;
+import com.kira.bank.publiccatalog.infrastructure.BankRepository;
+import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.*;
-import java.time.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.*;
 
 import static com.kira.bank.creditcard.application.CreditCardDtos.*;
-import static com.kira.bank.shared.web.ApiTypes.*;
+import static com.kira.bank.shared.web.ApiTypes.PageMeta;
+import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 
 @Service
 @RequiredArgsConstructor
 public class CreditCardService {
     private static final BigDecimal TOLERANCE = new BigDecimal("0.01");
     private final UserCreditCardRepository cards;
+    private final UserBankCreditLimitRepository creditLimits;
     private final BankRepository banks;
     private final CardTransactionRepository transactions;
     private final StatementRepository statements;
@@ -32,34 +37,39 @@ public class CreditCardService {
     @Transactional
     public CardResponse createCard(Long user, CreateCardRequest r) {
         var bank = banks.findById(r.bankId())
-                .filter(candidate -> candidate.isActive() && candidate.getDeletedAt() == null)
-                .orElseThrow(() -> missing("BANK_NOT_FOUND"));
+            .filter(candidate -> candidate.isActive() && candidate.getDeletedAt() == null)
+            .orElseThrow(() -> missing("BANK_NOT_FOUND"));
         UserCreditCard c = new UserCreditCard();
         c.setUserId(user);
         c.setBank(bank);
+        UserBankCreditLimit creditLimit = creditLimits.findByUserIdAndBankIdAndDeletedAtIsNull(user, bank.getId())
+            .map(existing -> requireMatchingCreditLimit(existing, r.creditLimit()))
+            .orElseGet(() -> createCreditLimit(user, bank, r.creditLimit()));
         c.setNickname(r.nickname());
         c.setLastFour(r.lastFour());
-        c.setCreditLimit(money(r.creditLimit()));
         c.setStatementDay(r.statementDay());
         c.setDueDay(r.dueDay());
         c.setNote(r.note());
         c.setCreatedBy(user);
         c.setUpdatedBy(user);
-        return cardDto(cards.save(c));
+        return cardDto(cards.save(c), creditLimit);
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<CardResponse> cards(Long user, Pageable p) {
-        Page<UserCreditCard> cardPage = cards.findByUserIdAndDeletedAtIsNull(user, p);
+    public PageResponse<CardResponse> cards(Long user, String search, Pageable p) {
+        Page<UserCreditCard> cardPage = cards.search(user, search == null ? "" : search.trim(), p);
         var cycles = monthlyStatements.currentCycles(user, cardPage.getContent());
-        Page<CardResponse> x = cardPage.map(card -> cardDto(card, cycles.get(card.getId())));
+        var balances = currentBalancesByBank(user, cardPage.getContent());
+        var limits = creditLimitsByBank(user);
+        Page<CardResponse> x = cardPage.map(card -> cardDto(card, cycles.get(card.getId()),
+            balances.getOrDefault(card.getBank().getId(), BigDecimal.ZERO), requireCreditLimit(limits, card)));
         return page(x);
     }
 
     @Transactional(readOnly = true)
     public CardResponse card(Long user, Long id) {
         UserCreditCard card = ownCard(id, user);
-        return cardDto(card, monthlyStatements.currentCycle(user, card));
+        return cardDto(card, monthlyStatements.currentCycle(user, card), ownCreditLimit(user, card.getBank().getId()));
     }
 
     @Transactional
@@ -69,15 +79,39 @@ public class CreditCardService {
             throw new ApiException(HttpStatus.CONFLICT, "CARD_VERSION_CONFLICT", "Dữ liệu thẻ đã được cập nhật ở phiên khác");
         if (!java.util.Set.of("ACTIVE", "INACTIVE", "CLOSED").contains(r.status()))
             throw invalid("INVALID_CARD_STATUS", "Trạng thái thẻ không hợp lệ");
+        UserBankCreditLimit creditLimit = ownCreditLimit(user, c.getBank().getId());
+        if (creditLimit.getVersion() != r.creditLimitVersion())
+            throw conflict("CREDIT_LIMIT_VERSION_CONFLICT");
+        creditLimit.setCreditLimit(money(r.creditLimit()));
+        creditLimit.setUpdatedBy(user);
         c.setNickname(r.nickname());
         c.setLastFour(r.lastFour());
-        c.setCreditLimit(money(r.creditLimit()));
         c.setStatementDay(r.statementDay());
         c.setDueDay(r.dueDay());
         c.setNote(r.note());
         c.setStatus(r.status());
         c.setUpdatedBy(user);
-        return cardDto(c, monthlyStatements.currentCycle(user, c));
+        creditLimits.flush();
+        return cardDto(c, monthlyStatements.currentCycle(user, c), creditLimit);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BankCreditLimitResponse> bankCreditLimits(Long user) {
+        return creditLimits.findByUserIdAndDeletedAtIsNull(user).stream()
+            .map(this::creditLimitDto)
+            .sorted(Comparator.comparing(BankCreditLimitResponse::bankName, String.CASE_INSENSITIVE_ORDER))
+            .toList();
+    }
+
+    @Transactional
+    public BankCreditLimitResponse updateBankCreditLimit(Long user, Long bankId, BankCreditLimitUpdateRequest r) {
+        UserBankCreditLimit creditLimit = ownCreditLimit(user, bankId);
+        if (creditLimit.getVersion() != r.version())
+            throw conflict("CREDIT_LIMIT_VERSION_CONFLICT");
+        creditLimit.setCreditLimit(money(r.creditLimit()));
+        creditLimit.setUpdatedBy(user);
+        creditLimits.flush();
+        return creditLimitDto(creditLimit);
     }
 
     @Transactional
@@ -219,18 +253,89 @@ public class CreditCardService {
         return statements.findByIdAndUserIdAndDeletedAtIsNull(id, user).orElseThrow(() -> missing("STATEMENT_NOT_FOUND"));
     }
 
-    private CardResponse cardDto(UserCreditCard c) {
-        return cardDto(c, monthlyStatements.currentCycle(c.getUserId(), c));
+    private CardResponse cardDto(UserCreditCard c, UserBankCreditLimit creditLimit) {
+        return cardDto(c, monthlyStatements.currentCycle(c.getUserId(), c),
+            currentBalanceForBank(c.getUserId(), c.getBank().getId()), creditLimit);
     }
 
-    private CardResponse cardDto(UserCreditCard c, BillingCycleResponse billing) {
+    private CardResponse cardDto(UserCreditCard c, BillingCycleResponse billing, UserBankCreditLimit creditLimit) {
+        return cardDto(c, billing, currentBalanceForBank(c.getUserId(), c.getBank().getId()), creditLimit);
+    }
+
+    private CardResponse cardDto(UserCreditCard c, BillingCycleResponse billing, BigDecimal currentBalance,
+                                 UserBankCreditLimit creditLimit) {
         String bankName = c.getBank().getShortName() == null || c.getBank().getShortName().isBlank()
-                ? c.getBank().getName() : c.getBank().getShortName();
+            ? c.getBank().getName() : c.getBank().getShortName();
         return new CardResponse(c.getId(), c.getBank().getId(), bankName, c.getBank().getLogoUrl(), c.getNickname(),
-                c.getLastFour(), c.getCreditLimit(), c.getCurrency(), c.getStatementDay(),
-                c.getDueDay(), c.getStatus(), c.getNote(), c.getVersion(),
-                billing.billingCycleId(), billing.statementDate(), billing.paymentDueDate(),
-                billing.statementBalance(), billing.minimumPayment(), billing.billingStatus(), billing.billingVersion());
+            c.getLastFour(), creditLimit.getCreditLimit(), creditLimit.getVersion(), money(currentBalance),
+            creditLimit.getCurrency(), c.getStatementDay(),
+            c.getDueDay(), c.getStatus(), c.getNote(), c.getVersion(),
+            billing.billingCycleId(), billing.statementDate(), billing.paymentDueDate(),
+            billing.statementBalance(), billing.minimumPayment(), billing.billingStatus(), billing.billingVersion());
+    }
+
+    private UserBankCreditLimit createCreditLimit(Long user, com.kira.bank.publiccatalog.domain.Bank bank,
+                                                  BigDecimal amount) {
+        UserBankCreditLimit creditLimit = new UserBankCreditLimit();
+        creditLimit.setUserId(user);
+        creditLimit.setBank(bank);
+        creditLimit.setCreditLimit(money(amount));
+        creditLimit.setCurrency("VND");
+        creditLimit.setCreatedBy(user);
+        creditLimit.setUpdatedBy(user);
+        return creditLimits.save(creditLimit);
+    }
+
+    private UserBankCreditLimit requireMatchingCreditLimit(UserBankCreditLimit creditLimit, BigDecimal requested) {
+        if (creditLimit.getCreditLimit().compareTo(money(requested)) != 0)
+            throw invalid("SHARED_CREDIT_LIMIT_MISMATCH",
+                "Hạn mức phải khớp với hạn mức chung hiện tại của ngân hàng");
+        return creditLimit;
+    }
+
+    private UserBankCreditLimit ownCreditLimit(Long user, Long bankId) {
+        return creditLimits.findByUserIdAndBankIdAndDeletedAtIsNull(user, bankId)
+            .orElseThrow(() -> missing("BANK_CREDIT_LIMIT_NOT_FOUND"));
+    }
+
+    private Map<Long, UserBankCreditLimit> creditLimitsByBank(Long user) {
+        Map<Long, UserBankCreditLimit> result = new HashMap<>();
+        creditLimits.findByUserIdAndDeletedAtIsNull(user)
+            .forEach(limit -> result.put(limit.getBank().getId(), limit));
+        return result;
+    }
+
+    private UserBankCreditLimit requireCreditLimit(Map<Long, UserBankCreditLimit> limits, UserCreditCard card) {
+        UserBankCreditLimit creditLimit = limits.get(card.getBank().getId());
+        if (creditLimit == null)
+            throw missing("BANK_CREDIT_LIMIT_NOT_FOUND");
+        return creditLimit;
+    }
+
+    private BankCreditLimitResponse creditLimitDto(UserBankCreditLimit creditLimit) {
+        String bankName = creditLimit.getBank().getShortName() == null || creditLimit.getBank().getShortName().isBlank()
+            ? creditLimit.getBank().getName() : creditLimit.getBank().getShortName();
+        return new BankCreditLimitResponse(creditLimit.getBank().getId(), bankName,
+            creditLimit.getBank().getLogoUrl(), creditLimit.getCreditLimit(), creditLimit.getCurrency(),
+            creditLimit.getVersion());
+    }
+
+    private Map<Long, BigDecimal> currentBalancesByBank(Long userId, Collection<UserCreditCard> userCards) {
+        if (userCards.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        var bankIds = userCards.stream().map(card -> card.getBank().getId()).distinct().toList();
+        Map<Long, BigDecimal> result = new HashMap<>();
+        statements.findCurrentBalancesForBanks(userId, bankIds)
+            .forEach(total -> result.put(total.getBankId(), total.getCurrentBalance()));
+        return result;
+    }
+
+    private BigDecimal currentBalanceForBank(Long userId, Long bankId) {
+        return statements.findCurrentBalancesForBanks(userId, List.of(bankId)).stream()
+            .findFirst()
+            .map(StatementRepository.BankCurrentBalance::getCurrentBalance)
+            .orElse(BigDecimal.ZERO);
     }
 
     private StatementResponse statementDto(Statement s) {
@@ -260,5 +365,10 @@ public class CreditCardService {
 
     private ApiException missing(String c) {
         return new ApiException(HttpStatus.NOT_FOUND, c, "Không tìm thấy dữ liệu");
+    }
+
+    private ApiException conflict(String code) {
+        return new ApiException(HttpStatus.CONFLICT, code,
+            "Hạn mức ngân hàng đã được cập nhật ở phiên khác");
     }
 }

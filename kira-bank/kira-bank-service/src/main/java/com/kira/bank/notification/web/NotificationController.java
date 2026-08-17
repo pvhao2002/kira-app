@@ -2,9 +2,11 @@ package com.kira.bank.notification.web;
 
 import com.kira.bank.notification.domain.Notification;
 import com.kira.bank.notification.infrastructure.NotificationRepository;
-import com.kira.bank.shared.web.*;
+import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,7 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.Map;
 
-import static com.kira.bank.shared.web.ApiTypes.*;
+import static com.kira.bank.shared.web.ApiTypes.PageMeta;
+import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 
 @RestController
 @RequestMapping("/api/v1/notifications")

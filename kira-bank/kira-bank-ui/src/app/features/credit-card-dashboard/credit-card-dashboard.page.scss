@@ -1,0 +1,451 @@
+:host {
+  display: block;
+}
+
+.debt-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+  margin-bottom: 13px;
+}
+
+.debt-kpi {
+  min-height: 118px;
+  padding: 19px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.debt-kpi small,
+.debt-kpi span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.debt-kpi strong {
+  margin: 9px 0 5px;
+  color: var(--navy);
+  font-size: clamp(17px, 1.7vw, 23px);
+  line-height: 1.2;
+}
+
+.statement-kpi {
+  border-top: 3px solid #6366f1;
+}
+
+.current-kpi {
+  border-top: 3px solid var(--blue);
+}
+
+.current-kpi span {
+  color: #087e6a;
+  font-weight: 700;
+}
+
+.debt-kpi.negative {
+  border-color: color-mix(in srgb, #dc2626 45%, var(--border));
+}
+
+.debt-kpi.negative strong,
+.debt-kpi.negative span,
+.negative-value {
+  color: #dc2626;
+}
+
+.usage-panel,
+.detail-panel {
+  margin-top: 13px;
+}
+
+.usage-panel header,
+.detail-panel header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.usage-panel h2,
+.detail-panel h2 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 16px;
+}
+
+.usage-panel header p,
+.detail-panel header p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.usage-chart {
+  display: grid;
+  gap: 22px;
+  padding-top: 20px;
+}
+
+.usage-row {
+  display: grid;
+  grid-template-columns: minmax(160px, .8fr) minmax(260px, 2fr);
+  grid-template-areas:
+    "bank values"
+    "bank track";
+  gap: 9px 24px;
+  align-items: center;
+}
+
+.usage-bank {
+  grid-area: bank;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.bank-logo-wrap,
+.table-bank-logo {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  background: #fff;
+  overflow: hidden;
+}
+
+.bank-logo-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+}
+
+.bank-logo-wrap img,
+.table-bank-logo img {
+  max-width: 82%;
+  max-height: 82%;
+  object-fit: contain;
+}
+
+.usage-bank strong,
+.usage-bank small {
+  display: block;
+}
+
+.usage-bank strong {
+  color: var(--navy);
+  font-size: 13px;
+}
+
+.usage-bank small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.usage-values {
+  grid-area: values;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.usage-values strong {
+  color: var(--navy);
+  font-size: 13px;
+}
+
+.usage-values span {
+  color: var(--muted);
+}
+
+.usage-values b {
+  margin-left: auto;
+  color: var(--blue);
+}
+
+.usage-track {
+  grid-area: track;
+  height: 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--blue) 9%, var(--surface));
+  overflow: hidden;
+}
+
+.usage-track span {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0878ff, #22a6f2);
+}
+
+.over-limit .usage-track span {
+  background: #dc2626;
+}
+
+.over-limit .usage-values b,
+.over-limit-label {
+  color: #dc2626;
+}
+
+.over-limit-label {
+  grid-column: 2;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.detail-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.detail-panel header {
+  padding: 19px 20px 16px;
+}
+
+.detail-panel table {
+  min-width: 940px;
+}
+
+.detail-panel th:not(:first-child),
+.detail-panel td:not(:first-child) {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.detail-panel th:last-child,
+.detail-panel td:last-child {
+  text-align: center;
+}
+
+.bank-row {
+  background: color-mix(in srgb, var(--blue) 3%, var(--surface));
+}
+
+.bank-row.expanded {
+  background: color-mix(in srgb, var(--blue) 7%, var(--surface));
+}
+
+.bank-disclosure {
+  display: grid;
+  grid-template-columns: 18px 34px 1fr;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.bank-disclosure svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .16s ease;
+}
+
+.bank-disclosure[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+
+.bank-disclosure:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 5px;
+  border-radius: 4px;
+}
+
+.table-bank-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+}
+
+.bank-disclosure b,
+.bank-disclosure small,
+.card-identity b,
+.card-identity small {
+  display: block;
+}
+
+.bank-disclosure small,
+.card-identity small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.card-row {
+  background: color-mix(in srgb, var(--blue) 1.5%, var(--surface));
+}
+
+.shared-value {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.limit-action {
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.limit-action:hover,
+.limit-action:focus-visible {
+  text-decoration: underline;
+}
+
+.total-row {
+  border-top: 2px solid color-mix(in srgb, var(--blue) 38%, var(--border));
+  background: color-mix(in srgb, var(--blue) 9%, var(--surface));
+  color: var(--navy);
+  font-weight: 800;
+}
+
+.limit-dialog {
+  width: min(460px, calc(100vw - 28px));
+}
+
+.limit-field {
+  display: grid;
+  gap: 7px;
+  margin: 20px 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.limit-field input {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--navy);
+}
+
+.limit-dialog footer {
+  position: static;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin: 20px -24px -24px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.card-identity {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+}
+
+.card-identity > span {
+  width: 18px;
+  height: 1px;
+  margin-left: 9px;
+  background: var(--border);
+}
+
+.current-value {
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.rate-value {
+  display: inline-block;
+  min-width: 54px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+  color: var(--blue);
+  text-align: center;
+  font-weight: 800;
+}
+
+.rate-value.over {
+  background: color-mix(in srgb, #dc2626 12%, var(--surface));
+  color: #dc2626;
+}
+
+.dashboard-loading {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 13px;
+}
+
+.kpi-skeleton {
+  height: 118px;
+  border-radius: 10px;
+}
+
+.content-skeleton {
+  grid-column: 1 / -1;
+  height: 320px;
+  border-radius: 10px;
+}
+
+@media (max-width: 1050px) {
+  .debt-kpis,
+  .dashboard-loading {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .debt-kpis,
+  .dashboard-loading {
+    grid-template-columns: 1fr;
+  }
+
+  .debt-kpi {
+    min-height: 98px;
+  }
+
+  .usage-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "bank"
+      "values"
+      "track";
+    gap: 9px;
+  }
+
+  .over-limit-label {
+    grid-column: 1;
+  }
+
+  .usage-values b {
+    margin-left: auto;
+  }
+}
+
+:host-context([data-theme='dark']) .debt-kpi strong,
+:host-context([data-theme='dark']) .usage-panel h2,
+:host-context([data-theme='dark']) .detail-panel h2,
+:host-context([data-theme='dark']) .usage-bank strong,
+:host-context([data-theme='dark']) .usage-values strong {
+  color: #f2f7fc;
+}
+
+:host-context([data-theme='dark']) .total-row,
+:host-context([data-theme='dark']) .limit-field input {
+  color: #f2f7fc;
+}
+
+:host-context([data-theme='dark']) .bank-logo-wrap,
+:host-context([data-theme='dark']) .table-bank-logo {
+  background: #f8fafc;
+}

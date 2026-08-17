@@ -1,7 +1,8 @@
-import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators} from '@angular/forms';
-import {ActivatedRoute} from '@angular/router';
-import {EMPTY, expand, finalize, map, Observable, reduce} from 'rxjs';
+import {ActivatedRoute, Router} from '@angular/router';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {debounceTime, distinctUntilChanged, EMPTY, expand, finalize, map, Observable, reduce, Subject} from 'rxjs';
 import {LanguageService} from '../../core/i18n/language.service';
 import {TranslationKey} from '../../core/i18n/translations';
 import {ApiService} from '../../core/services/api.service';
@@ -22,6 +23,7 @@ type Row = Record<string, unknown>;
 import {CustomSelectComponent} from '../../shared/custom-select/custom-select';
 import {CustomDatepickerComponent} from '../../shared/custom-datepicker/custom-datepicker';
 import {CreditCardPreviewComponent} from '../../shared/credit-card-preview/credit-card-preview';
+import {CreditCardBankLimit} from '../../shared/models/api.models';
 
 interface LookupOption {
   value: string | number;
@@ -52,6 +54,7 @@ export class ResourcePage {
   readonly rawLookups = signal<Record<string, Row[]>>({});
   readonly formValues = signal<Record<string, unknown>>({});
   readonly formError = signal('');
+  readonly sharedCreditLimit = signal(false);
   form = new FormGroup<Record<string, FormControl<unknown>>>({});
   readonly i18n = inject(LanguageService);
   private formSub?: any;
@@ -61,12 +64,18 @@ export class ResourcePage {
   readonly selectedStatus = signal('ALL');
 
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly searchChanges = new Subject<string>();
   readonly definition = resourceDefinitions[this.route.snapshot.data['resourceKey'] as string] as ResourceDefinition;
   readonly titleKey = this.definition.titleKey as TranslationKey;
   readonly apiPath = this.definition.apiPath;
   readonly flow = this.definition.flow;
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
+  private readonly creditCardLimits = signal<Record<string, CreditCardBankLimit>>({});
+  private readonly creditCardLimitsLoaded = signal(false);
+  private bankSub?: any;
 
   readonly filteredRows = computed(() => {
     let list = this.rows();
@@ -87,11 +96,32 @@ export class ResourcePage {
   });
 
   constructor() {
-    this.loadRows();
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+      this.searchQuery.set(params.get('search') ?? '');
+      this.loadRows();
+    });
+    this.searchChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(search => {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {search: search || null},
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    });
+    if (this.definition.key === 'creditCards') this.loadCreditCardLimits();
+  }
+
+  onSearchInput(value: string): void {
+    this.searchQuery.set(value);
+    this.searchChanges.next(value.trim());
   }
 
   resetFilters(): void {
-    this.searchQuery.set('');
+    this.onSearchInput('');
     this.selectedStatus.set('ALL');
   }
 
@@ -189,6 +219,7 @@ export class ResourcePage {
     this.activeForm.set(null);
     this.selectedRow.set(null);
     this.formError.set('');
+    this.sharedCreditLimit.set(false);
   }
 
   submit(): void {
@@ -284,8 +315,15 @@ export class ResourcePage {
     return row['currency'] ? `${formatted} ${String(row['currency'])}` : formatted;
   }
 
+  billingStatementDate(row: Row): string {
+    return this.billingDate(row['statementDate']);
+  }
+
   billingDueDate(row: Row): string {
-    const value = row['paymentDueDate'];
+    return this.billingDate(row['paymentDueDate']);
+  }
+
+  private billingDate(value: unknown): string {
     if (!value) return '';
     return new Intl.DateTimeFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US').format(
       new Date(`${String(value)}T00:00:00`)
@@ -317,7 +355,7 @@ export class ResourcePage {
       return;
     }
     this.loading.set(true);
-    this.api.page<Row>(this.apiPath).subscribe({
+    this.api.page<Row>(this.apiPath, 0, 20, this.searchQuery().trim()).subscribe({
       next: response => {
         this.rows.set(response.data);
         this.total.set(response.meta.totalElements);
@@ -369,7 +407,10 @@ export class ResourcePage {
     this.formSub = this.form.valueChanges.subscribe(() => {
       this.formValues.set(this.form.getRawValue());
     });
+    this.bankSub?.unsubscribe();
+    this.bankSub = this.form.controls['bankId']?.valueChanges.subscribe(() => this.syncCreditLimitField());
     this.loadLookups(definition.fields);
+    this.syncCreditLimitField();
     this.form.markAsPristine();
     this.open.set(true);
   }
@@ -434,6 +475,54 @@ export class ResourcePage {
     );
   }
 
+  private loadCreditCardLimits(): void {
+    this.api.creditCardBankLimits().subscribe({
+      next: limits => {
+        this.creditCardLimits.set(Object.fromEntries(limits.map(limit => [String(limit.bankId), limit])));
+        this.creditCardLimitsLoaded.set(true);
+        this.syncCreditLimitField();
+      },
+      error: () => {
+        this.creditCardLimits.set({});
+        this.creditCardLimitsLoaded.set(false);
+        this.syncCreditLimitField();
+      }
+    });
+  }
+
+  private syncCreditLimitField(): void {
+    if (this.activeForm()?.layout !== 'creditCard') return;
+    const control = this.form.controls['creditLimit'];
+    if (!control) return;
+
+    if (this.editing()) {
+      control.enable({emitEvent: false});
+      this.sharedCreditLimit.set(true);
+      this.formValues.set(this.form.getRawValue());
+      return;
+    }
+
+    const bankId = this.form.controls['bankId']?.value;
+    if (!bankId || !this.creditCardLimitsLoaded()) {
+      control.disable({emitEvent: false});
+      this.sharedCreditLimit.set(false);
+      this.formValues.set(this.form.getRawValue());
+      return;
+    }
+
+    const existing = this.creditCardLimits()[String(bankId)];
+    if (existing) {
+      control.setValue(existing.creditLimit, {emitEvent: false});
+      control.disable({emitEvent: false});
+      this.sharedCreditLimit.set(true);
+    } else {
+      control.setValue('', {emitEvent: false});
+      control.enable({emitEvent: false});
+      this.sharedCreditLimit.set(false);
+    }
+    this.formValues.set(this.form.getRawValue());
+  }
+
   private lookupOption(key: LookupKey, row: Row): LookupOption {
     const value = row['id'] as string | number;
     const label = {
@@ -491,6 +580,7 @@ export class ResourcePage {
           this.open.set(false);
           this.activeForm.set(null);
         }
+        if (this.definition.key === 'creditCards') this.loadCreditCardLimits();
         this.loadRows();
       },
       error: error => this.formError.set(error.error?.message ?? this.i18n.t('form.saveFailed'))

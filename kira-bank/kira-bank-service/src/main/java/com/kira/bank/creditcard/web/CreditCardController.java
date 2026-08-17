@@ -4,7 +4,8 @@ import com.kira.bank.creditcard.application.CreditCardService;
 import com.kira.bank.creditcard.application.MonthlyStatementService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,8 +27,9 @@ public class CreditCardController {
     }
 
     @GetMapping("/credit-cards")
-    Object cards(@AuthenticationPrincipal Long u, @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable p) {
-        return service.cards(u, p);
+    Object cards(@AuthenticationPrincipal Long u, @RequestParam(defaultValue = "") String search,
+                 @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable p) {
+        return service.cards(u, search, p);
     }
 
     @GetMapping("/credit-cards/{id}")
@@ -38,6 +40,17 @@ public class CreditCardController {
     @PutMapping("/credit-cards/{id}")
     Object updateCard(@AuthenticationPrincipal Long u, @PathVariable Long id, @Valid @RequestBody UpdateCardRequest r) {
         return service.updateCard(u, id, r);
+    }
+
+    @GetMapping("/credit-card-bank-limits")
+    Object bankCreditLimits(@AuthenticationPrincipal Long u) {
+        return service.bankCreditLimits(u);
+    }
+
+    @PutMapping("/credit-card-bank-limits/{bankId}")
+    Object updateBankCreditLimit(@AuthenticationPrincipal Long u, @PathVariable Long bankId,
+                                 @Valid @RequestBody BankCreditLimitUpdateRequest r) {
+        return service.updateBankCreditLimit(u, bankId, r);
     }
 
     @PutMapping("/credit-cards/{id}/billing-cycle")

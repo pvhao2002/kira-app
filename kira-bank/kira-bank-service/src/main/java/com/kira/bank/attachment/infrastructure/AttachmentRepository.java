@@ -17,7 +17,7 @@ import java.util.Optional;
 
 public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
     Page<Attachment> findByUserIdAndModuleAndDocumentTypeAndAiStatusInAndDeletedAtIsNull(
-            Long userId, String module, String documentType, Collection<AttachmentAiStatus> statuses, Pageable pageable);
+        Long userId, String module, String documentType, Collection<AttachmentAiStatus> statuses, Pageable pageable);
 
     Optional<Attachment> findByIdAndUserIdAndDeletedAtIsNull(Long id, Long userId);
 
@@ -27,33 +27,33 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
-            select a from Attachment a
-            where a.deletedAt is null
-              and a.module = :module
-              and a.documentType = :documentType
-              and a.aiStatus = :status
-              and (a.aiNextAttemptAt is null or a.aiNextAttemptAt <= :now)
-            order by a.createdAt asc
-            """)
+        select a from Attachment a
+        where a.deletedAt is null
+          and a.module = :module
+          and a.documentType = :documentType
+          and a.aiStatus = :status
+          and (a.aiNextAttemptAt is null or a.aiNextAttemptAt <= :now)
+        order by a.createdAt asc
+        """)
     List<Attachment> findClaimableForUpdate(
-            @Param("module") String module,
-            @Param("documentType") String documentType,
-            @Param("status") AttachmentAiStatus status,
-            @Param("now") Instant now,
-            Pageable pageable);
+        @Param("module") String module,
+        @Param("documentType") String documentType,
+        @Param("status") AttachmentAiStatus status,
+        @Param("now") Instant now,
+        Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
-            select a from Attachment a
-            where a.deletedAt is null
-              and a.module = :module
-              and a.documentType = :documentType
-              and a.aiStatus = :status
-              and a.aiProcessingStartedAt < :cutoff
-            """)
+        select a from Attachment a
+        where a.deletedAt is null
+          and a.module = :module
+          and a.documentType = :documentType
+          and a.aiStatus = :status
+          and a.aiProcessingStartedAt < :cutoff
+        """)
     List<Attachment> findStaleProcessingForUpdate(
-            @Param("module") String module,
-            @Param("documentType") String documentType,
-            @Param("status") AttachmentAiStatus status,
-            @Param("cutoff") Instant cutoff);
+        @Param("module") String module,
+        @Param("documentType") String documentType,
+        @Param("status") AttachmentAiStatus status,
+        @Param("cutoff") Instant cutoff);
 }

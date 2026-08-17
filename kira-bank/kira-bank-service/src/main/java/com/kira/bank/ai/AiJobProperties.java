@@ -6,10 +6,10 @@ import java.time.Duration;
 
 @ConfigurationProperties(prefix = "ai.job")
 public record AiJobProperties(
-        int batchSize,
-        int maxAttempts,
-        Duration retryDelay,
-        Duration processingTimeout
+    int batchSize,
+    int maxAttempts,
+    Duration retryDelay,
+    Duration processingTimeout
 ) {
     public int safeBatchSize() {
         return batchSize <= 0 ? 3 : Math.min(batchSize, 3);
@@ -25,6 +25,6 @@ public record AiJobProperties(
 
     public Duration safeProcessingTimeout() {
         return processingTimeout == null || processingTimeout.isNegative() || processingTimeout.isZero()
-                ? Duration.ofMinutes(30) : processingTimeout;
+            ? Duration.ofMinutes(30) : processingTimeout;
     }
 }

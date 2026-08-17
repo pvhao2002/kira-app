@@ -1,11 +1,13 @@
 package com.kira.bank.identity.web;
 
 import com.kira.bank.identity.application.AuthService;
-import jakarta.servlet.http.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +23,9 @@ public class AuthController {
     @Value("${app.refresh-cookie-secure:false}")
     private boolean secureCookie;
 
-    /** Admin tạo tài khoản mới — chỉ dùng qua Swagger, không public */
+    /**
+     * Admin tạo tài khoản mới — chỉ dùng qua Swagger, không public
+     */
     @PostMapping("/api/v1/admin/users")
     @ResponseStatus(HttpStatus.CREATED)
     public ProfileResponse createUser(@Valid @RequestBody CreateUserRequest r) {

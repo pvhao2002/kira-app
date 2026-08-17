@@ -1,11 +1,7 @@
 package com.kira.bank.attachment.domain;
 
 import com.kira.bank.shared.domain.AuditedEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 

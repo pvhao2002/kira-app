@@ -20,7 +20,8 @@ export const routes: Routes = [
       },
       {
         path: 'credit-card/dashboard',
-        loadComponent: () => import('./features/dashboard/dashboard.page').then(m => m.DashboardPage),
+        loadComponent: () => import('./features/credit-card-dashboard/credit-card-dashboard.page')
+          .then(m => m.CreditCardDashboardPage),
         data: {titleKey: 'route.creditDashboard'}
       },
       {

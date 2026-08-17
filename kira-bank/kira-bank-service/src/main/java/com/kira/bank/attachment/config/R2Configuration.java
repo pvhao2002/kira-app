@@ -17,11 +17,11 @@ public class R2Configuration {
     @Bean
     S3Client r2S3Client(R2Properties props) {
         return S3Client.builder()
-                .endpointOverride(URI.create("https://" + props.accountId() + ".r2.cloudflarestorage.com"))
-                .region(Region.of("auto"))
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(props.accessKeyId(), props.secretAccessKey())
-                ))
-                .build();
+            .endpointOverride(URI.create("https://" + props.accountId() + ".r2.cloudflarestorage.com"))
+            .region(Region.of("auto"))
+            .credentialsProvider(StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(props.accessKeyId(), props.secretAccessKey())
+            ))
+            .build();
     }
 }

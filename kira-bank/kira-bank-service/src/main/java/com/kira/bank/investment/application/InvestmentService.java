@@ -5,18 +5,21 @@ import com.kira.bank.investment.domain.*;
 import com.kira.bank.investment.infrastructure.*;
 import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
 
 import static com.kira.bank.investment.application.InvestmentDtos.*;
-import static com.kira.bank.shared.web.ApiTypes.*;
+import static com.kira.bank.shared.web.ApiTypes.PageMeta;
+import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -49,8 +52,8 @@ public class InvestmentService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<AccountResponse> accounts(Long userId, Pageable pageable) {
-        Page<AccountResponse> p = accounts.findByUserIdAndDeletedAtIsNull(userId, pageable).map(this::dto);
+    public PageResponse<AccountResponse> accounts(Long userId, String search, Pageable pageable) {
+        Page<AccountResponse> p = accounts.search(userId, search == null ? "" : search.trim(), pageable).map(this::dto);
         return new PageResponse<>(p.getContent(), new PageMeta(p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages()));
     }
 
@@ -147,7 +150,7 @@ public class InvestmentService {
             attachments.requireReadyForConfirmation(userId, attachmentId);
         }
         String k = attachmentId != null ? "attachment:" + attachmentId
-                : (key != null && !key.isBlank()) ? key : UUID.randomUUID().toString();
+            : (key != null && !key.isBlank()) ? key : UUID.randomUUID().toString();
         String type = r.type() == null ? "DEPOSIT" : r.type().toUpperCase(Locale.ROOT);
         String note = r.description() != null ? r.description() : "";
         if (attachmentId != null) {
@@ -157,36 +160,36 @@ public class InvestmentService {
         OperationResponse response;
         if ("WITHDRAWAL".equals(type)) {
             response = requestWithdrawal(userId, k, new WithdrawalRequest(
-                    r.accountId(),
-                    r.amount(),
-                    BigDecimal.ZERO,
-                    "EXTERNAL_BANK",
-                    "TX-" + System.currentTimeMillis(),
-                    attachmentId,
-                    r.transactionDate()
+                r.accountId(),
+                r.amount(),
+                BigDecimal.ZERO,
+                "EXTERNAL_BANK",
+                "TX-" + System.currentTimeMillis(),
+                attachmentId,
+                r.transactionDate()
             ));
         } else if ("BONUS".equals(type) || "REWARD".equals(type)) {
             response = reward(userId, k, new RewardRequest(
-                    r.accountId(),
-                    null,
-                    "BONUS",
-                    "INVESTMENT_BONUS",
-                    r.amount(),
-                    note,
-                    note,
-                    attachmentId,
-                    r.transactionDate()
+                r.accountId(),
+                null,
+                "BONUS",
+                "INVESTMENT_BONUS",
+                r.amount(),
+                note,
+                note,
+                attachmentId,
+                r.transactionDate()
             ));
         } else {
             response = completeDeposit(userId, k, new DepositRequest(
-                    r.accountId(),
-                    r.amount(),
-                    BigDecimal.ZERO,
-                    "TX-" + System.currentTimeMillis(),
-                    "BANK_TRANSFER",
-                    note,
-                    attachmentId,
-                    r.transactionDate()
+                r.accountId(),
+                r.amount(),
+                BigDecimal.ZERO,
+                "TX-" + System.currentTimeMillis(),
+                "BANK_TRANSFER",
+                note,
+                attachmentId,
+                r.transactionDate()
             ));
         }
         if (attachmentId != null) {
@@ -420,11 +423,11 @@ public class InvestmentService {
 
     private AccountResponse dto(InvestmentAccount a) {
         return new AccountResponse(
-                a.getId(), a.getPlatformId(), a.getAccountCode(), a.getAccountName(), a.getExternalAccountCode(),
-                a.getAccountUsername(), a.getAccountEmail(), a.getPhoneNumber(), a.getRegisterDate(), a.getAccountPassword(),
-                a.getCurrency(), a.getCurrentBalance(), a.getAvailableCapital(), a.getLockedCapital(),
-                a.getAccumulatedProfit(), a.getAccumulatedReward(), a.getReservedWithdrawal(), a.getStatus(),
-                a.getNote(), a.getVersion()
+            a.getId(), a.getPlatformId(), a.getAccountCode(), a.getAccountName(), a.getExternalAccountCode(),
+            a.getAccountUsername(), a.getAccountEmail(), a.getPhoneNumber(), a.getRegisterDate(), a.getAccountPassword(),
+            a.getCurrency(), a.getCurrentBalance(), a.getAvailableCapital(), a.getLockedCapital(),
+            a.getAccumulatedProfit(), a.getAccumulatedReward(), a.getReservedWithdrawal(), a.getStatus(),
+            a.getNote(), a.getVersion()
         );
     }
 

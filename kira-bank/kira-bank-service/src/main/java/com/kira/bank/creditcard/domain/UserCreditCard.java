@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Getter
@@ -19,7 +18,6 @@ public class UserCreditCard extends AuditedEntity {
     @JoinColumn(name = "bank_id", nullable = false)
     private Bank bank;
     private String nickname, lastFour;
-    private BigDecimal creditLimit;
     private String currency = "VND";
     private Integer statementDay, dueDay;
     private LocalDate openedDate;

@@ -1,14 +1,15 @@
 package com.kira.bank.identity.application;
 
 import com.kira.bank.identity.domain.User;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.time.*;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 
 @Service

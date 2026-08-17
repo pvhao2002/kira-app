@@ -407,6 +407,14 @@ tr.billing-row.billing-overdue > td {
   font-size: 12px;
 }
 
+.field-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
 .inline-validation {
   margin-top: 12px;
 }

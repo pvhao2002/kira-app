@@ -1,7 +1,9 @@
 package com.kira.bank.publiccatalog.domain;
 
 import com.kira.bank.shared.domain.AuditedEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
