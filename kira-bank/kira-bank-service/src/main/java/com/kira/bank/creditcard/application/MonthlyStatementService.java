@@ -114,7 +114,10 @@ public class MonthlyStatementService {
             throw invalid("STATEMENT_HAS_PAYMENT", "Không thể sửa số tiền của sao kê đã có thanh toán");
         }
         BigDecimal balance = money(request.statementBalance());
-        BigDecimal minimum = money(request.minimumPayment());
+        BigDecimal minimum = balance.signum() == 0 ? zero() : money(request.minimumPayment());
+        if (balance.signum() > 0 && minimum.signum() == 0) {
+            throw invalid("MINIMUM_PAYMENT_REQUIRED", "Thanh toán tối thiểu phải lớn hơn 0 khi sao kê có dư nợ");
+        }
         if (minimum.compareTo(balance) > 0) {
             throw invalid("MINIMUM_PAYMENT_EXCEEDS_BALANCE", "Thanh toán tối thiểu không được vượt tổng dư nợ");
         }
@@ -125,7 +128,11 @@ public class MonthlyStatementService {
         statement.setStatementBalance(balance);
         statement.setMinimumPayment(minimum);
         statement.setUpdatedBy(userId);
-        if (PAID.equals(request.paymentStatus())) {
+        if (balance.signum() == 0) {
+            statement.setPaidAmount(zero());
+            statement.setRemainingAmount(zero());
+            statement.setStatus(PAID);
+        } else if (PAID.equals(request.paymentStatus())) {
             createFullPayment(userId, statement, balance);
             statement.setPaidAmount(balance);
             statement.setRemainingAmount(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP));
@@ -252,6 +259,10 @@ public class MonthlyStatementService {
 
     private BigDecimal money(BigDecimal value) {
         return value.setScale(4, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal zero() {
+        return BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
     }
 
     private ApiException invalid(String code, String message) {

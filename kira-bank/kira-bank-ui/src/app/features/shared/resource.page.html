@@ -5,12 +5,12 @@
     <p>{{ i18n.t('resource.description') }}</p>
   </div>
   @if (definition.create) {
-    <button (click)="openCreate()" class="btn primary" type="button">＋ {{ i18n.t('common.addNew') }}</button>
+    <button (click)="openCreate()" class="btn primary" type="button"><app-icon name="plus"/> {{ i18n.t('common.addNew') }}</button>
   }
 </section>
 
 @if (definition.readOnlyKey) {
-  <div class="resource-notice">ⓘ {{ i18n.t(definition.readOnlyKey) }}</div>
+  <div class="resource-notice"><app-icon name="info"/> {{ i18n.t(definition.readOnlyKey) }}</div>
 }
 
 <section class="panel data-panel">
@@ -36,11 +36,11 @@
       <div class="filter-group">
         <span class="filter-label">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-          Trạng thái:
+          {{ i18n.t('field.status') }}:
         </span>
         <div class="filter-chips">
           <button (click)="setStatusFilter('ALL')" [class.active]="selectedStatus() === 'ALL'" class="chip">
-            Tất cả
+            {{ i18n.t('common.all') }}
           </button>
           <button (click)="setStatusFilter('ACTIVE')" [class.active]="selectedStatus() === 'ACTIVE'" class="chip active-chip">
             <span class="dot active"></span> ACTIVE
@@ -55,11 +55,11 @@
       </div>
 
       <div class="filter-meta">
-        <span class="count-badge">{{ filteredRows().length }} / {{ rows().length }} bản ghi</span>
+        <span class="count-badge">{{ i18n.t('resource.filteredRecordCount', {shown: filteredRows().length, total: rows().length}) }}</span>
         @if (isFilterActive) {
           <button (click)="resetFilters()" class="reset-btn" type="button">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            Đặt lại
+            {{ i18n.t('common.reset') }}
           </button>
         }
       </div>
@@ -69,83 +69,345 @@
   @if (loading()) {
     <div class="skeleton table-skeleton"></div>
   } @else if (filteredRows().length) {
-    <div class="responsive-table">
-      <table>
-        <thead>
-        <tr>
-          @for (column of columns(); track column) {
-            <th>{{ label(column) }}</th>
-          }
-          @if (definition.edit || availableActions.length) {
+    <div class="responsive-table" [class.credit-card-desktop-table]="definition.key === 'creditCards'">
+      @if (definition.key === 'creditCards') {
+        <table class="credit-card-group-table">
+          <thead>
+          <tr>
+            <th class="sequence-column">{{ i18n.t('field.sequence') }}</th>
+            <th>{{ i18n.t('field.cardType') }}</th>
+            <th>{{ i18n.t('field.nickname') }}</th>
+            <th>{{ i18n.t('field.statementDay') }}</th>
+            <th>{{ i18n.t('field.dueDay') }}</th>
+            <th>{{ i18n.t('field.billingStatus') }}</th>
+            <th>{{ i18n.t('field.status') }}</th>
             <th>{{ i18n.t('common.actions') }}</th>
-          }
-        </tr>
-        </thead>
-        <tbody>
-          @for (row of filteredRows(); track row['id'] ?? $index) {
-            <tr [class]="rowClass(row)">
-              @for (column of columns(); track column) {
-                <td>
-                  @if (columnKind(column) === 'bank') {
-                    <span class="bank-table-cell">
-                      @if (columnImage(row, column); as logoUrl) {
-                        <img [src]="logoUrl" (error)="hideBrokenImage($event)" alt="">
+          </tr>
+          </thead>
+          <tbody>
+            @if (creditCardTotalRow(); as totals) {
+              <tr class="credit-card-total-row top-total-row">
+                <td colspan="8">
+                  <div class="bank-group-summary">
+                    <div class="credit-card-total-label">
+                      <strong>{{ i18n.t('creditCards.totalAllBanks') }}</strong>
+                    </div>
+                    <div class="bank-group-metrics">
+                      <div>
+                        <small>{{ i18n.t('creditCards.totalCreditLimit') }}</small>
+                        <strong>{{ displayMoney(totals, 'creditLimit') }}</strong>
+                      </div>
+                      <div>
+                        <small>{{ i18n.t('creditCards.totalBalance') }}</small>
+                        <strong>{{ displayMoney(totals, 'currentBalance') }}</strong>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+            @for (group of creditCardGroups(); track group.bankId) {
+              <tr class="bank-group-row">
+                <td colspan="8">
+                  <div class="bank-group-summary">
+                    <div class="bank-group-identity">
+                      @if (group.bankLogoUrl) {
+                        <img [src]="group.bankLogoUrl" (error)="hideBrokenImage($event)" alt="">
                       }
-                      <span class="bank-table-copy">
-                        <span>{{ display(row[column]) }}</span>
-                        @if (columnSecondary(row, column); as secondary) {
-                          <small>•••• {{ secondary }}</small>
-                        }
-                      </span>
+                      <div>
+                        <strong>{{ group.bankName }}</strong>
+                        <small>{{ i18n.t('creditCards.cardCount', {count: group.cards.length}) }}</small>
+                      </div>
+                    </div>
+                    <div class="bank-group-metrics">
+                      <div>
+                        <small>{{ i18n.t('field.creditLimit') }}</small>
+                        <strong>{{ displayMoney(group.summary, 'creditLimit') }}</strong>
+                      </div>
+                      <div>
+                        <small>{{ i18n.t('field.currentBalance') }}</small>
+                        <span class="bank-balance-value">
+                          <strong>{{ displayMoney(group.summary, 'currentBalance') }}</strong>
+                          <button (click)="openBalanceEditor(group)"
+                                  [attr.aria-label]="i18n.t('creditBalance.editFor', {bank: group.bankName})"
+                                  class="balance-action"
+                                  type="button">{{ i18n.t('creditBalance.edit') }}</button>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              @for (item of group.cards; track item.row['id'] ?? $index) {
+                <tr [class]="rowClass(item.row)">
+                  <td class="sequence-cell">{{ item.sequence }}</td>
+                  <td>
+                    <span class="card-type" [class.missing]="!item.row['cardType']">
+                      {{ displayCardType(item.row) }}
                     </span>
-                  } @else if (columnKind(column) === 'money') {
-                    {{ displayMoney(row, column) }}
-                  } @else if (columnKind(column) === 'dayOfMonth') {
-                    {{ displayDay(row[column]) }}
-                  } @else if (columnKind(column) === 'billing') {
+                  </td>
+                  <td>
+                    <span class="card-identity">
+                      <strong>{{ display(item.row['nickname']) }}</strong>
+                      @if (item.row['lastFour']) {
+                        <small>•••• {{ item.row['lastFour'] }}</small>
+                      }
+                    </span>
+                  </td>
+                  <td>{{ displayDay(item.row['statementDay']) }}</td>
+                  <td>{{ displayDay(item.row['dueDay']) }}</td>
+                  <td>
                     <span class="billing-table-cell">
-                      <span [class]="billingClass(row)">{{ billingLabel(row) }}</span>
-                      @if (billingBalance(row); as balance) {
+                      <span [class]="billingClass(item.row)">{{ billingLabel(item.row) }}</span>
+                      @if (billingBalance(item.row); as balance) {
                         <small>{{ balance }}</small>
                       }
-                      @if (billingStatementDate(row); as statementDate) {
+                      @if (billingStatementDate(item.row); as statementDate) {
                         <small>{{ i18n.t('billing.statementOn', {date: statementDate}) }}</small>
                       }
-                      @if (billingDueDate(row); as dueDate) {
+                      @if (billingDueDate(item.row); as dueDate) {
                         <small>{{ i18n.t('billing.dueOn', {date: dueDate}) }}</small>
                       }
                     </span>
-                  } @else if (columnKind(column) === 'status') {
-                    <span class="status">{{ row[column] }}</span>
-                  } @else {
-                    {{ display(row[column]) }}
-                  }
-                </td>
+                  </td>
+                  <td><span class="status">{{ item.row['status'] }}</span></td>
+                  <td>
+                    <div class="row-actions">
+                      @if (definition.edit) {
+                        <button (click)="openEdit(item.row)"
+                                [attr.aria-label]="i18n.t('common.edit')"
+                                class="icon-button"
+                                type="button">{{ i18n.t('common.edit') }}</button>
+                      }
+                      @for (action of availableActions; track action.key) {
+                        @if (isActionVisible(action, item.row)) {
+                          <button (click)="openAction(action, item.row)"
+                                  class="icon-button"
+                                  type="button">{{ i18n.t(action.labelKey) }}</button>
+                        }
+                      }
+                    </div>
+                  </td>
+                </tr>
               }
-              @if (definition.edit || availableActions.length) {
-                <td>
-                  <div class="row-actions">
+            }
+          </tbody>
+          @if (creditCardTotalRow(); as totals) {
+            <tfoot>
+            <tr class="credit-card-total-row">
+              <td colspan="8">
+                <div class="bank-group-summary">
+                  <div class="credit-card-total-label">
+                    <strong>{{ i18n.t('creditCards.totalAllBanks') }}</strong>
+                  </div>
+                  <div class="bank-group-metrics">
+                    <div>
+                      <small>{{ i18n.t('creditCards.totalCreditLimit') }}</small>
+                      <strong>{{ displayMoney(totals, 'creditLimit') }}</strong>
+                    </div>
+                    <div>
+                      <small>{{ i18n.t('creditCards.totalBalance') }}</small>
+                      <strong>{{ displayMoney(totals, 'currentBalance') }}</strong>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            </tfoot>
+          }
+        </table>
+      } @else {
+        <table>
+          <thead>
+          <tr>
+            @for (column of columns(); track column) {
+              <th>{{ label(column) }}</th>
+            }
+            @if (definition.edit || availableActions.length) {
+              <th>{{ i18n.t('common.actions') }}</th>
+            }
+          </tr>
+          </thead>
+          <tbody>
+            @for (row of filteredRows(); track row['id'] ?? $index) {
+              <tr [class]="rowClass(row)">
+                @for (column of columns(); track column) {
+                  <td>
+                    @if (columnKind(column) === 'bank') {
+                      <span class="bank-table-cell">
+                        @if (columnImage(row, column); as logoUrl) {
+                          <img [src]="logoUrl" (error)="hideBrokenImage($event)" alt="">
+                        }
+                        <span class="bank-table-copy">
+                          <span>{{ display(row[column]) }}</span>
+                          @if (columnSecondary(row, column); as secondary) {
+                            <small>•••• {{ secondary }}</small>
+                          }
+                        </span>
+                      </span>
+                    } @else if (columnKind(column) === 'money') {
+                      {{ displayMoney(row, column) }}
+                    } @else if (columnKind(column) === 'dayOfMonth') {
+                      {{ displayDay(row[column]) }}
+                    } @else if (columnKind(column) === 'billing') {
+                      <span class="billing-table-cell">
+                        <span [class]="billingClass(row)">{{ billingLabel(row) }}</span>
+                        @if (billingBalance(row); as balance) {
+                          <small>{{ balance }}</small>
+                        }
+                        @if (billingStatementDate(row); as statementDate) {
+                          <small>{{ i18n.t('billing.statementOn', {date: statementDate}) }}</small>
+                        }
+                        @if (billingDueDate(row); as dueDate) {
+                          <small>{{ i18n.t('billing.dueOn', {date: dueDate}) }}</small>
+                        }
+                      </span>
+                    } @else if (columnKind(column) === 'status') {
+                      <span class="status">{{ row[column] }}</span>
+                    } @else {
+                      {{ display(row[column]) }}
+                    }
+                  </td>
+                }
+                @if (definition.edit || availableActions.length) {
+                  <td>
+                    <div class="row-actions">
+                      @if (definition.edit) {
+                        <button (click)="openEdit(row)"
+                                [attr.aria-label]="i18n.t('common.edit')"
+                                class="icon-button"
+                                type="button">{{ i18n.t('common.edit') }}</button>
+                      }
+                      @for (action of availableActions; track action.key) {
+                        @if (isActionVisible(action, row)) {
+                          <button (click)="openAction(action, row)"
+                                  class="icon-button"
+                                  type="button">{{ i18n.t(action.labelKey) }}</button>
+                        }
+                      }
+                    </div>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+    @if (definition.key === 'creditCards') {
+      <section class="credit-card-mobile-list" [attr.aria-label]="i18n.t('route.myCards')">
+        @if (creditCardTotalRow(); as totals) {
+          <article class="mobile-total-card">
+            <strong>{{ i18n.t('creditCards.totalAllBanks') }}</strong>
+            <div class="mobile-total-metrics">
+              <div>
+                <small>{{ i18n.t('creditCards.totalCreditLimit') }}</small>
+                <b>{{ displayMoney(totals, 'creditLimit') }}</b>
+              </div>
+              <div>
+                <small>{{ i18n.t('creditCards.totalBalance') }}</small>
+                <b>{{ displayMoney(totals, 'currentBalance') }}</b>
+              </div>
+            </div>
+          </article>
+        }
+
+        @for (group of creditCardGroups(); track group.bankId) {
+          <section class="mobile-bank-group">
+            <header class="mobile-bank-header">
+              <div class="bank-group-identity">
+                @if (group.bankLogoUrl) {
+                  <img [src]="group.bankLogoUrl" (error)="hideBrokenImage($event)" alt="">
+                }
+                <div>
+                  <strong>{{ group.bankName }}</strong>
+                  <small>{{ i18n.t('creditCards.cardCount', {count: group.cards.length}) }}</small>
+                </div>
+              </div>
+              <button (click)="openBalanceEditor(group)"
+                      [attr.aria-label]="i18n.t('creditBalance.editFor', {bank: group.bankName})"
+                      class="mobile-balance-action"
+                      type="button">{{ i18n.t('creditBalance.edit') }}</button>
+            </header>
+
+            <div class="mobile-bank-metrics">
+              <div>
+                <small>{{ i18n.t('field.creditLimit') }}</small>
+                <strong>{{ displayMoney(group.summary, 'creditLimit') }}</strong>
+              </div>
+              <div>
+                <small>{{ i18n.t('field.currentBalance') }}</small>
+                <strong>{{ displayMoney(group.summary, 'currentBalance') }}</strong>
+              </div>
+            </div>
+
+            <div class="mobile-bank-cards">
+              @for (item of group.cards; track item.row['id'] ?? $index) {
+                <article class="mobile-credit-card {{ rowClass(item.row) }}">
+                  <header class="mobile-card-header">
+                    <div class="mobile-card-identity">
+                      <span class="mobile-card-sequence">{{ item.sequence }}</span>
+                      <div>
+                        <strong>{{ display(item.row['nickname']) }}</strong>
+                        <small>
+                          <span class="card-type" [class.missing]="!item.row['cardType']">{{ displayCardType(item.row) }}</span>
+                          @if (item.row['lastFour']) {
+                            · •••• {{ item.row['lastFour'] }}
+                          }
+                        </small>
+                      </div>
+                    </div>
+                    <span class="status">{{ item.row['status'] }}</span>
+                  </header>
+
+                  <dl class="mobile-card-dates">
+                    <div>
+                      <dt>{{ i18n.t('field.statementDay') }}</dt>
+                      <dd>{{ displayDay(item.row['statementDay']) }}</dd>
+                    </div>
+                    <div>
+                      <dt>{{ i18n.t('field.dueDay') }}</dt>
+                      <dd>{{ displayDay(item.row['dueDay']) }}</dd>
+                    </div>
+                  </dl>
+
+                  <div class="mobile-billing-summary">
+                    <small>{{ i18n.t('field.billingStatus') }}</small>
+                    <span class="billing-table-cell">
+                      <span [class]="billingClass(item.row)">{{ billingLabel(item.row) }}</span>
+                      @if (billingBalance(item.row); as balance) {
+                        <b>{{ balance }}</b>
+                      }
+                      @if (billingStatementDate(item.row); as statementDate) {
+                        <span>{{ i18n.t('billing.statementOn', {date: statementDate}) }}</span>
+                      }
+                      @if (billingDueDate(item.row); as dueDate) {
+                        <span>{{ i18n.t('billing.dueOn', {date: dueDate}) }}</span>
+                      }
+                    </span>
+                  </div>
+
+                  <div class="mobile-card-actions" role="group" [attr.aria-label]="i18n.t('common.actions')">
                     @if (definition.edit) {
-                      <button (click)="openEdit(row)"
-                              [attr.aria-label]="i18n.t('common.edit')"
-                              class="icon-button"
-                              type="button">{{ i18n.t('common.edit') }}</button>
+                      <button (click)="openEdit(item.row)" class="btn mobile-card-action" type="button">
+                        {{ i18n.t('common.edit') }}
+                      </button>
                     }
                     @for (action of availableActions; track action.key) {
-                      @if (isActionVisible(action, row)) {
-                        <button (click)="openAction(action, row)"
-                                class="icon-button"
-                                type="button">{{ i18n.t(action.labelKey) }}</button>
+                      @if (isActionVisible(action, item.row)) {
+                        <button (click)="openAction(action, item.row)" class="btn mobile-card-action primary-action" type="button">
+                          {{ i18n.t(action.labelKey) }}
+                        </button>
                       }
                     }
                   </div>
-                </td>
+                </article>
               }
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+            </div>
+          </section>
+        }
+      </section>
+    }
     <footer class="pagination">
       <span>{{ i18n.t('resource.recordCount', {shown: rows().length, total: total()}) }}</span>
       <div>
@@ -174,6 +436,16 @@
   </div>
 }
 
+@if (editingBalanceBank(); as bank) {
+  <app-bank-balance-dialog
+    (closed)="closeBalanceEditor()"
+    (saved)="saveBankBalance($event)"
+    [bank]="bank"
+    [error]="balanceError()"
+    [saving]="balanceSaving()">
+  </app-bank-balance-dialog>
+}
+
 @if (open() && activeForm(); as definitionForm) {
   <div (click)="closeDialog()" class="dialog-backdrop">
     <form (click)="$event.stopPropagation()"
@@ -193,10 +465,13 @@
       @if (definitionForm.layout === 'creditCard') {
         <div class="card-dialog-layout">
           <div class="preview-column">
-            <span class="preview-section-title">✨ {{ i18n.t('landing.monthOverview') ? 'Xem trước thẻ trực quan' : 'Live Card Preview' }}</span>
+            <span class="preview-section-title">{{ i18n.t('creditCards.previewTitle') }}</span>
             <app-credit-card-preview
               [bankLogo]="cardPreviewBankLogo()"
               [bankName]="cardPreviewBank()"
+              [cardName]="cardPreviewCardType()"
+              [cardNetwork]="cardPreviewCardType()"
+              [cardTier]="cardPreviewCardType()"
               [nickname]="cardPreviewNickname()"
               [lastFour]="cardPreviewLastFour()"
               [creditLimit]="cardPreviewCreditLimit()"
@@ -224,13 +499,18 @@
                       [formControlName]="field.name"
                       [mode]="field.type === 'datetime' ? 'datetime' : 'date'"
                     ></app-custom-datepicker>
+                  } @else if (field.type === 'money') {
+                    <input appMoneyInput
+                           [attr.max]="field.max ?? null"
+                           [attr.min]="field.min ?? null"
+                           [formControlName]="field.name">
                   } @else {
                     <input [attr.max]="field.max ?? null"
                            [attr.maxlength]="field.maxLength ?? null"
                            [attr.min]="field.min ?? null"
-                           [attr.step]="field.type === 'number' ? '1' : field.type === 'percentage' ? '0.01' : field.type === 'money' ? '0.01' : null"
+                           [attr.step]="field.type === 'number' ? '1' : field.type === 'percentage' ? '0.01' : null"
                            [formControlName]="field.name"
-                           [type]="['number', 'money', 'percentage'].includes(field.type) ? 'number' : 'text'">
+                           [type]="['number', 'percentage'].includes(field.type) ? 'number' : 'text'">
                   }
                   @if (fieldError(field)) {
                     <small class="field-error">{{ fieldError(field) }}</small>
@@ -263,16 +543,24 @@
                   [formControlName]="field.name"
                   [mode]="field.type === 'datetime' ? 'datetime' : 'date'"
                 ></app-custom-datepicker>
+              } @else if (field.type === 'money') {
+                <input appMoneyInput
+                       [attr.max]="field.max ?? null"
+                       [attr.min]="field.min ?? null"
+                       [formControlName]="field.name">
               } @else {
                 <input [attr.max]="field.max ?? null"
                        [attr.maxlength]="field.maxLength ?? null"
                        [attr.min]="field.min ?? null"
-                       [attr.step]="field.type === 'number' ? '1' : field.type === 'percentage' ? '0.01' : field.type === 'money' ? '0.01' : null"
+                       [attr.step]="field.type === 'number' ? '1' : field.type === 'percentage' ? '0.01' : null"
                        [formControlName]="field.name"
-                       [type]="['number', 'money', 'percentage'].includes(field.type) ? 'number' : 'text'">
+                       [type]="['number', 'percentage'].includes(field.type) ? 'number' : 'text'">
               }
               @if (fieldError(field)) {
                 <small class="field-error">{{ fieldError(field) }}</small>
+              }
+              @if (definitionForm.validation === 'billingCycle' && field.name === 'statementBalance' && zeroStatement()) {
+                <small class="field-hint">{{ i18n.t('form.zeroStatementHint') }}</small>
               }
             </label>
           }

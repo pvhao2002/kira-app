@@ -7,6 +7,47 @@
   padding-bottom: 12px;
 }
 
+.side-nav app-icon {
+  font-size: 16px;
+}
+
+.secure-note app-icon,
+.top-actions app-icon {
+  font-size: 17px;
+}
+
+.global-search-result-icon app-icon {
+  font-size: 18px;
+}
+
+.global-search-enter app-icon {
+  font-size: 15px;
+}
+
+.mobile-brand,
+.mobile-search-trigger,
+.mobile-search-back,
+.mobile-user-preferences {
+  display: none;
+}
+
+.mobile-search-row {
+  width: 100%;
+}
+
+.user-menu-identity {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.user-menu-identity b,
+.user-menu-identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .global-search-shell {
   position: relative;
   width: 400px;
@@ -220,5 +261,270 @@
     left: 10px;
     width: auto;
     max-height: calc(100vh - 74px);
+  }
+}
+
+@media (max-width: 680px) {
+  .topbar {
+    box-sizing: border-box;
+    height: calc(60px + env(safe-area-inset-top));
+    min-height: calc(60px + env(safe-area-inset-top));
+    gap: 6px;
+    padding: env(safe-area-inset-top) 12px 0;
+  }
+
+  .menu-button,
+  .mobile-search-trigger,
+  .top-actions > button,
+  .top-actions > a {
+    display: grid;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid #dce5ef;
+    border-radius: 12px;
+    color: #334155;
+    background: #f7f9fc;
+  }
+
+  .menu-button {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .mobile-brand {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 8px;
+    margin-right: auto;
+    color: #0f2f50;
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .mobile-brand-mark {
+    display: grid;
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    color: #fff;
+    background: linear-gradient(135deg, #0878ff, #075fc4);
+    border-radius: 9px;
+    box-shadow: 0 6px 16px rgba(8, 120, 255, .2);
+  }
+
+  .mobile-brand-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .global-search-shell {
+    display: none;
+    margin: 0;
+  }
+
+  .global-search-shell.mobile-search-open {
+    position: fixed;
+    z-index: 80;
+    inset: 0;
+    display: flex;
+    box-sizing: border-box;
+    width: auto;
+    max-width: none;
+    height: 100dvh;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    flex-direction: column;
+    gap: 10px;
+    background: #f5f8fc;
+    overscroll-behavior: contain;
+  }
+
+  .mobile-search-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-search-back {
+    display: grid;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    place-items: center;
+    color: #334155;
+    font-size: 23px;
+    background: #fff;
+    border: 1px solid #dce5ef;
+    border-radius: 12px;
+  }
+
+  .global-search-shell .global-search {
+    display: flex;
+    height: 48px;
+    min-width: 0;
+    margin: 0;
+    padding: 0 13px;
+    flex: 1;
+    border-radius: 13px;
+  }
+
+  .global-search-shell .global-search input {
+    min-width: 0;
+  }
+
+  .global-search-shell .shortcut-badge {
+    display: none;
+  }
+
+  .global-search-results {
+    position: static;
+    inset: auto;
+    width: 100%;
+    max-height: none;
+    min-height: 0;
+    margin: 0;
+    flex: 1;
+    border-radius: 16px;
+    overscroll-behavior: contain;
+  }
+
+  .top-actions {
+    height: 44px;
+    gap: 4px;
+    margin-left: 0;
+  }
+
+  .mobile-search-trigger {
+    display: grid;
+  }
+
+  .desktop-language-switcher,
+  .top-actions > .desktop-theme-action {
+    display: none;
+  }
+
+  .top-actions > button,
+  .top-actions > a {
+    border-radius: 50%;
+  }
+
+  .top-actions i {
+    top: 6px;
+    right: 6px;
+  }
+
+  .user-menu {
+    position: fixed;
+    z-index: 70;
+    top: calc(68px + env(safe-area-inset-top));
+    right: 12px;
+    box-sizing: border-box;
+    width: min(320px, calc(100vw - 24px));
+    max-height: calc(100dvh - 80px - env(safe-area-inset-top));
+    min-width: 0;
+    padding: 16px;
+    overflow-y: auto;
+    gap: 8px;
+    border-radius: 16px;
+    overscroll-behavior: contain;
+  }
+
+  .user-menu > a,
+  .user-menu > .logout-action {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: 10px;
+  }
+
+  .mobile-user-preferences {
+    display: grid;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid #e5ebf2;
+    border-bottom: 1px solid #e5ebf2;
+  }
+
+  .preference-heading {
+    padding: 0 10px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .mobile-theme-action {
+    display: grid;
+    width: 100%;
+    min-height: 44px;
+    grid-template-columns: 22px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    color: #334155;
+    text-align: left;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+  }
+
+  .mobile-theme-action > small {
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  .logout-action {
+    color: #c02626;
+  }
+
+  :host-context(html[data-theme=dark]) .menu-button,
+  :host-context(html[data-theme=dark]) .mobile-search-trigger,
+  :host-context(html[data-theme=dark]) .top-actions > button,
+  :host-context(html[data-theme=dark]) .top-actions > a,
+  :host-context(html[data-theme=dark]) .mobile-search-back {
+    color: #dce7f2;
+    background: #0b2036;
+    border-color: #263c54;
+  }
+
+  :host-context(html[data-theme=dark]) .mobile-brand {
+    color: #f1f7fd;
+  }
+
+  :host-context(html[data-theme=dark]) .global-search-shell.mobile-search-open {
+    background: #071a2d;
+  }
+
+  :host-context(html[data-theme=dark]) .user-menu {
+    background: #0d1e33;
+    border-color: #29425f;
+  }
+
+  :host-context(html[data-theme=dark]) .mobile-user-preferences {
+    border-color: #29425f;
+  }
+
+  :host-context(html[data-theme=dark]) .mobile-theme-action {
+    color: #dce7f2;
+    background: #102942;
+    border-color: #29425f;
+  }
+
+  :host-context(html[data-theme=dark]) .mobile-theme-action > small {
+    color: #9eb2c8;
+  }
+}
+
+@media (max-width: 350px) {
+  .mobile-brand-name {
+    display: none;
   }
 }

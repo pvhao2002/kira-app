@@ -1,5 +1,6 @@
 package com.kira.bank.dashboard.application;
 
+import com.kira.bank.creditcard.application.BankBalanceService;
 import com.kira.bank.creditcard.domain.UserBankCreditLimit;
 import com.kira.bank.creditcard.domain.UserCreditCard;
 import com.kira.bank.creditcard.infrastructure.StatementRepository;
@@ -24,6 +25,7 @@ public class CreditCardDashboardService {
     private final UserCreditCardRepository cards;
     private final UserBankCreditLimitRepository creditLimits;
     private final StatementRepository statements;
+    private final BankBalanceService bankBalances;
 
     @Transactional(readOnly = true)
     public CreditCardDashboardResponse dashboard(Long userId) {
@@ -39,10 +41,12 @@ public class CreditCardDashboardService {
         Map<Long, List<UserCreditCard>> cardsByBank = new LinkedHashMap<>();
         userCards.forEach(card -> cardsByBank.computeIfAbsent(card.getBank().getId(), ignored -> new ArrayList<>())
             .add(card));
+        Map<Long, BigDecimal> balanceByBank = bankBalances.currentBalances(userId, cardsByBank.keySet());
 
         List<BankDebtResponse> bankRows = cardsByBank.values().stream()
             .map(bankCards -> bankRow(bankCards, debtByCard,
-                requireLimit(limitByBank, bankCards.getFirst().getBank().getId())))
+                requireLimit(limitByBank, bankCards.getFirst().getBank().getId()),
+                balanceByBank.getOrDefault(bankCards.getFirst().getBank().getId(), zero())))
             .sorted(Comparator.comparing(BankDebtResponse::utilizationRate).reversed()
                 .thenComparing(BankDebtResponse::bankName, String.CASE_INSENSITIVE_ORDER))
             .toList();
@@ -57,21 +61,21 @@ public class CreditCardDashboardService {
 
     private BankDebtResponse bankRow(List<UserCreditCard> bankCards,
                                      Map<Long, StatementRepository.CardDebtTotals> debtByCard,
-                                     UserBankCreditLimit creditLimit) {
+                                     UserBankCreditLimit creditLimit,
+                                     BigDecimal currentBalance) {
         List<CardDebtResponse> cardRows = bankCards.stream()
             .map(card -> cardRow(card, debtByCard.get(card.getId())))
             .sorted(Comparator.comparing(CardDebtResponse::nickname, String.CASE_INSENSITIVE_ORDER))
             .toList();
         BigDecimal totalCreditLimit = money(creditLimit.getCreditLimit());
         BigDecimal statementDebt = sum(cardRows.stream().map(CardDebtResponse::statementDebt).toList());
-        BigDecimal currentBalance = sum(bankCards.stream()
-            .map(card -> currentBalance(debtByCard.get(card.getId())))
-            .toList());
+        currentBalance = money(currentBalance);
         UserCreditCard first = bankCards.getFirst();
         String bankName = first.getBank().getShortName() == null || first.getBank().getShortName().isBlank()
             ? first.getBank().getName() : first.getBank().getShortName();
         return new BankDebtResponse(first.getBank().getId(), bankName, first.getBank().getLogoUrl(),
-            cardRows.size(), totalCreditLimit, creditLimit.getVersion(), statementDebt, currentBalance,
+            cardRows.size(), totalCreditLimit, creditLimit.getVersion(), creditLimit.getBalanceVersion(),
+            statementDebt, currentBalance,
             money(totalCreditLimit.subtract(currentBalance)), utilization(currentBalance, totalCreditLimit),
             creditLimit.getCurrency(), cardRows);
     }
@@ -80,10 +84,6 @@ public class CreditCardDashboardService {
         BigDecimal statementDebt = debt == null ? zero() : money(debt.getStatementDebt());
         return new CardDebtResponse(card.getId(), card.getNickname(), card.getLastFour(), card.getStatus(),
             statementDebt, card.getCurrency());
-    }
-
-    private BigDecimal currentBalance(StatementRepository.CardDebtTotals debt) {
-        return debt == null ? zero() : money(debt.getCurrentBalance());
     }
 
     private UserBankCreditLimit requireLimit(Map<Long, UserBankCreditLimit> limitByBank, Long bankId) {

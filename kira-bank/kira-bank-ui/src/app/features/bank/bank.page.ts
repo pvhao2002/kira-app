@@ -8,10 +8,11 @@ import {ApiService} from '../../core/services/api.service';
 import {LanguageService} from '../../core/i18n/language.service';
 import {ToastService} from '../../core/services/toast.service';
 import {Bank, PageResponse} from '../../shared/models/api.models';
+import {IconComponent} from '../../shared/icon/icon';
 
 @Component({
   selector: 'app-bank-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, IconComponent],
   templateUrl: './bank.page.html',
   styleUrl: './bank.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

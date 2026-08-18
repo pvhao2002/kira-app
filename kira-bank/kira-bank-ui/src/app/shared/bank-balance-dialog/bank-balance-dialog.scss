@@ -1,0 +1,147 @@
+.balance-dialog {
+  width: min(480px, calc(100vw - 28px));
+}
+
+.balance-dialog label {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.balance-dialog label > span b {
+  color: #dc2626;
+}
+
+.balance-dialog input,
+.balance-dialog textarea {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--navy);
+  font: inherit;
+}
+
+.balance-dialog textarea {
+  resize: vertical;
+}
+
+.current-balance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--blue) 7%, var(--surface));
+  font-size: 12px;
+}
+
+.current-balance span,
+.character-count {
+  color: var(--muted);
+}
+
+.current-balance strong {
+  color: var(--blue);
+}
+
+.character-count {
+  justify-self: end;
+  font-size: 10px;
+}
+
+.field-error {
+  color: #dc2626;
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.balance-dialog footer {
+  position: static;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin: 20px -26px -26px;
+  padding: 16px 26px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+@media (max-width: 680px) {
+  .balance-dialog {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: min(88dvh, 720px);
+    max-height: 88dvh;
+    padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .balance-dialog > header {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    margin-inline: -16px;
+    padding: 18px 16px 14px;
+    background: var(--surface);
+  }
+
+  .balance-dialog > header button {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .balance-dialog > p {
+    margin-top: 16px;
+  }
+
+  .current-balance {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .balance-dialog input,
+  .balance-dialog textarea {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .balance-dialog footer {
+    position: sticky;
+    bottom: calc(-16px - env(safe-area-inset-bottom));
+    z-index: 4;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 20px -16px calc(-16px - env(safe-area-inset-bottom));
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+
+    .btn {
+      min-height: 44px;
+      justify-content: center;
+    }
+  }
+}
+
+:host-context([data-theme='dark']) .balance-dialog input,
+:host-context([data-theme='dark']) .balance-dialog textarea {
+  color: #f2f7fc;
+}

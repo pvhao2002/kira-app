@@ -26,6 +26,7 @@ public interface UserCreditCardRepository extends JpaRepository<UserCreditCard, 
           and c.deletedAt is null
           and (:search = ''
             or lower(c.nickname) like lower(concat('%', :search, '%'))
+            or lower(c.cardType) like lower(concat('%', :search, '%'))
             or lower(c.lastFour) like lower(concat('%', :search, '%'))
             or lower(c.bank.name) like lower(concat('%', :search, '%'))
             or lower(c.bank.shortName) like lower(concat('%', :search, '%'))

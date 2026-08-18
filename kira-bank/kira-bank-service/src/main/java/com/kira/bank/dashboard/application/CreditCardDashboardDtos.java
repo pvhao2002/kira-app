@@ -22,6 +22,7 @@ public final class CreditCardDashboardDtos {
                                    int cardCount,
                                    BigDecimal totalCreditLimit,
                                    long creditLimitVersion,
+                                   long balanceVersion,
                                    BigDecimal statementDebt,
                                    BigDecimal currentBalance,
                                    BigDecimal availableCredit,

@@ -17,6 +17,8 @@ public class UserCreditCard extends AuditedEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "bank_id", nullable = false)
     private Bank bank;
+    @Column(length = 150)
+    private String cardType;
     private String nickname, lastFour;
     private String currency = "VND";
     private Integer statementDay, dueDay;

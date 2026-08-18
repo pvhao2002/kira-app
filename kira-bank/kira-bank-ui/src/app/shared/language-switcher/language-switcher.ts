@@ -1,10 +1,10 @@
-import {ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, signal, viewChild} from '@angular/core';
+import {ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, input, signal, viewChild} from '@angular/core';
 import {LanguageService, SupportedLanguage} from '../../core/i18n/language.service';
 
 @Component({
   selector: 'app-language-switcher',
   template: `
-    <div class="language-switcher">
+    <div class="language-switcher" [class.menu-variant]="variant() === 'menu'">
       <button #trigger
               (click)="open.set(!open())"
               [attr.aria-expanded]="open()"
@@ -75,6 +75,54 @@ import {LanguageService, SupportedLanguage} from '../../core/i18n/language.servi
       border-color: #0878ff;
       color: #0878ff;
       box-shadow: 0 0 0 3px rgba(8, 120, 255, 0.15);
+    }
+
+    .language-switcher.menu-variant,
+    .menu-variant .language-trigger {
+      width: 100%;
+    }
+
+    .menu-variant .language-trigger {
+      min-height: 44px;
+      justify-content: flex-start;
+      padding: 0 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+      box-shadow: none;
+    }
+
+    .menu-variant .chevron-icon {
+      margin-left: auto;
+    }
+
+    .menu-variant .language-menu {
+      position: relative;
+      top: auto;
+      right: auto;
+      width: 100%;
+      margin-top: 6px;
+      box-sizing: border-box;
+      box-shadow: none;
+    }
+
+    .menu-variant .menu-option {
+      min-height: 44px;
+    }
+
+    :host-context(html[data-theme=dark]) .menu-variant .language-trigger,
+    :host-context(html[data-theme=dark]) .menu-variant .language-menu {
+      color: #dce7f2;
+      background: #102942;
+      border-color: #29425f;
+    }
+
+    :host-context(html[data-theme=dark]) .menu-variant .menu-option {
+      color: #dce7f2;
+    }
+
+    :host-context(html[data-theme=dark]) .menu-variant .menu-option:hover {
+      color: #f8fafc;
+      background: #173653;
     }
 
     .globe-icon {
@@ -178,6 +226,7 @@ import {LanguageService, SupportedLanguage} from '../../core/i18n/language.servi
 })
 export class LanguageSwitcherComponent {
   readonly i18n = inject(LanguageService);
+  readonly variant = input<'compact' | 'menu'>('compact');
   readonly open = signal(false);
   readonly trigger = viewChild<ElementRef<HTMLButtonElement>>('trigger');
   readonly options = [

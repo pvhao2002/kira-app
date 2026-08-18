@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -24,7 +25,7 @@ public class InvestmentAccount extends AuditedEntity {
     private String accountUsername;
     private String accountEmail;
     private String phoneNumber;
-    private java.time.Instant registerDate;
+    private LocalDate registerDate;
     private String accountPassword;
     private String currency = "VND";
     private BigDecimal currentBalance = BigDecimal.ZERO;

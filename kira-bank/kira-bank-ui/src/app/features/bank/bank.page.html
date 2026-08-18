@@ -7,7 +7,7 @@
   @if (auth.admin()) {
     <div class="header-actions">
       <button (click)="openAddBank()" class="btn primary" type="button">
-        <span aria-hidden="true">🏦</span> {{ i18n.t('bank.addBank') }}
+        <span aria-hidden="true"><app-icon name="bank"/></span> {{ i18n.t('bank.addBank') }}
       </button>
     </div>
   }
@@ -15,7 +15,7 @@
 
 <section class="bank-stats-grid">
   <div class="stat-card">
-    <div class="stat-icon bank-icon">🏦</div>
+    <div class="stat-icon bank-icon"><app-icon name="bank"/></div>
     <div class="stat-content">
       <small>{{ i18n.t('bank.statBanks') }}</small>
       <strong>{{ banks().length }}</strong>
@@ -59,10 +59,10 @@
 
         <div class="bank-footer-info">
           @if (bank.hotline) {
-            <span class="info-item">📞 {{ bank.hotline }}</span>
+            <span class="info-item"><app-icon name="phone"/> {{ bank.hotline }}</span>
           }
           @if (bank.website) {
-            <a [href]="bank.website" target="_blank" class="info-item link">🌐 {{ i18n.t('bank.website') }}</a>
+            <a [href]="bank.website" target="_blank" class="info-item link"><app-icon name="globe"/> {{ i18n.t('bank.website') }}</a>
           }
         </div>
       </article>

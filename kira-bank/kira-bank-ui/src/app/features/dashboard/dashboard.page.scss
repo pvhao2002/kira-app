@@ -2,6 +2,19 @@
   display: block;
 }
 
+.flow-icon app-icon {
+  font-size: 18px;
+}
+
+.kpi > span app-icon {
+  font-size: 16px;
+}
+
+.date-range-trigger app-icon,
+.date-range-menu app-icon {
+  font-size: 13px;
+}
+
 .chart-panel {
   min-width: 0;
 }

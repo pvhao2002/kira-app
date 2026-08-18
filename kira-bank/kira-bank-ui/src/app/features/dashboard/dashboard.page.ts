@@ -11,19 +11,20 @@ import {
 import {RouterLink} from '@angular/router';
 import {LanguageService} from '../../core/i18n/language.service';
 import {TranslationKey} from '../../core/i18n/translations';
+import {IconComponent, IconName} from '../../shared/icon/icon';
 
 interface Kpi {
   label: string;
   value: string;
   trend: string;
-  icon: string
+  icon: IconName
 }
 
 type DateRange = 7 | 30 | 90;
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink],
+  imports: [RouterLink, IconComponent],
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -40,16 +41,16 @@ export class DashboardPage {
     {days: 90, labelKey: 'dashboard.last90Days'}
   ];
   readonly credit = computed<Kpi[]>(() => [
-    {label: this.i18n.t('dashboard.totalSpending'), value: '42.680.000 ₫', trend: this.i18n.t('dashboard.trendThisMonth'), icon: '▭'},
-    {label: this.i18n.t('dashboard.statementBalance'), value: '18.250.000 ₫', trend: this.i18n.t('dashboard.trendOpenStatements'), icon: '▤'},
-    {label: this.i18n.t('dashboard.pendingCashback'), value: '1.840.000 ₫', trend: this.i18n.t('dashboard.trendPendingItems'), icon: '◇'},
-    {label: this.i18n.t('dashboard.receivedCashback'), value: '5.240.000 ₫', trend: this.i18n.t('dashboard.trendCashbackMonth'), icon: '✓'}
+    {label: this.i18n.t('dashboard.totalSpending'), value: '42.680.000 ₫', trend: this.i18n.t('dashboard.trendThisMonth'), icon: 'card'},
+    {label: this.i18n.t('dashboard.statementBalance'), value: '18.250.000 ₫', trend: this.i18n.t('dashboard.trendOpenStatements'), icon: 'receipt'},
+    {label: this.i18n.t('dashboard.pendingCashback'), value: '1.840.000 ₫', trend: this.i18n.t('dashboard.trendPendingItems'), icon: 'diamond'},
+    {label: this.i18n.t('dashboard.receivedCashback'), value: '5.240.000 ₫', trend: this.i18n.t('dashboard.trendCashbackMonth'), icon: 'check-circle'}
   ]);
   readonly invest = computed<Kpi[]>(() => [
-    {label: this.i18n.t('dashboard.availableCapital'), value: '68.400.000 ₫', trend: this.i18n.t('dashboard.trendTotalBalance'), icon: '◉'},
-    {label: this.i18n.t('dashboard.lockedCapital'), value: '32.000.000 ₫', trend: this.i18n.t('dashboard.trendActiveTasks'), icon: '▣'},
-    {label: this.i18n.t('dashboard.receivedProfit'), value: '8.650.000 ₫', trend: this.i18n.t('dashboard.trendProfitMonth'), icon: '↗'},
-    {label: this.i18n.t('dashboard.receivedReward'), value: '2.180.000 ₫', trend: this.i18n.t('dashboard.trendRewardMonth'), icon: '☆'}
+    {label: this.i18n.t('dashboard.availableCapital'), value: '68.400.000 ₫', trend: this.i18n.t('dashboard.trendTotalBalance'), icon: 'wallet'},
+    {label: this.i18n.t('dashboard.lockedCapital'), value: '32.000.000 ₫', trend: this.i18n.t('dashboard.trendActiveTasks'), icon: 'lock'},
+    {label: this.i18n.t('dashboard.receivedProfit'), value: '8.650.000 ₫', trend: this.i18n.t('dashboard.trendProfitMonth'), icon: 'trend-up'},
+    {label: this.i18n.t('dashboard.receivedReward'), value: '2.180.000 ₫', trend: this.i18n.t('dashboard.trendRewardMonth'), icon: 'star'}
   ]);
   readonly dues = computed(() => [
     {bank: 'Vietcombank', card: '4821', date: this.i18n.t('dashboard.dueDate24'), amount: '8.450.000 ₫', color: '#087f5b'},

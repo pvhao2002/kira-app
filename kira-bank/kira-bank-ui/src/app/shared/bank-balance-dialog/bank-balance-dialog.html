@@ -1,0 +1,57 @@
+<div (click)="dismiss()" (keydown.escape)="dismiss()" class="dialog-backdrop">
+  <form (click)="$event.stopPropagation()"
+        (ngSubmit)="submit()"
+        [formGroup]="form"
+        aria-modal="true"
+        aria-labelledby="balance-dialog-title"
+        class="dialog balance-dialog"
+        role="dialog">
+    <header>
+      <div>
+        <small>{{ i18n.t('creditDashboard.sharedBalance') }}</small>
+        <h2 id="balance-dialog-title">{{ i18n.t('creditBalance.editFor', {bank: bank().bankName}) }}</h2>
+      </div>
+      <button (click)="dismiss()" [attr.aria-label]="i18n.t('common.close')" type="button">×</button>
+    </header>
+    <p>{{ i18n.t('creditBalance.editDescription') }}</p>
+
+    <div class="current-balance">
+      <span>{{ i18n.t('creditBalance.currentValue') }}</span>
+      <strong>{{ formatMoney(bank().remainingBalance, bank().currency) }}</strong>
+    </div>
+
+    <label>
+      <span>{{ i18n.t('field.currentBalance') }} <b>*</b></span>
+      <input #balanceInput
+             appMoneyInput
+             autofocus
+             formControlName="remainingBalance"
+             min="0"
+             [attr.max]="bank().creditLimit">
+      @if (form.controls.remainingBalance.touched && form.controls.remainingBalance.invalid) {
+        <small class="field-error">{{ i18n.t('form.invalidValue') }}</small>
+      }
+      <small class="field-hint">{{ i18n.t('creditBalance.rangeHint', {limit: formatMoney(bank().creditLimit, bank().currency)}) }}</small>
+    </label>
+
+    <label>
+      <span>{{ i18n.t('creditBalance.reason') }} <b>*</b></span>
+      <textarea formControlName="reason" maxlength="500" rows="4"></textarea>
+      <small class="character-count">{{ form.controls.reason.value.length }}/500</small>
+      @if (form.controls.reason.touched && form.controls.reason.invalid) {
+        <small class="field-error">{{ i18n.t('creditBalance.reasonRequired') }}</small>
+      }
+    </label>
+
+    @if (error()) {
+      <div class="form-error">{{ error() }}</div>
+    }
+
+    <footer>
+      <button (click)="dismiss()" class="btn ghost" type="button">{{ i18n.t('common.cancel') }}</button>
+      <button [disabled]="saving()" class="btn primary" type="submit">
+        {{ saving() ? i18n.t('form.saving') : i18n.t('common.save') }}
+      </button>
+    </footer>
+  </form>
+</div>

@@ -1,0 +1,47 @@
+name: kira-bank
+
+services:
+  kira-bank-service:
+    image: kira2308/kira-bank-service:latest
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      DB_URL: ${DB_URL:-jdbc:mysql://host.docker.internal:3306/kira_bank?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+      DB_USERNAME: ${DB_USERNAME:-kira_bank}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      JWT_SECRET: ${JWT_SECRET:-development-secret-must-have-at-least-32-characters}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4201}
+      SEED_DEVELOPMENT_USERS: ${SEED_DEVELOPMENT_USERS:-true}
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-false}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-test}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-test}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-test}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-kira-bank-attachments}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-test}
+      AI_ENABLED: ${AI_ENABLED:-false}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.cloudflare.com/client/v4/accounts}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-test}
+      CLOUDFLARE_AI_API_TOKEN: ${CLOUDFLARE_AI_API_TOKEN:-test}
+      AI_MODEL: ${AI_MODEL:-@cf/moonshotai/kimi-k2.7-code}
+      AI_BATCH_SIZE: ${AI_BATCH_SIZE:-3}
+      AI_MAX_ATTEMPTS: ${AI_MAX_ATTEMPTS:-3}
+      AI_RETRY_DELAY: ${AI_RETRY_DELAY:-PT3H}
+      AI_PROCESSING_TIMEOUT: ${AI_PROCESSING_TIMEOUT:-PT30M}
+      AI_JOB_CRON: ${AI_JOB_CRON:-0 0 */3 * * *}
+      AI_JOB_TIME_ZONE: ${AI_JOB_TIME_ZONE:-Asia/Bangkok}
+      CARD_STATEMENT_JOB_CRON: ${CARD_STATEMENT_JOB_CRON:-0 5 0 * * *}
+      CARD_STATEMENT_JOB_TIME_ZONE: ${CARD_STATEMENT_JOB_TIME_ZONE:-Asia/Bangkok}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${SERVICE_PORT:-8080}:8080"
+
+  kira-bank-ui:
+    image: kira2308/kira-bank-ui:latest
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      kira-bank-service:
+        condition: service_started
+    ports:
+      - "${UI_PORT:-4201}:80"

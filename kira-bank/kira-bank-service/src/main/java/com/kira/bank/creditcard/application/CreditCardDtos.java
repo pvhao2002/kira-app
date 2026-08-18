@@ -10,22 +10,25 @@ public final class CreditCardDtos {
     private CreditCardDtos() {
     }
 
-    public record CreateCardRequest(@NotNull Long bankId, @NotBlank String nickname,
+    public record CreateCardRequest(@NotNull Long bankId, @NotBlank @Size(max = 150) String cardType,
+                                    @NotBlank String nickname,
                                     @Pattern(regexp = "\\d{4}") String lastFour,
                                     @NotNull @Positive BigDecimal creditLimit, @Min(1) @Max(31) int statementDay,
                                     @Min(1) @Max(31) int dueDay, String note) {
     }
 
-    public record UpdateCardRequest(@NotBlank String nickname, @Pattern(regexp = "\\d{4}") String lastFour,
+    public record UpdateCardRequest(@NotBlank @Size(max = 150) String cardType, @NotBlank String nickname,
+                                    @Pattern(regexp = "\\d{4}") String lastFour,
                                     @NotNull @Positive BigDecimal creditLimit, @Min(1) @Max(31) int statementDay,
                                     @Min(1) @Max(31) int dueDay, String note,
                                     @NotBlank String status, @NotNull @PositiveOrZero Long version,
                                     @NotNull @PositiveOrZero Long creditLimitVersion) {
     }
 
-    public record CardResponse(Long id, Long bankId, String bankName, String bankLogoUrl, String nickname,
+    public record CardResponse(Long id, Long bankId, String bankName, String bankLogoUrl, String cardType,
+                               String nickname,
                                String lastFour, BigDecimal creditLimit, long creditLimitVersion,
-                               BigDecimal currentBalance,
+                               BigDecimal currentBalance, long balanceVersion,
                                String currency, int statementDay,
                                int dueDay, String status, String note, long version,
                                Long billingCycleId, LocalDate statementDate, LocalDate paymentDueDate,
@@ -41,9 +44,20 @@ public final class CreditCardDtos {
                                           BigDecimal creditLimit, String currency, long version) {
     }
 
+    public record BankBalanceUpdateRequest(@NotNull @DecimalMin("0") @Digits(integer = 15, fraction = 4)
+                                           BigDecimal currentBalance,
+                                           @NotBlank @Size(max = 500) String reason,
+                                           @NotNull @PositiveOrZero Long version) {
+    }
+
+    public record BankBalanceResponse(Long bankId, String bankName, String bankLogoUrl,
+                                      BigDecimal previousBalance, BigDecimal currentBalance,
+                                      BigDecimal adjustmentAmount, String currency, long balanceVersion) {
+    }
+
     public record BillingCycleUpdateRequest(@Positive Long billingCycleId,
-                                            @NotNull @Positive BigDecimal statementBalance,
-                                            @NotNull @Positive BigDecimal minimumPayment,
+                                            @NotNull @PositiveOrZero BigDecimal statementBalance,
+                                            @NotNull @PositiveOrZero BigDecimal minimumPayment,
                                             @NotBlank String paymentStatus,
                                             @NotNull @PositiveOrZero Long version) {
     }

@@ -1,4 +1,5 @@
-import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
 import {finalize} from 'rxjs';
@@ -9,6 +10,8 @@ import {ApiService} from '../../core/services/api.service';
 import {ToastService} from '../../core/services/toast.service';
 import {CustomSelectComponent, SelectOption} from '../../shared/custom-select/custom-select';
 import {CustomDatepickerComponent} from '../../shared/custom-datepicker/custom-datepicker';
+import {IconComponent} from '../../shared/icon/icon';
+import {MoneyInputDirective} from '../../shared/money-input/money-input.directive';
 
 type AccountRow = Record<string, unknown>;
 type DraftStatus = 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | 'CONFIRMED';
@@ -42,7 +45,14 @@ interface PageResponse<T> {
 
 @Component({
   selector: 'app-investment-transaction',
-  imports: [ReactiveFormsModule, DecimalPipe, CustomSelectComponent, CustomDatepickerComponent],
+  imports: [
+    ReactiveFormsModule,
+    DecimalPipe,
+    CustomSelectComponent,
+    CustomDatepickerComponent,
+    IconComponent,
+    MoneyInputDirective
+  ],
   templateUrl: './investment-transaction.page.html',
   styleUrl: './investment-transaction.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -56,7 +66,13 @@ export class InvestmentTransactionPage {
   readonly submitting = signal(false);
   readonly drafts = signal<AttachmentDraft[]>([]);
   readonly selectedAttachmentId = signal<number | null>(null);
-  readonly uploadedImageUrl = signal<string | null>(null);
+  readonly activePreviewAttachmentId = signal<number | null>(null);
+  readonly previewUrls = signal<Record<number, string>>({});
+  readonly failedPreviewIds = signal<Record<number, boolean>>({});
+  readonly uploadedImageUrl = computed(() => {
+    const attachmentId = this.activePreviewAttachmentId();
+    return attachmentId === null ? null : this.previewUrls()[attachmentId] ?? null;
+  });
   readonly uploadStatus = signal<DraftStatus | null>(null);
   readonly errorMsg = signal<string | null>(null);
 
@@ -85,8 +101,13 @@ export class InvestmentTransactionPage {
   private readonly http = inject(HttpClient);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly loadingPreviewIds = new Set<number>();
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      Object.values(this.previewUrls()).forEach(url => URL.revokeObjectURL(url));
+    });
     this.loadAccounts();
     this.loadDrafts();
   }
@@ -110,7 +131,10 @@ export class InvestmentTransactionPage {
     this.http.get<PageResponse<AttachmentDraft>>('/api/v1/attachments', {
       params: {statuses: 'PENDING,PROCESSING,READY,FAILED', page: 0, size: 50}
     }).pipe(finalize(() => this.loadingDrafts.set(false))).subscribe({
-      next: response => this.drafts.set(response.data),
+      next: response => {
+        this.drafts.set(response.data);
+        response.data.forEach(attachment => this.loadPreview(attachment));
+      },
       error: () => this.drafts.set([])
     });
   }
@@ -158,7 +182,8 @@ export class InvestmentTransactionPage {
       .pipe(finalize(() => this.uploadingAi.set(false)))
       .subscribe({
         next: attachment => {
-          this.uploadedImageUrl.set(attachment.contentUrl);
+          this.activePreviewAttachmentId.set(attachment.attachmentId);
+          this.loadPreview(attachment);
           this.uploadStatus.set(attachment.aiStatus);
           this.toast.show('Ảnh đã được lưu và đang chờ job AI xử lý.', 'success');
           this.loadDrafts();
@@ -173,7 +198,8 @@ export class InvestmentTransactionPage {
     }
     const draft = attachment.draft;
     this.selectedAttachmentId.set(attachment.attachmentId);
-    this.uploadedImageUrl.set(attachment.contentUrl);
+    this.activePreviewAttachmentId.set(attachment.attachmentId);
+    this.loadPreview(attachment);
     this.uploadStatus.set(attachment.aiStatus);
     this.form.patchValue({
       type: draft.type ?? 'DEPOSIT',
@@ -203,6 +229,14 @@ export class InvestmentTransactionPage {
       FAILED: 'Xử lý lỗi',
       CONFIRMED: 'Đã xác nhận'
     } as Record<DraftStatus, string>)[status];
+  }
+
+  previewUrl(attachmentId: number): string | null {
+    return this.previewUrls()[attachmentId] ?? null;
+  }
+
+  previewFailed(attachmentId: number): boolean {
+    return this.failedPreviewIds()[attachmentId] ?? false;
   }
 
   submit(): void {
@@ -241,5 +275,46 @@ export class InvestmentTransactionPage {
 
   private formatCurrentDateTime(): string {
     return this.toInputDateTime(new Date().toISOString());
+  }
+
+  private loadPreview(attachment: AttachmentDraft): void {
+    const attachmentId = attachment.attachmentId;
+    if (this.previewUrls()[attachmentId] || this.loadingPreviewIds.has(attachmentId)) {
+      return;
+    }
+
+    this.loadingPreviewIds.add(attachmentId);
+    this.failedPreviewIds.update(ids => {
+      const updated = {...ids};
+      delete updated[attachmentId];
+      return updated;
+    });
+    this.http.get(attachment.contentUrl, {responseType: 'blob'})
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.loadingPreviewIds.delete(attachmentId))
+      )
+      .subscribe({
+        next: blob => {
+          if (!blob.type.startsWith('image/')) {
+            this.handlePreviewError(attachmentId);
+            return;
+          }
+          const previewUrl = URL.createObjectURL(blob);
+          this.previewUrls.update(urls => ({...urls, [attachmentId]: previewUrl}));
+          if (this.activePreviewAttachmentId() === attachmentId) {
+            this.errorMsg.set(null);
+          }
+        },
+        error: () => this.handlePreviewError(attachmentId)
+      });
+  }
+
+  private handlePreviewError(attachmentId: number): void {
+    this.failedPreviewIds.update(ids => ({...ids, [attachmentId]: true}));
+    if (this.activePreviewAttachmentId() === attachmentId) {
+      this.activePreviewAttachmentId.set(null);
+      this.errorMsg.set('Không thể tải ảnh xem trước. Vui lòng thử làm mới.');
+    }
   }
 }

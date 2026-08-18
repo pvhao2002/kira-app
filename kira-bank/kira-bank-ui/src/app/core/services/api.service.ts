@@ -3,6 +3,7 @@ import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {
   Bank,
+  CreditCardBankBalanceResponse,
   CreditCardBankLimit,
   CreditCardDashboard,
   DashboardSummary,
@@ -56,5 +57,11 @@ export class ApiService {
 
   updateCreditCardBankLimit(bankId: number, creditLimit: number, version: number): Observable<CreditCardBankLimit> {
     return this.http.put<CreditCardBankLimit>(`/api/v1/credit-card-bank-limits/${bankId}`, {creditLimit, version});
+  }
+
+  updateCreditCardBankBalance(bankId: number, currentBalance: number, reason: string,
+                              version: number): Observable<CreditCardBankBalanceResponse> {
+    return this.http.put<CreditCardBankBalanceResponse>(`/api/v1/credit-card-bank-balances/${bankId}`,
+      {currentBalance, reason, version});
   }
 }

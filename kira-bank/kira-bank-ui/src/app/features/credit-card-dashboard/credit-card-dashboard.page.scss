@@ -61,6 +61,10 @@
   margin-top: 13px;
 }
 
+.mobile-bank-dashboard {
+  display: none;
+}
+
 .usage-panel header,
 .detail-panel header {
   padding-bottom: 16px;
@@ -306,6 +310,13 @@
   text-decoration: underline;
 }
 
+.bank-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
 .total-row {
   border-top: 2px solid color-mix(in srgb, var(--blue) 38%, var(--border));
   background: color-mix(in srgb, var(--blue) 9%, var(--surface));
@@ -404,31 +415,491 @@
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 680px) {
+  .page-heading {
+    margin-bottom: 14px;
+  }
+
+  .page-heading h1 {
+    font-size: clamp(22px, 7vw, 27px);
+    line-height: 1.15;
+  }
+
+  .page-heading p {
+    margin-top: 7px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
   .debt-kpis,
   .dashboard-loading {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
   }
 
   .debt-kpi {
-    min-height: 98px;
+    min-width: 0;
+    min-height: 108px;
+    padding: 13px;
+    overflow: hidden;
   }
 
-  .usage-row {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "bank"
-      "values"
-      "track";
+  .debt-kpi small,
+  .debt-kpi span {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .debt-kpi strong {
+    max-width: 100%;
+    margin: 8px 0 4px;
+    overflow: hidden;
+    font-size: clamp(13px, 3.8vw, 18px);
+    line-height: 1.2;
+    letter-spacing: -.025em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .kpi-skeleton {
+    height: 108px;
+  }
+
+  .content-skeleton {
+    grid-column: 1 / -1;
+    height: 350px;
+  }
+
+  .usage-panel,
+  .detail-panel {
+    display: none;
+  }
+
+  .mobile-bank-dashboard {
+    display: block;
+    margin-top: 10px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .mobile-bank-dashboard-header {
+    display: block;
+    padding: 17px 16px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mobile-bank-dashboard-header h2 {
+    margin: 0;
+    color: var(--navy);
+    font-size: 16px;
+  }
+
+  .mobile-bank-dashboard-header p {
+    margin: 5px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .mobile-bank-list {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .mobile-bank-card {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--blue) 2%, var(--surface));
+  }
+
+  .mobile-bank-card.expanded {
+    border-color: color-mix(in srgb, var(--blue) 35%, var(--border));
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--blue) 8%, transparent);
+  }
+
+  .mobile-bank-card.over-limit {
+    border-color: color-mix(in srgb, #dc2626 42%, var(--border));
+  }
+
+  .mobile-bank-disclosure {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 18px;
     gap: 9px;
+    align-items: center;
+    width: 100%;
+    min-height: 68px;
+    padding: 12px 13px 8px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
   }
 
-  .over-limit-label {
-    grid-column: 1;
+  .mobile-bank-disclosure:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: -3px;
+    border-radius: 10px;
   }
 
-  .usage-values b {
-    margin-left: auto;
+  .mobile-bank-disclosure > svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform .18s ease;
+  }
+
+  .mobile-bank-disclosure[aria-expanded='true'] > svg {
+    transform: rotate(90deg);
+  }
+
+  .mobile-bank-identity {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .mobile-bank-logo {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+  }
+
+  .mobile-bank-logo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 5px;
+    background: #fff;
+    object-fit: contain;
+  }
+
+  .mobile-bank-fallback {
+    color: var(--blue);
+    font-size: 16px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .mobile-bank-name {
+    min-width: 0;
+  }
+
+  .mobile-bank-name strong,
+  .mobile-bank-name small {
+    display: block;
+  }
+
+  .mobile-bank-name strong {
+    overflow: hidden;
+    color: var(--navy);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-bank-name small {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .mobile-bank-rate {
+    min-width: 48px;
+    padding: 6px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .mobile-bank-rate.over {
+    background: color-mix(in srgb, #dc2626 12%, var(--surface));
+    color: #dc2626;
+  }
+
+  .mobile-bank-usage {
+    padding: 0 13px 13px;
+  }
+
+  .mobile-bank-usage-values {
+    display: flex;
+    align-items: baseline;
+    min-width: 0;
+    margin-bottom: 8px;
+  }
+
+  .mobile-bank-usage-values > span {
+    margin-right: auto;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .mobile-bank-usage-values strong {
+    overflow: hidden;
+    color: var(--navy);
+    font-size: clamp(12px, 3.6vw, 14px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-bank-usage-values small {
+    margin-left: 4px;
+    color: var(--muted);
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .mobile-usage-track {
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+  }
+
+  .mobile-usage-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #0878ff, #22a6f2);
+  }
+
+  .mobile-bank-card.over-limit .mobile-usage-track span {
+    background: #dc2626;
+  }
+
+  .mobile-over-limit-label {
+    display: block;
+    margin-top: 6px;
+    color: #dc2626;
+    font-size: 10px;
+    font-weight: 800;
+    text-align: right;
+  }
+
+  .mobile-bank-expanded {
+    padding: 13px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .mobile-bank-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+
+  .mobile-bank-metrics > div {
+    min-width: 0;
+    padding: 11px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--blue) 5%, var(--surface));
+  }
+
+  .mobile-bank-metrics dt {
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1.35;
+  }
+
+  .mobile-bank-metrics dd {
+    margin: 6px 0 0;
+    overflow: hidden;
+    color: var(--navy);
+    font-size: clamp(11px, 3.35vw, 14px);
+    font-weight: 800;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-bank-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin-top: 12px;
+  }
+
+  .mobile-bank-actions .btn {
+    min-height: 44px;
+    padding: 9px 8px;
+    font-size: 11px;
+  }
+
+  .mobile-card-list {
+    margin-top: 16px;
+  }
+
+  .mobile-card-list h3 {
+    margin: 0 0 8px;
+    color: var(--navy);
+    font-size: 12px;
+  }
+
+  .mobile-debt-card {
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--blue) 1.5%, var(--surface));
+  }
+
+  .mobile-debt-card + .mobile-debt-card {
+    margin-top: 8px;
+  }
+
+  .mobile-card-identity,
+  .mobile-card-debt {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mobile-card-identity > div {
+    min-width: 0;
+  }
+
+  .mobile-card-identity strong,
+  .mobile-card-identity small {
+    display: block;
+  }
+
+  .mobile-card-identity strong {
+    overflow: hidden;
+    color: var(--navy);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-card-identity small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .mobile-card-identity .status {
+    flex: 0 0 auto;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-card-debt {
+    margin-top: 11px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .mobile-card-debt span {
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .mobile-card-debt strong {
+    color: var(--navy);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .limit-dialog {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: min(86dvh, 700px);
+    max-height: calc(100dvh - env(safe-area-inset-top) - 12px);
+    padding: 0 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -20px 60px #0003;
+  }
+
+  .limit-dialog header {
+    position: sticky;
+    z-index: 2;
+    top: 0;
+    margin: 0 -16px;
+    padding: 18px 16px 14px;
+    background: var(--surface);
+  }
+
+  .limit-dialog header > div {
+    min-width: 0;
+    padding-right: 8px;
+  }
+
+  .limit-dialog header h2 {
+    overflow: hidden;
+    font-size: 18px;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .limit-dialog header button {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .limit-dialog > p {
+    margin-top: 18px;
+    line-height: 1.5;
+  }
+
+  .limit-field input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .limit-dialog footer {
+    position: sticky;
+    z-index: 2;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin: 24px -16px 0;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    background: var(--surface);
+  }
+
+  .limit-dialog footer .btn {
+    min-height: 44px;
+  }
+
+  :host-context([data-theme='dark']) .mobile-bank-dashboard-header h2,
+  :host-context([data-theme='dark']) .mobile-bank-name strong,
+  :host-context([data-theme='dark']) .mobile-bank-usage-values strong,
+  :host-context([data-theme='dark']) .mobile-bank-metrics dd,
+  :host-context([data-theme='dark']) .mobile-card-list h3,
+  :host-context([data-theme='dark']) .mobile-card-identity strong,
+  :host-context([data-theme='dark']) .mobile-card-debt strong {
+    color: #f2f7fc;
   }
 }
 

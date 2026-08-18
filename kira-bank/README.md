@@ -73,7 +73,7 @@ Chỉ được tạo khi `app.seed-development-users=true` (mặc định develo
 ## Migration
 
 - `V1__initial_schema.sql`: 33 bảng identity, Flow 1, Flow 2 và shared; foreign key, unique/check constraint và index.
-- `V2__seed_public_catalog.sql`: roles, ngân hàng/thẻ/MCC/rule/platform/settings mẫu. User development được hash và tạo bởi application runner, không hard-code vào production migration.
+- `V2__seed_public_catalog.sql`: roles, ngân hàng/thẻ/MCC/rule/platform mẫu. Các setting tài chính cũ trong migration này được dọn bởi `V12__remove_unused_tables.sql` vì application dùng invariant trong code. User development được hash và tạo bởi application runner, không hard-code vào production migration.
 - `V6__link_user_credit_cards_to_banks.sql`: chuyển thẻ người dùng sang liên kết trực tiếp với ngân hàng, sau đó xóa Card Catalog và cashback rules.
 - `V8__share_credit_limits_by_bank.sql`: chuyển hạn mức từ từng thẻ sang hạn mức dùng chung theo user và ngân hàng.
 
@@ -85,3 +85,11 @@ Chỉ được tạo khi `app.seed-development-users=true` (mặc định develo
 - CORS/cookie: origin phải khớp chính xác và request refresh dùng credentials.
 
 Các giả định chi tiết nằm trong `docs/architecture/assumptions.md`.
+
+
+#Build image docker
+docker build  -t kira2308/kira-bank-service:latest .\kira-bank-service
+docker build  -t kira2308/kira-bank-ui:latest .\kira-bank-ui
+
+docker push kira2308/kira-bank-service:latest
+docker push kira2308/kira-bank-ui:latest

@@ -35,9 +35,14 @@
           <img [src]="uploadedImageUrl()" alt="Transaction receipt" class="receipt-preview">
           <div class="preview-badge">{{ uploadStatus() === 'READY' ? 'Sẵn sàng duyệt' : 'Đang chờ AI' }}</div>
         </div>
+      } @else if (activePreviewAttachmentId() !== null) {
+        <div class="upload-spinner-state">
+          <span class="spinner"></span>
+          <span>Đang tải ảnh xem trước...</span>
+        </div>
       } @else {
         <div class="dropzone-content">
-          <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+          <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
           <p class="prompt-text">Kéo thả hoặc chọn ảnh hóa đơn/chuyển khoản</p>
           <span class="browse-btn">Chọn ảnh</span>
         </div>
@@ -57,14 +62,22 @@
         <div class="draft-list">
           @for (draft of drafts(); track draft.attachmentId) {
             <article class="draft-item" [class.selected]="selectedAttachmentId() === draft.attachmentId">
-              <img [src]="draft.contentUrl" alt="Ảnh giao dịch">
+              @if (previewUrl(draft.attachmentId); as imageUrl) {
+                <img [src]="imageUrl" alt="Ảnh giao dịch">
+              } @else if (previewFailed(draft.attachmentId)) {
+                <div class="draft-thumbnail-placeholder failed" aria-label="Không thể tải ảnh xem trước">Ảnh</div>
+              } @else {
+                <div class="draft-thumbnail-placeholder" aria-label="Đang tải ảnh xem trước">
+                  <span class="spinner"></span>
+                </div>
+              }
               <div class="draft-detail">
                 <strong>{{ draft.originalName }}</strong>
                 <span class="draft-status" [class.ready]="draft.aiStatus === 'READY'" [class.failed]="draft.aiStatus === 'FAILED'">
                   {{ statusLabel(draft.aiStatus) }}
                 </span>
                 @if (draft.draft?.amount != null) {
-                  <small>{{ draft.draft?.amount | number:'1.0-4' }} · {{ draft.draft?.type ?? 'Chưa rõ loại' }}</small>
+                  <small>{{ draft.draft.amount | number:'1.0-4' }} · {{ draft.draft.type ?? 'Chưa rõ loại' }}</small>
                 } @else if (draft.aiError) {
                   <small>{{ draft.aiError }}</small>
                 }
@@ -83,7 +96,7 @@
 
   <section class="panel form-panel">
     <header class="panel-header">
-      <div class="header-icon blue">✓</div>
+      <div class="header-icon blue"><app-icon name="check"/></div>
       <div>
         <h3>{{ i18n.t('transaction.manualTitle') }}</h3>
         <p>Kiểm tra và chỉnh sửa dữ liệu trước khi xác nhận.</p>
@@ -110,7 +123,7 @@
 
       <div class="form-field">
         <label>{{ i18n.t('transaction.amountLabel') }} <b>*</b></label>
-        <div class="input-with-symbol"><input type="number" formControlName="amount" placeholder="0" min="0.0001" step="1000"><span class="symbol">₫</span></div>
+        <div class="input-with-symbol"><input appMoneyInput formControlName="amount" placeholder="0" min="0.0001"><span class="symbol">₫</span></div>
         @if (form.controls.amount.invalid && form.controls.amount.touched) {
           <span class="field-error">Vui lòng nhập số tiền hợp lệ</span>
         }

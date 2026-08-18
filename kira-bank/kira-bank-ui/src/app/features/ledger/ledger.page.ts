@@ -5,12 +5,13 @@ import {ApiService} from '../../core/services/api.service';
 
 import {CustomSelectComponent, SelectOption} from '../../shared/custom-select/custom-select';
 import {computed} from '@angular/core';
+import {IconComponent} from '../../shared/icon/icon';
 
 type Row = Record<string, unknown>;
 
 @Component({
   selector: 'app-ledger',
-  imports: [ReactiveFormsModule, CustomSelectComponent],
+  imports: [ReactiveFormsModule, CustomSelectComponent, IconComponent],
   templateUrl: './ledger.page.html',
   styleUrl: './ledger.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

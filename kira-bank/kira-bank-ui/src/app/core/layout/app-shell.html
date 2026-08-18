@@ -3,38 +3,52 @@
     <a class="brand" routerLink="/app"><span class="brand-mark">K</span>Kira Bank</a>
     <button (click)="menuOpen.set(false)" [attr.aria-label]="i18n.t('shell.closeMenu')" class="close-menu">×</button>
     <nav class="side-nav">
-      <a [routerLinkActiveOptions]="{exact: true}" routerLink="/app" routerLinkActive="active"><span>⌂</span>{{ i18n.t('shell.overview') }}</a>
+      <a [routerLinkActiveOptions]="{exact: true}" routerLink="/app" routerLinkActive="active"><span><app-icon name="home"/></span>{{ i18n.t('shell.overview') }}</a>
       @for (group of nav(); track group.labelKey) {
         <div class="nav-group"><small [class]="group.flow">{{ i18n.t(group.labelKey) }}</small>
           @for (item of group.items; track item.path) {
             <a (click)="menuOpen.set(false)" [routerLink]="item.path"
-               routerLinkActive="active"><span>{{ item.icon }}</span>{{ i18n.t(item.labelKey) }}</a>
+               routerLinkActive="active"><span><app-icon [name]="item.icon"/></span>{{ i18n.t(item.labelKey) }}</a>
           }
         </div>
       }
     </nav>
-    <div class="secure-note"><span>◈</span>
+    <div class="secure-note"><span><app-icon name="shield-check"/></span>
       <div><b>{{ i18n.t('shell.secureConnection') }}</b><small>{{ i18n.t('shell.dataProtected') }}</small></div>
     </div>
   </aside>
 
   <div class="page-area">
     <header class="topbar">
-      <button (click)="menuOpen.set(true)" [attr.aria-label]="i18n.t('shell.openMenu')" class="menu-button">☰</button>
-      <div #globalSearchRoot class="global-search-shell">
-        <div class="global-search">
-          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input #globalSearchInput aria-keyshortcuts="/" aria-autocomplete="list" aria-controls="global-search-results"
-                 role="combobox"
-                 [attr.aria-activedescendant]="activeSearchDescendant()"
-                 [attr.aria-expanded]="searchOpen()"
-                 [attr.aria-label]="i18n.t('shell.searchLabel')"
-                 [placeholder]="i18n.t('shell.searchPlaceholder')"
-                 [value]="searchQuery()"
-                 (focus)="openGlobalSearch()"
-                 (input)="updateGlobalSearch($any($event.target).value)"
-                 (keydown)="handleGlobalSearchKeydown($event)">
-          <kbd class="shortcut-badge">/</kbd>
+      <button (click)="openNavigationMenu()"
+              [attr.aria-expanded]="menuOpen()"
+              [attr.aria-label]="i18n.t('shell.openMenu')"
+              class="menu-button"
+              type="button"><app-icon name="menu"/></button>
+      <a aria-label="Kira Bank" class="mobile-brand" routerLink="/app">
+        <span class="mobile-brand-mark">K</span>
+        <span class="mobile-brand-name">Kira Bank</span>
+      </a>
+      <div #globalSearchRoot [class.mobile-search-open]="searchOpen()" class="global-search-shell">
+        <div class="mobile-search-row">
+          <button (click)="closeMobileSearch()"
+                  [attr.aria-label]="i18n.t('shell.closeSearch')"
+                  class="mobile-search-back"
+                  type="button"><app-icon name="arrow-left"/></button>
+          <div class="global-search">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input #globalSearchInput aria-keyshortcuts="/" aria-autocomplete="list" aria-controls="global-search-results"
+                   role="combobox"
+                   [attr.aria-activedescendant]="activeSearchDescendant()"
+                   [attr.aria-expanded]="searchOpen()"
+                   [attr.aria-label]="i18n.t('shell.searchLabel')"
+                   [placeholder]="i18n.t('shell.searchPlaceholder')"
+                   [value]="searchQuery()"
+                   (focus)="openGlobalSearch()"
+                   (input)="updateGlobalSearch($any($event.target).value)"
+                   (keydown)="handleGlobalSearchKeydown($event)">
+            <kbd class="shortcut-badge">/</kbd>
+          </div>
         </div>
         @if (searchOpen()) {
           <div id="global-search-results" class="global-search-results" role="listbox"
@@ -52,14 +66,14 @@
                       @if (result.imageUrl) {
                         <img [src]="result.imageUrl" alt="" (error)="hideBrokenSearchImage($event)">
                       } @else {
-                        {{ result.icon }}
+                        <app-icon [name]="result.icon"/>
                       }
                     </span>
                     <span class="global-search-result-copy">
                       <strong>{{ result.title }}</strong>
                       <small>{{ result.subtitle }}</small>
                     </span>
-                    <span class="global-search-enter">↵</span>
+                    <span class="global-search-enter"><app-icon name="corner-down-left"/></span>
                   </button>
                 }
               </section>
@@ -80,15 +94,49 @@
         }
       </div>
       <div class="top-actions">
-        <app-language-switcher/>
-        <button (click)="cycleTheme()" [attr.aria-label]="i18n.t('theme.label') + ' ' + theme()">{{ themeIcon() }}</button>
-        <a [attr.aria-label]="i18n.t('shell.notifications')" routerLink="/app/notifications">♢<i></i></a>
-        <button (click)="userMenu.set(!userMenu())" class="avatar">{{ initials() }}</button>
+        <button #mobileSearchTrigger
+                (click)="openGlobalSearch()"
+                [attr.aria-expanded]="searchOpen()"
+                [attr.aria-label]="i18n.t('shell.searchLabel')"
+                aria-controls="global-search-results"
+                class="mobile-search-trigger"
+                type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+        <app-language-switcher class="desktop-language-switcher"/>
+        <button (click)="cycleTheme()"
+                [attr.aria-label]="i18n.t('theme.label') + ' ' + themeLabel()"
+                class="desktop-theme-action"
+                type="button"><app-icon [name]="themeIcon()"/></button>
+        <a [attr.aria-label]="i18n.t('shell.notifications')" routerLink="/app/notifications"><app-icon name="bell"/><i></i></a>
+        <button #avatarButton
+                (click)="toggleUserMenu()"
+                [attr.aria-controls]="'user-account-menu'"
+                [attr.aria-expanded]="userMenu()"
+                [attr.aria-label]="i18n.t('shell.openAccountMenu')"
+                class="avatar"
+                type="button">{{ initials() }}</button>
       </div>
       @if (userMenu()) {
-        <div class="user-menu"><b>{{ auth.user()?.fullName }}</b><small>{{ auth.user()?.email }}</small><a
-          routerLink="/app/profile">{{ i18n.t('shell.profile') }}</a>
-          <button (click)="logout()">{{ i18n.t('shell.logout') }}</button>
+        <div #userMenuPanel class="user-menu" id="user-account-menu">
+          <div class="user-menu-identity">
+            <b>{{ auth.user()?.fullName }}</b>
+            <small>{{ auth.user()?.email }}</small>
+          </div>
+          <a (click)="userMenu.set(false)" routerLink="/app/profile">{{ i18n.t('shell.profile') }}</a>
+          <div class="mobile-user-preferences">
+            <small class="preference-heading">{{ i18n.t('shell.preferences') }}</small>
+            <app-language-switcher variant="menu"/>
+            <button (click)="cycleTheme()"
+                    [attr.aria-label]="i18n.t('theme.label') + ' ' + themeLabel()"
+                    class="mobile-theme-action"
+                    type="button">
+              <span><app-icon [name]="themeIcon()"/></span>
+              <span>{{ i18n.t('theme.label') }}</span>
+              <small>{{ themeLabel() }}</small>
+            </button>
+          </div>
+          <button (click)="logout()" class="logout-action">{{ i18n.t('shell.logout') }}</button>
         </div>
       }
     </header>

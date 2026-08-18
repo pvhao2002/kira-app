@@ -1,13 +1,21 @@
-import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild} from '@angular/core';
 import {ApiService} from '../../core/services/api.service';
 import {LanguageService} from '../../core/i18n/language.service';
 import {CreditCardDashboard} from '../../shared/models/api.models';
 import {CreditCardDebtBank} from '../../shared/models/api.models';
 import {ToastService} from '../../core/services/toast.service';
 import {finalize} from 'rxjs';
+import {
+  BankBalanceDialogComponent,
+  BankBalanceDialogTarget,
+  BankBalanceDialogValue
+} from '../../shared/bank-balance-dialog/bank-balance-dialog';
+import {IconComponent} from '../../shared/icon/icon';
+import {MoneyInputDirective} from '../../shared/money-input/money-input.directive';
 
 @Component({
   selector: 'app-credit-card-dashboard',
+  imports: [BankBalanceDialogComponent, IconComponent, MoneyInputDirective],
   templateUrl: './credit-card-dashboard.page.html',
   styleUrl: './credit-card-dashboard.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -24,6 +32,11 @@ export class CreditCardDashboardPage {
   readonly limitValue = signal<number | null>(null);
   readonly limitSaving = signal(false);
   readonly limitError = signal('');
+  readonly editingBalanceBank = signal<BankBalanceDialogTarget | null>(null);
+  readonly balanceSaving = signal(false);
+  readonly balanceError = signal('');
+  readonly limitInput = viewChild<ElementRef<HTMLInputElement>>('limitInput');
+  private limitTrigger: HTMLElement | null = null;
 
   constructor() {
     this.load();
@@ -53,9 +66,11 @@ export class CreditCardDashboardPage {
   }
 
   openLimitEditor(bank: CreditCardDebtBank): void {
+    this.limitTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.editingLimitBank.set(bank);
     this.limitValue.set(bank.totalCreditLimit);
     this.limitError.set('');
+    setTimeout(() => this.limitInput()?.nativeElement.focus());
   }
 
   closeLimitEditor(): void {
@@ -63,6 +78,9 @@ export class CreditCardDashboardPage {
     this.editingLimitBank.set(null);
     this.limitValue.set(null);
     this.limitError.set('');
+    const trigger = this.limitTrigger;
+    this.limitTrigger = null;
+    setTimeout(() => trigger?.focus());
   }
 
   saveLimit(event: SubmitEvent): void {
@@ -85,6 +103,43 @@ export class CreditCardDashboardPage {
           this.load();
         },
         error: error => this.limitError.set(error.error?.message ?? this.i18n.t('form.saveFailed'))
+      });
+  }
+
+  openBalanceEditor(bank: CreditCardDebtBank): void {
+    this.balanceError.set('');
+    this.editingBalanceBank.set({
+      bankId: bank.bankId,
+      bankName: bank.bankName,
+      remainingBalance: bank.availableCredit,
+      creditLimit: bank.totalCreditLimit,
+      currency: bank.currency,
+      balanceVersion: bank.balanceVersion
+    });
+  }
+
+  closeBalanceEditor(): void {
+    if (this.balanceSaving()) return;
+    this.editingBalanceBank.set(null);
+    this.balanceError.set('');
+  }
+
+  saveBalance(value: BankBalanceDialogValue): void {
+    const bank = this.editingBalanceBank();
+    if (!bank) return;
+
+    this.balanceSaving.set(true);
+    this.balanceError.set('');
+    const usedBalance = Number((bank.creditLimit - value.remainingBalance).toFixed(4));
+    this.api.updateCreditCardBankBalance(bank.bankId, usedBalance, value.reason, bank.balanceVersion)
+      .pipe(finalize(() => this.balanceSaving.set(false)))
+      .subscribe({
+        next: () => {
+          this.editingBalanceBank.set(null);
+          this.toast.show(this.i18n.t('form.saved'), 'success');
+          this.load();
+        },
+        error: error => this.balanceError.set(error.error?.message ?? this.i18n.t('form.saveFailed'))
       });
   }
 
@@ -111,5 +166,10 @@ export class CreditCardDashboardPage {
     const image = event.target as HTMLImageElement;
     image.hidden = true;
     image.parentElement?.setAttribute('hidden', '');
+  }
+
+  hideMobileLogo(event: Event): void {
+    const image = event.target as HTMLImageElement;
+    image.hidden = true;
   }
 }

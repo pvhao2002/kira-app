@@ -53,6 +53,12 @@ public class CreditCardController {
         return service.updateBankCreditLimit(u, bankId, r);
     }
 
+    @PutMapping("/credit-card-bank-balances/{bankId}")
+    Object updateBankBalance(@AuthenticationPrincipal Long u, @PathVariable Long bankId,
+                             @Valid @RequestBody BankBalanceUpdateRequest r) {
+        return service.updateBankBalance(u, bankId, r);
+    }
+
     @PutMapping("/credit-cards/{id}/billing-cycle")
     Object updateBillingCycle(@AuthenticationPrincipal Long u, @PathVariable Long id,
                               @Valid @RequestBody BillingCycleUpdateRequest r) {

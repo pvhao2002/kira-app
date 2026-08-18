@@ -2,10 +2,11 @@ import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
 import {RouterLink} from '@angular/router';
 import {LanguageService} from '../../core/i18n/language.service';
 import {LanguageSwitcherComponent} from '../../shared/language-switcher/language-switcher';
+import {IconComponent} from '../../shared/icon/icon';
 
 @Component({
   selector: 'app-landing',
-  imports: [RouterLink, LanguageSwitcherComponent],
+  imports: [RouterLink, LanguageSwitcherComponent, IconComponent],
   templateUrl: './landing.page.html',
   styleUrl: './landing.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

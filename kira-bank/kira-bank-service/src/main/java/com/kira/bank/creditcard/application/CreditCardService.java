@@ -33,6 +33,7 @@ public class CreditCardService {
     private final DiscountInvoiceRepository invoices;
     private final CashbackRecordRepository cashbacks;
     private final MonthlyStatementService monthlyStatements;
+    private final BankBalanceService bankBalances;
 
     @Transactional
     public CardResponse createCard(Long user, CreateCardRequest r) {
@@ -45,6 +46,7 @@ public class CreditCardService {
         UserBankCreditLimit creditLimit = creditLimits.findByUserIdAndBankIdAndDeletedAtIsNull(user, bank.getId())
             .map(existing -> requireMatchingCreditLimit(existing, r.creditLimit()))
             .orElseGet(() -> createCreditLimit(user, bank, r.creditLimit()));
+        c.setCardType(r.cardType().trim());
         c.setNickname(r.nickname());
         c.setLastFour(r.lastFour());
         c.setStatementDay(r.statementDay());
@@ -84,6 +86,7 @@ public class CreditCardService {
             throw conflict("CREDIT_LIMIT_VERSION_CONFLICT");
         creditLimit.setCreditLimit(money(r.creditLimit()));
         creditLimit.setUpdatedBy(user);
+        c.setCardType(r.cardType().trim());
         c.setNickname(r.nickname());
         c.setLastFour(r.lastFour());
         c.setStatementDay(r.statementDay());
@@ -112,6 +115,11 @@ public class CreditCardService {
         creditLimit.setUpdatedBy(user);
         creditLimits.flush();
         return creditLimitDto(creditLimit);
+    }
+
+    @Transactional
+    public BankBalanceResponse updateBankBalance(Long user, Long bankId, BankBalanceUpdateRequest request) {
+        return bankBalances.updateBalance(user, bankId, request);
     }
 
     @Transactional
@@ -266,8 +274,10 @@ public class CreditCardService {
                                  UserBankCreditLimit creditLimit) {
         String bankName = c.getBank().getShortName() == null || c.getBank().getShortName().isBlank()
             ? c.getBank().getName() : c.getBank().getShortName();
-        return new CardResponse(c.getId(), c.getBank().getId(), bankName, c.getBank().getLogoUrl(), c.getNickname(),
+        return new CardResponse(c.getId(), c.getBank().getId(), bankName, c.getBank().getLogoUrl(), c.getCardType(),
+            c.getNickname(),
             c.getLastFour(), creditLimit.getCreditLimit(), creditLimit.getVersion(), money(currentBalance),
+            creditLimit.getBalanceVersion(),
             creditLimit.getCurrency(), c.getStatementDay(),
             c.getDueDay(), c.getStatus(), c.getNote(), c.getVersion(),
             billing.billingCycleId(), billing.statementDate(), billing.paymentDueDate(),
@@ -325,17 +335,11 @@ public class CreditCardService {
             return Collections.emptyMap();
         }
         var bankIds = userCards.stream().map(card -> card.getBank().getId()).distinct().toList();
-        Map<Long, BigDecimal> result = new HashMap<>();
-        statements.findCurrentBalancesForBanks(userId, bankIds)
-            .forEach(total -> result.put(total.getBankId(), total.getCurrentBalance()));
-        return result;
+        return bankBalances.currentBalances(userId, bankIds);
     }
 
     private BigDecimal currentBalanceForBank(Long userId, Long bankId) {
-        return statements.findCurrentBalancesForBanks(userId, List.of(bankId)).stream()
-            .findFirst()
-            .map(StatementRepository.BankCurrentBalance::getCurrentBalance)
-            .orElse(BigDecimal.ZERO);
+        return bankBalances.currentBalance(userId, bankId);
     }
 
     private StatementResponse statementDto(Statement s) {

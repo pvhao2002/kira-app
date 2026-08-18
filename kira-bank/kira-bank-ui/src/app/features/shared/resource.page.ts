@@ -23,7 +23,14 @@ type Row = Record<string, unknown>;
 import {CustomSelectComponent} from '../../shared/custom-select/custom-select';
 import {CustomDatepickerComponent} from '../../shared/custom-datepicker/custom-datepicker';
 import {CreditCardPreviewComponent} from '../../shared/credit-card-preview/credit-card-preview';
-import {CreditCardBankLimit} from '../../shared/models/api.models';
+import {CreditCardBankLimit, CreditCardDashboard} from '../../shared/models/api.models';
+import {IconComponent} from '../../shared/icon/icon';
+import {
+  BankBalanceDialogTarget,
+  BankBalanceDialogValue,
+  BankBalanceDialogComponent
+} from '../../shared/bank-balance-dialog/bank-balance-dialog';
+import {MoneyInputDirective} from '../../shared/money-input/money-input.directive';
 
 interface LookupOption {
   value: string | number;
@@ -32,9 +39,30 @@ interface LookupOption {
   sublabel?: string;
 }
 
+interface CreditCardGroupItem {
+  row: Row;
+  sequence: number;
+}
+
+interface CreditCardGroup {
+  bankId: string;
+  bankName: string;
+  bankLogoUrl: string;
+  summary: Row;
+  cards: CreditCardGroupItem[];
+}
+
 @Component({
   selector: 'app-resource',
-  imports: [ReactiveFormsModule, CustomSelectComponent, CustomDatepickerComponent, CreditCardPreviewComponent],
+  imports: [
+    ReactiveFormsModule,
+    CustomSelectComponent,
+    CustomDatepickerComponent,
+    CreditCardPreviewComponent,
+    BankBalanceDialogComponent,
+    IconComponent,
+    MoneyInputDirective
+  ],
   templateUrl: './resource.page.html',
   styleUrl: './resource.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -55,6 +83,10 @@ export class ResourcePage {
   readonly formValues = signal<Record<string, unknown>>({});
   readonly formError = signal('');
   readonly sharedCreditLimit = signal(false);
+  readonly editingBalanceBank = signal<BankBalanceDialogTarget | null>(null);
+  readonly balanceSaving = signal(false);
+  readonly balanceError = signal('');
+  readonly zeroStatement = signal(false);
   form = new FormGroup<Record<string, FormControl<unknown>>>({});
   readonly i18n = inject(LanguageService);
   private formSub?: any;
@@ -75,7 +107,10 @@ export class ResourcePage {
   private readonly toast = inject(ToastService);
   private readonly creditCardLimits = signal<Record<string, CreditCardBankLimit>>({});
   private readonly creditCardLimitsLoaded = signal(false);
+  private readonly creditCardSummary = signal<CreditCardDashboard | null>(null);
   private bankSub?: any;
+  private billingSub?: any;
+  private billingSnapshot: {minimumPayment: unknown; paymentStatus: unknown} | null = null;
 
   readonly filteredRows = computed(() => {
     let list = this.rows();
@@ -95,6 +130,50 @@ export class ResourcePage {
     );
   });
 
+  readonly creditCardGroups = computed<CreditCardGroup[]>(() => {
+    if (this.definition.key !== 'creditCards') return [];
+
+    const byBank = new Map<string, {bankId: string; bankName: string; bankLogoUrl: string; summary: Row; rows: Row[]}>();
+    for (const row of this.filteredRows()) {
+      const bankId = String(row['bankId'] ?? row['bankName'] ?? '');
+      const existing = byBank.get(bankId);
+      if (existing) {
+        existing.rows.push(row);
+        continue;
+      }
+      byBank.set(bankId, {
+        bankId,
+        bankName: String(row['bankName'] ?? ''),
+        bankLogoUrl: String(row['bankLogoUrl'] ?? ''),
+        summary: row,
+        rows: [row]
+      });
+    }
+
+    const locale = this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
+    const groups = [...byBank.values()].sort((left, right) =>
+      left.bankName.localeCompare(right.bankName, locale, {sensitivity: 'base'})
+    );
+    let sequence = 1;
+    return groups.map(group => ({
+      bankId: group.bankId,
+      bankName: group.bankName,
+      bankLogoUrl: group.bankLogoUrl,
+      summary: group.summary,
+      cards: group.rows.map(row => ({row, sequence: sequence++}))
+    }));
+  });
+
+  readonly creditCardTotalRow = computed<Row | null>(() => {
+    const summary = this.creditCardSummary();
+    if (!summary) return null;
+    return {
+      creditLimit: summary.totalCreditLimit,
+      currentBalance: summary.currentBalance,
+      currency: summary.currency
+    };
+  });
+
   constructor() {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       this.searchQuery.set(params.get('search') ?? '');
@@ -112,7 +191,10 @@ export class ResourcePage {
         replaceUrl: true
       });
     });
-    if (this.definition.key === 'creditCards') this.loadCreditCardLimits();
+    if (this.definition.key === 'creditCards') {
+      this.loadCreditCardLimits();
+      this.loadCreditCardSummary();
+    }
   }
 
   onSearchInput(value: string): void {
@@ -264,6 +346,51 @@ export class ResourcePage {
     return String(value);
   }
 
+  displayCardType(row: Row): string {
+    const value = String(row['cardType'] ?? '').trim();
+    return value || this.i18n.t('creditCards.cardTypeMissing');
+  }
+
+  openBalanceEditor(group: CreditCardGroup): void {
+    this.balanceError.set('');
+    const creditLimit = Number(group.summary['creditLimit'] ?? 0);
+    const usedBalance = Number(group.summary['currentBalance'] ?? 0);
+    this.editingBalanceBank.set({
+      bankId: Number(group.bankId),
+      bankName: group.bankName,
+      remainingBalance: this.moneyDifference(creditLimit, usedBalance),
+      creditLimit,
+      currency: String(group.summary['currency'] ?? 'VND'),
+      balanceVersion: Number(group.summary['balanceVersion'] ?? 0)
+    });
+  }
+
+  closeBalanceEditor(): void {
+    if (this.balanceSaving()) return;
+    this.editingBalanceBank.set(null);
+    this.balanceError.set('');
+  }
+
+  saveBankBalance(value: BankBalanceDialogValue): void {
+    const bank = this.editingBalanceBank();
+    if (!bank) return;
+
+    this.balanceSaving.set(true);
+    this.balanceError.set('');
+    const usedBalance = this.moneyDifference(bank.creditLimit, value.remainingBalance);
+    this.api.updateCreditCardBankBalance(bank.bankId, usedBalance, value.reason, bank.balanceVersion)
+      .pipe(finalize(() => this.balanceSaving.set(false)))
+      .subscribe({
+        next: () => {
+          this.editingBalanceBank.set(null);
+          this.toast.show(this.i18n.t('form.saved'), 'success');
+          this.loadRows();
+          this.loadCreditCardSummary();
+        },
+        error: error => this.balanceError.set(error.error?.message ?? this.i18n.t('form.saveFailed'))
+      });
+  }
+
   columnKind(column: string): ResourceColumnKind {
     return this.definition.columns?.find(item => item.name === column)?.kind
       ?? (column === 'status' ? 'status' : 'text');
@@ -282,7 +409,9 @@ export class ResourcePage {
   }
 
   displayMoney(row: Row, column: string): string {
-    const value = row[column];
+    const value = this.definition.key === 'creditCards' && column === 'currentBalance'
+      ? this.moneyDifference(Number(row['creditLimit'] ?? 0), Number(row['currentBalance'] ?? 0))
+      : row[column];
     if (value === null || value === undefined || value === '') return '—';
     const amount = typeof value === 'number' ? value : Number(value);
     if (!Number.isFinite(amount)) return this.display(value);
@@ -291,6 +420,10 @@ export class ResourcePage {
     const locale = this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
     const formatted = amount.toLocaleString(locale, {maximumFractionDigits: 4});
     return currency ? `${formatted} ${String(currency)}` : formatted;
+  }
+
+  private moneyDifference(left: number, right: number): number {
+    return Number((left - right).toFixed(4));
   }
 
   displayDay(value: unknown): string {
@@ -338,8 +471,40 @@ export class ResourcePage {
   }
 
   billingAmountError(): string {
-    if (!this.form.hasError('minimumPaymentExceedsBalance') || !this.form.controls['minimumPayment']?.touched) return '';
-    return this.i18n.t('form.minimumPaymentExceedsBalance');
+    if (!this.form.controls['minimumPayment']?.touched) return '';
+    if (this.form.hasError('minimumPaymentRequired')) return this.i18n.t('form.minimumPaymentRequired');
+    if (this.form.hasError('minimumPaymentExceedsBalance')) return this.i18n.t('form.minimumPaymentExceedsBalance');
+    return '';
+  }
+
+  private syncZeroStatement(value: unknown): void {
+    const isZero = value !== '' && value !== null && value !== undefined && Number(value) === 0;
+    const minimumControl = this.form.controls['minimumPayment'];
+    const statusControl = this.form.controls['paymentStatus'];
+    if (!minimumControl || !statusControl) return;
+
+    if (isZero) {
+      if (!this.zeroStatement()) {
+        this.billingSnapshot = {
+          minimumPayment: minimumControl.value,
+          paymentStatus: statusControl.value
+        };
+      }
+      minimumControl.setValue(0, {emitEvent: false});
+      statusControl.setValue('PAID', {emitEvent: false});
+      minimumControl.disable({emitEvent: false});
+      statusControl.disable({emitEvent: false});
+      this.zeroStatement.set(true);
+    } else if (this.zeroStatement()) {
+      minimumControl.enable({emitEvent: false});
+      statusControl.enable({emitEvent: false});
+      minimumControl.setValue(this.billingSnapshot?.minimumPayment ?? '', {emitEvent: false});
+      statusControl.setValue(this.billingSnapshot?.paymentStatus ?? 'UNPAID', {emitEvent: false});
+      this.billingSnapshot = null;
+      this.zeroStatement.set(false);
+    }
+    this.formValues.set(this.form.getRawValue());
+    this.form.updateValueAndValidity({emitEvent: false});
   }
 
   hideBrokenImage(event: Event): void {
@@ -392,14 +557,25 @@ export class ResourcePage {
       controls[field.name] = control;
     }
     this.form = new FormGroup(controls);
+    this.billingSub?.unsubscribe();
+    this.billingSub = undefined;
+    this.billingSnapshot = null;
+    this.zeroStatement.set(false);
     if (definition.validation === 'billingCycle') {
       this.form.addValidators(group => {
         const balance = Number(group.get('statementBalance')?.value);
         const minimum = Number(group.get('minimumPayment')?.value);
-        return Number.isFinite(balance) && Number.isFinite(minimum) && minimum > balance
-          ? {minimumPaymentExceedsBalance: true}
-          : null;
+        if (Number.isFinite(balance) && balance > 0 && Number.isFinite(minimum) && minimum <= 0) {
+          return {minimumPaymentRequired: true};
+        }
+        if (Number.isFinite(balance) && Number.isFinite(minimum) && minimum > balance) {
+          return {minimumPaymentExceedsBalance: true};
+        }
+        return null;
       });
+      const statementControl = this.form.controls['statementBalance'];
+      this.syncZeroStatement(statementControl?.value);
+      this.billingSub = statementControl?.valueChanges.subscribe(value => this.syncZeroStatement(value));
       this.form.updateValueAndValidity({emitEvent: false});
     }
     this.formValues.set(this.form.getRawValue());
@@ -427,6 +603,7 @@ export class ResourcePage {
     this.selectedBank()?.['shortName'] ?? this.selectedBank()?.['name'] ?? ''
   ));
   readonly cardPreviewBankLogo = computed(() => String(this.selectedBank()?.['logoUrl'] ?? ''));
+  readonly cardPreviewCardType = computed(() => String(this.formValues()['cardType'] ?? ''));
   readonly cardPreviewNickname = computed(() => String(this.formValues()['nickname'] ?? ''));
   readonly cardPreviewLastFour = computed(() => String(this.formValues()['lastFour'] ?? ''));
   readonly cardPreviewCreditLimit = computed(() => this.formValues()['creditLimit'] as number | string | null);
@@ -487,6 +664,13 @@ export class ResourcePage {
         this.creditCardLimitsLoaded.set(false);
         this.syncCreditLimitField();
       }
+    });
+  }
+
+  private loadCreditCardSummary(): void {
+    this.api.creditCardDashboard().subscribe({
+      next: summary => this.creditCardSummary.set(summary),
+      error: () => this.creditCardSummary.set(null)
     });
   }
 
@@ -580,7 +764,10 @@ export class ResourcePage {
           this.open.set(false);
           this.activeForm.set(null);
         }
-        if (this.definition.key === 'creditCards') this.loadCreditCardLimits();
+        if (this.definition.key === 'creditCards') {
+          this.loadCreditCardLimits();
+          this.loadCreditCardSummary();
+        }
         this.loadRows();
       },
       error: error => this.formError.set(error.error?.message ?? this.i18n.t('form.saveFailed'))

@@ -6,6 +6,166 @@
   max-width: 100%;
 }
 
+.credit-card-mobile-list {
+  display: none;
+}
+
+.credit-card-group-table {
+  min-width: 1040px;
+
+  .sequence-column,
+  .sequence-cell {
+    width: 58px;
+    text-align: center;
+  }
+
+  .bank-group-row > td {
+    padding: 13px 16px;
+    border-top: 2px solid color-mix(in srgb, var(--blue) 30%, var(--border));
+    background: color-mix(in srgb, var(--blue) 7%, var(--surface));
+  }
+
+  .bank-group-row:first-child > td {
+    border-top-width: 1px;
+  }
+}
+
+.bank-group-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.credit-card-total-row > td {
+  padding: 15px 16px;
+  border-top: 2px solid color-mix(in srgb, var(--blue) 45%, var(--border));
+  background: color-mix(in srgb, var(--blue) 11%, var(--surface));
+}
+
+.credit-card-total-row.top-total-row > td {
+  border-top-width: 1px;
+  border-bottom: 2px solid color-mix(in srgb, var(--blue) 45%, var(--border));
+}
+
+.credit-card-total-label {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  color: var(--blue);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+}
+
+.bank-group-identity {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 11px;
+
+  img {
+    width: 42px;
+    height: 30px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: #ffffff;
+    object-fit: contain;
+  }
+
+  div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  strong {
+    color: inherit;
+    font-size: 14px;
+  }
+
+  small {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+  }
+}
+
+.bank-group-metrics {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+
+  > div {
+    display: flex;
+    min-width: 185px;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface);
+  }
+
+  small {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: inherit;
+    font-size: 12px;
+  }
+}
+
+.bank-balance-value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.balance-action {
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.balance-action:hover,
+.balance-action:focus-visible {
+  text-decoration: underline;
+}
+
+.card-type {
+  font-weight: 700;
+
+  &.missing {
+    color: var(--muted);
+    font-style: italic;
+    font-weight: 500;
+  }
+}
+
+.card-identity {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  white-space: nowrap;
+
+  small {
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+  }
+}
+
 .bank-table-cell {
   display: inline-flex;
   align-items: center;
@@ -100,6 +260,21 @@ tr.billing-row.billing-unpaid > td {
 
 tr.billing-row.billing-overdue > td {
   background: color-mix(in srgb, #ef4444 15%, var(--surface));
+}
+
+.mobile-credit-card.billing-row.billing-needs-input {
+  border-color: color-mix(in srgb, #eab308 55%, var(--border));
+  background: color-mix(in srgb, #facc15 10%, var(--surface));
+}
+
+.mobile-credit-card.billing-row.billing-unpaid {
+  border-color: color-mix(in srgb, #f97316 55%, var(--border));
+  background: color-mix(in srgb, #fb923c 10%, var(--surface));
+}
+
+.mobile-credit-card.billing-row.billing-overdue {
+  border-color: color-mix(in srgb, #ef4444 55%, var(--border));
+  background: color-mix(in srgb, #ef4444 9%, var(--surface));
 }
 
 .resource-notice {
@@ -436,6 +611,358 @@ tr.billing-row.billing-overdue > td {
 }
 
 @media (max-width: 680px) {
+  :host {
+    margin-inline: -6px;
+  }
+
+  .page-heading {
+    flex-direction: column;
+
+    > div,
+    > .btn {
+      width: 100%;
+    }
+
+    > .btn {
+      min-height: 44px;
+      justify-content: center;
+    }
+  }
+
+  .table-tools {
+    align-items: stretch;
+    flex-direction: column;
+    margin-bottom: 0;
+    padding: 14px;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .tool-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    .tool-btn {
+      width: 100%;
+      min-width: 0;
+      min-height: 44px;
+      justify-content: center;
+      padding-inline: 10px;
+    }
+  }
+
+  .filter-panel {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+    margin: 0;
+    padding: 14px;
+    border-width: 1px 0;
+    border-radius: 0;
+
+    .filter-group {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .filter-chips {
+      align-items: stretch;
+      flex-wrap: wrap;
+
+      .chip {
+        min-height: 40px;
+        justify-content: center;
+      }
+    }
+
+    .filter-meta {
+      justify-content: space-between;
+
+      .reset-btn {
+        min-height: 40px;
+        padding-inline: 12px;
+      }
+    }
+  }
+
+  .credit-card-desktop-table {
+    display: none;
+  }
+
+  .credit-card-mobile-list {
+    display: grid;
+    gap: 14px;
+    padding: 14px;
+    background: color-mix(in srgb, var(--blue) 2%, var(--surface));
+  }
+
+  .mobile-total-card,
+  .mobile-bank-group,
+  .mobile-credit-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: 0 5px 18px rgba(15, 23, 42, 0.05);
+  }
+
+  .mobile-total-card {
+    padding: 16px;
+    border-color: color-mix(in srgb, var(--blue) 35%, var(--border));
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--blue) 7%, var(--surface));
+
+    > strong {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--blue);
+      font-size: 12px;
+      letter-spacing: .35px;
+      text-transform: uppercase;
+    }
+  }
+
+  .mobile-total-metrics,
+  .mobile-bank-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+
+    > div {
+      display: grid;
+      min-width: 0;
+      gap: 5px;
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+    }
+
+    small {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    b,
+    strong {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      color: var(--navy);
+      font-size: 12px;
+    }
+  }
+
+  .mobile-bank-group {
+    overflow: hidden;
+    border-radius: 16px;
+  }
+
+  .mobile-bank-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--blue) 6%, var(--surface));
+  }
+
+  .mobile-balance-action {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid color-mix(in srgb, var(--blue) 38%, var(--border));
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .mobile-balance-action:focus-visible,
+  .mobile-card-action:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+
+  .mobile-bank-metrics {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mobile-bank-cards {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .mobile-credit-card {
+    overflow: hidden;
+    border-radius: 13px;
+  }
+
+  .mobile-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mobile-card-identity {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 10px;
+
+    > div {
+      min-width: 0;
+    }
+
+    strong,
+    small {
+      display: block;
+    }
+
+    strong {
+      overflow-wrap: anywhere;
+      color: var(--navy);
+      font-size: 13px;
+    }
+
+    small {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 10.5px;
+      line-height: 1.4;
+    }
+  }
+
+  .mobile-card-sequence {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .mobile-card-header > .status {
+    flex: 0 0 auto;
+    max-width: 36%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-card-dates {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    margin: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--border);
+
+    > div {
+      min-width: 0;
+      padding: 12px 13px;
+      background: var(--surface);
+    }
+
+    dt {
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    dd {
+      margin: 0;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 800;
+    }
+  }
+
+  .mobile-billing-summary {
+    display: grid;
+    gap: 8px;
+    padding: 13px;
+    border-bottom: 1px solid var(--border);
+
+    > small {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .billing-table-cell {
+      white-space: normal;
+
+      b,
+      > span:not(.billing-badge) {
+        color: var(--muted);
+        font-size: 10.5px;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .mobile-card-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+    padding: 12px 13px;
+  }
+
+  .mobile-card-action {
+    min-height: 44px;
+    justify-content: center;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 800;
+
+    &.primary-action {
+      border-color: color-mix(in srgb, var(--blue) 40%, var(--border));
+      background: color-mix(in srgb, var(--blue) 8%, var(--surface));
+    }
+  }
+
+  .pagination {
+    gap: 12px;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+
+    button,
+    b {
+      min-width: 40px;
+      min-height: 40px;
+    }
+  }
+
+  .bank-group-summary {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bank-group-metrics {
+    > div {
+      min-width: 0;
+      flex: 1;
+    }
+  }
+
   .resource-form-grid {
     grid-template-columns: 1fr;
   }
@@ -443,9 +970,82 @@ tr.billing-row.billing-overdue > td {
   .resource-form-grid .full-width {
     grid-column: auto;
   }
+
+  .resource-dialog,
+  .resource-dialog.credit-card-dialog {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: min(94dvh, 860px);
+    max-height: 94dvh;
+    padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    > header {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      margin-inline: -16px;
+      padding: 18px 16px 14px;
+      background: var(--surface);
+    }
+
+    > p {
+      margin-top: 16px;
+    }
+
+    > footer {
+      position: sticky;
+      bottom: calc(-16px - env(safe-area-inset-bottom));
+      z-index: 4;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin: 20px -16px calc(-16px - env(safe-area-inset-bottom));
+      padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+      background: var(--surface);
+
+      .btn {
+        min-height: 44px;
+        justify-content: center;
+      }
+    }
+  }
+
+  .card-dialog-layout {
+    .preview-column {
+      width: 100%;
+      max-width: 360px;
+    }
+  }
 }
 
 :host-context(html[data-theme=dark]) {
+  .mobile-total-card,
+  .mobile-bank-group,
+  .mobile-credit-card,
+  .mobile-total-metrics > div,
+  .mobile-bank-metrics > div,
+  .mobile-card-dates > div,
+  .mobile-balance-action,
+  .mobile-card-action,
+  .resource-dialog > header,
+  .resource-dialog > footer {
+    background: var(--surface);
+  }
+
+  .mobile-total-metrics b,
+  .mobile-total-metrics strong,
+  .mobile-bank-metrics b,
+  .mobile-bank-metrics strong,
+  .mobile-card-identity strong,
+  .mobile-card-dates dd {
+    color: #f2f7fc;
+  }
+
   .billing-badge.billing-needs-input {
     border-color: #facc15;
     background: #422f0b;

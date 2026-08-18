@@ -3,12 +3,17 @@ export const englishTranslations = {
   'language.english': 'English',
   'language.vietnamese': 'Tiếng Việt',
   'theme.label': 'Theme',
+  'theme.system': 'System',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
   'common.login': 'Log in',
   'common.register': 'Sign up',
   'common.startFree': 'Start for free',
   'common.search': 'Search',
+  'common.all': 'All',
   'common.filter': 'Filter',
   'common.export': 'Export data',
+  'common.reset': 'Reset',
   'common.addNew': 'Add new',
   'common.edit': 'Edit',
   'common.actions': 'Actions',
@@ -129,6 +134,9 @@ export const englishTranslations = {
   'shell.searchEmpty': 'No matching results',
   'shell.searchHint': 'Type at least 2 characters to search your data',
   'shell.searchPartialError': 'Some data sources could not be searched.',
+  'shell.closeSearch': 'Close search',
+  'shell.openAccountMenu': 'Open account menu',
+  'shell.preferences': 'Preferences',
   'shell.profile': 'Profile',
   'shell.logout': 'Log out',
   'dashboard.date': 'Wednesday, July 22',
@@ -178,6 +186,7 @@ export const englishTranslations = {
   'resource.flowSystem': 'SYSTEM',
   'resource.description': 'Track, search and reconcile your own data.',
   'resource.searchPlaceholder': 'Search…',
+  'resource.filteredRecordCount': '{shown} / {total} records',
   'resource.recordCount': '{shown} / {total} records',
   'resource.emptyTitle': 'No data yet',
   'resource.emptyBody': 'Add your first record to start tracking and reconciling.',
@@ -214,6 +223,8 @@ export const englishTranslations = {
   'form.billingCycle': 'Update monthly statement',
   'form.billingCycleDescription': 'Enter the statement amounts and confirm whether the full balance has been paid.',
   'form.minimumPaymentExceedsBalance': 'Minimum payment cannot exceed the statement balance.',
+  'form.minimumPaymentRequired': 'Minimum payment must be greater than zero when the statement has a balance.',
+  'form.zeroStatementHint': 'A zero statement is completed automatically without creating a payment.',
   'form.addAccount': 'Add investment account',
   'form.addAccountDescription': 'Connect an account to an available investment platform.',
   'form.editAccount': 'Edit investment account',
@@ -261,12 +272,14 @@ export const englishTranslations = {
   'ledger.description': 'Review balance movements for one investment account.',
   'ledger.empty': 'Select an account with recorded operations to view its ledger.',
   'error.serverUnavailable': 'Unable to connect to the server',
+  'route.login': 'Log in',
   'route.overview': 'Overview',
   'route.creditDashboard': 'Credit card dashboard',
   'route.investmentDashboard': 'Investment dashboard',
   'route.adminUsers': 'User management',
   'route.adminBanks': 'Bank management',
   'route.profile': 'Profile',
+  'route.banks': 'Bank directory',
   'route.myCards': 'My cards',
   'route.creditReports': 'Credit card reports',
   'route.investmentPlatforms': 'Investment platforms',
@@ -293,6 +306,8 @@ export const englishTranslations = {
   'field.cardName': 'Card',
   'field.reference': 'Reference'
   ,'field.bankId': 'Bank'
+  ,'field.sequence': 'No.'
+  ,'field.cardType': 'Card type'
   ,'field.nickname': 'Card holder'
   ,'field.lastFour': 'Last four digits'
   ,'field.creditLimit': 'Credit limit'
@@ -380,7 +395,20 @@ export const englishTranslations = {
   ,'bank.fieldHotlinePlaceholder': '1900xxxx'
   ,'bank.fieldWebsite': 'Website'
   ,'bank.fieldWebsitePlaceholder': 'https://bank.com.vn'
-  ,'field.currentBalance': 'Shared current balance'
+  ,'field.currentBalance': 'Current balance'
+  ,'creditCards.cardCount': '{count} cards'
+  ,'creditCards.cardTypeMissing': 'Not updated'
+  ,'creditCards.totalAllBanks': 'Total — all banks'
+  ,'creditCards.totalCreditLimit': 'Total credit limit'
+  ,'creditCards.totalBalance': 'Total current balance'
+  ,'creditCards.previewTitle': 'Live card preview'
+  ,'creditBalance.edit': 'Edit current balance'
+  ,'creditBalance.editFor': 'Edit {bank} current balance'
+  ,'creditBalance.editDescription': 'Enter the remaining credit. The adjustment is recorded without rewriting card statements.'
+  ,'creditBalance.currentValue': 'Current remaining credit'
+  ,'creditBalance.rangeHint': 'Enter an amount from 0 to {limit}.'
+  ,'creditBalance.reason': 'Adjustment reason'
+  ,'creditBalance.reasonRequired': 'Enter a reason with no more than 500 characters.'
   ,'creditDashboard.eyebrow': 'CREDIT CARDS'
   ,'creditDashboard.title': 'Credit card debt overview'
   ,'creditDashboard.description': 'See statement debt, current balance and credit usage by bank.'
@@ -388,16 +416,21 @@ export const englishTranslations = {
   ,'creditDashboard.currentBalance': 'Current balance'
   ,'creditDashboard.totalCreditLimit': 'Total credit limit'
   ,'creditDashboard.availableCredit': 'Available credit'
+  ,'creditDashboard.usedCredit': 'Used credit'
   ,'creditDashboard.utilization': '{value}% used'
   ,'creditDashboard.usageByBank': 'Credit usage by bank'
-  ,'creditDashboard.usageByBankDescription': 'Current balance compared with total credit limit'
-  ,'creditDashboard.chartAria': 'Current balance divided by total credit limit for each bank'
+  ,'creditDashboard.usageByBankDescription': 'Used credit compared with total credit limit'
+  ,'creditDashboard.chartAria': 'Used credit divided by total credit limit for each bank'
+  ,'creditDashboard.mobileBankOverview': 'Bank overview'
+  ,'creditDashboard.mobileBankDescription': 'Tap a bank to see balances and credit cards.'
+  ,'creditDashboard.cardList': 'Credit cards'
   ,'creditDashboard.debtDetail': 'Debt details'
   ,'creditDashboard.debtDetailDescription': 'Expand a bank to see each credit card.'
   ,'creditDashboard.bankCard': 'Bank / Card'
   ,'creditDashboard.statementDebt': 'Statement debt'
   ,'creditDashboard.creditLimit': 'Credit limit'
   ,'creditDashboard.available': 'Available'
+  ,'creditDashboard.used': 'Used'
   ,'creditDashboard.utilizationColumn': 'Utilization'
   ,'creditDashboard.status': 'Status'
   ,'creditDashboard.cards': '{count} cards'
@@ -425,12 +458,17 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'language.english': 'English',
   'language.vietnamese': 'Tiếng Việt',
   'theme.label': 'Giao diện',
+  'theme.system': 'Theo hệ thống',
+  'theme.light': 'Sáng',
+  'theme.dark': 'Tối',
   'common.login': 'Đăng nhập',
   'common.register': 'Đăng ký',
   'common.startFree': 'Bắt đầu miễn phí',
   'common.search': 'Tìm kiếm',
+  'common.all': 'Tất cả',
   'common.filter': 'Bộ lọc',
   'common.export': 'Xuất dữ liệu',
+  'common.reset': 'Đặt lại',
   'common.addNew': 'Thêm mới',
   'common.edit': 'Sửa',
   'common.actions': 'Thao tác',
@@ -551,6 +589,9 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'shell.searchEmpty': 'Không tìm thấy kết quả phù hợp',
   'shell.searchHint': 'Nhập ít nhất 2 ký tự để tìm dữ liệu',
   'shell.searchPartialError': 'Không thể tìm kiếm từ một số nguồn dữ liệu.',
+  'shell.closeSearch': 'Đóng tìm kiếm',
+  'shell.openAccountMenu': 'Mở menu tài khoản',
+  'shell.preferences': 'Tùy chọn',
   'shell.profile': 'Hồ sơ cá nhân',
   'shell.logout': 'Đăng xuất',
   'dashboard.date': 'Thứ Tư, 22 tháng 7',
@@ -600,6 +641,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'resource.flowSystem': 'HỆ THỐNG',
   'resource.description': 'Theo dõi, tìm kiếm và đối soát dữ liệu của riêng bạn.',
   'resource.searchPlaceholder': 'Tìm kiếm…',
+  'resource.filteredRecordCount': '{shown} / {total} bản ghi',
   'resource.recordCount': '{shown} / {total} bản ghi',
   'resource.emptyTitle': 'Chưa có dữ liệu',
   'resource.emptyBody': 'Thêm bản ghi đầu tiên để bắt đầu theo dõi và đối soát.',
@@ -636,6 +678,8 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'form.billingCycle': 'Cập nhật sao kê tháng',
   'form.billingCycleDescription': 'Nhập số tiền sao kê và xác nhận đã thanh toán toàn bộ dư nợ hay chưa.',
   'form.minimumPaymentExceedsBalance': 'Mức thanh toán tối thiểu không được lớn hơn tổng dư nợ sao kê.',
+  'form.minimumPaymentRequired': 'Thanh toán tối thiểu phải lớn hơn 0 khi sao kê có dư nợ.',
+  'form.zeroStatementHint': 'Sao kê 0 đồng được tự động hoàn tất và không tạo giao dịch thanh toán.',
   'form.addAccount': 'Thêm tài khoản đầu tư',
   'form.addAccountDescription': 'Kết nối tài khoản với một nền tảng đầu tư.',
   'form.editAccount': 'Sửa tài khoản đầu tư',
@@ -683,12 +727,14 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'ledger.description': 'Xem biến động số dư của một tài khoản đầu tư.',
   'ledger.empty': 'Chọn tài khoản đã có nghiệp vụ để xem ledger.',
   'error.serverUnavailable': 'Không thể kết nối đến máy chủ',
+  'route.login': 'Đăng nhập',
   'route.overview': 'Tổng quan',
   'route.creditDashboard': 'Dashboard thẻ tín dụng',
   'route.investmentDashboard': 'Dashboard đầu tư',
   'route.adminUsers': 'Quản lý người dùng',
   'route.adminBanks': 'Quản lý ngân hàng',
   'route.profile': 'Hồ sơ cá nhân',
+  'route.banks': 'Danh sách ngân hàng',
   'route.myCards': 'Thẻ của tôi',
   'route.creditReports': 'Báo cáo thẻ tín dụng',
   'route.investmentPlatforms': 'Nền tảng đầu tư',
@@ -715,6 +761,8 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'field.cardName': 'Thẻ',
   'field.reference': 'Tham chiếu'
   ,'field.bankId': 'Ngân hàng'
+  ,'field.sequence': 'STT'
+  ,'field.cardType': 'Loại thẻ'
   ,'field.nickname': 'Card holder (Chủ thẻ)'
   ,'field.lastFour': 'Bốn số cuối'
   ,'field.creditLimit': 'Hạn mức tín dụng'
@@ -802,24 +850,42 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'bank.fieldHotlinePlaceholder': '1900xxxx'
   ,'bank.fieldWebsite': 'Website'
   ,'bank.fieldWebsitePlaceholder': 'https://bank.com.vn'
-  ,'field.currentBalance': 'Dư nợ hiện tại dùng chung'
+  ,'field.currentBalance': 'Hạn mức còn lại'
+  ,'creditCards.cardCount': '{count} thẻ'
+  ,'creditCards.cardTypeMissing': 'Chưa cập nhật'
+  ,'creditCards.totalAllBanks': 'Tổng tất cả ngân hàng'
+  ,'creditCards.totalCreditLimit': 'Tổng hạn mức'
+  ,'creditCards.totalBalance': 'Tổng hạn mức còn lại'
+  ,'creditCards.previewTitle': 'Xem trước thẻ trực quan'
+  ,'creditBalance.edit': 'Sửa hạn mức còn lại'
+  ,'creditBalance.editFor': 'Sửa hạn mức còn lại của {bank}'
+  ,'creditBalance.editDescription': 'Nhập hạn mức còn lại. Hệ thống lưu điều chỉnh mà không sửa lại các kỳ sao kê.'
+  ,'creditBalance.currentValue': 'Hạn mức còn lại hiện tại'
+  ,'creditBalance.rangeHint': 'Nhập số tiền từ 0 đến {limit}.'
+  ,'creditBalance.reason': 'Lý do điều chỉnh'
+  ,'creditBalance.reasonRequired': 'Vui lòng nhập lý do không quá 500 ký tự.'
   ,'creditDashboard.eyebrow': 'THẺ TÍN DỤNG'
   ,'creditDashboard.title': 'Tổng quan dư nợ thẻ'
   ,'creditDashboard.description': 'Theo dõi dư nợ sao kê, dư nợ hiện tại và mức sử dụng theo ngân hàng.'
   ,'creditDashboard.totalStatementDebt': 'Tổng dư nợ sao kê'
-  ,'creditDashboard.currentBalance': 'Dư nợ hiện tại'
+  ,'creditDashboard.currentBalance': 'Hạn mức còn lại'
   ,'creditDashboard.totalCreditLimit': 'Tổng hạn mức'
   ,'creditDashboard.availableCredit': 'Hạn mức còn lại'
+  ,'creditDashboard.usedCredit': 'Đã sử dụng'
   ,'creditDashboard.utilization': 'Đã dùng {value}%'
   ,'creditDashboard.usageByBank': 'Mức sử dụng theo ngân hàng'
-  ,'creditDashboard.usageByBankDescription': 'Dư nợ hiện tại trên tổng hạn mức tín dụng'
-  ,'creditDashboard.chartAria': 'Dư nợ hiện tại chia cho tổng hạn mức của từng ngân hàng'
+  ,'creditDashboard.usageByBankDescription': 'Số tiền đã sử dụng trên tổng hạn mức tín dụng'
+  ,'creditDashboard.chartAria': 'Số tiền đã sử dụng chia cho tổng hạn mức của từng ngân hàng'
+  ,'creditDashboard.mobileBankOverview': 'Tổng quan theo ngân hàng'
+  ,'creditDashboard.mobileBankDescription': 'Chọn ngân hàng để xem chi tiết dư nợ và thẻ.'
+  ,'creditDashboard.cardList': 'Danh sách thẻ'
   ,'creditDashboard.debtDetail': 'Chi tiết dư nợ'
   ,'creditDashboard.debtDetailDescription': 'Mở rộng ngân hàng để xem từng thẻ tín dụng.'
   ,'creditDashboard.bankCard': 'Ngân hàng / Thẻ'
   ,'creditDashboard.statementDebt': 'Dư nợ sao kê'
   ,'creditDashboard.creditLimit': 'Hạn mức'
   ,'creditDashboard.available': 'Còn lại'
+  ,'creditDashboard.used': 'Đã dùng'
   ,'creditDashboard.utilizationColumn': 'Mức sử dụng'
   ,'creditDashboard.status': 'Trạng thái'
   ,'creditDashboard.cards': '{count} thẻ'

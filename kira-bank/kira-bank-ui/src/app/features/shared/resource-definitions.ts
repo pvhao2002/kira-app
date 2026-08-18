@@ -82,6 +82,7 @@ const statusOptions: SelectOption[] = [
 
 const cardFields: ResourceField[] = [
   {name: 'bankId', labelKey: 'field.bankId', type: 'select', lookup: 'banks', required: true, readonlyOnEdit: true},
+  {name: 'cardType', labelKey: 'field.cardType', type: 'text', required: true, maxLength: 150},
   {name: 'nickname', labelKey: 'field.nickname', type: 'text', required: true, maxLength: 100},
   {name: 'lastFour', labelKey: 'field.lastFour', type: 'text', pattern: '^\\d{4}$', maxLength: 4},
   {name: 'creditLimit', labelKey: 'field.creditLimit', type: 'money', required: true, min: 0.0001},
@@ -98,8 +99,8 @@ const billingCycleForm: ResourceFormDefinition = {
   validation: 'billingCycle',
   fields: [
     {name: 'billingCycleId', labelKey: 'field.billingStatus', type: 'hidden'},
-    {name: 'statementBalance', labelKey: 'field.statementBalance', type: 'money', required: true, min: 0.0001},
-    {name: 'minimumPayment', labelKey: 'field.minimumPayment', type: 'money', required: true, min: 0.0001},
+    {name: 'statementBalance', labelKey: 'field.statementBalance', type: 'money', required: true, min: 0},
+    {name: 'minimumPayment', labelKey: 'field.minimumPayment', type: 'money', required: true, min: 0},
     {
       name: 'paymentStatus',
       labelKey: 'field.paymentStatus',
@@ -135,6 +136,7 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
     rowHighlightField: 'billingStatus',
     columns: [
       {name: 'bankName', kind: 'bank', imageField: 'bankLogoUrl', secondaryField: 'lastFour'},
+      {name: 'cardType'},
       {name: 'nickname'},
       {name: 'creditLimit', kind: 'money', currencyField: 'currency'},
       {name: 'currentBalance', kind: 'money', currencyField: 'currency'},

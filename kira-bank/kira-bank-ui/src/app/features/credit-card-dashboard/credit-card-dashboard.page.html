@@ -23,7 +23,7 @@
 } @else if (data(); as dashboard) {
   @if (dashboard.banks.length === 0) {
     <section class="empty-state panel">
-      <span aria-hidden="true">◇</span>
+      <span aria-hidden="true"><app-icon name="card"/></span>
       <h2>{{ i18n.t('creditDashboard.emptyTitle') }}</h2>
       <p>{{ i18n.t('creditDashboard.emptyDescription') }}</p>
     </section>
@@ -33,9 +33,9 @@
         <small>{{ i18n.t('creditDashboard.totalStatementDebt') }}</small>
         <strong>{{ formatMoney(dashboard.totalStatementDebt, dashboard.currency) }}</strong>
       </article>
-      <article class="debt-kpi current-kpi">
+      <article class="debt-kpi current-kpi" [class.negative]="dashboard.availableCredit < 0">
         <small>{{ i18n.t('creditDashboard.currentBalance') }}</small>
-        <strong>{{ formatMoney(dashboard.currentBalance, dashboard.currency) }}</strong>
+        <strong>{{ formatMoney(dashboard.availableCredit, dashboard.currency) }}</strong>
         <span>{{ i18n.t('creditDashboard.utilization', {value: formatRate(dashboard.utilizationRate)}) }}</span>
       </article>
       <article class="debt-kpi">
@@ -43,8 +43,8 @@
         <strong>{{ formatMoney(dashboard.totalCreditLimit, dashboard.currency) }}</strong>
       </article>
       <article class="debt-kpi" [class.negative]="dashboard.availableCredit < 0">
-        <small>{{ i18n.t('creditDashboard.availableCredit') }}</small>
-        <strong>{{ formatMoney(dashboard.availableCredit, dashboard.currency) }}</strong>
+        <small>{{ i18n.t('creditDashboard.usedCredit') }}</small>
+        <strong>{{ formatMoney(dashboard.currentBalance, dashboard.currency) }}</strong>
         @if (dashboard.availableCredit < 0) {
           <span>{{ i18n.t('creditDashboard.overLimit') }}</span>
         }
@@ -92,6 +92,127 @@
       </div>
     </section>
 
+    <section class="panel mobile-bank-dashboard">
+      <header class="mobile-bank-dashboard-header">
+        <h2>{{ i18n.t('creditDashboard.mobileBankOverview') }}</h2>
+        <p>{{ i18n.t('creditDashboard.mobileBankDescription') }}</p>
+      </header>
+
+      <div class="mobile-bank-list">
+        @for (bank of dashboard.banks; track bank.bankId) {
+          <article class="mobile-bank-card"
+                   [class.expanded]="expandedBanks().has(bank.bankId)"
+                   [class.over-limit]="bank.utilizationRate > 100">
+            <button (click)="toggleBank(bank.bankId)"
+                    [attr.aria-expanded]="expandedBanks().has(bank.bankId)"
+                    [attr.aria-label]="i18n.t(expandedBanks().has(bank.bankId) ? 'creditDashboard.collapseBank' : 'creditDashboard.expandBank', {bank: bank.bankName})"
+                    class="mobile-bank-disclosure"
+                    type="button">
+              <span class="mobile-bank-identity">
+                <span class="mobile-bank-logo" aria-hidden="true">
+                  <span class="mobile-bank-fallback">{{ bank.bankName.slice(0, 1) }}</span>
+                  @if (bank.bankLogoUrl) {
+                    <img (error)="hideMobileLogo($event)" [src]="bank.bankLogoUrl" alt="">
+                  }
+                </span>
+                <span class="mobile-bank-name">
+                  <strong>{{ bank.bankName }}</strong>
+                  <small>{{ i18n.t('creditDashboard.cards', {count: bank.cardCount}) }}</small>
+                </span>
+              </span>
+              <span class="mobile-bank-rate" [class.over]="bank.utilizationRate > 100">
+                {{ formatRate(bank.utilizationRate) }}%
+              </span>
+              <svg aria-hidden="true" viewBox="0 0 20 20">
+                <path d="m7 5 5 5-5 5"/>
+              </svg>
+            </button>
+
+            <div class="mobile-bank-usage">
+              <div class="mobile-bank-usage-values">
+                <span>{{ i18n.t('creditDashboard.usedCredit') }}</span>
+                <strong>{{ formatMoney(bank.currentBalance, bank.currency) }}</strong>
+                <small>/ {{ formatMoney(bank.totalCreditLimit, bank.currency) }}</small>
+              </div>
+              <div class="mobile-usage-track"
+                   role="progressbar"
+                   [attr.aria-label]="i18n.t('creditDashboard.utilization', {value: formatRate(bank.utilizationRate)})"
+                   [attr.aria-valuemin]="0"
+                   [attr.aria-valuemax]="100"
+                   [attr.aria-valuenow]="barWidth(bank.utilizationRate)">
+                <span [style.width.%]="barWidth(bank.utilizationRate)"></span>
+              </div>
+              @if (bank.utilizationRate > 100) {
+                <small class="mobile-over-limit-label">{{ i18n.t('creditDashboard.overLimit') }}</small>
+              }
+            </div>
+
+            @if (expandedBanks().has(bank.bankId)) {
+              <div class="mobile-bank-expanded">
+                <dl class="mobile-bank-metrics">
+                  <div>
+                    <dt>{{ i18n.t('creditDashboard.statementDebt') }}</dt>
+                    <dd>{{ formatMoney(bank.statementDebt, bank.currency) }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ i18n.t('creditDashboard.currentBalance') }}</dt>
+                    <dd class="current-value" [class.negative-value]="bank.availableCredit < 0">
+                      {{ formatMoney(bank.availableCredit, bank.currency) }}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{{ i18n.t('creditDashboard.creditLimit') }}</dt>
+                    <dd>{{ formatMoney(bank.totalCreditLimit, bank.currency) }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ i18n.t('creditDashboard.used') }}</dt>
+                    <dd>{{ formatMoney(bank.currentBalance, bank.currency) }}</dd>
+                  </div>
+                </dl>
+
+                <div class="mobile-bank-actions" role="group">
+                  <button (click)="openBalanceEditor(bank)"
+                          [attr.aria-label]="i18n.t('creditBalance.editFor', {bank: bank.bankName})"
+                          class="btn ghost"
+                          type="button">
+                    {{ i18n.t('creditBalance.edit') }}
+                  </button>
+                  <button (click)="openLimitEditor(bank)"
+                          [attr.aria-label]="i18n.t('creditDashboard.editLimitFor', {bank: bank.bankName})"
+                          class="btn ghost"
+                          type="button">
+                    {{ i18n.t('creditDashboard.editLimit') }}
+                  </button>
+                </div>
+
+                <section class="mobile-card-list"
+                         [attr.aria-label]="i18n.t('creditDashboard.cardList')">
+                  <h3>{{ i18n.t('creditDashboard.cardList') }}</h3>
+                  @for (card of bank.cards; track card.id) {
+                    <article class="mobile-debt-card">
+                      <div class="mobile-card-identity">
+                        <div>
+                          <strong>{{ card.nickname }}</strong>
+                          @if (card.lastFour) {
+                            <small>{{ i18n.t('creditDashboard.lastFour', {value: card.lastFour}) }}</small>
+                          }
+                        </div>
+                        <span class="status">{{ card.status }}</span>
+                      </div>
+                      <div class="mobile-card-debt">
+                        <span>{{ i18n.t('creditDashboard.statementDebt') }}</span>
+                        <strong>{{ formatMoney(card.statementDebt, card.currency) }}</strong>
+                      </div>
+                    </article>
+                  }
+                </section>
+              </div>
+            }
+          </article>
+        }
+      </div>
+    </section>
+
     <section class="panel detail-panel">
       <header>
         <div>
@@ -107,7 +228,7 @@
             <th>{{ i18n.t('creditDashboard.statementDebt') }}</th>
             <th>{{ i18n.t('creditDashboard.currentBalance') }}</th>
             <th>{{ i18n.t('creditDashboard.creditLimit') }}</th>
-            <th>{{ i18n.t('creditDashboard.available') }}</th>
+            <th>{{ i18n.t('creditDashboard.used') }}</th>
             <th>{{ i18n.t('creditDashboard.utilizationColumn') }}</th>
             <th>{{ i18n.t('creditDashboard.status') }}</th>
           </tr>
@@ -133,14 +254,19 @@
                   </button>
                 </td>
                 <td>{{ formatMoney(bank.statementDebt, bank.currency) }}</td>
-                <td class="current-value">{{ formatMoney(bank.currentBalance, bank.currency) }}</td>
+                <td class="current-value" [class.negative-value]="bank.availableCredit < 0">{{ formatMoney(bank.availableCredit, bank.currency) }}</td>
                 <td>{{ formatMoney(bank.totalCreditLimit, bank.currency) }}</td>
-                <td [class.negative-value]="bank.availableCredit < 0">{{ formatMoney(bank.availableCredit, bank.currency) }}</td>
+                <td>{{ formatMoney(bank.currentBalance, bank.currency) }}</td>
                 <td><span class="rate-value" [class.over]="bank.utilizationRate > 100">{{ formatRate(bank.utilizationRate) }}%</span></td>
                 <td>
-                  <button (click)="openLimitEditor(bank)" class="limit-action" type="button">
-                    {{ i18n.t('creditDashboard.editLimit') }}
-                  </button>
+                  <span class="bank-actions">
+                    <button (click)="openBalanceEditor(bank)" class="limit-action" type="button">
+                      {{ i18n.t('creditBalance.edit') }}
+                    </button>
+                    <button (click)="openLimitEditor(bank)" class="limit-action" type="button">
+                      {{ i18n.t('creditDashboard.editLimit') }}
+                    </button>
+                  </span>
                 </td>
               </tr>
               @if (expandedBanks().has(bank.bankId)) {
@@ -171,9 +297,9 @@
           <tr class="total-row">
             <td>{{ i18n.t('creditDashboard.totalAllBanks') }}</td>
             <td>{{ formatMoney(dashboard.totalStatementDebt, dashboard.currency) }}</td>
-            <td class="current-value">{{ formatMoney(dashboard.currentBalance, dashboard.currency) }}</td>
+            <td class="current-value" [class.negative-value]="dashboard.availableCredit < 0">{{ formatMoney(dashboard.availableCredit, dashboard.currency) }}</td>
             <td>{{ formatMoney(dashboard.totalCreditLimit, dashboard.currency) }}</td>
-            <td [class.negative-value]="dashboard.availableCredit < 0">{{ formatMoney(dashboard.availableCredit, dashboard.currency) }}</td>
+            <td>{{ formatMoney(dashboard.currentBalance, dashboard.currency) }}</td>
             <td><span class="rate-value" [class.over]="dashboard.utilizationRate > 100">{{ formatRate(dashboard.utilizationRate) }}%</span></td>
             <td>—</td>
           </tr>
@@ -184,13 +310,28 @@
   }
 }
 
+@if (editingBalanceBank(); as bank) {
+  <app-bank-balance-dialog
+    (closed)="closeBalanceEditor()"
+    (saved)="saveBalance($event)"
+    [bank]="bank"
+    [error]="balanceError()"
+    [saving]="balanceSaving()">
+  </app-bank-balance-dialog>
+}
+
 @if (editingLimitBank(); as bank) {
-  <div (click)="closeLimitEditor()" class="dialog-backdrop">
-    <form (click)="$event.stopPropagation()" (submit)="saveLimit($event)" class="dialog limit-dialog">
+  <div (click)="closeLimitEditor()" (keydown.escape)="closeLimitEditor()" class="dialog-backdrop">
+    <form (click)="$event.stopPropagation()"
+          (submit)="saveLimit($event)"
+          aria-modal="true"
+          aria-labelledby="limit-dialog-title"
+          class="dialog limit-dialog"
+          role="dialog">
       <header>
         <div>
           <small>{{ i18n.t('creditDashboard.sharedLimit') }}</small>
-          <h2>{{ i18n.t('creditDashboard.editLimitFor', {bank: bank.bankName}) }}</h2>
+          <h2 id="limit-dialog-title">{{ i18n.t('creditDashboard.editLimitFor', {bank: bank.bankName}) }}</h2>
         </div>
         <button (click)="closeLimitEditor()" [attr.aria-label]="i18n.t('common.close')" type="button">×</button>
       </header>
@@ -198,11 +339,14 @@
       <label class="limit-field">
         <span>{{ i18n.t('field.creditLimit') }} <b>*</b></span>
         <input #limitInput
-               (input)="limitValue.set(limitInput.valueAsNumber)"
-               [value]="limitValue()"
+               (moneyValueChange)="limitValue.set($event)"
+               [attr.aria-invalid]="limitError() ? 'true' : null"
+               [moneyValue]="limitValue()"
+               appMoneyInput
+               autofocus
                min="0.01"
-               step="0.01"
-               type="number">
+               required
+               type="text">
       </label>
       @if (limitError()) {
         <div class="form-error">{{ limitError() }}</div>

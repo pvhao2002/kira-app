@@ -10,7 +10,7 @@
             aria-haspopup="listbox"
             class="btn ghost date-range-trigger"
             type="button">
-      {{ dateRangeLabel() }} <span aria-hidden="true">⌄</span>
+      {{ dateRangeLabel() }} <span aria-hidden="true"><app-icon name="chevron-down"/></span>
     </button>
     @if (dateRangeOpen()) {
       <div [attr.aria-label]="i18n.t('dashboard.changeDateRange')" class="date-range-menu" role="listbox">
@@ -21,7 +21,7 @@
                   type="button">
             {{ i18n.t(option.labelKey) }}
             @if (selectedDateRange() === option.days) {
-              <span aria-hidden="true">✓</span>
+              <span aria-hidden="true"><app-icon name="check"/></span>
             }
           </button>
         }
@@ -32,13 +32,13 @@
 
 <section class="flow-section credit-section">
   <div class="section-title">
-    <div><span class="flow-icon">▭</span>
+    <div><span class="flow-icon"><app-icon name="card"/></span>
       <div><h2>{{ i18n.t('dashboard.flowCredit') }}</h2></div>
     </div>
     <a routerLink="/app/credit-card/dashboard">{{ i18n.t('dashboard.goToDashboard') }}</a></div>
   <div class="kpi-grid">@for (kpi of credit(); track kpi.label) {
     <article class="kpi">
-      <span>{{ kpi.icon }}</span><small>{{ kpi.label }}</small><strong>{{ kpi.value }}</strong><em>{{ kpi.trend }}</em>
+      <span><app-icon [name]="kpi.icon"/></span><small>{{ kpi.label }}</small><strong>{{ kpi.value }}</strong><em>{{ kpi.trend }}</em>
     </article>
   }</div>
   <div class="dashboard-grid">
@@ -80,13 +80,13 @@
 
 <section class="flow-section invest-section">
   <div class="section-title">
-    <div><span class="flow-icon">↗</span>
+    <div><span class="flow-icon"><app-icon name="trend-up"/></span>
       <div><h2>{{ i18n.t('dashboard.flowInvestment') }}</h2></div>
     </div>
     <a routerLink="/app/investment/dashboard">{{ i18n.t('dashboard.goToDashboard') }}</a></div>
   <div class="kpi-grid">@for (kpi of invest(); track kpi.label) {
     <article class="kpi">
-      <span>{{ kpi.icon }}</span><small>{{ kpi.label }}</small><strong>{{ kpi.value }}</strong><em>{{ kpi.trend }}</em>
+      <span><app-icon [name]="kpi.icon"/></span><small>{{ kpi.label }}</small><strong>{{ kpi.value }}</strong><em>{{ kpi.trend }}</em>
     </article>
   }</div>
 </section>

@@ -55,11 +55,13 @@ export interface UserCreditCard {
   bankId: number;
   bankName: string;
   bankLogoUrl: string | null;
+  cardType: string | null;
   nickname: string;
   lastFour: string | null;
   creditLimit: number;
   creditLimitVersion: number;
   currentBalance: number;
+  balanceVersion: number;
   currency: string;
   statementDay: number;
   dueDay: number;
@@ -117,6 +119,7 @@ export interface CreditCardDebtBank {
   cardCount: number;
   totalCreditLimit: number;
   creditLimitVersion: number;
+  balanceVersion: number;
   statementDebt: number;
   currentBalance: number;
   availableCredit: number;
@@ -132,6 +135,17 @@ export interface CreditCardBankLimit {
   creditLimit: number;
   currency: string;
   version: number
+}
+
+export interface CreditCardBankBalanceResponse {
+  bankId: number;
+  bankName: string;
+  bankLogoUrl: string | null;
+  previousBalance: number;
+  currentBalance: number;
+  adjustmentAmount: number;
+  currency: string;
+  balanceVersion: number
 }
 
 export interface CreditCardDashboard {

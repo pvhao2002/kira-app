@@ -4,6 +4,7 @@ import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 
 public final class InvestmentDtos {
     private InvestmentDtos() {
@@ -16,7 +17,7 @@ public final class InvestmentDtos {
         @NotBlank @Size(max = 100) String accountUsername,
         @NotBlank @Size(max = 150) String accountEmail,
         @NotBlank @Size(max = 50) String phoneNumber,
-        @NotNull Instant registerDate,
+        @NotNull LocalDate registerDate,
         @NotBlank @Size(max = 100) String accountPassword,
         @Pattern(regexp = "[A-Z]{3}") String currency
     ) {
@@ -29,7 +30,7 @@ public final class InvestmentDtos {
         @Size(max = 100) String accountUsername,
         @Size(max = 150) String accountEmail,
         @Size(max = 50) String phoneNumber,
-        Instant registerDate,
+        LocalDate registerDate,
         @Size(max = 100) String accountPassword,
         @Size(max = 1000) String note,
         @NotBlank String status,
@@ -39,7 +40,7 @@ public final class InvestmentDtos {
 
     public record AccountResponse(
         Long id, Long platformId, String accountCode, String accountName, String externalAccountCode,
-        String accountUsername, String accountEmail, String phoneNumber, Instant registerDate, String accountPassword,
+        String accountUsername, String accountEmail, String phoneNumber, LocalDate registerDate, String accountPassword,
         String currency, BigDecimal currentBalance, BigDecimal availableCapital,
         BigDecimal lockedCapital, BigDecimal accumulatedProfit, BigDecimal accumulatedReward,
         BigDecimal reservedWithdrawal, String status, String note, long version

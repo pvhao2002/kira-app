@@ -8,11 +8,12 @@ import {TranslationKey} from '../i18n/translations';
 import {ApiService} from '../services/api.service';
 import {ToastService} from '../services/toast.service';
 import {LanguageSwitcherComponent} from '../../shared/language-switcher/language-switcher';
+import {IconComponent, IconName} from '../../shared/icon/icon';
 import {PageResponse, UserCreditCard} from '../../shared/models/api.models';
 
 interface NavItem {
   labelKey: TranslationKey;
-  icon: string;
+  icon: IconName;
   path: string
 }
 
@@ -29,7 +30,7 @@ interface GlobalSearchResult {
   group: SearchResultGroup;
   title: string;
   subtitle: string;
-  icon: string;
+  icon: IconName;
   imageUrl?: string | null;
   path: string;
   filtered: boolean;
@@ -54,7 +55,7 @@ interface SearchBatch<T> {
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, LanguageSwitcherComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LanguageSwitcherComponent, IconComponent],
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -66,9 +67,12 @@ export class AppShell {
   readonly menuOpen = signal(false);
   readonly userMenu = signal(false);
   readonly theme = signal<'light' | 'dark' | 'system'>((localStorage.getItem('kira-theme') as 'light' | 'dark' | 'system') || 'system');
-  readonly themeIcon = computed(() => this.theme() === 'dark' ? '☾' : this.theme() === 'light' ? '☀' : '◐');
+  readonly themeIcon = computed<IconName>(() => this.theme() === 'dark' ? 'moon' : this.theme() === 'light' ? 'sun' : 'monitor');
   readonly globalSearchInput = viewChild<ElementRef<HTMLInputElement>>('globalSearchInput');
   readonly globalSearchRoot = viewChild<ElementRef<HTMLElement>>('globalSearchRoot');
+  readonly mobileSearchTrigger = viewChild<ElementRef<HTMLButtonElement>>('mobileSearchTrigger');
+  readonly avatarButton = viewChild<ElementRef<HTMLButtonElement>>('avatarButton');
+  readonly userMenuPanel = viewChild<ElementRef<HTMLElement>>('userMenuPanel');
   readonly searchQuery = signal('');
   readonly searchOpen = signal(false);
   readonly searchLoading = signal(false);
@@ -76,20 +80,21 @@ export class AppShell {
   readonly selectedSearchIndex = signal(-1);
   readonly remoteSearchResults = signal<GlobalSearchResult[]>([]);
   readonly initials = computed(() => this.auth.user()?.fullName.split(' ').slice(-2).map(part => part[0]).join('').toUpperCase() ?? 'KB');
+  readonly themeLabel = computed(() => this.i18n.t(`theme.${this.theme()}`));
   readonly nav = computed<NavGroup[]>(() => {
     const groups: NavGroup[] = [
       {
         labelKey: 'shell.groupCredit', flow: 'credit', items: [
-          {labelKey: 'shell.dashboard', icon: '▦', path: '/app/credit-card/dashboard'},
-          {labelKey: 'shell.myCards', icon: '▭', path: '/app/credit-cards'},
-          {labelKey: 'shell.banks', icon: '🏦', path: '/app/banks'}
+          {labelKey: 'shell.dashboard', icon: 'dashboard', path: '/app/credit-card/dashboard'},
+          {labelKey: 'shell.myCards', icon: 'card', path: '/app/credit-cards'},
+          {labelKey: 'shell.banks', icon: 'bank', path: '/app/banks'}
         ]
       },
       {
         labelKey: 'shell.groupInvestment', flow: 'investment', items: [
-          {labelKey: 'shell.dashboard', icon: '▦', path: '/app/investment/dashboard'},
-          {labelKey: 'shell.accounts', icon: '◉', path: '/app/investment/accounts'},
-          {labelKey: 'shell.addTransaction', icon: '＋', path: '/app/investment/add-transaction'}
+          {labelKey: 'shell.dashboard', icon: 'dashboard', path: '/app/investment/dashboard'},
+          {labelKey: 'shell.accounts', icon: 'account', path: '/app/investment/accounts'},
+          {labelKey: 'shell.addTransaction', icon: 'plus', path: '/app/investment/add-transaction'}
         ]
       }
     ];
@@ -97,16 +102,16 @@ export class AppShell {
     if (this.auth.admin()) {
       groups.push({
         labelKey: 'shell.groupAdmin', flow: 'system', items: [
-          {labelKey: 'shell.adminUsers', icon: '👥', path: '/app/admin/users'},
-          {labelKey: 'shell.adminBanks', icon: '🏦', path: '/app/admin/banks'}
+          {labelKey: 'shell.adminUsers', icon: 'users', path: '/app/admin/users'},
+          {labelKey: 'shell.adminBanks', icon: 'bank', path: '/app/admin/banks'}
         ]
       });
     }
 
     groups.push({
       labelKey: 'shell.groupSystem', flow: 'system', items: [
-        {labelKey: 'shell.notifications', icon: '♢', path: '/app/notifications'},
-        {labelKey: 'shell.settings', icon: '⚙', path: '/app/settings'}
+        {labelKey: 'shell.notifications', icon: 'bell', path: '/app/notifications'},
+        {labelKey: 'shell.settings', icon: 'settings', path: '/app/settings'}
       ]
     });
 
@@ -114,9 +119,9 @@ export class AppShell {
   });
   readonly pageSearchResults = computed<GlobalSearchResult[]>(() => {
     const pages = [
-      {labelKey: 'shell.overview' as TranslationKey, icon: '⌂', path: '/app'},
+      {labelKey: 'shell.overview' as TranslationKey, icon: 'home' as IconName, path: '/app'},
       ...this.nav().flatMap(group => group.items),
-      {labelKey: 'shell.profile' as TranslationKey, icon: '◉', path: '/app/profile'}
+      {labelKey: 'shell.profile' as TranslationKey, icon: 'account' as IconName, path: '/app/profile'}
     ];
     const query = this.normalizedSearchQuery();
 
@@ -157,6 +162,7 @@ export class AppShell {
   private readonly api = inject(ApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly searchChanges = new Subject<string>();
+  private readonly mobileHeader = window.matchMedia('(max-width: 680px)');
   private readonly systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
   private readonly systemThemeListener = () => {
     if (this.theme() === 'system') {
@@ -213,21 +219,51 @@ export class AppShell {
     }
 
     event.preventDefault();
-    this.searchOpen.set(true);
-    this.globalSearchInput()?.nativeElement.focus();
+    this.openGlobalSearch();
   }
 
   @HostListener('document:mousedown', ['$event'])
-  closeGlobalSearchFromOutside(event: MouseEvent): void {
-    const root = this.globalSearchRoot()?.nativeElement;
-    if (this.searchOpen() && root && !root.contains(event.target as Node)) {
+  closeTransientUiFromOutside(event: MouseEvent): void {
+    const target = event.target as Node;
+    const searchRoot = this.globalSearchRoot()?.nativeElement;
+    const accountPanel = this.userMenuPanel()?.nativeElement;
+    const avatar = this.avatarButton()?.nativeElement;
+
+    if (this.searchOpen() && searchRoot && !searchRoot.contains(target)) {
       this.searchOpen.set(false);
       this.selectedSearchIndex.set(-1);
+    }
+    if (this.userMenu() && !accountPanel?.contains(target) && !avatar?.contains(target)) {
+      this.userMenu.set(false);
     }
   }
 
   openGlobalSearch(): void {
+    this.menuOpen.set(false);
+    this.userMenu.set(false);
     this.searchOpen.set(true);
+    requestAnimationFrame(() => this.globalSearchInput()?.nativeElement.focus());
+  }
+
+  closeMobileSearch(): void {
+    this.closeGlobalSearch(true, true);
+  }
+
+  openNavigationMenu(): void {
+    this.closeGlobalSearch(false);
+    this.userMenu.set(false);
+    this.menuOpen.set(true);
+  }
+
+  toggleUserMenu(): void {
+    if (this.userMenu()) {
+      this.userMenu.set(false);
+      return;
+    }
+    this.searchOpen.set(false);
+    this.selectedSearchIndex.set(-1);
+    this.menuOpen.set(false);
+    this.userMenu.set(true);
   }
 
   updateGlobalSearch(value: string): void {
@@ -245,7 +281,8 @@ export class AppShell {
     const results = this.selectableSearchResults();
     if (event.key === 'Escape') {
       event.preventDefault();
-      this.closeGlobalSearch(true);
+      event.stopPropagation();
+      this.closeGlobalSearch(true, this.mobileHeader.matches);
       return;
     }
     if (!results.length) return;
@@ -285,7 +322,26 @@ export class AppShell {
     this.auth.logout().subscribe(() => this.router.navigateByUrl('/'));
   }
 
-  private closeGlobalSearch(clear: boolean): void {
+  @HostListener('document:keydown.escape', ['$event'])
+  closeTransientUiFromEscape(event: Event): void {
+    if (this.searchOpen()) {
+      event.preventDefault();
+      this.closeGlobalSearch(true, this.mobileHeader.matches);
+      return;
+    }
+    if (this.userMenu()) {
+      event.preventDefault();
+      this.userMenu.set(false);
+      requestAnimationFrame(() => this.avatarButton()?.nativeElement.focus());
+      return;
+    }
+    if (this.menuOpen()) {
+      event.preventDefault();
+      this.menuOpen.set(false);
+    }
+  }
+
+  private closeGlobalSearch(clear: boolean, restoreMobileFocus = false): void {
     this.searchOpen.set(false);
     this.selectedSearchIndex.set(-1);
     if (clear) {
@@ -294,6 +350,9 @@ export class AppShell {
       this.searchPartialError.set(false);
       this.searchChanges.next('');
       this.globalSearchInput()?.nativeElement.blur();
+    }
+    if (restoreMobileFocus) {
+      requestAnimationFrame(() => this.mobileSearchTrigger()?.nativeElement.focus());
     }
   }
 
@@ -316,7 +375,7 @@ export class AppShell {
           group: 'cards' as const,
           title: card.nickname,
           subtitle: [card.bankName, card.lastFour ? `•••• ${card.lastFour}` : ''].filter(Boolean).join(' · '),
-          icon: '▭',
+          icon: 'card' as IconName,
           imageUrl: card.bankLogoUrl,
           path: '/app/credit-cards',
           filtered: true
@@ -326,7 +385,7 @@ export class AppShell {
           group: 'banks' as const,
           title: bank.shortName || bank.name,
           subtitle: [bank.code, bank.name].filter(Boolean).join(' · '),
-          icon: '🏦',
+          icon: 'bank' as IconName,
           imageUrl: bank.logoUrl,
           path: '/app/banks',
           filtered: true
@@ -336,7 +395,7 @@ export class AppShell {
           group: 'accounts' as const,
           title: account.accountName,
           subtitle: [account.accountCode, account.accountUsername].filter(Boolean).join(' · '),
-          icon: '◉',
+          icon: 'account' as IconName,
           path: '/app/investment/accounts',
           filtered: true
         }))

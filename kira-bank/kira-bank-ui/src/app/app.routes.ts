@@ -6,7 +6,7 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./features/auth/auth.page').then(m => m.AuthPage),
-    data: {mode: 'login'}
+    data: {mode: 'login', titleKey: 'route.login'}
   },
   {
     path: 'app',
@@ -34,17 +34,18 @@ export const routes: Routes = [
         path: 'admin/users',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage),
-        data: {resourceKey: 'adminUsers'}
+        data: {resourceKey: 'adminUsers', titleKey: 'route.adminUsers'}
       },
       {
         path: 'admin/banks',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage),
-        data: {resourceKey: 'adminBanks'}
+        data: {resourceKey: 'adminBanks', titleKey: 'route.adminBanks'}
       },
       {
         path: 'profile',
-        loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage)
+        loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage),
+        data: {titleKey: 'route.profile'}
       }
     ]
   }, {path: '**', redirectTo: 'login'}
@@ -54,32 +55,34 @@ function resourceRoutes(): Routes {
   const definitions: Routes = [
     {
       path: 'banks',
-      loadComponent: () => import('./features/bank/bank.page').then(m => m.BankPage)
+      loadComponent: () => import('./features/bank/bank.page').then(m => m.BankPage),
+      data: {titleKey: 'route.banks'}
     },
     {
       path: 'credit-cards',
-      data: {resourceKey: 'creditCards'}
+      data: {resourceKey: 'creditCards', titleKey: 'route.myCards'}
     },
     {path: 'card-transactions', redirectTo: 'credit-cards', pathMatch: 'full'},
     {path: 'statements', redirectTo: 'credit-cards', pathMatch: 'full'},
     {path: 'payments', redirectTo: 'credit-cards', pathMatch: 'full'},
     {path: 'cashbacks', redirectTo: 'credit-cards', pathMatch: 'full'},
     {path: 'discount-invoices', redirectTo: 'credit-cards', pathMatch: 'full'},
-    {path: 'reports/credit-card', data: {resourceKey: 'creditReports'}},
+    {path: 'reports/credit-card', data: {resourceKey: 'creditReports', titleKey: 'route.creditReports'}},
     {
       path: 'investment/platforms',
-      data: {resourceKey: 'investmentPlatforms'}
+      data: {resourceKey: 'investmentPlatforms', titleKey: 'route.investmentPlatforms'}
     }, {
       path: 'investment/accounts',
-      data: {resourceKey: 'investmentAccounts'}
+      data: {resourceKey: 'investmentAccounts', titleKey: 'route.investmentAccounts'}
     }, {
       path: 'investment/add-transaction',
       loadComponent: () => import('./features/investment/investment-transaction.page').then(m => m.InvestmentTransactionPage),
       data: {titleKey: 'route.addInvestmentTransaction'}
     },
-    {path: 'notifications', data: {resourceKey: 'notifications'}}, {
+    {path: 'notifications', data: {resourceKey: 'notifications', titleKey: 'route.notifications'}}, {
       path: 'settings',
-      loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage)
+      loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage),
+      data: {titleKey: 'route.settings'}
     }
   ];
 

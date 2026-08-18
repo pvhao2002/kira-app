@@ -28,6 +28,10 @@
     color: #0878ff;
     flex-shrink: 0;
 
+    app-icon {
+      font-size: 19px;
+    }
+
     &.teal {
       background: rgba(0, 169, 143, 0.12);
       color: #00a98f;
@@ -225,6 +229,30 @@
   img { width: 42px; height: 42px; border-radius: 7px; object-fit: cover; }
 }
 
+.draft-thumbnail-placeholder {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 7px;
+  background: #e2e8f0;
+
+  &.failed {
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 169, 143, 0.2);
+    border-top-color: #00a98f;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
 .draft-detail {
   min-width: 0;
   display: grid;
@@ -361,6 +389,7 @@
 
   .draft-section, .draft-item { border-color: #2a4362; }
   .draft-item.selected { background: #0b253b; }
+  .draft-thumbnail-placeholder { background: #1e334d; }
   .draft-detail strong, .draft-heading h4 { color: #f8fafc; }
 }
 

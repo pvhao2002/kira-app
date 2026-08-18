@@ -27,4 +27,7 @@ public class UserBankCreditLimit extends AuditedEntity {
 
     @Column(nullable = false, length = 3)
     private String currency = "VND";
+
+    @Column(nullable = false)
+    private long balanceVersion;
 }
