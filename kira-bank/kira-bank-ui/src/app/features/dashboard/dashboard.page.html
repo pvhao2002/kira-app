@@ -38,32 +38,10 @@
     <a routerLink="/app/credit-card/dashboard">{{ i18n.t('dashboard.goToDashboard') }}</a></div>
   <div class="kpi-grid">@for (kpi of credit(); track kpi.label) {
     <article class="kpi">
-      <span><app-icon [name]="kpi.icon"/></span><small>{{ kpi.label }}</small><strong>{{ kpi.value }}</strong><em>{{ kpi.trend }}</em>
+      <span><app-icon [name]="kpi.icon"/></span><small>{{ kpi.label }}</small><strong>{{ kpi.value }}</strong>
     </article>
   }</div>
   <div class="dashboard-grid">
-    <article class="panel chart-panel">
-      <header>
-        <div><h3>{{ i18n.t('dashboard.spendingCashback') }}</h3>
-          <p>{{ i18n.t('dashboard.last6Months') }}</p></div>
-        <span class="legend"><i></i>{{ i18n.t('dashboard.spending') }} <i></i>Cashback</span></header>
-      @defer (on viewport) {
-        <div class="line-chart">
-          <div class="y-labels"><span>40M</span><span>30M</span><span>20M</span><span>10M</span><span>0</span></div>
-          <svg [attr.aria-label]="i18n.t('dashboard.chartLabel')" role="img" viewBox="0 0 600 180">
-            <path class="area" d="M0 145 C80 130 100 80 180 95 S270 125 350 55 S470 90 600 25 L600 180 L0 180Z"/>
-            <path class="line" d="M0 145 C80 130 100 80 180 95 S270 125 350 55 S470 90 600 25"/>
-            <path class="cash-line" d="M0 165 C120 160 170 145 240 155 S360 145 420 135 S520 145 600 125"/>
-          </svg>
-          <div class="x-labels">
-            <span>{{ i18n.t('dashboard.month2') }}</span><span>{{ i18n.t('dashboard.month3') }}</span>
-            <span>{{ i18n.t('dashboard.month4') }}</span><span>{{ i18n.t('dashboard.month5') }}</span>
-            <span>{{ i18n.t('dashboard.month6') }}</span><span>{{ i18n.t('dashboard.month7') }}</span></div>
-        </div>
-      } @placeholder {
-        <div class="skeleton"></div>
-      }
-    </article>
     <article class="panel">
       <header>
         <div><h3>{{ i18n.t('dashboard.dueSoon') }}</h3>
@@ -76,17 +54,4 @@
       }
     </article>
   </div>
-</section>
-
-<section class="flow-section invest-section">
-  <div class="section-title">
-    <div><span class="flow-icon"><app-icon name="trend-up"/></span>
-      <div><h2>{{ i18n.t('dashboard.flowInvestment') }}</h2></div>
-    </div>
-    <a routerLink="/app/investment/dashboard">{{ i18n.t('dashboard.goToDashboard') }}</a></div>
-  <div class="kpi-grid">@for (kpi of invest(); track kpi.label) {
-    <article class="kpi">
-      <span><app-icon [name]="kpi.icon"/></span><small>{{ kpi.label }}</small><strong>{{ kpi.value }}</strong><em>{{ kpi.trend }}</em>
-    </article>
-  }</div>
 </section>

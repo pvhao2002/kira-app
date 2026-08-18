@@ -45,7 +45,7 @@ public class UserBankBalanceAdjustment {
     @Column(nullable = false, updatable = false, length = 500)
     private String reason;
 
-    @Column(nullable = false, updatable = false, length = 3)
+    @Column(nullable = false, updatable = false, length = 3, columnDefinition = "CHAR(3)")
     private String currency;
 
     @Column(nullable = false, updatable = false)

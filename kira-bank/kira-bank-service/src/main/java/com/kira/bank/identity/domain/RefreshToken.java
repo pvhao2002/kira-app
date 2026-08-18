@@ -15,15 +15,14 @@ public class RefreshToken extends AuditedEntity {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
-    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+    @Column(name = "token_hash", nullable = false, unique = true, length = 64, columnDefinition = "CHAR(64)")
     private String tokenHash;
-    @Column(name = "family_id", nullable = false, length = 36)
+    @Column(name = "family_id", nullable = false, length = 36, columnDefinition = "CHAR(36)")
     private String familyId;
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
     @Column(name = "revoked_at")
     private Instant revokedAt;
-    @Column(name = "replaced_by_hash", length = 64)
+    @Column(name = "replaced_by_hash", length = 64, columnDefinition = "CHAR(64)")
     private String replacedByHash;
 }
-

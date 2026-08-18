@@ -65,17 +65,6 @@ public class CreditCardController {
         return monthlyStatements.updateCurrentCycle(u, id, r);
     }
 
-    @PostMapping("/card-transactions")
-    @ResponseStatus(HttpStatus.CREATED)
-    Object tx(@AuthenticationPrincipal Long u, @Valid @RequestBody TransactionRequest r) {
-        return service.transaction(u, r);
-    }
-
-    @GetMapping("/card-transactions")
-    Object txs(@AuthenticationPrincipal Long u, @PageableDefault(size = 20, sort = "transactionDate", direction = Sort.Direction.DESC) Pageable p) {
-        return service.transactions(u, p);
-    }
-
     @PostMapping("/statements")
     @ResponseStatus(HttpStatus.CREATED)
     Object statement(@AuthenticationPrincipal Long u, @Valid @RequestBody StatementRequest r) {
@@ -97,19 +86,4 @@ public class CreditCardController {
         return service.payments(u, p);
     }
 
-    @GetMapping("/cashbacks")
-    Object cashbacks(@AuthenticationPrincipal Long u, @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable p) {
-        return service.cashbacks(u, p);
-    }
-
-    @PostMapping("/discount-invoices")
-    @ResponseStatus(HttpStatus.CREATED)
-    Object invoice(@AuthenticationPrincipal Long u, @Valid @RequestBody InvoiceRequest r) {
-        return service.invoice(u, r);
-    }
-
-    @GetMapping("/discount-invoices")
-    Object invoices(@AuthenticationPrincipal Long u, @PageableDefault(size = 20, sort = "invoiceDate", direction = Sort.Direction.DESC) Pageable p) {
-        return service.invoices(u, p);
-    }
 }

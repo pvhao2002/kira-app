@@ -16,7 +16,6 @@ import {IconComponent, IconName} from '../../shared/icon/icon';
 interface Kpi {
   label: string;
   value: string;
-  trend: string;
   icon: IconName
 }
 
@@ -41,16 +40,9 @@ export class DashboardPage {
     {days: 90, labelKey: 'dashboard.last90Days'}
   ];
   readonly credit = computed<Kpi[]>(() => [
-    {label: this.i18n.t('dashboard.totalSpending'), value: '42.680.000 ₫', trend: this.i18n.t('dashboard.trendThisMonth'), icon: 'card'},
-    {label: this.i18n.t('dashboard.statementBalance'), value: '18.250.000 ₫', trend: this.i18n.t('dashboard.trendOpenStatements'), icon: 'receipt'},
-    {label: this.i18n.t('dashboard.pendingCashback'), value: '1.840.000 ₫', trend: this.i18n.t('dashboard.trendPendingItems'), icon: 'diamond'},
-    {label: this.i18n.t('dashboard.receivedCashback'), value: '5.240.000 ₫', trend: this.i18n.t('dashboard.trendCashbackMonth'), icon: 'check-circle'}
-  ]);
-  readonly invest = computed<Kpi[]>(() => [
-    {label: this.i18n.t('dashboard.availableCapital'), value: '68.400.000 ₫', trend: this.i18n.t('dashboard.trendTotalBalance'), icon: 'wallet'},
-    {label: this.i18n.t('dashboard.lockedCapital'), value: '32.000.000 ₫', trend: this.i18n.t('dashboard.trendActiveTasks'), icon: 'lock'},
-    {label: this.i18n.t('dashboard.receivedProfit'), value: '8.650.000 ₫', trend: this.i18n.t('dashboard.trendProfitMonth'), icon: 'trend-up'},
-    {label: this.i18n.t('dashboard.receivedReward'), value: '2.180.000 ₫', trend: this.i18n.t('dashboard.trendRewardMonth'), icon: 'star'}
+    {label: this.i18n.t('field.creditLimit'), value: '60.000.000 ₫', icon: 'card'},
+    {label: this.i18n.t('field.currentBalance'), value: '41.750.000 ₫', icon: 'wallet'},
+    {label: this.i18n.t('field.statementBalance'), value: '18.250.000 ₫', icon: 'receipt'}
   ]);
   readonly dues = computed(() => [
     {bank: 'Vietcombank', card: '4821', date: this.i18n.t('dashboard.dueDate24'), amount: '8.450.000 ₫', color: '#087f5b'},

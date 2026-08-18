@@ -4,7 +4,7 @@ OpenAPI tương tác: `http://localhost:8080/swagger-ui.html`.
 
 Các request tài chính quan trọng cần header `Idempotency-Key` là UUID do client tạo. Danh sách trả `{ data, meta }`; lỗi trả `{ timestamp, status, code, message, fieldErrors, path, traceId }`.
 
-Nhóm chính: `/api/v1/auth`, `/api/v1/public`, `/api/v1/credit-cards`, `/api/v1/card-transactions`, `/api/v1/statements`, `/api/v1/discount-invoices`, `/api/v1/investment/accounts`, `/api/v1/investment/deposits`, `/api/v1/investment/tasks`, `/api/v1/investment/withdrawals` và ledger theo account.
+Nhóm chính: `/api/v1/auth`, `/api/v1/public/banks`, `/api/v1/credit-cards`, `/api/v1/statements`, `/api/v1/payments`, `/api/v1/dashboards/credit-cards`, `/api/v1/investment/accounts` và `/api/v1/attachments`.
 
 ## Thẻ tín dụng người dùng
 
@@ -38,8 +38,21 @@ Angular gọi song song ba API domain hiện có; không có endpoint tìm kiế
 
 ## Tài khoản đầu tư
 
-`POST /api/v1/investment/accounts` nhận `registerDate` theo ngày lịch ISO `yyyy-MM-dd`,
-ví dụ `2026-08-18`. Chuỗi timestamp có giờ không thuộc hợp đồng của field này.
+CRUD `/api/v1/investment/accounts` chỉ quản lý hồ sơ. Request create/update và response không còn `platformId` hoặc các field balance/capital/profit/reward. Response gồm thông tin nhận diện, liên hệ, `registerDate`, `accountPassword`, `currency`, `status`, `note` và `version`.
+
+`registerDate` nhận ngày lịch ISO `yyyy-MM-dd`, ví dụ `2026-08-18`; timestamp có giờ không thuộc hợp đồng. Các endpoint platform, deposit, task, settlement, reward, withdrawal và ledger cũ đã được gỡ và trả 404.
+
+### Investment Transaction Import
+
+- `POST /api/v1/investment/accounts/{accountId}/transaction-imports`: multipart field `files`, 1–10 ảnh JPEG/PNG/WebP, tối đa 10 MB/ảnh và 50 MB/batch; trả `202`. AI chưa cấu hình trả `503 AI_NOT_CONFIGURED`. Quá 5 batch/phút/user trả `429 IMPORT_RATE_LIMITED` và `Retry-After: 60`.
+- `GET /api/v1/investment/accounts/{accountId}/transaction-imports/{batchId}`: polling trạng thái batch, file errors và preview items.
+- `POST .../files/{attachmentId}/retry`: retry file AI lỗi khi batch chưa hoàn tất.
+- `POST .../{batchId}/confirm`: nhận từng `itemId`, `version`, `selected`, dữ liệu đã sửa và `resolution` (`ACCEPT`, `MERGE_EXISTING`, `SAVE_AS_NEW`, `SKIP`). Backend không tin action/dedup key từ client và xử lý từng item bằng transaction độc lập.
+- `GET /api/v1/investment/accounts/{accountId}/transactions`: lọc `fromDate`, `toDate`, `type`, `status`, hỗ trợ page/size/sort.
+
+Batch đi qua `QUEUED`, `PROCESSING`, `READY`/`READY_WITH_ERRORS`, rồi `PARTIALLY_CONFIRMED` hoặc `CONFIRMED`; file lỗi toàn bộ có thể thành `FAILED`. Confirm trả counters và kết quả từng item; confirm lặp không tạo transaction trùng.
+
+Amount được chuẩn hóa dương scale 4, currency phải khớp account, thời gian local mặc định theo `Asia/Ho_Chi_Minh` rồi lưu UTC. External ID tạo unique theo account; item không có external ID dùng fingerprint theo account/type/amount/currency/phút và collision luôn yêu cầu review. Transaction chỉ là lịch sử, không cập nhật account balance.
 
 `PUT /api/v1/credit-cards/{cardId}/billing-cycle` nhận:
 
@@ -65,4 +78,4 @@ Job tạo kỳ hiện tại chạy theo `CARD_STATEMENT_JOB_CRON` và `CARD_STAT
 
 `statementDebt` cộng `statement_balance` của các kỳ còn nợ, còn `currentBalance` áp dụng adjustment mới nhất lên tổng `remaining_amount` thực tế sau payment. Kỳ `PAID` hoặc `CANCELLED` không được tính. Tổng hạn mức và current balance đều có grain theo ngân hàng; dòng thẻ con chỉ giữ chi tiết dư nợ sao kê và hiển thị current balance là dùng chung để tránh cộng lặp. `availableCredit` có thể âm khi vượt hạn mức và `utilizationRate` có thể lớn hơn `100`.
 
-Public catalog chỉ còn `/api/v1/public/banks` và `/api/v1/public/mccs`. Các endpoint `/api/v1/public/cards` và `/api/v1/public/cashback-finder` đã được gỡ bỏ. Lịch sử cashback thực tế tại `cashback_records` vẫn được giữ nguyên.
+Public catalog chỉ còn `/api/v1/public/banks`. `/api/v1/dashboards/summary`, MCC catalog, card transaction, cashback và discount invoice API đã được gỡ và trả 404.

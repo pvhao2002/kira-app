@@ -1,14 +1,25 @@
 package com.kira.bank.investment.web;
 
 import com.kira.bank.investment.application.InvestmentService;
+import com.kira.bank.investment.application.InvestmentTransactionImportDtos.ConfirmBatchRequest;
+import com.kira.bank.investment.application.InvestmentTransactionImportService;
+import com.kira.bank.investment.domain.InvestmentTransactionStatus;
+import com.kira.bank.investment.domain.InvestmentTransactionType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
 
 import static com.kira.bank.investment.application.InvestmentDtos.*;
 
@@ -17,6 +28,7 @@ import static com.kira.bank.investment.application.InvestmentDtos.*;
 @RequiredArgsConstructor
 public class InvestmentController {
     private final InvestmentService service;
+    private final InvestmentTransactionImportService transactionImports;
 
     @PostMapping("/accounts")
     @ResponseStatus(HttpStatus.CREATED)
@@ -40,73 +52,39 @@ public class InvestmentController {
         return service.updateAccount(user, id, r);
     }
 
-    @GetMapping("/platforms")
-    Object platforms(@PageableDefault(size = 20, sort = "name") Pageable p) {
-        return service.platforms(p);
+    @PostMapping(value = "/accounts/{id}/transaction-imports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    Object importTransactions(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                              @RequestPart("files") List<MultipartFile> files) throws IOException {
+        return transactionImports.createBatch(user, id, files);
     }
 
-    @GetMapping("/deposits")
-    Object deposits(@AuthenticationPrincipal Long user, @PageableDefault(size = 20, sort = "depositDate", direction = Sort.Direction.DESC) Pageable p) {
-        return service.deposits(user, p);
+    @GetMapping("/accounts/{id}/transaction-imports/{batchId}")
+    Object transactionImport(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                             @PathVariable String batchId) {
+        return transactionImports.batch(user, id, batchId);
     }
 
-    @GetMapping("/tasks")
-    Object tasks(@AuthenticationPrincipal Long user, @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable p) {
-        return service.tasks(user, p);
+    @PostMapping("/accounts/{id}/transaction-imports/{batchId}/files/{attachmentId}/retry")
+    Object retryImportFile(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                           @PathVariable String batchId, @PathVariable Long attachmentId) {
+        return transactionImports.retryFile(user, id, batchId, attachmentId);
     }
 
-    @GetMapping("/rewards")
-    Object rewards(@AuthenticationPrincipal Long user, @PageableDefault(size = 20, sort = "rewardDate", direction = Sort.Direction.DESC) Pageable p) {
-        return service.rewards(user, p);
+    @PostMapping("/accounts/{id}/transaction-imports/{batchId}/confirm")
+    Object confirmTransactions(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                               @PathVariable String batchId, @Valid @RequestBody ConfirmBatchRequest request) {
+        return transactionImports.confirm(user, id, batchId, request);
     }
 
-    @PostMapping("/rewards")
-    Object reward(@AuthenticationPrincipal Long user, @RequestHeader("Idempotency-Key") String key, @Valid @RequestBody RewardRequest r) {
-        return service.reward(user, key, r);
+    @GetMapping("/accounts/{id}/transactions")
+    Object transactions(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+                        @RequestParam(required = false) InvestmentTransactionType type,
+                        @RequestParam(required = false) InvestmentTransactionStatus status,
+                        @PageableDefault(size = 20, sort = "transactionAt", direction = Sort.Direction.DESC) Pageable p) {
+        return transactionImports.transactions(user, id, fromDate, toDate, type, status, p);
     }
 
-    @GetMapping("/withdrawals")
-    Object withdrawals(@AuthenticationPrincipal Long user, @PageableDefault(size = 20, sort = "requestedDate", direction = Sort.Direction.DESC) Pageable p) {
-        return service.withdrawals(user, p);
-    }
-
-    @PostMapping("/deposits/completed")
-    Object deposit(@AuthenticationPrincipal Long user, @RequestHeader("Idempotency-Key") String key, @Valid @RequestBody DepositRequest r) {
-        return service.completeDeposit(user, key, r);
-    }
-
-    @PostMapping("/tasks/allocate")
-    Object task(@AuthenticationPrincipal Long user, @RequestHeader("Idempotency-Key") String key, @Valid @RequestBody TaskRequest r) {
-        return service.allocate(user, key, r);
-    }
-
-    @PostMapping("/tasks/{id}/settlements")
-    Object settle(@AuthenticationPrincipal Long user, @PathVariable Long id, @RequestHeader("Idempotency-Key") String key, @Valid @RequestBody SettlementRequest r) {
-        return service.settle(user, id, key, r);
-    }
-
-    @PostMapping("/withdrawals")
-    Object withdrawal(@AuthenticationPrincipal Long user, @RequestHeader("Idempotency-Key") String key, @Valid @RequestBody WithdrawalRequest r) {
-        return service.requestWithdrawal(user, key, r);
-    }
-
-    @PostMapping("/withdrawals/{id}/complete")
-    Object completeWithdrawal(@AuthenticationPrincipal Long user, @PathVariable Long id) {
-        return service.completeWithdrawal(user, id);
-    }
-
-    @PostMapping("/transactions")
-    @ResponseStatus(HttpStatus.CREATED)
-    Object transaction(
-        @AuthenticationPrincipal Long user,
-        @RequestHeader(value = "Idempotency-Key", required = false) String key,
-        @Valid @RequestBody CreateTransactionRequest r
-    ) {
-        return service.createTransaction(user, key, r);
-    }
-
-    @GetMapping("/accounts/{id}/ledger")
-    Object ledger(@AuthenticationPrincipal Long user, @PathVariable Long id, @PageableDefault(size = 50, sort = "entryDate", direction = Sort.Direction.DESC) Pageable p) {
-        return service.ledger(user, id, p);
-    }
 }

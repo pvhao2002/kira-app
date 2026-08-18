@@ -41,15 +41,6 @@ export interface Bank {
   description: string
 }
 
-export interface Mcc {
-  id: number;
-  code: string;
-  name: string;
-  category: string;
-  description: string;
-  merchantType: string
-}
-
 export interface UserCreditCard {
   id: number;
   bankId: number;
@@ -83,24 +74,6 @@ export interface ApiError {
   message: string;
   fieldErrors: Record<string, string>;
   traceId: string
-}
-
-export interface DashboardSummary {
-  creditCard: {
-    totalSpending: number;
-    statementDebt: number;
-    cashbackWaiting: number;
-    cashbackReceived: number;
-    discountProfit: number
-  };
-  investment: {
-    currentBalance: number;
-    availableCapital: number;
-    lockedCapital: number;
-    profit: number;
-    reward: number;
-    pendingWithdrawal: number
-  }
 }
 
 export interface CreditCardDebtCard {
@@ -156,4 +129,90 @@ export interface CreditCardDashboard {
   utilizationRate: number;
   currency: string;
   banks: CreditCardDebtBank[]
+}
+
+export interface InvestmentAccountSummary {
+  id: number;
+  accountCode: string | null;
+  accountName: string;
+  currency: string;
+  status: string
+}
+
+export type InvestmentTransactionType = 'DEPOSIT' | 'WITHDRAWAL' | 'BONUS';
+export type InvestmentTransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+export type InvestmentImportAction = 'INSERT' | 'UPDATE' | 'DUPLICATE' | 'REVIEW' | 'IGNORE';
+export type InvestmentImportResolution = 'ACCEPT' | 'MERGE_EXISTING' | 'SAVE_AS_NEW' | 'SKIP';
+export type InvestmentImportBatchStatus = 'QUEUED' | 'PROCESSING' | 'READY' | 'READY_WITH_ERRORS'
+  | 'PARTIALLY_CONFIRMED' | 'CONFIRMED' | 'FAILED';
+
+export interface InvestmentImportFile {
+  attachmentId: number;
+  originalName: string;
+  contentUrl: string;
+  status: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | 'CONFIRMED';
+  errorCode: string | null
+}
+
+export interface InvestmentImportItem {
+  itemId: string;
+  version: number;
+  transactionType: InvestmentTransactionType | null;
+  transactionStatus: InvestmentTransactionStatus | null;
+  amount: number | null;
+  currency: string | null;
+  transactionAt: string | null;
+  externalTransactionId: string | null;
+  description: string | null;
+  rawText: string | null;
+  confidence: number | null;
+  processingAction: InvestmentImportAction;
+  matchedTransactionId: number | null;
+  warnings: string[]
+}
+
+export interface InvestmentImportBatch {
+  batchId: string;
+  accountId: number;
+  status: InvestmentImportBatchStatus;
+  summary: {detected: number; inserted: number; updated: number; skipped: number; failed: number; review: number};
+  files: InvestmentImportFile[];
+  transactions: InvestmentImportItem[]
+}
+
+export interface InvestmentConfirmItem {
+  itemId: string;
+  version: number;
+  selected: boolean;
+  resolution: InvestmentImportResolution;
+  transactionType: InvestmentTransactionType | null;
+  transactionStatus: InvestmentTransactionStatus | null;
+  amount: number | null;
+  currency: string | null;
+  transactionAt: string | null;
+  externalTransactionId: string | null;
+  description: string | null
+}
+
+export interface InvestmentConfirmResponse {
+  inserted: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  results: Array<{itemId: string; result: string; transactionId: number | null; errorCode: string | null}>
+}
+
+export interface InvestmentTransaction {
+  id: number;
+  transactionType: InvestmentTransactionType;
+  transactionStatus: InvestmentTransactionStatus;
+  amount: number;
+  currency: string;
+  transactionAt: string;
+  externalTransactionId: string | null;
+  description: string | null;
+  rawText: string | null;
+  confidence: number | null;
+  sourceFileHash: string | null;
+  version: number
 }

@@ -3,7 +3,6 @@ package com.kira.bank.creditcard.application;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 
 public final class CreditCardDtos {
@@ -67,11 +66,6 @@ public final class CreditCardDtos {
                                        String billingStatus, long billingVersion) {
     }
 
-    public record TransactionRequest(@NotNull Long userCardId, @NotNull Instant transactionDate, @NotNull Long mccId,
-                                     @NotNull @Positive BigDecimal amount, String currency,
-                                     @NotBlank String referenceNumber, String description, String note) {
-    }
-
     public record StatementRequest(@NotNull Long userCardId, @NotNull LocalDate periodStart,
                                    @NotNull LocalDate periodEnd, @NotNull LocalDate statementDate,
                                    @NotNull LocalDate dueDate, @NotNull @PositiveOrZero BigDecimal openingBalance,
@@ -86,15 +80,6 @@ public final class CreditCardDtos {
                                  String sourceAccount, @NotBlank String referenceNumber, String note) {
     }
 
-    public record InvoiceRequest(@NotNull Long userCardId, @NotNull Long serviceProviderId,
-                                 @NotBlank String invoiceNumber, @NotNull LocalDate invoiceDate,
-                                 @NotNull @Positive BigDecimal invoiceAmount, @NotNull @Positive BigDecimal amountPaid,
-                                 @NotNull @DecimalMin("0") BigDecimal serviceDiscountRate,
-                                 @NotNull @DecimalMin("0") BigDecimal additionalFee,
-                                 @NotNull @DecimalMin("0") BigDecimal cashbackRate,
-                                 @DecimalMin("0") BigDecimal actualCashback, String note) {
-    }
-
     public record StatementResponse(Long id, BigDecimal statementBalance, BigDecimal paidAmount,
                                     BigDecimal remainingAmount, String status, long version) {
     }
@@ -102,8 +87,4 @@ public final class CreditCardDtos {
     public record PaymentResponse(Long id, String status, StatementResponse statement) {
     }
 
-    public record InvoiceResponse(Long id, BigDecimal serviceCost, BigDecimal expectedCashback,
-                                  BigDecimal actualCashback, BigDecimal expectedProfit, BigDecimal actualProfit,
-                                  String status) {
-    }
 }

@@ -1,7 +1,6 @@
 package com.kira.bank.publiccatalog.application;
 
 import com.kira.bank.publiccatalog.infrastructure.BankRepository;
-import com.kira.bank.publiccatalog.infrastructure.MccRepository;
 import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import static com.kira.bank.publiccatalog.application.CatalogDtos.BankDto;
-import static com.kira.bank.publiccatalog.application.CatalogDtos.MccDto;
 import static com.kira.bank.shared.web.ApiTypes.PageMeta;
 import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 
@@ -20,7 +18,6 @@ import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 @Transactional(readOnly = true)
 public class CatalogService {
     private final BankRepository banks;
-    private final MccRepository mccs;
     private final CatalogMapper mapper;
 
     public PageResponse<BankDto> banks(String q, Pageable p) {
@@ -31,16 +28,6 @@ public class CatalogService {
         return mapper.toDto(banks.findById(id)
             .filter(b -> b.isActive() && b.getDeletedAt() == null)
             .orElseThrow(() -> notFound("BANK_NOT_FOUND")));
-    }
-
-    public PageResponse<MccDto> mccs(String q, String category, Pageable p) {
-        return page(mccs.search(q, category, p).map(mapper::toDto));
-    }
-
-    public MccDto mcc(long id) {
-        return mapper.toDto(mccs.findById(id)
-            .filter(m -> m.isActive() && m.getDeletedAt() == null)
-            .orElseThrow(() -> notFound("MCC_NOT_FOUND")));
     }
 
     private <T> PageResponse<T> page(Page<T> p) {

@@ -19,9 +19,15 @@ public class UserCreditCard extends AuditedEntity {
     private Bank bank;
     @Column(length = 150)
     private String cardType;
-    private String nickname, lastFour;
+    private String nickname;
+    @Column(length = 4, columnDefinition = "CHAR(4)")
+    private String lastFour;
+    @Column(length = 3, columnDefinition = "CHAR(3)")
     private String currency = "VND";
-    private Integer statementDay, dueDay;
+    @Column(columnDefinition = "TINYINT")
+    private Integer statementDay;
+    @Column(columnDefinition = "TINYINT")
+    private Integer dueDay;
     private LocalDate openedDate;
     private String status = "ACTIVE";
     @Column(columnDefinition = "TEXT")

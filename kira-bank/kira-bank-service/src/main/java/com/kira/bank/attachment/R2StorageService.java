@@ -8,6 +8,7 @@ import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +39,11 @@ public class R2StorageService {
             GetObjectRequest.builder().bucket(r2Properties.bucketName()).key(key).build(),
             ResponseTransformer.toBytes()
         ).asByteArray();
+    }
+
+    public void delete(String key) {
+        r2S3Client.deleteObject(DeleteObjectRequest.builder()
+            .bucket(r2Properties.bucketName()).key(key).build());
     }
 
     /**

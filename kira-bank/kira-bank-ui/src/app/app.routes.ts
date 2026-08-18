@@ -25,9 +25,10 @@ export const routes: Routes = [
         data: {titleKey: 'route.creditDashboard'}
       },
       {
-        path: 'investment/dashboard',
-        loadComponent: () => import('./features/dashboard/dashboard.page').then(m => m.DashboardPage),
-        data: {titleKey: 'route.investmentDashboard'}
+        path: 'investment/transactions',
+        loadComponent: () => import('./features/investment/investment-transaction.page')
+          .then(m => m.InvestmentTransactionPage),
+        data: {titleKey: 'route.investmentTransactions'}
       },
       ...resourceRoutes(),
       {
@@ -62,22 +63,12 @@ function resourceRoutes(): Routes {
       path: 'credit-cards',
       data: {resourceKey: 'creditCards', titleKey: 'route.myCards'}
     },
-    {path: 'card-transactions', redirectTo: 'credit-cards', pathMatch: 'full'},
     {path: 'statements', redirectTo: 'credit-cards', pathMatch: 'full'},
     {path: 'payments', redirectTo: 'credit-cards', pathMatch: 'full'},
-    {path: 'cashbacks', redirectTo: 'credit-cards', pathMatch: 'full'},
-    {path: 'discount-invoices', redirectTo: 'credit-cards', pathMatch: 'full'},
     {path: 'reports/credit-card', data: {resourceKey: 'creditReports', titleKey: 'route.creditReports'}},
     {
-      path: 'investment/platforms',
-      data: {resourceKey: 'investmentPlatforms', titleKey: 'route.investmentPlatforms'}
-    }, {
       path: 'investment/accounts',
       data: {resourceKey: 'investmentAccounts', titleKey: 'route.investmentAccounts'}
-    }, {
-      path: 'investment/add-transaction',
-      loadComponent: () => import('./features/investment/investment-transaction.page').then(m => m.InvestmentTransactionPage),
-      data: {titleKey: 'route.addInvestmentTransaction'}
     },
     {path: 'notifications', data: {resourceKey: 'notifications', titleKey: 'route.notifications'}}, {
       path: 'settings',

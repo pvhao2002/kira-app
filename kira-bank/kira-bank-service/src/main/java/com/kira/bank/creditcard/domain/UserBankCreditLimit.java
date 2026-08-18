@@ -25,7 +25,7 @@ public class UserBankCreditLimit extends AuditedEntity {
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal creditLimit;
 
-    @Column(nullable = false, length = 3)
+    @Column(nullable = false, length = 3, columnDefinition = "CHAR(3)")
     private String currency = "VND";
 
     @Column(nullable = false)

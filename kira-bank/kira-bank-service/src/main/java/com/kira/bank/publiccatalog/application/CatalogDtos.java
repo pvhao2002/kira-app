@@ -9,7 +9,4 @@ public final class CatalogDtos {
                           String website, String hotline, String brandColor, String description) {
     }
 
-    public record MccDto(Long id, String code, String name, String category, String description, String merchantType) {
-    }
-
 }

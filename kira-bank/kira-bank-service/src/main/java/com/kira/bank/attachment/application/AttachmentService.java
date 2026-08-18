@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kira.bank.ai.AiDocumentService;
 import com.kira.bank.ai.AiJobProperties;
+import com.kira.bank.ai.AiProviderConfiguration;
 import com.kira.bank.attachment.R2StorageService;
 import com.kira.bank.attachment.domain.Attachment;
 import com.kira.bank.attachment.domain.AttachmentAiStatus;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +31,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import static com.kira.bank.attachment.application.AttachmentDtos.AiDraftResponse;
+import static com.kira.bank.attachment.application.AttachmentDtos.AiTransactionDraftResponse;
 import static com.kira.bank.attachment.application.AttachmentDtos.AttachmentResponse;
 
 @Service
@@ -36,6 +39,7 @@ import static com.kira.bank.attachment.application.AttachmentDtos.AttachmentResp
 public class AttachmentService {
     public static final String INVESTMENT_MODULE = "investment";
     public static final String RECEIPT_DOCUMENT_TYPE = "RECEIPT";
+    public static final int INVESTMENT_AI_SCHEMA_VERSION = 2;
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
     private static final List<String> AI_IMAGE_TYPES = List.of("image/jpeg", "image/png", "image/webp");
     private static final List<String> GENERIC_FILE_TYPES = List.of("image/jpeg", "image/png", "image/webp", "application/pdf");
@@ -43,7 +47,10 @@ public class AttachmentService {
     private final AttachmentRepository repository;
     private final R2StorageService storage;
     private final AiJobProperties jobProperties;
+    private final AiProviderConfiguration aiConfiguration;
     private final ObjectMapper objectMapper;
+    @Value("${investment.transaction-import.time-zone:Asia/Ho_Chi_Minh}")
+    private String importTimeZone;
 
     private static boolean isInvestmentReceipt(String flow, String documentType) {
         return INVESTMENT_MODULE.equalsIgnoreCase(flow) && RECEIPT_DOCUMENT_TYPE.equalsIgnoreCase(documentType);
@@ -82,7 +89,7 @@ public class AttachmentService {
         return List.of("DEPOSIT", "WITHDRAWAL", "BONUS").contains(normalized) ? normalized : null;
     }
 
-    private static Instant parseInstant(String raw) {
+    private Instant parseInstant(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
         }
@@ -93,7 +100,7 @@ public class AttachmentService {
                 return OffsetDateTime.parse(raw).toInstant();
             } catch (DateTimeParseException ignoredAgain) {
                 try {
-                    return LocalDateTime.parse(raw).atZone(ZoneId.of("Asia/Bangkok")).toInstant();
+                    return LocalDateTime.parse(raw).atZone(ZoneId.of(importTimeZone)).toInstant();
                 } catch (DateTimeParseException ignoredThird) {
                     return null;
                 }
@@ -109,9 +116,18 @@ public class AttachmentService {
     public AttachmentResponse upload(Long userId, String flow, String documentType, MultipartFile file) throws IOException {
         String normalizedFlow = normalizeFlow(flow);
         String normalizedDocumentType = normalizeDocumentType(documentType);
-        validateFile(normalizedFlow, normalizedDocumentType, file);
-        String mimeType = file.getContentType();
         byte[] data = file.getBytes();
+        String mimeType = validateFile(normalizedFlow, normalizedDocumentType, file, data);
+        String hash = sha256(data);
+        if (isInvestmentReceipt(normalizedFlow, normalizedDocumentType)) {
+            Optional<Attachment> reusable = repository
+                .findFirstByUserIdAndModuleAndDocumentTypeAndSha256AndAiSchemaVersionAndStoragePurgedAtIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(
+                    userId, normalizedFlow, normalizedDocumentType, hash, INVESTMENT_AI_SCHEMA_VERSION);
+            if (reusable.isPresent() && reusable.get().getAiResult() != null
+                && List.of(AttachmentAiStatus.READY, AttachmentAiStatus.CONFIRMED).contains(reusable.get().getAiStatus())) {
+                return toResponse(reusable.get());
+            }
+        }
         String key = userId + "/" + UUID.randomUUID() + extensionFor(mimeType);
         storage.upload(key, data, mimeType);
 
@@ -123,11 +139,12 @@ public class AttachmentService {
         attachment.setOriginalName(Optional.ofNullable(file.getOriginalFilename()).filter(s -> !s.isBlank()).orElse("document"));
         attachment.setMimeType(mimeType);
         attachment.setSizeBytes(file.getSize());
-        attachment.setSha256(sha256(data));
+        attachment.setSha256(hash);
         attachment.setCreatedBy(userId);
         attachment.setUpdatedBy(userId);
         if (isInvestmentReceipt(normalizedFlow, normalizedDocumentType)) {
             attachment.setAiStatus(AttachmentAiStatus.PENDING);
+            attachment.setAiSchemaVersion(INVESTMENT_AI_SCHEMA_VERSION);
             attachment.setAiNextAttemptAt(Instant.now());
         }
         return toResponse(repository.save(attachment));
@@ -142,6 +159,9 @@ public class AttachmentService {
     @Transactional(readOnly = true)
     public AttachmentContent content(Long userId, Long attachmentId) {
         Attachment attachment = owned(attachmentId, userId);
+        if (attachment.getStoragePurgedAt() != null) {
+            throw new ApiException(HttpStatus.GONE, "ATTACHMENT_PURGED", "Ảnh nguồn đã hết thời hạn lưu trữ");
+        }
         return new AttachmentContent(attachment.getMimeType(), attachment.getOriginalName(), storage.download(attachment.getStorageKey()));
     }
 
@@ -159,6 +179,7 @@ public class AttachmentService {
         attachment.setAiNextAttemptAt(Instant.now());
         attachment.setAiProcessingStartedAt(null);
         attachment.setAiCompletedAt(null);
+        attachment.setAiSchemaVersion(INVESTMENT_AI_SCHEMA_VERSION);
         attachment.setUpdatedBy(userId);
         return toResponse(attachment);
     }
@@ -210,7 +231,7 @@ public class AttachmentService {
         }
         AiDraftResponse draft = sanitize(extraction, attachmentId);
         attachment.setAiStatus(AttachmentAiStatus.READY);
-        attachment.setAiModel("@cf/moonshotai/kimi-k2.7-code");
+        attachment.setAiModel(aiConfiguration.model());
         attachment.setAiRawResponse(rawResponse);
         attachment.setAiResult(serialize(draft));
         attachment.setAiError(null);
@@ -265,11 +286,15 @@ public class AttachmentService {
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ATTACHMENT_NOT_FOUND", "Không tìm thấy tệp đính kèm"));
     }
 
-    private void validateFile(String flow, String documentType, MultipartFile file) {
+    private String validateFile(String flow, String documentType, MultipartFile file, byte[] data) {
         if (file == null || file.isEmpty() || file.getSize() > MAX_FILE_SIZE) {
             throw bad("INVALID_FILE_SIZE", "File phải có dung lượng từ 1 byte đến 10 MB");
         }
-        String contentType = file.getContentType();
+        String contentType = detectedImageType(data);
+        if (contentType == null && "application/pdf".equals(file.getContentType()) && data.length >= 5
+            && new String(data, 0, 5, java.nio.charset.StandardCharsets.US_ASCII).equals("%PDF-")) {
+            contentType = "application/pdf";
+        }
         if (contentType == null || !(isInvestmentReceipt(flow, documentType)
             ? AI_IMAGE_TYPES.contains(contentType)
             : GENERIC_FILE_TYPES.contains(contentType))) {
@@ -277,6 +302,25 @@ public class AttachmentService {
                 ? "Ảnh giao dịch chỉ hỗ trợ JPEG, PNG hoặc WebP"
                 : "Chỉ hỗ trợ JPEG, PNG, WebP hoặc PDF");
         }
+        if (file.getContentType() != null && !file.getContentType().equals(contentType)) {
+            throw bad("FILE_CONTENT_TYPE_MISMATCH", "Nội dung file không khớp MIME type khai báo");
+        }
+        return contentType;
+    }
+
+    private String detectedImageType(byte[] data) {
+        if (data.length >= 3 && (data[0] & 0xff) == 0xff && (data[1] & 0xff) == 0xd8 && (data[2] & 0xff) == 0xff) {
+            return "image/jpeg";
+        }
+        byte[] png = {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
+        if (data.length >= png.length && java.util.Arrays.equals(java.util.Arrays.copyOf(data, png.length), png)) {
+            return "image/png";
+        }
+        if (data.length >= 12 && new String(data, 0, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("RIFF")
+            && new String(data, 8, 4, java.nio.charset.StandardCharsets.US_ASCII).equals("WEBP")) {
+            return "image/webp";
+        }
+        return null;
     }
 
     private AttachmentResponse toResponse(Attachment attachment) {
@@ -317,30 +361,38 @@ public class AttachmentService {
     }
 
     private AiDraftResponse sanitize(AiDocumentService.AiExtraction extraction, Long attachmentId) {
-        List<String> warnings = new ArrayList<>(Optional.ofNullable(extraction.validationWarnings()).orElse(List.of()));
-        String type = normalizeType(extraction.type());
-        if (extraction.type() != null && type == null) {
-            warnings.add("Unsupported transaction type returned by AI");
+        List<AiTransactionDraftResponse> transactions = new ArrayList<>();
+        for (AiDocumentService.AiTransactionExtraction transaction :
+            Optional.ofNullable(extraction.transactions()).orElse(List.of())) {
+            List<String> warnings = new ArrayList<>(Optional.ofNullable(transaction.validationWarnings()).orElse(List.of()));
+            String type = normalizeType(transaction.transactionType());
+            if (transaction.transactionType() != null && type == null) warnings.add("UNSUPPORTED_TRANSACTION_TYPE");
+            String status = normalizeStatus(transaction.transactionStatus());
+            if (transaction.transactionStatus() != null && status == null) warnings.add("UNSUPPORTED_TRANSACTION_STATUS");
+            BigDecimal amount = transaction.amount();
+            if (amount != null && amount.signum() < 0) {
+                amount = amount.abs();
+                warnings.add("NEGATIVE_AMOUNT_TYPE_SIGNAL");
+            } else if (amount != null && amount.signum() == 0) {
+                amount = null;
+                warnings.add("INVALID_AMOUNT");
+            }
+            Instant transactionAt = parseInstant(transaction.transactionAt());
+            if (transaction.transactionAt() != null && transactionAt == null) warnings.add("INVALID_TRANSACTION_TIME");
+            transactions.add(new AiTransactionDraftResponse(
+                type, status, amount, trimToNull(transaction.currency()), transactionAt,
+                trimToNull(transaction.externalTransactionId()), trimToNull(transaction.description()),
+                trimToNull(transaction.rawText()), transaction.confidence(),
+                Optional.ofNullable(transaction.uncertainFields()).orElse(List.of()), List.copyOf(warnings)
+            ));
         }
-        BigDecimal amount = extraction.amount();
-        if (amount != null && amount.signum() <= 0) {
-            amount = null;
-            warnings.add("Amount must be greater than zero");
-        }
-        Instant transactionDate = parseInstant(extraction.transactionDate());
-        if (extraction.transactionDate() != null && transactionDate == null) {
-            warnings.add("Transaction date could not be parsed");
-        }
-        return new AiDraftResponse(
-            attachmentId,
-            type,
-            amount,
-            transactionDate,
-            trimToNull(extraction.description()),
-            extraction.confidence(),
-            Optional.ofNullable(extraction.uncertainFields()).orElse(List.of()),
-            List.copyOf(warnings)
-        );
+        return new AiDraftResponse(attachmentId, List.copyOf(transactions));
+    }
+
+    private String normalizeStatus(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String normalized = raw.trim().toUpperCase(Locale.ROOT);
+        return List.of("PENDING", "COMPLETED", "FAILED", "CANCELLED").contains(normalized) ? normalized : null;
     }
 
     private ApiException bad(String code, String message) {

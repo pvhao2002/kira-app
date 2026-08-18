@@ -1,6 +1,6 @@
 export type ResourceFlow = 'credit' | 'investment' | 'system';
 export type ResourceFieldType = 'text' | 'textarea' | 'number' | 'money' | 'percentage' | 'date' | 'datetime' | 'select' | 'hidden';
-export type LookupKey = 'banks' | 'platforms' | 'accounts' | 'tasks';
+export type LookupKey = 'banks';
 export type RequestMethod = 'post' | 'put' | 'patch';
 export type ResourceColumnKind = 'text' | 'status' | 'bank' | 'money' | 'dayOfMonth' | 'billing';
 
@@ -183,13 +183,6 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
       }
     ]
   },
-  investmentPlatforms: {
-    key: 'investmentPlatforms',
-    titleKey: 'route.investmentPlatforms',
-    apiPath: 'investment/platforms',
-    flow: 'investment',
-    readOnlyKey: 'resource.catalogReadOnly'
-  },
   investmentAccounts: {
     key: 'investmentAccounts',
     titleKey: 'route.investmentAccounts',
@@ -235,13 +228,6 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
     titleKey: 'route.creditReports',
     apiPath: '',
     flow: 'credit',
-    readOnlyKey: 'resource.apiUnavailable'
-  },
-  investmentReports: {
-    key: 'investmentReports',
-    titleKey: 'route.investmentReports',
-    apiPath: '',
-    flow: 'investment',
     readOnlyKey: 'resource.apiUnavailable'
   },
   adminUsers: {

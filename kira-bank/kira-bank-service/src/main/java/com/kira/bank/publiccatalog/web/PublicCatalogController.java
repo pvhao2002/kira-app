@@ -23,15 +23,4 @@ public class PublicCatalogController {
         return service.bank(id);
     }
 
-    @GetMapping("/mccs")
-    Object mccs(@RequestParam(defaultValue = "") String search,
-                @RequestParam(defaultValue = "") String category,
-                @PageableDefault(size = 20, sort = "code") Pageable p) {
-        return service.mccs(search, category, p);
-    }
-
-    @GetMapping("/mccs/{id}")
-    Object mcc(@PathVariable long id) {
-        return service.mcc(id);
-    }
 }

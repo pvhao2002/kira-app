@@ -10,16 +10,22 @@ public final class AttachmentDtos {
     private AttachmentDtos() {
     }
 
-    public record AiDraftResponse(
-        Long attachmentId,
-        String type,
+    public record AiTransactionDraftResponse(
+        String transactionType,
+        String transactionStatus,
         BigDecimal amount,
-        Instant transactionDate,
+        String currency,
+        Instant transactionAt,
+        String externalTransactionId,
         String description,
+        String rawText,
         Double confidence,
         List<String> uncertainFields,
         List<String> validationWarnings
     ) {
+    }
+
+    public record AiDraftResponse(Long attachmentId, List<AiTransactionDraftResponse> transactions) {
     }
 
     public record AttachmentResponse(

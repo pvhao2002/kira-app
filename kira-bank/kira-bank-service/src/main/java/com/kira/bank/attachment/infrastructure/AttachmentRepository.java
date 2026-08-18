@@ -21,6 +21,11 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
 
     Optional<Attachment> findByIdAndUserIdAndDeletedAtIsNull(Long id, Long userId);
 
+    Optional<Attachment> findFirstByUserIdAndModuleAndDocumentTypeAndSha256AndAiSchemaVersionAndStoragePurgedAtIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(
+        Long userId, String module, String documentType, String sha256, Integer aiSchemaVersion);
+
+    List<Attachment> findByIdInAndStoragePurgedAtIsNull(Collection<Long> ids);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from Attachment a where a.id = :id and a.userId = :userId and a.deletedAt is null")
     Optional<Attachment> findOwnedForUpdate(@Param("id") Long id, @Param("userId") Long userId);

@@ -27,11 +27,8 @@ public class CreditCardService {
     private final UserCreditCardRepository cards;
     private final UserBankCreditLimitRepository creditLimits;
     private final BankRepository banks;
-    private final CardTransactionRepository transactions;
     private final StatementRepository statements;
     private final PaymentRepository payments;
-    private final DiscountInvoiceRepository invoices;
-    private final CashbackRecordRepository cashbacks;
     private final MonthlyStatementService monthlyStatements;
     private final BankBalanceService bankBalances;
 
@@ -123,29 +120,6 @@ public class CreditCardService {
     }
 
     @Transactional
-    public CardTransaction transaction(Long user, TransactionRequest r) {
-        ownCard(r.userCardId(), user);
-        if (transactions.existsByUserIdAndUserCardIdAndReferenceNumber(user, r.userCardId(), r.referenceNumber()))
-            throw new ApiException(HttpStatus.CONFLICT, "DUPLICATE_TRANSACTION", "Giao dịch có thể bị trùng");
-        CardTransaction t = new CardTransaction();
-        t.setUserId(user);
-        t.setUserCardId(r.userCardId());
-        t.setTransactionDate(r.transactionDate());
-        t.setMccId(r.mccId());
-        t.setAmount(money(r.amount()));
-        t.setCurrency(r.currency() == null ? "VND" : r.currency());
-        t.setReferenceNumber(r.referenceNumber());
-        t.setDescription(r.description());
-        t.setNote(r.note());
-        return transactions.save(t);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<CardTransaction> transactions(Long user, Pageable p) {
-        return page(transactions.findByUserIdAndDeletedAtIsNull(user, p));
-    }
-
-    @Transactional
     public StatementResponse statement(Long user, StatementRequest r) {
         ownCard(r.userCardId(), user);
         if (r.periodEnd().isBefore(r.periodStart()) || r.dueDate().isBefore(r.statementDate()))
@@ -210,47 +184,6 @@ public class CreditCardService {
     @Transactional(readOnly = true)
     public PageResponse<Payment> payments(Long user, Pageable p) {
         return page(payments.findByUserIdAndDeletedAtIsNull(user, p));
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<CashbackRecord> cashbacks(Long user, Pageable p) {
-        return page(cashbacks.findByUserIdAndDeletedAtIsNull(user, p));
-    }
-
-    @Transactional
-    public InvoiceResponse invoice(Long user, InvoiceRequest r) {
-        ownCard(r.userCardId(), user);
-        BigDecimal discount = money(r.invoiceAmount().multiply(r.serviceDiscountRate()));
-        BigDecimal cost = money(discount.add(r.additionalFee()));
-        BigDecimal expected = money(r.invoiceAmount().multiply(r.cashbackRate()));
-        BigDecimal actual = money(r.actualCashback() == null ? BigDecimal.ZERO : r.actualCashback());
-        DiscountInvoice i = new DiscountInvoice();
-        i.setUserId(user);
-        i.setUserCardId(r.userCardId());
-        i.setServiceProviderId(r.serviceProviderId());
-        i.setInvoiceNumber(r.invoiceNumber());
-        i.setInvoiceDate(r.invoiceDate());
-        i.setInvoiceAmount(money(r.invoiceAmount()));
-        i.setAmountPaid(money(r.amountPaid()));
-        i.setServiceDiscountRate(r.serviceDiscountRate());
-        i.setServiceDiscountAmount(discount);
-        i.setAdditionalFee(money(r.additionalFee()));
-        i.setCashbackRate(r.cashbackRate());
-        i.setExpectedCashback(expected);
-        i.setActualCashback(actual);
-        i.setExpectedProfit(money(expected.subtract(cost)));
-        i.setActualProfit(money(actual.subtract(cost)));
-        i.setCapitalLocked(money(r.amountPaid()));
-        i.setStatus(actual.signum() > 0 ? "CASHBACK_RECEIVED" : "PAID");
-        i.setNote(r.note());
-        invoices.save(i);
-        return invoiceDto(i);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<InvoiceResponse> invoices(Long user, Pageable p) {
-        Page<InvoiceResponse> x = invoices.findByUserIdAndDeletedAtIsNull(user, p).map(this::invoiceDto);
-        return page(x);
     }
 
     private UserCreditCard ownCard(Long id, Long user) {
@@ -344,10 +277,6 @@ public class CreditCardService {
 
     private StatementResponse statementDto(Statement s) {
         return new StatementResponse(s.getId(), s.getStatementBalance(), s.getPaidAmount(), s.getRemainingAmount(), s.getStatus(), s.getVersion());
-    }
-
-    private InvoiceResponse invoiceDto(DiscountInvoice i) {
-        return new InvoiceResponse(i.getId(), money(i.getServiceDiscountAmount().add(i.getAdditionalFee())), i.getExpectedCashback(), i.getActualCashback(), i.getExpectedProfit(), i.getActualProfit(), i.getStatus());
     }
 
     private <T> PageResponse<T> page(Page<T> p) {

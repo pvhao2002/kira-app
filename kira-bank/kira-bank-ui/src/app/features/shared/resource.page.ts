@@ -630,19 +630,12 @@ export class ResourcePage {
     }
   }
 
-  private lookupPath(key: LookupKey): string {
-    return {
-      banks: 'public/banks',
-      platforms: 'investment/platforms',
-      accounts: 'investment/accounts',
-      tasks: 'investment/tasks'
-    }[key];
+  private lookupPath(_key: LookupKey): string {
+    return 'public/banks';
   }
 
   private loadLookupRows(key: LookupKey): Observable<Row[]> {
     const firstPage = this.api.page<Row>(this.lookupPath(key), 0, 100);
-    if (key !== 'banks') return firstPage.pipe(map(response => response.data));
-
     return firstPage.pipe(
       expand(response => response.meta.page + 1 < response.meta.totalPages
         ? this.api.page<Row>(this.lookupPath(key), response.meta.page + 1, 100)
@@ -707,16 +700,11 @@ export class ResourcePage {
     this.formValues.set(this.form.getRawValue());
   }
 
-  private lookupOption(key: LookupKey, row: Row): LookupOption {
+  private lookupOption(_key: LookupKey, row: Row): LookupOption {
     const value = row['id'] as string | number;
-    const label = {
-      banks: String(row['shortName'] ?? row['name'] ?? value),
-      platforms: String(row['name'] ?? row['code'] ?? value),
-      accounts: String(row['accountName'] ?? row['externalAccountCode'] ?? value),
-      tasks: String(row['taskName'] ?? row['taskCode'] ?? value)
-    }[key];
-    const iconUrl = key === 'banks' ? (row['logoUrl'] as string || undefined) : undefined;
-    const sublabel = key === 'banks' ? String(row['code'] ?? '') || undefined : undefined;
+    const label = String(row['shortName'] ?? row['name'] ?? value);
+    const iconUrl = row['logoUrl'] as string || undefined;
+    const sublabel = String(row['code'] ?? '') || undefined;
     return {value, label, iconUrl, sublabel};
   }
 

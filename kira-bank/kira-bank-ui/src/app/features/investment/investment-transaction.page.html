@@ -1,149 +1,151 @@
 <section class="page-heading">
   <div>
-    <span class="eyebrow">{{ i18n.t('resource.flowInvestment') }}</span>
-    <h1>{{ i18n.t('route.addInvestmentTransaction') }}</h1>
-    <p>Upload ảnh giao dịch để AI tạo draft. Bạn luôn xem và xác nhận trước khi ghi nhận giao dịch.</p>
+    <span class="eyebrow">ĐẦU TƯ · AI REVIEW</span>
+    <h1>Investment Transactions</h1>
+    <p>Đưa ảnh giao dịch vào hàng đợi AI, duyệt từng kết quả rồi mới lưu vào lịch sử.</p>
   </div>
+  <label class="account-picker">
+    <span>Tài khoản</span>
+    <select [ngModel]="accountId()" (ngModelChange)="chooseAccount($event)">
+      @for (account of accounts(); track account.id) {
+        <option [ngValue]="account.id">{{ account.accountName }} · {{ account.currency }} · {{ account.status }}</option>
+      }
+    </select>
+  </label>
 </section>
 
-<div class="transaction-grid">
-  <section class="panel ai-panel">
-    <header class="panel-header">
-      <div class="header-icon teal">AI</div>
-      <div>
-        <h3>Ảnh giao dịch AI</h3>
-        <p>JPEG, PNG hoặc WebP; tối đa 10 MB. AI chạy theo job mỗi 3 giờ.</p>
-      </div>
-    </header>
+<nav class="tabs" aria-label="Investment transaction sections">
+  <button type="button" [class.active]="activeTab() === 'import'" (click)="switchTab('import')">Import & duyệt AI</button>
+  <button type="button" [class.active]="activeTab() === 'history'" (click)="switchTab('history')">Lịch sử giao dịch</button>
+</nav>
 
-    <div
-      class="dropzone"
-      [class.is-uploading]="uploadingAi()"
-      [class.has-image]="uploadedImageUrl() !== null"
-      (dragover)="onDragOver($event)"
-      (drop)="onDrop($event)"
-      (click)="fileInput.click()">
-      <input #fileInput type="file" accept="image/jpeg,image/png,image/webp" (change)="onFileSelected($event)" style="display: none;">
+@if (error()) {
+  <div class="error-banner" role="alert">{{ error() }}</div>
+}
 
-      @if (uploadingAi()) {
-        <div class="upload-spinner-state">
-          <span class="spinner"></span>
-          <span>Đang lưu ảnh vào hàng đợi AI...</span>
-        </div>
-      } @else if (uploadedImageUrl()) {
-        <div class="preview-container">
-          <img [src]="uploadedImageUrl()" alt="Transaction receipt" class="receipt-preview">
-          <div class="preview-badge">{{ uploadStatus() === 'READY' ? 'Sẵn sàng duyệt' : 'Đang chờ AI' }}</div>
-        </div>
-      } @else if (activePreviewAttachmentId() !== null) {
-        <div class="upload-spinner-state">
-          <span class="spinner"></span>
-          <span>Đang tải ảnh xem trước...</span>
-        </div>
-      } @else {
-        <div class="dropzone-content">
-          <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-          <p class="prompt-text">Kéo thả hoặc chọn ảnh hóa đơn/chuyển khoản</p>
-          <span class="browse-btn">Chọn ảnh</span>
-        </div>
-      }
+@if (activeTab() === 'import') {
+  <section class="panel upload-panel">
+    <div class="panel-copy">
+      <h2>1. Chọn ảnh giao dịch</h2>
+      <p>Tối đa 10 ảnh JPEG/PNG/WebP, 10 MB mỗi ảnh và 50 MB mỗi batch.</p>
     </div>
-
-    <div class="draft-section">
-      <div class="draft-heading">
-        <h4>Draft AI của bạn</h4>
-        <button type="button" class="text-button" (click)="loadDrafts()">Làm mới</button>
+    <label class="drop-zone" (drop)="dropFiles($event)" (dragover)="allowDrop($event)">
+      <input type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="chooseFiles($event)">
+      <strong>Kéo thả ảnh vào đây</strong>
+      <span>hoặc bấm để chọn từ thiết bị</span>
+    </label>
+    @if (selectedFiles().length) {
+      <div class="file-list">
+        @for (file of selectedFiles(); track file.name + file.lastModified; let index = $index) {
+          <div><span>{{ file.name }}</span><small>{{ (file.size / 1024 / 1024).toFixed(2) }} MB</small>
+            <button type="button" (click)="removeFile(index)">Bỏ</button></div>
+        }
       </div>
-      @if (loadingDrafts()) {
-        <p class="draft-empty">Đang tải draft...</p>
-      } @else if (drafts().length === 0) {
-        <p class="draft-empty">Chưa có ảnh nào chờ AI xử lý.</p>
-      } @else {
-        <div class="draft-list">
-          @for (draft of drafts(); track draft.attachmentId) {
-            <article class="draft-item" [class.selected]="selectedAttachmentId() === draft.attachmentId">
-              @if (previewUrl(draft.attachmentId); as imageUrl) {
-                <img [src]="imageUrl" alt="Ảnh giao dịch">
-              } @else if (previewFailed(draft.attachmentId)) {
-                <div class="draft-thumbnail-placeholder failed" aria-label="Không thể tải ảnh xem trước">Ảnh</div>
-              } @else {
-                <div class="draft-thumbnail-placeholder" aria-label="Đang tải ảnh xem trước">
-                  <span class="spinner"></span>
-                </div>
-              }
-              <div class="draft-detail">
-                <strong>{{ draft.originalName }}</strong>
-                <span class="draft-status" [class.ready]="draft.aiStatus === 'READY'" [class.failed]="draft.aiStatus === 'FAILED'">
-                  {{ statusLabel(draft.aiStatus) }}
-                </span>
-                @if (draft.draft?.amount != null) {
-                  <small>{{ draft.draft.amount | number:'1.0-4' }} · {{ draft.draft.type ?? 'Chưa rõ loại' }}</small>
-                } @else if (draft.aiError) {
-                  <small>{{ draft.aiError }}</small>
-                }
-              </div>
-              @if (draft.aiStatus === 'READY') {
-                <button type="button" class="draft-action" (click)="selectDraft(draft)">Dùng draft</button>
-              } @else if (draft.aiStatus === 'FAILED') {
-                <button type="button" class="draft-action" (click)="retryDraft(draft)">Thử lại</button>
-              }
-            </article>
-          }
-        </div>
-      }
-    </div>
-  </section>
-
-  <section class="panel form-panel">
-    <header class="panel-header">
-      <div class="header-icon blue"><app-icon name="check"/></div>
-      <div>
-        <h3>{{ i18n.t('transaction.manualTitle') }}</h3>
-        <p>Kiểm tra và chỉnh sửa dữ liệu trước khi xác nhận.</p>
-      </div>
-    </header>
-
-    @if (errorMsg()) {
-      <div class="form-error-alert">{{ errorMsg() }}</div>
+      <button class="primary" type="button" [disabled]="loading() || !accountId()" (click)="upload()">
+        {{ loading() ? 'Đang tải ảnh…' : 'Tạo batch AI' }}
+      </button>
     }
-
-    <form [formGroup]="form" (ngSubmit)="submit()" class="transaction-form">
-      <div class="form-field">
-        <label>{{ i18n.t('transaction.accountLabel') }} <b>*</b></label>
-        <app-custom-select formControlName="accountId" [options]="accountOptions()" placeholder="Chọn tài khoản..."></app-custom-select>
-        @if (form.controls.accountId.invalid && form.controls.accountId.touched) {
-          <span class="field-error">Vui lòng chọn tài khoản</span>
-        }
-      </div>
-
-      <div class="form-field">
-        <label>{{ i18n.t('transaction.typeLabel') }} <b>*</b></label>
-        <app-custom-select formControlName="type" [options]="typeOptions" placeholder="Chọn loại giao dịch..."></app-custom-select>
-      </div>
-
-      <div class="form-field">
-        <label>{{ i18n.t('transaction.amountLabel') }} <b>*</b></label>
-        <div class="input-with-symbol"><input appMoneyInput formControlName="amount" placeholder="0" min="0.0001"><span class="symbol">₫</span></div>
-        @if (form.controls.amount.invalid && form.controls.amount.touched) {
-          <span class="field-error">Vui lòng nhập số tiền hợp lệ</span>
-        }
-      </div>
-
-      <div class="form-field">
-        <label>{{ i18n.t('transaction.datetimeLabel') }} <b>*</b></label>
-        <app-custom-datepicker formControlName="datetime" mode="datetime"></app-custom-datepicker>
-      </div>
-
-      <div class="form-field full-width">
-        <label>{{ i18n.t('transaction.descriptionLabel') }}</label>
-        <textarea formControlName="description" rows="3" placeholder="Ghi chú giao dịch..."></textarea>
-      </div>
-
-      <div class="form-actions full-width">
-        <button type="submit" class="btn primary submit-btn" [disabled]="form.invalid || submitting()">
-          @if (submitting()) {<span class="spinner"></span><span>Đang ghi nhận...</span>} @else {<span>{{ i18n.t('transaction.submitBtn') }}</span>}
-        </button>
-      </div>
-    </form>
   </section>
-</div>
+
+  @if (batch(); as currentBatch) {
+    <section class="panel batch-panel">
+      <div class="batch-heading">
+        <div><h2>2. Trạng thái xử lý</h2><code>{{ currentBatch.batchId }}</code></div>
+        <span class="batch-status" [attr.data-status]="currentBatch.status">{{ currentBatch.status }}</span>
+      </div>
+      <div class="summary-grid">
+        <div><strong>{{ currentBatch.summary.detected }}</strong><span>Phát hiện</span></div>
+        <div><strong>{{ currentBatch.summary.review }}</strong><span>Cần duyệt</span></div>
+        <div><strong>{{ currentBatch.summary.inserted }}</strong><span>Đã thêm</span></div>
+        <div><strong>{{ currentBatch.summary.updated }}</strong><span>Đã cập nhật</span></div>
+        <div><strong>{{ currentBatch.summary.failed }}</strong><span>Lỗi</span></div>
+      </div>
+      <div class="processing-files">
+        @for (file of currentBatch.files; track file.attachmentId) {
+          <article>
+            <div><strong>{{ file.originalName }}</strong><small>#{{ file.attachmentId }}</small></div>
+            <span [attr.data-file-status]="file.status">{{ file.status }}</span>
+            @if (file.errorCode) { <code>{{ file.errorCode }}</code> }
+            @if (file.status === 'FAILED') {
+              <button type="button" (click)="retryFile(file.attachmentId)">Thử lại</button>
+            }
+          </article>
+        }
+      </div>
+    </section>
+
+    @if (reviewItems().length) {
+      <section class="panel preview-panel">
+        <div class="batch-heading">
+          <div><h2>3. Duyệt và chỉnh sửa</h2><p>Backend sẽ chuẩn hóa và kiểm tra trùng lần nữa khi confirm.</p></div>
+          <button class="primary" type="button" [disabled]="loading()" (click)="confirm()">Xác nhận item đã chọn</button>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Chọn</th><th>Action</th><th>Ngày giờ</th><th>Loại</th><th>Trạng thái</th><th>Số tiền</th><th>Tiền tệ</th><th>Mã ngoài</th><th>Mô tả</th><th>Xử lý</th></tr></thead>
+            <tbody>
+              @for (item of reviewItems(); track item.itemId) {
+                <tr [class.needs-review]="item.processingAction === 'REVIEW'">
+                  <td><input type="checkbox" [(ngModel)]="item.selected" [attr.aria-label]="'Chọn ' + item.itemId"></td>
+                  <td><span class="action-badge" [attr.data-action]="item.processingAction">{{ item.processingAction }}</span>
+                    @if (item.warnings.length) { <small class="warnings" [title]="item.warnings.join(', ')">{{ item.warnings.length }} cảnh báo</small> }
+                  </td>
+                  <td><input type="datetime-local" [ngModel]="toLocalDateTime(item.transactionAt)" (ngModelChange)="updateTime(item, $event)"></td>
+                  <td><select [(ngModel)]="item.transactionType"><option [ngValue]="null">—</option><option value="DEPOSIT">DEPOSIT</option><option value="WITHDRAWAL">WITHDRAWAL</option><option value="BONUS">BONUS</option></select></td>
+                  <td><select [(ngModel)]="item.transactionStatus"><option [ngValue]="null">—</option><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="FAILED">FAILED</option><option value="CANCELLED">CANCELLED</option></select></td>
+                  <td><input class="amount" type="number" min="0.0001" step="0.0001" [(ngModel)]="item.amount"></td>
+                  <td><input class="currency" maxlength="3" [(ngModel)]="item.currency"></td>
+                  <td><input [(ngModel)]="item.externalTransactionId"></td>
+                  <td><textarea rows="2" maxlength="1000" [(ngModel)]="item.description"></textarea></td>
+                  <td><button class="resolution" type="button" (click)="openResolution(item)">{{ item.resolution }}</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+
+  @if (confirmResult(); as result) {
+    <section class="confirm-summary" aria-live="polite">
+      <strong>Kết quả confirm</strong>
+      <span>{{ result.inserted }} thêm mới</span><span>{{ result.updated }} cập nhật</span>
+      <span>{{ result.skipped }} bỏ qua</span><span>{{ result.failed }} lỗi</span>
+    </section>
+  }
+} @else {
+  <section class="panel history-panel">
+    <div class="batch-heading"><div><h2>Lịch sử giao dịch</h2><p>Đây là lịch sử độc lập, không thay đổi balance hoặc ledger.</p></div></div>
+    <div class="filters">
+      <label>Từ ngày<input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)"></label>
+      <label>Đến ngày<input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)"></label>
+      <label>Loại<select [ngModel]="historyType()" (ngModelChange)="historyType.set($event)"><option value="">Tất cả</option><option value="DEPOSIT">DEPOSIT</option><option value="WITHDRAWAL">WITHDRAWAL</option><option value="BONUS">BONUS</option></select></label>
+      <label>Trạng thái<select [ngModel]="historyStatus()" (ngModelChange)="historyStatus.set($event)"><option value="">Tất cả</option><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="FAILED">FAILED</option><option value="CANCELLED">CANCELLED</option></select></label>
+      <button class="primary" type="button" (click)="loadHistory()">Lọc</button>
+    </div>
+    @if (historyLoading()) { <p class="empty">Đang tải lịch sử…</p> }
+    @else if (!history().length) { <p class="empty">Chưa có giao dịch đã xác nhận.</p> }
+    @else {
+      <div class="table-scroll"><table><thead><tr><th>Thời gian</th><th>Loại</th><th>Trạng thái</th><th>Số tiền</th><th>Mã ngoài</th><th>Mô tả</th></tr></thead><tbody>
+        @for (transaction of history(); track transaction.id) {
+          <tr><td>{{ transaction.transactionAt | date:'dd/MM/yyyy HH:mm' }}</td><td>{{ transaction.transactionType }}</td><td><span class="action-badge">{{ transaction.transactionStatus }}</span></td><td class="money">{{ formatAmount(transaction.amount) }} {{ transaction.currency }}</td><td>{{ transaction.externalTransactionId || '—' }}</td><td>{{ transaction.description || '—' }}</td></tr>
+        }
+      </tbody></table></div>
+    }
+  </section>
+}
+
+@if (conflictItem(); as item) {
+  <div class="modal-backdrop" (click)="conflictItemId.set(null)">
+    <section class="resolution-dialog" role="dialog" aria-modal="true" aria-labelledby="resolution-title" (click)="$event.stopPropagation()">
+      <h2 id="resolution-title">Xử lý item {{ item.processingAction }}</h2>
+      <p>Chọn cách backend xử lý sau khi chuẩn hóa và dedup lại. SAVE_AS_NEW chỉ phù hợp khi đây thật sự là hai giao dịch khác nhau.</p>
+      <button type="button" (click)="resolveConflict('ACCEPT')"><strong>ACCEPT</strong><span>Lưu dữ liệu đã duyệt nếu backend không còn phát hiện xung đột.</span></button>
+      <button type="button" (click)="resolveConflict('MERGE_EXISTING')"><strong>MERGE_EXISTING</strong><span>Giữ giao dịch hiện có, chỉ nâng trạng thái hoặc bổ sung metadata.</span></button>
+      <button type="button" (click)="resolveConflict('SAVE_AS_NEW')"><strong>SAVE_AS_NEW</strong><span>Tạo fingerprint riêng cho giao dịch cùng phút không có external ID.</span></button>
+      <button type="button" (click)="resolveConflict('SKIP')"><strong>SKIP</strong><span>Không lưu item này.</span></button>
+      <button class="cancel" type="button" (click)="conflictItemId.set(null)">Đóng</button>
+    </section>
+  </div>
+}

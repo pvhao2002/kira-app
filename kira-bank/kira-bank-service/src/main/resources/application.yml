@@ -17,7 +17,7 @@ spring:
     enabled: true
   servlet.multipart:
     max-file-size: 10MB
-    max-request-size: 10MB
+    max-request-size: 55MB
 server:
   port: ${SERVER_PORT:8080}
   error:
@@ -52,4 +52,8 @@ ai:
     processing-timeout: ${AI_PROCESSING_TIMEOUT:PT30M}
     cron: "${AI_JOB_CRON:0 0 */3 * * *}"
     time-zone: "${AI_JOB_TIME_ZONE:Asia/Bangkok}"
+investment:
+  transaction-import:
+    time-zone: "${INVESTMENT_IMPORT_TIME_ZONE:Asia/Ho_Chi_Minh}"
+    retention-cron: "${INVESTMENT_IMPORT_RETENTION_CRON:0 20 2 * * *}"
 springdoc.swagger-ui.path: /swagger-ui.html

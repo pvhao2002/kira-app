@@ -13,12 +13,17 @@ import java.time.Instant;
 @Table(name = "attachments")
 public class Attachment extends AuditedEntity {
     private Long userId;
+    @Column(length = 40)
     private String module;
+    @Column(length = 60)
     private String documentType;
+    @Column(length = 500)
     private String storageKey;
     private String originalName;
+    @Column(length = 100)
     private String mimeType;
     private long sizeBytes;
+    @Column(length = 64, columnDefinition = "CHAR(64)")
     private String sha256;
 
     @Enumerated(EnumType.STRING)
@@ -26,7 +31,9 @@ public class Attachment extends AuditedEntity {
     private AttachmentAiStatus aiStatus = AttachmentAiStatus.NOT_REQUESTED;
 
     private int aiAttemptCount;
+    @Column(length = 150)
     private String aiModel;
+    private Integer aiSchemaVersion;
     @Column(columnDefinition = "LONGTEXT")
     private String aiRawResponse;
     @Column(columnDefinition = "JSON")
@@ -37,4 +44,5 @@ public class Attachment extends AuditedEntity {
     private Instant aiProcessingStartedAt;
     private Instant aiCompletedAt;
     private Instant aiConfirmedAt;
+    private Instant storagePurgedAt;
 }

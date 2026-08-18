@@ -1,6 +1,6 @@
 # Kira Bank
 
-Kira Bank là ứng dụng quản lý tài chính gồm hai miền độc lập: (1) thẻ tín dụng, sao kê, thanh toán, cashback và lợi nhuận hóa đơn chiết khấu; (2) theo dõi website đầu tư với Capital, Profit, Reward, task settlement, withdrawal và append-only ledger.
+Kira Bank là ứng dụng quản lý thẻ tín dụng, sao kê, thanh toán, hồ sơ tài khoản đầu tư và lịch sử giao dịch đầu tư nhập từ ảnh qua AI. Lịch sử đầu tư độc lập, không tính balance/capital và không tạo ledger.
 
 ## Công nghệ và cấu trúc
 
@@ -8,7 +8,7 @@ Kira Bank là ứng dụng quản lý tài chính gồm hai miền độc lập:
 - `kira-bank-ui`: Angular 22 standalone, strict TypeScript, Signals, lazy routes, responsive light/dark UI.
 - `docs`: kiến trúc, ERD, business rules, API và production deployment.
 
-Backend là modular monolith. Hai flow không có foreign key nghiệp vụ chéo; dashboard chỉ trình bày hai section riêng.
+Backend là modular monolith. Dữ liệu thẻ/sao kê/thanh toán độc lập với hồ sơ tài khoản đầu tư; dashboard nghiệp vụ chỉ tổng hợp thẻ tín dụng.
 
 ## Yêu cầu
 
@@ -16,7 +16,7 @@ Java 25, Node `^22.22.3` hoặc `^24.15.0` hoặc `>=26`, npm 8+, Docker Desktop
 
 ## Cấu hình
 
-Sao chép `.env.example` thành `.env` và đổi toàn bộ secret. Các biến chính: `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`, `AI_BASE_URL`, `AI_API_KEY`.
+Sao chép `.env.example` thành `.env` và đổi toàn bộ secret. Các biến chính: cấu hình MySQL/JWT/CORS/R2, `AI_ENABLED`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_AI_API_TOKEN`, `AI_MODEL`, `INVESTMENT_IMPORT_TIME_ZONE` và `INVESTMENT_IMPORT_RETENTION_CRON`.
 
 ## Chạy backend
 
@@ -65,17 +65,19 @@ Chỉ được tạo khi `app.seed-development-users=true` (mặc định develo
 ## API chính
 
 - Identity: `/api/v1/auth/register`, `/login`, `/refresh`, `/logout`, `/profile`, `/change-password`.
-- Public: `/api/v1/public/banks`, `/mccs`.
-- Flow 1: `/credit-cards`, `/card-transactions`, `/statements`, `/statements/{id}/payments`, `/discount-invoices`.
-- Flow 2: `/investment/accounts`, `/deposits/completed`, `/tasks/allocate`, `/tasks/{id}/settlements`, `/withdrawals`, `/accounts/{id}/ledger`.
-- Shared: `/attachments` (upload/review; AI không tự lưu dữ liệu tài chính).
+- Public: `/api/v1/public/banks`.
+- Credit card: `/credit-cards`, `/statements`, `/statements/{id}/payments`, `/payments`, `/dashboards/credit-cards`.
+- Investment: CRUD hồ sơ tại `/investment/accounts`, import tại `/investment/accounts/{id}/transaction-imports` và lịch sử tại `/investment/accounts/{id}/transactions`.
+- Shared: `/attachments` lưu ảnh nguồn; scheduler AI xử lý tối đa 3 ảnh/request mỗi 3 giờ, luôn chờ người dùng review/confirm.
 
 ## Migration
 
 - `V1__initial_schema.sql`: 33 bảng identity, Flow 1, Flow 2 và shared; foreign key, unique/check constraint và index.
-- `V2__seed_public_catalog.sql`: roles, ngân hàng/thẻ/MCC/rule/platform mẫu. Các setting tài chính cũ trong migration này được dọn bởi `V12__remove_unused_tables.sql` vì application dùng invariant trong code. User development được hash và tạo bởi application runner, không hard-code vào production migration.
+- `V2__seed_public_catalog.sql`: dữ liệu seed lịch sử. Catalog MCC, service provider và investment platform được xóa ở V13. User development được hash và tạo bởi application runner, không hard-code vào production migration.
 - `V6__link_user_credit_cards_to_banks.sql`: chuyển thẻ người dùng sang liên kết trực tiếp với ngân hàng, sau đó xóa Card Catalog và cashback rules.
 - `V8__share_credit_limits_by_bank.sql`: chuyển hạn mức từ từng thẻ sang hạn mức dùng chung theo user và ngân hàng.
+- `V13__remove_legacy_financial_tables.sql`: hard-delete 13 bảng nghiệp vụ cũ và chuyển `investment_accounts` thành hồ sơ tối giản. Cần backup dữ liệu trước deploy nếu muốn lưu lịch sử.
+- `V14__create_investment_transaction_import.sql`: tạo transaction history, batch/file/item staging, source links, dedup constraints và metadata retention cho attachment. Không phục hồi balance/ledger đã xóa.
 
 ## Troubleshooting
 

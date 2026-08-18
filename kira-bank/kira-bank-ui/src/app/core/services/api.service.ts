@@ -6,9 +6,11 @@ import {
   CreditCardBankBalanceResponse,
   CreditCardBankLimit,
   CreditCardDashboard,
-  DashboardSummary,
-  Mcc,
-  PageResponse
+  PageResponse,
+  InvestmentImportBatch,
+  InvestmentConfirmItem,
+  InvestmentConfirmResponse,
+  InvestmentTransaction
 } from '../../shared/models/api.models';
 
 @Injectable({providedIn: 'root'})
@@ -17,10 +19,6 @@ export class ApiService {
 
   banks(search = '', page = 0, size = 20): Observable<PageResponse<Bank>> {
     return this.http.get<PageResponse<Bank>>('/api/v1/public/banks', {params: {search, page, size}});
-  }
-
-  mccs(search = ''): Observable<PageResponse<Mcc>> {
-    return this.http.get<PageResponse<Mcc>>('/api/v1/public/mccs', {params: {search}});
   }
 
   page<T>(path: string, page = 0, size = 20, search = ''): Observable<PageResponse<T>> {
@@ -43,10 +41,6 @@ export class ApiService {
     return this.http.patch<T>(`/api/v1/${path}`, body);
   }
 
-  summary(): Observable<DashboardSummary> {
-    return this.http.get<DashboardSummary>('/api/v1/dashboards/summary');
-  }
-
   creditCardDashboard(): Observable<CreditCardDashboard> {
     return this.http.get<CreditCardDashboard>('/api/v1/dashboards/credit-cards');
   }
@@ -63,5 +57,34 @@ export class ApiService {
                               version: number): Observable<CreditCardBankBalanceResponse> {
     return this.http.put<CreditCardBankBalanceResponse>(`/api/v1/credit-card-bank-balances/${bankId}`,
       {currentBalance, reason, version});
+  }
+
+  createInvestmentTransactionImport(accountId: number, files: File[]): Observable<InvestmentImportBatch> {
+    const body = new FormData();
+    files.forEach(file => body.append('files', file, file.name));
+    return this.http.post<InvestmentImportBatch>(
+      `/api/v1/investment/accounts/${accountId}/transaction-imports`, body);
+  }
+
+  investmentTransactionImport(accountId: number, batchId: string): Observable<InvestmentImportBatch> {
+    return this.http.get<InvestmentImportBatch>(
+      `/api/v1/investment/accounts/${accountId}/transaction-imports/${batchId}`);
+  }
+
+  retryInvestmentImportFile(accountId: number, batchId: string, attachmentId: number): Observable<InvestmentImportBatch> {
+    return this.http.post<InvestmentImportBatch>(
+      `/api/v1/investment/accounts/${accountId}/transaction-imports/${batchId}/files/${attachmentId}/retry`, {});
+  }
+
+  confirmInvestmentTransactions(accountId: number, batchId: string,
+                                transactions: InvestmentConfirmItem[]): Observable<InvestmentConfirmResponse> {
+    return this.http.post<InvestmentConfirmResponse>(
+      `/api/v1/investment/accounts/${accountId}/transaction-imports/${batchId}/confirm`, {transactions});
+  }
+
+  investmentTransactions(accountId: number, filters: Record<string, string | number> = {}):
+    Observable<PageResponse<InvestmentTransaction>> {
+    return this.http.get<PageResponse<InvestmentTransaction>>(
+      `/api/v1/investment/accounts/${accountId}/transactions`, {params: filters});
   }
 }
