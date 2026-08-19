@@ -23,7 +23,6 @@ public final class InvestmentDtos {
     public record UpdateAccountRequest(
         @Size(max = 100) String accountCode,
         @NotBlank @Size(max = 150) String accountName,
-        @Size(max = 100) String externalAccountCode,
         @Size(max = 100) String accountUsername,
         @Size(max = 150) String accountEmail,
         @Size(max = 50) String phoneNumber,
@@ -36,8 +35,8 @@ public final class InvestmentDtos {
     }
 
     public record AccountResponse(
-        Long id, String accountCode, String accountName, String externalAccountCode,
-        String accountUsername, String accountEmail, String phoneNumber, LocalDate registerDate, String accountPassword,
+        Long id, String accountCode, String accountName, String accountUsername, String accountEmail,
+        String phoneNumber, LocalDate registerDate, String accountPassword,
         String currency, String status, String note, long version
     ) {
     }

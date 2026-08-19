@@ -21,7 +21,6 @@ public interface InvestmentAccountRepository extends JpaRepository<InvestmentAcc
           and (:search = ''
             or lower(a.accountCode) like lower(concat('%', :search, '%'))
             or lower(a.accountName) like lower(concat('%', :search, '%'))
-            or lower(a.externalAccountCode) like lower(concat('%', :search, '%'))
             or lower(a.accountUsername) like lower(concat('%', :search, '%'))
             or lower(a.accountEmail) like lower(concat('%', :search, '%')))
         """)

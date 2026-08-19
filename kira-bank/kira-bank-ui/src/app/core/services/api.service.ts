@@ -10,7 +10,8 @@ import {
   InvestmentImportBatch,
   InvestmentConfirmItem,
   InvestmentConfirmResponse,
-  InvestmentTransaction
+  InvestmentTransaction,
+  InvestmentAiJob
 } from '../../shared/models/api.models';
 
 @Injectable({providedIn: 'root'})
@@ -86,5 +87,28 @@ export class ApiService {
     Observable<PageResponse<InvestmentTransaction>> {
     return this.http.get<PageResponse<InvestmentTransaction>>(
       `/api/v1/investment/accounts/${accountId}/transactions`, {params: filters});
+  }
+
+  investmentAiJobs(adminScope: boolean, status = '', page = 0, size = 20):
+    Observable<PageResponse<InvestmentAiJob>> {
+    const path = adminScope ? '/api/v1/admin/investment/ai-jobs' : '/api/v1/investment/ai-jobs';
+    const params: Record<string, string | number> = {page, size, sort: 'createdAt,desc'};
+    if (status) params['statuses'] = status;
+    return this.http.get<PageResponse<InvestmentAiJob>>(path, {params});
+  }
+
+  cancelInvestmentAiJob(attachmentId: number, adminScope: boolean): Observable<InvestmentAiJob> {
+    const prefix = adminScope ? '/api/v1/admin/investment/ai-jobs' : '/api/v1/investment/ai-jobs';
+    return this.http.post<InvestmentAiJob>(`${prefix}/${attachmentId}/cancel`, {});
+  }
+
+  runInvestmentAiJob(attachmentId: number, adminScope: boolean): Observable<InvestmentAiJob> {
+    const prefix = adminScope ? '/api/v1/admin/investment/ai-jobs' : '/api/v1/investment/ai-jobs';
+    return this.http.post<InvestmentAiJob>(`${prefix}/${attachmentId}/run`, {});
+  }
+
+  investmentAiJobContent(attachmentId: number, adminScope: boolean): Observable<Blob> {
+    const prefix = adminScope ? '/api/v1/admin/investment/ai-jobs' : '/api/v1/investment/ai-jobs';
+    return this.http.get(`${prefix}/${attachmentId}/content`, {responseType: 'blob'});
   }
 }

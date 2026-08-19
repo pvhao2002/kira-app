@@ -129,7 +129,7 @@ public class InvestmentTransactionImportService {
         if (attachment == null) return;
         List<InvestmentTransactionImportFile> linked = files.findByAttachmentIdAndStatusInAndDeletedAtIsNull(
             attachmentId, List.of(InvestmentImportFileStatus.PENDING, InvestmentImportFileStatus.PROCESSING,
-                InvestmentImportFileStatus.FAILED));
+                InvestmentImportFileStatus.FAILED, InvestmentImportFileStatus.CANCELLED));
         for (InvestmentTransactionImportFile file : linked) {
             InvestmentTransactionImportBatch batch = batches.findById(file.getBatchId()).orElse(null);
             if (batch == null) continue;
@@ -144,8 +144,15 @@ public class InvestmentTransactionImportService {
             } else if (attachment.getAiStatus() == AttachmentAiStatus.FAILED) {
                 file.setStatus(InvestmentImportFileStatus.FAILED);
                 file.setErrorCode(attachment.getAiError());
+            } else if (attachment.getAiStatus() == AttachmentAiStatus.CANCELLED) {
+                file.setStatus(InvestmentImportFileStatus.CANCELLED);
+                file.setErrorCode(null);
             } else if (attachment.getAiStatus() == AttachmentAiStatus.PROCESSING) {
                 file.setStatus(InvestmentImportFileStatus.PROCESSING);
+                file.setErrorCode(null);
+            } else if (attachment.getAiStatus() == AttachmentAiStatus.PENDING) {
+                file.setStatus(InvestmentImportFileStatus.PENDING);
+                file.setErrorCode(null);
             }
             refreshBatch(batch);
         }
@@ -171,6 +178,11 @@ public class InvestmentTransactionImportService {
     @Transactional
     public ConfirmBatchResponse confirm(Long userId, Long accountId, String batchId, ConfirmBatchRequest request) {
         InvestmentTransactionImportBatch batch = ownedBatch(batchId, userId, accountId);
+        if (!EnumSet.of(InvestmentImportBatchStatus.READY, InvestmentImportBatchStatus.READY_WITH_ERRORS,
+            InvestmentImportBatchStatus.PARTIALLY_CONFIRMED).contains(batch.getStatus())) {
+            throw new ApiException(HttpStatus.CONFLICT, "IMPORT_BATCH_NOT_REVIEWABLE",
+                "Batch chưa sẵn sàng để xác nhận");
+        }
         List<ConfirmItemResult> results = new ArrayList<>();
         int inserted = 0, updated = 0, skipped = 0, failed = 0;
         for (ConfirmItemRequest item : request.transactions()) {
@@ -366,17 +378,23 @@ public class InvestmentTransactionImportService {
         boolean pending = batchFiles.stream()
             .anyMatch(file -> file.getStatus() == InvestmentImportFileStatus.PENDING);
         long failed = batchFiles.stream().filter(file -> file.getStatus() == InvestmentImportFileStatus.FAILED).count();
+        long cancelled = batchFiles.stream().filter(file -> file.getStatus() == InvestmentImportFileStatus.CANCELLED).count();
         if (processing) batch.setStatus(InvestmentImportBatchStatus.PROCESSING);
         else if (pending) batch.setStatus(InvestmentImportBatchStatus.QUEUED);
-        else if (failed == batchFiles.size()) batch.setStatus(InvestmentImportBatchStatus.FAILED);
-        else if (failed > 0) batch.setStatus(InvestmentImportBatchStatus.READY_WITH_ERRORS);
+        else if (!batchFiles.isEmpty() && cancelled == batchFiles.size()) batch.setStatus(InvestmentImportBatchStatus.CANCELLED);
+        else if (!batchFiles.isEmpty() && failed + cancelled == batchFiles.size()) batch.setStatus(InvestmentImportBatchStatus.FAILED);
+        else if (failed + cancelled > 0) batch.setStatus(InvestmentImportBatchStatus.READY_WITH_ERRORS);
         else batch.setStatus(InvestmentImportBatchStatus.READY);
         List<InvestmentTransactionImportItem> batchItems = items.findByBatchIdAndDeletedAtIsNullOrderById(batch.getId());
         batch.setDetectedCount(batchItems.size());
         batch.setReviewCount((int) batchItems.stream()
             .filter(item -> item.getProcessingAction() == InvestmentProcessingAction.REVIEW).count());
         batch.setFailedCount((int) failed);
-        if (batch.getStatus() == InvestmentImportBatchStatus.FAILED && batch.getCompletedAt() == null) {
+        if (List.of(InvestmentImportBatchStatus.QUEUED, InvestmentImportBatchStatus.PROCESSING).contains(batch.getStatus())) {
+            batch.setCompletedAt(null);
+            batch.setRetentionUntil(null);
+        } else if (List.of(InvestmentImportBatchStatus.FAILED, InvestmentImportBatchStatus.CANCELLED)
+            .contains(batch.getStatus()) && batch.getCompletedAt() == null) {
             batch.setCompletedAt(Instant.now());
             batch.setRetentionUntil(Instant.now().plus(RETENTION));
         }

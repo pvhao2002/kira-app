@@ -159,6 +159,26 @@ public class AttachmentService {
     @Transactional(readOnly = true)
     public AttachmentContent content(Long userId, Long attachmentId) {
         Attachment attachment = owned(attachmentId, userId);
+        return content(attachment);
+    }
+
+    @Transactional(readOnly = true)
+    public AttachmentContent investmentJobContent(Long userId, Long attachmentId) {
+        Attachment attachment = owned(attachmentId, userId);
+        requireInvestmentJob(attachment);
+        return content(attachment);
+    }
+
+    @Transactional(readOnly = true)
+    public AttachmentContent investmentJobContentAsAdmin(Long attachmentId) {
+        Attachment attachment = repository.findById(attachmentId)
+            .filter(value -> value.getDeletedAt() == null)
+            .orElseThrow(this::missingAttachment);
+        requireInvestmentJob(attachment);
+        return content(attachment);
+    }
+
+    private AttachmentContent content(Attachment attachment) {
         if (attachment.getStoragePurgedAt() != null) {
             throw new ApiException(HttpStatus.GONE, "ATTACHMENT_PURGED", "Ảnh nguồn đã hết thời hạn lưu trữ");
         }
@@ -167,21 +187,101 @@ public class AttachmentService {
 
     @Transactional
     public AttachmentResponse retry(Long userId, Long attachmentId) {
-        Attachment attachment = owned(attachmentId, userId);
-        if (attachment.getAiStatus() != AttachmentAiStatus.FAILED) {
-            throw bad("ATTACHMENT_NOT_RETRYABLE", "Chỉ có thể thử lại ảnh AI đã xử lý lỗi");
+        Attachment attachment = repository.findOwnedForUpdate(attachmentId, userId)
+            .orElseThrow(this::missingAttachment);
+        rerun(attachment, userId);
+        return toResponse(attachment);
+    }
+
+    @Transactional
+    public AttachmentResponse retryAsAdmin(Long adminId, Long attachmentId) {
+        Attachment attachment = repository.findForUpdate(attachmentId).orElseThrow(this::missingAttachment);
+        rerun(attachment, adminId);
+        return toResponse(attachment);
+    }
+
+    private void rerun(Attachment attachment, Long actorId) {
+        requireInvestmentJob(attachment);
+        if (!List.of(AttachmentAiStatus.FAILED, AttachmentAiStatus.CANCELLED).contains(attachment.getAiStatus())) {
+            throw conflict("AI_JOB_NOT_RERUNNABLE", "Chỉ có thể chạy lại job FAILED hoặc CANCELLED");
         }
+        resetForRun(attachment, actorId);
+    }
+
+    private void resetForRun(Attachment attachment, Long actorId) {
         attachment.setAiStatus(AttachmentAiStatus.PENDING);
         attachment.setAiAttemptCount(0);
+        attachment.setAiModel(null);
         attachment.setAiError(null);
         attachment.setAiRawResponse(null);
         attachment.setAiResult(null);
         attachment.setAiNextAttemptAt(Instant.now());
         attachment.setAiProcessingStartedAt(null);
         attachment.setAiCompletedAt(null);
+        attachment.setAiConfirmedAt(null);
         attachment.setAiSchemaVersion(INVESTMENT_AI_SCHEMA_VERSION);
-        attachment.setUpdatedBy(userId);
+        attachment.setUpdatedBy(actorId);
+    }
+
+    @Transactional
+    public Attachment claimImmediateRun(Long userId, Long attachmentId) {
+        Attachment attachment = repository.findOwnedForUpdate(attachmentId, userId)
+            .orElseThrow(this::missingAttachment);
+        return claimImmediateRun(attachment, userId);
+    }
+
+    @Transactional
+    public Attachment claimImmediateRunAsAdmin(Long adminId, Long attachmentId) {
+        Attachment attachment = repository.findForUpdate(attachmentId).orElseThrow(this::missingAttachment);
+        return claimImmediateRun(attachment, adminId);
+    }
+
+    private Attachment claimImmediateRun(Attachment attachment, Long actorId) {
+        requireInvestmentJob(attachment);
+        if (!List.of(AttachmentAiStatus.PENDING, AttachmentAiStatus.FAILED, AttachmentAiStatus.CANCELLED)
+            .contains(attachment.getAiStatus())) {
+            throw conflict("AI_JOB_NOT_RUNNABLE", "Chỉ có thể chạy job PENDING, FAILED hoặc CANCELLED");
+        }
+        if (attachment.getAiStatus() != AttachmentAiStatus.PENDING) {
+            resetForRun(attachment, actorId);
+        }
+        Instant now = Instant.now();
+        attachment.setAiStatus(AttachmentAiStatus.PROCESSING);
+        attachment.setAiAttemptCount(attachment.getAiAttemptCount() + 1);
+        attachment.setAiProcessingStartedAt(now);
+        attachment.setAiNextAttemptAt(null);
+        attachment.setAiCompletedAt(null);
+        attachment.setAiError(null);
+        attachment.setUpdatedBy(actorId);
+        return attachment;
+    }
+
+    @Transactional
+    public AttachmentResponse cancel(Long userId, Long attachmentId) {
+        Attachment attachment = repository.findOwnedForUpdate(attachmentId, userId)
+            .orElseThrow(this::missingAttachment);
+        cancel(attachment, userId);
         return toResponse(attachment);
+    }
+
+    @Transactional
+    public AttachmentResponse cancelAsAdmin(Long adminId, Long attachmentId) {
+        Attachment attachment = repository.findForUpdate(attachmentId).orElseThrow(this::missingAttachment);
+        cancel(attachment, adminId);
+        return toResponse(attachment);
+    }
+
+    private void cancel(Attachment attachment, Long actorId) {
+        requireInvestmentJob(attachment);
+        if (attachment.getAiStatus() != AttachmentAiStatus.PENDING) {
+            throw conflict("AI_JOB_NOT_CANCELLABLE", "Chỉ có thể hủy job đang chờ xử lý");
+        }
+        attachment.setAiStatus(AttachmentAiStatus.CANCELLED);
+        attachment.setAiNextAttemptAt(null);
+        attachment.setAiProcessingStartedAt(null);
+        attachment.setAiCompletedAt(Instant.now());
+        attachment.setAiError(null);
+        attachment.setUpdatedBy(actorId);
     }
 
     @Transactional
@@ -286,6 +386,12 @@ public class AttachmentService {
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ATTACHMENT_NOT_FOUND", "Không tìm thấy tệp đính kèm"));
     }
 
+    private void requireInvestmentJob(Attachment attachment) {
+        if (!isInvestmentReceipt(attachment.getModule(), attachment.getDocumentType())) {
+            throw missingAttachment();
+        }
+    }
+
     private String validateFile(String flow, String documentType, MultipartFile file, byte[] data) {
         if (file == null || file.isEmpty() || file.getSize() > MAX_FILE_SIZE) {
             throw bad("INVALID_FILE_SIZE", "File phải có dung lượng từ 1 byte đến 10 MB");
@@ -341,7 +447,7 @@ public class AttachmentService {
         );
     }
 
-    private AiDraftResponse parseDraft(String value) {
+    AiDraftResponse parseDraft(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
@@ -397,6 +503,14 @@ public class AttachmentService {
 
     private ApiException bad(String code, String message) {
         return new ApiException(HttpStatus.BAD_REQUEST, code, message);
+    }
+
+    private ApiException conflict(String code, String message) {
+        return new ApiException(HttpStatus.CONFLICT, code, message);
+    }
+
+    private ApiException missingAttachment() {
+        return new ApiException(HttpStatus.NOT_FOUND, "ATTACHMENT_NOT_FOUND", "Không tìm thấy tệp đính kèm");
     }
 
     public record AttachmentContent(String mimeType, String originalName, byte[] bytes) {

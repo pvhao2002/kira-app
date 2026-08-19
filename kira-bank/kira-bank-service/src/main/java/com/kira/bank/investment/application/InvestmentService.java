@@ -65,7 +65,6 @@ public class InvestmentService {
         }
         account.setAccountCode(request.accountCode());
         account.setAccountName(request.accountName());
-        account.setExternalAccountCode(request.externalAccountCode());
         account.setAccountUsername(request.accountUsername());
         account.setAccountEmail(request.accountEmail());
         account.setPhoneNumber(request.phoneNumber());
@@ -84,8 +83,8 @@ public class InvestmentService {
 
     private AccountResponse dto(InvestmentAccount account) {
         return new AccountResponse(
-            account.getId(), account.getAccountCode(), account.getAccountName(), account.getExternalAccountCode(),
-            account.getAccountUsername(), account.getAccountEmail(), account.getPhoneNumber(), account.getRegisterDate(),
+            account.getId(), account.getAccountCode(), account.getAccountName(), account.getAccountUsername(),
+            account.getAccountEmail(), account.getPhoneNumber(), account.getRegisterDate(),
             account.getAccountPassword(), account.getCurrency(), account.getStatus(), account.getNote(),
             account.getVersion()
         );

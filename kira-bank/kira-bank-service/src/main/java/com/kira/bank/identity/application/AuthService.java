@@ -103,10 +103,14 @@ public class AuthService {
 
     @Transactional
     public ProfileResponse update(Long id, UpdateProfileRequest request) {
-        User user = require(id);
+        User user = requireForUpdate(id);
+        if (user.getVersion() != request.version()) {
+            throw new ApiException(HttpStatus.CONFLICT, "PROFILE_VERSION_CONFLICT",
+                "Hồ sơ đã được cập nhật ở phiên khác");
+        }
         user.setFullName(request.fullName().trim());
         user.setPhone(request.phone());
-        return profile(user);
+        return profile(users.saveAndFlush(user));
     }
 
     @Transactional(readOnly = true)
@@ -126,11 +130,17 @@ public class AuthService {
     }
 
     private ProfileResponse profile(User u) {
-        return new ProfileResponse(u.getId(), u.getEmail(), u.getFullName(), u.getPhone(), u.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet()));
+        return new ProfileResponse(u.getId(), u.getEmail(), u.getFullName(), u.getPhone(),
+            u.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet()), u.getVersion());
     }
 
     private User require(Long id) {
         return users.findById(id).filter(u -> u.getDeletedAt() == null).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "Không tìm thấy người dùng"));
+    }
+
+    private User requireForUpdate(Long id) {
+        return users.findByIdForUpdate(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
+            "USER_NOT_FOUND", "Không tìm thấy người dùng"));
     }
 
     private ApiException badCredentials() {

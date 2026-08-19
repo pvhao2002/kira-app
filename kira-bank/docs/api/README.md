@@ -33,12 +33,14 @@ Dư nợ gốc là tổng `remaining_amount` của các sao kê còn nợ. Adjus
 Angular gọi song song ba API domain hiện có; không có endpoint tìm kiếm tổng hợp. `GET /api/v1/credit-cards`, `GET /api/v1/investment/accounts` và `GET /api/v1/public/banks` nhận query parameter `search` tùy chọn, đồng thời vẫn nhận `page` và `size` như trước.
 
 - Thẻ tìm không phân biệt hoa thường theo loại thẻ, nickname, bốn số cuối, code/tên ngắn/tên đầy đủ của ngân hàng; kết quả luôn giới hạn theo user đăng nhập và bỏ dữ liệu soft-delete.
-- Tài khoản đầu tư tìm theo account code, account name, external code, username hoặc email; kết quả luôn giới hạn theo user đăng nhập và bỏ dữ liệu soft-delete.
+- Tài khoản đầu tư tìm theo account code, account name, username hoặc email; kết quả luôn giới hạn theo user đăng nhập và bỏ dữ liệu soft-delete.
 - Ngân hàng tìm theo code, tên ngắn hoặc tên đầy đủ; chỉ trả ngân hàng active và chưa bị xóa.
 
 ## Tài khoản đầu tư
 
-CRUD `/api/v1/investment/accounts` chỉ quản lý hồ sơ. Request create/update và response không còn `platformId` hoặc các field balance/capital/profit/reward. Response gồm thông tin nhận diện, liên hệ, `registerDate`, `accountPassword`, `currency`, `status`, `note` và `version`.
+CRUD `/api/v1/investment/accounts` chỉ quản lý hồ sơ. Request create/update và response không còn `platformId`, `externalAccountCode` hoặc các field balance/capital/profit/reward. Response gồm thông tin nhận diện, liên hệ, `registerDate`, `accountPassword`, `currency`, `status`, `note` và `version`.
+
+`GET /api/v1/auth/profile` và response đăng nhập/refresh trả thêm `version`. `PUT /api/v1/auth/profile` nhận `{ "fullName": "Nguyen Van A", "phone": "0900000000", "version": 0 }`; version cũ trả `409 PROFILE_VERSION_CONFLICT`.
 
 `registerDate` nhận ngày lịch ISO `yyyy-MM-dd`, ví dụ `2026-08-18`; timestamp có giờ không thuộc hợp đồng. Các endpoint platform, deposit, task, settlement, reward, withdrawal và ledger cũ đã được gỡ và trả 404.
 
@@ -47,10 +49,19 @@ CRUD `/api/v1/investment/accounts` chỉ quản lý hồ sơ. Request create/upd
 - `POST /api/v1/investment/accounts/{accountId}/transaction-imports`: multipart field `files`, 1–10 ảnh JPEG/PNG/WebP, tối đa 10 MB/ảnh và 50 MB/batch; trả `202`. AI chưa cấu hình trả `503 AI_NOT_CONFIGURED`. Quá 5 batch/phút/user trả `429 IMPORT_RATE_LIMITED` và `Retry-After: 60`.
 - `GET /api/v1/investment/accounts/{accountId}/transaction-imports/{batchId}`: polling trạng thái batch, file errors và preview items.
 - `POST .../files/{attachmentId}/retry`: retry file AI lỗi khi batch chưa hoàn tất.
-- `POST .../{batchId}/confirm`: nhận từng `itemId`, `version`, `selected`, dữ liệu đã sửa và `resolution` (`ACCEPT`, `MERGE_EXISTING`, `SAVE_AS_NEW`, `SKIP`). Backend không tin action/dedup key từ client và xử lý từng item bằng transaction độc lập.
+- `POST .../{batchId}/confirm`: chỉ nhận batch `READY`, `READY_WITH_ERRORS` hoặc `PARTIALLY_CONFIRMED`; trạng thái khác trả `409 IMPORT_BATCH_NOT_REVIEWABLE`. Request nhận từng `itemId`, `version`, `selected`, dữ liệu đã sửa và `resolution` (`ACCEPT`, `MERGE_EXISTING`, `SAVE_AS_NEW`, `SKIP`). Backend không tin action/dedup key từ client và xử lý từng item bằng transaction độc lập.
 - `GET /api/v1/investment/accounts/{accountId}/transactions`: lọc `fromDate`, `toDate`, `type`, `status`, hỗ trợ page/size/sort.
 
-Batch đi qua `QUEUED`, `PROCESSING`, `READY`/`READY_WITH_ERRORS`, rồi `PARTIALLY_CONFIRMED` hoặc `CONFIRMED`; file lỗi toàn bộ có thể thành `FAILED`. Confirm trả counters và kết quả từng item; confirm lặp không tạo transaction trùng.
+### Investment AI Queue
+
+- `GET /api/v1/investment/ai-jobs`: danh sách job ảnh giao dịch thuộc user đăng nhập; lọc bằng `statuses`, hỗ trợ page/size/sort. `GET /api/v1/admin/investment/ai-jobs` trả toàn hệ thống và chỉ dành cho `ROLE_ADMIN`.
+- `POST .../ai-jobs/{attachmentId}/cancel`: chỉ hủy job `PENDING`; nếu scheduler đã claim hoặc job đã terminal thì trả `409 AI_JOB_NOT_CANCELLABLE`.
+- `POST .../ai-jobs/{attachmentId}/run`: chạy nền ngay đúng một job `PENDING`/`FAILED`/`CANCELLED` và trả `202` với trạng thái `PROCESSING`; không drain toàn queue. Trạng thái không hợp lệ trả `409 AI_JOB_NOT_RUNNABLE`, provider chưa cấu hình trả `503 AI_NOT_CONFIGURED`, đủ 3 manual run đồng thời trả `429 AI_RUN_CAPACITY_EXCEEDED` và `Retry-After: 5`.
+- `GET .../ai-jobs/{attachmentId}/content`: trả ảnh nguồn có kiểm tra ownership; endpoint `/api/v1/admin/...` cho phép admin xem ảnh của job toàn hệ thống.
+- Response job có owner trong admin scope, trạng thái, attempt/model/error/timestamps, `canCancel`, `canRun`, `detectedJson` đã chuẩn hóa riêng theo attachment và `reviewTargets`. Mỗi review target gồm `accountId`, `accountName`, `batchId`, `batchStatus`, `createdAt`, `pendingItemCount`; chỉ liệt kê batch chưa kết thúc, cùng owner và còn draft item chưa hoàn tất, mới nhất trước. API không trả `aiRawResponse` vì raw response thuộc cả batch AI và có thể chứa kết quả của job khác.
+- Deep link review dùng `/app/investment/transactions?accountId={accountId}&batchId={batchId}#review`. Trang Transactions kiểm tra ownership bằng API user hiện có, polling batch đang `QUEUED`/`PROCESSING` và chỉ bật Confirm khi batch reviewable; không có API confirm dành cho admin.
+
+Batch đi qua `QUEUED`, `PROCESSING`, `READY`/`READY_WITH_ERRORS`, rồi `PARTIALLY_CONFIRMED` hoặc `CONFIRMED`; file lỗi toàn bộ có thể thành `FAILED`, còn batch có toàn bộ file bị hủy thành `CANCELLED`. Confirm trả counters và kết quả từng item; confirm lặp không tạo transaction trùng.
 
 Amount được chuẩn hóa dương scale 4, currency phải khớp account, thời gian local mặc định theo `Asia/Ho_Chi_Minh` rồi lưu UTC. External ID tạo unique theo account; item không có external ID dùng fingerprint theo account/type/amount/currency/phút và collision luôn yêu cầu review. Transaction chỉ là lịch sử, không cập nhật account balance.
 

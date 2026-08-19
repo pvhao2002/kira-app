@@ -10,6 +10,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.*;
 
 @Service
@@ -29,6 +30,32 @@ public class AiDocumentService {
 
     public boolean isConfigured() {
         return config.isConfigured();
+    }
+
+    public String safeConfigurationSummary() {
+        return "enabled=" + config.enabled()
+            + ", baseUrl=" + safeBaseUrl(config.baseUrl())
+            + ", accountId=" + masked(config.accountId())
+            + ", tokenConfigured=" + (config.apiToken() != null && !config.apiToken().isBlank())
+            + ", model=" + Objects.toString(config.model(), "<missing>");
+    }
+
+    private String masked(String value) {
+        if (value == null || value.isBlank()) return "<missing>";
+        String trimmed = value.trim();
+        return trimmed.length() <= 4 ? "****" : "****" + trimmed.substring(trimmed.length() - 4);
+    }
+
+    private String safeBaseUrl(String value) {
+        if (value == null || value.isBlank()) return "<default>";
+        try {
+            URI uri = URI.create(value.trim());
+            if (uri.getScheme() == null || uri.getHost() == null) return "<invalid>";
+            String port = uri.getPort() < 0 ? "" : ":" + uri.getPort();
+            return uri.getScheme() + "://" + uri.getHost() + port + Objects.toString(uri.getPath(), "");
+        } catch (IllegalArgumentException ex) {
+            return "<invalid>";
+        }
     }
 
     public AiBatchResponse analyzeBatch(List<AiInputDocument> documents) {

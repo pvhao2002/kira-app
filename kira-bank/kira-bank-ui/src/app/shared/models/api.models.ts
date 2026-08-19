@@ -15,7 +15,8 @@ export interface Profile {
   email: string;
   fullName: string;
   phone: string | null;
-  roles: string[]
+  roles: string[];
+  version: number
 }
 
 export interface AuthResponse {
@@ -144,13 +145,13 @@ export type InvestmentTransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | '
 export type InvestmentImportAction = 'INSERT' | 'UPDATE' | 'DUPLICATE' | 'REVIEW' | 'IGNORE';
 export type InvestmentImportResolution = 'ACCEPT' | 'MERGE_EXISTING' | 'SAVE_AS_NEW' | 'SKIP';
 export type InvestmentImportBatchStatus = 'QUEUED' | 'PROCESSING' | 'READY' | 'READY_WITH_ERRORS'
-  | 'PARTIALLY_CONFIRMED' | 'CONFIRMED' | 'FAILED';
+  | 'PARTIALLY_CONFIRMED' | 'CONFIRMED' | 'FAILED' | 'CANCELLED';
 
 export interface InvestmentImportFile {
   attachmentId: number;
   originalName: string;
   contentUrl: string;
-  status: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | 'CONFIRMED';
+  status: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | 'CANCELLED' | 'CONFIRMED';
   errorCode: string | null
 }
 
@@ -215,4 +216,57 @@ export interface InvestmentTransaction {
   confidence: number | null;
   sourceFileHash: string | null;
   version: number
+}
+
+export type InvestmentAiJobStatus = 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | 'CANCELLED' | 'CONFIRMED';
+
+export interface InvestmentAiDetectedTransaction {
+  transactionType: string | null;
+  transactionStatus: string | null;
+  amount: number | null;
+  currency: string | null;
+  transactionAt: string | null;
+  externalTransactionId: string | null;
+  description: string | null;
+  rawText: string | null;
+  confidence: number | null;
+  uncertainFields: string[];
+  validationWarnings: string[]
+}
+
+export interface InvestmentAiDetectedJson {
+  attachmentId: number;
+  transactions: InvestmentAiDetectedTransaction[]
+}
+
+export interface InvestmentAiReviewTarget {
+  accountId: number;
+  accountName: string;
+  batchId: string;
+  batchStatus: InvestmentImportBatchStatus;
+  createdAt: string;
+  pendingItemCount: number
+}
+
+export interface InvestmentAiJob {
+  attachmentId: number;
+  owner: {userId: number; fullName: string | null; email: string | null} | null;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  status: InvestmentAiJobStatus;
+  attemptCount: number;
+  maxAttempts: number;
+  model: string | null;
+  error: string | null;
+  nextAttemptAt: string | null;
+  processingStartedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  contentAvailable: boolean;
+  canCancel: boolean;
+  canRun: boolean;
+  reviewTargets: InvestmentAiReviewTarget[];
+  detectedJson: InvestmentAiDetectedJson | null
 }

@@ -43,7 +43,13 @@ export interface ResourceFormDefinition {
   layout?: 'creditCard';
   validation?: 'billingCycle';
   stripFields?: string[];
+  requestMetadata?: ResourceRequestMetadata[];
   fields: ResourceField[];
+}
+
+export interface ResourceRequestMetadata {
+  name: string;
+  sourceField?: string;
 }
 
 export interface ResourceActionDefinition {
@@ -112,7 +118,9 @@ const billingCycleForm: ResourceFormDefinition = {
         {value: 'PAID', labelKey: 'billing.paid'}
       ]
     },
-    {name: 'version', sourceField: 'billingVersion', labelKey: 'field.version', type: 'hidden', required: true}
+  ],
+  requestMetadata: [
+    {name: 'version', sourceField: 'billingVersion'}
   ]
 };
 
@@ -163,9 +171,11 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
       layout: 'creditCard',
       fields: [
         ...cardFields,
-        {name: 'status', labelKey: 'field.status', type: 'select', options: statusOptions, required: true},
-        {name: 'creditLimitVersion', labelKey: 'field.version', type: 'hidden', required: true},
-        {name: 'version', labelKey: 'field.version', type: 'number', required: true}
+        {name: 'status', labelKey: 'field.status', type: 'select', options: statusOptions, required: true}
+      ],
+      requestMetadata: [
+        {name: 'creditLimitVersion'},
+        {name: 'version'}
       ]
     },
     actions: [
@@ -188,6 +198,16 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
     titleKey: 'route.investmentAccounts',
     apiPath: 'investment/accounts',
     flow: 'investment',
+    columns: [
+      {name: 'accountCode'},
+      {name: 'accountName'},
+      {name: 'accountUsername'},
+      {name: 'accountEmail'},
+      {name: 'phoneNumber'},
+      {name: 'registerDate'},
+      {name: 'currency'},
+      {name: 'status', kind: 'status'}
+    ],
     create: {
       titleKey: 'form.addAccount',
       descriptionKey: 'form.addAccountDescription',
@@ -204,9 +224,9 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
       stripFields: ['currency'],
       fields: [
         ...accountFields,
-        {name: 'status', labelKey: 'field.status', type: 'select', options: statusOptions, required: true},
-        {name: 'version', labelKey: 'field.version', type: 'number', required: true}
-      ]
+        {name: 'status', labelKey: 'field.status', type: 'select', options: statusOptions, required: true}
+      ],
+      requestMetadata: [{name: 'version'}]
     }
   },
   notifications: {

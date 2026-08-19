@@ -1,4 +1,5 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {provideRouter} from '@angular/router';
 import {of} from 'rxjs';
 import {ApiService} from '../../core/services/api.service';
 import {ToastService} from '../../core/services/toast.service';
@@ -42,7 +43,8 @@ describe('InvestmentTransactionPage', () => {
       imports: [InvestmentTransactionPage],
       providers: [
         {provide: ApiService, useValue: api},
-        {provide: ToastService, useValue: {show: vi.fn()}}
+        {provide: ToastService, useValue: {show: vi.fn()}},
+        provideRouter([])
       ]
     }).compileComponents();
     fixture = TestBed.createComponent(InvestmentTransactionPage);

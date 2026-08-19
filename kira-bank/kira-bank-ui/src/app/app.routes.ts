@@ -26,9 +26,15 @@ export const routes: Routes = [
       },
       {
         path: 'investment/transactions',
-        loadComponent: () => import('./features/investment/investment-transaction.page')
-          .then(m => m.InvestmentTransactionPage),
+        loadComponent: () =>
+          import('./features/investment/investment-transaction.page').then(m => m.InvestmentTransactionPage),
         data: {titleKey: 'route.investmentTransactions'}
+      },
+      {
+        path: 'investment/ai-queue',
+        loadComponent: () =>
+          import('./features/investment/investment-ai-queue.page').then(m => m.InvestmentAiQueuePage),
+        data: {titleKey: 'route.investmentAiQueue'}
       },
       ...resourceRoutes(),
       {

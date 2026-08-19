@@ -27,7 +27,7 @@
       <input formControlName="phone" type="tel">
     </label>
     <footer>
-      <button [disabled]="savingProfile()" class="btn primary" type="submit">
+      <button [disabled]="savingProfile() || loading() || profileVersion() === null" class="btn primary" type="submit">
         {{ savingProfile() ? i18n.t('form.saving') : i18n.t('settings.saveProfile') }}
       </button>
     </footer>

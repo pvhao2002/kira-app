@@ -29,7 +29,13 @@ public class InvestmentReceiptAiScheduler {
 
     @Scheduled(cron = "${ai.job.cron:0 0 */3 * * *}", zone = "${ai.job.time-zone:Asia/Bangkok}")
     public void processPendingReceipts() {
-        if (!ai.isConfigured() || !running.compareAndSet(false, true)) {
+        if (!ai.isConfigured()) {
+            log.warn("Investment receipt AI scheduler skipped because the provider configuration is incomplete: {}",
+                ai.safeConfigurationSummary());
+            return;
+        }
+        if (!running.compareAndSet(false, true)) {
+            log.debug("Investment receipt AI scheduler skipped because a previous run is still active");
             return;
         }
         try {
@@ -43,11 +49,16 @@ public class InvestmentReceiptAiScheduler {
     }
 
     private boolean processOneBatch() {
-        long startedAt = System.nanoTime();
         List<Attachment> claimed = attachments.claimNextBatch();
         if (claimed.isEmpty()) {
             return false;
         }
+        processClaimedAttachments(claimed);
+        return true;
+    }
+
+    public void processClaimedAttachments(List<Attachment> claimed) {
+        long startedAt = System.nanoTime();
         claimed.forEach(attachment -> transactionImports.refreshAttachmentState(attachment.getId()));
 
         List<AiDocumentService.AiInputDocument> documents = new ArrayList<>();
@@ -64,10 +75,15 @@ public class InvestmentReceiptAiScheduler {
         }
         if (documents.isEmpty()) {
             recordProcessingTime(startedAt);
-            return true;
+            return;
         }
 
+        List<Long> attachmentIds = documents.stream()
+            .map(AiDocumentService.AiInputDocument::attachmentId)
+            .toList();
         try {
+            log.info("Calling Cloudflare AI for {} investment receipt(s), attachmentIds={}, provider={}",
+                documents.size(), attachmentIds, ai.safeConfigurationSummary());
             AiDocumentService.AiBatchResponse response = ai.analyzeBatch(documents);
             Map<Long, AiDocumentService.AiExtraction> resultsByAttachment = new HashMap<>();
             Set<Long> requestedIds = new HashSet<>();
@@ -89,16 +105,18 @@ public class InvestmentReceiptAiScheduler {
                 }
                 transactionImports.refreshAttachmentState(document.attachmentId());
             }
+            log.info("Cloudflare AI batch completed for {} investment receipt(s), attachmentIds={}",
+                documents.size(), attachmentIds);
         } catch (AiDocumentService.AiProviderException ex) {
             for (AiDocumentService.AiInputDocument document : documents) {
                 attachments.markRetryOrFailed(document.attachmentId(), "AI_PROVIDER_ERROR");
                 transactionImports.refreshAttachmentState(document.attachmentId());
             }
             metrics.counter("investment.import.ai.failure", "reason", "provider").increment(documents.size());
-            log.warn("Cloudflare AI batch failed for {} attachment(s)", documents.size());
+            log.warn("Cloudflare AI batch failed for {} attachment(s), attachmentIds={}: {}",
+                documents.size(), attachmentIds, ex.getMessage(), ex);
         }
         recordProcessingTime(startedAt);
-        return true;
     }
 
     private void recordProcessingTime(long startedAt) {

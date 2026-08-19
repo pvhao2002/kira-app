@@ -6,5 +6,6 @@ public enum AttachmentAiStatus {
     PROCESSING,
     READY,
     FAILED,
+    CANCELLED,
     CONFIRMED
 }

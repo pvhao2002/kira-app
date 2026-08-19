@@ -19,6 +19,9 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
     Page<Attachment> findByUserIdAndModuleAndDocumentTypeAndAiStatusInAndDeletedAtIsNull(
         Long userId, String module, String documentType, Collection<AttachmentAiStatus> statuses, Pageable pageable);
 
+    Page<Attachment> findByModuleAndDocumentTypeAndAiStatusInAndDeletedAtIsNull(
+        String module, String documentType, Collection<AttachmentAiStatus> statuses, Pageable pageable);
+
     Optional<Attachment> findByIdAndUserIdAndDeletedAtIsNull(Long id, Long userId);
 
     Optional<Attachment> findFirstByUserIdAndModuleAndDocumentTypeAndSha256AndAiSchemaVersionAndStoragePurgedAtIsNullAndDeletedAtIsNullOrderByCreatedAtDesc(
@@ -29,6 +32,10 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from Attachment a where a.id = :id and a.userId = :userId and a.deletedAt is null")
     Optional<Attachment> findOwnedForUpdate(@Param("id") Long id, @Param("userId") Long userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from Attachment a where a.id = :id and a.deletedAt is null")
+    Optional<Attachment> findForUpdate(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

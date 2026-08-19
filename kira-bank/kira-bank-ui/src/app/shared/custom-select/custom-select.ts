@@ -9,7 +9,9 @@ import {
   signal,
   computed
 } from '@angular/core';
+import {CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition} from '@angular/cdk/overlay';
 import {ControlValueAccessor, NG_VALUE_ACCESSOR} from '@angular/forms';
+import {LanguageService} from '../../core/i18n/language.service';
 
 export interface SelectOption {
   value: any;
@@ -20,6 +22,7 @@ export interface SelectOption {
 
 @Component({
   selector: 'app-custom-select',
+  imports: [CdkConnectedOverlay, CdkOverlayOrigin],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -32,9 +35,14 @@ export interface SelectOption {
       <!-- Trigger Button -->
       <button
         type="button"
+        cdkOverlayOrigin
+        #trigger="cdkOverlayOrigin"
         class="select-trigger"
         [class.is-open]="isOpen()"
         [disabled]="isDisabled()"
+        [attr.aria-expanded]="isOpen()"
+        [attr.aria-label]="ariaLabel() ?? placeholder() ?? i18n.t('select.placeholder')"
+        aria-haspopup="listbox"
         (click)="toggleOpen()">
         <div class="selected-content">
           @if (selectedOption()?.iconUrl) {
@@ -49,9 +57,16 @@ export interface SelectOption {
         </svg>
       </button>
 
-      <!-- Dropdown Menu -->
-      @if (isOpen()) {
-        <div class="select-dropdown-menu" role="listbox">
+      <ng-template
+        cdk-connected-overlay
+        [cdkConnectedOverlayOrigin]="trigger"
+        [cdkConnectedOverlayOpen]="isOpen()"
+        [cdkConnectedOverlayPositions]="overlayPositions"
+        [cdkConnectedOverlayPush]="true"
+        [cdkConnectedOverlayFlexibleDimensions]="false"
+        [cdkConnectedOverlayWidth]="trigger.elementRef.nativeElement.offsetWidth"
+        (detach)="close()">
+        <div class="select-dropdown-menu" role="listbox" (click)="$event.stopPropagation()">
           @if (options().length > 5) {
             <div class="search-box">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -59,7 +74,7 @@ export interface SelectOption {
                 type="text"
                 [value]="searchQuery()"
                 (input)="updateSearch($event)"
-                placeholder="Search..."
+                [placeholder]="i18n.t('select.search')"
                 (click)="$event.stopPropagation()"
               />
             </div>
@@ -88,11 +103,11 @@ export interface SelectOption {
                 }
               </button>
             } @empty {
-              <div class="no-options">No matching options</div>
+              <div class="no-options">{{ i18n.t('select.noOptions') }}</div>
             }
           </div>
         </div>
-      }
+      </ng-template>
     </div>
   `,
   styles: `
@@ -114,17 +129,17 @@ export interface SelectOption {
 
     .select-trigger {
       width: 100%;
-      height: 44px;
-      padding: 0 14px;
+      height: var(--custom-select-height, 44px);
+      padding: 0 var(--custom-select-horizontal-padding, 14px);
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
       background: var(--surface, #ffffff);
       border: 1.5px solid var(--border, #e2e8f0);
-      border-radius: 12px;
+      border-radius: var(--custom-select-radius, 12px);
       color: #0f172a;
-      font-size: 13.5px;
+      font-size: var(--custom-select-font-size, 13.5px);
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -168,11 +183,8 @@ export interface SelectOption {
 
     /* Dropdown Menu */
     .select-dropdown-menu {
-      position: absolute;
-      z-index: 200;
-      top: calc(100% + 6px);
-      left: 0;
-      right: 0;
+      width: 100%;
+      box-sizing: border-box;
       background: rgba(255, 255, 255, 0.98);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -403,14 +415,20 @@ export interface SelectOption {
 })
 export class CustomSelectComponent implements ControlValueAccessor {
   options = input<SelectOption[]>([]);
-  placeholder = input<string>('Select an option');
+  placeholder = input<string | undefined>(undefined);
+  ariaLabel = input<string | undefined>(undefined);
 
   readonly isOpen = signal(false);
   readonly selectedValue = signal<any>(null);
   readonly isDisabled = signal(false);
   readonly searchQuery = signal('');
+  readonly overlayPositions: ConnectedPosition[] = [
+    {originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 6},
+    {originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -6}
+  ];
 
   private readonly element = inject(ElementRef<HTMLElement>);
+  readonly i18n = inject(LanguageService);
 
   onChange: (val: any) => void = () => {};
   onTouched: () => void = () => {};
@@ -429,7 +447,7 @@ export class CustomSelectComponent implements ControlValueAccessor {
 
   readonly selectedLabel = computed(() => {
     const opt = this.selectedOption();
-    return opt ? opt.label : this.placeholder();
+    return opt ? opt.label : (this.placeholder() ?? this.i18n.t('select.placeholder'));
   });
 
   toggleOpen(): void {
@@ -439,6 +457,11 @@ export class CustomSelectComponent implements ControlValueAccessor {
       this.searchQuery.set('');
       this.onTouched();
     }
+  }
+
+  close(): void {
+    this.isOpen.set(false);
+    this.searchQuery.set('');
   }
 
   selectOption(opt: SelectOption, event?: MouseEvent): void {
@@ -479,8 +502,7 @@ export class CustomSelectComponent implements ControlValueAccessor {
   closeOnOutsideClick(event: MouseEvent): void {
     if (!this.element.nativeElement.contains(event.target as Node)) {
       if (this.isOpen()) {
-        this.isOpen.set(false);
-        this.searchQuery.set('');
+        this.close();
         this.onTouched();
       }
     }
@@ -489,8 +511,7 @@ export class CustomSelectComponent implements ControlValueAccessor {
   @HostListener('document:keydown.escape')
   closeOnEscape(): void {
     if (this.isOpen()) {
-      this.isOpen.set(false);
-      this.searchQuery.set('');
+      this.close();
       this.onTouched();
     }
   }

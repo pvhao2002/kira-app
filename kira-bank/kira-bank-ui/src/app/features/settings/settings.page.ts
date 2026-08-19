@@ -20,6 +20,7 @@ export class SettingsPage {
   readonly savingProfile = signal(false);
   readonly savingPassword = signal(false);
   readonly email = signal('');
+  readonly profileVersion = signal<number | null>(null);
   readonly profileForm = new FormGroup({
     fullName: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.maxLength(150)]}),
     phone: new FormControl('', {nonNullable: true, validators: [Validators.maxLength(30)]})
@@ -36,6 +37,7 @@ export class SettingsPage {
     this.api.get<Profile>('auth/profile').pipe(finalize(() => this.loading.set(false))).subscribe({
       next: profile => {
         this.email.set(profile.email);
+        this.profileVersion.set(profile.version);
         this.profileForm.patchValue({fullName: profile.fullName, phone: profile.phone ?? ''});
         this.profileForm.markAsPristine();
       }
@@ -47,11 +49,14 @@ export class SettingsPage {
       this.profileForm.markAllAsTouched();
       return;
     }
+    const version = this.profileVersion();
+    if (version === null) return;
     this.savingProfile.set(true);
-    this.api.put<Profile>('auth/profile', this.profileForm.getRawValue())
+    this.api.put<Profile>('auth/profile', {...this.profileForm.getRawValue(), version})
       .pipe(finalize(() => this.savingProfile.set(false)))
       .subscribe({
-        next: () => {
+        next: profile => {
+          this.profileVersion.set(profile.version);
           this.profileForm.markAsPristine();
           this.toast.show(this.i18n.t('settings.profileSaved'), 'success');
         }

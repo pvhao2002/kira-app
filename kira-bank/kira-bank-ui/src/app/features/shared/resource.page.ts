@@ -111,6 +111,7 @@ export class ResourcePage {
   private bankSub?: any;
   private billingSub?: any;
   private billingSnapshot: {minimumPayment: unknown; paymentStatus: unknown} | null = null;
+  private requestMetadata: Record<string, unknown> = {};
 
   readonly filteredRows = computed(() => {
     let list = this.rows();
@@ -302,6 +303,7 @@ export class ResourcePage {
     this.selectedRow.set(null);
     this.formError.set('');
     this.sharedCreditLimit.set(false);
+    this.requestMetadata = {};
   }
 
   submit(): void {
@@ -313,6 +315,7 @@ export class ResourcePage {
     }
     const raw = this.form.getRawValue();
     const values = this.serialize(definition.fields, raw);
+    if (!this.mergeRequestMetadata(definition, values)) return;
     const path = definition.path(this.selectedRow(), values);
     for (const field of definition.stripFields ?? []) delete values[field];
     this.executeRequest(definition.method, path, values, definition.idempotent ?? false, true);
@@ -542,6 +545,10 @@ export class ResourcePage {
   private openForm(definition: ResourceFormDefinition, values: Row | null): void {
     this.activeForm.set(definition);
     this.formError.set('');
+    this.requestMetadata = Object.fromEntries((definition.requestMetadata ?? []).map(metadata => [
+      metadata.name,
+      values?.[metadata.sourceField ?? metadata.name]
+    ]));
     const controls: Record<string, FormControl<unknown>> = {};
     for (const field of definition.fields) {
       const validators: ValidatorFn[] = [];
@@ -721,6 +728,18 @@ export class ResourcePage {
       }
     }
     return values;
+  }
+
+  private mergeRequestMetadata(definition: ResourceFormDefinition, values: Record<string, unknown>): boolean {
+    for (const metadata of definition.requestMetadata ?? []) {
+      const value = this.requestMetadata[metadata.name];
+      if (value === null || value === undefined || value === '') {
+        this.formError.set(this.i18n.t('form.reloadRequired'));
+        return false;
+      }
+      values[metadata.name] = value;
+    }
+    return true;
   }
 
   private deserializeValue(field: ResourceField, value: unknown): unknown {

@@ -18,7 +18,6 @@ public class InvestmentAccount extends AuditedEntity {
     private Long userId;
     private String accountCode;
     private String accountName;
-    private String externalAccountCode;
     private String accountUsername;
     private String accountEmail;
     private String phoneNumber;

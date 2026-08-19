@@ -1,22 +1,28 @@
 <section class="page-heading">
   <div>
-    <span class="eyebrow">ĐẦU TƯ · AI REVIEW</span>
-    <h1>Investment Transactions</h1>
-    <p>Đưa ảnh giao dịch vào hàng đợi AI, duyệt từng kết quả rồi mới lưu vào lịch sử.</p>
+    <span class="eyebrow">{{ i18n.t('investmentTransactions.eyebrow') }}</span>
+    <h1>{{ i18n.t('route.investmentTransactions') }}</h1>
+    <p>{{ i18n.t('investmentTransactions.description') }}</p>
   </div>
   <label class="account-picker">
-    <span>Tài khoản</span>
-    <select [ngModel]="accountId()" (ngModelChange)="chooseAccount($event)">
-      @for (account of accounts(); track account.id) {
-        <option [ngValue]="account.id">{{ account.accountName }} · {{ account.currency }} · {{ account.status }}</option>
-      }
-    </select>
+    <span>{{ i18n.t('investmentTransactions.account') }}</span>
+    <app-custom-select
+      [ariaLabel]="i18n.t('investmentTransactions.account')"
+      [ngModel]="accountId()"
+      [options]="accountOptions()"
+      [placeholder]="i18n.t('investmentTransactions.accountPlaceholder')"
+      (ngModelChange)="chooseAccount($event)">
+    </app-custom-select>
   </label>
 </section>
 
-<nav class="tabs" aria-label="Investment transaction sections">
-  <button type="button" [class.active]="activeTab() === 'import'" (click)="switchTab('import')">Import & duyệt AI</button>
-  <button type="button" [class.active]="activeTab() === 'history'" (click)="switchTab('history')">Lịch sử giao dịch</button>
+<nav class="tabs" [attr.aria-label]="i18n.t('investmentTransactions.sections')">
+  <button type="button" [class.active]="activeTab() === 'import'" (click)="switchTab('import')">
+    {{ i18n.t('investmentTransactions.tabImport') }}
+  </button>
+  <button type="button" [class.active]="activeTab() === 'history'" (click)="switchTab('history')">
+    {{ i18n.t('investmentTransactions.tabHistory') }}
+  </button>
 </nav>
 
 @if (error()) {
@@ -26,78 +32,97 @@
 @if (activeTab() === 'import') {
   <section class="panel upload-panel">
     <div class="panel-copy">
-      <h2>1. Chọn ảnh giao dịch</h2>
-      <p>Tối đa 10 ảnh JPEG/PNG/WebP, 10 MB mỗi ảnh và 50 MB mỗi batch.</p>
+      <h2>{{ i18n.t('investmentTransactions.uploadTitle') }}</h2>
+      <p>{{ i18n.t('investmentTransactions.uploadDescription') }}</p>
     </div>
     <label class="drop-zone" (drop)="dropFiles($event)" (dragover)="allowDrop($event)">
       <input type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="chooseFiles($event)">
-      <strong>Kéo thả ảnh vào đây</strong>
-      <span>hoặc bấm để chọn từ thiết bị</span>
+      <strong>{{ i18n.t('investmentTransactions.dropTitle') }}</strong>
+      <span>{{ i18n.t('investmentTransactions.dropHint') }}</span>
     </label>
     @if (selectedFiles().length) {
       <div class="file-list">
         @for (file of selectedFiles(); track file.name + file.lastModified; let index = $index) {
           <div><span>{{ file.name }}</span><small>{{ (file.size / 1024 / 1024).toFixed(2) }} MB</small>
-            <button type="button" (click)="removeFile(index)">Bỏ</button></div>
+            <button type="button" [attr.aria-label]="i18n.t('investmentTransactions.removeFile', {name: file.name})" (click)="removeFile(index)">
+              {{ i18n.t('investmentTransactions.removeFile', {name: file.name}) }}
+            </button>
+          </div>
         }
       </div>
       <button class="primary" type="button" [disabled]="loading() || !accountId()" (click)="upload()">
-        {{ loading() ? 'Đang tải ảnh…' : 'Tạo batch AI' }}
+        {{ loading() ? i18n.t('investmentTransactions.uploading') : i18n.t('investmentTransactions.createBatch') }}
       </button>
     }
   </section>
 
   @if (batch(); as currentBatch) {
-    <section class="panel batch-panel">
+    <section id="batch-review-summary" class="panel batch-panel" tabindex="-1">
       <div class="batch-heading">
-        <div><h2>2. Trạng thái xử lý</h2><code>{{ currentBatch.batchId }}</code></div>
-        <span class="batch-status" [attr.data-status]="currentBatch.status">{{ currentBatch.status }}</span>
+        <div><h2>{{ i18n.t('investmentTransactions.batchTitle') }}</h2><code>{{ currentBatch.batchId }}</code></div>
+        <span class="batch-status" [attr.data-status]="currentBatch.status">{{ importStatusLabel(currentBatch.status) }}</span>
       </div>
       <div class="summary-grid">
-        <div><strong>{{ currentBatch.summary.detected }}</strong><span>Phát hiện</span></div>
-        <div><strong>{{ currentBatch.summary.review }}</strong><span>Cần duyệt</span></div>
-        <div><strong>{{ currentBatch.summary.inserted }}</strong><span>Đã thêm</span></div>
-        <div><strong>{{ currentBatch.summary.updated }}</strong><span>Đã cập nhật</span></div>
-        <div><strong>{{ currentBatch.summary.failed }}</strong><span>Lỗi</span></div>
+        <div><strong>{{ currentBatch.summary.detected }}</strong><span>{{ i18n.t('investmentTransactions.detected') }}</span></div>
+        <div><strong>{{ currentBatch.summary.review }}</strong><span>{{ i18n.t('investmentTransactions.review') }}</span></div>
+        <div><strong>{{ currentBatch.summary.inserted }}</strong><span>{{ i18n.t('investmentTransactions.inserted') }}</span></div>
+        <div><strong>{{ currentBatch.summary.updated }}</strong><span>{{ i18n.t('investmentTransactions.updated') }}</span></div>
+        <div><strong>{{ currentBatch.summary.failed }}</strong><span>{{ i18n.t('investmentTransactions.failed') }}</span></div>
       </div>
       <div class="processing-files">
         @for (file of currentBatch.files; track file.attachmentId) {
           <article>
             <div><strong>{{ file.originalName }}</strong><small>#{{ file.attachmentId }}</small></div>
-            <span [attr.data-file-status]="file.status">{{ file.status }}</span>
+            <span [attr.data-file-status]="file.status">{{ importStatusLabel(file.status) }}</span>
             @if (file.errorCode) { <code>{{ file.errorCode }}</code> }
-            @if (file.status === 'FAILED') {
-              <button type="button" (click)="retryFile(file.attachmentId)">Thử lại</button>
+            @if (file.status === 'FAILED' || file.status === 'CANCELLED') {
+              <button type="button" (click)="retryFile(file.attachmentId)">{{ i18n.t('investmentTransactions.retryFile') }}</button>
             }
           </article>
         }
       </div>
+      @if (batchIsWaiting()) {
+        <div class="batch-state-note waiting" role="status">
+          <strong>{{ i18n.t('investmentTransactions.reviewWaitingTitle') }}</strong>
+          <span>{{ i18n.t('investmentTransactions.reviewWaitingDescription') }}</span>
+        </div>
+      } @else if (batchIsReadOnly()) {
+        <div class="batch-state-note confirmed" role="status">
+          <strong>{{ i18n.t('investmentTransactions.reviewConfirmedTitle') }}</strong>
+          <span>{{ i18n.t('investmentTransactions.reviewConfirmedDescription') }}</span>
+        </div>
+      } @else if (currentBatch.status === 'FAILED' || currentBatch.status === 'CANCELLED') {
+        <div class="batch-state-note unavailable" role="status">
+          <strong>{{ i18n.t('investmentTransactions.reviewUnavailableTitle') }}</strong>
+          <span>{{ i18n.t('investmentTransactions.reviewUnavailableDescription') }}</span>
+        </div>
+      }
     </section>
 
-    @if (reviewItems().length) {
-      <section class="panel preview-panel">
+    @if (canConfirmBatch() && reviewItems().length) {
+      <section id="review" class="panel preview-panel" tabindex="-1" aria-labelledby="investment-review-title">
         <div class="batch-heading">
-          <div><h2>3. Duyệt và chỉnh sửa</h2><p>Backend sẽ chuẩn hóa và kiểm tra trùng lần nữa khi confirm.</p></div>
-          <button class="primary" type="button" [disabled]="loading()" (click)="confirm()">Xác nhận item đã chọn</button>
+          <div><h2 id="investment-review-title">{{ i18n.t('investmentTransactions.reviewTitle') }}</h2><p>{{ i18n.t('investmentTransactions.reviewDescription') }}</p></div>
+          <button class="primary" type="button" [disabled]="loading() || !canConfirmBatch()" (click)="confirm()">{{ i18n.t('investmentTransactions.confirmSelected') }}</button>
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Chọn</th><th>Action</th><th>Ngày giờ</th><th>Loại</th><th>Trạng thái</th><th>Số tiền</th><th>Tiền tệ</th><th>Mã ngoài</th><th>Mô tả</th><th>Xử lý</th></tr></thead>
+            <thead><tr><th>{{ i18n.t('investmentTransactions.review') }}</th><th>{{ i18n.t('investmentTransactions.action') }}</th><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th>{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('field.currency') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th><th>{{ i18n.t('investmentTransactions.resolution') }}</th></tr></thead>
             <tbody>
               @for (item of reviewItems(); track item.itemId) {
                 <tr [class.needs-review]="item.processingAction === 'REVIEW'">
-                  <td><input type="checkbox" [(ngModel)]="item.selected" [attr.aria-label]="'Chọn ' + item.itemId"></td>
-                  <td><span class="action-badge" [attr.data-action]="item.processingAction">{{ item.processingAction }}</span>
-                    @if (item.warnings.length) { <small class="warnings" [title]="item.warnings.join(', ')">{{ item.warnings.length }} cảnh báo</small> }
+                  <td><input type="checkbox" [(ngModel)]="item.selected" [attr.aria-label]="i18n.t('investmentTransactions.selectItem', {id: item.itemId})"></td>
+                  <td><span class="action-badge" [attr.data-action]="item.processingAction">{{ processingActionLabel(item.processingAction) }}</span>
+                    @if (item.warnings.length) { <small class="warnings" [title]="item.warnings.join(', ')">{{ i18n.t('investmentTransactions.warnings', {count: item.warnings.length}) }}</small> }
                   </td>
                   <td><input type="datetime-local" [ngModel]="toLocalDateTime(item.transactionAt)" (ngModelChange)="updateTime(item, $event)"></td>
-                  <td><select [(ngModel)]="item.transactionType"><option [ngValue]="null">—</option><option value="DEPOSIT">DEPOSIT</option><option value="WITHDRAWAL">WITHDRAWAL</option><option value="BONUS">BONUS</option></select></td>
-                  <td><select [(ngModel)]="item.transactionStatus"><option [ngValue]="null">—</option><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="FAILED">FAILED</option><option value="CANCELLED">CANCELLED</option></select></td>
+                  <td><app-custom-select [(ngModel)]="item.transactionType" [ariaLabel]="i18n.t('investmentTransactions.type')" [options]="reviewTypeOptions()" [placeholder]="i18n.t('investmentTransactions.notSelected')"></app-custom-select></td>
+                  <td><app-custom-select [(ngModel)]="item.transactionStatus" [ariaLabel]="i18n.t('field.status')" [options]="reviewStatusOptions()" [placeholder]="i18n.t('investmentTransactions.notSelected')"></app-custom-select></td>
                   <td><input class="amount" type="number" min="0.0001" step="0.0001" [(ngModel)]="item.amount"></td>
                   <td><input class="currency" maxlength="3" [(ngModel)]="item.currency"></td>
                   <td><input [(ngModel)]="item.externalTransactionId"></td>
                   <td><textarea rows="2" maxlength="1000" [(ngModel)]="item.description"></textarea></td>
-                  <td><button class="resolution" type="button" (click)="openResolution(item)">{{ item.resolution }}</button></td>
+                  <td><button class="resolution" type="button" (click)="openResolution(item)">{{ resolutionLabel(item.resolution) }}</button></td>
                 </tr>
               }
             </tbody>
@@ -109,29 +134,145 @@
 
   @if (confirmResult(); as result) {
     <section class="confirm-summary" aria-live="polite">
-      <strong>Kết quả confirm</strong>
-      <span>{{ result.inserted }} thêm mới</span><span>{{ result.updated }} cập nhật</span>
-      <span>{{ result.skipped }} bỏ qua</span><span>{{ result.failed }} lỗi</span>
+      <strong>{{ i18n.t('investmentTransactions.confirmResult') }}</strong>
+      <span>{{ i18n.t('investmentTransactions.createdCount', {count: result.inserted}) }}</span><span>{{ i18n.t('investmentTransactions.updatedCount', {count: result.updated}) }}</span>
+      <span>{{ i18n.t('investmentTransactions.skippedCount', {count: result.skipped}) }}</span><span>{{ i18n.t('investmentTransactions.failedCount', {count: result.failed}) }}</span>
     </section>
   }
 } @else {
   <section class="panel history-panel">
-    <div class="batch-heading"><div><h2>Lịch sử giao dịch</h2><p>Đây là lịch sử độc lập, không thay đổi balance hoặc ledger.</p></div></div>
-    <div class="filters">
-      <label>Từ ngày<input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)"></label>
-      <label>Đến ngày<input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)"></label>
-      <label>Loại<select [ngModel]="historyType()" (ngModelChange)="historyType.set($event)"><option value="">Tất cả</option><option value="DEPOSIT">DEPOSIT</option><option value="WITHDRAWAL">WITHDRAWAL</option><option value="BONUS">BONUS</option></select></label>
-      <label>Trạng thái<select [ngModel]="historyStatus()" (ngModelChange)="historyStatus.set($event)"><option value="">Tất cả</option><option value="PENDING">PENDING</option><option value="COMPLETED">COMPLETED</option><option value="FAILED">FAILED</option><option value="CANCELLED">CANCELLED</option></select></label>
-      <button class="primary" type="button" (click)="loadHistory()">Lọc</button>
-    </div>
-    @if (historyLoading()) { <p class="empty">Đang tải lịch sử…</p> }
-    @else if (!history().length) { <p class="empty">Chưa có giao dịch đã xác nhận.</p> }
-    @else {
-      <div class="table-scroll"><table><thead><tr><th>Thời gian</th><th>Loại</th><th>Trạng thái</th><th>Số tiền</th><th>Mã ngoài</th><th>Mô tả</th></tr></thead><tbody>
-        @for (transaction of history(); track transaction.id) {
-          <tr><td>{{ transaction.transactionAt | date:'dd/MM/yyyy HH:mm' }}</td><td>{{ transaction.transactionType }}</td><td><span class="action-badge">{{ transaction.transactionStatus }}</span></td><td class="money">{{ formatAmount(transaction.amount) }} {{ transaction.currency }}</td><td>{{ transaction.externalTransactionId || '—' }}</td><td>{{ transaction.description || '—' }}</td></tr>
+    <header class="history-heading">
+      <div>
+        <h2>{{ i18n.t('investmentTransactions.historyTitle') }}</h2>
+        <p>{{ i18n.t('investmentTransactions.historyDescription') }}</p>
+      </div>
+      @if (historyMeta().totalElements) {
+        <span class="history-count">{{ i18n.t('investmentTransactions.historyResults', {count: historyMeta().totalElements}) }}</span>
+      }
+    </header>
+
+    <button
+      class="history-filter-toggle"
+      type="button"
+      aria-controls="transaction-history-filters"
+      [attr.aria-expanded]="historyFiltersOpen()"
+      (click)="historyFiltersOpen.update(open => !open)">
+      <span>{{ i18n.t(historyFiltersOpen() ? 'investmentTransactions.hideFilters' : 'investmentTransactions.showFilters') }}</span>
+      @if (historyFilterCount()) {
+        <b>{{ historyFilterCount() }}</b>
+      }
+    </button>
+
+    <form
+      id="transaction-history-filters"
+      class="history-filters"
+      [class.open]="historyFiltersOpen()"
+      (keydown.enter)="$event.preventDefault(); applyHistoryFilters()"
+      (ngSubmit)="applyHistoryFilters()">
+      <label>
+        <span>{{ i18n.t('investmentTransactions.fromDate') }}</span>
+        <input type="date" name="historyFromDate" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)">
+      </label>
+      <label>
+        <span>{{ i18n.t('investmentTransactions.toDate') }}</span>
+        <input type="date" name="historyToDate" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)">
+      </label>
+      <label>
+        <span>{{ i18n.t('investmentTransactions.type') }}</span>
+        <app-custom-select
+          name="historyType"
+          [ngModel]="historyType()"
+          [ariaLabel]="i18n.t('investmentTransactions.type')"
+          [options]="historyTypeOptions()"
+          (ngModelChange)="historyType.set($event)">
+        </app-custom-select>
+      </label>
+      <label>
+        <span>{{ i18n.t('field.status') }}</span>
+        <app-custom-select
+          name="historyStatus"
+          [ngModel]="historyStatus()"
+          [ariaLabel]="i18n.t('field.status')"
+          [options]="historyStatusOptions()"
+          (ngModelChange)="historyStatus.set($event)">
+        </app-custom-select>
+      </label>
+      <div class="history-filter-actions">
+        <button class="primary" type="submit" [disabled]="historyDateRangeInvalid() || historyLoading()">
+          {{ i18n.t('investmentTransactions.filter') }}
+        </button>
+        <button class="secondary" type="button" [disabled]="historyLoading()" (click)="resetHistoryFilters()">
+          {{ i18n.t('common.reset') }}
+        </button>
+      </div>
+      @if (historyDateRangeInvalid()) {
+        <p class="history-filter-error" role="alert">{{ i18n.t('investmentTransactions.invalidDateRange') }}</p>
+      }
+    </form>
+
+    @if (historyLoading()) {
+      <div class="history-loading" aria-live="polite">
+        <span class="sr-only">{{ i18n.t('investmentTransactions.loadingHistory') }}</span>
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <div class="history-skeleton-row"><i></i><i></i><i></i><i></i></div>
         }
-      </tbody></table></div>
+      </div>
+    } @else if (!history().length) {
+      <div class="history-empty">
+        <span class="history-empty-icon" aria-hidden="true">↕</span>
+        <h3>{{ i18n.t(historyHasFilters() ? 'investmentTransactions.emptyFilteredTitle' : 'investmentTransactions.emptyHistoryTitle') }}</h3>
+        <p>{{ i18n.t(historyHasFilters() ? 'investmentTransactions.emptyFilteredDescription' : 'investmentTransactions.emptyHistoryDescription') }}</p>
+        @if (historyHasFilters()) {
+          <button class="secondary" type="button" (click)="resetHistoryFilters()">{{ i18n.t('investmentTransactions.clearFilters') }}</button>
+        }
+      </div>
+    } @else {
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <caption class="sr-only">{{ i18n.t('investmentTransactions.historyTitle') }}</caption>
+          <thead><tr><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th class="amount-heading">{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th></tr></thead>
+          <tbody>
+            @for (transaction of history(); track transaction.id) {
+              <tr>
+                <td><time [attr.datetime]="transaction.transactionAt"><strong>{{ formatHistoryDate(transaction.transactionAt) }}</strong><small>{{ formatHistoryTime(transaction.transactionAt) }}</small></time></td>
+                <td><span class="history-type" [attr.data-type]="transaction.transactionType"><i aria-hidden="true">{{ transactionTypeIcon(transaction.transactionType) }}</i>{{ transactionTypeLabel(transaction.transactionType) }}</span></td>
+                <td><span class="history-status" [attr.data-transaction-status]="transaction.transactionStatus">{{ transactionStatusLabel(transaction.transactionStatus) }}</span></td>
+                <td class="history-money" [class.credit]="transactionAmountClass(transaction.transactionType) === 'credit'" [class.debit]="transactionAmountClass(transaction.transactionType) === 'debit'">{{ transactionAmountPrefix(transaction.transactionType) }}{{ formatAmount(transaction.amount) }} <small>{{ transaction.currency }}</small></td>
+                <td><span class="history-truncate" [title]="transaction.externalTransactionId || ''">{{ transaction.externalTransactionId || '—' }}</span></td>
+                <td><span class="history-truncate description" [title]="transaction.description || ''">{{ transaction.description || '—' }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="history-card-list">
+        @for (transaction of history(); track transaction.id) {
+          <article class="history-card">
+            <header>
+              <span class="history-type" [attr.data-type]="transaction.transactionType"><i aria-hidden="true">{{ transactionTypeIcon(transaction.transactionType) }}</i>{{ transactionTypeLabel(transaction.transactionType) }}</span>
+              <span class="history-status" [attr.data-transaction-status]="transaction.transactionStatus">{{ transactionStatusLabel(transaction.transactionStatus) }}</span>
+            </header>
+            <strong class="history-card-amount" [class.credit]="transactionAmountClass(transaction.transactionType) === 'credit'" [class.debit]="transactionAmountClass(transaction.transactionType) === 'debit'">{{ transactionAmountPrefix(transaction.transactionType) }}{{ formatAmount(transaction.amount) }} <small>{{ transaction.currency }}</small></strong>
+            <time [attr.datetime]="transaction.transactionAt">{{ formatHistoryDate(transaction.transactionAt) }} · {{ formatHistoryTime(transaction.transactionAt) }}</time>
+            <dl>
+              <div><dt>{{ i18n.t('investmentTransactions.externalId') }}</dt><dd>{{ transaction.externalTransactionId || '—' }}</dd></div>
+              <div><dt>{{ i18n.t('field.description') }}</dt><dd>{{ transaction.description || '—' }}</dd></div>
+            </dl>
+          </article>
+        }
+      </div>
+    }
+
+    @if (!historyLoading() && historyMeta().totalElements) {
+      <footer class="history-pagination">
+        <span>{{ i18n.t('investmentTransactions.paginationRange', {start: historyRangeStart(), end: historyRangeEnd(), total: historyMeta().totalElements}) }}</span>
+        <div>
+          <button type="button" [disabled]="!historyCanGoPrevious()" [attr.aria-label]="i18n.t('common.previous')" (click)="goToHistoryPage(historyMeta().page - 1)">‹</button>
+          <b>{{ i18n.t('investmentTransactions.paginationPage', {current: historyMeta().page + 1, total: historyMeta().totalPages}) }}</b>
+          <button type="button" [disabled]="!historyCanGoNext()" [attr.aria-label]="i18n.t('common.next')" (click)="goToHistoryPage(historyMeta().page + 1)">›</button>
+        </div>
+      </footer>
     }
   </section>
 }
@@ -139,13 +280,13 @@
 @if (conflictItem(); as item) {
   <div class="modal-backdrop" (click)="conflictItemId.set(null)">
     <section class="resolution-dialog" role="dialog" aria-modal="true" aria-labelledby="resolution-title" (click)="$event.stopPropagation()">
-      <h2 id="resolution-title">Xử lý item {{ item.processingAction }}</h2>
-      <p>Chọn cách backend xử lý sau khi chuẩn hóa và dedup lại. SAVE_AS_NEW chỉ phù hợp khi đây thật sự là hai giao dịch khác nhau.</p>
-      <button type="button" (click)="resolveConflict('ACCEPT')"><strong>ACCEPT</strong><span>Lưu dữ liệu đã duyệt nếu backend không còn phát hiện xung đột.</span></button>
-      <button type="button" (click)="resolveConflict('MERGE_EXISTING')"><strong>MERGE_EXISTING</strong><span>Giữ giao dịch hiện có, chỉ nâng trạng thái hoặc bổ sung metadata.</span></button>
-      <button type="button" (click)="resolveConflict('SAVE_AS_NEW')"><strong>SAVE_AS_NEW</strong><span>Tạo fingerprint riêng cho giao dịch cùng phút không có external ID.</span></button>
-      <button type="button" (click)="resolveConflict('SKIP')"><strong>SKIP</strong><span>Không lưu item này.</span></button>
-      <button class="cancel" type="button" (click)="conflictItemId.set(null)">Đóng</button>
+      <h2 id="resolution-title">{{ i18n.t('investmentTransactions.resolutionTitle', {action: processingActionLabel(item.processingAction)}) }}</h2>
+      <p>{{ i18n.t('investmentTransactions.resolutionDescription') }}</p>
+      <button type="button" (click)="resolveConflict('ACCEPT')"><strong>{{ i18n.t('investmentTransactions.resolution.accept') }}</strong><span>{{ i18n.t('investmentTransactions.resolution.acceptDescription') }}</span></button>
+      <button type="button" (click)="resolveConflict('MERGE_EXISTING')"><strong>{{ i18n.t('investmentTransactions.resolution.mergeExisting') }}</strong><span>{{ i18n.t('investmentTransactions.resolution.mergeExistingDescription') }}</span></button>
+      <button type="button" (click)="resolveConflict('SAVE_AS_NEW')"><strong>{{ i18n.t('investmentTransactions.resolution.saveAsNew') }}</strong><span>{{ i18n.t('investmentTransactions.resolution.saveAsNewDescription') }}</span></button>
+      <button type="button" (click)="resolveConflict('SKIP')"><strong>{{ i18n.t('investmentTransactions.resolution.skip') }}</strong><span>{{ i18n.t('investmentTransactions.resolution.skipDescription') }}</span></button>
+      <button class="cancel" type="button" (click)="conflictItemId.set(null)">{{ i18n.t('common.close') }}</button>
     </section>
   </div>
 }
