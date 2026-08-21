@@ -270,3 +270,69 @@ export interface InvestmentAiJob {
   reviewTargets: InvestmentAiReviewTarget[];
   detectedJson: InvestmentAiDetectedJson | null
 }
+
+export type LodgingStatus = 'PENDING' | 'READY' | 'FAILED';
+export type LodgingReviewStatus = 'OK' | 'NOT_OK';
+export interface LodgingFee { amount: number; unit: string }
+export interface LodgingReferenceLocation {
+  id: number; name: string; address: string; formattedAddress: string | null;
+  geocodeStatus: LodgingStatus; geocodeError: string | null; canEdit: boolean; canDelete: boolean; version: number
+}
+export interface LodgingImage { attachmentId: number; originalName: string; contentUrl: string; sortOrder: number }
+export interface LodgingDistance {
+  referenceLocationId: number; name: string; address: string; distanceMeters: number | null;
+  status: LodgingStatus; errorCode: string | null; calculatedAt: string | null
+}
+export interface LodgingReviewSummary { okCount: number; notOkCount: number; myStatus: LodgingReviewStatus | null; myReason: string | null }
+export interface LodgingListing {
+  id: number; address: string; formattedAddress: string | null; rentPrice: number;
+  electricity: LodgingFee | null; water: LodgingFee | null; service: LodgingFee | null; parking: LodgingFee | null;
+  facebookUrl: string | null; phone: string | null; videoUrl: string | null; note: string | null;
+  geocodeStatus: LodgingStatus; geocodeError: string | null;
+  owner: {userId: number; fullName: string}; canEdit: boolean; canDelete: boolean; version: number;
+  images: LodgingImage[]; distances: LodgingDistance[]; reviewSummary: LodgingReviewSummary;
+  createdAt: string; updatedAt: string
+}
+export interface LodgingReview { userId: number; fullName: string; status: LodgingReviewStatus; reason: string | null; updatedAt: string }
+export interface AddressSuggestion { mapboxId: string | null; label: string }
+export interface LodgingListingRequest {
+  address: string; rentPrice: number; electricity: LodgingFee | null; water: LodgingFee | null;
+  service: LodgingFee | null; parking: LodgingFee | null; facebookUrl: string | null; phone: string | null;
+  videoUrl: string | null; note: string | null; referenceLocationIds: number[]; version: number | null
+}
+
+export type AiProviderAccountStatus = 'PENDING_TEST' | 'VERIFIED' | 'COOLDOWN' | 'BLOCKED';
+export interface CloudflareAiCapability {
+  tokenConfigured: boolean;
+  model: string;
+  priority: number;
+  enabled: boolean;
+  status: AiProviderAccountStatus;
+  cooldownUntil: string | null;
+  lastErrorCode: string | null;
+  lastErrorAt: string | null;
+  lastTestedAt: string | null;
+  lastSuccessAt: string | null
+}
+export interface CloudflareR2Capability {
+  accessKeyConfigured: boolean;
+  secretKeyConfigured: boolean;
+  maskedBucketName: string | null;
+  maskedPublicUrl: string | null;
+  primary: boolean;
+  status: AiProviderAccountStatus;
+  lastErrorCode: string | null;
+  lastErrorAt: string | null;
+  lastTestedAt: string | null;
+  lastSuccessAt: string | null;
+  attachmentCount: number
+}
+export interface CloudflareAccount {
+  id: number;
+  displayName: string;
+  maskedAccountId: string;
+  ai: CloudflareAiCapability;
+  r2: CloudflareR2Capability;
+  legacyAttachmentCount: number;
+  version: number
+}

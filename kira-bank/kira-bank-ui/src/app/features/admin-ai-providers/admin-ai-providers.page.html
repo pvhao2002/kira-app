@@ -1,0 +1,79 @@
+<section class="provider-page">
+  <header class="page-heading">
+    <div><span class="eyebrow">{{ i18n.t('aiProviders.eyebrow') }}</span><h1>{{ i18n.t('aiProviders.title') }}</h1><p>{{ i18n.t('aiProviders.description') }}</p></div>
+    <button class="btn primary" type="button" (click)="create()">{{ i18n.t('aiProviders.add') }}</button>
+  </header>
+
+  @if (error()) { <div class="inline-error" role="alert">{{ error() }}</div> }
+  @if (loading() && !accounts().length) {
+    <section class="panel state">{{ i18n.t('aiProviders.loading') }}</section>
+  } @else if (!accounts().length) {
+    <section class="panel state"><h2>{{ i18n.t('aiProviders.emptyTitle') }}</h2><p>{{ i18n.t('aiProviders.emptyDescription') }}</p></section>
+  } @else {
+    <div class="provider-grid">
+      @for (account of accounts(); track account.id) {
+        <article class="panel provider-card">
+          <header><div><h2>{{ account.displayName }}</h2><code>{{ account.maskedAccountId }}</code></div><button type="button" (click)="edit(account)">{{ i18n.t('common.edit') }}</button></header>
+
+          <section class="capability">
+            <div class="capability-title"><h3>Workers AI</h3><span class="status" [attr.data-status]="account.ai.status">{{ statusLabel(account.ai.status) }}</span></div>
+            <dl>
+              <div><dt>{{ i18n.t('aiProviders.model') }}</dt><dd><code>{{ account.ai.model }}</code></dd></div>
+              <div><dt>{{ i18n.t('aiProviders.priority') }}</dt><dd>{{ account.ai.priority }}</dd></div>
+              <div><dt>{{ i18n.t('aiProviders.lastTested') }}</dt><dd>{{ formatDate(account.ai.lastTestedAt) }}</dd></div>
+              <div><dt>{{ i18n.t('aiProviders.lastSuccess') }}</dt><dd>{{ formatDate(account.ai.lastSuccessAt) }}</dd></div>
+              @if (account.ai.cooldownUntil) { <div><dt>{{ i18n.t('aiProviders.cooldownUntil') }}</dt><dd>{{ formatDate(account.ai.cooldownUntil) }}</dd></div> }
+              @if (account.ai.lastErrorCode) { <div><dt>{{ i18n.t('aiProviders.lastError') }}</dt><dd><code>{{ account.ai.lastErrorCode }}</code></dd></div> }
+            </dl>
+            <footer>
+              <button type="button" [disabled]="actingId() === account.id || !account.ai.tokenConfigured" (click)="testAi(account)">{{ i18n.t('aiProviders.testAi') }}</button>
+              <button type="button" [disabled]="actingId() === account.id || (!account.ai.enabled && account.ai.status !== 'VERIFIED')" (click)="toggleAi(account)">{{ i18n.t(account.ai.enabled ? 'aiProviders.disable' : 'aiProviders.enable') }}</button>
+            </footer>
+          </section>
+
+          <section class="capability">
+            <div class="capability-title"><h3>R2</h3><span class="status" [attr.data-status]="account.r2.status">{{ account.r2.primary ? i18n.t('aiProviders.r2PrimaryStatus') : statusLabel(account.r2.status) }}</span></div>
+            <dl>
+              <div><dt>{{ i18n.t('aiProviders.bucket') }}</dt><dd><code>{{ account.r2.maskedBucketName || '—' }}</code></dd></div>
+              <div><dt>{{ i18n.t('aiProviders.files') }}</dt><dd>{{ account.r2.attachmentCount }}</dd></div>
+              <div><dt>{{ i18n.t('aiProviders.lastTested') }}</dt><dd>{{ formatDate(account.r2.lastTestedAt) }}</dd></div>
+              <div><dt>{{ i18n.t('aiProviders.lastSuccess') }}</dt><dd>{{ formatDate(account.r2.lastSuccessAt) }}</dd></div>
+              @if (account.r2.lastErrorCode) { <div><dt>{{ i18n.t('aiProviders.lastError') }}</dt><dd><code>{{ account.r2.lastErrorCode }}</code></dd></div> }
+            </dl>
+            <footer>
+              <button type="button" [disabled]="actingId() === account.id || !account.r2.accessKeyConfigured || !account.r2.secretKeyConfigured" (click)="testR2(account)">{{ i18n.t('aiProviders.testR2') }}</button>
+              <button type="button" [disabled]="actingId() === account.id || (!account.r2.primary && account.r2.status !== 'VERIFIED')" (click)="toggleR2Primary(account)">{{ i18n.t(account.r2.primary ? 'aiProviders.stopUploads' : 'aiProviders.makePrimary') }}</button>
+              @if (account.legacyAttachmentCount > 0) { <button type="button" [disabled]="actingId() === account.id || account.r2.status !== 'VERIFIED'" (click)="adoptLegacy(account)">{{ i18n.t('aiProviders.adoptLegacy') }} ({{ account.legacyAttachmentCount }})</button> }
+            </footer>
+          </section>
+
+          <footer class="account-actions"><button class="danger" type="button" [disabled]="actingId() === account.id || account.r2.attachmentCount > 0" (click)="remove(account)">{{ i18n.t('aiProviders.delete') }}</button></footer>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+@if (formOpen()) {
+  <div class="modal-backdrop" (click)="closeForm()">
+    <form class="provider-dialog" role="dialog" aria-modal="true" aria-labelledby="cloudflare-dialog-title" [formGroup]="form" (ngSubmit)="save()" (click)="$event.stopPropagation()">
+      <header><h2 id="cloudflare-dialog-title">{{ i18n.t(editing() ? 'aiProviders.editTitle' : 'aiProviders.createTitle') }}</h2><button type="button" [attr.aria-label]="i18n.t('common.close')" (click)="closeForm()">×</button></header>
+      <fieldset><legend>{{ i18n.t('aiProviders.accountSection') }}</legend>
+        <label><span>{{ i18n.t('aiProviders.name') }} *</span><input formControlName="displayName" type="text"></label>
+        <label><span>{{ i18n.t('aiProviders.accountId') }}{{ editing() ? '' : ' *' }}</span><input formControlName="accountId" type="text" autocomplete="off">@if (editing()) { <small>{{ i18n.t('aiProviders.accountIdKeep') }}</small> }</label>
+      </fieldset>
+      <fieldset><legend>Workers AI</legend>
+        <label><span>{{ i18n.t('aiProviders.token') }}</span><input formControlName="apiToken" type="password" autocomplete="new-password"><small>{{ i18n.t('aiProviders.secretKeep') }}</small></label>
+        <label><span>{{ i18n.t('aiProviders.model') }} *</span><input formControlName="aiModel" type="text"></label>
+        <label><span>{{ i18n.t('aiProviders.priority') }} *</span><input formControlName="priority" type="number" min="0" max="100000"><small>{{ i18n.t('aiProviders.priorityHint') }}</small></label>
+      </fieldset>
+      <fieldset><legend>R2</legend>
+        <label><span>{{ i18n.t('aiProviders.r2AccessKey') }}</span><input formControlName="r2AccessKeyId" type="password" autocomplete="new-password"><small>{{ i18n.t('aiProviders.secretKeep') }}</small></label>
+        <label><span>{{ i18n.t('aiProviders.r2SecretKey') }}</span><input formControlName="r2SecretAccessKey" type="password" autocomplete="new-password"><small>{{ i18n.t('aiProviders.secretKeep') }}</small></label>
+        <label><span>{{ i18n.t('aiProviders.bucket') }}</span><input formControlName="r2BucketName" type="text" autocomplete="off">@if (editing()) { <small>{{ i18n.t('aiProviders.bucketKeep') }}</small> }</label>
+        <label><span>{{ i18n.t('aiProviders.publicUrl') }}</span><input formControlName="r2PublicUrl" type="url" autocomplete="off"></label>
+      </fieldset>
+      <footer><button type="button" (click)="closeForm()">{{ i18n.t('common.cancel') }}</button><button class="btn primary" type="submit" [disabled]="saving()">{{ saving() ? i18n.t('form.saving') : i18n.t('aiProviders.save') }}</button></footer>
+    </form>
+  </div>
+}

@@ -16,7 +16,7 @@ Java 25, Node `^22.22.3` hoặc `^24.15.0` hoặc `>=26`, npm 8+, Docker Desktop
 
 ## Cấu hình
 
-Sao chép `.env.example` thành `.env` và đổi toàn bộ secret. Các biến chính: cấu hình MySQL/JWT/CORS/R2, `AI_ENABLED`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_AI_API_TOKEN`, `AI_MODEL`, `INVESTMENT_IMPORT_TIME_ZONE` và `INVESTMENT_IMPORT_RETENTION_CRON`.
+Sao chép `.env.example` thành `.env` và đổi toàn bộ secret. Cloudflare Account ID, Workers AI token/model và R2 access key/bucket được quản lý động tại `/app/admin/cloudflare-accounts`; chúng không còn lấy từ môi trường. `AI_CREDENTIAL_ENCRYPTION_KEY` là master key Base64 32 byte duy nhất phải cấu hình ngoài database. Cron, timeout và retry của AI vẫn là cấu hình vận hành.
 
 ## Chạy backend
 
@@ -69,6 +69,7 @@ Chỉ được tạo khi `app.seed-development-users=true` (mặc định develo
 - Credit card: `/credit-cards`, `/statements`, `/statements/{id}/payments`, `/payments`, `/dashboards/credit-cards`.
 - Investment: CRUD hồ sơ tại `/investment/accounts`, import tại `/investment/accounts/{id}/transaction-imports` và lịch sử tại `/investment/accounts/{id}/transactions`.
 - Shared: `/attachments` lưu ảnh nguồn; scheduler AI xử lý tối đa 3 ảnh/request mỗi 3 giờ, luôn chờ người dùng review/confirm.
+- Admin Cloudflare: `/admin/cloudflare-accounts` quản lý Workers AI failover và R2 primary động.
 
 ## Migration
 
@@ -78,6 +79,7 @@ Chỉ được tạo khi `app.seed-development-users=true` (mặc định develo
 - `V8__share_credit_limits_by_bank.sql`: chuyển hạn mức từ từng thẻ sang hạn mức dùng chung theo user và ngân hàng.
 - `V13__remove_legacy_financial_tables.sql`: hard-delete 13 bảng nghiệp vụ cũ và chuyển `investment_accounts` thành hồ sơ tối giản. Cần backup dữ liệu trước deploy nếu muốn lưu lịch sử.
 - `V14__create_investment_transaction_import.sql`: tạo transaction history, batch/file/item staging, source links, dedup constraints và metadata retention cho attachment. Không phục hồi balance/ledger đã xóa.
+- `V19__unify_cloudflare_accounts_and_r2.sql`: hợp nhất cấu hình Workers AI/R2 và gắn attachment với đúng R2 account.
 
 ## Troubleshooting
 

@@ -14,10 +14,7 @@ public class AiConfiguration {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(properties.connectTimeout());
         requestFactory.setReadTimeout(properties.readTimeout());
-        String baseUrl = properties.baseUrl();
-        if (baseUrl == null || baseUrl.isBlank()) {
-            baseUrl = "https://api.cloudflare.com/client/v4/accounts";
-        }
-        return RestClient.builder().requestFactory(requestFactory).baseUrl(baseUrl).build();
+        return RestClient.builder().requestFactory(requestFactory)
+            .baseUrl("https://api.cloudflare.com/client/v4/accounts").build();
     }
 }

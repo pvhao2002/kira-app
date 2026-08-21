@@ -3,14 +3,18 @@ package com.kira.bank.ai;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kira.bank.ai.application.AiProviderAccountService;
+import com.kira.bank.ai.application.AiProviderAccountService.RuntimeCredential;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.math.BigDecimal;
-import java.net.URI;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -27,39 +31,19 @@ public class AiDocumentService {
     private final AiProviderConfiguration config;
     private final RestClient cloudflareAiRestClient;
     private final ObjectMapper objectMapper;
+    private final AiProviderAccountService providerAccounts;
 
     public boolean isConfigured() {
-        return config.isConfigured();
+        return !providerAccounts.availableCredentials().isEmpty();
     }
 
     public String safeConfigurationSummary() {
-        return "enabled=" + config.enabled()
-            + ", baseUrl=" + safeBaseUrl(config.baseUrl())
-            + ", accountId=" + masked(config.accountId())
-            + ", tokenConfigured=" + (config.apiToken() != null && !config.apiToken().isBlank())
-            + ", model=" + Objects.toString(config.model(), "<missing>");
-    }
-
-    private String masked(String value) {
-        if (value == null || value.isBlank()) return "<missing>";
-        String trimmed = value.trim();
-        return trimmed.length() <= 4 ? "****" : "****" + trimmed.substring(trimmed.length() - 4);
-    }
-
-    private String safeBaseUrl(String value) {
-        if (value == null || value.isBlank()) return "<default>";
-        try {
-            URI uri = URI.create(value.trim());
-            if (uri.getScheme() == null || uri.getHost() == null) return "<invalid>";
-            String port = uri.getPort() < 0 ? "" : ":" + uri.getPort();
-            return uri.getScheme() + "://" + uri.getHost() + port + Objects.toString(uri.getPath(), "");
-        } catch (IllegalArgumentException ex) {
-            return "<invalid>";
-        }
+        return "eligibleAccounts=" + providerAccounts.availableCredentials().size();
     }
 
     public AiBatchResponse analyzeBatch(List<AiInputDocument> documents) {
-        if (!isConfigured()) {
+        List<RuntimeCredential> credentials = providerAccounts.availableCredentials();
+        if (credentials.isEmpty()) {
             throw new AiProviderException("Cloudflare AI is not configured", null);
         }
         List<Map<String, Object>> content = new ArrayList<>();
@@ -78,20 +62,79 @@ public class AiDocumentService {
         body.put("temperature", 0);
         body.put("max_completion_tokens", 6000);
 
-        try {
-            String response = cloudflareAiRestClient.post()
-                .uri("/{accountId}/ai/run/" + config.model(), config.accountId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer " + config.apiToken())
-                .body(body)
-                .retrieve()
-                .body(String.class);
-            return new AiBatchResponse(response, extractResults(response));
-        } catch (RestClientResponseException ex) {
-            throw new AiProviderException("Cloudflare AI returned HTTP " + ex.getStatusCode().value(), ex);
-        } catch (RuntimeException ex) {
-            throw new AiProviderException("Cloudflare AI request failed", ex);
+        AiProviderException lastAccountFailure = null;
+        for (RuntimeCredential credential : credentials) {
+            try {
+                String response = cloudflareAiRestClient.post()
+                    .uri("/{accountId}/ai/run/" + credential.model(), credential.accountId())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + credential.apiToken())
+                    .body(body)
+                    .retrieve()
+                    .body(String.class);
+                AiBatchResponse result = new AiBatchResponse(response, extractResults(response), credential.model());
+                providerAccounts.markSuccess(credential.id());
+                return result;
+            } catch (RestClientResponseException ex) {
+                ProviderFailure failure = providerFailure(ex);
+                if (!failure.failover()) {
+                    throw new AiProviderException("Cloudflare AI returned HTTP " + ex.getStatusCode().value(), ex);
+                }
+                if (failure.blocked()) providerAccounts.markBlocked(credential.id(), failure.code());
+                else providerAccounts.markCooldown(credential.id(), failure.cooldownUntil(), failure.code());
+                lastAccountFailure = new AiProviderException(
+                    "Cloudflare AI account unavailable (" + failure.code() + ")", ex);
+            } catch (AiProviderException ex) {
+                throw ex;
+            } catch (RuntimeException ex) {
+                throw new AiProviderException("Cloudflare AI request failed", ex);
+            }
         }
+        throw new AiProviderException("No Cloudflare AI account is currently available", lastAccountFailure);
+    }
+
+    ProviderFailure providerFailure(RestClientResponseException ex) {
+        int status = ex.getStatusCode().value();
+        String internalCode = cloudflareErrorCode(ex.getResponseBodyAsString());
+        String code = internalCode == null ? "HTTP_" + status : "CF_" + internalCode;
+        if (status == 401 || status == 403) return new ProviderFailure(true, true, null, code);
+        if (status == 429 && "3036".equals(internalCode)) {
+            Instant reset = LocalDate.now(ZoneOffset.UTC).plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+            return new ProviderFailure(true, false, reset.plusSeconds(5), code);
+        }
+        if (status == 429 && !"3040".equals(internalCode)) {
+            return new ProviderFailure(true, false, retryAfter(ex), code);
+        }
+        return new ProviderFailure(false, false, null, code);
+    }
+
+    private String cloudflareErrorCode(String body) {
+        if (body == null || body.isBlank()) return null;
+        try {
+            JsonNode code = objectMapper.readTree(body).path("errors").path(0).path("code");
+            return code.isMissingNode() || code.isNull() ? null : code.asText();
+        } catch (JsonProcessingException ex) {
+            return null;
+        }
+    }
+
+    private Instant retryAfter(RestClientResponseException ex) {
+        String value = ex.getResponseHeaders() == null ? null : ex.getResponseHeaders().getFirst(HttpHeaders.RETRY_AFTER);
+        if (value != null) {
+            try {
+                return Instant.now().plusSeconds(Math.max(1, Long.parseLong(value.trim())));
+            } catch (NumberFormatException ignored) {
+                try {
+                    return ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+                } catch (DateTimeException ignoredDate) {
+                    // Fall through to the configured account cooldown.
+                }
+            }
+        }
+        return Instant.now().plus(config.accountRateLimitCooldown());
+    }
+
+    record ProviderFailure(boolean failover, boolean blocked, Instant cooldownUntil, String code) {
     }
 
     private List<AiExtraction> extractResults(String rawResponse) {
@@ -117,7 +160,7 @@ public class AiDocumentService {
     public record AiInputDocument(Long attachmentId, String mimeType, byte[] content) {
     }
 
-    public record AiBatchResponse(String rawResponse, List<AiExtraction> results) {
+    public record AiBatchResponse(String rawResponse, List<AiExtraction> results, String model) {
     }
 
     public record AiExtraction(

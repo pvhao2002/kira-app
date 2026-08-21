@@ -19,6 +19,7 @@ public class Attachment extends AuditedEntity {
     private String documentType;
     @Column(length = 500)
     private String storageKey;
+    private Long r2AccountId;
     private String originalName;
     @Column(length = 100)
     private String mimeType;

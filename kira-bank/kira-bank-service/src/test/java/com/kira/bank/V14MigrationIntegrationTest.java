@@ -173,7 +173,7 @@ class V14MigrationIntegrationTest {
                 "DEPOSIT", "COMPLETED", new BigDecimal("125000.50"), "VNĐ",
                 "2026-08-18T09:30:00+07:00", "No. TX 100", "Nạp tiền", "receipt row",
                 0.96, List.of(), List.of())
-        )), "provider-response-not-logged");
+        )), "provider-response-not-logged", "test-model");
         imports.refreshAttachmentState(attachmentId);
 
         var preview = imports.batch(userId, accountId, created.batchId());
@@ -211,7 +211,7 @@ class V14MigrationIntegrationTest {
             var attachment = attachments.findById(file.attachmentId()).orElseThrow();
             attachment.setAiStatus(AttachmentAiStatus.PROCESSING);
             attachments.saveAndFlush(attachment);
-            attachmentService.markReady(file.attachmentId(), extraction, "provider-response-not-logged");
+            attachmentService.markReady(file.attachmentId(), extraction, "provider-response-not-logged", "test-model");
             imports.refreshAttachmentState(file.attachmentId());
         }
 
@@ -243,7 +243,7 @@ class V14MigrationIntegrationTest {
                 "WITHDRAWAL", "COMPLETED", new BigDecimal("75000"), "VND",
                 "2026-08-18T11:20:00+07:00", "Concurrent-77", "Rút tiền", "concurrent row",
                 0.98, List.of(), List.of())
-        )), "provider-response-not-logged");
+        )), "provider-response-not-logged", "test-model");
         imports.refreshAttachmentState(attachmentId);
         var item = imports.batch(userId, accountId, created.batchId()).transactions().getFirst();
         var request = new InvestmentTransactionImportDtos.ConfirmBatchRequest(List.of(

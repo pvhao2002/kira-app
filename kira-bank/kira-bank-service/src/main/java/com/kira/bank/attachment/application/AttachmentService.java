@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kira.bank.ai.AiDocumentService;
 import com.kira.bank.ai.AiJobProperties;
-import com.kira.bank.ai.AiProviderConfiguration;
 import com.kira.bank.attachment.R2StorageService;
 import com.kira.bank.attachment.domain.Attachment;
 import com.kira.bank.attachment.domain.AttachmentAiStatus;
@@ -47,7 +46,6 @@ public class AttachmentService {
     private final AttachmentRepository repository;
     private final R2StorageService storage;
     private final AiJobProperties jobProperties;
-    private final AiProviderConfiguration aiConfiguration;
     private final ObjectMapper objectMapper;
     @Value("${investment.transaction-import.time-zone:Asia/Ho_Chi_Minh}")
     private String importTimeZone;
@@ -129,13 +127,14 @@ public class AttachmentService {
             }
         }
         String key = userId + "/" + UUID.randomUUID() + extensionFor(mimeType);
-        storage.upload(key, data, mimeType);
+        R2StorageService.StoredObject stored = storage.upload(key, data, mimeType);
 
         Attachment attachment = new Attachment();
         attachment.setUserId(userId);
         attachment.setModule(normalizedFlow);
         attachment.setDocumentType(normalizedDocumentType);
         attachment.setStorageKey(key);
+        attachment.setR2AccountId(stored.accountId());
         attachment.setOriginalName(Optional.ofNullable(file.getOriginalFilename()).filter(s -> !s.isBlank()).orElse("document"));
         attachment.setMimeType(mimeType);
         attachment.setSizeBytes(file.getSize());
@@ -182,7 +181,8 @@ public class AttachmentService {
         if (attachment.getStoragePurgedAt() != null) {
             throw new ApiException(HttpStatus.GONE, "ATTACHMENT_PURGED", "Ảnh nguồn đã hết thời hạn lưu trữ");
         }
-        return new AttachmentContent(attachment.getMimeType(), attachment.getOriginalName(), storage.download(attachment.getStorageKey()));
+        return new AttachmentContent(attachment.getMimeType(), attachment.getOriginalName(),
+            storage.download(attachment.getR2AccountId(), attachment.getStorageKey()));
     }
 
     @Transactional
@@ -324,14 +324,14 @@ public class AttachmentService {
     }
 
     @Transactional
-    public void markReady(Long attachmentId, AiDocumentService.AiExtraction extraction, String rawResponse) {
+    public void markReady(Long attachmentId, AiDocumentService.AiExtraction extraction, String rawResponse, String model) {
         Attachment attachment = repository.findById(attachmentId).orElseThrow();
         if (attachment.getAiStatus() != AttachmentAiStatus.PROCESSING) {
             return;
         }
         AiDraftResponse draft = sanitize(extraction, attachmentId);
         attachment.setAiStatus(AttachmentAiStatus.READY);
-        attachment.setAiModel(aiConfiguration.model());
+        attachment.setAiModel(model);
         attachment.setAiRawResponse(rawResponse);
         attachment.setAiResult(serialize(draft));
         attachment.setAiError(null);

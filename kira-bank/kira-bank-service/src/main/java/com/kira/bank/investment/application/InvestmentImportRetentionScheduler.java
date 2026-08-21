@@ -46,7 +46,7 @@ public class InvestmentImportRetentionScheduler {
         Attachment attachment = attachments.findById(attachmentId).orElse(null);
         if (attachment == null || attachment.getStoragePurgedAt() != null) return;
         try {
-            storage.delete(attachment.getStorageKey());
+            storage.delete(attachment.getR2AccountId(), attachment.getStorageKey());
             attachment.setStoragePurgedAt(purgedAt);
             attachments.saveAndFlush(attachment);
             log.info("Investment import attachment purged attachmentId={} userId={}",

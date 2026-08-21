@@ -31,20 +31,11 @@ app:
   cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   seed-development-users: ${SEED_DEVELOPMENT_USERS:true}
   refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
-r2:
-  account-id: ${R2_ACCOUNT_ID:test}
-  access-key-id: ${R2_ACCESS_KEY_ID:test}
-  secret-access-key: ${R2_SECRET_ACCESS_KEY:test}
-  bucket-name: ${R2_BUCKET_NAME:kira-bank-attachments}
-  public-url: ${R2_PUBLIC_URL:test}
 ai:
-  enabled: ${AI_ENABLED:false}
-  base-url: ${AI_BASE_URL:https://api.cloudflare.com/client/v4/accounts}
-  account-id: ${CLOUDFLARE_ACCOUNT_ID:test}
-  api-token: ${CLOUDFLARE_AI_API_TOKEN:test}
-  model: "${AI_MODEL:@cf/moonshotai/kimi-k2.7-code}"
   connect-timeout: 5s
   read-timeout: 120s
+  credential-encryption-key: ${AI_CREDENTIAL_ENCRYPTION_KEY:}
+  account-rate-limit-cooldown: ${AI_ACCOUNT_RATE_LIMIT_COOLDOWN:PT1M}
   job:
     batch-size: ${AI_BATCH_SIZE:3}
     max-attempts: ${AI_MAX_ATTEMPTS:3}
@@ -56,4 +47,8 @@ investment:
   transaction-import:
     time-zone: "${INVESTMENT_IMPORT_TIME_ZONE:Asia/Ho_Chi_Minh}"
     retention-cron: "${INVESTMENT_IMPORT_RETENTION_CRON:0 20 2 * * *}"
+mapbox:
+  access-token: ${MAPBOX_ACCESS_TOKEN:}
+  connect-timeout: ${MAPBOX_CONNECT_TIMEOUT:5s}
+  read-timeout: ${MAPBOX_READ_TIMEOUT:15s}
 springdoc.swagger-ui.path: /swagger-ui.html

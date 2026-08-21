@@ -65,7 +65,8 @@ public class InvestmentReceiptAiScheduler {
         for (Attachment attachment : claimed) {
             try {
                 documents.add(new AiDocumentService.AiInputDocument(
-                    attachment.getId(), attachment.getMimeType(), storage.download(attachment.getStorageKey())));
+                    attachment.getId(), attachment.getMimeType(),
+                    storage.download(attachment.getR2AccountId(), attachment.getStorageKey())));
             } catch (RuntimeException ex) {
                 attachments.markRetryOrFailed(attachment.getId(), "ATTACHMENT_STORAGE_UNAVAILABLE");
                 transactionImports.refreshAttachmentState(attachment.getId());
@@ -101,7 +102,7 @@ public class InvestmentReceiptAiScheduler {
                     attachments.markRetryOrFailed(document.attachmentId(), "AI_RESULT_MISSING");
                     metrics.counter("investment.import.ai.failure", "reason", "missing_result").increment();
                 } else {
-                    attachments.markReady(document.attachmentId(), result, response.rawResponse());
+                    attachments.markReady(document.attachmentId(), result, response.rawResponse(), response.model());
                 }
                 transactionImports.refreshAttachmentState(document.attachmentId());
             }
@@ -114,7 +115,7 @@ public class InvestmentReceiptAiScheduler {
             }
             metrics.counter("investment.import.ai.failure", "reason", "provider").increment(documents.size());
             log.warn("Cloudflare AI batch failed for {} attachment(s), attachmentIds={}: {}",
-                documents.size(), attachmentIds, ex.getMessage(), ex);
+                documents.size(), attachmentIds, ex.getMessage());
         }
         recordProcessingTime(startedAt);
     }

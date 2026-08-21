@@ -11,7 +11,14 @@ import {
   InvestmentConfirmItem,
   InvestmentConfirmResponse,
   InvestmentTransaction,
-  InvestmentAiJob
+  InvestmentAiJob,
+  LodgingListing,
+  LodgingListingRequest,
+  LodgingReferenceLocation,
+  LodgingReview,
+  LodgingReviewStatus,
+  AddressSuggestion,
+  CloudflareAccount
 } from '../../shared/models/api.models';
 
 @Injectable({providedIn: 'root'})
@@ -40,6 +47,14 @@ export class ApiService {
 
   patch<T>(path: string, body: unknown = {}): Observable<T> {
     return this.http.patch<T>(`/api/v1/${path}`, body);
+  }
+
+  deleteWithBody<T>(path: string, body: unknown): Observable<T> {
+    return this.http.request<T>('DELETE', `/api/v1/${path}`, {body});
+  }
+
+  cloudflareAccounts(): Observable<CloudflareAccount[]> {
+    return this.get<CloudflareAccount[]>('admin/cloudflare-accounts');
   }
 
   creditCardDashboard(): Observable<CreditCardDashboard> {
@@ -111,4 +126,26 @@ export class ApiService {
     const prefix = adminScope ? '/api/v1/admin/investment/ai-jobs' : '/api/v1/investment/ai-jobs';
     return this.http.get(`${prefix}/${attachmentId}/content`, {responseType: 'blob'});
   }
+
+  lodgings(page = 0, size = 20, search = ''): Observable<PageResponse<LodgingListing>> {
+    return this.http.get<PageResponse<LodgingListing>>('/api/v1/lodgings', {params: {page, size, search}});
+  }
+
+  createLodging(request: LodgingListingRequest): Observable<LodgingListing> {
+    return this.http.post<LodgingListing>('/api/v1/lodgings', request);
+  }
+
+  updateLodging(id: number, request: LodgingListingRequest): Observable<LodgingListing> {
+    return this.http.put<LodgingListing>(`/api/v1/lodgings/${id}`, request);
+  }
+
+  deleteLodging(id: number): Observable<void> { return this.http.delete<void>(`/api/v1/lodgings/${id}`); }
+  recalculateLodging(id: number): Observable<LodgingListing> { return this.http.post<LodgingListing>(`/api/v1/lodgings/${id}/distances/recalculate`, {}); }
+  lodgingLocations(): Observable<LodgingReferenceLocation[]> { return this.http.get<LodgingReferenceLocation[]>('/api/v1/lodgings/reference-locations'); }
+  lodgingAddressSuggestions(query: string): Observable<AddressSuggestion[]> { return this.http.get<AddressSuggestion[]>('/api/v1/lodgings/address-suggestions', {params: {q: query}}); }
+  createLodgingLocation(body: {name: string; address: string; version: null}): Observable<LodgingReferenceLocation> { return this.http.post<LodgingReferenceLocation>('/api/v1/lodgings/reference-locations', body); }
+  uploadLodgingImage(id: number, file: File): Observable<{attachmentId: number}> { const body = new FormData(); body.append('file', file, file.name); return this.http.post<{attachmentId: number}>(`/api/v1/lodgings/${id}/images`, body); }
+  deleteLodgingImage(id: number, attachmentId: number): Observable<void> { return this.http.delete<void>(`/api/v1/lodgings/${id}/images/${attachmentId}`); }
+  lodgingReviews(id: number): Observable<LodgingReview[]> { return this.http.get<LodgingReview[]>(`/api/v1/lodgings/${id}/reviews`); }
+  reviewLodging(id: number, status: LodgingReviewStatus, reason: string | null): Observable<LodgingReview> { return this.http.put<LodgingReview>(`/api/v1/lodgings/${id}/reviews/me`, {status, reason}); }
 }

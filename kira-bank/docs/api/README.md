@@ -1,10 +1,29 @@
 # API
 
+## Cloudflare accounts
+
+Admin-only endpoints under `/api/v1/admin/cloudflare-accounts` manage one Cloudflare Account ID with independent Workers AI and R2 capabilities. Responses expose only masked metadata and credential-presence flags. Every mutation includes `version` for optimistic locking; blank secret fields retain the stored encrypted value.
+
+AI actions are `POST /{id}/ai/test|enable|disable`; test validates the dynamic model without inference. AI detection selects enabled, verified accounts by ascending priority and fails over only for account-scoped credential/quota/rate-limit failures. There is no environment credential fallback.
+
+R2 actions are `POST /{id}/r2/test`, `/make-primary`, `/stop-uploads` and `/adopt-legacy-attachments`. Test performs a temporary upload/read/delete probe. Exactly one verified R2 account receives new uploads; each attachment stores its R2 account so reads and deletes continue against the original bucket. Legacy attachments remain unassigned until Admin explicitly confirms adoption. The previous `/api/v1/admin/ai-provider-accounts` endpoints remain as an AI compatibility alias.
+
 OpenAPI tương tác: `http://localhost:8080/swagger-ui.html`.
 
 Các request tài chính quan trọng cần header `Idempotency-Key` là UUID do client tạo. Danh sách trả `{ data, meta }`; lỗi trả `{ timestamp, status, code, message, fieldErrors, path, traceId }`.
 
-Nhóm chính: `/api/v1/auth`, `/api/v1/public/banks`, `/api/v1/credit-cards`, `/api/v1/statements`, `/api/v1/payments`, `/api/v1/dashboards/credit-cards`, `/api/v1/investment/accounts` và `/api/v1/attachments`.
+Nhóm chính: `/api/v1/auth`, `/api/v1/public/banks`, `/api/v1/credit-cards`, `/api/v1/statements`, `/api/v1/payments`, `/api/v1/dashboards/credit-cards`, `/api/v1/investment/accounts`, `/api/v1/attachments` và `/api/v1/lodgings`.
+
+## Tìm trọ
+
+`/api/v1/lodgings` là danh sách dùng chung cho mọi user đã đăng nhập. `POST` và `PUT` nhận địa chỉ, `rentPrice`, các khoản phí tùy chọn dạng `{ amount, unit }`, liên hệ, note, 1–10 `referenceLocationIds` và `version` khi cập nhật. Chủ tin hoặc `ROLE_ADMIN` mới được sửa/xóa, nhưng mọi user đều có thể xem và review.
+
+- `GET /api/v1/lodgings` hỗ trợ `search`, `page`, `size`; response gồm ảnh, khoảng cách, owner, permission và tổng review.
+- `GET /api/v1/lodgings/address-suggestions?q=...` trả tối đa 5 gợi ý địa chỉ Việt Nam khi query có từ 3 ký tự. Endpoint chỉ proxy gợi ý tạm thời qua backend; việc lưu và geocode lâu dài vẫn xảy ra khi tạo/sửa tin hoặc địa điểm.
+- `POST /api/v1/lodgings/{id}/images` nhận multipart field `file`, chỉ JPEG/PNG/WebP tối đa 10 MB và tối đa 10 ảnh/tin. `GET .../content` cho user đã đăng nhập xem ảnh; `DELETE` chỉ dành cho chủ tin/admin.
+- `PUT /api/v1/lodgings/{id}/reviews/me` nhận `OK` hoặc `NOT_OK`; `NOT_OK` bắt buộc `reason`. `GET .../reviews` hiển thị tên người review, lý do và thời gian.
+- `GET/POST/PUT/DELETE /api/v1/lodgings/reference-locations` quản lý địa điểm dùng chung. Địa điểm đang được dùng không đổi địa chỉ/xóa được (`409 LOCATION_IN_USE`).
+- `POST /api/v1/lodgings/{id}/distances/recalculate` và `POST /api/v1/lodgings/reference-locations/{id}/geocode` retry Mapbox. Khi provider lỗi, tin vẫn được lưu với `PENDING`/`FAILED` và error code rút gọn.
 
 ## Thẻ tín dụng người dùng
 

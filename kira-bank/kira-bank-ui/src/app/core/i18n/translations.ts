@@ -65,6 +65,7 @@ export const englishTranslations = {
   'shell.groupAdmin': 'ADMINISTRATION',
   'shell.adminUsers': 'User Management',
   'shell.adminBanks': 'Bank Directory',
+  'shell.adminAiProviders': 'Cloudflare Accounts',
   'shell.groupSystem': 'SYSTEM',
   'shell.dashboard': 'Dashboard',
   'shell.myCards': 'My cards',
@@ -188,6 +189,7 @@ export const englishTranslations = {
   'route.creditDashboard': 'Credit card dashboard',
   'route.adminUsers': 'User management',
   'route.adminBanks': 'Bank management',
+  'route.adminAiProviders': 'Cloudflare Accounts',
   'route.profile': 'Profile',
   'route.banks': 'Bank directory',
   'route.myCards': 'My cards',
@@ -197,6 +199,66 @@ export const englishTranslations = {
   'route.investmentAiQueue': 'Investment AI queue',
   'route.notifications': 'Notifications',
   'route.settings': 'Settings',
+  'aiProviders.eyebrow': 'ADMINISTRATION · CLOUDFLARE',
+  'aiProviders.title': 'Cloudflare Accounts',
+  'aiProviders.description': 'Manage encrypted Workers AI and R2 configuration without provider environment variables.',
+  'aiProviders.add': 'Add account',
+  'aiProviders.editTitle': 'Edit Cloudflare account',
+  'aiProviders.createTitle': 'Add Cloudflare account',
+  'aiProviders.name': 'Display name',
+  'aiProviders.accountId': 'Account ID',
+  'aiProviders.accountIdKeep': 'Leave blank to keep the current Account ID',
+  'aiProviders.token': 'API token',
+  'aiProviders.tokenKeep': 'Leave blank to keep the current token',
+  'aiProviders.priority': 'Priority',
+  'aiProviders.priorityHint': 'Lower numbers are tried first.',
+  'aiProviders.save': 'Save account',
+  'aiProviders.loading': 'Loading Cloudflare accounts…',
+  'aiProviders.emptyTitle': 'No database accounts',
+  'aiProviders.emptyDescription': 'Add and verify a Cloudflare account before using Workers AI or R2.',
+  'aiProviders.test': 'Test',
+  'aiProviders.enable': 'Enable',
+  'aiProviders.disable': 'Disable',
+  'aiProviders.delete': 'Delete',
+  'aiProviders.testRequired': 'Test this credential successfully before enabling it.',
+  'aiProviders.saved': 'Cloudflare account saved.',
+  'aiProviders.testPassed': 'Cloudflare credential verified.',
+  'aiProviders.enabled': 'Cloudflare account enabled.',
+  'aiProviders.disabled': 'Cloudflare account disabled.',
+  'aiProviders.deleted': 'Cloudflare account deleted.',
+  'aiProviders.deleteConfirm': 'Delete this Cloudflare account?',
+  'aiProviders.status': 'Status',
+  'aiProviders.lastTested': 'Last tested',
+  'aiProviders.lastSuccess': 'Last success',
+  'aiProviders.cooldownUntil': 'Cooldown until',
+  'aiProviders.lastError': 'Last error',
+  'aiProviders.statusPending': 'Pending test',
+  'aiProviders.statusVerified': 'Verified',
+  'aiProviders.statusCooldown': 'Cooldown',
+  'aiProviders.statusBlocked': 'Blocked',
+  'aiProviders.loadFailed': 'Unable to load Cloudflare accounts.',
+  'aiProviders.actionFailed': 'The Cloudflare account action failed.',
+  'aiProviders.accountSection': 'Cloudflare account',
+  'aiProviders.model': 'Model',
+  'aiProviders.secretKeep': 'Leave blank to keep the current secret.',
+  'aiProviders.r2AccessKey': 'R2 Access Key ID',
+  'aiProviders.r2SecretKey': 'R2 Secret Access Key',
+  'aiProviders.bucket': 'Bucket',
+  'aiProviders.bucketKeep': 'Leave blank to keep the current bucket.',
+  'aiProviders.publicUrl': 'Public URL (optional)',
+  'aiProviders.files': 'Stored files',
+  'aiProviders.testAi': 'Test AI',
+  'aiProviders.testR2': 'Test R2',
+  'aiProviders.aiTestPassed': 'Workers AI credential and model verified.',
+  'aiProviders.r2TestPassed': 'R2 upload, read and delete verified.',
+  'aiProviders.makePrimary': 'Make primary',
+  'aiProviders.stopUploads': 'Stop uploads',
+  'aiProviders.r2PrimaryStatus': 'Primary',
+  'aiProviders.r2Primary': 'R2 is now receiving new uploads.',
+  'aiProviders.r2Stopped': 'This R2 account no longer receives new uploads.',
+  'aiProviders.adoptLegacy': 'Assign legacy files',
+  'aiProviders.adoptConfirm': 'Assign {count} legacy files to this R2 account? This cannot be guessed automatically.',
+  'aiProviders.adopted': 'Legacy files assigned to this R2 account.',
   'investmentTransactions.eyebrow': 'INVESTMENT · AI REVIEW',
   'investmentTransactions.description': 'Send transaction screenshots to the AI queue, review each result, then save it to history.',
   'investmentTransactions.account': 'Account',
@@ -495,6 +557,49 @@ export const englishTranslations = {
   ,'creditDashboard.errorTitle': 'Could not load credit card debt'
   ,'creditDashboard.retry': 'Try again'
   ,'bank.saveBank': 'Save bank'
+  ,'lodging.eyebrow': 'ROOM FINDER'
+  ,'lodging.title': 'Lodging listings'
+  ,'lodging.description': 'Keep shared room listings, costs, travel distances and reviews in one place.'
+  ,'lodging.add': 'Add listing'
+  ,'lodging.edit': 'Edit listing'
+  ,'lodging.search': 'Search address, note or phone…'
+  ,'lodging.addLocation': 'Add shared location'
+  ,'lodging.loading': 'Loading lodging listings…'
+  ,'lodging.empty': 'No lodging listings yet'
+  ,'lodging.emptyDescription': 'Add a listing to start comparing rooms.'
+  ,'lodging.by': 'Added by'
+  ,'lodging.month': 'month'
+  ,'lodging.images': 'images'
+  ,'lodging.electricity': 'Electricity'
+  ,'lodging.water': 'Water'
+  ,'lodging.service': 'Service'
+  ,'lodging.parking': 'Parking'
+  ,'lodging.calculating': 'Calculating…'
+  ,'lodging.distanceFailed': 'Distance unavailable'
+  ,'lodging.notOk': 'Not OK'
+  ,'lodging.review': 'Review'
+  ,'lodging.retry': 'Retry distance'
+  ,'lodging.delete': 'Delete'
+  ,'lodging.deleteConfirm': 'Delete this lodging listing?'
+  ,'lodging.deleted': 'Lodging listing deleted'
+  ,'lodging.saved': 'Lodging listing saved'
+  ,'lodging.saveFailed': 'Could not save lodging listing'
+  ,'lodging.loadFailed': 'Could not load lodging listings'
+  ,'lodging.uploadFailed': 'Image upload failed'
+  ,'lodging.retryFailed': 'Could not recalculate distance'
+  ,'lodging.address': 'Address'
+  ,'lodging.rent': 'Monthly rent (VND)'
+  ,'lodging.phone': 'Phone'
+  ,'lodging.locations': 'Comparison locations'
+  ,'lodging.selectLocation': 'Select at least one location.'
+  ,'lodging.note': 'Note'
+  ,'lodging.locationName': 'Location name'
+  ,'lodging.reason': 'Reason'
+  ,'lodging.reviewReasonRequired': 'A reason is required for Not OK.'
+  ,'lodging.reviewHistory': 'Review history'
+  ,'lodging.reviewSaved': 'Review saved'
+  ,'shell.groupLodging': 'ROOM FINDER'
+  ,'shell.lodgings': 'Find lodging'
 } as const;
 
 export type TranslationKey = keyof typeof englishTranslations;
@@ -566,6 +671,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'shell.groupAdmin': 'QUẢN TRỊ HỆ THỐNG',
   'shell.adminUsers': 'Quản lý Người dùng',
   'shell.adminBanks': 'Danh mục Ngân hàng',
+  'shell.adminAiProviders': 'Tài khoản Cloudflare',
   'shell.groupSystem': 'HỆ THỐNG',
   'shell.dashboard': 'Dashboard',
   'shell.myCards': 'Thẻ của tôi',
@@ -689,6 +795,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'route.creditDashboard': 'Dashboard thẻ tín dụng',
   'route.adminUsers': 'Quản lý người dùng',
   'route.adminBanks': 'Quản lý ngân hàng',
+  'route.adminAiProviders': 'Tài khoản Cloudflare',
   'route.profile': 'Hồ sơ cá nhân',
   'route.banks': 'Danh sách ngân hàng',
   'route.myCards': 'Thẻ của tôi',
@@ -698,6 +805,66 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'route.investmentAiQueue': 'Hàng đợi AI đầu tư',
   'route.notifications': 'Thông báo',
   'route.settings': 'Cài đặt',
+  'aiProviders.eyebrow': 'QUẢN TRỊ · CLOUDFLARE',
+  'aiProviders.title': 'Tài khoản Cloudflare',
+  'aiProviders.description': 'Quản lý động Workers AI và R2 đã mã hóa, không dùng biến môi trường của provider.',
+  'aiProviders.add': 'Thêm account',
+  'aiProviders.editTitle': 'Sửa Cloudflare account',
+  'aiProviders.createTitle': 'Thêm Cloudflare account',
+  'aiProviders.name': 'Tên gợi nhớ',
+  'aiProviders.accountId': 'Account ID',
+  'aiProviders.accountIdKeep': 'Để trống nếu muốn giữ Account ID hiện tại',
+  'aiProviders.token': 'API token',
+  'aiProviders.tokenKeep': 'Để trống nếu muốn giữ token hiện tại',
+  'aiProviders.priority': 'Độ ưu tiên',
+  'aiProviders.priorityHint': 'Số nhỏ hơn sẽ được thử trước.',
+  'aiProviders.save': 'Lưu account',
+  'aiProviders.loading': 'Đang tải Cloudflare account…',
+  'aiProviders.emptyTitle': 'Chưa có account trong database',
+  'aiProviders.emptyDescription': 'Hãy thêm và kiểm tra Cloudflare account trước khi dùng Workers AI hoặc R2.',
+  'aiProviders.test': 'Kiểm tra',
+  'aiProviders.enable': 'Bật',
+  'aiProviders.disable': 'Tắt',
+  'aiProviders.delete': 'Xóa',
+  'aiProviders.testRequired': 'Cần kiểm tra credential thành công trước khi bật.',
+  'aiProviders.saved': 'Đã lưu Cloudflare account.',
+  'aiProviders.testPassed': 'Credential Cloudflare hợp lệ.',
+  'aiProviders.enabled': 'Đã bật Cloudflare account.',
+  'aiProviders.disabled': 'Đã tắt Cloudflare account.',
+  'aiProviders.deleted': 'Đã xóa Cloudflare account.',
+  'aiProviders.deleteConfirm': 'Xóa Cloudflare account này?',
+  'aiProviders.status': 'Trạng thái',
+  'aiProviders.lastTested': 'Kiểm tra gần nhất',
+  'aiProviders.lastSuccess': 'Thành công gần nhất',
+  'aiProviders.cooldownUntil': 'Tạm nghỉ tới',
+  'aiProviders.lastError': 'Lỗi gần nhất',
+  'aiProviders.statusPending': 'Chờ kiểm tra',
+  'aiProviders.statusVerified': 'Đã xác minh',
+  'aiProviders.statusCooldown': 'Tạm nghỉ',
+  'aiProviders.statusBlocked': 'Bị khóa',
+  'aiProviders.loadFailed': 'Không thể tải danh sách Cloudflare account.',
+  'aiProviders.actionFailed': 'Thao tác Cloudflare account thất bại.',
+  'aiProviders.accountSection': 'Cloudflare account',
+  'aiProviders.model': 'Model',
+  'aiProviders.secretKeep': 'Để trống để giữ secret hiện tại.',
+  'aiProviders.r2AccessKey': 'R2 Access Key ID',
+  'aiProviders.r2SecretKey': 'R2 Secret Access Key',
+  'aiProviders.bucket': 'Bucket',
+  'aiProviders.bucketKeep': 'Để trống để giữ bucket hiện tại.',
+  'aiProviders.publicUrl': 'Public URL (không bắt buộc)',
+  'aiProviders.files': 'File đang lưu',
+  'aiProviders.testAi': 'Test AI',
+  'aiProviders.testR2': 'Test R2',
+  'aiProviders.aiTestPassed': 'Đã xác minh Workers AI credential và model.',
+  'aiProviders.r2TestPassed': 'Đã xác minh quyền upload, đọc và xóa trên R2.',
+  'aiProviders.makePrimary': 'Chọn làm primary',
+  'aiProviders.stopUploads': 'Ngừng nhận upload',
+  'aiProviders.r2PrimaryStatus': 'Primary',
+  'aiProviders.r2Primary': 'R2 account này đang nhận upload mới.',
+  'aiProviders.r2Stopped': 'R2 account này đã ngừng nhận upload mới.',
+  'aiProviders.adoptLegacy': 'Gán file cũ',
+  'aiProviders.adoptConfirm': 'Gán {count} file cũ vào R2 account này? Hệ thống không thể tự xác định bucket.',
+  'aiProviders.adopted': 'Đã gán file cũ vào R2 account này.',
   'investmentTransactions.eyebrow': 'ĐẦU TƯ · DUYỆT AI',
   'investmentTransactions.description': 'Đưa ảnh giao dịch vào hàng đợi AI, duyệt từng kết quả rồi mới lưu vào lịch sử.',
   'investmentTransactions.account': 'Tài khoản',
@@ -996,6 +1163,49 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'creditDashboard.errorTitle': 'Không thể tải dữ liệu dư nợ thẻ'
   ,'creditDashboard.retry': 'Thử lại'
   ,'bank.saveBank': 'Lưu ngân hàng'
+  ,'lodging.eyebrow': 'TÌM TRỌ'
+  ,'lodging.title': 'Thông tin tìm trọ'
+  ,'lodging.description': 'Lưu tin trọ dùng chung, chi phí, khoảng cách và review tại một nơi.'
+  ,'lodging.add': 'Thêm tin trọ'
+  ,'lodging.edit': 'Sửa tin trọ'
+  ,'lodging.search': 'Tìm địa chỉ, note hoặc số điện thoại…'
+  ,'lodging.addLocation': 'Thêm địa điểm chung'
+  ,'lodging.loading': 'Đang tải danh sách trọ…'
+  ,'lodging.empty': 'Chưa có thông tin trọ'
+  ,'lodging.emptyDescription': 'Thêm một tin để bắt đầu so sánh.'
+  ,'lodging.by': 'Người tạo'
+  ,'lodging.month': 'tháng'
+  ,'lodging.images': 'ảnh'
+  ,'lodging.electricity': 'Điện'
+  ,'lodging.water': 'Nước'
+  ,'lodging.service': 'Dịch vụ'
+  ,'lodging.parking': 'Giữ xe'
+  ,'lodging.calculating': 'Đang tính…'
+  ,'lodging.distanceFailed': 'Chưa tính được km'
+  ,'lodging.notOk': 'Không OK'
+  ,'lodging.review': 'Review'
+  ,'lodging.retry': 'Tính lại km'
+  ,'lodging.delete': 'Xóa'
+  ,'lodging.deleteConfirm': 'Xóa thông tin trọ này?'
+  ,'lodging.deleted': 'Đã xóa tin trọ'
+  ,'lodging.saved': 'Đã lưu tin trọ'
+  ,'lodging.saveFailed': 'Không thể lưu tin trọ'
+  ,'lodging.loadFailed': 'Không thể tải danh sách trọ'
+  ,'lodging.uploadFailed': 'Tải ảnh lên thất bại'
+  ,'lodging.retryFailed': 'Không thể tính lại khoảng cách'
+  ,'lodging.address': 'Địa chỉ'
+  ,'lodging.rent': 'Giá thuê/tháng (VND)'
+  ,'lodging.phone': 'Số điện thoại'
+  ,'lodging.locations': 'Địa điểm so sánh'
+  ,'lodging.selectLocation': 'Chọn ít nhất một địa điểm.'
+  ,'lodging.note': 'Ghi chú'
+  ,'lodging.locationName': 'Tên địa điểm'
+  ,'lodging.reason': 'Lý do'
+  ,'lodging.reviewReasonRequired': 'Review Không OK cần nhập lý do.'
+  ,'lodging.reviewHistory': 'Lịch sử review'
+  ,'lodging.reviewSaved': 'Đã lưu review'
+  ,'shell.groupLodging': 'TÌM TRỌ'
+  ,'shell.lodgings': 'Tìm trọ'
 };
 
 export const translations = {

@@ -36,6 +36,11 @@ export const routes: Routes = [
           import('./features/investment/investment-ai-queue.page').then(m => m.InvestmentAiQueuePage),
         data: {titleKey: 'route.investmentAiQueue'}
       },
+      {
+        path: 'lodgings',
+        loadComponent: () => import('./features/lodging/lodging.page').then(m => m.LodgingPage),
+        data: {titleKey: 'shell.lodgings'}
+      },
       ...resourceRoutes(),
       {
         path: 'admin/users',
@@ -49,6 +54,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage),
         data: {resourceKey: 'adminBanks', titleKey: 'route.adminBanks'}
       },
+      {
+        path: 'admin/cloudflare-accounts',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/admin-ai-providers/admin-ai-providers.page')
+          .then(m => m.AdminAiProvidersPage),
+        data: {titleKey: 'route.adminAiProviders'}
+      },
+      {path: 'admin/ai-providers', redirectTo: 'admin/cloudflare-accounts', pathMatch: 'full'},
       {
         path: 'profile',
         loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage),
