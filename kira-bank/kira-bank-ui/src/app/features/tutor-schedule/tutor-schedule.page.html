@@ -1,0 +1,103 @@
+<section class="page-heading tutor-heading">
+  <div><span class="eyebrow">{{ i18n.t('tutor.eyebrow') }}</span><h1>{{ i18n.t('tutor.title') }}</h1><p>{{ i18n.t('tutor.description') }}</p></div>
+  <div class="heading-actions">
+    <button class="btn ghost" type="button" (click)="openStudent()"><app-icon name="users"/> {{ i18n.t('tutor.students') }}</button>
+    <button class="btn primary" type="button" [disabled]="!canEdit()" (click)="openCreate()"><app-icon name="plus"/> {{ i18n.t('tutor.addLesson') }}</button>
+  </div>
+</section>
+
+<section class="week-toolbar panel" aria-label="Week navigation">
+  <div class="week-navigation">
+    <button type="button" class="icon-button" [attr.aria-label]="i18n.t('tutor.previousWeek')" (click)="moveWeek(-1)"><app-icon name="chevron-left"/></button>
+    <button type="button" class="today-button" (click)="goToday()">{{ i18n.t('tutor.today') }}</button>
+    <button type="button" class="icon-button" [attr.aria-label]="i18n.t('tutor.nextWeek')" (click)="moveWeek(1)"><app-icon name="chevron-right"/></button>
+  </div>
+  <strong>{{ weekLabel() }}</strong>
+  <span class="timezone"><app-icon name="clock"/> Asia/Ho_Chi_Minh</span>
+</section>
+
+@if (error() && !lessonDialog() && !studentDialog()) { <div class="page-error" role="alert">{{ error() }} <button type="button" (click)="loadAll()">{{ i18n.t('tutor.retry') }}</button></div> }
+@if (loading()) {
+  <div class="loading-state"><span class="spinner"></span>{{ i18n.t('tutor.loading') }}</div>
+} @else if (week(); as currentWeek) {
+  @if (currentWeek.readOnly) { <div class="read-only-banner"><app-icon name="lock"/> {{ i18n.t('tutor.pastReadOnly') }}</div> }
+  <section class="summary-grid" aria-label="Schedule summary">
+    <article><span class="summary-icon blue"><app-icon name="calendar"/></span><div><small>{{ i18n.t('tutor.lessonCount') }}</small><strong>{{ currentWeek.lessonCount }}</strong></div></article>
+    <article><span class="summary-icon violet"><app-icon name="clock"/></span><div><small>{{ i18n.t('tutor.totalHours') }}</small><strong>{{ currentWeek.totalHours }}</strong></div></article>
+    <article><span class="summary-icon green"><app-icon name="wallet"/></span><div><small>{{ i18n.t('tutor.expectedFee') }}</small><strong>{{ money(currentWeek.totalFee) }}</strong></div></article>
+    <article [class.has-conflict]="currentWeek.conflicts.length"><span class="summary-icon orange"><app-icon name="alert-circle"/></span><div><small>{{ i18n.t('tutor.conflicts') }}</small><strong>{{ currentWeek.conflicts.length }}</strong></div></article>
+  </section>
+
+  @if (!students().length) {
+    <section class="empty-state panel"><span><app-icon name="users"/></span><h2>{{ i18n.t('tutor.noStudents') }}</h2><p>{{ i18n.t('tutor.noStudentsDescription') }}</p><button class="btn primary" type="button" (click)="openStudent()">{{ i18n.t('tutor.addStudent') }}</button></section>
+  } @else {
+    <section #calendarGrid class="calendar-panel panel desktop-calendar">
+      <div class="calendar-header"><div class="time-heading"></div>@for (day of days(); track day) { <div [class.today]="isToday(day)">{{ dayLabel(day) }}</div> }</div>
+      <div class="calendar-body">
+        <div class="time-column">@for (hour of hours; track hour) { <span [style.top.px]="(hour - 6) * 72">{{ hour.toString().padStart(2, '0') }}:00</span> }</div>
+        @for (day of days(); track day) {
+          <div class="day-column" [class.today]="isToday(day)">
+            @for (hour of hours; track hour) { <div class="hour-line" [style.top.px]="(hour - 6) * 72"></div><div class="half-line" [style.top.px]="(hour - 6) * 72 + 36"></div> }
+            @for (lesson of lessonsFor(day); track lesson.seriesId + '-' + lesson.originalDate) {
+              <button type="button" class="lesson-card" cdkDrag [cdkDragDisabled]="!canEdit() || lesson.cancelled"
+                      cdkDragBoundary=".calendar-body" [ngStyle]="lessonStyle(lesson)"
+                      [class.cancelled]="lesson.cancelled" [class.conflict]="lesson.conflict"
+                      (cdkDragEnded)="dragEnded($event, lesson)" (click)="lesson.cancelled && canEdit() ? restore(lesson) : openLesson(lesson)">
+                <b>{{ lesson.studentName }}</b><span>{{ lesson.subject }}</span><small>{{ duration(lesson) }}</small>
+                @if (lesson.exceptionAction) { <i>{{ lesson.cancelled ? i18n.t('tutor.cancelled') : i18n.t('tutor.movedOnce') }}</i> }
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="mobile-schedule">
+      @for (day of days(); track day) {
+        <article class="mobile-day" [class.today]="isToday(day)"><header><strong>{{ dayLabel(day) }}</strong>@if (canEdit()) { <button type="button" (click)="openCreate(day)"><app-icon name="plus"/> {{ i18n.t('tutor.add') }}</button> }</header>
+          @if (!lessonsFor(day).length) { <p>{{ i18n.t('tutor.noLesson') }}</p> }
+          @for (lesson of lessonsFor(day); track lesson.seriesId + '-' + lesson.originalDate) {
+            <div class="mobile-lesson" [style.--student-color]="lesson.studentColor" [class.cancelled]="lesson.cancelled" [class.conflict]="lesson.conflict">
+              <button type="button" class="mobile-lesson-main" (click)="openLesson(lesson)"><span class="time-block">{{ time(lesson.startTime) }}<small>{{ time(lesson.endTime) }}</small></span><span><b>{{ lesson.studentName }}</b><small>{{ lesson.subject }} · {{ lesson.teachingMode === 'ONLINE' ? i18n.t('tutor.online') : i18n.t('tutor.inPerson') }}</small></span></button>
+              @if (lesson.cancelled && lesson.exceptionVersion !== null && canEdit()) { <button type="button" class="restore" (click)="restore(lesson)">{{ i18n.t('tutor.restore') }}</button> }
+            </div>
+          }
+        </article>
+      }
+    </section>
+  }
+}
+
+@if (lessonDialog()) {
+  <div class="dialog-backdrop" (click)="closeLesson()"><form class="dialog lesson-dialog" [formGroup]="lessonForm" (ngSubmit)="saveLesson()" (click)="$event.stopPropagation()">
+    <header><div><small>{{ i18n.t('tutor.eyebrow') }}</small><h2>{{ editingLesson() ? i18n.t('tutor.editLesson') : i18n.t('tutor.addLesson') }}</h2></div><button type="button" [attr.aria-label]="i18n.t('common.cancel')" (click)="closeLesson()"><app-icon name="close"/></button></header>
+    @if (editingLesson()) { <div class="scope-switch"><label><input type="radio" formControlName="scope" value="FUTURE"> {{ i18n.t('tutor.fromThisWeek') }}</label><label><input type="radio" formControlName="scope" value="ONCE"> {{ i18n.t('tutor.onlyThisLesson') }}</label></div> }
+    @if (lessonForm.controls.scope.value === 'ONCE') { <p class="form-hint"><app-icon name="info"/> {{ i18n.t('tutor.onceHint') }}</p> }
+    @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+    <fieldset class="form-grid" [disabled]="!canEdit()">
+      @if (lessonForm.controls.scope.value === 'FUTURE') {
+      <label><span>{{ i18n.t('tutor.student') }} *</span><div class="student-select"><select formControlName="studentId" [attr.aria-label]="i18n.t('tutor.student')">@for (student of students(); track student.id) { <option [value]="student.id">{{ student.name }}</option> }</select><button type="button" (click)="openStudent()"><app-icon name="plus"/></button></div></label>
+      <label><span>{{ i18n.t('tutor.subject') }} *</span><input formControlName="subject"></label>
+      }
+      <label><span>{{ i18n.t('tutor.date') }} *</span><input type="date" formControlName="date" [min]="weekStart()" [max]="days()[6]"></label>
+      <div class="time-pair"><label><span>{{ i18n.t('tutor.start') }} *</span><input type="time" min="06:00" max="23:00" step="300" formControlName="startTime"></label><label><span>{{ i18n.t('tutor.end') }} *</span><input type="time" min="06:00" max="23:00" step="300" formControlName="endTime"></label></div>
+      @if (lessonForm.controls.scope.value === 'FUTURE') {
+      <label><span>{{ i18n.t('tutor.mode') }}</span><select formControlName="teachingMode"><option value="IN_PERSON">{{ i18n.t('tutor.inPerson') }}</option><option value="ONLINE">{{ i18n.t('tutor.online') }}</option></select></label>
+      <label><span>{{ lessonForm.controls.teachingMode.value === 'ONLINE' ? i18n.t('tutor.meetingLink') : i18n.t('tutor.location') }}</span><input formControlName="location"></label>
+      <label><span>{{ i18n.t('tutor.fee') }}</span><input type="number" min="0" step="1000" inputmode="numeric" formControlName="fee"></label>
+      <label class="full"><span>{{ i18n.t('tutor.note') }}</span><textarea formControlName="note"></textarea></label>
+      }
+    </fieldset>
+    <footer>@if (canEdit() && editingLesson()) { <button class="btn danger left-action" type="button" (click)="deleteFuture()">{{ i18n.t('tutor.deleteFuture') }}</button><button class="btn ghost" type="button" (click)="cancelOccurrence()">{{ i18n.t('tutor.cancelOnce') }}</button> }<button class="btn ghost" type="button" (click)="closeLesson()">{{ i18n.t('common.cancel') }}</button>@if (canEdit()) { <button class="btn primary" [disabled]="saving()" type="submit">{{ saving() ? i18n.t('tutor.saving') : i18n.t('common.save') }}</button> }</footer>
+  </form></div>
+}
+
+@if (studentDialog()) {
+  <div class="dialog-backdrop student-backdrop" (click)="closeStudent()"><section class="dialog student-dialog" (click)="$event.stopPropagation()">
+    <header><div><small>{{ i18n.t('tutor.directory') }}</small><h2>{{ i18n.t('tutor.students') }}</h2></div><button type="button" [attr.aria-label]="i18n.t('common.cancel')" (click)="closeStudent()"><app-icon name="close"/></button></header>
+    @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+    <div class="student-layout"><div class="student-list">@if (!students().length) { <p>{{ i18n.t('tutor.noStudents') }}</p> }@for (student of students(); track student.id) { <button type="button" [class.active]="editingStudent()?.id === student.id" (click)="openStudent(student)"><i [style.background]="student.color"></i><span><b>{{ student.name }}</b><small>{{ student.phone || i18n.t('tutor.noPhone') }}</small></span></button> }</div>
+      <form [formGroup]="studentForm" (ngSubmit)="saveStudent()"><h3>{{ editingStudent() ? i18n.t('tutor.editStudent') : i18n.t('tutor.addStudent') }}</h3><label><span>{{ i18n.t('tutor.studentName') }} *</span><input formControlName="name"></label><label><span>{{ i18n.t('tutor.phone') }}</span><input type="tel" formControlName="phone"></label><label><span>{{ i18n.t('tutor.color') }}</span><input class="color-input" type="color" formControlName="color"></label><label><span>{{ i18n.t('tutor.note') }}</span><textarea formControlName="note"></textarea></label><div class="student-form-actions">@if (editingStudent(); as student) { <button class="btn danger" type="button" (click)="deleteStudent(student)">{{ i18n.t('tutor.deleteStudent') }}</button> }<button class="btn primary" [disabled]="saving()" type="submit">{{ i18n.t('common.save') }}</button></div></form>
+    </div>
+  </section></div>
+}

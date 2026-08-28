@@ -37,5 +37,7 @@ public interface UserCreditCardRepository extends JpaRepository<UserCreditCard, 
     @EntityGraph(attributePaths = "bank")
     List<UserCreditCard> findByUserIdAndDeletedAtIsNull(Long userId);
 
+    List<UserCreditCard> findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long userId);
+
     Slice<UserCreditCard> findByStatusAndDeletedAtIsNull(String status, Pageable p);
 }

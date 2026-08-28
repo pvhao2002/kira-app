@@ -1,0 +1,168 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('creditBenefits.eyebrow') }}</span>
+    <h1>{{ i18n.t('creditBenefits.title') }}</h1>
+    <p>{{ i18n.t('creditBenefits.description') }}</p>
+  </div>
+  @if (selectedCard()) {
+    <button class="btn primary" type="button" (click)="openCreateProgram()">
+      <app-icon name="plus"/> {{ i18n.t('creditBenefits.addProgram') }}
+    </button>
+  }
+</section>
+
+@if (pageError()) {
+  <section class="alert error-alert" role="alert">
+    <app-icon name="alert-circle"/><span>{{ pageError() }}</span>
+    <button class="btn ghost" type="button" (click)="load()">{{ i18n.t('creditBenefits.reload') }}</button>
+  </section>
+}
+
+@if (loading()) {
+  <section class="state-card"><app-icon name="loader"/><p>{{ i18n.t('creditBenefits.loading') }}</p></section>
+} @else if (!cards().length) {
+  <section class="state-card">
+    <app-icon name="card"/>
+    <h2>{{ i18n.t('creditBenefits.noCards') }}</h2>
+    <p>{{ i18n.t('creditBenefits.noCardsDescription') }}</p>
+  </section>
+} @else if (selectedCard(); as card) {
+  <section class="card-selector panel">
+    <label for="benefit-card">{{ i18n.t('creditBenefits.chooseCard') }}</label>
+    <select id="benefit-card" [value]="card.cardId" (change)="selectCard($any($event.target).value)">
+      @for (item of cards(); track item.cardId) {
+        <option [value]="item.cardId">
+          {{ item.bankName }} · {{ item.nickname }}@if (item.lastFour) { · •••• {{ item.lastFour }} } · {{ item.status }}
+        </option>
+      }
+    </select>
+    <div class="selected-card">
+      <div class="bank-logo">
+        @if (card.bankLogoUrl) { <img [src]="card.bankLogoUrl" [alt]="card.bankName"> }
+        @else { <app-icon name="bank"/> }
+      </div>
+      <div>
+        <strong>{{ card.nickname }}</strong>
+        <span>{{ card.bankName }} · {{ card.cardType || i18n.t('creditBenefits.cardTypeMissing') }}</span>
+      </div>
+      <span class="status" [class.inactive]="card.status !== 'ACTIVE'">{{ card.status }}</span>
+    </div>
+  </section>
+
+  <section class="monthly-cap panel">
+    <div>
+      <span class="section-icon"><app-icon name="wallet"/></span>
+      <div>
+        <h2>{{ i18n.t('creditBenefits.monthlyCap') }}</h2>
+        <p>{{ i18n.t('creditBenefits.monthlyCapDescription') }}</p>
+      </div>
+    </div>
+    <div class="cap-editor">
+      <label for="monthly-cap">{{ i18n.t('creditBenefits.amountIn', {currency: card.currency}) }}</label>
+      <input id="monthly-cap" appMoneyInput [moneyFractionDigits]="4"
+             [ngModel]="monthlyCap()" (ngModelChange)="monthlyCap.set($event)"
+             [ngModelOptions]="{standalone: true}">
+      <button class="btn primary" type="button" [disabled]="savingCap()" (click)="saveMonthlyCap()">
+        {{ savingCap() ? i18n.t('creditBenefits.saving') : i18n.t('creditBenefits.saveCap') }}
+      </button>
+    </div>
+  </section>
+
+  <section class="program-section">
+    <header>
+      <div><h2>{{ i18n.t('creditBenefits.programs') }}</h2><p>{{ i18n.t('creditBenefits.programsDescription') }}</p></div>
+      <span>{{ i18n.t('creditBenefits.programCount', {count: card.programs.length}) }}</span>
+    </header>
+    @if (!card.programs.length) {
+      <div class="state-card compact">
+        <app-icon name="star"/>
+        <h3>{{ i18n.t('creditBenefits.emptyPrograms') }}</h3>
+        <p>{{ i18n.t('creditBenefits.emptyProgramsDescription') }}</p>
+        <button class="btn primary" type="button" (click)="openCreateProgram()">{{ i18n.t('creditBenefits.addProgram') }}</button>
+      </div>
+    } @else {
+      <div class="program-grid">
+        @for (program of card.programs; track program.id) {
+          <article class="program-card" [class.disabled]="!program.active">
+            <header>
+              <div>
+                <span class="program-state" [class.off]="!program.active">
+                  {{ program.active ? i18n.t('creditBenefits.active') : i18n.t('creditBenefits.inactive') }}
+                </span>
+                <h3>{{ program.name }}</h3>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [checked]="program.active"
+                       [disabled]="togglingProgramId() !== null"
+                       (change)="toggleProgram(program)">
+                <span aria-hidden="true"></span>
+                <b>{{ i18n.t('creditBenefits.toggleProgram') }}</b>
+              </label>
+            </header>
+            @if (program.notes) { <p class="program-notes">{{ program.notes }}</p> }
+            @if (program.termsUrl) {
+              <a class="terms-link" [href]="program.termsUrl" target="_blank" rel="noopener noreferrer">
+                <app-icon name="globe"/> {{ i18n.t('creditBenefits.terms') }}
+              </a>
+            }
+            <div class="group-list">
+              @for (group of program.groups; track group.id) {
+                <div class="group-row">
+                  <div><strong>{{ group.categoryName }}</strong><small>{{ group.mccCodes.join(' · ') }}</small></div>
+                  <div class="reward"><b>{{ group.cashbackRate }}%</b><span>{{ i18n.t('creditBenefits.maxPerMonth', {amount: formatMoney(group.maxCashbackAmount), currency: card.currency}) }}</span></div>
+                </div>
+              }
+            </div>
+            <footer>
+              <button class="btn ghost" type="button" (click)="openEditProgram(program)">{{ i18n.t('common.edit') }}</button>
+              <button class="btn danger" type="button" (click)="deleteProgram(program)">{{ i18n.t('creditBenefits.delete') }}</button>
+            </footer>
+          </article>
+        }
+      </div>
+    }
+  </section>
+}
+
+@if (dialogOpen() && programDraft(); as draft) {
+  <div class="dialog-backdrop" (click)="closeDialog()" (keydown.escape)="closeDialog()">
+    <section class="program-dialog" role="dialog" aria-modal="true" aria-labelledby="program-dialog-title"
+             (click)="$event.stopPropagation()">
+      <header>
+        <div><span>{{ i18n.t('creditBenefits.eyebrow') }}</span><h2 id="program-dialog-title">{{ draft.id ? i18n.t('creditBenefits.editProgram') : i18n.t('creditBenefits.addProgram') }}</h2></div>
+        <button type="button" [attr.aria-label]="i18n.t('common.close')" (click)="closeDialog()">×</button>
+      </header>
+      @if (formError()) { <div class="form-error" role="alert"><app-icon name="alert-circle"/> {{ formError() }}</div> }
+      <div class="program-fields">
+        <label class="full"><span>{{ i18n.t('creditBenefits.programName') }} *</span><input maxlength="150" [(ngModel)]="draft.name" [ngModelOptions]="{standalone:true}"></label>
+        <label class="full"><span>{{ i18n.t('creditBenefits.notes') }}</span><textarea maxlength="2000" rows="3" [(ngModel)]="draft.notes" [ngModelOptions]="{standalone:true}"></textarea><small>{{ draft.notes.length }}/2000</small></label>
+        <label class="full"><span>{{ i18n.t('creditBenefits.termsUrl') }}</span><input type="url" maxlength="500" placeholder="https://" [(ngModel)]="draft.termsUrl" [ngModelOptions]="{standalone:true}"></label>
+        <label class="active-field"><input type="checkbox" [(ngModel)]="draft.active" [ngModelOptions]="{standalone:true}"><span>{{ i18n.t('creditBenefits.activeOnSave') }}</span></label>
+      </div>
+      <div class="groups-heading">
+        <div><h3>{{ i18n.t('creditBenefits.categoryGroups') }}</h3><p>{{ i18n.t('creditBenefits.categoryGroupsDescription') }}</p></div>
+        <button class="btn ghost" type="button" (click)="addGroup()"><app-icon name="plus"/> {{ i18n.t('creditBenefits.addGroup') }}</button>
+      </div>
+      <div class="group-editor-list">
+        @for (group of draft.groups; track $index; let index = $index) {
+          <article class="group-editor">
+            <header><strong>{{ i18n.t('creditBenefits.groupNumber', {number: index + 1}) }}</strong><button type="button" [attr.aria-label]="i18n.t('creditBenefits.removeGroup')" (click)="removeGroup(index)">×</button></header>
+            <div class="group-fields">
+              <label class="full"><span>{{ i18n.t('creditBenefits.categoryName') }} *</span><input maxlength="150" [(ngModel)]="group.categoryName" [ngModelOptions]="{standalone:true}" placeholder="{{ i18n.t('creditBenefits.categoryExample') }}"></label>
+              <label><span>{{ i18n.t('creditBenefits.cashbackRate') }} *</span><div class="suffix-input"><input type="number" min="0.0001" max="100" step="0.01" [(ngModel)]="group.cashbackRate" [ngModelOptions]="{standalone:true}"><b>%</b></div></label>
+              <label><span>{{ i18n.t('creditBenefits.groupCap') }} *</span><input appMoneyInput [moneyFractionDigits]="4" [(ngModel)]="group.maxCashbackAmount" [ngModelOptions]="{standalone:true}"></label>
+              <label class="full"><span>{{ i18n.t('creditBenefits.mccCodes') }} *</span><div class="mcc-input"><input inputmode="text" [value]="group.mccInput" (input)="group.mccInput = $any($event.target).value" (blur)="addMcc(group)" (keydown.enter)="addMcc(group, $event)" placeholder="5411, 5812, 5999"><button type="button" (click)="addMcc(group)">{{ i18n.t('creditBenefits.addMcc') }}</button></div><small>{{ i18n.t('creditBenefits.mccHint') }}</small></label>
+            </div>
+            <div class="mcc-chips">
+              @for (code of group.mccCodes; track code) { <span>{{ code }}<button type="button" [attr.aria-label]="i18n.t('creditBenefits.removeMcc', {code})" (click)="removeMcc(group, code)">×</button></span> }
+            </div>
+          </article>
+        }
+      </div>
+      <footer>
+        <button class="btn ghost" type="button" (click)="closeDialog()">{{ i18n.t('common.cancel') }}</button>
+        <button class="btn primary" type="button" [disabled]="savingProgram()" (click)="saveProgram()">{{ savingProgram() ? i18n.t('creditBenefits.saving') : i18n.t('common.save') }}</button>
+      </footer>
+    </section>
+  </div>
+}

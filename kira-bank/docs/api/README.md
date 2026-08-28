@@ -47,6 +47,15 @@ Response của `GET /api/v1/credit-cards` và `GET /api/v1/credit-cards/{id}` b�
 
 Dư nợ gốc là tổng `remaining_amount` của các sao kê còn nợ. Adjustment mới nhất lưu offset bằng balance được nhập trừ dư nợ gốc tại thời điểm cập nhật; số hiển thị sau đó là `max(0, dư nợ gốc hiện tại + offset mới nhất)`. Vì vậy payment hoặc thay đổi sao kê của bất kỳ thẻ nào cùng bank vẫn làm số dư dùng chung thay đổi, còn số dư không hiển thị âm.
 
+### Cấu hình ưu đãi và hoàn tiền
+
+`GET /api/v1/credit-card-benefits` trả toàn bộ thẻ chưa bị xóa của user đăng nhập, kể cả thẻ inactive, cùng trần hoàn tiền tháng và cây chương trình → nhóm danh mục → mã MCC. Dữ liệu này chỉ phục vụ cấu hình/tra cứu; không tính cashback và không tạo giao dịch.
+
+- `PUT /api/v1/credit-card-benefits/{cardId}/monthly-cap` nhận `monthlyCashbackCap > 0` và `version`. Lần thiết lập đầu nhận `version: null`; cập nhật đồng thời trả `409 CASHBACK_CONFIG_VERSION_CONFLICT`.
+- `POST /api/v1/credit-card-benefits/{cardId}/programs` tạo chương trình cùng toàn bộ nhóm MCC trong một transaction. `PUT .../programs/{programId}` cập nhật aggregate; nhóm không còn trong payload được xóa mềm. `DELETE .../programs/{programId}` nhận `{ "version": 0 }` và xóa mềm chương trình cùng dữ liệu con.
+- Chương trình có tên, ghi chú tối đa 2.000 ký tự, URL điều khoản HTTP/HTTPS tùy chọn và trạng thái bật/tắt thủ công. Mỗi nhóm có tên, tỷ lệ `(0, 100]`, trần tiền hoàn dương theo tháng và ít nhất một MCC bốn chữ số.
+- MCC được phép dùng lại giữa các chương trình nhưng không được trùng giữa các nhóm trong cùng một chương trình. Mọi lookup lồng nhau đều kiểm tra ownership qua `user_credit_cards`; ID ngoài scope trả `404 CREDIT_CARD_BENEFIT_NOT_FOUND`.
+
 ## Tìm kiếm toàn cục
 
 Angular gọi song song ba API domain hiện có; không có endpoint tìm kiếm tổng hợp. `GET /api/v1/credit-cards`, `GET /api/v1/investment/accounts` và `GET /api/v1/public/banks` nhận query parameter `search` tùy chọn, đồng thời vẫn nhận `page` và `size` như trước.
@@ -108,4 +117,21 @@ Job tạo kỳ hiện tại chạy theo `CARD_STATEMENT_JOB_CRON` và `CARD_STAT
 
 `statementDebt` cộng `statement_balance` của các kỳ còn nợ, còn `currentBalance` áp dụng adjustment mới nhất lên tổng `remaining_amount` thực tế sau payment. Kỳ `PAID` hoặc `CANCELLED` không được tính. Tổng hạn mức và current balance đều có grain theo ngân hàng; dòng thẻ con chỉ giữ chi tiết dư nợ sao kê và hiển thị current balance là dùng chung để tránh cộng lặp. `availableCredit` có thể âm khi vượt hạn mức và `utilizationRate` có thể lớn hơn `100`.
 
-Public catalog chỉ còn `/api/v1/public/banks`. `/api/v1/dashboards/summary`, MCC catalog, card transaction, cashback và discount invoice API đã được gỡ và trả 404.
+Public catalog chỉ còn `/api/v1/public/banks`. `/api/v1/dashboards/summary`, MCC catalog, card transaction, cashback-record và discount invoice API legacy đã được gỡ và trả 404; `/api/v1/credit-card-benefits` là API cấu hình riêng theo thẻ, không khôi phục các API legacy đó.
+
+## Password Manager cá nhân
+
+`/api/v1/password-vault` chỉ thao tác trên dữ liệu của user đăng nhập; role Admin không có quyền đọc vault của user khác. Module được quản lý qua `/modules`, account qua `/modules/{moduleId}/accounts` và `/accounts/{id}`. List response chỉ có metadata và password mask, không chứa username, password, login URL hoặc secure note.
+
+Secret payload được envelope-encrypt bằng DEK AES-256-GCM riêng cho từng account; DEK được AES-256-GCM wrap bởi key ring ngoài database. Cấu hình `PASSWORD_VAULT_ENCRYPTION_KEYS` theo dạng `keyId:Base64Key` cách nhau bằng dấu phẩy và chọn key ghi mới bằng `PASSWORD_VAULT_ACTIVE_KEY_ID`. Giữ key cũ trong key ring cho tới khi mọi record đã được rotate.
+
+`POST /unlock` xác nhận mật khẩu hiện tại và trả opaque token dùng 5 phút; server chỉ lưu SHA-256 hash. Sau 5 lần sai trong 15 phút, API trả `429 VAULT_UNLOCK_RATE_LIMITED`. Gửi token trong `X-Vault-Unlock-Token` khi gọi `POST /accounts/{id}/secret` hoặc cập nhật secret; `DELETE /unlock` thu hồi token sớm. Action secret là `REVEAL` hoặc `COPY`; `COPY` bắt buộc chọn `USERNAME`, `PASSWORD`, `LOGIN_URL` hoặc `NOTE` và chỉ trả field đó.
+# Tutoring schedule
+
+Authenticated users manage their private tutor calendar under `/api/v1/tutoring`.
+
+- `GET /week?weekStart=YYYY-MM-DD` resolves recurring schedule versions and one-off exceptions for a Monday-based week in `Asia/Ho_Chi_Minh`.
+- `/students` provides user-owned student directory CRUD.
+- `/series` creates recurring lessons; updates and deletes use an `effectiveFrom` Monday so prior weeks remain unchanged.
+- `/series/{seriesId}/occurrences/{date}` moves, cancels, or restores one occurrence.
+- Overlapping lessons return `409 TUTOR_SCHEDULE_CONFLICT`. Resubmit the same mutation with `confirmConflict=true` to accept the overlap.

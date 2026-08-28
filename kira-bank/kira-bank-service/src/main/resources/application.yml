@@ -51,4 +51,8 @@ mapbox:
   access-token: ${MAPBOX_ACCESS_TOKEN:}
   connect-timeout: ${MAPBOX_CONNECT_TIMEOUT:5s}
   read-timeout: ${MAPBOX_READ_TIMEOUT:15s}
+password-vault:
+  # Comma-separated keyId:Base64(32-byte-key) entries. Keep old keys during rotation.
+  encryption-keys: ${PASSWORD_VAULT_ENCRYPTION_KEYS:}
+  active-key-id: ${PASSWORD_VAULT_ACTIVE_KEY_ID:}
 springdoc.swagger-ui.path: /swagger-ui.html

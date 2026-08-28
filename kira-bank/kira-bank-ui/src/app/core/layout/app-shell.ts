@@ -19,7 +19,7 @@ interface NavItem {
 
 interface NavGroup {
   labelKey: TranslationKey;
-  flow: 'credit' | 'investment' | 'lodging' | 'system';
+  flow: 'credit' | 'investment' | 'lodging' | 'tutor' | 'system';
   items: NavItem[]
 }
 
@@ -87,6 +87,7 @@ export class AppShell {
         labelKey: 'shell.groupCredit', flow: 'credit', items: [
           {labelKey: 'shell.dashboard', icon: 'dashboard', path: '/app/credit-card/dashboard'},
           {labelKey: 'shell.myCards', icon: 'card', path: '/app/credit-cards'},
+          {labelKey: 'shell.creditBenefits', icon: 'star', path: '/app/credit-card/benefits'},
           {labelKey: 'shell.banks', icon: 'bank', path: '/app/banks'}
         ]
       },
@@ -100,6 +101,11 @@ export class AppShell {
       {
         labelKey: 'shell.groupLodging', flow: 'lodging', items: [
           {labelKey: 'shell.lodgings', icon: 'home', path: '/app/lodgings'}
+        ]
+      },
+      {
+        labelKey: 'shell.groupTutor', flow: 'tutor', items: [
+          {labelKey: 'shell.tutorSchedule', icon: 'calendar', path: '/app/tutor-schedule'}
         ]
       }
     ];
@@ -116,6 +122,7 @@ export class AppShell {
 
     groups.push({
       labelKey: 'shell.groupSystem', flow: 'system', items: [
+        {labelKey: 'shell.passwordManager', icon: 'lock', path: '/app/password-manager'},
         {labelKey: 'shell.notifications', icon: 'bell', path: '/app/notifications'},
         {labelKey: 'shell.settings', icon: 'settings', path: '/app/settings'}
       ]

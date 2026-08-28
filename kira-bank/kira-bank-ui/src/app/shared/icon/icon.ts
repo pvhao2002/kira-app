@@ -6,12 +6,16 @@ export type IconName =
   | 'bank'
   | 'bell'
   | 'card'
+  | 'calendar'
   | 'check'
   | 'check-circle'
   | 'chevron-down'
+  | 'chevron-left'
+  | 'chevron-right'
   | 'clock'
   | 'close'
   | 'corner-down-left'
+  | 'copy'
   | 'dashboard'
   | 'diamond'
   | 'loader'
@@ -20,6 +24,8 @@ export type IconName =
   | 'home'
   | 'info'
   | 'lock'
+  | 'eye'
+  | 'key'
   | 'menu'
   | 'monitor'
   | 'moon'
@@ -31,6 +37,7 @@ export type IconName =
   | 'star'
   | 'sun'
   | 'trend-up'
+  | 'trash'
   | 'users'
   | 'wallet'
   | 'x-circle';
@@ -60,6 +67,10 @@ export type IconName =
           <rect x="3" y="5" width="18" height="14" rx="2"/>
           <path d="M3 10h18M7 15h3"/>
         }
+        @case ('calendar') {
+          <rect x="3" y="5" width="18" height="16" rx="2"/>
+          <path d="M16 3v4M8 3v4M3 10h18M7 14h2M11 14h2M15 14h2M7 18h2M11 18h2"/>
+        }
         @case ('check') {
           <path d="m5 12 4 4L19 6"/>
         }
@@ -69,6 +80,12 @@ export type IconName =
         }
         @case ('chevron-down') {
           <path d="m6 9 6 6 6-6"/>
+        }
+        @case ('chevron-left') {
+          <path d="m15 18-6-6 6-6"/>
+        }
+        @case ('chevron-right') {
+          <path d="m9 18 6-6-6-6"/>
         }
         @case ('clock') {
           <circle cx="12" cy="12" r="9"/>
@@ -80,6 +97,10 @@ export type IconName =
         @case ('corner-down-left') {
           <path d="M9 10 4 15l5 5"/>
           <path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+        }
+        @case ('copy') {
+          <rect x="9" y="9" width="11" height="11" rx="2"/>
+          <path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/>
         }
         @case ('dashboard') {
           <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -109,6 +130,14 @@ export type IconName =
         @case ('info') {
           <circle cx="12" cy="12" r="9"/>
           <path d="M12 11v5M12 8h.01"/>
+        }
+        @case ('eye') {
+          <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/>
+          <circle cx="12" cy="12" r="2.5"/>
+        }
+        @case ('key') {
+          <circle cx="8" cy="15" r="4"/>
+          <path d="m11 12 8-8M16 7l3 3M14 9l2 2"/>
         }
         @case ('lock') {
           <rect x="4" y="10" width="16" height="11" rx="2"/>
@@ -152,6 +181,9 @@ export type IconName =
         @case ('trend-up') {
           <path d="m3 17 6-6 4 4 8-8"/>
           <path d="M15 7h6v6"/>
+        }
+        @case ('trash') {
+          <path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/>
         }
         @case ('users') {
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>

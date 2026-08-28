@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
                 safeLogMessage(ex));
         }
         return ResponseEntity.status(ex.getStatus()).headers(ex.getHeaders()).body(error(
-            ex.getStatus(), ex.getCode(), ex.getMessage(), Map.of(), request));
+            ex.getStatus(), ex.getCode(), ex.getMessage(), ex.getFieldErrors(), request));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

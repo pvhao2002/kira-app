@@ -132,6 +132,58 @@ export interface CreditCardDashboard {
   banks: CreditCardDebtBank[]
 }
 
+export interface CreditCardCashbackGroup {
+  id: number;
+  categoryName: string;
+  cashbackRate: number;
+  maxCashbackAmount: number;
+  mccCodes: string[];
+  version: number
+}
+
+export interface CreditCardCashbackProgram {
+  id: number;
+  name: string;
+  notes: string | null;
+  termsUrl: string | null;
+  active: boolean;
+  version: number;
+  groups: CreditCardCashbackGroup[]
+}
+
+export interface CreditCardBenefit {
+  cardId: number;
+  bankId: number;
+  bankName: string;
+  bankLogoUrl: string | null;
+  cardType: string | null;
+  nickname: string;
+  lastFour: string | null;
+  status: string;
+  currency: string;
+  monthlyCashbackCap: number | null;
+  configVersion: number | null;
+  programs: CreditCardCashbackProgram[]
+}
+
+export interface CreditCardCashbackGroupRequest {
+  id: number | null;
+  version: number | null;
+  categoryName: string;
+  cashbackRate: number;
+  maxCashbackAmount: number;
+  mccCodes: string[]
+}
+
+export interface CreditCardCashbackProgramRequest {
+  name: string;
+  notes: string | null;
+  termsUrl: string | null;
+  active: boolean;
+  version: number | null;
+  groups: CreditCardCashbackGroupRequest[]
+}
+
 export interface InvestmentAccountSummary {
   id: number;
   accountCode: string | null;
@@ -335,4 +387,125 @@ export interface CloudflareAccount {
   r2: CloudflareR2Capability;
   legacyAttachmentCount: number;
   version: number
+}
+
+export interface PasswordVaultModule {
+  id: number;
+  name: string;
+  websiteUrl: string | null;
+  description: string | null;
+  accountCount: number;
+  version: number;
+  createdAt: string;
+  updatedAt: string
+}
+
+export interface PasswordVaultAccount {
+  id: number;
+  moduleId: number;
+  displayName: string;
+  passwordMasked: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string
+}
+
+export interface PasswordVaultAccountRequest {
+  displayName: string;
+  username: string | null;
+  password: string;
+  loginUrl: string | null;
+  note: string | null;
+  version: number | null
+}
+
+export interface PasswordVaultSecret {
+  username: string | null;
+  password: string | null;
+  loginUrl: string | null;
+  note: string | null;
+  value: string | null
+}
+
+export interface PasswordVaultUnlock {
+  unlockToken: string;
+  expiresAt: string
+}
+
+export type TutoringTeachingMode = 'ONLINE' | 'IN_PERSON';
+export type TutoringExceptionAction = 'MOVE' | 'CANCEL';
+
+export interface TutoringStudent {
+  id: number;
+  name: string;
+  phone: string | null;
+  color: string;
+  note: string | null;
+  version: number
+}
+
+export interface TutoringLesson {
+  seriesId: number;
+  seriesVersion: number;
+  studentId: number;
+  studentName: string;
+  studentPhone: string | null;
+  studentColor: string;
+  originalDate: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  teachingMode: TutoringTeachingMode;
+  location: string | null;
+  fee: number;
+  note: string | null;
+  exceptionAction: TutoringExceptionAction | null;
+  exceptionVersion: number | null;
+  cancelled: boolean;
+  conflict: boolean
+}
+
+export interface TutoringConflict {
+  firstSeriesId: number;
+  secondSeriesId: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  description: string
+}
+
+export interface TutoringWeek {
+  weekStart: string;
+  weekEnd: string;
+  timeZone: string;
+  readOnly: boolean;
+  lessonCount: number;
+  totalHours: number;
+  totalFee: number;
+  conflicts: TutoringConflict[];
+  lessons: TutoringLesson[]
+}
+
+export interface TutoringStudentRequest {
+  name: string;
+  phone: string | null;
+  color: string;
+  note: string | null;
+  version: number | null
+}
+
+export interface TutoringSeriesRequest {
+  studentId: number;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  teachingMode: TutoringTeachingMode;
+  location: string | null;
+  fee: number;
+  note: string | null;
+  effectiveFrom: string;
+  version: number | null;
+  confirmConflict: boolean
 }

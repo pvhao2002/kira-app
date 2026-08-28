@@ -25,6 +25,12 @@ export const routes: Routes = [
         data: {titleKey: 'route.creditDashboard'}
       },
       {
+        path: 'credit-card/benefits',
+        loadComponent: () => import('./features/credit-card-benefits/credit-card-benefits.page')
+          .then(m => m.CreditCardBenefitsPage),
+        data: {titleKey: 'route.creditBenefits'}
+      },
+      {
         path: 'investment/transactions',
         loadComponent: () =>
           import('./features/investment/investment-transaction.page').then(m => m.InvestmentTransactionPage),
@@ -40,6 +46,18 @@ export const routes: Routes = [
         path: 'lodgings',
         loadComponent: () => import('./features/lodging/lodging.page').then(m => m.LodgingPage),
         data: {titleKey: 'shell.lodgings'}
+      },
+      {
+        path: 'password-manager',
+        loadComponent: () => import('./features/password-manager/password-manager.page')
+          .then(m => m.PasswordManagerPage),
+        data: {titleKey: 'route.passwordManager'}
+      },
+      {
+        path: 'tutor-schedule',
+        loadComponent: () => import('./features/tutor-schedule/tutor-schedule.page')
+          .then(m => m.TutorSchedulePage),
+        data: {titleKey: 'route.tutorSchedule'}
       },
       ...resourceRoutes(),
       {
