@@ -1,0 +1,24 @@
+<header><div><small>ADMIN · KIRA LIFE</small><h1>{{ t('title') }}</h1><p>{{ t('subtitle') }}</p></div><button type="button" [disabled]="loading()" (click)="load()">{{ t('refresh') }}</button></header>
+<section class="panel"><form (ngSubmit)="apply()"><label>{{ t('from') }}<input type="date" name="from" [(ngModel)]="from" required></label><label>{{ t('to') }}<input type="date" name="to" [(ngModel)]="to" required></label><label>{{ t('ip') }}<input name="ip" [(ngModel)]="ip" [placeholder]="t('allIps')" maxlength="45"></label><button class="primary" [disabled]="loading()">{{ t('apply') }}</button></form><p class="hint">{{ t('zone') }}: {{ zone }} · {{ t('retention') }}</p></section>
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+@if (loading()) { <p role="status">{{ t('loading') }}</p> }
+@if (report(); as data) {
+  <div class="metrics"><article><span>{{ t('views') }}</span><strong>{{ data.totals.views }}</strong></article><article><span>{{ t('reloads') }}</span><strong>{{ data.totals.reloads }}</strong></article><article><span>{{ t('ips') }}</span><strong>{{ data.totals.ips }}</strong></article><article><span>{{ t('visitors') }}</span><strong>{{ data.totals.visitors }}</strong></article></div>
+  <section class="panel"><h2>{{ t('byIp') }}</h2><p class="hint">{{ t('updated') }}: {{ date(updated()) }}</p><div class="table-wrap"><table><thead><tr><th>IP</th><th>{{ t('views') }}</th><th>{{ t('reloads') }}</th><th>{{ t('visitors') }}</th><th>{{ t('sessions') }}</th><th>{{ t('first') }}</th><th>{{ t('last') }}</th><th>{{ t('detail') }}</th></tr></thead><tbody>
+  @for (row of data.ips.items; track row.ip) { <tr [class.selected]="selectedIp() === row.ip"><td><code>{{ row.ip }}</code></td><td>{{ row.views }}</td><td>{{ row.reloads }}</td><td>{{ row.visitors }}</td><td>{{ row.sessions }}</td><td>{{ date(row.firstSeen) }}</td><td>{{ date(row.lastSeen) }}</td><td><button (click)="detail(row.ip)">{{ t('detail') }}</button></td></tr> }
+  @empty { <tr><td colspan="8">{{ t('empty') }}</td></tr> }</tbody></table></div><footer><button [disabled]="data.ips.page === 0" (click)="load(data.ips.page - 1)">{{ t('previous') }}</button><span>{{ t('page') }} {{ data.ips.page + 1 }} · {{ data.ips.total }} IP</span><button [disabled]="(data.ips.page + 1) * data.ips.size >= data.ips.total" (click)="load(data.ips.page + 1)">{{ t('next') }}</button></footer></section>
+}
+@if (selectedIp(); as ip) {
+  <section class="panel"><h2>{{ t('history') }} · {{ ip }}</h2>
+  @if (eventsLoading()) { <p role="status">{{ t('loading') }}</p> }
+  @if (eventError()) { <p class="error" role="alert">{{ eventError() }} <button (click)="detail(ip)">{{ t('refresh') }}</button></p> }
+  @if (events(); as data) {
+    @for (event of data.items; track event.id) {
+      <article class="event"><div class="event-heading"><div><strong>{{ date(event.visitedAt) }}</strong><span class="badge">{{ t(event.navigation) }}</span><p>{{ browser(event.userAgent) }} · {{ device(event.userAgent) }} · {{ event.screenWidth }} × {{ event.screenHeight }}</p></div><button [attr.aria-expanded]="expanded() === event.id" (click)="toggle(event.id)">{{ t('detail') }}</button></div>
+      @if (expanded() === event.id) { <dl><dt>{{ t('ipSource') }}</dt><dd>{{ t(event.ipSource) }} · {{ t('peer') }}: {{ event.peerIp }}</dd><dt>{{ t('visitorId') }}</dt><dd><code>{{ event.visitorId }}</code></dd><dt>{{ t('sessionId') }}</dt><dd><code>{{ event.sessionId }}</code></dd><dt>{{ t('language') }}</dt><dd>{{ event.language || '—' }}</dd><dt>{{ t('zone') }}</dt><dd>{{ event.timezone || '—' }}</dd><dt>{{ t('referrer') }}</dt><dd>{{ event.referrer || t('direct') }}</dd><dt>User-Agent</dt><dd>{{ event.userAgent || '—' }}</dd><dt>{{ t('eventId') }}</dt><dd><code>{{ event.id }}</code></dd></dl> }
+      </article>
+    } @empty { <p>{{ t('empty') }}</p> }
+    <footer><button [disabled]="data.page === 0" (click)="detail(ip, data.page - 1)">{{ t('previous') }}</button><span>{{ t('page') }} {{ data.page + 1 }} · {{ data.total }} {{ t('views') }}</span><button [disabled]="(data.page + 1) * data.size >= data.total" (click)="detail(ip, data.page + 1)">{{ t('next') }}</button></footer>
+  }</section>
+}
+<section class="panel explanation"><h2>{{ t('about') }}</h2><p>{{ t('definitions') }}</p><p>{{ t('accuracy') }}</p><p>{{ t('proxyHelp') }}</p></section>

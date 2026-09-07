@@ -1,6 +1,6 @@
 <div [class.sidebar-open]="menuOpen()" class="app-layout">
   <aside>
-    <a class="brand" routerLink="/app"><span class="brand-mark">K</span>Kira Bank</a>
+    <a class="brand" routerLink="/app"><span class="brand-mark">K</span>Kira Life</a>
     <button (click)="menuOpen.set(false)" [attr.aria-label]="i18n.t('shell.closeMenu')" class="close-menu">×</button>
     <nav class="side-nav">
       <a [routerLinkActiveOptions]="{exact: true}" routerLink="/app" routerLinkActive="active"><span><app-icon name="home"/></span>{{ i18n.t('shell.overview') }}</a>
@@ -25,9 +25,9 @@
               [attr.aria-label]="i18n.t('shell.openMenu')"
               class="menu-button"
               type="button"><app-icon name="menu"/></button>
-      <a aria-label="Kira Bank" class="mobile-brand" routerLink="/app">
+      <a aria-label="Kira Life" class="mobile-brand" routerLink="/app">
         <span class="mobile-brand-mark">K</span>
-        <span class="mobile-brand-name">Kira Bank</span>
+        <span class="mobile-brand-name">Kira Life</span>
       </a>
       <div #globalSearchRoot [class.mobile-search-open]="searchOpen()" class="global-search-shell">
         <div class="mobile-search-row">

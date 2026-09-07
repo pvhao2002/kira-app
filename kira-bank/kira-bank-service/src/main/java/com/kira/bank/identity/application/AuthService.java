@@ -53,6 +53,8 @@ public class AuthService {
 
     @Transactional
     public ProfileResponse createUser(CreateUserRequest request) {
+        if (request.roles() != null && request.roles().stream().anyMatch(role -> !"ROLE_USER".equals(role)))
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_USER_ROLES", "Chỉ được tạo tài khoản User");
         String email = request.email().trim().toLowerCase(Locale.ROOT);
         if (users.existsByEmailIgnoreCase(email))
             throw new ApiException(HttpStatus.CONFLICT, "EMAIL_EXISTS", "Email đã được sử dụng");
@@ -62,10 +64,29 @@ public class AuthService {
         user.setFullName(request.fullName().trim());
         user.setPhone(request.phone());
         user.getRoles().add(roles.findByName("ROLE_USER").orElseThrow());
-        if (request.roles() != null && request.roles().contains("ROLE_ADMIN"))
-            user.getRoles().add(roles.findByName("ROLE_ADMIN").orElseThrow());
-        users.save(user);
+        user.setStatus("ACTIVE");
+        try {
+            users.saveAndFlush(user);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            if (ex.getMostSpecificCause() instanceof java.sql.SQLException sql && sql.getErrorCode() == 1062)
+                throw new ApiException(HttpStatus.CONFLICT, "EMAIL_EXISTS", "Email đã được sử dụng");
+            throw ex;
+        }
         return profile(user);
+    }
+
+    @Transactional(readOnly = true)
+    public com.kira.bank.shared.web.ApiTypes.PageResponse<AdminUserResponse> listUsers(String search, int page, int size) {
+        if (page < 0 || size < 1 || size > 100)
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PAGINATION", "Phân trang không hợp lệ");
+        var result = users.searchActiveRecords(search.trim(), org.springframework.data.domain.PageRequest.of(page, size,
+            org.springframework.data.domain.Sort.by("createdAt").descending().and(
+                org.springframework.data.domain.Sort.by("id").descending())));
+        var data = result.getContent().stream().map(user -> new AdminUserResponse(user.getId(), user.getEmail(),
+            user.getFullName(), user.getPhone(), user.getRoles().stream().map(Role::getName)
+                .collect(java.util.stream.Collectors.toSet()), user.getStatus())).toList();
+        return new com.kira.bank.shared.web.ApiTypes.PageResponse<>(data,
+            new com.kira.bank.shared.web.ApiTypes.PageMeta(page, size, result.getTotalElements(), result.getTotalPages()));
     }
 
     @Transactional
@@ -76,11 +97,15 @@ public class AuthService {
         return newSession(user, UUID.randomUUID().toString());
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = ApiException.class)
     public Session rotate(String raw) {
         RefreshToken old = tokens.findByTokenHash(hash(raw)).orElseThrow(this::invalidRefresh);
         if (old.getRevokedAt() != null || old.getExpiresAt().isBefore(Instant.now())) {
             tokens.findByFamilyIdAndRevokedAtIsNull(old.getFamilyId()).forEach(t -> t.setRevokedAt(Instant.now()));
+            throw invalidRefresh();
+        }
+        if (!"ACTIVE".equals(old.getUser().getStatus()) || old.getUser().getDeletedAt() != null) {
+            old.setRevokedAt(Instant.now());
             throw invalidRefresh();
         }
         old.setRevokedAt(Instant.now());

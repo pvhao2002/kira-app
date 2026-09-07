@@ -24,12 +24,20 @@ public class AuthController {
     private boolean secureCookie;
 
     /**
-     * Admin tạo tài khoản mới — chỉ dùng qua Swagger, không public
+     * Admin tạo tài khoản User mới.
      */
     @PostMapping("/api/v1/admin/users")
     @ResponseStatus(HttpStatus.CREATED)
     public ProfileResponse createUser(@Valid @RequestBody CreateUserRequest r) {
         return auth.createUser(r);
+    }
+
+    @GetMapping("/api/v1/admin/users")
+    public com.kira.bank.shared.web.ApiTypes.PageResponse<AdminUserResponse> listUsers(
+        @RequestParam(defaultValue = "") String search,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size) {
+        return auth.listUsers(search, page, size);
     }
 
     @PostMapping("/api/v1/auth/login")

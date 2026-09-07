@@ -1,5 +1,9 @@
 # API
 
+## Quản lý User
+
+[Danh sách và tạo User dành cho Admin](admin-users.md): `GET/POST /api/v1/admin/users`. Tài khoản mới chỉ có `ROLE_USER`.
+
 ## Cloudflare accounts
 
 Admin-only endpoints under `/api/v1/admin/cloudflare-accounts` manage one Cloudflare Account ID with independent Workers AI and R2 capabilities. Responses expose only masked metadata and credential-presence flags. Every mutation includes `version` for optimistic locking; blank secret fields retain the stored encrypted value.
@@ -135,3 +139,19 @@ Authenticated users manage their private tutor calendar under `/api/v1/tutoring`
 - `/series` creates recurring lessons; updates and deletes use an `effectiveFrom` Monday so prior weeks remain unchanged.
 - `/series/{seriesId}/occurrences/{date}` moves, cancels, or restores one occurrence.
 - Overlapping lessons return `409 TUTOR_SCHEDULE_CONFLICT`. Resubmit the same mutation with `confirmConflict=true` to accept the overlap.
+
+## Personal Overview
+
+See [Personal Overview](personal-overview.md) for the read-only overview endpoints, date windows, aggregation rules and client behavior.
+
+## Health / Kira Life
+
+See [Health API](health.md) for profiles, BMI and calorie rules, reviewed plans, journals, mobile authentication and Apple Health synchronization.
+
+## Travel / Du lịch
+
+See [Travel API](travel.md) for the web trip planner, itinerary, packing, group expense splits, private booking documents, map and departure countdown.
+
+## Login visitor tracking
+
+See [Login visits](login-visits.md) for the Admin visitor report, reload counting, proxy/IP attribution and retention.

@@ -1,4 +1,16 @@
+import {healthEnglish, healthVietnamese} from './health.translations';
+import {overviewEnglish, overviewVietnamese} from './overview.translations';
+import {travelEnglish, travelVietnamese} from './travel.translations';
+import {visitsEnglish, visitsVietnamese} from './login-visits.translations';
+
+import {usersEnglish, usersVietnamese} from './admin-users.translations';
+
 export const englishTranslations = {
+  ...usersEnglish,
+  ...visitsEnglish,
+  ...travelEnglish,
+  ...healthEnglish,
+  ...overviewEnglish,
   'language.change': 'Change language',
   'language.english': 'English',
   'language.vietnamese': 'Tiếng Việt',
@@ -29,7 +41,7 @@ export const englishTranslations = {
   'select.noOptions': 'No matching options',
   'auth.registerEyebrow': 'Create your financial space',
   'auth.loginEyebrow': 'Welcome back',
-  'auth.registerTitle': 'Get started with Kira Bank',
+  'auth.registerTitle': 'Get started with Kira Life',
   'auth.loginTitle': 'Log in to your account',
   'auth.registerDescription': 'Free, private and ready in minutes.',
   'auth.loginDescription': 'Continue managing your two separate cash flows.',
@@ -180,7 +192,7 @@ export const englishTranslations = {
   'settings.changePassword': 'Change password',
   'settings.passwordChanged': 'Password changed successfully.',
   'settings.appearanceTitle': 'Appearance and language',
-  'settings.appearanceDescription': 'Choose how Kira Bank is displayed.',
+  'settings.appearanceDescription': 'Choose how Kira Life is displayed.',
   'settings.language': 'Language',
   'settings.languageDescription': 'This preference is saved on this device.',
   'error.serverUnavailable': 'Unable to connect to the server',
@@ -705,7 +717,7 @@ export const englishTranslations = {
   ,'passwordManager.encryptedHint': 'Username, password, login URL and note are encrypted together before storage.'
   ,'passwordManager.securityCheck': 'Security check'
   ,'passwordManager.unlockTitle': 'Unlock password vault'
-  ,'passwordManager.unlockDescription': 'Confirm your current Kira Bank password. The unlock expires automatically after five minutes.'
+  ,'passwordManager.unlockDescription': 'Confirm your current Kira Life password. The unlock expires automatically after five minutes.'
   ,'passwordManager.currentPassword': 'Current password'
   ,'passwordManager.unlocking': 'Unlocking…'
   ,'passwordManager.unlock': 'Unlock'
@@ -732,6 +744,16 @@ export const englishTranslations = {
   ,'tutor.previousWeek': 'Previous week'
   ,'tutor.nextWeek': 'Next week'
   ,'tutor.today': 'Today'
+  ,'tutor.weekNavigation': 'Week navigation'
+  ,'tutor.timezone': 'Vietnam time'
+  ,'tutor.viewMode': 'Schedule view'
+  ,'tutor.weekView': 'Week'
+  ,'tutor.agendaView': 'Agenda'
+  ,'tutor.summary': 'Schedule summary'
+  ,'tutor.lessonsUnit': 'lessons'
+  ,'tutor.focusHoursHint': 'Showing the hours around your lessons'
+  ,'tutor.fullDayHint': 'Full schedule · 06:00–23:00'
+  ,'tutor.showFullDay': 'Show all hours'
   ,'tutor.retry': 'Retry'
   ,'tutor.loading': 'Loading teaching schedule…'
   ,'tutor.loadFailed': 'Could not load the teaching schedule.'
@@ -790,6 +812,11 @@ export const englishTranslations = {
 export type TranslationKey = keyof typeof englishTranslations;
 
 export const vietnameseTranslations: Record<TranslationKey, string> = {
+  ...usersVietnamese,
+  ...visitsVietnamese,
+  ...travelVietnamese,
+  ...healthVietnamese,
+  ...overviewVietnamese,
   'language.change': 'Đổi ngôn ngữ',
   'language.english': 'English',
   'language.vietnamese': 'Tiếng Việt',
@@ -820,7 +847,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'select.noOptions': 'Không có tùy chọn phù hợp',
   'auth.registerEyebrow': 'Tạo không gian tài chính',
   'auth.loginEyebrow': 'Chào mừng trở lại',
-  'auth.registerTitle': 'Bắt đầu với Kira Bank',
+  'auth.registerTitle': 'Bắt đầu với Kira Life',
   'auth.loginTitle': 'Đăng nhập tài khoản',
   'auth.registerDescription': 'Miễn phí, riêng tư và sẵn sàng trong vài phút.',
   'auth.loginDescription': 'Tiếp tục quản lý hai dòng tiền tách bạch.',
@@ -971,7 +998,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'settings.changePassword': 'Đổi mật khẩu',
   'settings.passwordChanged': 'Đã đổi mật khẩu thành công.',
   'settings.appearanceTitle': 'Giao diện và ngôn ngữ',
-  'settings.appearanceDescription': 'Chọn cách hiển thị Kira Bank.',
+  'settings.appearanceDescription': 'Chọn cách hiển thị Kira Life.',
   'settings.language': 'Ngôn ngữ',
   'settings.languageDescription': 'Tùy chọn này được lưu trên thiết bị.',
   'error.serverUnavailable': 'Không thể kết nối đến máy chủ',
@@ -1496,7 +1523,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'passwordManager.encryptedHint': 'Username, password, URL đăng nhập và ghi chú được mã hóa cùng nhau trước khi lưu.'
   ,'passwordManager.securityCheck': 'Kiểm tra bảo mật'
   ,'passwordManager.unlockTitle': 'Mở password vault'
-  ,'passwordManager.unlockDescription': 'Xác nhận mật khẩu Kira Bank hiện tại. Quyền mở khóa tự hết hạn sau 5 phút.'
+  ,'passwordManager.unlockDescription': 'Xác nhận mật khẩu Kira Life hiện tại. Quyền mở khóa tự hết hạn sau 5 phút.'
   ,'passwordManager.currentPassword': 'Mật khẩu hiện tại'
   ,'passwordManager.unlocking': 'Đang mở khóa…'
   ,'passwordManager.unlock': 'Mở khóa'
@@ -1523,6 +1550,16 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'tutor.previousWeek': 'Tuần trước'
   ,'tutor.nextWeek': 'Tuần sau'
   ,'tutor.today': 'Hôm nay'
+  ,'tutor.weekNavigation': 'Chuyển tuần'
+  ,'tutor.timezone': 'Giờ Việt Nam'
+  ,'tutor.viewMode': 'Chế độ xem lịch'
+  ,'tutor.weekView': 'Tuần'
+  ,'tutor.agendaView': 'Danh sách'
+  ,'tutor.summary': 'Tổng quan lịch dạy'
+  ,'tutor.lessonsUnit': 'buổi'
+  ,'tutor.focusHoursHint': 'Hiển thị khung giờ quanh các buổi học'
+  ,'tutor.fullDayHint': 'Toàn bộ khung giờ · 06:00–23:00'
+  ,'tutor.showFullDay': 'Hiện tất cả giờ'
   ,'tutor.retry': 'Tải lại'
   ,'tutor.loading': 'Đang tải lịch dạy…'
   ,'tutor.loadFailed': 'Không thể tải lịch dạy.'

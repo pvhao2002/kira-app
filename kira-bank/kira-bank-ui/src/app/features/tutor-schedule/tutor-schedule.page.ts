@@ -37,9 +37,57 @@ export class TutorSchedulePage {
   readonly studentDialog = signal(false);
   readonly editingLesson = signal<TutoringLesson | null>(null);
   readonly editingStudent = signal<TutoringStudent | null>(null);
-  readonly hours = Array.from({length: 18}, (_, index) => index + 6);
+  readonly viewMode = signal<'calendar' | 'agenda'>('calendar');
+  readonly fullDay = signal(false);
+  readonly hourHeight = 72;
+  private suppressClickUntil = 0;
+  readonly timeRange = computed(() => {
+    const lessons = this.week()?.lessons ?? [];
+    if (this.fullDay()) return {start: 6, end: 23};
+    if (!lessons.length) return {start: 16, end: 22};
+    const first = Math.floor(Math.min(...lessons.map(lesson => this.minutes(lesson.startTime))) / 60);
+    const last = Math.ceil(Math.max(...lessons.map(lesson => this.minutes(lesson.endTime))) / 60);
+    const end = Math.min(23, Math.max(last + 1, first + 5));
+    return {start: Math.max(6, Math.min(first - 1, end - 5)), end};
+  });
+  readonly hours = computed(() => Array.from(
+    {length: this.timeRange().end - this.timeRange().start}, (_, index) => index + this.timeRange().start));
+  readonly calendarHeight = computed(() => this.hours().length * this.hourHeight);
   readonly days = computed(() => Array.from({length: 7}, (_, index) => this.addDays(this.weekStart(), index)));
-  readonly canEdit = computed(() => !this.week()?.readOnly);
+  readonly canEdit = computed(() => !!this.week() && !this.loading() && !this.week()?.readOnly);
+  readonly dayLessons = computed(() => {
+    const grouped = new Map<string, TutoringLesson[]>();
+    for (const day of this.days()) grouped.set(day, []);
+    for (const lesson of this.week()?.lessons ?? []) grouped.get(lesson.date)?.push(lesson);
+    for (const lessons of grouped.values()) lessons.sort((a, b) => a.startTime.localeCompare(b.startTime) || a.seriesId - b.seriesId);
+    return grouped;
+  });
+  readonly lessonColumns = computed(() => {
+    const result = new Map<TutoringLesson, {column: number; count: number}>();
+    for (const lessons of this.dayLessons().values()) {
+      let group: TutoringLesson[] = [];
+      let ends: number[] = [];
+      let groupEnd = 0;
+      const finish = () => {
+        for (const lesson of group) result.get(lesson)!.count = ends.length;
+        group = []; ends = [];
+      };
+      for (const lesson of lessons) {
+        const start = this.minutes(lesson.startTime);
+        // Include minimum card height so short adjacent lessons stay readable.
+        const end = Math.max(this.minutes(lesson.endTime), start + 35);
+        if (group.length && start >= groupEnd) finish();
+        let column = ends.findIndex(value => value <= start);
+        if (column < 0) column = ends.length;
+        ends[column] = end;
+        result.set(lesson, {column, count: 1});
+        group.push(lesson);
+        groupEnd = Math.max(...ends);
+      }
+      finish();
+    }
+    return result;
+  });
 
   readonly lessonForm = this.fb.nonNullable.group({
     studentId: [0, [Validators.required, Validators.min(1)]],
@@ -78,23 +126,31 @@ export class TutorSchedulePage {
 
   moveWeek(offset: number): void { this.weekStart.set(this.addDays(this.weekStart(), offset * 7)); this.loadAll(); }
   goToday(): void { this.weekStart.set(this.currentWeekStart()); this.loadAll(); }
-  lessonsFor(date: string): TutoringLesson[] { return (this.week()?.lessons ?? []).filter(value => value.date === date); }
+  lessonsFor(date: string): TutoringLesson[] { return this.dayLessons().get(date) ?? []; }
   isToday(date: string): boolean { return date === this.todayInZone(); }
   dayLabel(date: string): string { return new Intl.DateTimeFormat(this.locale(), {weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC'}).format(new Date(`${date}T00:00:00Z`)); }
   weekLabel(): string {
-    const value = this.week(); if (!value) return '';
-    return `${this.shortDate(value.weekStart)} – ${this.shortDate(value.weekEnd)}`;
+    return `${this.shortDate(this.weekStart())} – ${this.shortDate(this.addDays(this.weekStart(), 6))}`;
   }
   money(value: number): string { return new Intl.NumberFormat(this.locale(), {style: 'currency', currency: 'VND', maximumFractionDigits: 0}).format(value); }
   time(value: string): string { return value.slice(0, 5); }
   duration(lesson: TutoringLesson): string { return `${this.time(lesson.startTime)}–${this.time(lesson.endTime)}`; }
   lessonStyle(lesson: TutoringLesson): Record<string, string> {
-    const start = this.minutes(lesson.startTime) - 360;
+    const start = this.minutes(lesson.startTime) - this.timeRange().start * 60;
     const length = Math.max(30, this.minutes(lesson.endTime) - this.minutes(lesson.startTime));
-    return {top: `${start * 1.2}px`, height: `${Math.max(42, length * 1.2 - 4)}px`, '--student-color': lesson.studentColor};
+    const {column, count} = this.lessonColumns().get(lesson) ?? {column: 0, count: 1};
+    return {top: `${start * this.hourHeight / 60}px`, height: `${Math.max(42, length * this.hourHeight / 60 - 4)}px`,
+      left: `calc(${column * 100 / count}% + 4px)`, width: `calc(${100 / count}% - 8px)`,
+      '--student-color': lesson.studentColor};
   }
 
-  openCreate(date = this.days()[0], startTime = '18:00'): void {
+  lessonClicked(lesson: TutoringLesson): void {
+    if (Date.now() < this.suppressClickUntil) return;
+    if (lesson.cancelled && this.canEdit()) this.restore(lesson);
+    else this.openLesson(lesson);
+  }
+
+  openCreate(date = this.days().find(day => this.isToday(day)) ?? this.days()[0], startTime = '18:00'): void {
     if (!this.canEdit()) return;
     if (!this.students().length) { this.openStudent(); return; }
     this.editingLesson.set(null); this.error.set('');
@@ -151,13 +207,15 @@ export class TutorSchedulePage {
   }
 
   dragEnded(event: CdkDragEnd, lesson: TutoringLesson): void {
+    this.suppressClickUntil = Date.now() + 300;
     event.source.reset();
     if (!this.canEdit() || lesson.cancelled) return;
     const grid = this.calendarGrid()?.nativeElement;
     if (!grid) return;
-    const dayWidth = (grid.clientWidth - 64) / 7;
+    const dayWidth = grid.querySelector<HTMLElement>('.day-column')?.getBoundingClientRect().width;
+    if (!dayWidth) return;
     const dayDelta = Math.round(event.distance.x / dayWidth);
-    const minuteDelta = Math.round(event.distance.y / 36) * 30;
+    const minuteDelta = Math.round(event.distance.y / (this.hourHeight / 2)) * 30;
     if (!dayDelta && !minuteDelta) { this.openLesson(lesson); return; }
     const date = this.addDays(lesson.date, Math.max(-6, Math.min(6, dayDelta)));
     if (!this.days().includes(date)) { this.toast.show(this.i18n.t('tutor.dragSameWeek'), 'error'); return; }

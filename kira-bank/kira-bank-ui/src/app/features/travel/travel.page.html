@@ -1,0 +1,173 @@
+<header class="page-heading">
+  <div><span class="eyebrow">KIRA LIFE / {{ t('private') }}</span><h1>{{ t('title') }}</h1><p>{{ t('subtitle') }}</p></div>
+  <button class="primary" [disabled]="busy() || loading()" (click)="openTrip(null)">+ {{ t('newTrip') }}</button>
+</header>
+@if (error()) { <div class="alert error" role="alert">{{ error() }} <button [disabled]="busy()" (click)="load()">{{ t('retry') }}</button></div> }
+@if (notice()) { <div class="save-notice" role="status">{{ notice() }}</div> }
+@if (loading()) { <div class="empty panel" role="status">{{ t('loading') }}</div> }
+@else {
+  <div class="workspace">
+    <aside class="trip-sidebar panel">
+      <h2>{{ t('trips') }} <small>{{ trips().length }}</small></h2>
+      <input type="search" [attr.aria-label]="t('search')" [placeholder]="t('search')" [ngModel]="query()" (ngModelChange)="query.set($event)">
+      <div class="trip-list">
+        @for (trip of filteredTrips(); track trip.id) {
+          <button class="trip-card" [class.active]="selected()?.id === trip.id" [attr.aria-pressed]="selected()?.id === trip.id" [disabled]="busy()" (click)="select(trip)">
+            <span class="destination">{{ trip.data.destination }}</span><strong>{{ trip.data.name }}</strong>
+            <small>{{ trip.data.startDate | date:'dd/MM/yyyy':'UTC' }} — {{ trip.data.endDate | date:'dd/MM/yyyy':'UTC' }}</small>
+            <span class="trip-status">{{ countdown(trip) }}</span>
+          </button>
+        } @empty { <p>{{ t(trips().length ? 'noMatches' : 'emptyIntro') }}</p> }
+      </div>
+    </aside>
+    <div class="trip-content">
+      @if (editor() === 'trip') {
+        <section class="panel editor">
+          <h2>{{ t(editingExistingTrip() ? 'editTrip' : 'newTrip') }}</h2>
+          <form #tripForm="ngForm" (ngSubmit)="saveTrip()">
+            <fieldset [disabled]="busy()">
+              <div class="form-grid">
+                <label>{{ t('name') }}<input name="name" [(ngModel)]="tripDraft.name" required maxlength="160"></label>
+                <label>{{ t('destination') }}<input name="destination" [(ngModel)]="tripDraft.destination" required maxlength="200"></label>
+                <label>{{ t('start') }}<input type="date" name="start" [(ngModel)]="tripDraft.startDate" required></label>
+                <label>{{ t('end') }}<input type="date" name="end" [(ngModel)]="tripDraft.endDate" [min]="tripDraft.startDate" required></label>
+                <label>{{ t('timezone') }}<input name="timezone" [(ngModel)]="tripDraft.timezone" required maxlength="80" placeholder="Asia/Ho_Chi_Minh"></label>
+                <label>{{ t('currency') }}<select name="currency" [(ngModel)]="tripDraft.currency" [disabled]="tripDraft.expenses.length > 0">@for (currency of currencies; track currency) { <option [value]="currency">{{ currency }}</option> }</select>
+                  @if (tripDraft.expenses.length) { <small>{{ t('currencyLocked') }}</small> }
+                </label>
+                <label>{{ t('budget') }}<input type="number" name="budget" [(ngModel)]="tripDraft.budget" min="0" max="1000000000000" [step]="moneyStep(tripDraft.currency)" required></label>
+                <label class="wide">{{ t('notes') }}<textarea name="notes" [(ngModel)]="tripDraft.notes" maxlength="4000" rows="3"></textarea></label>
+              </div>
+              <h3>{{ t('members') }}</h3>
+              <div class="member-list">
+                @for (member of tripDraft.members; track member.id; let index = $index) {
+                  <div class="member-row"><label>{{ t('memberName') }} {{ index + 1 }}<input [name]="'member-' + member.id" [(ngModel)]="member.name" required maxlength="80"></label>
+                    <button type="button" class="danger" [disabled]="tripDraft.members.length <= 1" (click)="removeMember(member.id)">{{ t('delete') }}</button></div>
+                }
+              </div>
+              <button type="button" [disabled]="tripDraft.members.length >= 50" (click)="addMember()">+ {{ t('addMember') }}</button>
+              <div class="actions"><button class="primary" type="submit" [disabled]="tripForm.invalid || busy()">{{ t(busy() ? 'saving' : 'save') }}</button><button type="button" (click)="cancel()">{{ t('cancel') }}</button></div>
+            </fieldset>
+          </form>
+        </section>
+      } @else if (selected(); as trip) {
+        <section class="trip-hero">
+          <div><span class="eyebrow">{{ trip.data.destination }}</span><h2>{{ trip.data.name }}</h2><p>{{ trip.data.startDate | date:'dd/MM/yyyy':'UTC' }} — {{ trip.data.endDate | date:'dd/MM/yyyy':'UTC' }}</p><small>{{ trip.data.timezone }} · {{ trip.data.members.length }} {{ t('members') }}</small></div>
+          <div class="countdown"><span class="compass" aria-hidden="true">↗</span><strong>{{ countdown(trip) }}</strong></div>
+        </section>
+        <nav class="tabs" [attr.aria-label]="t('title')">@for (item of tabs; track item) { <button [class.active]="tab() === item" [attr.aria-current]="tab() === item ? 'page' : null" [disabled]="busy()" (click)="changeTab(item)">{{ t(item) }}</button> }</nav>
+
+        @if (editor(); as editing) {
+          <section class="panel editor">
+            <h2>{{ t(editing === 'activities' ? 'activityTitle' : editing === 'packing' ? 'item' : editing === 'expenses' ? 'expenseTitle' : editing === 'bookings' ? 'bookingTitle' : 'placeName') }}</h2>
+            <form #itemForm="ngForm" (ngSubmit)="saveItem()"><fieldset [disabled]="busy()"><div class="form-grid">
+              @switch (editing) {
+                @case ('activities') {
+                  <label class="wide">{{ t('activityTitle') }}<input name="title" [(ngModel)]="activity.title" required maxlength="160"></label>
+                  <label>{{ t('date') }}<input type="date" name="date" [(ngModel)]="activity.date" [min]="trip.data.startDate" [max]="trip.data.endDate" required></label>
+                  <label>{{ t('time') }}<input type="time" name="time" [(ngModel)]="activity.time"></label>
+                  <label class="wide">{{ t('location') }}<input name="location" [(ngModel)]="activity.location" maxlength="300"></label>
+                  <label class="wide">{{ t('notes') }}<textarea name="notes" [(ngModel)]="activity.notes" maxlength="2000" rows="3"></textarea></label>
+                }
+                @case ('packing') {
+                  <label class="wide">{{ t('item') }}<input name="name" [(ngModel)]="packing.name" required maxlength="160"></label>
+                  <label>{{ t('category') }}<input name="category" [(ngModel)]="packing.category" required maxlength="80"></label>
+                  <label>{{ t('quantity') }}<input type="number" name="quantity" [(ngModel)]="packing.quantity" required min="1" max="999" step="1"></label>
+                }
+                @case ('expenses') {
+                  <label class="wide">{{ t('expenseTitle') }}<input name="title" [(ngModel)]="expense.title" required maxlength="160"></label>
+                  <label>{{ t('amount') }} ({{ trip.data.currency }})<input type="number" name="amount" [(ngModel)]="expense.amount" required [min]="moneyStep()" max="1000000000000" [step]="moneyStep()"></label>
+                  <label>{{ t('date') }}<input type="date" name="date" [(ngModel)]="expense.date" required></label>
+                  <label>{{ t('paidBy') }}<select name="paidBy" [(ngModel)]="expense.paidBy" required>@for (member of trip.data.members; track member.id) { <option [value]="member.id">{{ member.name }}</option> }</select></label>
+                  <fieldset class="wide"><legend>{{ t('splitBetween') }}</legend><div class="checks">@for (member of trip.data.members; track member.id) {
+                    <label class="check"><input type="checkbox" [name]="'participant-' + member.id" [ngModel]="expense.participants.includes(member.id)" (ngModelChange)="participant(member.id, $event)">{{ member.name }}</label>
+                  }</div><small>{{ t('splitHelp') }}</small></fieldset>
+                }
+                @case ('bookings') {
+                  <label class="wide">{{ t('bookingTitle') }}<input name="title" [(ngModel)]="booking.title" required maxlength="160"></label>
+                  <label>{{ t('type') }}<select name="type" [(ngModel)]="booking.type">@for (type of bookingTypes; track type) { <option [value]="type">{{ t(type) }}</option> }</select></label>
+                  <label>{{ t('date') }}<input type="date" name="date" [(ngModel)]="booking.date" required></label>
+                  <label>{{ t('reference') }}<input name="reference" [(ngModel)]="booking.reference" maxlength="120"></label>
+                  <label>{{ t('url') }}<input type="url" name="url" [(ngModel)]="booking.url" maxlength="1000" pattern="https?://.+" placeholder="https://"></label>
+                  <label class="wide">{{ t('notes') }}<textarea name="notes" [(ngModel)]="booking.notes" maxlength="2000" rows="3"></textarea></label>
+                }
+                @case ('places') {
+                  <label class="wide">{{ t('placeName') }}<input name="name" [(ngModel)]="place.name" required maxlength="160"></label>
+                  <label class="wide">{{ t('address') }}<input name="address" [(ngModel)]="place.address" maxlength="300"></label>
+                  <label>{{ t('latitude') }}<input type="number" name="latitude" [(ngModel)]="place.latitude" required min="-90" max="90" step="any"></label>
+                  <label>{{ t('longitude') }}<input type="number" name="longitude" [(ngModel)]="place.longitude" required min="-180" max="180" step="any"></label>
+                  <small class="wide">{{ t('mapHelp') }}</small>
+                  <label class="wide">{{ t('notes') }}<textarea name="notes" [(ngModel)]="place.notes" maxlength="2000" rows="3"></textarea></label>
+                }
+              }
+            </div><div class="actions"><button class="primary" type="submit" [disabled]="itemForm.invalid || busy()">{{ t(busy() ? 'saving' : 'save') }}</button><button type="button" (click)="cancel()">{{ t('cancel') }}</button></div></fieldset></form>
+          </section>
+        } @else {
+          @switch (tab()) {
+            @case ('overview') {
+              <div class="metrics">
+                <article class="panel metric"><span>{{ t('total') }}</span><strong>{{ money(trip.summary.total) }}</strong><small>{{ t('budget') }}: {{ money(trip.data.budget) }}</small></article>
+                <article class="panel metric"><span>{{ t('remaining') }}</span><strong [class.negative]="trip.data.budget > 0 && trip.summary.total > trip.data.budget">{{ trip.data.budget ? money(trip.data.budget - trip.summary.total) : '—' }}</strong><small>{{ trip.data.budget ? trip.data.currency : t('noBudget') }}</small></article>
+                <article class="panel metric"><span>{{ t('packed') }}</span><strong>{{ packed() }} <small>/ {{ trip.data.packing.length }}</small></strong><progress [value]="packed()" [max]="trip.data.packing.length || 1" [attr.aria-label]="t('packed')"></progress></article>
+              </div>
+              <section class="panel"><div class="section-heading"><h2>{{ t('overview') }}</h2><button [disabled]="busy()" (click)="openTrip(trip)">{{ t('editTrip') }}</button></div>
+                <p class="notes">{{ trip.data.notes }}</p><h3>{{ t('members') }}</h3><div class="chips">@for (member of trip.data.members; track member.id) { <span>{{ member.name }}</span> }</div>
+                <p>{{ trip.data.activities.length }} {{ t('planned') }} · {{ trip.data.bookings.length }} {{ t('bookings') }} · {{ trip.data.places.length }} {{ t('places') }}</p>
+              </section>
+              <button class="danger" [disabled]="busy()" (click)="deleteTrip()">{{ t('deleteTrip') }}</button>
+            }
+            @case ('itinerary') {
+              <div class="section-heading"><h2>{{ t('itinerary') }}</h2><button class="primary" [disabled]="busy() || trip.data.activities.length >= 500" (click)="openItem('activities')">+ {{ t('add') }}</button></div>
+              @if (!trip.data.activities.length) { <p class="empty panel">{{ t('emptyActivities') }}</p> }
+              @for (day of days(); track day.date; let index = $index) {
+                <section class="panel day"><h3><span class="day-number">{{ index + 1 }}</span>{{ day.date | date:'dd/MM/yyyy':'UTC' }}</h3>
+                  @for (activity of day.activities; track activity.id) {
+                    <article class="list-row"><time>{{ activity.time || '—' }}</time><div class="row-copy"><strong>{{ activity.title }}</strong><small>{{ activity.location }}</small><p class="notes">{{ activity.notes }}</p></div><div class="row-actions"><button [disabled]="busy()" (click)="openItem('activities', activity)">{{ t('edit') }}</button><button class="danger" [disabled]="busy()" (click)="removeItem('activities', activity.id)">{{ t('delete') }}</button></div></article>
+                  } @empty { <p>{{ t('noDayActivities') }}</p> }
+                </section>
+              }
+            }
+            @case ('packing') {
+              <section class="panel"><div class="section-heading"><h2>{{ t('packing') }} <small>{{ packed() }}/{{ trip.data.packing.length }}</small></h2><button class="primary" [disabled]="busy() || trip.data.packing.length >= 500" (click)="openItem('packing')">+ {{ t('add') }}</button></div>
+                <progress [value]="packed()" [max]="trip.data.packing.length || 1" [attr.aria-label]="t('packed')"></progress>
+                @for (item of trip.data.packing; track item.id) {
+                  <article class="list-row"><button class="check-button" [class.checked]="item.packed" [attr.aria-label]="t('packed') + ': ' + item.name" [attr.aria-pressed]="item.packed" [disabled]="busy()" (click)="toggle('packing', item.id)">{{ item.packed ? '✓' : '○' }}</button><div class="row-copy" [class.completed]="item.packed"><strong>{{ item.name }} × {{ item.quantity }}</strong><small>{{ item.category }}</small></div><div class="row-actions"><button [disabled]="busy()" (click)="openItem('packing', item)">{{ t('edit') }}</button><button class="danger" [disabled]="busy()" (click)="removeItem('packing', item.id)">{{ t('delete') }}</button></div></article>
+                } @empty { <p class="empty">{{ t('emptyPacking') }}</p> }
+              </section>
+            }
+            @case ('expenses') {
+              <section class="panel"><div class="section-heading"><div><h2>{{ t('expenses') }}</h2><strong>{{ money(trip.summary.total) }}</strong></div><button class="primary" [disabled]="busy() || trip.data.expenses.length >= 1000" (click)="openItem('expenses')">+ {{ t('add') }}</button></div>
+                @for (expense of trip.data.expenses; track expense.id) {
+                  <article class="list-row"><div class="row-copy"><strong>{{ expense.title }}</strong><small>{{ expense.date | date:'dd/MM/yyyy':'UTC' }} · {{ t('paidBy') }} {{ memberName(expense.paidBy) }}</small><small>{{ t('splitBetween') }}: @for (id of expense.participants; track id; let last = $last) { {{ memberName(id) }}{{ last ? '' : ', ' }} }</small></div><strong>{{ money(expense.amount) }}</strong><div class="row-actions"><button [disabled]="busy()" (click)="openItem('expenses', expense)">{{ t('edit') }}</button><button class="danger" [disabled]="busy()" (click)="removeItem('expenses', expense.id)">{{ t('delete') }}</button></div></article>
+                } @empty { <p class="empty">{{ t('emptyExpenses') }}</p> }
+              </section>
+              <section class="panel"><h2>{{ t('net') }}</h2><div class="table-wrap"><table><thead><tr><th>{{ t('memberName') }}</th><th>{{ t('paidBy') }}</th><th>{{ t('share') }}</th><th>{{ t('net') }}</th></tr></thead><tbody>@for (balance of trip.summary.balances; track balance.memberId) { <tr><td>{{ memberName(balance.memberId) }}</td><td>{{ money(balance.paid) }}</td><td>{{ money(balance.share) }}</td><td [class.negative]="balance.net < 0">{{ money(balance.net) }}</td></tr> }</tbody></table></div></section>
+              <section class="panel settlement"><h2>{{ t('settlements') }}</h2>@for (transfer of trip.summary.transfers; track $index) { <div class="list-row"><span class="row-copy">{{ memberName(transfer.from) }} → {{ memberName(transfer.to) }}</span><strong>{{ money(transfer.amount) }}</strong></div> } @empty { <p>{{ t('balanced') }}</p> }<small>{{ t('settlementHelp') }}</small></section>
+            }
+            @case ('bookings') {
+              <section class="panel"><div class="section-heading"><h2>{{ t('bookings') }}</h2><button class="primary" [disabled]="busy() || trip.data.bookings.length >= 200" (click)="openItem('bookings')">+ {{ t('add') }}</button></div>
+                @for (booking of trip.data.bookings; track booking.id) {
+                  <article class="booking-card"><div class="section-heading"><span class="badge">{{ t(booking.type) }}</span><small>{{ booking.date | date:'dd/MM/yyyy':'UTC' }}</small></div><h3>{{ booking.title }}</h3><p>{{ t('reference') }}: <strong>{{ booking.reference || '—' }}</strong></p><p class="notes">{{ booking.notes }}</p><div class="row-actions">@if (booking.url) { <a class="link-button" [href]="booking.url" target="_blank" rel="noopener noreferrer">{{ t('openLink') }} ↗</a> }<button [disabled]="busy()" (click)="openItem('bookings', booking)">{{ t('edit') }}</button><button class="danger" [disabled]="busy()" (click)="removeItem('bookings', booking.id)">{{ t('delete') }}</button></div></article>
+                } @empty { <p class="empty">{{ t('emptyBookings') }}</p> }
+              </section>
+              <section class="panel"><h2>{{ t('files') }}</h2><p>{{ t('fileHelp') }}</p><label class="upload-label">{{ t('upload') }}<input type="file" accept="application/pdf,image/png,image/jpeg" [disabled]="busy() || filesLoading() || filesError() || files().length >= 20" (change)="upload($event)"></label>
+                @if (filesLoading()) { <p role="status">{{ t('loading') }}</p> }
+                @else if (filesError()) { <p role="alert">{{ t('fileLoadError') }} <button (click)="loadFiles()">{{ t('retry') }}</button></p> }
+                @else { @for (file of files(); track file.id) { <div class="list-row"><div class="row-copy"><strong>{{ file.name }}</strong><small>{{ (file.size / 1024).toFixed(1) }} KB</small></div><div class="row-actions"><button [disabled]="busy()" (click)="download(file)">{{ t('download') }}</button><button class="danger" [disabled]="busy()" (click)="deleteFile(file)">{{ t('delete') }}</button></div></div> } @empty { <p>{{ t('noFiles') }}</p> } }
+              </section>
+            }
+            @case ('places') {
+              <div class="section-heading"><h2>{{ t('places') }}</h2><button class="primary" [disabled]="busy() || trip.data.places.length >= 300" (click)="openItem('places')">+ {{ t('add') }}</button></div>
+              <section class="panel map-panel">@if (mapUrl(); as url) { <iframe [src]="url" [title]="t('mapTitle')" loading="lazy" referrerpolicy="no-referrer"></iframe><p>{{ mapPlace()?.name }} · © OpenStreetMap contributors</p> } @else { <p class="empty">{{ t('selectPlace') }}</p> }</section>
+              @for (place of trip.data.places; track place.id) {
+                <article class="panel"><div class="section-heading"><h3>{{ place.name }}</h3><button [disabled]="busy()" [class.checked]="place.visited" [attr.aria-pressed]="place.visited" (click)="toggle('places', place.id)">{{ place.visited ? '✓ ' : '' }}{{ t('visited') }}</button></div><p>{{ place.address }}</p><p class="notes">{{ place.notes }}</p><div class="row-actions"><button (click)="mapPlace.set(place)">{{ t('showMap') }}</button><a class="link-button" [href]="directions(place)" target="_blank" rel="noopener noreferrer">{{ t('directions') }} ↗</a><button [disabled]="busy()" (click)="openItem('places', place)">{{ t('edit') }}</button><button class="danger" [disabled]="busy()" (click)="removeItem('places', place.id)">{{ t('delete') }}</button></div></article>
+              } @empty { <p class="empty panel">{{ t('emptyPlaces') }}</p> }
+            }
+          }
+        }
+      } @else {
+        <section class="panel empty welcome"><span class="welcome-symbol" aria-hidden="true">↗</span><h2>{{ t('noTrips') }}</h2><p>{{ t('emptyIntro') }}</p><button class="primary" (click)="openTrip(null)">+ {{ t('newTrip') }}</button></section>
+      }
+    </div>
+  </div>
+}

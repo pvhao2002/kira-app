@@ -1,0 +1,16 @@
+:host { display: block; color: var(--navy); }
+header, form, footer, .event-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+h1 { font-size: 30px; margin: 8px 0; } h2 { font-size: 18px; margin: 0 0 16px; }
+p, small, .hint { color: var(--muted); line-height: 1.6; } .hint { font-size: 12px; }
+.panel, .metrics article { background-color: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin: 18px 0; }
+form { justify-content: flex-start; align-items: flex-end; } label { display: grid; gap: 8px; font-size: 13px; }
+input { background-color: var(--surface); color: var(--navy); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+button { padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background-color: var(--surface); color: var(--navy); cursor: pointer; font: inherit; font-size: 13px; }
+button:disabled { opacity: .45; cursor: default; } .primary { background-color: #0878ff; color: #fff; }
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; } .metrics article { margin: 0; } .metrics span { color: var(--muted); font-size: 13px; } .metrics strong { display: block; font-size: 32px; margin-top: 12px; }
+.table-wrap { overflow-x: auto; } table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; } th, td { padding: 13px 10px; border-bottom: 1px solid var(--border); font-size: 12px; } th { color: var(--muted); }
+.selected { background-color: color-mix(in srgb, #0878ff 8%, var(--surface)); } footer { margin-top: 18px; font-size: 13px; }
+.event { padding: 18px 0; border-bottom: 1px solid var(--border); } .badge { margin-left: 12px; padding: 4px 8px; border-radius: 12px; background-color: color-mix(in srgb, #0878ff 10%, var(--surface)); font-size: 11px; }
+dl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 13px; } dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; } .error { color: #df4961; } .explanation p { font-size: 13px; }
+:is(button, input):focus-visible { outline: 3px solid #0878ff; outline-offset: 3px; }
+@media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } dl { grid-template-columns: 1fr; gap: 8px; } .panel { padding: 16px; } }

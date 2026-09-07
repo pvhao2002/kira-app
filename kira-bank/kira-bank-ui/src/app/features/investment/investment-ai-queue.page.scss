@@ -63,7 +63,7 @@ button:focus-visible, select:focus-visible, [tabindex="0"]:focus-visible { outli
 .scope-switch button { border: 0; border-radius: .55rem; background: transparent; padding: .55rem .9rem; font-weight: 700; color: var(--muted); }
 .scope-switch button.active { background: var(--surface, #fff); color: #6d28d9; box-shadow: 0 1px 5px #1112; }
 .status-filter { display: flex; align-items: center; gap: .55rem; color: var(--muted); font-size: .85rem; font-weight: 700; }
-.status-filter select { min-width: 150px; border: 1px solid var(--border, #d8dee8); border-radius: .6rem; background: var(--surface, #fff); color: inherit; padding: .55rem 2rem .55rem .65rem; }
+.status-filter select { min-width: 150px; border: 1px solid var(--border, #d8dee8); border-radius: .6rem; background-color: var(--surface, #fff); color: inherit; padding: .55rem 2rem .55rem .65rem; }
 .live-indicator { display: flex; align-items: center; gap: .4rem; margin-left: auto; color: #15803d; font-size: .8rem; font-weight: 700; }
 .live-indicator i { width: .45rem; height: .45rem; border-radius: 50%; background: currentColor; }
 .live-indicator i { box-shadow: 0 0 0 .25rem #22c55e22; }

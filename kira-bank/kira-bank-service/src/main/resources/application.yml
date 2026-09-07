@@ -56,3 +56,5 @@ password-vault:
   encryption-keys: ${PASSWORD_VAULT_ENCRYPTION_KEYS:}
   active-key-id: ${PASSWORD_VAULT_ACTIVE_KEY_ID:}
 springdoc.swagger-ui.path: /swagger-ui.html
+analytics:
+  trusted-proxies: ${LOGIN_VISIT_TRUSTED_PROXIES:127.0.0.1/32,::1/128}

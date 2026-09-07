@@ -1,0 +1,123 @@
+<header class="health-heading">
+  <div><span class="eyebrow">KIRA LIFE</span><h1>{{ t(section) }}</h1><p>{{ t('subtitle') }}</p></div>
+  <button type="button" (click)="reload()" [disabled]="loading() || saving()">{{ t('refresh') }}</button>
+</header>
+<nav class="health-tabs" [attr.aria-label]="t('navigation')">
+  @for (tab of tabs; track tab) { <a [routerLink]="'/app/health/' + tab" routerLinkActive="active">{{ t(tab) }}</a> }
+</nav>
+@if (error()) { <div class="alert error" role="alert">{{ error() }}</div> }
+@if (notice()) { <div class="alert" role="status">{{ notice() }}</div> }
+@if (loading()) { <p role="status">{{ t('loading') }}</p> }
+@if (saving()) { <p role="status">{{ t('saving') }}</p> }
+@if (!hasProfile() && !loading() && section !== 'profile') {
+  <div class="panel empty"><h2>{{ t('setup') }}</h2><p>{{ t('setupHelp') }}</p><a class="primary link-button" routerLink="/app/health/profile">{{ t('profile') }}</a></div>
+}
+
+@if (section === 'overview') {
+  <div class="toolbar"><label>{{ t('date') }}<input type="date" [(ngModel)]="date" (change)="reload()"></label><span>{{ t('provisionalHelp') }}</span></div>
+  @if (summary(); as s) {
+    <div class="metrics">
+      <article class="metric accent"><span>{{ t('target') }}</span><strong>{{ value(s.targetCalories) }} <small>kcal</small></strong><p>{{ t(s.targetSource) }}</p></article>
+      <article class="metric"><span>{{ t('eaten') }}</span><strong>{{ value(s.eatenCalories) }} <small>kcal</small></strong><p>{{ t('journalOnly') }}</p></article>
+      <article class="metric"><span>{{ t('activeCalories') }}</span><strong>{{ value(s.activeCalories) }} <small>kcal</small></strong><p>Apple Health</p></article>
+      <article class="metric"><span>{{ t('totalBurned') }}</span><strong>{{ value(s.totalBurned) }} <small>kcal</small></strong><p>{{ t('totalHelp') }}</p></article>
+      <article class="metric"><span>BMI</span><strong>{{ value(s.bmi) }}</strong><p>{{ t('bmiHelp') }}</p></article>
+      <article class="metric"><span>{{ t('restingEstimate') }}</span><strong>{{ value(s.restingEstimate) }} <small>kcal</small></strong><p>Mifflin–St Jeor</p></article>
+      <article class="metric"><span>{{ t('restingCalories') }}</span><strong>{{ value(s.restingCalories) }} <small>kcal</small></strong><p>Apple Health</p></article>
+      <article class="metric"><span>{{ t('netCalories') }}</span><strong>{{ value(s.netCalories) }} <small>kcal</small></strong><p>{{ t('netHelp') }}</p></article>
+    </div>
+    <div class="panel"><h2>{{ t('lastSevenDays') }}</h2><div class="table-scroll"><table>
+      <thead><tr><th>{{ t('date') }}</th><th>{{ t('eaten') }}</th><th>{{ t('target') }}</th><th>{{ t('totalBurned') }}</th><th>{{ t('steps') }}</th></tr></thead>
+      <tbody>@for (row of statistics(); track row.date) { <tr><td>{{ row.date }}</td><td>{{ value(row.eatenCalories) }}</td><td>{{ value(row.targetCalories) }}</td><td>{{ value(row.totalBurned) }}</td><td>{{ value(row.steps) }}</td></tr> }</tbody>
+    </table></div></div>
+    <div class="panel"><h2>{{ t('watchWorkouts') }}</h2><p>{{ t('noDoubleCount') }}</p>
+      @for (workout of s.workouts; track workout.id) { <div class="list-row"><span>{{ workout.type }} · {{ workout.start | date:'short' }}<small>{{ workout.source }}</small></span><strong>{{ value(workout.calories) }} kcal</strong></div> }
+      @empty { <p class="empty">{{ t('noData') }}</p> }
+    </div>
+  }
+}
+
+@if (section === 'profile') {
+  <form class="panel" #profileForm="ngForm" (ngSubmit)="saveProfile()"><h2>{{ t('bodyProfile') }}</h2><p>{{ t('adultHelp') }}</p>
+    <fieldset [disabled]="saving() || loading()"><div class="form-grid">
+      <label>{{ t('heightCm') }}<input type="number" name="height" [(ngModel)]="profile.heightCm" min="80" max="250" step="0.1" required></label>
+      <label>{{ t('birthDate') }}<input type="date" name="birth" [(ngModel)]="profile.birthDate" required></label>
+      <label>{{ t('formulaSex') }}<select name="sex" [(ngModel)]="profile.formulaSex"><option value="MALE">{{ t('MALE') }}</option><option value="FEMALE">{{ t('FEMALE') }}</option></select></label>
+      <label>{{ t('timezone') }}<input name="timezone" [(ngModel)]="profile.timezone" required maxlength="80"></label>
+      <label>{{ t('goal') }}<select name="goal" [(ngModel)]="profile.goal"><option value="MAINTAIN">{{ t('MAINTAIN') }}</option><option value="LOSE">{{ t('LOSE') }}</option><option value="GAIN">{{ t('GAIN') }}</option></select></label>
+      <label>{{ t('activityFactor') }}<select name="activity" [(ngModel)]="profile.activityFactor"><option [ngValue]="1.2">{{ t('sedentary') }}</option><option [ngValue]="1.375">{{ t('light') }}</option><option [ngValue]="1.55">{{ t('moderate') }}</option><option [ngValue]="1.725">{{ t('veryActive') }}</option></select></label>
+      <label>{{ t('calorieAdjustment') }}<input type="number" name="adjustment" [(ngModel)]="profile.calorieAdjustment" min="-1000" max="1000" step="1" required><small>{{ t('adjustmentHelp') }}</small></label>
+      <label>{{ t('preparationMinutes') }}<input type="number" name="prep" [(ngModel)]="profile.preparationMinutes" min="0" max="240" required></label>
+      @for (field of profileTextFields; track field) { <label>{{ t(field) }}<textarea [name]="field" [(ngModel)]="profile[field]" rows="3" [maxlength]="field === 'foodPreferences' || field === 'movementRestrictions' ? 2000 : 1000"></textarea></label> }
+    </div><p>{{ t('restrictionHelp') }}</p><button class="primary" type="submit" [disabled]="profileForm.invalid">{{ t('saveProfile') }}</button></fieldset>
+  </form>
+  <div class="panel"><h2>{{ t('weightHistory') }}</h2>
+    <form class="toolbar" #weightForm="ngForm" (ngSubmit)="saveWeight()"><label>{{ t('date') }}<input type="date" name="weightDate" [(ngModel)]="weightDate" required></label><label>{{ t('weightKg') }}<input type="number" name="kg" [(ngModel)]="weightKg" min="20" max="500" step="0.1" required></label><button type="submit" [disabled]="saving() || !hasProfile() || weightForm.invalid">{{ t('save') }}</button></form>
+    @for (weight of weights(); track weight.date) { <div class="list-row"><span>{{ weight.date }}</span><strong>{{ value(weight.kg) }} kg</strong><button type="button" (click)="deleteWeight(weight)" [disabled]="saving()">{{ t('delete') }}</button></div> }
+    @empty { <p>{{ t('noData') }}</p> }
+  </div>
+}
+
+@if (section === 'plans') {
+  <div class="toolbar"><label>{{ t('week') }}<input type="date" [(ngModel)]="weekStart" (change)="changeWeek()"></label><button type="button" (click)="newPlan()" [disabled]="!hasProfile() || saving()">{{ t('newPlan') }}</button></div>
+  <div class="panel ai-panel"><h2>{{ t('aiTitle') }}</h2><p>{{ t('aiHelp') }}</p>
+    <label>{{ t('fromDate') }}<input type="date" [(ngModel)]="fromDate" [min]="weekStart" [max]="shift(weekStart, 6)"></label>
+    <label class="check"><input type="checkbox" [(ngModel)]="consent">{{ t('aiConsent') }}</label>
+    <button class="primary" type="button" (click)="generate()" [disabled]="!consent || !hasProfile() || saving()">{{ t('generate') }}</button>
+    @for (job of jobs(); track job.id) { <p class="job">{{ t(job.status) }} @if (job.errorCode) { — {{ t('aiFailed') }} }</p> }
+  </div>
+  @if (editor; as draft) {
+    <form class="panel" #planForm="ngForm" (ngSubmit)="savePlan()"><h2>{{ t('editDraft') }}</h2>
+      <fieldset [disabled]="saving()"><label>{{ t('title') }}<input name="title" [(ngModel)]="draft.title" maxlength="200" required></label>
+      @for (item of draft.items; track $index; let index = $index) {
+        <div class="item-editor"><div class="form-grid">
+          <label>{{ t('date') }}<input type="date" [name]="'date' + index" [(ngModel)]="item.date" [min]="weekStart" [max]="shift(weekStart, 6)" required></label>
+          <label>{{ t('kind') }}<select [name]="'kind' + index" [(ngModel)]="item.kind"><option value="MEAL">{{ t('MEAL') }}</option><option value="WORKOUT">{{ t('WORKOUT') }}</option><option value="REST">{{ t('REST') }}</option></select></label>
+          <label>{{ t('title') }}<input [name]="'title' + index" [(ngModel)]="item.title" maxlength="200" required></label>
+          <label>{{ t('portion') }}<input [name]="'portion' + index" [(ngModel)]="item.portion" maxlength="1000"></label>
+          <label>{{ t('estimatedCalories') }}<input type="number" [name]="'calories' + index" [(ngModel)]="item.calories" min="0" max="10000" required></label>
+          <label>{{ t('minutes') }}<input type="number" [name]="'minutes' + index" [(ngModel)]="item.minutes" min="0" max="1440" required></label>
+          <label class="wide">{{ t('notes') }}<textarea [name]="'notes' + index" [(ngModel)]="item.notes" maxlength="2000"></textarea></label>
+        </div><button type="button" (click)="draft.items.splice(index, 1)">{{ t('remove') }}</button></div>
+      }
+      <div class="actions"><button type="button" (click)="addItem()" [disabled]="draft.items.length >= 100">{{ t('addItem') }}</button><button class="primary" type="submit" [disabled]="planForm.invalid || draft.items.length === 0">{{ t('saveDraft') }}</button><button type="button" (click)="editor = null">{{ t('cancel') }}</button></div></fieldset>
+    </form>
+  }
+  @for (plan of plans(); track plan.id) {
+    <article class="panel"><div class="plan-heading"><h2>{{ plan.data.title }}</h2><span class="badge">{{ t(plan.status) }}</span></div>
+      @for (warning of plan.data.warnings; track $index) { <p class="alert">{{ warning }}</p> }
+      @for (item of plan.data.items; track $index; let index = $index) {
+        <div class="plan-item" [class.completed]="item.completed"><div><small>{{ item.date }} · {{ t(item.kind) }}</small><h3>{{ item.title }}</h3><p>{{ item.portion }}</p><p>{{ item.notes }}</p></div><div class="item-totals"><strong>{{ value(item.calories) }} kcal</strong><small>{{ t('estimated') }} · {{ item.minutes }} {{ t('minutes') }}</small>
+          @if (plan.status === 'ACTIVE') { <button type="button" (click)="complete(plan, index)" [disabled]="saving()">{{ t(item.completed ? 'undoComplete' : 'complete') }}</button> }
+        </div></div>
+      }
+      @if (plan.status === 'DRAFT') { <label class="check review"><input type="checkbox" [ngModel]="reviewedPlanId === plan.id" (ngModelChange)="reviewedPlanId = $event ? plan.id : null">{{ t('reviewConfirm') }}</label> }
+      <div class="actions"><button type="button" (click)="editPlan(plan)" [disabled]="saving()">{{ t(plan.status === 'DRAFT' ? 'editDraft' : 'copyDraft') }}</button>
+        @if (plan.status === 'DRAFT') { <button class="primary" type="button" (click)="approve(plan)" [disabled]="reviewedPlanId !== plan.id || saving()">{{ t('approve') }}</button> }
+      </div>
+    </article>
+  } @empty { <div class="panel empty">{{ t('noPlans') }}</div> }
+}
+
+@if (section === 'journal') {
+  <div class="toolbar"><label>{{ t('date') }}<input type="date" [(ngModel)]="date" (change)="reload()"></label><p>{{ t('journalHelp') }}</p></div>
+  <form class="panel" #journalForm="ngForm" (ngSubmit)="saveJournal()"><h2>{{ t('logActual') }}</h2><fieldset [disabled]="saving()"><div class="form-grid">
+    <label>{{ t('date') }}<input type="date" name="journalDate" [(ngModel)]="journalDate" required></label>
+    <label>{{ t('kind') }}<select name="kind" [(ngModel)]="journal.kind"><option value="MEAL">{{ t('MEAL') }}</option><option value="WORKOUT">{{ t('WORKOUT') }}</option></select></label>
+    <label>{{ t('title') }}<input name="title" [(ngModel)]="journal.title" maxlength="200" required></label>
+    <label>{{ t('calories') }}<input type="number" name="calories" [(ngModel)]="journal.calories" min="0" max="10000" required></label>
+    <label>{{ t('minutes') }}<input type="number" name="minutes" [(ngModel)]="journal.minutes" min="0" max="1440" required></label>
+    <label>{{ t('notes') }}<textarea name="notes" [(ngModel)]="journal.notes" maxlength="2000"></textarea></label>
+  </div><div class="actions"><button class="primary" type="submit" [disabled]="journalForm.invalid || !hasProfile()">{{ t('save') }}</button><button type="button" (click)="resetJournal()">{{ t('cancel') }}</button></div></fieldset></form>
+  <div class="panel">@for (entry of journals(); track entry.id) { <div class="list-row"><div><small>{{ t(entry.data.kind) }} · {{ entry.date }}</small><h3>{{ entry.data.title }}</h3><p>{{ entry.data.notes }}</p></div><strong>{{ value(entry.data.calories) }} kcal</strong><button type="button" (click)="editJournal(entry)">{{ t('edit') }}</button><button type="button" (click)="deleteJournal(entry)" [disabled]="saving()">{{ t('delete') }}</button></div> } @empty { <p class="empty">{{ t('noData') }}</p> }</div>
+}
+
+@if (section === 'connection') {
+  <div class="panel"><span class="eyebrow">APPLE HEALTH</span><h2>{{ t('connectTitle') }}</h2><p>{{ t('connectHelp') }}</p>
+    <ol><li>{{ t('connectStep1') }}</li><li>{{ t('connectStep2') }}</li><li>{{ t('connectStep3') }}</li></ol>
+    <p>{{ t('backgroundHelp') }}</p><p>{{ t('timezoneHelp') }}</p>
+    @if (device(); as d) { <div class="connection-status"><strong>{{ t('connected') }}</strong><p>{{ t('lastSync') }}: {{ d.lastSyncedAt ? (d.lastSyncedAt | date:'medium') : t('notSynced') }}</p><p>{{ t('timezone') }}: {{ d.timezone }}</p></div> }
+    @else { <p class="empty">{{ t('disconnected') }}</p> }
+    <div class="actions"><button type="button" (click)="disconnect(false)" [disabled]="saving() || !device()">{{ t('disconnect') }}</button><button class="danger" type="button" (click)="disconnect(true)" [disabled]="saving()">{{ t('erase') }}</button></div>
+  </div>
+}

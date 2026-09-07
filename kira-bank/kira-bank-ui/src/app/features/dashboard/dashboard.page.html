@@ -1,57 +1,115 @@
-<section class="page-heading">
-  <div><span class="eyebrow">{{ i18n.t('dashboard.date') }}</span>
-    <h1>{{ i18n.t('dashboard.title') }}</h1>
-    <p>{{ i18n.t('dashboard.greeting') }}</p></div>
-  <div #dateRangePicker class="date-range-picker">
-    <button #dateRangeTrigger
-            (click)="toggleDateRange($event)"
-            [attr.aria-expanded]="dateRangeOpen()"
-            [attr.aria-label]="i18n.t('dashboard.changeDateRange')"
-            aria-haspopup="listbox"
-            class="btn ghost date-range-trigger"
-            type="button">
-      {{ dateRangeLabel() }} <span aria-hidden="true"><app-icon name="chevron-down"/></span>
-    </button>
-    @if (dateRangeOpen()) {
-      <div [attr.aria-label]="i18n.t('dashboard.changeDateRange')" class="date-range-menu" role="listbox">
-        @for (option of dateRangeOptions; track option.days) {
-          <button (click)="selectDateRange(option.days)"
-                  [attr.aria-selected]="selectedDateRange() === option.days"
-                  role="option"
-                  type="button">
-            {{ i18n.t(option.labelKey) }}
-            @if (selectedDateRange() === option.days) {
-              <span aria-hidden="true"><app-icon name="check"/></span>
-            }
-          </button>
-        }
-      </div>
-    }
+<section class="page-heading overview-heading">
+  <div><span class="eyebrow">{{ currentDate() }}</span><h1>{{ i18n.t('overview.greeting', {name: auth.user()?.fullName || i18n.t('overview.you')}) }}</h1><p>{{ i18n.t('overview.subtitle') }}</p></div>
+  <div class="page-actions">
+    <button class="btn ghost" type="button" [attr.aria-pressed]="hidden()" (click)="toggleHidden()"><app-icon name="eye"/>{{ i18n.t(hidden() ? 'overview.showMoney' : 'overview.hideMoney') }}</button>
+    <button class="btn primary" type="button" [disabled]="busy()" (click)="refresh()"><app-icon name="loader"/>{{ i18n.t('overview.refresh') }}</button>
   </div>
 </section>
 
-<section class="flow-section credit-section">
-  <div class="section-title">
-    <div><span class="flow-icon"><app-icon name="card"/></span>
-      <div><h2>{{ i18n.t('dashboard.flowCredit') }}</h2></div>
-    </div>
-    <a routerLink="/app/credit-card/dashboard">{{ i18n.t('dashboard.goToDashboard') }}</a></div>
-  <div class="kpi-grid">@for (kpi of credit(); track kpi.label) {
-    <article class="kpi">
-      <span><app-icon [name]="kpi.icon"/></span><small>{{ kpi.label }}</small><strong>{{ kpi.value }}</strong>
-    </article>
-  }</div>
-  <div class="dashboard-grid">
-    <article class="panel">
-      <header>
-        <div><h3>{{ i18n.t('dashboard.dueSoon') }}</h3>
-          <p>{{ i18n.t('dashboard.next7Days') }}</p></div>
-        <a routerLink="/app/credit-cards">{{ i18n.t('dashboard.viewAll') }}</a></header>
-      @for (due of dues(); track due.bank) {
-        <div class="due-row"><span [style.background]="due.color">{{ due.bank[0] }}</span>
-          <div><b>{{ due.bank }}</b><small>•••• {{ due.card }} · {{ due.date }}</small></div>
-          <strong>{{ due.amount }}</strong></div>
+<div class="priority-grid">
+  <section class="overview-panel attention-panel">
+    <header class="block-heading"><div><span class="section-kicker">{{ i18n.t('overview.startHere') }}</span><h2>{{ i18n.t('overview.attention') }} @if (taskCount()) { <span class="count">{{ taskCount() }}</span> }</h2></div><app-icon name="alert-circle"/></header>
+    @if (!tasksComplete()) {
+      <p class="muted" role="status">{{ i18n.t('overview.partialAttention') }}</p>
+      @if (credit().failed) { <button class="text-button" type="button" (click)="loadCredit()">{{ i18n.t('overview.retryCards') }}</button> }
+      @if (investments().failed) { <button class="text-button" type="button" (click)="loadInvestments()">{{ i18n.t('overview.retryInvestments') }}</button> }
+      @if (tutoring().failed) { <button class="text-button" type="button" (click)="loadTutoring()">{{ i18n.t('overview.retryTutoring') }}</button> }
+    }
+    @if (tasksComplete() && !taskCount()) { <div class="clear-state"><app-icon name="check-circle"/><h3>{{ i18n.t('overview.allClear') }}</h3><p>{{ i18n.t('overview.allClearHint') }}</p></div> }
+    <div class="attention-list">
+      @for (group of tasks(); track group.key) {
+        <article class="task-group" [class.urgent]="group.urgent">
+          <header><h3>{{ i18n.t('overview.' + group.key) }} <span class="count">{{ group.total }}</span></h3><a [routerLink]="group.link">{{ i18n.t('overview.viewAll') }}</a></header>
+          @for (item of group.items; track item.id) {
+            <a class="task-row" [routerLink]="item.link" [queryParams]="item.params"><span><b>{{ item.title }}</b><small>{{ item.detail }}</small></span>@if (item.amount !== undefined) { <strong>{{ money(item.amount, item.currency) }}</strong> }<app-icon name="chevron-right"/></a>
+          }
+        </article>
       }
-    </article>
-  </div>
+    </div>
+  </section>
+  <section class="overview-panel upcoming-panel">
+    <header class="block-heading"><div><span class="section-kicker">{{ i18n.t('overview.next7') }}</span><h2>{{ i18n.t('overview.upcoming') }}</h2></div><a routerLink="/app/tutor-schedule">{{ i18n.t('overview.viewAll') }}</a></header>
+    <app-dashboard-status [loading]="tutoring().loading" [failed]="tutoring().failed" [updatedAt]="tutoring().updatedAt" (retry)="loadTutoring()"/>
+    @if (tutoring().data; as data) {
+      @if (!data.upcoming.total) { <p class="empty-copy">{{ i18n.t('overview.noUpcoming') }}</p> }
+      @for (lesson of data.upcoming.items; track lesson.seriesId + '-' + lesson.date) {
+        <a class="upcoming-row" routerLink="/app/tutor-schedule"><span class="lesson-date">{{ date(lesson.date) }}<b>{{ lesson.startTime.slice(0, 5) }}</b><small>{{ lesson.endTime.slice(0, 5) }}</small></span><span class="lesson-content"><b>{{ lesson.studentName }}</b><small>{{ lesson.subject }}</small><strong>{{ money(lesson.fee) }}</strong></span><app-icon name="chevron-right"/></a>
+      }
+      @if (data.upcoming.total > 5) { <p class="muted">{{ i18n.t('overview.showing', {count: 5, total: data.upcoming.total}) }}</p> }
+    }
+  </section>
+</div>
+
+<section class="overview-panel">
+  <header class="block-heading"><div><span class="section-kicker">{{ i18n.t('overview.currentSnapshot') }}</span><h2><app-icon name="card"/>{{ i18n.t('overview.cards') }}</h2></div><a routerLink="/app/credit-card/dashboard">{{ i18n.t('overview.details') }}</a></header>
+  <app-dashboard-status [loading]="credit().loading" [failed]="credit().failed" [updatedAt]="credit().updatedAt" (retry)="loadCredit()"/>
+  @if (credit().data; as data) {
+    @if (!data.summary.cardCount) { <div class="empty-copy">{{ i18n.t('overview.noCards') }} <a routerLink="/app/credit-cards">{{ i18n.t('overview.manageCards') }}</a></div> }
+    @else {
+      <div class="metric-grid">
+        <article><small>{{ i18n.t('overview.creditLimit') }}</small><strong>{{ money(data.summary.totalCreditLimit, data.summary.currency) }}</strong></article>
+        <article><small>{{ i18n.t('overview.balance') }}</small><strong>{{ money(data.summary.currentBalance, data.summary.currency) }}</strong></article>
+        <article><small>{{ i18n.t('overview.available') }}</small><strong>{{ money(data.summary.availableCredit, data.summary.currency) }}</strong></article>
+        <article><small>{{ i18n.t('overview.utilization') }}</small><strong>{{ percentage(data.summary.utilizationRate) }}</strong></article>
+      </div>
+      <p class="muted">{{ i18n.t('overview.bankShared') }}</p>
+    }
+  }
 </section>
+
+<section class="overview-panel investment-panel">
+  <header class="block-heading"><div><span class="section-kicker">{{ i18n.t('overview.completedOnly') }}</span><h2><app-icon name="trend-up"/>{{ i18n.t('overview.investments') }}</h2></div><div class="block-actions"><label class="select-label"><span>{{ i18n.t('overview.period') }}</span><select [attr.aria-label]="i18n.t('overview.period')" [value]="days()" (change)="changeDays($event)"><option value="7">{{ i18n.t('overview.days', {days: 7}) }}</option><option value="30">{{ i18n.t('overview.days', {days: 30}) }}</option><option value="90">{{ i18n.t('overview.days', {days: 90}) }}</option></select></label><a routerLink="/app/investment/accounts">{{ i18n.t('overview.details') }}</a></div></header>
+  <app-dashboard-status [loading]="investments().loading" [failed]="investments().failed" [updatedAt]="investments().updatedAt" (retry)="loadInvestments()"/>
+  @if (investments().data; as data) {
+    <div class="investment-meta"><span>{{ i18n.t('overview.activeAccounts') }}: <b>{{ data.activeAccounts }}</b> · {{ date(data.fromDate) }} – {{ date(data.toDate) }}</span>
+      @if (data.currencies.length > 1) { <label class="select-label"><span>{{ i18n.t('overview.currency') }}</span><select [attr.aria-label]="i18n.t('overview.currency')" [value]="flow()?.currency" (change)="changeCurrency($event)">@for (item of data.currencies; track item.currency) { <option [value]="item.currency">{{ item.currency }}</option> }</select></label> }
+    </div>
+    @if (data.days !== days()) { <p class="muted" role="status">{{ i18n.t('overview.previousPeriod', {days: data.days}) }}</p> }
+    @if (flow(); as value) {
+      <div class="metric-grid">
+        <article><small>{{ i18n.t('overview.deposits') }}</small><strong>{{ money(value.deposits, value.currency) }}</strong></article>
+        <article><small>{{ i18n.t('overview.withdrawals') }}</small><strong>{{ money(value.withdrawals, value.currency) }}</strong></article>
+        <article><small>{{ i18n.t('overview.bonuses') }}</small><strong>{{ money(value.bonuses, value.currency) }}</strong></article>
+        <article><small>{{ i18n.t('overview.netDeposits') }}</small><strong>{{ money(value.netDeposits, value.currency) }}</strong></article>
+      </div>
+      <div class="chart-heading"><h3>{{ i18n.t('overview.cashFlow') }}</h3><div class="chart-legend"><span><i class="deposit-key"></i>{{ i18n.t('overview.deposits') }}</span><span><i class="withdrawal-key"></i>{{ i18n.t('overview.withdrawals') }}</span></div></div>
+      @if (hidden()) { <div class="hidden-chart"><app-icon name="eye"/>{{ i18n.t('overview.chartHidden') }}</div> }
+      @else if (!value.deposits && !value.withdrawals) { <div class="hidden-chart">{{ i18n.t('overview.noFlow') }}</div> }
+      @else {
+        <div class="chart-scroll" role="region" tabindex="0" [attr.aria-label]="i18n.t('overview.cashFlow')">
+          <div class="chart-bars" [class.long-period]="data.days === 90" [class.short-period]="data.days === 7">
+            @for (point of value.daily; track point.date) {
+              <div class="chart-day" tabindex="0" [attr.aria-label]="chartLabel(point.date, point.deposits, point.withdrawals, value.currency)">
+                <div class="bar-pair"><span class="deposit-bar" [style.height.%]="chartHeight(point.deposits)"></span><span class="withdrawal-bar" [style.height.%]="chartHeight(point.withdrawals)"></span></div>
+                @if ($index % (data.days === 90 ? 15 : data.days === 30 ? 5 : 1) === 0 || $last) { <small>{{ date(point.date) }}</small> }<span class="chart-tooltip">{{ chartLabel(point.date, point.deposits, point.withdrawals, value.currency) }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+      <p class="muted">{{ i18n.t('overview.flowHint') }}</p>
+    } @else { <p class="empty-copy">{{ i18n.t('overview.noInvestments') }} <a routerLink="/app/investment/accounts">{{ i18n.t('overview.manageAccounts') }}</a></p> }
+  }
+</section>
+
+<section class="overview-panel">
+  <header class="block-heading"><div><span class="section-kicker">{{ i18n.t('overview.thisWeek') }}</span><h2><app-icon name="calendar"/>{{ i18n.t('overview.tutoring') }}</h2></div><a routerLink="/app/tutor-schedule">{{ i18n.t('overview.openSchedule') }}</a></header>
+  @if (tutoring().data; as data) {
+    <p class="muted">{{ date(data.weekStart) }} – {{ date(data.weekEnd) }} · {{ i18n.t('overview.vietnamTime') }}</p>
+    <div class="metric-grid three"><article><small>{{ i18n.t('overview.lessons') }}</small><strong>{{ data.lessonCount }}</strong></article><article><small>{{ i18n.t('overview.hours') }}</small><strong>{{ data.totalHours }}</strong></article><article><small>{{ i18n.t('overview.expectedFees') }}</small><strong>{{ money(data.totalFee) }}</strong></article></div>
+  }
+  <app-dashboard-status [loading]="tutoring().loading" [failed]="tutoring().failed" [updatedAt]="tutoring().updatedAt" (retry)="loadTutoring()"/>
+</section>
+
+<div class="footer-grid">
+  <section class="overview-panel">
+    <header class="block-heading"><h2><app-icon name="bell"/>{{ i18n.t('overview.notifications') }}</h2><a routerLink="/app/notifications">{{ i18n.t('overview.viewAll') }}</a></header>
+    <app-dashboard-status [loading]="notifications().loading" [failed]="notifications().failed" [updatedAt]="notifications().updatedAt" (retry)="loadNotifications()"/>
+    @if (notifications().data; as data) {
+      <p class="muted">{{ i18n.t('overview.unread', {count: data.unread}) }}</p>
+      @if (!data.items.length) { <p class="empty-copy">{{ i18n.t('overview.noNotifications') }}</p> }
+      @for (item of data.items; track item.id) { <a class="notification-row" routerLink="/app/notifications"><span class="notification-dot" [class.unread]="!item.readAt"></span><span>{{ hidden() ? i18n.t('overview.notificationPrivate') : item.title }}<small>{{ date(item.createdAt) }}</small></span><app-icon name="chevron-right"/></a> }
+    }
+  </section>
+  <section class="overview-panel"><header class="block-heading"><h2>{{ i18n.t('overview.shortcuts') }}</h2></header><nav class="shortcut-grid" [attr.aria-label]="i18n.t('overview.shortcuts')">@for (shortcut of shortcuts; track shortcut.key) { <a [routerLink]="shortcut.link"><app-icon [name]="shortcut.icon"/><span>{{ i18n.t('overview.' + shortcut.key) }}</span><app-icon name="chevron-right"/></a> }</nav></section>
+</div>

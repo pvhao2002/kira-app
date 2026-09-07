@@ -19,7 +19,7 @@ interface NavItem {
 
 interface NavGroup {
   labelKey: TranslationKey;
-  flow: 'credit' | 'investment' | 'lodging' | 'tutor' | 'system';
+  flow: 'credit' | 'investment' | 'lodging' | 'tutor' | 'health' | 'travel' | 'system';
   items: NavItem[]
 }
 
@@ -79,10 +79,20 @@ export class AppShell {
   readonly searchPartialError = signal(false);
   readonly selectedSearchIndex = signal(-1);
   readonly remoteSearchResults = signal<GlobalSearchResult[]>([]);
-  readonly initials = computed(() => this.auth.user()?.fullName.split(' ').slice(-2).map(part => part[0]).join('').toUpperCase() ?? 'KB');
+  readonly initials = computed(() => this.auth.user()?.fullName.split(' ').slice(-2).map(part => part[0]).join('').toUpperCase() ?? 'KL');
   readonly themeLabel = computed(() => this.i18n.t(`theme.${this.theme()}`));
   readonly nav = computed<NavGroup[]>(() => {
     const groups: NavGroup[] = [
+      {labelKey: 'travel.title', flow: 'travel', items: [
+        {labelKey: 'travel.title', icon: 'globe', path: '/app/travel'}
+      ]},
+      {labelKey: 'health.overview', flow: 'health', items: [
+        {labelKey: 'health.overview', icon: 'dashboard', path: '/app/health/overview'},
+        {labelKey: 'health.profile', icon: 'account', path: '/app/health/profile'},
+        {labelKey: 'health.plans', icon: 'calendar', path: '/app/health/plans'},
+        {labelKey: 'health.journal', icon: 'receipt', path: '/app/health/journal'},
+        {labelKey: 'health.connection', icon: 'monitor', path: '/app/health/connection'}
+      ]},
       {
         labelKey: 'shell.groupCredit', flow: 'credit', items: [
           {labelKey: 'shell.dashboard', icon: 'dashboard', path: '/app/credit-card/dashboard'},
@@ -114,6 +124,7 @@ export class AppShell {
       groups.push({
         labelKey: 'shell.groupAdmin', flow: 'system', items: [
           {labelKey: 'shell.adminUsers', icon: 'users', path: '/app/admin/users'},
+          {labelKey: 'visits.title', icon: 'globe', path: '/app/admin/login-visits'},
           {labelKey: 'shell.adminBanks', icon: 'bank', path: '/app/admin/banks'},
           {labelKey: 'shell.adminAiProviders', icon: 'shield-check', path: '/app/admin/cloudflare-accounts'}
         ]

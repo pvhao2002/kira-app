@@ -1,6 +1,6 @@
 # Kiến trúc
 
-Kira Bank là modular monolith: Angular gọi REST `/api/v1`, Spring Boot áp dụng authentication/ownership/business rules và MySQL giữ dữ liệu qua Flyway. `creditcard` quản lý thẻ, sao kê và payment; `investment` quản lý hồ sơ cùng transaction history nhập qua AI. Hai context dùng chung identity, attachment, notification và audit nhưng không tạo coupling ghi chéo.
+Kira Life là modular monolith: Angular gọi REST `/api/v1`, Spring Boot áp dụng authentication/ownership/business rules và MySQL giữ dữ liệu qua Flyway. `creditcard` quản lý thẻ, sao kê và payment; `investment` quản lý hồ sơ cùng transaction history nhập qua AI. Hai context dùng chung identity, attachment, notification và audit nhưng không tạo coupling ghi chéo.
 
 ```mermaid
 flowchart LR

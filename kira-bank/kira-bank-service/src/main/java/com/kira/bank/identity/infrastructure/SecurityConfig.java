@@ -34,10 +34,20 @@ public class SecurityConfig {
         return http.csrf(c -> c.disable()).cors(c -> {
             }).sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(h -> h.contentSecurityPolicy(c -> c.policyDirectives("default-src 'self'; frame-ancestors 'none'")))
+            .exceptionHandling(e -> e.authenticationEntryPoint((request, response, failure) -> {
+                // The companion refreshes an expired access token on 401; preserve legacy behavior elsewhere.
+                if (request.getRequestURI().startsWith("/api/v1/health")) {
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"code\":\"UNAUTHORIZED\"}");
+                } else response.sendError(403);
+            }))
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/actuator/health", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout",
+                    "/api/v1/auth/mobile/login", "/api/v1/auth/mobile/refresh", "/api/v1/auth/mobile/logout").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/public/login-visits").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .addFilterBefore(jwt, UsernamePasswordAuthenticationFilter.class).build();

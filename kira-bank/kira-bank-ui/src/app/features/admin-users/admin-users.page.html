@@ -1,0 +1,47 @@
+<section class="page-heading">
+  <div><h1>{{ i18n.t('route.adminUsers') }}</h1><p>{{ t('description') }}</p></div>
+  @if (auth.admin()) { <button class="btn primary" type="button" (click)="openCreate()">{{ t('add') }}</button> }
+</section>
+<section class="panel users-panel">
+  <form class="search" (ngSubmit)="applySearch()">
+    <input [formControl]="search" [placeholder]="t('search')" [attr.aria-label]="t('search')">
+    <button class="btn" type="submit">{{ i18n.t('common.search') }}</button>
+  </form>
+  @if (loading()) { <p role="status">{{ t('loading') }}</p> }
+  @else if (error()) { <p class="error" role="alert">{{ error() }}</p><button class="btn" (click)="load()">{{ t('retry') }}</button> }
+  @else if (result(); as list) {
+    @if (list.data.length) {
+      <div class="table-wrap"><table>
+        <thead><tr><th>{{ t('fullName') }}</th><th>{{ t('email') }}</th><th>{{ t('phone') }}</th><th>{{ t('roles') }}</th><th>{{ t('status') }}</th></tr></thead>
+        <tbody>@for (user of list.data; track user.id) {
+          <tr><td>{{ user.fullName }}</td><td>{{ user.email }}</td><td>{{ user.phone || '—' }}</td>
+            <td>{{ user.roles.join(', ') }}</td><td>{{ user.status }}</td></tr>
+        }</tbody>
+      </table></div>
+    } @else { <p>{{ t('empty') }}</p> }
+    <footer>
+      <span>{{ t('total') }}: {{ list.meta.totalElements }} · {{ t('page') }} {{ list.meta.page + 1 }} / {{ list.meta.totalPages || 1 }}</span>
+      <div><button class="btn" [disabled]="list.meta.page === 0" (click)="load(list.meta.page - 1)">{{ i18n.t('common.previous') }}</button>
+        <button class="btn" [disabled]="list.meta.page + 1 >= list.meta.totalPages" (click)="load(list.meta.page + 1)">{{ i18n.t('common.next') }}</button></div>
+    </footer>
+  }
+</section>
+@if (open() && auth.admin()) {
+  <dialog #createDialog aria-labelledby="create-user-title" (cancel)="$event.preventDefault(); close()">
+    <h2 id="create-user-title">{{ t('add') }}</h2>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <fieldset [disabled]="saving()">
+        <label>{{ t('fullName') }} *<input formControlName="fullName" maxlength="150" autocomplete="off"></label>
+        <label>{{ t('email') }} *<input formControlName="email" type="email" autocomplete="off"></label>
+        <label>{{ t('phone') }}<input formControlName="phone" type="tel" maxlength="30" autocomplete="off"></label>
+        <label>{{ t('password') }} *<input formControlName="password" type="password" minlength="8" maxlength="72" autocomplete="new-password"></label>
+        <small>{{ t('passwordHint') }}</small>
+        <label>{{ t('confirmPassword') }} *<input formControlName="confirmPassword" type="password" autocomplete="new-password"></label>
+      </fieldset>
+      @if (form.touched && form.invalid) { <p class="error" role="alert">{{ t(form.hasError('passwordMismatch') ? 'mismatch' : 'invalid') }}</p> }
+      @if (formError()) { <p class="error" role="alert">{{ formError() }}</p> }
+      <footer><button class="btn" type="button" [disabled]="saving()" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+        <button class="btn primary" type="submit" [disabled]="saving()">{{ t(saving() ? 'saving' : 'add') }}</button></footer>
+    </form>
+  </dialog>
+}

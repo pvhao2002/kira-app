@@ -3,7 +3,7 @@ import {Title} from '@angular/platform-browser';
 import {ActivatedRouteSnapshot, RouterStateSnapshot, TitleStrategy} from '@angular/router';
 import {LanguageService} from '../i18n/language.service';
 
-const BRAND_TITLE = 'Kira Bank';
+const BRAND_TITLE = 'Kira Life';
 
 @Injectable()
 export class LocalizedTitleStrategy extends TitleStrategy {

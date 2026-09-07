@@ -14,6 +14,23 @@ export const routes: Routes = [
     loadComponent: () => import('./core/layout/app-shell').then(m => m.AppShell),
     children: [
       {
+        path: 'admin/login-visits', canActivate: [adminGuard],
+        loadComponent: () => import('./features/login-visits/login-visits.page').then(m => m.LoginVisitsPage),
+        data: {titleKey: 'visits.title'}
+      },
+      {
+        path: 'travel',
+        loadComponent: () => import('./features/travel/travel.page').then(m => m.TravelPage),
+        canDeactivate: [(component: {canLeave: () => boolean}) => component.canLeave()],
+        data: {titleKey: 'travel.title'}
+      },
+      {path: 'health', redirectTo: 'health/overview', pathMatch: 'full'},
+      ...['overview', 'profile', 'plans', 'journal', 'connection'].map(section => ({
+        path: `health/${section}`,
+        loadComponent: () => import('./features/health/health.page').then(m => m.HealthPage),
+        data: {healthSection: section, titleKey: `health.${section}`}
+      })),
+      {
         path: '',
         loadComponent: () => import('./features/dashboard/dashboard.page').then(m => m.DashboardPage),
         data: {titleKey: 'route.overview'}
@@ -63,8 +80,8 @@ export const routes: Routes = [
       {
         path: 'admin/users',
         canActivate: [adminGuard],
-        loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage),
-        data: {resourceKey: 'adminUsers', titleKey: 'route.adminUsers'}
+        loadComponent: () => import('./features/admin-users/admin-users.page').then(m => m.AdminUsersPage),
+        data: {titleKey: 'route.adminUsers'}
       },
       {
         path: 'admin/banks',

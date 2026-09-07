@@ -462,7 +462,7 @@ export interface CalendarDay {
       padding: 4px 8px;
       border-radius: 8px;
       border: 1px solid #e2e8f0;
-      background: #f8fafc;
+      background-color: #f8fafc;
       color: #0f172a;
       font-size: 13px;
       font-weight: 600;
@@ -472,7 +472,7 @@ export interface CalendarDay {
 
     .select-month:hover, .select-year:hover {
       border-color: #0878ff;
-      background: #ffffff;
+      background-color: #ffffff;
     }
 
     /* Weekday Headers */
@@ -586,7 +586,7 @@ export interface CalendarDay {
       padding: 4px 8px;
       border-radius: 8px;
       border: 1px solid #cbd5e1;
-      background: #ffffff;
+      background-color: #ffffff;
       color: #0f172a;
       font-size: 13px;
       font-weight: 600;
@@ -720,7 +720,7 @@ export interface CalendarDay {
 
     :host-context(html[data-theme=dark]) .select-month,
     :host-context(html[data-theme=dark]) .select-year {
-      background: #1e293b;
+      background-color: #1e293b;
       border-color: #334155;
       color: #ffffff;
     }
@@ -756,7 +756,7 @@ export interface CalendarDay {
     }
 
     :host-context(html[data-theme=dark]) .time-select {
-      background: #1e293b;
+      background-color: #1e293b;
       border-color: #334155;
       color: #ffffff;
     }

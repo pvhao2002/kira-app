@@ -1,11 +1,16 @@
-# Kira Bank
+# Kira Life
 
-Kira Bank là ứng dụng quản lý thẻ tín dụng, sao kê, thanh toán, hồ sơ tài khoản đầu tư và lịch sử giao dịch đầu tư nhập từ ảnh qua AI. Lịch sử đầu tư độc lập, không tính balance/capital và không tạo ledger.
+Kira Life là ứng dụng quản lý thẻ tín dụng, sao kê, thanh toán, hồ sơ tài khoản đầu tư và lịch sử giao dịch đầu tư nhập từ ảnh qua AI. Lịch sử đầu tư độc lập, không tính balance/capital và không tạo ledger.
+
+Module **Sức khỏe** bổ sung hồ sơ cơ thể, BMI, mục tiêu calo, kế hoạch ăn/tập có AI tạo bản nháp, nhật ký và dữ liệu Apple Health từ app iPhone riêng. Xem [API và quy tắc sức khỏe](docs/api/health.md), [hướng dẫn iPhone](kira-life-ios/README.md). Tên thương hiệu đã đổi; thư mục, Java package, database và tên image Docker giữ nguyên để tương thích triển khai.
 
 ## Công nghệ và cấu trúc
 
+Module **Du lịch** dành cho web tại `/app/travel`: quản lý chuyến đi, lịch trình, checklist hành lý, chia chi phí nhóm, lưu vé/booking, bản đồ địa điểm và đếm ngược ngày khởi hành. Xem [API và quy tắc Du lịch](docs/api/travel.md).
+
 - `kira-bank-service`: Java 25, Spring Boot 3.5, Security/JWT, JPA, Flyway, MySQL, OpenAPI.
 - `kira-bank-ui`: Angular 22 standalone, strict TypeScript, Signals, lazy routes, responsive light/dark UI.
+- `kira-life-ios`: SwiftUI + HealthKit, iPhone iOS 17+, chỉ đăng nhập và đồng bộ; kế hoạch và nhật ký quản lý trên web.
 - `docs`: kiến trúc, ERD, business rules, API và production deployment.
 
 Backend là modular monolith. Dữ liệu thẻ/sao kê/thanh toán độc lập với hồ sơ tài khoản đầu tư; dashboard nghiệp vụ chỉ tổng hợp thẻ tín dụng.

@@ -6,14 +6,17 @@
   </div>
 </section>
 
-<section class="week-toolbar panel" aria-label="Week navigation">
+<section class="week-toolbar panel" [attr.aria-label]="i18n.t('tutor.weekNavigation')">
   <div class="week-navigation">
-    <button type="button" class="icon-button" [attr.aria-label]="i18n.t('tutor.previousWeek')" (click)="moveWeek(-1)"><app-icon name="chevron-left"/></button>
-    <button type="button" class="today-button" (click)="goToday()">{{ i18n.t('tutor.today') }}</button>
-    <button type="button" class="icon-button" [attr.aria-label]="i18n.t('tutor.nextWeek')" (click)="moveWeek(1)"><app-icon name="chevron-right"/></button>
+    <button type="button" class="icon-button" [disabled]="loading()" [attr.aria-label]="i18n.t('tutor.previousWeek')" (click)="moveWeek(-1)"><app-icon name="chevron-left"/></button>
+    <button type="button" class="today-button" [disabled]="loading()" (click)="goToday()">{{ i18n.t('tutor.today') }}</button>
+    <button type="button" class="icon-button" [disabled]="loading()" [attr.aria-label]="i18n.t('tutor.nextWeek')" (click)="moveWeek(1)"><app-icon name="chevron-right"/></button>
   </div>
-  <strong>{{ weekLabel() }}</strong>
-  <span class="timezone"><app-icon name="clock"/> Asia/Ho_Chi_Minh</span>
+  <div class="week-title" aria-live="polite"><strong>{{ weekLabel() }}</strong><span class="timezone">{{ i18n.t('tutor.timezone') }} · UTC+7</span></div>
+  <div class="view-switch" role="group" [attr.aria-label]="i18n.t('tutor.viewMode')">
+    <button type="button" [attr.aria-pressed]="viewMode() === 'calendar'" (click)="viewMode.set('calendar')"><app-icon name="calendar"/> {{ i18n.t('tutor.weekView') }}</button>
+    <button type="button" [attr.aria-pressed]="viewMode() === 'agenda'" (click)="viewMode.set('agenda')"><app-icon name="menu"/> {{ i18n.t('tutor.agendaView') }}</button>
+  </div>
 </section>
 
 @if (error() && !lessonDialog() && !studentDialog()) { <div class="page-error" role="alert">{{ error() }} <button type="button" (click)="loadAll()">{{ i18n.t('tutor.retry') }}</button></div> }
@@ -21,7 +24,7 @@
   <div class="loading-state"><span class="spinner"></span>{{ i18n.t('tutor.loading') }}</div>
 } @else if (week(); as currentWeek) {
   @if (currentWeek.readOnly) { <div class="read-only-banner"><app-icon name="lock"/> {{ i18n.t('tutor.pastReadOnly') }}</div> }
-  <section class="summary-grid" aria-label="Schedule summary">
+  <section class="summary-grid" [attr.aria-label]="i18n.t('tutor.summary')">
     <article><span class="summary-icon blue"><app-icon name="calendar"/></span><div><small>{{ i18n.t('tutor.lessonCount') }}</small><strong>{{ currentWeek.lessonCount }}</strong></div></article>
     <article><span class="summary-icon violet"><app-icon name="clock"/></span><div><small>{{ i18n.t('tutor.totalHours') }}</small><strong>{{ currentWeek.totalHours }}</strong></div></article>
     <article><span class="summary-icon green"><app-icon name="wallet"/></span><div><small>{{ i18n.t('tutor.expectedFee') }}</small><strong>{{ money(currentWeek.totalFee) }}</strong></div></article>
@@ -31,19 +34,30 @@
   @if (!students().length) {
     <section class="empty-state panel"><span><app-icon name="users"/></span><h2>{{ i18n.t('tutor.noStudents') }}</h2><p>{{ i18n.t('tutor.noStudentsDescription') }}</p><button class="btn primary" type="button" (click)="openStudent()">{{ i18n.t('tutor.addStudent') }}</button></section>
   } @else {
-    <section #calendarGrid class="calendar-panel panel desktop-calendar">
-      <div class="calendar-header"><div class="time-heading"></div>@for (day of days(); track day) { <div [class.today]="isToday(day)">{{ dayLabel(day) }}</div> }</div>
-      <div class="calendar-body">
-        <div class="time-column">@for (hour of hours; track hour) { <span [style.top.px]="(hour - 6) * 72">{{ hour.toString().padStart(2, '0') }}:00</span> }</div>
+    <div class="calendar-options" [class.agenda-selected]="viewMode() === 'agenda'">
+      <span><app-icon name="clock"/> {{ i18n.t(fullDay() ? 'tutor.fullDayHint' : 'tutor.focusHoursHint') }}</span>
+      <label><input type="checkbox" [checked]="fullDay()" (change)="fullDay.set(!fullDay())"> {{ i18n.t('tutor.showFullDay') }}</label>
+    </div>
+    <section #calendarGrid class="calendar-panel panel desktop-calendar" [class.agenda-selected]="viewMode() === 'agenda'" [attr.aria-label]="i18n.t('tutor.weekView')">
+      <div class="calendar-header"><div class="time-heading">UTC+7</div>@for (day of days(); track day) {
+        <div [class.today]="isToday(day)"><strong>{{ dayLabel(day) }}</strong><small>{{ lessonsFor(day).length }} {{ i18n.t('tutor.lessonsUnit') }}</small>
+          @if (canEdit()) { <button type="button" class="day-add" [attr.aria-label]="i18n.t('tutor.addLesson') + ' · ' + dayLabel(day)" (click)="openCreate(day)"><app-icon name="plus"/></button> }
+        </div>
+      }</div>
+      <div class="calendar-body" [style.height.px]="calendarHeight()">
+        <div class="time-column">@for (hour of hours(); track hour) { <span [style.top.px]="(hour - timeRange().start) * hourHeight">{{ hour.toString().padStart(2, '0') }}:00</span> }</div>
         @for (day of days(); track day) {
           <div class="day-column" [class.today]="isToday(day)">
-            @for (hour of hours; track hour) { <div class="hour-line" [style.top.px]="(hour - 6) * 72"></div><div class="half-line" [style.top.px]="(hour - 6) * 72 + 36"></div> }
+            @for (hour of hours(); track hour) { <div class="hour-line" [style.top.px]="(hour - timeRange().start) * hourHeight"></div><div class="half-line" [style.top.px]="(hour - timeRange().start) * hourHeight + hourHeight / 2"></div> }
             @for (lesson of lessonsFor(day); track lesson.seriesId + '-' + lesson.originalDate) {
               <button type="button" class="lesson-card" cdkDrag [cdkDragDisabled]="!canEdit() || lesson.cancelled"
-                      cdkDragBoundary=".calendar-body" [ngStyle]="lessonStyle(lesson)"
+                      cdkDragBoundary=".calendar-body" [cdkDragStartDelay]="150" [ngStyle]="lessonStyle(lesson)"
+                      [title]="lesson.studentName + ' · ' + lesson.subject + ' · ' + duration(lesson)"
+                      [attr.aria-label]="lesson.studentName + ' · ' + lesson.subject + ' · ' + duration(lesson) + (lesson.conflict ? ' · ' + i18n.t('tutor.conflicts') : '') + (lesson.cancelled ? ' · ' + i18n.t('tutor.cancelled') : '')"
                       [class.cancelled]="lesson.cancelled" [class.conflict]="lesson.conflict"
-                      (cdkDragEnded)="dragEnded($event, lesson)" (click)="lesson.cancelled && canEdit() ? restore(lesson) : openLesson(lesson)">
-                <b>{{ lesson.studentName }}</b><span>{{ lesson.subject }}</span><small>{{ duration(lesson) }}</small>
+                      (cdkDragEnded)="dragEnded($event, lesson)" (click)="lessonClicked(lesson)">
+                <small class="lesson-time">{{ duration(lesson) }}</small><b>{{ lesson.studentName }}</b><span>{{ lesson.subject }}</span>
+                @if (lesson.conflict) { <i>{{ i18n.t('tutor.conflicts') }}</i> }
                 @if (lesson.exceptionAction) { <i>{{ lesson.cancelled ? i18n.t('tutor.cancelled') : i18n.t('tutor.movedOnce') }}</i> }
               </button>
             }
@@ -52,13 +66,13 @@
       </div>
     </section>
 
-    <section class="mobile-schedule">
+    <section class="mobile-schedule" [class.agenda-selected]="viewMode() === 'agenda'" [attr.aria-label]="i18n.t('tutor.agendaView')">
       @for (day of days(); track day) {
-        <article class="mobile-day" [class.today]="isToday(day)"><header><strong>{{ dayLabel(day) }}</strong>@if (canEdit()) { <button type="button" (click)="openCreate(day)"><app-icon name="plus"/> {{ i18n.t('tutor.add') }}</button> }</header>
+        <article class="mobile-day" [class.today]="isToday(day)"><header><strong>{{ dayLabel(day) }} @if (isToday(day)) { <span class="today-badge">{{ i18n.t('tutor.today') }}</span> }</strong>@if (canEdit()) { <button type="button" (click)="openCreate(day)"><app-icon name="plus"/> {{ i18n.t('tutor.add') }}</button> }</header>
           @if (!lessonsFor(day).length) { <p>{{ i18n.t('tutor.noLesson') }}</p> }
           @for (lesson of lessonsFor(day); track lesson.seriesId + '-' + lesson.originalDate) {
             <div class="mobile-lesson" [style.--student-color]="lesson.studentColor" [class.cancelled]="lesson.cancelled" [class.conflict]="lesson.conflict">
-              <button type="button" class="mobile-lesson-main" (click)="openLesson(lesson)"><span class="time-block">{{ time(lesson.startTime) }}<small>{{ time(lesson.endTime) }}</small></span><span><b>{{ lesson.studentName }}</b><small>{{ lesson.subject }} · {{ lesson.teachingMode === 'ONLINE' ? i18n.t('tutor.online') : i18n.t('tutor.inPerson') }}</small></span></button>
+              <button type="button" class="mobile-lesson-main" [disabled]="lesson.cancelled" (click)="openLesson(lesson)"><span class="time-block">{{ time(lesson.startTime) }}<small>{{ time(lesson.endTime) }}</small></span><span><b>{{ lesson.studentName }}</b><small>{{ lesson.subject }} · {{ lesson.teachingMode === 'ONLINE' ? i18n.t('tutor.online') : i18n.t('tutor.inPerson') }}</small>@if (lesson.location) { <small class="lesson-location">{{ lesson.location }}</small> }@if (lesson.conflict || lesson.exceptionAction) { <small class="lesson-status">{{ lesson.cancelled ? i18n.t('tutor.cancelled') : lesson.conflict ? i18n.t('tutor.conflicts') : i18n.t('tutor.movedOnce') }}</small> }</span><span class="lesson-fee">{{ money(lesson.fee) }}</span></button>
               @if (lesson.cancelled && lesson.exceptionVersion !== null && canEdit()) { <button type="button" class="restore" (click)="restore(lesson)">{{ i18n.t('tutor.restore') }}</button> }
             </div>
           }

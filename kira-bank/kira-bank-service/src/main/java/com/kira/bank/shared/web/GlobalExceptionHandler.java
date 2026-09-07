@@ -57,6 +57,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ErrorResponse> unexpected(Exception ex, HttpServletRequest request) {
+        if (request.getRequestURI().startsWith("/api/v1/health") || request.getRequestURI().startsWith("/api/v1/auth/mobile")
+            || request.getRequestURI().startsWith("/api/v1/travel")) {
+            log.error("Private request failed traceId={} method={} path={} exception={}",
+                traceId(), request.getMethod(), request.getRequestURI(), ex.getClass().getSimpleName());
+            return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Đã có lỗi xảy ra", Map.of(), request);
+        }
         log.error("Unhandled exception traceId={} method={} path={} exception={} message={}",
             traceId(), request.getMethod(), request.getRequestURI(), ex.getClass().getSimpleName(),
             safeLogMessage(ex), ex);

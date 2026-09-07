@@ -5,6 +5,7 @@ import {finalize} from 'rxjs';
 import {AuthStore} from '../../core/auth/auth.store';
 import {LanguageService} from '../../core/i18n/language.service';
 import {LanguageSwitcherComponent} from '../../shared/language-switcher/language-switcher';
+import {LoginVisitTracker} from '../../core/services/login-visit-tracker.service';
 
 @Component({
   selector: 'app-auth',
@@ -25,8 +26,10 @@ export class AuthPage {
   }>;
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly visits = inject(LoginVisitTracker);
 
   constructor() {
+    this.visits.record();
     this.form = new FormGroup({
       email: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.email]}),
       password: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.minLength(8)]})

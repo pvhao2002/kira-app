@@ -20,7 +20,7 @@ public final class AuthDtos {
     }
 
     /**
-     * Admin tạo tài khoản — POST /api/v1/admin/users (Swagger).
+     * Admin tạo tài khoản thường — POST /api/v1/admin/users.
      */
     public record CreateUserRequest(
         @Email @NotBlank String email,
@@ -39,6 +39,10 @@ public final class AuthDtos {
     }
 
     public record ProfileResponse(Long id, String email, String fullName, String phone, Set<String> roles, long version) {
+    }
+
+    public record AdminUserResponse(Long id, String email, String fullName, String phone,
+                                    Set<String> roles, String status) {
     }
 
     public record AuthResponse(String accessToken, long expiresInSeconds, ProfileResponse user) {
