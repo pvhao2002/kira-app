@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#0a0e1a;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'primary-fixed': '#c8eaff', 'on-primary-fixed': '#001f2e', 'on-primary': '#001f2e', 'primary': '#7dd3fc', 'surface-dim': '#0f1524', 'primary-container': '#0e4d6e', 'inverse-surface': '#e0e8f0', 'on-primary-fixed-variant': '#004d73', 'outline-variant': '#2a3a48', 'secondary-container': '#1a3a4e', 'primary-fixed-dim': '#7dd3fc', 'error': '#ff6b6b', 'surface-container-highest': '#202c42', 'on-error-container': '#ffb3b3', 'surface-container-lowest': '#0a0e1a', 'surface-container-low': '#111828', 'on-primary-container': '#c8eaff', 'on-error': '#1a0000', 'tertiary-container': '#3d2060', 'error-container': '#3d1414', 'surface-bright': '#1a2438', 'on-secondary-fixed-variant': '#2a4a5e', 'on-tertiary-container': '#e8d0ff', 'background': '#0a0e1a', 'on-surface': '#e0e8f0', 'on-secondary': '#001f2e', 'surface-container-high': '#1a2438', 'inverse-on-surface': '#0a0e1a', 'surface-tint': '#7dd3fc', 'on-secondary-fixed': '#0d1f2b', 'secondary-fixed-dim': '#88b4cc', 'outline': '#4a6070', 'surface-container': '#141c2e', 'tertiary-fixed-dim': '#c8a0f0', 'secondary': '#88b4cc', 'on-secondary-container': '#c0d8e8', 'on-tertiary-fixed': '#1a002e', 'on-tertiary': '#1a002e', 'surface': '#0f1524', 'tertiary-fixed': '#e8d0ff', 'on-tertiary-fixed-variant': '#4d2a73', 'on-background': '#e0e8f0', 'tertiary': '#c8a0f0', 'on-surface-variant': '#a0b4c4', 'secondary-fixed': '#c0d8e8', 'surface-variant': '#1a2438', 'inverse-primary': '#0a4c6e' }, borderRadius: { 'DEFAULT': '0.5rem', 'lg': '1rem', 'xl': '1.5rem', 'full': '9999px' }, fontFamily: { 'headline': ['Inter'], 'display': ['Inter'], 'body': ['Inter'], 'label': ['Inter'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/60 backdrop-blur-2xl"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">account_balance</span></div><div class="flex flex-col"><span class="text-[11px] font-medium tracking-wider uppercase text-primary">Kira Bank</span><span class="text-base font-headline font-semibold text-on-surface leading-tight">Cá Nhân</span></div></div><div class="flex items-center gap-1"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-background"><div class="flex flex-col w-full relative">
+<!-- Underlying Screen Context Preview (Frosted background context) -->
+<div class="w-full px-4 pt-2 pb-6 opacity-40 blur-sm pointer-events-none select-none">
+<div class="bg-surface-container-high rounded-xl p-4 mb-3 flex items-center justify-between shadow-lg">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">receipt_long</span>
+</div>
+<div>
+<div class="text-xs text-on-surface-variant font-medium">Bản ghi #01 • Đã khớp</div>
+<div class="text-sm font-semibold text-on-surface">5.000.000 VND</div>
+</div>
+</div>
+<span class="text-xs text-primary font-medium">Hợp lệ</span>
+</div>
+<div class="bg-surface-container-high rounded-xl p-4 mb-3 flex items-center justify-between shadow-lg">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[22px]">difference</span>
+</div>
+<div>
+<div class="text-xs text-on-surface-variant font-medium">Bản ghi #02 • Xung đột thời gian</div>
+<div class="text-sm font-semibold text-on-surface">2.500.000 VND</div>
+</div>
+</div>
+<span class="text-xs text-tertiary font-medium">Cần xử lý</span>
+</div>
+</div>
+<!-- Dim Backing Scrim Overlay -->
+<div class="fixed inset-0 bg-surface-container-lowest/80 backdrop-blur-md z-40 transition-opacity"></div>
+<!-- Bottom Sheet Layer -->
+<div class="relative z-50 w-full mt-auto bg-surface/95 backdrop-blur-2xl rounded-t-3xl shadow-[0_-12px_48px_rgba(0,0,0,0.6)] flex flex-col pt-3 pb-8">
+<!-- Drag Handle -->
+<div class="w-full flex justify-center pb-2">
+<div class="w-12 h-1.5 rounded-full bg-surface-container-highest cursor-grab active:cursor-grabbing"></div>
+</div>
+<!-- Sheet Header -->
+<div class="px-5 pt-2 pb-4 flex items-start justify-between">
+<div class="flex-1 pr-3">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-[20px]">tune</span>
+<h2 class="text-lg font-headline font-semibold text-on-surface tracking-tight">Cách xử lý giao dịch</h2>
+</div>
+<p class="text-xs font-body text-on-surface-variant leading-relaxed">
+          Chọn phương án xử lý cho bản ghi giao dịch <span class="text-primary font-medium">#02 (2.500.000 VND)</span>
+</p>
+</div>
+<button aria-label="Đóng" class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors active:scale-95" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Options List Form -->
+<form class="px-5 flex flex-col gap-3" id="resolution-form">
+<!-- Option 1: Chấp nhận (Default Selected) -->
+<label class="group relative flex flex-col p-4 rounded-xl cursor-pointer bg-primary-container/30 transition-all duration-200">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<!-- Custom Radio -->
+<div class="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+<div class="w-2 h-2 rounded-full bg-on-primary"></div>
+</div>
+<div>
+<span class="text-sm font-semibold text-on-surface group-hover:text-primary transition-colors">Chấp nhận</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary">
+            Mặc định đề xuất
+          </span>
+</div>
+<p class="mt-2 text-xs text-on-surface-variant leading-relaxed pl-8">
+          Lưu dữ liệu đã duyệt nếu hệ thống không còn phát hiện xung đột.
+        </p>
+<input checked="" class="sr-only" name="resolution_choice" type="radio" value="accept"/>
+</label>
+<!-- Option 2: Gộp với bản ghi có sẵn -->
+<label class="group relative flex flex-col p-4 rounded-xl cursor-pointer bg-surface-container-low hover:bg-surface-container transition-all duration-200">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<!-- Custom Radio Unchecked -->
+<div class="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0">
+<div class="w-2 h-2 rounded-full bg-transparent"></div>
+</div>
+<div>
+<span class="text-sm font-semibold text-on-surface group-hover:text-primary transition-colors">Gộp với bản ghi có sẵn</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary-container text-on-secondary-container">
+            Cập nhật
+          </span>
+</div>
+<p class="mt-2 text-xs text-on-surface-variant leading-relaxed pl-8">
+          Giữ giao dịch hiện có, chỉ cập nhật trạng thái hoặc bổ sung thông tin.
+        </p>
+<input class="sr-only" name="resolution_choice" type="radio" value="merge"/>
+</label>
+<!-- Option 3: Lưu như giao dịch mới -->
+<label class="group relative flex flex-col p-4 rounded-xl cursor-pointer bg-surface-container-low hover:bg-surface-container transition-all duration-200">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0">
+<div class="w-2 h-2 rounded-full bg-transparent"></div>
+</div>
+<div>
+<span class="text-sm font-semibold text-on-surface group-hover:text-primary transition-colors">Lưu như giao dịch mới</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-tertiary-container text-on-tertiary-container">
+            Tạo mới
+          </span>
+</div>
+<p class="mt-2 text-xs text-on-surface-variant leading-relaxed pl-8">
+          Dùng khi đây thực sự là giao dịch khác; hỗ trợ phân biệt các giao dịch cùng phút không có mã giao dịch bên ngoài.
+        </p>
+<!-- Notice badge inside Option 3 -->
+<div class="mt-2.5 ml-8 p-2 rounded-lg bg-surface-container flex items-start gap-2">
+<span class="material-symbols-outlined text-[15px] text-tertiary shrink-0 mt-0.5">info</span>
+<span class="text-[11px] leading-tight text-on-surface-variant">
+<strong class="font-medium text-tertiary">Lưu ý:</strong> Chỉ chọn khi đây thực sự là hai giao dịch khác nhau.
+          </span>
+</div>
+<input class="sr-only" name="resolution_choice" type="radio" value="create_new"/>
+</label>
+<!-- Option 4: Bỏ qua -->
+<label class="group relative flex flex-col p-4 rounded-xl cursor-pointer bg-surface-container-low hover:bg-surface-container transition-all duration-200">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0">
+<div class="w-2 h-2 rounded-full bg-transparent"></div>
+</div>
+<div>
+<span class="text-sm font-semibold text-on-surface group-hover:text-primary transition-colors">Bỏ qua</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface-container-highest text-on-surface-variant">
+            Bỏ qua
+          </span>
+</div>
+<p class="mt-2 text-xs text-on-surface-variant leading-relaxed pl-8">
+          Không lưu bản ghi này.
+        </p>
+<input class="sr-only" name="resolution_choice" type="radio" value="ignore"/>
+</label>
+<!-- Security / Workflow Confirmation Banner -->
+<div class="mt-2 p-3 rounded-xl bg-surface-container flex items-center gap-3">
+<div class="w-7 h-7 rounded-lg bg-surface-container-high flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[17px]">verified_user</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-snug">
+          Cách xử lý này sẽ được áp dụng cho bản ghi khi bạn bấm <span class="text-on-surface font-semibold">"Xác nhận các mục đã chọn"</span> ở màn hình duyệt.
+        </p>
+</div>
+<!-- Action Buttons -->
+<div class="mt-3 flex flex-col gap-2">
+<button class="w-full h-12 rounded-xl bg-primary text-on-primary font-headline font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/10 hover:bg-primary/90 active:scale-[0.99] transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+          Áp dụng cách xử lý
+        </button>
+<button class="w-full h-11 rounded-xl bg-transparent text-on-surface-variant font-headline font-medium text-sm flex items-center justify-center hover:bg-surface-container hover:text-on-surface active:scale-[0.99] transition-all" type="button">
+          Quay lại
+        </button>
+</div>
+</form>
+</div>
+</div>
+<script>
+  (function() {
+    const labels = document.querySelectorAll('#resolution-form label');
+    labels.forEach(label => {
+      label.addEventListener('click', function() {
+        labels.forEach(l => {
+          l.classList.remove('bg-primary-container/30');
+          l.classList.add('bg-surface-container-low');
+          const radioCircle = l.querySelector('.w-5.h-5');
+          const innerDot = l.querySelector('.w-2.h-2');
+          if (radioCircle && innerDot) {
+            radioCircle.classList.remove('bg-primary');
+            radioCircle.classList.add('bg-surface-container-highest');
+            innerDot.classList.remove('bg-on-primary');
+            innerDot.classList.add('bg-transparent');
+          }
+        });
+
+        this.classList.remove('bg-surface-container-low');
+        this.classList.add('bg-primary-container/30');
+        const activeRadio = this.querySelector('.w-5.h-5');
+        const activeDot = this.querySelector('.w-2.h-2');
+        if (activeRadio && activeDot) {
+          activeRadio.classList.remove('bg-surface-container-highest');
+          activeRadio.classList.add('bg-primary');
+          activeDot.classList.remove('bg-transparent');
+          activeDot.classList.add('bg-on-primary');
+        }
+      });
+    });
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/75 backdrop-blur-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.36)]" data-active-classes="text-primary font-semibold"><div class="flex items-center justify-around h-16 px-4"><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="the-tin-dung" href="#"><span class="material-symbols-outlined text-[22px]">credit_card</span><span class="text-[11px] font-label font-medium tracking-tight">Thẻ tín dụng</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="dau-tu" href="#"><span class="material-symbols-outlined text-[22px]">trending_up</span><span class="text-[11px] font-label font-medium tracking-tight">Đầu tư</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ca-nhan" href="#"><span class="material-symbols-outlined text-[22px]">person</span><span class="text-[11px] font-label font-medium tracking-tight">Cá nhân</span></a></div></nav></body></html>

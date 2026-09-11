@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="880" viewBox="0 0 640 880">
+  <rect width="640" height="880" rx="20" fill="#f4f7fa"/>
+  <rect width="640" height="160" rx="20" fill="#19374b"/>
+  <text x="42" y="64" font-family="Arial" font-size="22" fill="#7dd3fc" font-weight="bold">KIRA LIFE · DEMO</text>
+  <text x="42" y="113" font-family="Arial" font-size="30" fill="#ffffff" font-weight="bold">CHỨNG TỪ MINH HỌA</text>
+  <text x="42" y="211" font-family="Arial" font-size="18" fill="#687b8e">Dùng để trải nghiệm giao diện duyệt giao dịch</text>
+  <text x="42" y="270" font-family="Arial" font-size="18" fill="#687b8e">TÀI KHOẢN</text>
+  <text x="42" y="307" font-family="Arial" font-size="25" fill="#152032" font-weight="bold">Tài khoản được chọn · VND</text>
+  <text x="42" y="353" font-family="Arial" font-size="20" fill="#152032">Nguyễn Minh Triết</text>
+  <path d="M42 385H598" stroke="#cbd5df"/>
+  <text x="42" y="428" font-family="Arial" font-size="18" fill="#687b8e">01 · NẠP TIỀN</text>
+  <text x="42" y="476" font-family="Arial" font-size="36" fill="#19374b" font-weight="bold">+1.000.000 VND</text>
+  <text x="42" y="516" font-family="Arial" font-size="19" fill="#152032">20/10/2024 · 09:30</text>
+  <text x="42" y="552" font-family="Arial" font-size="17" fill="#687b8e">Mã demo riêng theo mỗi lần nhập</text>
+  <path d="M42 583H598" stroke="#cbd5df"/>
+
+
+
+  <text x="42" y="796" font-family="Arial" font-size="19" fill="#8f4a43" font-weight="bold">KHÔNG CÓ GIÁ TRỊ GIAO DỊCH</text>
+  <text x="42" y="830" font-family="Arial" font-size="16" fill="#687b8e">Không phải chứng từ do ngân hàng hoặc sàn phát hành.</text>
+</svg>
+

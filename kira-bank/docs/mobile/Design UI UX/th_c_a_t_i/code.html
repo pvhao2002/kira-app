@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#0a0e1a;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'primary-fixed': '#c8eaff', 'on-primary-fixed': '#001f2e', 'on-primary': '#001f2e', 'primary': '#7dd3fc', 'surface-dim': '#0f1524', 'primary-container': '#0e4d6e', 'inverse-surface': '#e0e8f0', 'on-primary-fixed-variant': '#004d73', 'outline-variant': '#2a3a48', 'secondary-container': '#1a3a4e', 'primary-fixed-dim': '#7dd3fc', 'error': '#ff6b6b', 'surface-container-highest': '#202c42', 'on-error-container': '#ffb3b3', 'surface-container-lowest': '#0a0e1a', 'surface-container-low': '#111828', 'on-primary-container': '#c8eaff', 'on-error': '#1a0000', 'tertiary-container': '#3d2060', 'error-container': '#3d1414', 'surface-bright': '#1a2438', 'on-secondary-fixed-variant': '#2a4a5e', 'on-tertiary-container': '#e8d0ff', 'background': '#0a0e1a', 'on-surface': '#e0e8f0', 'on-secondary': '#001f2e', 'surface-container-high': '#1a2438', 'inverse-on-surface': '#0a0e1a', 'surface-tint': '#7dd3fc', 'on-secondary-fixed': '#0d1f2b', 'secondary-fixed-dim': '#88b4cc', 'outline': '#4a6070', 'surface-container': '#141c2e', 'tertiary-fixed-dim': '#c8a0f0', 'secondary': '#88b4cc', 'on-secondary-container': '#c0d8e8', 'on-tertiary-fixed': '#1a002e', 'on-tertiary': '#1a002e', 'surface': '#0f1524', 'tertiary-fixed': '#e8d0ff', 'on-tertiary-fixed-variant': '#4d2a73', 'on-background': '#e0e8f0', 'tertiary': '#c8a0f0', 'on-surface-variant': '#a0b4c4', 'secondary-fixed': '#c0d8e8', 'surface-variant': '#1a2438', 'inverse-primary': '#0a4c6e' }, borderRadius: { 'DEFAULT': '0.5rem', 'lg': '1rem', 'xl': '1.5rem', 'full': '9999px' }, fontFamily: { 'headline': ['Inter'], 'display': ['Inter'], 'body': ['Inter'], 'label': ['Inter'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/60 backdrop-blur-2xl"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">account_balance</span></div><div class="flex flex-col"><span class="text-[11px] font-medium tracking-wider uppercase text-primary">Kira Bank</span><span class="text-base font-headline font-semibold text-on-surface leading-tight">Thẻ Tín Dụng</span></div></div><div class="flex items-center gap-1"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-background"><div class="flex flex-col w-full px-4 gap-5 pb-6">
+<!-- Search & Quick Action -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2.5">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[20px] text-on-surface-variant">search</span>
+<input class="w-full h-11 pl-10 pr-4 rounded-xl bg-surface-container/60 backdrop-blur-xl text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:bg-surface-container-high transition-colors" id="cardSearchInput" placeholder="Tìm tên thẻ, số thẻ, ngân hàng..." type="text"/>
+</div>
+<button aria-label="Thêm thẻ mới" class="h-11 px-3.5 rounded-xl bg-primary text-on-primary font-medium text-xs flex items-center gap-1.5 shadow-[0_0_20px_rgba(125,211,252,0.25)] hover:bg-primary-fixed active:scale-95 transition-all shrink-0" id="btnAddNewCard">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Thêm thẻ</span>
+</button>
+</div>
+<!-- Filter Chips -->
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5" id="filterContainer">
+<button class="filter-chip active-filter px-3.5 py-1.5 rounded-full text-xs font-medium bg-primary text-on-primary transition-all whitespace-nowrap" data-filter="all">
+        Tất cả (4)
+      </button>
+<button class="filter-chip px-3.5 py-1.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap" data-filter="active">
+        Đang hoạt động (4)
+      </button>
+<button class="filter-chip px-3.5 py-1.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap" data-filter="locked">
+        Đã tạm khóa (0)
+      </button>
+<button class="filter-chip px-3.5 py-1.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap" data-filter="techcombank">
+        Techcombank (2)
+      </button>
+<button class="filter-chip px-3.5 py-1.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap" data-filter="vpbank">
+        VPBank (1)
+      </button>
+<button class="filter-chip px-3.5 py-1.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap" data-filter="vib">
+        VIB (1)
+      </button>
+</div>
+</div>
+<!-- Summary Banner Glass Tile -->
+<div class="p-4 rounded-xl bg-surface-container/60 backdrop-blur-2xl relative overflow-hidden flex flex-col gap-3 shadow-md">
+<div class="absolute -right-6 -top-6 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-primary-container/60 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[17px]">credit_card</span>
+</div>
+<span class="text-xs font-medium text-on-surface-variant">Tổng hạn mức khả dụng</span>
+</div>
+<span class="text-[11px] px-2 py-0.5 rounded bg-primary/15 text-primary font-medium tracking-wide">3 Ngân Hàng</span>
+</div>
+<div class="flex items-baseline justify-between">
+<div>
+<div class="text-2xl font-headline font-bold text-on-surface tracking-tight">187.500.000 <span class="text-sm font-normal text-on-surface-variant">₫</span></div>
+<div class="text-[11px] text-on-surface-variant mt-0.5">Tổng dư nợ hiện tại: <span class="text-primary font-semibold">62.500.000 ₫</span> (Hạn mức gộp 250tr)</div>
+</div>
+<div class="text-right">
+<span class="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-lg">25% Sử dụng</span>
+</div>
+</div>
+</div>
+<!-- GROUP 1: TECHCOMBANK -->
+<div class="bank-group flex flex-col gap-3" data-bank="techcombank">
+<!-- Group Header Card -->
+<div class="p-3.5 rounded-xl bg-surface-container-high/60 backdrop-blur-xl flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-primary font-bold text-sm shrink-0">
+          TCB
+        </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-sm font-semibold text-on-surface truncate">Techcombank</span>
+<span class="text-[10px] px-1.5 py-0.2 rounded bg-surface-container-lowest text-on-surface-variant font-mono">2 Thẻ</span>
+</div>
+<div class="text-[11px] text-on-surface-variant truncate">
+            Hạn mức chung: <span class="text-on-surface font-medium">150.000.000 ₫</span> • Nợ: <span class="text-primary font-medium">38.200.000 ₫</span>
+</div>
+</div>
+</div>
+<button class="h-9 px-2.5 rounded-lg bg-primary/15 text-primary hover:bg-primary/25 active:scale-95 transition-all text-xs font-medium flex items-center gap-1 shrink-0" onclick="openBalanceModal('Techcombank', '150.000.000 ₫', '38.200.000 ₫')" title="Điều chỉnh số dư ngân hàng">
+<span class="material-symbols-outlined text-[15px]">edit</span>
+<span class="hidden sm:inline">Điều chỉnh</span>
+</button>
+</div>
+<!-- Cards in Techcombank -->
+<div class="flex flex-col gap-3">
+<!-- Card 1: Techcombank Visa Signature -->
+<div class="card-item relative rounded-xl p-4 bg-gradient-to-br from-surface-container/80 via-surface-container-high/60 to-surface-dim/90 backdrop-blur-2xl shadow-lg flex flex-col gap-3 overflow-hidden" data-card-id="tcb-8829" data-status="active">
+<!-- Glacier Ambient Glow -->
+<div class="absolute -top-10 -right-10 w-36 h-36 bg-primary/15 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Realistic Visual Credit Card Front Face -->
+<div class="relative w-full rounded-xl p-4 bg-gradient-to-tr from-[#0a192f] via-[#0f2744] to-[#1a3a5c] text-on-surface shadow-[0_8px_24px_rgba(0,0,0,0.4)] overflow-hidden">
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(125,211,252,0.2),transparent_70%)] pointer-events-none"></div>
+<div class="relative flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="text-xs font-semibold tracking-wider text-primary">TECHCOMBANK</span>
+<span class="text-[10px] text-on-surface-variant font-light">| SIGNATURE</span>
+</div>
+<div class="flex items-center gap-1.5 bg-primary/20 backdrop-blur-md px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span class="text-[10px] font-medium text-primary card-status-text">Đang hoạt động</span>
+</div>
+</div>
+<!-- Chip & Contactless Visual -->
+<div class="relative flex items-center justify-between mb-3">
+<div class="w-9 h-7 rounded bg-gradient-to-br from-[#ffd54f] to-[#ffb300] flex items-center justify-center p-0.5 shadow-inner">
+<div class="w-full h-full rounded bg-amber-200/30 flex flex-col justify-between py-1 px-1">
+<div class="h-[1px] bg-amber-900/40 w-full"></div>
+<div class="h-[1px] bg-amber-900/40 w-full"></div>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary/70 text-[20px]">contactless</span>
+</div>
+<div class="relative flex items-end justify-between mt-2">
+<div>
+<div class="font-mono text-sm tracking-widest text-on-surface">•••• •••• •••• 8829</div>
+<div class="text-[10px] text-on-surface-variant uppercase mt-1 tracking-wider">NGUYEN HOANG HAI • 08/28</div>
+</div>
+<div class="text-right">
+<span class="font-bold italic text-base tracking-wider text-primary">VISA</span>
+</div>
+</div>
+</div>
+<!-- Card Limits & Balances -->
+<div class="grid grid-cols-2 gap-2 pt-1">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest/50 backdrop-blur-sm">
+<div class="text-[10px] text-on-surface-variant">Hạn mức riêng</div>
+<div class="text-xs font-bold text-on-surface mt-0.5">100.000.000 ₫</div>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest/50 backdrop-blur-sm">
+<div class="text-[10px] text-on-surface-variant">Dư nợ hiện tại</div>
+<div class="text-xs font-bold text-primary mt-0.5">28.400.000 ₫</div>
+</div>
+</div>
+<!-- Quick Actions Row -->
+<div class="flex items-center justify-between gap-1.5 pt-1">
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="openLimitModal('Techcombank Visa Signature (•••• 8829)', '100.000.000 ₫')">
+<span class="material-symbols-outlined text-[16px] text-primary">tune</span>
+<span>Hạn mức</span>
+</button>
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="openHistoryModal('Techcombank Visa Signature (•••• 8829)')">
+<span class="material-symbols-outlined text-[16px] text-secondary">history</span>
+<span>Lịch sử</span>
+</button>
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="toggleCardLock(this, 'tcb-8829')">
+<span class="material-symbols-outlined text-[16px] text-error">lock_open</span>
+<span class="lock-btn-label">Tạm khóa</span>
+</button>
+</div>
+</div>
+<!-- Card 2: Techcombank Everyday Card -->
+<div class="card-item relative rounded-xl p-4 bg-gradient-to-br from-surface-container/80 via-surface-container-high/60 to-surface-dim/90 backdrop-blur-2xl shadow-lg flex flex-col gap-3 overflow-hidden" data-card-id="tcb-4190" data-status="active">
+<div class="absolute -bottom-8 -left-8 w-32 h-32 bg-secondary/15 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Card Face -->
+<div class="relative w-full rounded-xl p-4 bg-gradient-to-tr from-[#122033] via-[#1a334d] to-[#123e59] text-on-surface shadow-[0_8px_24px_rgba(0,0,0,0.4)] overflow-hidden">
+<div class="relative flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="text-xs font-semibold tracking-wider text-secondary">TECHCOMBANK</span>
+<span class="text-[10px] text-on-surface-variant font-light">| EVERYDAY</span>
+</div>
+<div class="flex items-center gap-1.5 bg-primary/20 backdrop-blur-md px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span class="text-[10px] font-medium text-primary card-status-text">Đang hoạt động</span>
+</div>
+</div>
+<div class="relative flex items-center justify-between mb-3">
+<div class="w-9 h-7 rounded bg-gradient-to-br from-[#ffd54f] to-[#ffb300] flex items-center justify-center p-0.5 shadow-inner">
+<div class="w-full h-full rounded bg-amber-200/30"></div>
+</div>
+<span class="material-symbols-outlined text-primary/70 text-[20px]">contactless</span>
+</div>
+<div class="relative flex items-end justify-between mt-2">
+<div>
+<div class="font-mono text-sm tracking-widest text-on-surface">•••• •••• •••• 4190</div>
+<div class="text-[10px] text-on-surface-variant uppercase mt-1 tracking-wider">NGUYEN HOANG HAI • 11/27</div>
+</div>
+<div class="text-right flex items-center gap-0.5">
+<div class="w-4 h-4 rounded-full bg-error/80"></div>
+<div class="w-4 h-4 -ml-2 rounded-full bg-amber-400/80"></div>
+</div>
+</div>
+</div>
+<!-- Limits -->
+<div class="grid grid-cols-2 gap-2 pt-1">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest/50 backdrop-blur-sm">
+<div class="text-[10px] text-on-surface-variant">Hạn mức riêng</div>
+<div class="text-xs font-bold text-on-surface mt-0.5">50.000.000 ₫</div>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest/50 backdrop-blur-sm">
+<div class="text-[10px] text-on-surface-variant">Dư nợ hiện tại</div>
+<div class="text-xs font-bold text-primary mt-0.5">9.800.000 ₫</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center justify-between gap-1.5 pt-1">
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="openLimitModal('Techcombank Everyday (•••• 4190)', '50.000.000 ₫')">
+<span class="material-symbols-outlined text-[16px] text-primary">tune</span>
+<span>Hạn mức</span>
+</button>
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="openHistoryModal('Techcombank Everyday (•••• 4190)')">
+<span class="material-symbols-outlined text-[16px] text-secondary">history</span>
+<span>Lịch sử</span>
+</button>
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="toggleCardLock(this, 'tcb-4190')">
+<span class="material-symbols-outlined text-[16px] text-error">lock_open</span>
+<span class="lock-btn-label">Tạm khóa</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- GROUP 2: VPBANK -->
+<div class="bank-group flex flex-col gap-3" data-bank="vpbank">
+<!-- Group Header Card -->
+<div class="p-3.5 rounded-xl bg-surface-container-high/60 backdrop-blur-xl flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-primary font-bold text-sm shrink-0">
+          VPB
+        </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-sm font-semibold text-on-surface truncate">VPBank</span>
+<span class="text-[10px] px-1.5 py-0.2 rounded bg-surface-container-lowest text-on-surface-variant font-mono">1 Thẻ</span>
+</div>
+<div class="text-[11px] text-on-surface-variant truncate">
+            Hạn mức chung: <span class="text-on-surface font-medium">50.000.000 ₫</span> • Nợ: <span class="text-primary font-medium">14.300.000 ₫</span>
+</div>
+</div>
+</div>
+<button class="h-9 px-2.5 rounded-lg bg-primary/15 text-primary hover:bg-primary/25 active:scale-95 transition-all text-xs font-medium flex items-center gap-1 shrink-0" onclick="openBalanceModal('VPBank', '50.000.000 ₫', '14.300.000 ₫')" title="Điều chỉnh số dư ngân hàng">
+<span class="material-symbols-outlined text-[15px]">edit</span>
+<span class="hidden sm:inline">Điều chỉnh</span>
+</button>
+</div>
+<!-- Card 3: VPBank StepUp Mastercard -->
+<div class="card-item relative rounded-xl p-4 bg-gradient-to-br from-surface-container/80 via-surface-container-high/60 to-surface-dim/90 backdrop-blur-2xl shadow-lg flex flex-col gap-3 overflow-hidden" data-card-id="vpb-1204" data-status="active">
+<div class="absolute -top-10 right-4 w-32 h-32 bg-tertiary/15 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Card Face with Emerald/Glacier Hint -->
+<div class="relative w-full rounded-xl p-4 bg-gradient-to-tr from-[#0a2324] via-[#10383b] to-[#1e5358] text-on-surface shadow-[0_8px_24px_rgba(0,0,0,0.4)] overflow-hidden">
+<div class="relative flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="text-xs font-semibold tracking-wider text-primary-fixed">VPBANK</span>
+<span class="text-[10px] text-on-surface-variant font-light">| STEPUP</span>
+</div>
+<div class="flex items-center gap-1.5 bg-primary/20 backdrop-blur-md px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span class="text-[10px] font-medium text-primary card-status-text">Đang hoạt động</span>
+</div>
+</div>
+<div class="relative flex items-center justify-between mb-2">
+<div class="w-9 h-7 rounded bg-gradient-to-br from-[#ffd54f] to-[#ffb300] flex items-center justify-center p-0.5 shadow-inner">
+<div class="w-full h-full rounded bg-amber-200/30"></div>
+</div>
+<div class="text-[10px] px-2 py-0.5 rounded bg-surface-container-lowest/60 text-secondary-fixed">
+            Hoàn tiền ẩm thực 15%
+          </div>
+</div>
+<div class="relative flex items-end justify-between mt-3">
+<div>
+<div class="font-mono text-sm tracking-widest text-on-surface">•••• •••• •••• 1204</div>
+<div class="text-[10px] text-on-surface-variant uppercase mt-1 tracking-wider">NGUYEN HOANG HAI • 04/29</div>
+</div>
+<div class="text-right flex items-center gap-0.5">
+<div class="w-4 h-4 rounded-full bg-error/80"></div>
+<div class="w-4 h-4 -ml-2 rounded-full bg-amber-400/80"></div>
+</div>
+</div>
+</div>
+<!-- Limits & Highlight tag -->
+<div class="p-2.5 rounded-lg bg-surface-container-lowest/50 backdrop-blur-sm flex items-center justify-between">
+<div>
+<div class="text-[10px] text-on-surface-variant">Hạn mức riêng / Dư nợ</div>
+<div class="text-xs font-bold text-on-surface mt-0.5">50.000.000 ₫ <span class="text-on-surface-variant font-normal">/</span> <span class="text-primary font-bold">14.300.000 ₫</span></div>
+</div>
+<span class="text-[10px] px-2 py-0.5 rounded bg-tertiary-container/60 text-on-tertiary-container font-medium">Mua sắm &amp; Ẩm thực</span>
+</div>
+<!-- Actions -->
+<div class="flex items-center justify-between gap-1.5 pt-1">
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="openLimitModal('VPBank StepUp Mastercard (•••• 1204)', '50.000.000 ₫')">
+<span class="material-symbols-outlined text-[16px] text-primary">tune</span>
+<span>Hạn mức</span>
+</button>
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="openHistoryModal('VPBank StepUp Mastercard (•••• 1204)')">
+<span class="material-symbols-outlined text-[16px] text-secondary">history</span>
+<span>Lịch sử</span>
+</button>
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="toggleCardLock(this, 'vpb-1204')">
+<span class="material-symbols-outlined text-[16px] text-error">lock_open</span>
+<span class="lock-btn-label">Tạm khóa</span>
+</button>
+</div>
+</div>
+</div>
+<!-- GROUP 3: VIB -->
+<div class="bank-group flex flex-col gap-3" data-bank="vib">
+<!-- Group Header Card -->
+<div class="p-3.5 rounded-xl bg-surface-container-high/60 backdrop-blur-xl flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-primary font-bold text-sm shrink-0">
+          VIB
+        </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-sm font-semibold text-on-surface truncate">VIB</span>
+<span class="text-[10px] px-1.5 py-0.2 rounded bg-surface-container-lowest text-on-surface-variant font-mono">1 Thẻ</span>
+</div>
+<div class="text-[11px] text-on-surface-variant truncate">
+            Hạn mức chung: <span class="text-on-surface font-medium">50.000.000 ₫</span> • Nợ: <span class="text-primary font-medium">10.000.000 ₫</span>
+</div>
+</div>
+</div>
+<button class="h-9 px-2.5 rounded-lg bg-primary/15 text-primary hover:bg-primary/25 active:scale-95 transition-all text-xs font-medium flex items-center gap-1 shrink-0" onclick="openBalanceModal('VIB', '50.000.000 ₫', '10.000.000 ₫')" title="Điều chỉnh số dư ngân hàng">
+<span class="material-symbols-outlined text-[15px]">edit</span>
+<span class="hidden sm:inline">Điều chỉnh</span>
+</button>
+</div>
+<!-- Card 4: VIB Cash Back -->
+<div class="card-item relative rounded-xl p-4 bg-gradient-to-br from-surface-container/80 via-surface-container-high/60 to-surface-dim/90 backdrop-blur-2xl shadow-lg flex flex-col gap-3 overflow-hidden" data-card-id="vib-9931" data-status="active">
+<div class="absolute top-0 right-0 w-36 h-36 bg-primary-container/30 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Card Face Deep Glacier -->
+<div class="relative w-full rounded-xl p-4 bg-gradient-to-tr from-[#1b1c38] via-[#24264f] to-[#342e61] text-on-surface shadow-[0_8px_24px_rgba(0,0,0,0.4)] overflow-hidden">
+<div class="relative flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="text-xs font-semibold tracking-wider text-tertiary-fixed">VIB</span>
+<span class="text-[10px] text-on-surface-variant font-light">| CASH BACK</span>
+</div>
+<div class="flex items-center gap-1.5 bg-primary/20 backdrop-blur-md px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span class="text-[10px] font-medium text-primary card-status-text">Đang hoạt động</span>
+</div>
+</div>
+<div class="relative flex items-center justify-between mb-3">
+<div class="w-9 h-7 rounded bg-gradient-to-br from-[#ffd54f] to-[#ffb300] flex items-center justify-center p-0.5 shadow-inner">
+<div class="w-full h-full rounded bg-amber-200/30"></div>
+</div>
+<span class="material-symbols-outlined text-primary/70 text-[20px]">contactless</span>
+</div>
+<div class="relative flex items-end justify-between mt-2">
+<div>
+<div class="font-mono text-sm tracking-widest text-on-surface">•••• •••• •••• 9931</div>
+<div class="text-[10px] text-on-surface-variant uppercase mt-1 tracking-wider">NGUYEN HOANG HAI • 02/30</div>
+</div>
+<div class="text-right">
+<span class="font-bold italic text-base tracking-wider text-primary">VISA</span>
+</div>
+</div>
+</div>
+<!-- Limits -->
+<div class="grid grid-cols-2 gap-2 pt-1">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest/50 backdrop-blur-sm">
+<div class="text-[10px] text-on-surface-variant">Hạn mức thẻ</div>
+<div class="text-xs font-bold text-on-surface mt-0.5">50.000.000 ₫</div>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest/50 backdrop-blur-sm">
+<div class="text-[10px] text-on-surface-variant">Dư nợ hiện tại</div>
+<div class="text-xs font-bold text-primary mt-0.5">10.000.000 ₫</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center justify-between gap-1.5 pt-1">
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="openLimitModal('VIB Cash Back (•••• 9931)', '50.000.000 ₫')">
+<span class="material-symbols-outlined text-[16px] text-primary">tune</span>
+<span>Hạn mức</span>
+</button>
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="openHistoryModal('VIB Cash Back (•••• 9931)')">
+<span class="material-symbols-outlined text-[16px] text-secondary">history</span>
+<span>Lịch sử</span>
+</button>
+<button class="flex-1 h-9 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-95" onclick="toggleCardLock(this, 'vib-9931')">
+<span class="material-symbols-outlined text-[16px] text-error">lock_open</span>
+<span class="lock-btn-label">Tạm khóa</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Security Footer Badge -->
+<div class="p-3.5 rounded-xl bg-surface-container-low/60 backdrop-blur-xl flex items-center justify-center gap-2 text-on-surface-variant text-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+<span>Bảo mật chuẩn mã hóa Glacier 256-bit • Kira Safeguard</span>
+</div>
+<!-- MODAL: ĐIỀU CHỈNH SỐ DƯ NGÂN HÀNG -->
+<div class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-surface-container-lowest/80 backdrop-blur-md" id="modalBalance">
+<div class="w-full max-w-sm rounded-xl p-5 bg-surface-container/90 backdrop-blur-2xl shadow-2xl flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">account_balance</span>
+<h3 class="font-headline font-semibold text-sm text-on-surface" id="modalBalanceBankTitle">Điều chỉnh Techcombank</h3>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1" onclick="closeModal('modalBalance')">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="flex flex-col gap-3 text-xs">
+<div>
+<label class="text-on-surface-variant">Hạn mức chung cấp ngân hàng</label>
+<input class="w-full h-10 px-3 mt-1 rounded-lg bg-surface-container-high text-on-surface font-semibold focus:outline-none" id="modalBankLimitInput" type="text" value="150.000.000 ₫"/>
+</div>
+<div>
+<label class="text-on-surface-variant">Dư nợ thực tế cần đồng bộ</label>
+<input class="w-full h-10 px-3 mt-1 rounded-lg bg-surface-container-high text-on-surface font-semibold focus:outline-none" id="modalBankDebtInput" type="text" value="38.200.000 ₫"/>
+</div>
+<div>
+<label class="text-on-surface-variant">Lý do điều chỉnh (ghi nhận Backend)</label>
+<select class="w-full h-10 px-2 mt-1 rounded-lg bg-surface-container-high text-on-surface focus:outline-none">
+<option>Đồng bộ giao dịch tự động</option>
+<option>Thanh toán trực tiếp tại quầy</option>
+<option>Hoàn tiền hóa đơn / Merchant Refund</option>
+<option>Hiệu chỉnh sao kê định kỳ</option>
+</select>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-2">
+<button class="flex-1 h-10 rounded-lg bg-surface-container-highest text-on-surface-variant font-medium text-xs" onclick="closeModal('modalBalance')">Hủy</button>
+<button class="flex-1 h-10 rounded-lg bg-primary text-on-primary font-medium text-xs" onclick="submitModalSuccess('modalBalance', 'Cập nhật số dư ngân hàng thành công!')">Lưu thay đổi</button>
+</div>
+</div>
+</div>
+<!-- MODAL: SỬA HẠN MỨC THẺ -->
+<div class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-surface-container-lowest/80 backdrop-blur-md" id="modalLimit">
+<div class="w-full max-w-sm rounded-xl p-5 bg-surface-container/90 backdrop-blur-2xl shadow-2xl flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">tune</span>
+<h3 class="font-headline font-semibold text-sm text-on-surface truncate" id="modalLimitCardTitle">Điều chỉnh hạn mức</h3>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1" onclick="closeModal('modalLimit')">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="flex flex-col gap-3 text-xs">
+<div>
+<label class="text-on-surface-variant">Hạn mức thẻ riêng biệt (VND)</label>
+<input class="w-full h-10 px-3 mt-1 rounded-lg bg-surface-container-high text-on-surface font-semibold focus:outline-none" id="modalCardLimitInput" type="text" value="100.000.000"/>
+</div>
+<div class="p-3 rounded-lg bg-primary/10 text-primary flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] shrink-0 mt-0.5">info</span>
+<span class="text-[11px] leading-relaxed">Hạn mức riêng không được vượt quá hạn mức tín dụng chung do ngân hàng phát hành cấp.</span>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-2">
+<button class="flex-1 h-10 rounded-lg bg-surface-container-highest text-on-surface-variant font-medium text-xs" onclick="closeModal('modalLimit')">Hủy</button>
+<button class="flex-1 h-10 rounded-lg bg-primary text-on-primary font-medium text-xs" onclick="submitModalSuccess('modalLimit', 'Đã lưu hạn mức thẻ mới!')">Xác nhận</button>
+</div>
+</div>
+</div>
+<!-- MODAL: LỊCH SỬ ĐIỀU CHỈNH SỐ DƯ (BACKEND REASONS) -->
+<div class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-surface-container-lowest/80 backdrop-blur-md" id="modalHistory">
+<div class="w-full max-w-sm rounded-xl p-5 bg-surface-container/90 backdrop-blur-2xl shadow-2xl flex flex-col gap-4 max-h-[751px]">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[22px]">history</span>
+<h3 class="font-headline font-semibold text-sm text-on-surface truncate" id="modalHistoryTitle">Lịch sử điều chỉnh</h3>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1" onclick="closeModal('modalHistory')">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- History Feed -->
+<div class="flex flex-col gap-2.5 overflow-y-auto no-scrollbar pr-0.5 text-xs">
+<!-- Item 1 -->
+<div class="p-3 rounded-lg bg-surface-container-high flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-semibold text-on-surface">Đồng bộ tự động sao kê</span>
+<span class="text-[10px] text-primary font-medium">+12.450.000 ₫</span>
+</div>
+<div class="text-[11px] text-on-surface-variant">Lý do backend: <span class="text-on-surface">SYNC_BILLING_CYCLE_AUTO</span></div>
+<div class="text-[10px] text-on-surface-variant/70">18:42 • 15/05/2024 • Mã: #LOG-88419</div>
+</div>
+<!-- Item 2 -->
+<div class="p-3 rounded-lg bg-surface-container-high flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-semibold text-on-surface">Thanh toán dư nợ thẻ</span>
+<span class="text-[10px] text-tertiary font-medium">-20.000.000 ₫</span>
+</div>
+<div class="text-[11px] text-on-surface-variant">Lý do backend: <span class="text-on-surface">DIRECT_PAYMENT_INTERBANK</span></div>
+<div class="text-[10px] text-on-surface-variant/70">09:15 • 10/05/2024 • Mã: #LOG-87120</div>
+</div>
+<!-- Item 3 -->
+<div class="p-3 rounded-lg bg-surface-container-high flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-semibold text-on-surface">Merchant Refund Shopee</span>
+<span class="text-[10px] text-primary font-medium">-650.000 ₫</span>
+</div>
+<div class="text-[11px] text-on-surface-variant">Lý do backend: <span class="text-on-surface">REFUND_REVERSAL_GATEWAY</span></div>
+<div class="text-[10px] text-on-surface-variant/70">14:02 • 02/05/2024 • Mã: #LOG-84392</div>
+</div>
+</div>
+<button class="w-full h-10 rounded-lg bg-surface-container-highest text-on-surface font-medium text-xs mt-1" onclick="closeModal('modalHistory')">Đóng</button>
+</div>
+</div>
+<!-- Interactive Toast Notification -->
+<div class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-surface-container-highest text-primary text-xs font-medium backdrop-blur-xl shadow-xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2" id="toastNotification">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span id="toastMessage">Thao tác thành công</span>
+</div>
+</div>
+<script>
+  // Toast Helper
+  function showToast(msg) {
+    const toast = document.getElementById('toastNotification');
+    const toastMsg = document.getElementById('toastMessage');
+    if (!toast || !toastMsg) return;
+    toastMsg.textContent = msg;
+    toast.classList.remove('opacity-0', 'pointer-events-none');
+    toast.classList.add('opacity-100');
+    setTimeout(() => {
+      toast.classList.remove('opacity-100');
+      toast.classList.add('opacity-0', 'pointer-events-none');
+    }, 2500);
+  }
+
+  // Modal Actions
+  function openBalanceModal(bankName, limit, debt) {
+    const title = document.getElementById('modalBalanceBankTitle');
+    const limitInput = document.getElementById('modalBankLimitInput');
+    const debtInput = document.getElementById('modalBankDebtInput');
+    if (title) title.textContent = 'Điều chỉnh ' + bankName;
+    if (limitInput) limitInput.value = limit;
+    if (debtInput) debtInput.value = debt;
+    document.getElementById('modalBalance').classList.remove('hidden');
+  }
+
+  function openLimitModal(cardName, limit) {
+    const title = document.getElementById('modalLimitCardTitle');
+    const limitInput = document.getElementById('modalCardLimitInput');
+    if (title) title.textContent = cardName;
+    if (limitInput) limitInput.value = limit;
+    document.getElementById('modalLimit').classList.remove('hidden');
+  }
+
+  function openHistoryModal(cardName) {
+    const title = document.getElementById('modalHistoryTitle');
+    if (title) title.textContent = 'Lịch sử &bull; ' + cardName;
+    document.getElementById('modalHistory').classList.remove('hidden');
+  }
+
+  function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('hidden');
+  }
+
+  function submitModalSuccess(modalId, msg) {
+    closeModal(modalId);
+    showToast(msg);
+  }
+
+  // Toggle Card Lock Micro-interaction
+  function toggleCardLock(btn, cardId) {
+    const cardEl = document.querySelector(`[data-card-id="${cardId}"]`);
+    if (!cardEl) return;
+
+    const isLocked = cardEl.getAttribute('data-status') === 'locked';
+    const statusBadge = cardEl.querySelector('.card-status-text');
+    const lockIcon = btn.querySelector('.material-symbols-outlined');
+    const lockLabel = btn.querySelector('.lock-btn-label');
+
+    if (!isLocked) {
+      // Lock Card
+      cardEl.setAttribute('data-status', 'locked');
+      if (statusBadge) {
+        statusBadge.textContent = 'Đã tạm khóa';
+        statusBadge.classList.remove('text-primary');
+        statusBadge.classList.add('text-error');
+      }
+      if (lockIcon) {
+        lockIcon.textContent = 'lock';
+        lockIcon.classList.remove('text-error');
+        lockIcon.classList.add('text-primary');
+      }
+      if (lockLabel) lockLabel.textContent = 'Mở khóa';
+      showToast('Đã tạm khóa thẻ ' + cardId.toUpperCase() + ' thành công');
+    } else {
+      // Unlock Card
+      cardEl.setAttribute('data-status', 'active');
+      if (statusBadge) {
+        statusBadge.textContent = 'Đang hoạt động';
+        statusBadge.classList.remove('text-error');
+        statusBadge.classList.add('text-primary');
+      }
+      if (lockIcon) {
+        lockIcon.textContent = 'lock_open';
+        lockIcon.classList.remove('text-primary');
+        lockIcon.classList.add('text-error');
+      }
+      if (lockLabel) lockLabel.textContent = 'Tạm khóa';
+      showToast('Đã mở khóa thẻ ' + cardId.toUpperCase());
+    }
+  }
+
+  // Filter Chips Logic
+  const filterChips = document.querySelectorAll('.filter-chip');
+  const cardItems = document.querySelectorAll('.card-item');
+  const bankGroups = document.querySelectorAll('.bank-group');
+
+  filterChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      filterChips.forEach(c => {
+        c.classList.remove('bg-primary', 'text-on-primary');
+        c.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+      });
+      chip.classList.add('bg-primary', 'text-on-primary');
+      chip.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+
+      const filterVal = chip.getAttribute('data-filter');
+
+      bankGroups.forEach(group => {
+        const bank = group.getAttribute('data-bank');
+        let visibleCount = 0;
+
+        const cardsInGroup = group.querySelectorAll('.card-item');
+        cardsInGroup.forEach(card => {
+          const status = card.getAttribute('data-status');
+          let shouldShow = false;
+
+          if (filterVal === 'all') {
+            shouldShow = true;
+          } else if (filterVal === 'active' && status === 'active') {
+            shouldShow = true;
+          } else if (filterVal === 'locked' && status === 'locked') {
+            shouldShow = true;
+          } else if (filterVal === bank) {
+            shouldShow = true;
+          }
+
+          if (shouldShow) {
+            card.style.display = 'flex';
+            visibleCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        group.style.display = visibleCount > 0 ? 'flex' : 'none';
+      });
+    });
+  });
+
+  // Search Input Filter
+  const searchInput = document.getElementById('cardSearchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const keyword = e.target.value.toLowerCase().trim();
+
+      bankGroups.forEach(group => {
+        let visibleInGroup = 0;
+        const bankName = group.getAttribute('data-bank') || '';
+        const cards = group.querySelectorAll('.card-item');
+
+        cards.forEach(card => {
+          const text = card.textContent.toLowerCase();
+          if (text.includes(keyword) || bankName.includes(keyword)) {
+            card.style.display = 'flex';
+            visibleInGroup++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        group.style.display = visibleInGroup > 0 ? 'flex' : 'none';
+      });
+    });
+  }
+
+  // Add Card CTA Button
+  const btnAddNewCard = document.getElementById('btnAddNewCard');
+  if (btnAddNewCard) {
+    btnAddNewCard.addEventListener('click', () => {
+      showToast('Đang kết nối liên minh ngân hàng mở thẻ mới...');
+    });
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/75 backdrop-blur-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.36)]" data-active-classes="text-primary font-semibold"><div class="flex items-center justify-around h-16 px-4"><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="the-tin-dung" href="#"><span class="material-symbols-outlined text-[22px]">credit_card</span><span class="text-[11px] font-label font-medium tracking-tight">Thẻ tín dụng</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="dau-tu" href="#"><span class="material-symbols-outlined text-[22px]">trending_up</span><span class="text-[11px] font-label font-medium tracking-tight">Đầu tư</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ca-nhan" href="#"><span class="material-symbols-outlined text-[22px]">person</span><span class="text-[11px] font-label font-medium tracking-tight">Cá nhân</span></a></div></nav></body></html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    @layer base {
+      html, body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #0a0e1a;
+      }
+      body {
+        overscroll-behavior-y: none;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "secondary-container": "#1a3a4e",
+            "on-primary": "#001f2e",
+            "on-tertiary-fixed-variant": "#4d2a73",
+            "on-tertiary-fixed": "#1a002e",
+            "surface-variant": "#1a2438",
+            "tertiary-fixed-dim": "#c8a0f0",
+            "tertiary-container": "#3d2060",
+            "inverse-surface": "#e0e8f0",
+            "error": "#ff6b6b",
+            "on-error-container": "#ffb3b3",
+            "surface-container": "#141c2e",
+            "on-secondary-container": "#c0d8e8",
+            "on-primary-fixed": "#001f2e",
+            "inverse-primary": "#0a4c6e",
+            "on-error": "#1a0000",
+            "primary": "#7dd3fc",
+            "outline": "#4a6070",
+            "secondary-fixed-dim": "#88b4cc",
+            "on-tertiary": "#1a002e",
+            "surface": "#0f1524",
+            "primary-fixed-dim": "#7dd3fc",
+            "primary-fixed": "#c8eaff",
+            "surface-container-high": "#1a2438",
+            "on-tertiary-container": "#e8d0ff",
+            "surface-bright": "#1a2438",
+            "secondary": "#88b4cc",
+            "on-primary-fixed-variant": "#004d73",
+            "surface-tint": "#7dd3fc",
+            "surface-container-highest": "#202c42",
+            "error-container": "#3d1414",
+            "on-secondary-fixed": "#0d1f2b",
+            "surface-container-lowest": "#0a0e1a",
+            "tertiary": "#c8a0f0",
+            "surface-dim": "#0f1524",
+            "on-surface-variant": "#a0b4c4",
+            "surface-container-low": "#111828",
+            "primary-container": "#0e4d6e",
+            "on-secondary": "#001f2e",
+            "inverse-on-surface": "#0a0e1a",
+            "tertiary-fixed": "#e8d0ff",
+            "secondary-fixed": "#c0d8e8",
+            "on-primary-container": "#c8eaff",
+            "on-background": "#e0e8f0",
+            "background": "#0a0e1a",
+            "on-surface": "#e0e8f0",
+            "outline-variant": "#2a3a48",
+            "on-secondary-fixed-variant": "#2a4a5e"
+          },
+          borderRadius: {
+            "DEFAULT": "0.5rem",
+            "lg": "1rem",
+            "xl": "1.5rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            "headline": ["Inter"],
+            "display": ["Inter"],
+            "body": ["Inter"],
+            "label": ["Inter"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary/20">
+<!-- Main Top Header -->
+<header class="fixed top-0 w-full z-50 pt-safe bg-surface/75 backdrop-blur-2xl border-b border-outline-variant/30">
+<div class="h-16 px-4 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/20">
+<span class="material-symbols-outlined text-[20px]">account_balance</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-semibold tracking-wider uppercase text-primary">KIRA BANK</span>
+<span class="text-base font-headline font-semibold text-on-surface leading-tight">Đầu Tư</span>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-on-primary font-medium text-xs shadow-md shadow-primary/10 hover:bg-primary-fixed active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[17px]">add_circle</span>
+<span>Thêm tài khoản</span>
+</button>
+<button aria-label="Notifications" class="w-9 h-9 flex items-center justify-center rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors relative ml-0.5">
+<span class="material-symbols-outlined text-[21px]">notifications</span>
+<span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary ring-2 ring-surface"></span>
+</button>
+</div>
+</div>
+<!-- Secondary Module Navigation Tabs -->
+<div class="px-4 pb-2 flex items-center gap-1 border-t border-outline-variant/20 pt-1.5 overflow-x-auto">
+<a class="relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-primary-container/40 text-primary border border-primary/30 transition-all whitespace-nowrap" href="#">
+<span class="material-symbols-outlined text-[16px]">folder_shared</span>
+<span>Tài khoản</span>
+</a>
+<a class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container/60 transition-all whitespace-nowrap" href="#">
+<span class="material-symbols-outlined text-[16px]">add_task</span>
+<span>Nhập giao dịch</span>
+</a>
+<a class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container/60 transition-all whitespace-nowrap" href="#">
+<span class="material-symbols-outlined text-[16px]">psychology</span>
+<span>Hàng đợi AI</span>
+<span class="px-1.5 py-0.2 rounded-full bg-tertiary/20 text-tertiary text-[10px] font-semibold">3</span>
+</a>
+</div>
+</header>
+<!-- Main Content Body -->
+<main class="flex-1 flex flex-col relative w-full pt-[124px] pb-24 bg-background">
+<!-- Ambient Blur Background -->
+<div class="fixed top-24 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="fixed bottom-24 right-0 w-72 h-72 bg-tertiary/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="flex flex-col w-full px-4 space-y-4 pt-1">
+<!-- Section Title & Meta Count -->
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-lg font-headline font-bold text-on-surface tracking-tight">Danh sách tài khoản đầu tư</h2>
+<p class="text-xs text-on-surface-variant mt-0.5">Quản lý định danh và thông tin xác thực dữ liệu</p>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-surface-container-high border border-outline-variant/30 text-xs font-semibold text-primary">
+          3 tài khoản
+        </span>
+</div>
+<!-- Search Input Bar -->
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full h-11 pl-11 pr-4 rounded-xl bg-surface-container/70 border border-outline-variant/40 text-on-surface placeholder:text-on-surface-variant text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary backdrop-blur-md transition-all shadow-inner" placeholder="Tìm theo tên, mã tài khoản..." type="text"/>
+</div>
+<!-- Filter Status Chips -->
+<div class="flex items-center gap-2 overflow-x-auto pb-1">
+<button class="px-3 py-1.5 rounded-full bg-primary text-on-primary text-xs font-semibold shadow-sm whitespace-nowrap transition-transform active:scale-95">
+          Tất cả (3)
+        </button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container-high/80 hover:bg-surface-container-highest border border-outline-variant/40 text-on-surface-variant hover:text-on-surface text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          Hoạt động (2)
+        </button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container-high/80 hover:bg-surface-container-highest border border-outline-variant/40 text-on-surface-variant hover:text-on-surface text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+          Không hoạt động (1)
+        </button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container-high/80 hover:bg-surface-container-highest border border-outline-variant/40 text-on-surface-variant hover:text-on-surface text-xs font-medium whitespace-nowrap transition-all">
+          Đã đóng (0)
+        </button>
+</div>
+<!-- Account Cards List -->
+<div class="space-y-3.5 pt-1">
+<!-- Card 1: Tài khoản SSI Pro Trader -->
+<article class="relative rounded-2xl bg-surface-container/75 border border-outline-variant/40 p-4 backdrop-blur-xl shadow-lg hover:border-primary/40 transition-all">
+<!-- Card Header -->
+<div class="flex items-start justify-between gap-2 pb-3 border-b border-outline-variant/30">
+<div class="min-w-0 flex-1">
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="text-base font-headline font-bold text-on-surface tracking-tight truncate">Tài khoản SSI Pro Trader</h3>
+<span class="px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-primary text-[11px] font-bold tracking-wider uppercase">VND</span>
+</div>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="text-[11px] font-mono text-secondary">Mã: SSI-001C-VN</span>
+</div>
+</div>
+<!-- Status Badge -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              Hoạt động
+            </span>
+</div>
+<!-- Metadata Fields -->
+<div class="grid grid-cols-2 gap-y-2.5 gap-x-2 py-3 text-xs">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">badge</span>
+                Tên đăng nhập
+              </span>
+<span class="font-medium text-on-surface mt-0.5 truncate">ssi_trietnguyen</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">phone_iphone</span>
+                Số điện thoại
+              </span>
+<span class="font-medium text-on-surface mt-0.5 truncate">0988 123 456</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">mail</span>
+                Email đăng ký
+              </span>
+<span class="font-medium text-on-surface mt-0.5 truncate">triet.nguyen@kirabank.vn</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">calendar_today</span>
+                Ngày đăng ký
+              </span>
+<span class="font-medium text-on-surface mt-0.5">15/03/2023</span>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="pt-2.5 border-t border-outline-variant/30 flex items-center justify-end">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-surface-variant/80 hover:bg-primary/20 text-primary hover:text-primary-fixed border border-primary/20 text-xs font-semibold transition-all">
+<span class="material-symbols-outlined text-[15px]">edit</span>
+<span>Chỉnh sửa</span>
+</button>
+</div>
+</article>
+<!-- Card 2: Quỹ mở VinaCapital VEOF -->
+<article class="relative rounded-2xl bg-surface-container/75 border border-outline-variant/40 p-4 backdrop-blur-xl shadow-lg hover:border-primary/40 transition-all">
+<!-- Card Header -->
+<div class="flex items-start justify-between gap-2 pb-3 border-b border-outline-variant/30">
+<div class="min-w-0 flex-1">
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="text-base font-headline font-bold text-on-surface tracking-tight truncate">Quỹ mở VinaCapital VEOF</h3>
+<span class="px-2 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-primary text-[11px] font-bold tracking-wider uppercase">VND</span>
+</div>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="text-[11px] font-mono text-secondary">Mã: VCF-9821-VN</span>
+</div>
+</div>
+<!-- Status Badge -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              Hoạt động
+            </span>
+</div>
+<!-- Metadata Fields -->
+<div class="grid grid-cols-2 gap-y-2.5 gap-x-2 py-3 text-xs">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">badge</span>
+                Tên đăng nhập
+              </span>
+<span class="font-medium text-on-surface mt-0.5 truncate">vinacap_triet</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">phone_iphone</span>
+                Số điện thoại
+              </span>
+<span class="font-medium text-on-surface mt-0.5 truncate">0988 123 456</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">mail</span>
+                Email đăng ký
+              </span>
+<span class="font-medium text-on-surface mt-0.5 truncate">triet.nguyen@kirabank.vn</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">calendar_today</span>
+                Ngày đăng ký
+              </span>
+<span class="font-medium text-on-surface mt-0.5">20/08/2023</span>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="pt-2.5 border-t border-outline-variant/30 flex items-center justify-end">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-surface-variant/80 hover:bg-primary/20 text-primary hover:text-primary-fixed border border-primary/20 text-xs font-semibold transition-all">
+<span class="material-symbols-outlined text-[15px]">edit</span>
+<span>Chỉnh sửa</span>
+</button>
+</div>
+</article>
+<!-- Card 3: Global Interactive Brokers -->
+<article class="relative rounded-2xl bg-surface-container/75 border border-outline-variant/40 p-4 backdrop-blur-xl shadow-lg hover:border-outline transition-all">
+<!-- Card Header -->
+<div class="flex items-start justify-between gap-2 pb-3 border-b border-outline-variant/30">
+<div class="min-w-0 flex-1">
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="text-base font-headline font-bold text-on-surface tracking-tight truncate">Global Interactive Brokers</h3>
+<span class="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/30 text-amber-300 text-[11px] font-bold tracking-wider uppercase">USD</span>
+</div>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="text-[11px] font-mono text-secondary">Mã: IBKR-U781204</span>
+</div>
+</div>
+<!-- Status Badge: Không hoạt động -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-variant border border-outline/50 text-on-surface-variant text-xs font-semibold shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+              Không hoạt động
+            </span>
+</div>
+<!-- Metadata Fields -->
+<div class="grid grid-cols-2 gap-y-2.5 gap-x-2 py-3 text-xs">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">badge</span>
+                Tên đăng nhập
+              </span>
+<span class="font-medium text-on-surface mt-0.5 truncate">triet_ibkr_usd</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">phone_iphone</span>
+                Số điện thoại
+              </span>
+<span class="font-medium text-on-surface mt-0.5 truncate">+84 988 123 456</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">mail</span>
+                Email đăng ký
+              </span>
+<span class="font-medium text-on-surface mt-0.5 truncate">t.nguyen@kiraglobal.com</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-medium tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">calendar_today</span>
+                Ngày đăng ký
+              </span>
+<span class="font-medium text-on-surface mt-0.5">10/01/2024</span>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="pt-2.5 border-t border-outline-variant/30 flex items-center justify-end">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-surface-variant/80 hover:bg-primary/20 text-primary hover:text-primary-fixed border border-primary/20 text-xs font-semibold transition-all">
+<span class="material-symbols-outlined text-[15px]">edit</span>
+<span>Chỉnh sửa</span>
+</button>
+</div>
+</article>
+</div>
+<!-- Business Rule Footnote -->
+<div class="pt-3 pb-2 text-center">
+<div class="p-3 rounded-xl bg-surface-container-low/80 border border-outline-variant/20 flex items-start gap-2 text-left">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">info</span>
+<p class="text-[11px] leading-relaxed text-on-surface-variant">
+            Mỗi tài khoản lưu trữ độc lập thông tin đồng bộ dữ liệu. Không can thiệp số dư trực tiếp.
+          </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Persistent Kira Bank Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/85 backdrop-blur-2xl border-t border-outline-variant/30 shadow-[0_-8px_32px_rgba(0,0,0,0.45)]">
+<div class="flex items-center justify-around h-16 px-4">
+<a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="the-tin-dung" href="#">
+<span class="material-symbols-outlined text-[22px]">credit_card</span>
+<span class="text-[11px] font-label font-medium tracking-tight">Thẻ tín dụng</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-primary font-semibold transition-colors" data-path="dau-tu" href="#">
+<span class="material-symbols-outlined text-[22px]">trending_up</span>
+<span class="text-[11px] font-label font-semibold tracking-tight">Đầu tư</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ca-nhan" href="#">
+<span class="material-symbols-outlined text-[22px]">person</span>
+<span class="text-[11px] font-label font-medium tracking-tight">Cá nhân</span>
+</a>
+</div>
+</nav>
+</body></html>

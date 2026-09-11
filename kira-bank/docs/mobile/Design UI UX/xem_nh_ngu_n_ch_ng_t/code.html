@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#0a0e1a;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'primary-fixed': '#c8eaff', 'on-primary-fixed': '#001f2e', 'on-primary': '#001f2e', 'primary': '#7dd3fc', 'surface-dim': '#0f1524', 'primary-container': '#0e4d6e', 'inverse-surface': '#e0e8f0', 'on-primary-fixed-variant': '#004d73', 'outline-variant': '#2a3a48', 'secondary-container': '#1a3a4e', 'primary-fixed-dim': '#7dd3fc', 'error': '#ff6b6b', 'surface-container-highest': '#202c42', 'on-error-container': '#ffb3b3', 'surface-container-lowest': '#0a0e1a', 'surface-container-low': '#111828', 'on-primary-container': '#c8eaff', 'on-error': '#1a0000', 'tertiary-container': '#3d2060', 'error-container': '#3d1414', 'surface-bright': '#1a2438', 'on-secondary-fixed-variant': '#2a4a5e', 'on-tertiary-container': '#e8d0ff', 'background': '#0a0e1a', 'on-surface': '#e0e8f0', 'on-secondary': '#001f2e', 'surface-container-high': '#1a2438', 'inverse-on-surface': '#0a0e1a', 'surface-tint': '#7dd3fc', 'on-secondary-fixed': '#0d1f2b', 'secondary-fixed-dim': '#88b4cc', 'outline': '#4a6070', 'surface-container': '#141c2e', 'tertiary-fixed-dim': '#c8a0f0', 'secondary': '#88b4cc', 'on-secondary-container': '#c0d8e8', 'on-tertiary-fixed': '#1a002e', 'on-tertiary': '#1a002e', 'surface': '#0f1524', 'tertiary-fixed': '#e8d0ff', 'on-tertiary-fixed-variant': '#4d2a73', 'on-background': '#e0e8f0', 'tertiary': '#c8a0f0', 'on-surface-variant': '#a0b4c4', 'secondary-fixed': '#c0d8e8', 'surface-variant': '#1a2438', 'inverse-primary': '#0a4c6e' }, borderRadius: { 'DEFAULT': '0.5rem', 'lg': '1rem', 'xl': '1.5rem', 'full': '9999px' }, fontFamily: { 'headline': ['Inter'], 'display': ['Inter'], 'body': ['Inter'], 'label': ['Inter'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/60 backdrop-blur-2xl"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">account_balance</span></div><div class="flex flex-col"><span class="text-[11px] font-medium tracking-wider uppercase text-primary">Kira Bank</span><span class="text-base font-headline font-semibold text-on-surface leading-tight">Cá Nhân</span></div></div><div class="flex items-center gap-1"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-background"><div class="flex flex-col w-full px-4 space-y-4 select-none">
+<!-- Interactive Viewport Canvas -->
+<div class="w-full relative rounded-xl overflow-hidden bg-surface-container-lowest shadow-2xl flex flex-col">
+<!-- Action Status Bar (Top bar inside viewer) -->
+<div class="flex items-center justify-between px-3.5 py-3 bg-surface/75 backdrop-blur-2xl z-20">
+<div class="flex items-center gap-2.5 min-w-0">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0"></span>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-xs font-semibold text-on-surface truncate">chung_tu_nap_tien_01.png</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-highest text-[10px] font-medium text-primary shrink-0 font-mono">#JOB-98214</span>
+</div>
+<span class="text-[10px] text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary">verified_user</span>
+            Glacier Vault Verified • AI Ready
+          </span>
+</div>
+</div>
+<!-- Quick Document Utilities -->
+<div class="flex items-center gap-1 shrink-0">
+<button aria-label="Xoay ảnh 90 độ" class="w-8 h-8 rounded-lg bg-surface-variant/80 hover:bg-surface-variant active:scale-95 text-on-surface flex items-center justify-center transition-all" id="btn-rotate">
+<span class="material-symbols-outlined text-[18px]">rotate_right</span>
+</button>
+<button aria-label="Bật quét OCR" class="px-2.5 h-8 rounded-lg bg-primary-container/80 text-primary hover:bg-primary-container text-[11px] font-semibold flex items-center gap-1 active:scale-95 transition-all" id="btn-ocr-toggle">
+<span class="material-symbols-outlined text-[16px]">document_scanner</span>
+<span>OCR</span>
+</button>
+<button aria-label="Chia sẻ hoặc tải về" class="w-8 h-8 rounded-lg bg-surface-variant/80 hover:bg-surface-variant active:scale-95 text-on-surface-variant flex items-center justify-center transition-all" id="btn-share">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+</div>
+<!-- Viewer Workspace Area -->
+<div class="relative w-full h-[400px] overflow-hidden bg-[#070b13] flex items-center justify-center cursor-grab active:cursor-grabbing touch-none" id="image-viewport">
+<!-- Ambient Grid Background for Pro Inspection -->
+<div class="absolute inset-0 bg-[radial-gradient(#1a2438_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none"></div>
+<!-- Scalable Document Container -->
+<div class="relative transition-transform duration-100 ease-out origin-center select-none will-change-transform" id="transformable-container">
+<img alt="Chứng từ giao dịch gốc" class="w-[320px] rounded-lg shadow-2xl pointer-events-none transition-all duration-300" data-alt="Photorealistic ultra-high-resolution mobile banking transaction receipt showing Kira Bank transfer confirmation. The slip features crisp navy and ice-blue typography, a clear payment reference code FT2429288102, transaction amount of 250,000,000 VND to Investment Portfolio Alpha, detailed timestamp, QR verification code, and subtle security watermarks under clean professional frosted lighting." id="document-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuDl_bDD-O4Tr1Hc9oW0gxg7LIfob1OWd6rsapmflwjhjniMAUiWa7G_tQo1JA6utUlTZhyA12GI1AC5pY1P2-eAkQppoHnwZpi6ivO3wBUqIYT8Hd6amKriB5WIcdwWo2OZpuN8JJBnRfXMrKLxMmVTxcM1WEb1b8s2IRGcTW4Lrk_unm1rGpThzWrtU42Z722Ezf_7Hwin0x_ZlY8Q6EBaASc0ElC_GlYtAursaeyU-lvphtSe5x"/>
+<!-- High-Precision Simulated OCR Bounding Boxes (Toggled via OCR Mode) -->
+<div class="absolute inset-0 pointer-events-none hidden transition-opacity duration-300" id="ocr-layer">
+<div class="absolute top-[28%] left-[8%] right-[10%] h-[34px] rounded bg-primary/20 animate-pulse flex items-start justify-end pr-1 pt-0.5">
+<span class="text-[9px] bg-primary text-on-primary px-1 font-mono font-bold rounded">250,000,000 VND (99.8%)</span>
+</div>
+<div class="absolute top-[44%] left-[8%] right-[40%] h-[24px] rounded bg-tertiary/20 flex items-start justify-end pr-1 pt-0.5">
+<span class="text-[9px] bg-tertiary text-on-tertiary px-1 font-mono font-bold rounded">QUY_DAU_TU_ALPHA</span>
+</div>
+<div class="absolute top-[56%] left-[8%] right-[30%] h-[20px] rounded bg-primary/20 flex items-start justify-end pr-1 pt-0.5">
+<span class="text-[9px] bg-primary text-on-primary px-1 font-mono font-bold rounded">FT2429288102</span>
+</div>
+</div>
+</div>
+<!-- Watermark Badge -->
+<div class="absolute top-3 left-3 px-2 py-1 rounded bg-surface/80 backdrop-blur-md flex items-center gap-1.5 pointer-events-none z-10">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="text-[10px] font-mono tracking-wide text-primary-fixed uppercase">4K High-Res Source</span>
+</div>
+<!-- Live Zoom HUD Display -->
+<div class="absolute bottom-3 left-3 px-2.5 py-1 rounded-full bg-surface-dim/80 backdrop-blur-md text-[11px] font-mono font-medium text-on-surface-variant flex items-center gap-1 pointer-events-none z-10">
+<span class="material-symbols-outlined text-[13px] text-primary">zoom_in</span>
+<span id="zoom-indicator">100%</span>
+</div>
+<!-- Floating Canvas Glass Controls -->
+<div class="absolute bottom-3 right-3 flex items-center gap-1 p-1 rounded-xl bg-surface/80 backdrop-blur-2xl shadow-xl z-10">
+<button aria-label="Thu nhỏ" class="w-8 h-8 rounded-lg bg-surface-container-highest hover:bg-surface-bright text-on-surface flex items-center justify-center active:scale-95 transition-all" id="btn-zoom-out">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<button aria-label="Khôi phục vừa màn hình" class="px-2 h-8 rounded-lg bg-surface-container-highest hover:bg-surface-bright text-on-surface text-[11px] font-medium active:scale-95 transition-all" id="btn-zoom-reset">
+          Fit
+        </button>
+<button aria-label="Phóng to" class="w-8 h-8 rounded-lg bg-surface-container-highest hover:bg-surface-bright text-on-surface flex items-center justify-center active:scale-95 transition-all" id="btn-zoom-in">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Document Intelligence & Metadata Details Sheet -->
+<div class="w-full rounded-xl bg-surface/60 backdrop-blur-2xl p-4 shadow-xl flex flex-col gap-4">
+<!-- Header with Quick State Pill -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-secondary-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">badge</span>
+</div>
+<div class="flex flex-col">
+<h3 class="text-sm font-semibold text-on-surface font-headline leading-none">Thông số chứng từ</h3>
+<span class="text-[11px] text-on-surface-variant mt-1 font-label">Khối dữ liệu tự động đồng bộ</span>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+<span class="material-symbols-outlined text-[12px]">cloud_done</span>
+<span>Khai thác khả dụng</span>
+</div>
+</div>
+<!-- Metadata Grid Bento Cards -->
+<div class="grid grid-cols-2 gap-2.5">
+<!-- Item 1: File Specifications -->
+<div class="p-3 rounded-lg bg-surface-container-low flex flex-col gap-1">
+<span class="text-[10px] uppercase font-semibold tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">photo_library</span>
+          Định dạng &amp; Kích thước
+        </span>
+<span class="text-xs font-semibold text-on-surface font-mono mt-0.5">PNG • 2.4 MB</span>
+<span class="text-[10px] text-on-surface-variant font-mono">2400 × 1800 px (300 DPI)</span>
+</div>
+<!-- Item 2: Timestamp -->
+<div class="p-3 rounded-lg bg-surface-container-low flex flex-col gap-1">
+<span class="text-[10px] uppercase font-semibold tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-tertiary">schedule</span>
+          Thời gian tải lên
+        </span>
+<span class="text-xs font-semibold text-on-surface font-mono mt-0.5">14:20:10</span>
+<span class="text-[10px] text-on-surface-variant font-mono">18/10/2024 (GMT+7)</span>
+</div>
+<!-- Item 3: Storage Vault Status (Span 2) -->
+<div class="col-span-2 p-3 rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-7 h-7 rounded-full bg-primary-container/60 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-xs font-semibold text-on-surface truncate">Glacier Vault Encrypted Storage</span>
+<span class="text-[10px] text-on-surface-variant truncate">SHA-256: 8f4e2d...47b9 • Mã hóa cấp ngân hàng</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-bright text-primary shrink-0 font-label">Bảo mật</span>
+</div>
+</div>
+<!-- Extraction Brief -->
+<div class="p-3 rounded-lg bg-surface-container flex items-start gap-2.5">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">auto_awesome</span>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-on-surface">Đã trích xuất sẵn 4 trường giao dịch</span>
+<p class="text-[11px] text-on-surface-variant leading-relaxed mt-0.5">
+          AI Vision Kira đã đối soát số tiền khớp 100% với danh mục Nạp tiền đầu tư tự động Quỹ Alpha.
+        </p>
+</div>
+</div>
+<!-- Action Bar Buttons -->
+<div class="flex items-center gap-2.5 pt-1">
+<button aria-label="Đóng cửa sổ xem ảnh" class="flex-1 h-11 px-4 rounded-lg bg-surface-container-highest hover:bg-surface-bright active:scale-98 transition-all flex items-center justify-center gap-1.5 text-on-surface text-xs font-medium" type="button">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">close</span>
+<span>Đóng</span>
+</button>
+<button aria-label="Xem kết quả AI chuẩn hóa" class="flex-[1.8] h-11 px-4 rounded-lg bg-primary text-on-primary hover:bg-primary/90 active:scale-98 transition-all flex items-center justify-center gap-2 font-semibold text-xs shadow-[0_0_24px_rgba(125,211,252,0.25)]" type="button">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+<span>Kết quả AI chuẩn hóa</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const container = document.getElementById('transformable-container');
+    const viewport = document.getElementById('image-viewport');
+    const zoomIndicator = document.getElementById('zoom-indicator');
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const btnZoomReset = document.getElementById('btn-zoom-reset');
+    const btnRotate = document.getElementById('btn-rotate');
+    const btnOcrToggle = document.getElementById('btn-ocr-toggle');
+    const ocrLayer = document.getElementById('ocr-layer');
+
+    let scale = 1;
+    let rotation = 0;
+    let posX = 0;
+    let posY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let ocrActive = false;
+
+    function updateTransform() {
+      container.style.transform = `translate(${posX}px, ${posY}px) scale(${scale}) rotate(${rotation}deg)`;
+      zoomIndicator.textContent = Math.round(scale * 100) + '%';
+    }
+
+    // Zoom handlers
+    btnZoomIn.addEventListener('click', () => {
+      if (scale < 3.0) {
+        scale = Math.min(3.0, scale + 0.25);
+        updateTransform();
+      }
+    });
+
+    btnZoomOut.addEventListener('click', () => {
+      if (scale > 0.6) {
+        scale = Math.max(0.6, scale - 0.25);
+        updateTransform();
+      }
+    });
+
+    btnZoomReset.addEventListener('click', () => {
+      scale = 1;
+      rotation = 0;
+      posX = 0;
+      posY = 0;
+      updateTransform();
+    });
+
+    // Rotation handler
+    btnRotate.addEventListener('click', () => {
+      rotation = (rotation + 90) % 360;
+      updateTransform();
+    });
+
+    // OCR Layer toggle
+    btnOcrToggle.addEventListener('click', () => {
+      ocrActive = !ocrActive;
+      if (ocrActive) {
+        ocrLayer.classList.remove('hidden');
+        btnOcrToggle.classList.replace('bg-primary-container/80', 'bg-primary');
+        btnOcrToggle.classList.replace('text-primary', 'text-on-primary');
+      } else {
+        ocrLayer.classList.add('hidden');
+        btnOcrToggle.classList.replace('bg-primary', 'bg-primary-container/80');
+        btnOcrToggle.classList.replace('text-on-primary', 'text-primary');
+      }
+    });
+
+    // Mobile touch and pan drag gesture
+    viewport.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      startX = e.clientX - posX;
+      startY = e.clientY - posY;
+      viewport.setPointerCapture(e.pointerId);
+    });
+
+    viewport.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      posX = e.clientX - startX;
+      posY = e.clientY - startY;
+      updateTransform();
+    });
+
+    const endDrag = (e) => {
+      if (isDragging) {
+        isDragging = false;
+        try {
+          viewport.releasePointerCapture(e.pointerId);
+        } catch (err) {}
+      }
+    };
+
+    viewport.addEventListener('pointerup', endDrag);
+    viewport.addEventListener('pointercancel', endDrag);
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/75 backdrop-blur-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.36)]" data-active-classes="text-primary font-semibold"><div class="flex items-center justify-around h-16 px-4"><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="the-tin-dung" href="#"><span class="material-symbols-outlined text-[22px]">credit_card</span><span class="text-[11px] font-label font-medium tracking-tight">Thẻ tín dụng</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="dau-tu" href="#"><span class="material-symbols-outlined text-[22px]">trending_up</span><span class="text-[11px] font-label font-medium tracking-tight">Đầu tư</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ca-nhan" href="#"><span class="material-symbols-outlined text-[22px]">person</span><span class="text-[11px] font-label font-medium tracking-tight">Cá nhân</span></a></div></nav></body></html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#0a0e1a;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'primary-fixed': '#c8eaff', 'on-primary-fixed': '#001f2e', 'on-primary': '#001f2e', 'primary': '#7dd3fc', 'surface-dim': '#0f1524', 'primary-container': '#0e4d6e', 'inverse-surface': '#e0e8f0', 'on-primary-fixed-variant': '#004d73', 'outline-variant': '#2a3a48', 'secondary-container': '#1a3a4e', 'primary-fixed-dim': '#7dd3fc', 'error': '#ff6b6b', 'surface-container-highest': '#202c42', 'on-error-container': '#ffb3b3', 'surface-container-lowest': '#0a0e1a', 'surface-container-low': '#111828', 'on-primary-container': '#c8eaff', 'on-error': '#1a0000', 'tertiary-container': '#3d2060', 'error-container': '#3d1414', 'surface-bright': '#1a2438', 'on-secondary-fixed-variant': '#2a4a5e', 'on-tertiary-container': '#e8d0ff', 'background': '#0a0e1a', 'on-surface': '#e0e8f0', 'on-secondary': '#001f2e', 'surface-container-high': '#1a2438', 'inverse-on-surface': '#0a0e1a', 'surface-tint': '#7dd3fc', 'on-secondary-fixed': '#0d1f2b', 'secondary-fixed-dim': '#88b4cc', 'outline': '#4a6070', 'surface-container': '#141c2e', 'tertiary-fixed-dim': '#c8a0f0', 'secondary': '#88b4cc', 'on-secondary-container': '#c0d8e8', 'on-tertiary-fixed': '#1a002e', 'on-tertiary': '#1a002e', 'surface': '#0f1524', 'tertiary-fixed': '#e8d0ff', 'on-tertiary-fixed-variant': '#4d2a73', 'on-background': '#e0e8f0', 'tertiary': '#c8a0f0', 'on-surface-variant': '#a0b4c4', 'secondary-fixed': '#c0d8e8', 'surface-variant': '#1a2438', 'inverse-primary': '#0a4c6e' }, borderRadius: { 'DEFAULT': '0.5rem', 'lg': '1rem', 'xl': '1.5rem', 'full': '9999px' }, fontFamily: { 'headline': ['Inter'], 'display': ['Inter'], 'body': ['Inter'], 'label': ['Inter'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/60 backdrop-blur-2xl"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">account_balance</span></div><div class="flex flex-col"><span class="text-[11px] font-medium tracking-wider uppercase text-primary">Kira Bank</span><span class="text-base font-headline font-semibold text-on-surface leading-tight">Cá Nhân</span></div></div><div class="flex items-center gap-1"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-background"><div class="flex flex-col w-full px-4 pb-8 space-y-5">
+<!-- Profile Header Card (Glacier Frosted Glass) -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container/60 backdrop-blur-xl p-5 shadow-[0_8px_32px_rgba(0,0,0,0.36)]">
+<!-- Ambient Frost Aura behind avatar -->
+<div class="absolute -top-12 -left-12 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-10 -right-10 w-36 h-36 bg-tertiary/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="relative flex items-start gap-4">
+<!-- Glow Avatar Container -->
+<div class="relative flex-shrink-0">
+<div class="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-primary via-primary-fixed to-primary/40 shadow-[0_0_20px_rgba(125,211,252,0.45)]">
+<img class="w-full h-full rounded-full object-cover bg-surface-container-highest" data-alt="Portrait of an elegant Vietnamese young man in his early 30s with styled dark hair wearing a sharp navy suit, soft cyan ambient rim light, deep dark crystalline background, ultra-modern luxury fintech profile photo style, realistic photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJrX3SJxqr4EK3QRn_B7CXj4AvWoZr2rXucci9joqCpdwtGR7O1e3zKdbkkNmD_Ytq_aUyVPxgmiHjnVPrHki8lMkHA1pN1IyNGw57xiA5sS7NT0mYJ0K1kSZ3sFV_zavTOmNSJXsdUoBJ8ZGp8m69JoaXTeh5kuJymxfIOmfonuoXwvtcZh9iDfQ0_-c6exrfEbRMu6uniavnf37Y4NzflM5KEk59zX4UgjJTle8xoSg7SqoY3jek"/>
+</div>
+<!-- Priority Member Badge Dot -->
+<div class="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-[0_0_8px_rgba(125,211,252,0.8)]">
+<span class="material-symbols-outlined text-[13px] text-on-primary font-bold">diamond</span>
+</div>
+</div>
+<!-- Identity Text Block -->
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<h2 class="text-lg font-headline font-semibold text-on-surface truncate">Nguyễn Minh Triết</h2>
+</div>
+<p class="text-xs text-on-surface-variant mt-0.5 truncate">triet.nguyen@kirabank.vn</p>
+<div class="flex items-center gap-2 mt-2 flex-wrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium tracking-wide bg-primary/15 text-primary">
+<span class="material-symbols-outlined text-[12px]">verified</span>
+            Priority Banking
+          </span>
+<span class="text-[11px] text-secondary font-mono tracking-wider">#KIRA-889210</span>
+</div>
+</div>
+</div>
+<!-- Biometric KYC Verification Strip -->
+<div class="mt-4 pt-3 bg-surface-container-high/40 rounded-lg p-3 flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[16px]">fingerprint</span>
+</div>
+<div class="min-w-0">
+<div class="text-xs font-medium text-on-surface flex items-center gap-1">
+<span>CCCD gắn chip</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+<span class="text-[11px] text-primary">Chuẩn sinh trắc học</span>
+</div>
+<p class="text-[10px] text-on-surface-variant truncate">Bảo vệ định danh bởi Trung tâm Dữ liệu Quốc gia</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-[18px] flex-shrink-0 ml-2">check_circle</span>
+</div>
+</div>
+<!-- Section 1: Security & Platform Architecture -->
+<div class="space-y-2">
+<div class="flex items-center justify-between px-1">
+<span class="text-[11px] font-semibold uppercase tracking-wider text-secondary">Cấu hình bảo mật &amp; Nền tảng</span>
+<span class="text-[10px] text-primary font-medium tracking-tight flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]">shield</span> Cấp độ Quân sự
+      </span>
+</div>
+<div class="rounded-xl bg-surface-container/60 backdrop-blur-xl divide-y-0 overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.25)]">
+<!-- Biometric Auth Switch -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-bright/20 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">id_card</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-medium text-on-surface truncate">Xác thực sinh trắc học</p>
+<p class="text-[11px] text-on-surface-variant truncate">FaceID &amp; Cảm biến vân tay siêu âm</p>
+</div>
+</div>
+<!-- Modern Toggle Switch (Active state) -->
+<button aria-checked="true" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full bg-primary transition-colors duration-200 ease-in-out focus:outline-none" id="toggle-bio" role="switch">
+<span class="pointer-events-none inline-block h-5 w-5 transform translate-x-5.5 mt-0.5 ml-0.5 rounded-full bg-surface-container-lowest shadow-md transition duration-200 ease-in-out" id="toggle-thumb"></span>
+</button>
+</div>
+<!-- App Lock Timeout -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-bright/20 transition-colors bg-surface-container-low/30">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">timer</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-medium text-on-surface truncate">Khóa khi vào nền</p>
+<p class="text-[11px] text-on-surface-variant truncate">Tự động khóa sau thời gian chờ</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 flex-shrink-0">
+<span class="text-xs font-semibold px-2 py-1 rounded bg-secondary-container/60 text-primary">1 phút</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
+</div>
+</div>
+<!-- Active Sessions & Trusted Devices -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-bright/20 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">devices</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<p class="text-sm font-medium text-on-surface truncate">Thiết bị đã cấp quyền</p>
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</div>
+<p class="text-[11px] text-on-surface-variant truncate">iPhone 15 Pro Max (Thiết bị này), iPad Pro</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Section 2: Ecosystem Integration & Synchronization -->
+<div class="space-y-2">
+<div class="flex items-center justify-between px-1">
+<span class="text-[11px] font-semibold uppercase tracking-wider text-secondary">Tích hợp hệ thống &amp; Đồng bộ</span>
+<span class="text-[10px] text-tertiary font-mono">API v4.1 Sync</span>
+</div>
+<div class="rounded-xl bg-surface-container/60 backdrop-blur-xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.25)]">
+<!-- Open Banking & VietQR Gateway -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-bright/20 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-tertiary/15 flex items-center justify-center text-tertiary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-medium text-on-surface truncate">Liên kết Open Banking / VietQR</p>
+<p class="text-[11px] text-on-surface-variant truncate">Tự động nhận diện chuỗi giao dịch liên ngân hàng</p>
+</div>
+</div>
+<span class="text-xs text-primary font-medium px-2 py-0.5 rounded bg-primary/10 flex-shrink-0">Kích hoạt</span>
+</div>
+<!-- Portfolio Synced Cards -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-bright/20 transition-colors bg-surface-container-low/30">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-tertiary/15 flex items-center justify-center text-tertiary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">query_stats</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-medium text-on-surface truncate">Danh mục đầu tư liên kết</p>
+<p class="text-[11px] text-on-surface-variant truncate">SSI Chứng khoán, VNDirect, VinaCapital</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<div class="flex -space-x-1.5">
+<div class="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold text-primary">S</div>
+<div class="w-5 h-5 rounded-full bg-tertiary/20 flex items-center justify-center text-[9px] font-bold text-tertiary">V</div>
+<div class="w-5 h-5 rounded-full bg-secondary/20 flex items-center justify-center text-[9px] font-bold text-secondary">C</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
+</div>
+</div>
+<!-- App Permissions (Camera & OCR) -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-bright/20 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-secondary/15 flex items-center justify-center text-secondary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">photo_camera</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-medium text-on-surface truncate">Quyền thiết bị (Camera &amp; Ảnh)</p>
+<p class="text-[11px] text-on-surface-variant truncate">Quét OCR hóa đơn, chuyển khoản &amp; eKYC</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Section 3: App Preferences & Experience -->
+<div class="space-y-2">
+<div class="flex items-center justify-between px-1">
+<span class="text-[11px] font-semibold uppercase tracking-wider text-secondary">Tùy chọn ứng dụng</span>
+</div>
+<div class="rounded-xl bg-surface-container/60 backdrop-blur-xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.25)]">
+<!-- Language Selection -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-bright/20 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">language</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-medium text-on-surface truncate">Ngôn ngữ hiển thị</p>
+<p class="text-[11px] text-on-surface-variant truncate">Giao diện ngôn ngữ chính</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-xs text-on-surface font-medium">Tiếng Việt (Mặc định)</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
+</div>
+</div>
+<!-- Notifications & Due Dates Alert -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-bright/20 transition-colors bg-surface-container-low/30">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-medium text-on-surface truncate">Thông báo &amp; Báo động thẻ</p>
+<p class="text-[11px] text-on-surface-variant truncate">Biến động số dư tức thời &amp; Hạn thanh toán tín dụng</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0">chevron_right</span>
+</div>
+<!-- Support & Knowledge Base -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-bright/20 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">support_agent</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-medium text-on-surface truncate">Hướng dẫn &amp; Trợ giúp kỹ thuật</p>
+<p class="text-[11px] text-on-surface-variant truncate">Tổng đài viên Priority 24/7 &amp; Tra cứu nghiệp vụ</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Section 4: Security Action / Logout Zone -->
+<div class="pt-2 space-y-3">
+<!-- Logout Button with Warning Glass Treatment -->
+<button class="w-full relative overflow-hidden flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-error-container/30 hover:bg-error-container/50 active:scale-[0.98] transition-all duration-200 backdrop-blur-lg shadow-[0_0_20px_rgba(255,107,107,0.12)] text-error font-medium text-sm group" id="btn-logout" type="button">
+<div class="absolute inset-0 bg-gradient-to-r from-transparent via-error/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<span class="material-symbols-outlined text-[20px] transition-transform group-hover:-translate-x-1">logout</span>
+<span>Đăng xuất tài khoản &amp; Xóa phiên làm việc</span>
+</button>
+<!-- App Version & Build Metadata -->
+<div class="flex flex-col items-center justify-center space-y-1 py-1">
+<div class="flex items-center gap-2">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary/80"></span>
+<span class="text-[11px] text-on-surface-variant font-mono">Kira Bank Mobile v2.4.0 (Build 20241018)</span>
+</div>
+<p class="text-[10px] text-outline font-mono uppercase tracking-wider">Glacier Engine • End-to-End Cryptography Active</p>
+</div>
+</div>
+</div>
+<script>
+  // Simple micro-interaction for the Biometric switch toggle
+  (function() {
+    const bioToggle = document.getElementById('toggle-bio');
+    const toggleThumb = document.getElementById('toggle-thumb');
+    let isChecked = true;
+
+    if (bioToggle && toggleThumb) {
+      bioToggle.addEventListener('click', () => {
+        isChecked = !isChecked;
+        bioToggle.setAttribute('aria-checked', String(isChecked));
+        if (isChecked) {
+          bioToggle.classList.remove('bg-surface-variant');
+          bioToggle.classList.add('bg-primary');
+          toggleThumb.classList.remove('translate-x-0.5');
+          toggleThumb.classList.add('translate-x-5.5');
+        } else {
+          bioToggle.classList.remove('bg-primary');
+          bioToggle.classList.add('bg-surface-variant');
+          toggleThumb.classList.remove('translate-x-5.5');
+          toggleThumb.classList.add('translate-x-0.5');
+        }
+      });
+    }
+
+    // Interactive feedback for logout click
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        const confirmed = confirm('Bạn có chắc chắn muốn đăng xuất? Toàn bộ token xác thực và khóa giải mã trên thiết bị này sẽ được dọn dẹp sạch.');
+        if (confirmed) {
+          logoutBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[20px]">sync</span><span>Đang xóa phiên bảo mật...</span>';
+          setTimeout(() => {
+            alert('Đã kết thúc phiên an toàn.');
+            location.reload();
+          }, 600);
+        }
+      });
+    }
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/75 backdrop-blur-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.36)]" data-active-classes="text-primary font-semibold"><div class="flex items-center justify-around h-16 px-4"><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="the-tin-dung" href="#"><span class="material-symbols-outlined text-[22px]">credit_card</span><span class="text-[11px] font-label font-medium tracking-tight">Thẻ tín dụng</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="dau-tu" href="#"><span class="material-symbols-outlined text-[22px]">trending_up</span><span class="text-[11px] font-label font-medium tracking-tight">Đầu tư</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ca-nhan" href="#"><span class="material-symbols-outlined text-[22px]">person</span><span class="text-[11px] font-label font-medium tracking-tight">Cá nhân</span></a></div></nav></body></html>

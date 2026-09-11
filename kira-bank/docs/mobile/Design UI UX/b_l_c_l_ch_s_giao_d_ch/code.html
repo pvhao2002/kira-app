@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#0a0e1a;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'primary-fixed': '#c8eaff', 'on-primary-fixed': '#001f2e', 'on-primary': '#001f2e', 'primary': '#7dd3fc', 'surface-dim': '#0f1524', 'primary-container': '#0e4d6e', 'inverse-surface': '#e0e8f0', 'on-primary-fixed-variant': '#004d73', 'outline-variant': '#2a3a48', 'secondary-container': '#1a3a4e', 'primary-fixed-dim': '#7dd3fc', 'error': '#ff6b6b', 'surface-container-highest': '#202c42', 'on-error-container': '#ffb3b3', 'surface-container-lowest': '#0a0e1a', 'surface-container-low': '#111828', 'on-primary-container': '#c8eaff', 'on-error': '#1a0000', 'tertiary-container': '#3d2060', 'error-container': '#3d1414', 'surface-bright': '#1a2438', 'on-secondary-fixed-variant': '#2a4a5e', 'on-tertiary-container': '#e8d0ff', 'background': '#0a0e1a', 'on-surface': '#e0e8f0', 'on-secondary': '#001f2e', 'surface-container-high': '#1a2438', 'inverse-on-surface': '#0a0e1a', 'surface-tint': '#7dd3fc', 'on-secondary-fixed': '#0d1f2b', 'secondary-fixed-dim': '#88b4cc', 'outline': '#4a6070', 'surface-container': '#141c2e', 'tertiary-fixed-dim': '#c8a0f0', 'secondary': '#88b4cc', 'on-secondary-container': '#c0d8e8', 'on-tertiary-fixed': '#1a002e', 'on-tertiary': '#1a002e', 'surface': '#0f1524', 'tertiary-fixed': '#e8d0ff', 'on-tertiary-fixed-variant': '#4d2a73', 'on-background': '#e0e8f0', 'tertiary': '#c8a0f0', 'on-surface-variant': '#a0b4c4', 'secondary-fixed': '#c0d8e8', 'surface-variant': '#1a2438', 'inverse-primary': '#0a4c6e' }, borderRadius: { 'DEFAULT': '0.5rem', 'lg': '1rem', 'xl': '1.5rem', 'full': '9999px' }, fontFamily: { 'headline': ['Inter'], 'display': ['Inter'], 'body': ['Inter'], 'label': ['Inter'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/60 backdrop-blur-2xl"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">account_balance</span></div><div class="flex flex-col"><span class="text-[11px] font-medium tracking-wider uppercase text-primary">Kira Bank</span><span class="text-base font-headline font-semibold text-on-surface leading-tight">Cá Nhân</span></div></div><div class="flex items-center gap-1"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-background"><div class="flex flex-col w-full relative -mx-4 px-4 overflow-hidden select-none">
+<!-- Underneath Backdrop Content (Dimmed Investment Transaction Activity) -->
+<div aria-hidden="true" class="w-full opacity-20 pointer-events-none filter blur-[6px] space-y-4 pt-1">
+<div class="flex items-center justify-between px-1">
+<div class="h-6 w-32 rounded-lg bg-surface-container-highest"></div>
+<div class="h-6 w-20 rounded-lg bg-surface-container-highest"></div>
+</div>
+<div class="p-4 rounded-2xl bg-surface-container-high/60 space-y-3">
+<div class="flex justify-between items-center">
+<div class="h-5 w-40 rounded-lg bg-surface-variant"></div>
+<div class="h-5 w-24 rounded-lg bg-primary/20"></div>
+</div>
+<div class="h-4 w-52 rounded bg-surface-variant/70"></div>
+</div>
+<div class="p-4 rounded-2xl bg-surface-container-high/60 space-y-3">
+<div class="flex justify-between items-center">
+<div class="h-5 w-36 rounded-lg bg-surface-variant"></div>
+<div class="h-5 w-28 rounded-lg bg-surface-variant"></div>
+</div>
+<div class="h-4 w-44 rounded bg-surface-variant/70"></div>
+</div>
+<div class="p-4 rounded-2xl bg-surface-container-high/60 space-y-3">
+<div class="flex justify-between items-center">
+<div class="h-5 w-48 rounded-lg bg-surface-variant"></div>
+<div class="h-5 w-20 rounded-lg bg-surface-variant"></div>
+</div>
+<div class="h-4 w-32 rounded bg-surface-variant/70"></div>
+</div>
+</div>
+<!-- Frosted Overlay Dimmer -->
+<div class="fixed inset-0 bg-surface-container-lowest/80 backdrop-blur-md z-40 transition-opacity"></div>
+<!-- Bottom Sheet Modal Wrapper -->
+<div class="fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[795px] bg-surface-dim/95 backdrop-blur-2xl rounded-t-3xl shadow-[0_-12px_48px_rgba(0,0,0,0.6)]">
+<!-- Top Grab Handle & Header Bar -->
+<div class="relative pt-3 pb-4 px-5 flex-shrink-0">
+<!-- Drag pill -->
+<div class="w-12 h-1.5 bg-outline-variant/60 rounded-full mx-auto mb-3"></div>
+<div class="flex items-start justify-between gap-3">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<h2 class="text-lg font-headline font-semibold text-on-surface tracking-tight truncate">
+              Bộ lọc lịch sử giao dịch
+            </h2>
+<span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-primary-container/60 text-primary">
+              Đang chọn 3
+            </span>
+</div>
+<p class="text-xs text-on-surface-variant mt-0.5 truncate">
+            Tùy chỉnh khoảng thời gian và tiêu chí tìm kiếm
+          </p>
+</div>
+<div class="flex items-center gap-1.5 flex-shrink-0">
+<button class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-colors active:scale-95" type="button">
+            Đặt lại
+          </button>
+<button aria-label="Đóng bộ lọc" class="w-8 h-8 rounded-full flex items-center justify-center bg-surface-variant/50 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors active:scale-95" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Scrollable Filter Form Body -->
+<div class="flex-1 overflow-y-auto px-5 pb-6 space-y-6">
+<!-- Section 1: Khoảng thời gian giao dịch -->
+<section class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]">calendar_month</span>
+            Khoảng thời gian giao dịch
+          </label>
+<span class="text-[11px] text-primary/80 font-medium">Tối đa 90 ngày</span>
+</div>
+<!-- Quick preset chips (Horizontal scroll) -->
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-1 px-1">
+<button class="flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" type="button">
+            Hôm nay
+          </button>
+<button class="flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" type="button">
+            7 ngày qua
+          </button>
+<!-- Active preset with Ice-blue glow & badge -->
+<button class="flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold bg-primary-container text-on-primary-container shadow-[0_0_20px_rgba(125,211,252,0.2)] flex items-center gap-1.5" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+            30 ngày qua
+          </button>
+<button class="flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" type="button">
+            Tháng này
+          </button>
+<button class="flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" type="button">
+            Tùy chọn
+          </button>
+</div>
+<!-- Distinct Interactive Date Inputs -->
+<div class="grid grid-cols-2 gap-2.5 pt-1">
+<div class="flex flex-col gap-1">
+<span class="text-[11px] font-medium text-on-surface-variant/80 pl-1">Từ ngày</span>
+<div class="h-12 px-3.5 rounded-xl bg-surface-container/70 flex items-center justify-between hover:bg-surface-container transition-colors cursor-pointer group">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-[18px] text-primary flex-shrink-0">event</span>
+<span class="text-sm font-medium text-on-surface tracking-wide">01/10/2024</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant/60 group-hover:text-primary transition-colors">calendar_today</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-[11px] font-medium text-on-surface-variant/80 pl-1">Đến ngày</span>
+<div class="h-12 px-3.5 rounded-xl bg-surface-container/70 flex items-center justify-between hover:bg-surface-container transition-colors cursor-pointer group">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-[18px] text-primary flex-shrink-0">event_available</span>
+<span class="text-sm font-medium text-on-surface tracking-wide">18/10/2024</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant/60 group-hover:text-primary transition-colors">calendar_today</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-1 pt-0.5">
+<span class="material-symbols-outlined text-[14px] text-secondary">info</span>
+<p class="text-[11px] text-on-surface-variant leading-tight">
+            Hỗ trợ tra cứu tối đa 90 ngày mỗi lần lọc để đảm bảo tốc độ phản hồi.
+          </p>
+</div>
+</section>
+<!-- Section 2: Tài khoản đầu tư -->
+<section class="space-y-3">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]">account_balance_wallet</span>
+          Tài khoản đầu tư
+        </label>
+<div class="space-y-2">
+<!-- Item 1 (All) -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container/50 hover:bg-surface-container transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">apps</span>
+</div>
+<span class="text-xs font-medium text-on-surface">Tất cả tài khoản đầu tư</span>
+</div>
+<div class="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center"></div>
+</div>
+<!-- Item 2 (Active SSI Pro Trader) -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-primary-container/40 shadow-[0_0_24px_rgba(125,211,252,0.12)] cursor-pointer">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">show_chart</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-xs font-semibold text-on-surface truncate">SSI Pro Trader</span>
+<span class="px-1.5 py-0.2 rounded bg-primary/20 text-[10px] text-primary font-mono font-medium">MẶC ĐỊNH</span>
+</div>
+<span class="text-[11px] text-on-surface-variant font-mono truncate">SSI-001C-VN</span>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-sm flex-shrink-0">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+</div>
+<!-- Item 3 (VinaCapital Open Fund) -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container/50 hover:bg-surface-container transition-all cursor-pointer">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-tertiary-container/50 flex items-center justify-center text-tertiary flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">pie_chart</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-xs font-medium text-on-surface truncate">Quỹ mở VinaCapital VEOF</span>
+<span class="text-[11px] text-on-surface-variant font-mono truncate">VCF-9821-VN</span>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center"></div>
+</div>
+</div>
+</section>
+<!-- Section 3: Loại giao dịch (Strict Kira Bank Investment Module) -->
+<section class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]">swap_horiz</span>
+            Loại giao dịch
+          </label>
+<span class="text-[11px] text-on-surface-variant">Chọn nhiều</span>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<!-- Pill: Tất cả -->
+<button class="h-11 px-3 rounded-xl bg-surface-container/60 hover:bg-surface-container flex items-center justify-between text-xs font-medium text-on-surface-variant transition-all" type="button">
+<span>Tất cả loại</span>
+<span class="w-2 h-2 rounded-full bg-transparent"></span>
+</button>
+<!-- Pill: Nạp tiền (Selected) -->
+<button class="h-11 px-3 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-between text-xs font-semibold shadow-[0_0_16px_rgba(125,211,252,0.15)] transition-all" type="button">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">arrow_downward</span>
+<span>Nạp tiền</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>
+</button>
+<!-- Pill: Rút tiền -->
+<button class="h-11 px-3 rounded-xl bg-surface-container/60 hover:bg-surface-container flex items-center justify-between text-xs font-medium text-on-surface-variant transition-all" type="button">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-secondary">arrow_upward</span>
+<span>Rút tiền</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-transparent"></span>
+</button>
+<!-- Pill: Thưởng (Selected) -->
+<button class="h-11 px-3 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-between text-xs font-semibold shadow-[0_0_16px_rgba(125,211,252,0.15)] transition-all" type="button">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">featured_seasonal_and_gifts</span>
+<span>Thưởng</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>
+</button>
+</div>
+</section>
+<!-- Section 4: Trạng thái ghi nhận -->
+<section class="space-y-3">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]">verified</span>
+          Trạng thái ghi nhận
+        </label>
+<div class="flex flex-wrap gap-2">
+<!-- All -->
+<button class="px-3.5 py-2 rounded-xl text-xs font-medium bg-surface-container/70 text-on-surface-variant hover:text-on-surface transition-all" type="button">
+            Tất cả
+          </button>
+<!-- Hoàn thành (Green accent chip) -->
+<button class="px-3.5 py-2 rounded-xl text-xs font-medium bg-secondary-container/60 text-on-secondary-container flex items-center gap-2" type="button">
+<span class="w-2 h-2 rounded-full bg-[#34d399] shadow-[0_0_8px_#34d399]"></span>
+<span>Hoàn thành</span>
+</button>
+<!-- Chờ xử lý (Amber accent chip) -->
+<button class="px-3.5 py-2 rounded-xl text-xs font-medium bg-surface-container/70 text-on-surface-variant hover:text-on-surface flex items-center gap-2" type="button">
+<span class="w-2 h-2 rounded-full bg-[#fbbf24]"></span>
+<span>Chờ xử lý</span>
+</button>
+<!-- Thất bại (Red accent chip) -->
+<button class="px-3.5 py-2 rounded-xl text-xs font-medium bg-surface-container/70 text-on-surface-variant hover:text-on-surface flex items-center gap-2" type="button">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span>Thất bại</span>
+</button>
+<!-- Đã hủy (Gray accent chip) -->
+<button class="px-3.5 py-2 rounded-xl text-xs font-medium bg-surface-container/70 text-on-surface-variant hover:text-on-surface flex items-center gap-2" type="button">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span>Đã hủy</span>
+</button>
+</div>
+</section>
+<!-- Section 5: Khoảng số tiền (VND) -->
+<section class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]">payments</span>
+            Khoảng số tiền (VND)
+          </label>
+<span class="text-xs font-semibold text-primary font-mono">0 đ — 100.000.000 đ</span>
+</div>
+<!-- Interactive Range Slider Simulation -->
+<div class="p-3.5 rounded-2xl bg-surface-container/50 space-y-3">
+<div class="relative w-full h-2 bg-surface-variant rounded-full flex items-center">
+<div class="absolute left-0 right-0 h-2 bg-primary rounded-full"></div>
+<!-- Range Knob Left -->
+<div class="absolute left-0 w-5 h-5 -ml-1 rounded-full bg-on-primary-container shadow-md flex items-center justify-center ring-2 ring-primary">
+<div class="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+</div>
+<!-- Range Knob Right -->
+<div class="absolute right-0 w-5 h-5 -mr-1 rounded-full bg-on-primary-container shadow-md flex items-center justify-center ring-2 ring-primary">
+<div class="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+</div>
+</div>
+<!-- Preset quick amount tags -->
+<div class="grid grid-cols-3 gap-2 pt-1">
+<button class="py-1.5 px-2 rounded-lg bg-surface-container-high/60 text-[11px] font-medium text-on-surface-variant hover:text-on-surface text-center truncate" type="button">
+              &lt; 10 triệu
+            </button>
+<button class="py-1.5 px-2 rounded-lg bg-surface-container-high/60 text-[11px] font-medium text-on-surface-variant hover:text-on-surface text-center truncate" type="button">
+              10tr - 50tr
+            </button>
+<button class="py-1.5 px-2 rounded-lg bg-surface-container-high/60 text-[11px] font-medium text-on-surface-variant hover:text-on-surface text-center truncate" type="button">
+              &gt; 50 triệu
+            </button>
+</div>
+</div>
+</section>
+</div>
+<!-- Sticky Bottom Actions (Footer Bar) -->
+<div class="p-4 bg-surface/90 backdrop-blur-2xl flex items-center gap-3">
+<!-- Reset button -->
+<button class="h-12 w-2/5 rounded-xl bg-surface-container-high/80 text-on-surface font-medium text-xs tracking-wide flex items-center justify-center gap-1.5 hover:bg-surface-container-highest transition-all active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+<span>Đặt lại</span>
+</button>
+<!-- Apply filter button (Glacier Cyan #7dd3fc, high contrast) -->
+<button class="h-12 flex-1 rounded-xl bg-primary text-on-primary font-headline font-semibold text-sm tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_24px_rgba(125,211,252,0.35)] hover:bg-primary-fixed-dim transition-all active:scale-[0.98]" type="button">
+<span>Áp dụng bộ lọc (3)</span>
+<span class="material-symbols-outlined text-[18px]">check</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // Add micro-interaction click ripple or toggling simulation for chips
+    const filterButtons = document.querySelectorAll('button');
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        if (!this.classList.contains('bg-primary') && !this.classList.contains('bg-surface-variant')) {
+          this.classList.toggle('scale-95');
+          setTimeout(() => this.classList.remove('scale-95'), 120);
+        }
+      });
+    });
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/75 backdrop-blur-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.36)]" data-active-classes="text-primary font-semibold"><div class="flex items-center justify-around h-16 px-4"><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="the-tin-dung" href="#"><span class="material-symbols-outlined text-[22px]">credit_card</span><span class="text-[11px] font-label font-medium tracking-tight">Thẻ tín dụng</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="dau-tu" href="#"><span class="material-symbols-outlined text-[22px]">trending_up</span><span class="text-[11px] font-label font-medium tracking-tight">Đầu tư</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ca-nhan" href="#"><span class="material-symbols-outlined text-[22px]">person</span><span class="text-[11px] font-label font-medium tracking-tight">Cá nhân</span></a></div></nav></body></html>

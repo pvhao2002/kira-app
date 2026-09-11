@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#0a0e1a;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'primary-fixed': '#c8eaff', 'on-primary-fixed': '#001f2e', 'on-primary': '#001f2e', 'primary': '#7dd3fc', 'surface-dim': '#0f1524', 'primary-container': '#0e4d6e', 'inverse-surface': '#e0e8f0', 'on-primary-fixed-variant': '#004d73', 'outline-variant': '#2a3a48', 'secondary-container': '#1a3a4e', 'primary-fixed-dim': '#7dd3fc', 'error': '#ff6b6b', 'surface-container-highest': '#202c42', 'on-error-container': '#ffb3b3', 'surface-container-lowest': '#0a0e1a', 'surface-container-low': '#111828', 'on-primary-container': '#c8eaff', 'on-error': '#1a0000', 'tertiary-container': '#3d2060', 'error-container': '#3d1414', 'surface-bright': '#1a2438', 'on-secondary-fixed-variant': '#2a4a5e', 'on-tertiary-container': '#e8d0ff', 'background': '#0a0e1a', 'on-surface': '#e0e8f0', 'on-secondary': '#001f2e', 'surface-container-high': '#1a2438', 'inverse-on-surface': '#0a0e1a', 'surface-tint': '#7dd3fc', 'on-secondary-fixed': '#0d1f2b', 'secondary-fixed-dim': '#88b4cc', 'outline': '#4a6070', 'surface-container': '#141c2e', 'tertiary-fixed-dim': '#c8a0f0', 'secondary': '#88b4cc', 'on-secondary-container': '#c0d8e8', 'on-tertiary-fixed': '#1a002e', 'on-tertiary': '#1a002e', 'surface': '#0f1524', 'tertiary-fixed': '#e8d0ff', 'on-tertiary-fixed-variant': '#4d2a73', 'on-background': '#e0e8f0', 'tertiary': '#c8a0f0', 'on-surface-variant': '#a0b4c4', 'secondary-fixed': '#c0d8e8', 'surface-variant': '#1a2438', 'inverse-primary': '#0a4c6e' }, borderRadius: { 'DEFAULT': '0.5rem', 'lg': '1rem', 'xl': '1.5rem', 'full': '9999px' }, fontFamily: { 'headline': ['Inter'], 'display': ['Inter'], 'body': ['Inter'], 'label': ['Inter'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/60 backdrop-blur-2xl"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">account_balance</span></div><div class="flex flex-col"><span class="text-[11px] font-medium tracking-wider uppercase text-primary">Kira Bank</span><span class="text-base font-headline font-semibold text-on-surface leading-tight">Cá Nhân</span></div></div><div class="flex items-center gap-1"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-background"><div class="flex flex-col w-full">
+<!-- Subtle Ambient Glow Overlay -->
+<div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+<div class="absolute -top-24 -left-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+<div class="absolute top-1/2 -right-32 w-72 h-72 bg-tertiary/10 rounded-full blur-3xl"></div>
+</div>
+<div class="relative z-10 flex flex-col w-full px-4 pt-1 pb-24 space-y-4">
+<!-- Sub-Header contextual card -->
+<div class="flex items-center justify-between bg-surface-container-low/70 backdrop-blur-xl rounded-2xl p-3 shadow-md">
+<div class="flex items-center gap-3 min-w-0">
+<button aria-label="Đóng hoặc quay lại" class="w-10 h-10 rounded-xl bg-surface-variant/80 flex items-center justify-center text-on-surface hover:text-primary transition-colors shrink-0" type="button">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+</button>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-sm font-headline font-semibold text-on-surface truncate">Kết quả AI chuẩn hóa</span>
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0"></span>
+</div>
+<span class="text-[11px] font-label text-on-surface-variant truncate">#JOB-98214 • chung_tu_nap_tien_01.png</span>
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-container/40 text-primary text-[11px] font-label font-medium">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+          Đã chuẩn hóa
+        </span>
+</div>
+</div>
+<!-- Segmented Control Tabs -->
+<div class="w-full bg-surface-container-lowest/80 p-1 rounded-xl backdrop-blur-md shadow-inner flex items-center gap-1">
+<button class="flex-1 py-2 rounded-lg text-xs font-label font-semibold flex items-center justify-center gap-1.5 transition-all bg-surface-container-high text-primary shadow-sm" id="tabVisualBtn" onclick="switchView('visual')" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+        Bản trực quan dễ đọc
+      </button>
+<button class="flex-1 py-2 rounded-lg text-xs font-label font-medium flex items-center justify-center gap-1.5 transition-all text-on-surface-variant hover:text-on-surface" id="tabJsonBtn" onclick="switchView('json')" type="button">
+<span class="material-symbols-outlined text-[16px]">data_object</span>
+        Mã JSON chuẩn hóa
+      </button>
+</div>
+<!-- TAB 1: VISUAL VIEW -->
+<div class="flex flex-col space-y-3.5 w-full" id="visualContent">
+<!-- Status Summary Card -->
+<div class="bg-surface-container/60 backdrop-blur-xl rounded-2xl p-4 shadow-md relative overflow-hidden">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">document_scanner</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-2">
+<span class="text-xs font-label uppercase tracking-wider text-primary font-semibold">Tóm tắt tiến trình</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-bright text-primary text-[11px] font-medium">
+                Sẵn sàng
+              </span>
+</div>
+<p class="text-sm font-headline text-on-surface font-medium mt-1 leading-snug">
+              Trích xuất thành công 2 giao dịch độc lập từ 1 ảnh chứng từ.
+            </p>
+<div class="flex items-center gap-3 mt-2 text-[11px] text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">layers</span>
+                2 bản ghi riêng biệt
+              </span>
+<span>•</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-primary">check_circle</span>
+                Cấu trúc hoàn chỉnh
+              </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Record Item 1 -->
+<div class="bg-surface-container/70 backdrop-blur-xl rounded-2xl p-4 shadow-md flex flex-col space-y-3 relative">
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-md bg-surface-variant text-[11px] font-label font-semibold text-primary">
+              #01
+            </span>
+<span class="text-xs font-headline font-semibold text-on-surface">Bản ghi nạp vốn</span>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/15 text-primary text-[11px] font-medium">
+<span class="material-symbols-outlined text-[13px]">add_circle</span>
+            Đề xuất: Thêm mới
+          </span>
+</div>
+<div class="bg-surface-container-low/70 rounded-xl p-3 flex items-baseline justify-between">
+<span class="text-xs text-on-surface-variant font-label">Số tiền nhận diện</span>
+<div class="text-right">
+<span class="text-lg font-headline font-bold text-primary tracking-tight">+50.000.000</span>
+<span class="text-[11px] font-label text-on-surface-variant ml-1 font-medium">VND</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2 text-xs">
+<div class="bg-surface-container-lowest/50 p-2.5 rounded-xl flex flex-col">
+<span class="text-[11px] text-on-surface-variant">Loại giao dịch</span>
+<span class="text-on-surface font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">arrow_downward</span>
+              Nạp tiền
+            </span>
+</div>
+<div class="bg-surface-container-lowest/50 p-2.5 rounded-xl flex flex-col">
+<span class="text-[11px] text-on-surface-variant">Trạng thái</span>
+<span class="text-on-surface font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">task_alt</span>
+              Hoàn thành
+            </span>
+</div>
+</div>
+<div class="bg-surface-container-lowest/50 p-2.5 rounded-xl space-y-2 text-xs">
+<div class="flex items-center justify-between">
+<span class="text-[11px] text-on-surface-variant">Thời gian GD</span>
+<span class="font-mono text-on-surface font-medium text-[11px]">18/10/2024 09:30:15</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-[11px] text-on-surface-variant">Mã GD bên ngoài</span>
+<span class="font-mono text-primary font-medium text-[11px]">MB-FT2410189821</span>
+</div>
+<div class="flex flex-col pt-1">
+<span class="text-[11px] text-on-surface-variant">Mô tả trích xuất</span>
+<span class="text-on-surface text-xs mt-0.5 bg-surface-container-high/40 p-2 rounded-lg leading-relaxed">
+              Nộp tiền tài khoản chứng khoán SSI Nguyen Minh Triet
+            </span>
+</div>
+</div>
+</div>
+<!-- Record Item 2 (Warning / Attention) -->
+<div class="bg-surface-container/70 backdrop-blur-xl rounded-2xl p-4 shadow-md flex flex-col space-y-3 relative">
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-md bg-surface-variant text-[11px] font-label font-semibold text-tertiary">
+              #02
+            </span>
+<span class="text-xs font-headline font-semibold text-on-surface">Khoản thưởng bổ sung</span>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-error-container/80 text-error text-[11px] font-medium">
+<span class="material-symbols-outlined text-[13px]">warning</span>
+            Cần duyệt (Trùng lặp tiềm ẩn)
+          </span>
+</div>
+<div class="bg-surface-container-low/70 rounded-xl p-3 flex items-baseline justify-between">
+<span class="text-xs text-on-surface-variant font-label">Số tiền nhận diện</span>
+<div class="text-right">
+<span class="text-lg font-headline font-bold text-tertiary tracking-tight">+2.500.000</span>
+<span class="text-[11px] font-label text-on-surface-variant ml-1 font-medium">VND</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2 text-xs">
+<div class="bg-surface-container-lowest/50 p-2.5 rounded-xl flex flex-col">
+<span class="text-[11px] text-on-surface-variant">Loại giao dịch</span>
+<span class="text-on-surface font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-tertiary">redeem</span>
+              Thưởng
+            </span>
+</div>
+<div class="bg-surface-container-lowest/50 p-2.5 rounded-xl flex flex-col">
+<span class="text-[11px] text-on-surface-variant">Trạng thái</span>
+<span class="text-on-surface font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">pending</span>
+              Chờ xử lý
+            </span>
+</div>
+</div>
+<div class="bg-surface-container-lowest/50 p-2.5 rounded-xl space-y-2 text-xs">
+<div class="flex items-center justify-between">
+<span class="text-[11px] text-on-surface-variant">Thời gian GD</span>
+<span class="font-mono text-on-surface font-medium text-[11px]">18/10/2024 14:15:00</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-[11px] text-on-surface-variant">Mã GD bên ngoài</span>
+<span class="text-on-surface-variant font-medium text-[11px]">— (Không có)</span>
+</div>
+<div class="flex flex-col pt-1">
+<span class="text-[11px] text-on-surface-variant">Ghi chú lưu ý đối soát</span>
+<div class="text-xs mt-0.5 bg-error-container/40 text-on-surface p-2 rounded-lg leading-relaxed flex items-start gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-error shrink-0 mt-0.5">info</span>
+<span>Đã có 1 khoản 2.500.000 VND tương tự trong 48 giờ gần nhất. Đề nghị kiểm tra kỹ mã đối tác trước khi ghi sổ.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- TAB 2: JSON VIEWER (Normalized Schema Only) -->
+<div class="hidden flex-col space-y-3 w-full" id="jsonContent">
+<div class="bg-surface-container/70 backdrop-blur-xl rounded-2xl p-4 shadow-md flex flex-col">
+<div class="flex items-center justify-between pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">terminal</span>
+<span class="text-xs font-mono font-medium text-on-surface tracking-wide">normalized_output.json</span>
+</div>
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-variant text-on-surface hover:text-primary text-xs font-label font-medium transition-colors" id="copyJsonBtn" onclick="copyNormalizedJson()" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+<span id="copyBtnText">Sao chép JSON</span>
+</button>
+</div>
+<div class="bg-surface-container-lowest/90 rounded-xl p-3.5 font-mono text-[11px] leading-relaxed text-secondary-fixed overflow-x-auto">
+<pre class="whitespace-pre text-on-surface selection:bg-primary-container"><span class="text-primary">{</span>
+  <span class="text-tertiary">"job_id"</span>: <span class="text-secondary">"JOB-98214"</span>,
+  <span class="text-tertiary">"source_file"</span>: <span class="text-secondary">"chung_tu_nap_tien_01.png"</span>,
+  <span class="text-tertiary">"normalization_status"</span>: <span class="text-primary">"ready"</span>,
+  <span class="text-tertiary">"extracted_records_count"</span>: <span class="text-primary">2</span>,
+  <span class="text-tertiary">"records"</span>: [
+    {
+      <span class="text-tertiary">"record_index"</span>: <span class="text-primary">1</span>,
+      <span class="text-tertiary">"transaction_type"</span>: <span class="text-secondary">"DEPOSIT"</span>,
+      <span class="text-tertiary">"status"</span>: <span class="text-secondary">"COMPLETED"</span>,
+      <span class="text-tertiary">"amount"</span>: <span class="text-primary">50000000</span>,
+      <span class="text-tertiary">"currency"</span>: <span class="text-secondary">"VND"</span>,
+      <span class="text-tertiary">"timestamp"</span>: <span class="text-secondary">"2024-10-18T09:30:15+07:00"</span>,
+      <span class="text-tertiary">"external_reference"</span>: <span class="text-secondary">"MB-FT2410189821"</span>,
+      <span class="text-tertiary">"extracted_description"</span>: <span class="text-secondary">"Nộp tiền tài khoản chứng khoán SSI Nguyen Minh Triet"</span>,
+      <span class="text-tertiary">"resolution_proposal"</span>: <span class="text-secondary">"CREATE_NEW"</span>
+    },
+    {
+      <span class="text-tertiary">"record_index"</span>: <span class="text-primary">2</span>,
+      <span class="text-tertiary">"transaction_type"</span>: <span class="text-secondary">"BONUS"</span>,
+      <span class="text-tertiary">"status"</span>: <span class="text-secondary">"PENDING"</span>,
+      <span class="text-tertiary">"amount"</span>: <span class="text-primary">2500000</span>,
+      <span class="text-tertiary">"currency"</span>: <span class="text-secondary">"VND"</span>,
+      <span class="text-tertiary">"timestamp"</span>: <span class="text-secondary">"2024-10-18T14:15:00+07:00"</span>,
+      <span class="text-tertiary">"external_reference"</span>: <span class="text-on-surface-variant">null</span>,
+      <span class="text-tertiary">"resolution_proposal"</span>: <span class="text-secondary">"NEEDS_APPROVAL"</span>,
+      <span class="text-tertiary">"validation_flag"</span>: <span class="text-error">"POTENTIAL_DUPLICATE"</span>
+    }
+  ]
+<span class="text-primary">}</span></pre>
+</div>
+<div class="flex items-center gap-1.5 mt-3 text-[11px] text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-primary">security</span>
+<span>Dữ liệu tuân thủ chuẩn ISO-20022. Đã lọc các thuộc tính thô từ động cơ AI.</span>
+</div>
+</div>
+</div>
+<!-- Original Image Viewer Modal Simulation -->
+<div class="hidden fixed inset-0 z-50 bg-background/90 backdrop-blur-2xl p-4 flex flex-col justify-center items-center" id="imagePreviewModal">
+<div class="w-full max-w-sm bg-surface-container rounded-2xl p-4 flex flex-col space-y-3 shadow-2xl">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-sm font-headline font-semibold text-on-surface">Ảnh chứng từ gốc</span>
+<span class="text-[11px] font-label text-on-surface-variant">chung_tu_nap_tien_01.png</span>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-on-surface hover:text-primary" onclick="toggleImageModal(false)" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="w-full h-72 rounded-xl overflow-hidden bg-surface-container-lowest relative">
+<img class="w-full h-full object-cover" data-alt="Clear high resolution banking transfer receipt document on dark mobile interface background, displaying transaction numbers and official payment seal with blue accents, ultra clean financial photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsAtGRpF0wluQNt95VCjAUSUkX6VRHAK5Ld0pbdMqERc9tpget55xajRwGI3bAh5yZdcCvjjXM3Uj-Vwbdt1m5deHSkrFlwiQVWwYJOlyBy0-QtSiOWhJzZhFTRA6OtDEOenKhN4mr66dCRveqmz061DSvTiEq4nO4Ajtacv-4G8kXoYqGnSPeKZ9-JFiMThaOn9Uhr3gQjDpt-PpzghDewzmMw8WKP3nG-kSOEVrTg7dBsHPBAYrf"/>
+</div>
+<div class="text-[11px] text-on-surface-variant text-center">
+          Chỉ dùng để đối chiếu dữ liệu ngoại vi. Không chỉnh sửa tệp gốc tại bước này.
+        </div>
+</div>
+</div>
+<!-- Persistent Bottom Action Floating Panel -->
+<div class="w-full pt-2">
+<div class="bg-surface-container-high/80 backdrop-blur-xl p-3 rounded-2xl shadow-xl flex items-center gap-2.5">
+<button class="px-3.5 py-3 rounded-xl bg-surface-variant hover:bg-surface-bright text-on-surface text-xs font-label font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0" onclick="toggleImageModal(true)" type="button">
+<span class="material-symbols-outlined text-[18px]">image</span>
+<span>Xem ảnh gốc</span>
+</button>
+<button class="flex-1 py-3 px-4 rounded-xl bg-primary text-on-primary hover:bg-primary-fixed-dim text-xs font-headline font-bold flex items-center justify-center gap-2 shadow-lg transition-all" type="button">
+<span>Chuyển đến duyệt &amp; xác nhận</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function switchView(tab) {
+    const visualContent = document.getElementById('visualContent');
+    const jsonContent = document.getElementById('jsonContent');
+    const tabVisualBtn = document.getElementById('tabVisualBtn');
+    const tabJsonBtn = document.getElementById('tabJsonBtn');
+
+    if (tab === 'visual') {
+      visualContent.classList.remove('hidden');
+      jsonContent.classList.add('hidden');
+      
+      tabVisualBtn.className = 'flex-1 py-2 rounded-lg text-xs font-label font-semibold flex items-center justify-center gap-1.5 transition-all bg-surface-container-high text-primary shadow-sm';
+      tabJsonBtn.className = 'flex-1 py-2 rounded-lg text-xs font-label font-medium flex items-center justify-center gap-1.5 transition-all text-on-surface-variant hover:text-on-surface';
+    } else {
+      visualContent.classList.add('hidden');
+      jsonContent.classList.remove('hidden');
+      
+      tabJsonBtn.className = 'flex-1 py-2 rounded-lg text-xs font-label font-semibold flex items-center justify-center gap-1.5 transition-all bg-surface-container-high text-primary shadow-sm';
+      tabVisualBtn.className = 'flex-1 py-2 rounded-lg text-xs font-label font-medium flex items-center justify-center gap-1.5 transition-all text-on-surface-variant hover:text-on-surface';
+    }
+  }
+
+  function toggleImageModal(show) {
+    const modal = document.getElementById('imagePreviewModal');
+    if (show) {
+      modal.classList.remove('hidden');
+    } else {
+      modal.classList.add('hidden');
+    }
+  }
+
+  function copyNormalizedJson() {
+    const jsonText = JSON.stringify({
+      "job_id": "JOB-98214",
+      "source_file": "chung_tu_nap_tien_01.png",
+      "normalization_status": "ready",
+      "extracted_records_count": 2,
+      "records": [
+        {
+          "record_index": 1,
+          "transaction_type": "DEPOSIT",
+          "status": "COMPLETED",
+          "amount": 50000000,
+          "currency": "VND",
+          "timestamp": "2024-10-18T09:30:15+07:00",
+          "external_reference": "MB-FT2410189821",
+          "extracted_description": "Nộp tiền tài khoản chứng khoán SSI Nguyen Minh Triet",
+          "resolution_proposal": "CREATE_NEW"
+        },
+        {
+          "record_index": 2,
+          "transaction_type": "BONUS",
+          "status": "PENDING",
+          "amount": 2500000,
+          "currency": "VND",
+          "timestamp": "2024-10-18T14:15:00+07:00",
+          "external_reference": null,
+          "resolution_proposal": "NEEDS_APPROVAL",
+          "validation_flag": "POTENTIAL_DUPLICATE"
+        }
+      ]
+    }, null, 2);
+
+    navigator.clipboard.writeText(jsonText).then(() => {
+      const btnText = document.getElementById('copyBtnText');
+      btnText.innerText = 'Đã sao chép!';
+      setTimeout(() => {
+        btnText.innerText = 'Sao chép JSON';
+      }, 2000);
+    }).catch(() => {
+      const btnText = document.getElementById('copyBtnText');
+      btnText.innerText = 'Lỗi sao chép';
+    });
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/75 backdrop-blur-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.36)]" data-active-classes="text-primary font-semibold"><div class="flex items-center justify-around h-16 px-4"><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="the-tin-dung" href="#"><span class="material-symbols-outlined text-[22px]">credit_card</span><span class="text-[11px] font-label font-medium tracking-tight">Thẻ tín dụng</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="dau-tu" href="#"><span class="material-symbols-outlined text-[22px]">trending_up</span><span class="text-[11px] font-label font-medium tracking-tight">Đầu tư</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ca-nhan" href="#"><span class="material-symbols-outlined text-[22px]">person</span><span class="text-[11px] font-label font-medium tracking-tight">Cá nhân</span></a></div></nav></body></html>

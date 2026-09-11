@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Kira Life",
+    "slug": "kira-life-mobile",
+    "version": "1.0.0",
+    "scheme": "kiralifedemo",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": false },
+    "android": { "edgeToEdgeEnabled": true },
+    "web": { "bundler": "metro" },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": false }
+  }
+}

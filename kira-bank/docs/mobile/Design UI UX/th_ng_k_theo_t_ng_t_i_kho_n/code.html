@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#0a0e1a;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'primary-fixed': '#c8eaff', 'on-primary-fixed': '#001f2e', 'on-primary': '#001f2e', 'primary': '#7dd3fc', 'surface-dim': '#0f1524', 'primary-container': '#0e4d6e', 'inverse-surface': '#e0e8f0', 'on-primary-fixed-variant': '#004d73', 'outline-variant': '#2a3a48', 'secondary-container': '#1a3a4e', 'primary-fixed-dim': '#7dd3fc', 'error': '#ff6b6b', 'surface-container-highest': '#202c42', 'on-error-container': '#ffb3b3', 'surface-container-lowest': '#0a0e1a', 'surface-container-low': '#111828', 'on-primary-container': '#c8eaff', 'on-error': '#1a0000', 'tertiary-container': '#3d2060', 'error-container': '#3d1414', 'surface-bright': '#1a2438', 'on-secondary-fixed-variant': '#2a4a5e', 'on-tertiary-container': '#e8d0ff', 'background': '#0a0e1a', 'on-surface': '#e0e8f0', 'on-secondary': '#001f2e', 'surface-container-high': '#1a2438', 'inverse-on-surface': '#0a0e1a', 'surface-tint': '#7dd3fc', 'on-secondary-fixed': '#0d1f2b', 'secondary-fixed-dim': '#88b4cc', 'outline': '#4a6070', 'surface-container': '#141c2e', 'tertiary-fixed-dim': '#c8a0f0', 'secondary': '#88b4cc', 'on-secondary-container': '#c0d8e8', 'on-tertiary-fixed': '#1a002e', 'on-tertiary': '#1a002e', 'surface': '#0f1524', 'tertiary-fixed': '#e8d0ff', 'on-tertiary-fixed-variant': '#4d2a73', 'on-background': '#e0e8f0', 'tertiary': '#c8a0f0', 'on-surface-variant': '#a0b4c4', 'secondary-fixed': '#c0d8e8', 'surface-variant': '#1a2438', 'inverse-primary': '#0a4c6e' }, borderRadius: { 'DEFAULT': '0.5rem', 'lg': '1rem', 'xl': '1.5rem', 'full': '9999px' }, fontFamily: { 'headline': ['Inter'], 'display': ['Inter'], 'body': ['Inter'], 'label': ['Inter'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/60 backdrop-blur-2xl"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">account_balance</span></div><div class="flex flex-col"><span class="text-[11px] font-medium tracking-wider uppercase text-primary">Kira Bank</span><span class="text-base font-headline font-semibold text-on-surface leading-tight">Cá Nhân</span></div></div><div class="flex items-center gap-1"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-background"><div class="flex flex-col w-full">
+<!-- Subtle Ambient Glow Orbs -->
+<div class="relative w-full overflow-hidden px-4 pb-12 pt-2">
+<div class="absolute -top-16 -right-16 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute top-80 -left-20 w-72 h-72 bg-tertiary/10 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Screen Navigation Header -->
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2.5">
+<a class="w-9 h-9 rounded-xl bg-surface-variant/70 backdrop-blur-md flex items-center justify-center text-on-surface hover:text-primary transition-colors shadow-sm" data-path="dau-tu" href="#">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+</a>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<h1 class="text-base font-semibold text-on-surface font-headline tracking-tight">Thống kê theo tài khoản</h1>
+<span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary">Sổ cái</span>
+</div>
+<p class="text-[11px] text-on-surface-variant line-clamp-1">Chi tiết dòng tiền đối soát từng đối tác độc lập</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="w-9 h-9 rounded-xl bg-surface-variant/70 backdrop-blur-md flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors shadow-sm" id="btn-export" title="Xuất báo cáo tài khoản">
+<span class="material-symbols-outlined text-[20px]">ios_share</span>
+</button>
+<button class="w-9 h-9 rounded-xl bg-surface-variant/70 backdrop-blur-md flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors shadow-sm" title="Bộ lọc thời gian">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+</div>
+<!-- Account Selector Pills (Horizontal Scroll) -->
+<div class="relative w-full -mx-4 px-4 mb-4">
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 text-xs">
+<button class="shrink-0 px-3.5 py-2 rounded-xl bg-surface-container-high/60 backdrop-blur-md text-on-surface-variant font-medium hover:text-on-surface transition-all flex items-center gap-1.5 shadow-sm">
+<span>Tất cả tài khoản</span>
+<span class="text-[10px] px-1.5 py-0.2 bg-surface-container-highest rounded-full text-secondary">4</span>
+</button>
+<button class="shrink-0 px-3.5 py-2 rounded-xl bg-primary/20 backdrop-blur-md text-primary font-medium shadow-[0_0_20px_rgba(125,211,252,0.18)] flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span>SSI Pro Trader</span>
+<span class="text-[10px] px-1.5 py-0.2 bg-primary/25 text-primary rounded-full">Chính</span>
+</button>
+<button class="shrink-0 px-3.5 py-2 rounded-xl bg-surface-container-high/60 backdrop-blur-md text-on-surface-variant font-medium hover:text-on-surface transition-all flex items-center gap-1.5 shadow-sm">
+<span>VNDIRECT D-Stock</span>
+</button>
+<button class="shrink-0 px-3.5 py-2 rounded-xl bg-surface-container-high/60 backdrop-blur-md text-on-surface-variant font-medium hover:text-on-surface transition-all flex items-center gap-1.5 shadow-sm">
+<span>Quỹ Mở VinaCapital</span>
+</button>
+<button class="shrink-0 px-3.5 py-2 rounded-xl bg-surface-container-high/60 backdrop-blur-md text-on-surface-variant font-medium hover:text-on-surface transition-all flex items-center gap-1.5 shadow-sm">
+<span>Dragon Capital DCBC</span>
+</button>
+</div>
+</div>
+<!-- Main Account Hero Glacier Card -->
+<div class="relative w-full rounded-2xl bg-surface-container-high/65 backdrop-blur-xl p-4 mb-4 shadow-lg overflow-hidden">
+<div class="absolute -right-10 -bottom-10 w-36 h-36 bg-primary/10 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Account Branding & Reconciliation Status -->
+<div class="flex items-start justify-between mb-3">
+<div class="flex items-center gap-2.5">
+<div class="w-11 h-11 rounded-xl bg-surface-container-highest/80 backdrop-blur-md flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-[24px]">candlestick_chart</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="text-sm font-semibold text-on-surface">SSI Pro Trader</span>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary-fixed">HSC / Napas</span>
+</div>
+<p class="text-[11px] text-on-surface-variant font-mono">TK đích: 001C-928472 • Napas MB</p>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/15 backdrop-blur-md text-primary text-[10px] font-medium shadow-sm">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+<span>Khớp 100% sổ cái</span>
+</div>
+</div>
+<!-- Total Reconciled Value -->
+<div class="pt-2 pb-3">
+<span class="text-[11px] uppercase tracking-wider text-on-surface-variant font-medium">Tổng giá trị tích lũy đối soát</span>
+<div class="flex items-baseline gap-2 mt-0.5">
+<span class="text-2xl sm:text-3xl font-bold font-headline text-on-surface tracking-tight">180.000.000</span>
+<span class="text-xs font-semibold text-primary">VND</span>
+</div>
+<div class="flex items-center gap-2 mt-1.5">
+<span class="inline-flex items-center gap-0.5 text-xs font-medium text-primary">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+            +12.8% (+20.500.000 VND)
+          </span>
+<span class="text-on-surface-variant text-[11px]">• kỳ 30 ngày</span>
+</div>
+</div>
+<!-- Metrics Breakdown Bar -->
+<div class="pt-3 bg-surface-container-lowest/40 backdrop-blur-md rounded-xl p-3 flex items-center justify-between">
+<div>
+<span class="text-[10px] text-on-surface-variant">Tỷ trọng trong danh mục</span>
+<p class="text-xs font-semibold text-on-surface mt-0.5">51.6% <span class="text-[10px] font-normal text-on-surface-variant">tổng dòng tiền</span></p>
+</div>
+<div class="text-right">
+<span class="text-[10px] text-on-surface-variant">Chứng từ đã lập</span>
+<p class="text-xs font-semibold text-primary mt-0.5">27 biên lai đối soát</p>
+</div>
+</div>
+</div>
+<!-- 3 Cashflow Pillar Metrics -->
+<div class="grid grid-cols-3 gap-2.5 mb-4">
+<!-- Inflow -->
+<div class="rounded-xl bg-surface-container-high/60 backdrop-blur-md p-3 flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[10px] text-on-surface-variant font-medium">Nạp vào</span>
+<span class="material-symbols-outlined text-primary text-[16px]">arrow_downward</span>
+</div>
+<div>
+<div class="text-[13px] font-semibold text-on-surface leading-snug">150.000.000</div>
+<span class="text-[10px] text-secondary">24 giao dịch</span>
+</div>
+</div>
+<!-- Outflow -->
+<div class="rounded-xl bg-surface-container-high/60 backdrop-blur-md p-3 flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[10px] text-on-surface-variant font-medium">Đã rút ra</span>
+<span class="material-symbols-outlined text-error text-[16px]">arrow_upward</span>
+</div>
+<div>
+<div class="text-[13px] font-semibold text-on-surface leading-snug">20.000.000</div>
+<span class="text-[10px] text-secondary">3 lần rút về</span>
+</div>
+</div>
+<!-- Returns/Rewards -->
+<div class="rounded-xl bg-surface-container-high/60 backdrop-blur-md p-3 flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-[10px] text-on-surface-variant font-medium">Lãi &amp; Thưởng</span>
+<span class="material-symbols-outlined text-tertiary text-[16px]">redeem</span>
+</div>
+<div>
+<div class="text-[13px] font-semibold text-on-surface leading-snug">50.000.000</div>
+<span class="text-[10px] text-tertiary">Cổ tức tiền mặt</span>
+</div>
+</div>
+</div>
+<!-- Cashflow Trend Graph (Inline SVG Chart) -->
+<div class="rounded-2xl bg-surface-container-high/60 backdrop-blur-xl p-4 mb-4 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div>
+<h2 class="text-xs font-semibold text-on-surface font-headline uppercase tracking-wider">Biến động dòng tiền 6 tháng</h2>
+<p class="text-[11px] text-on-surface-variant">Sổ cái tích lũy ròng SSI Pro Trader</p>
+</div>
+<div class="px-2 py-0.5 rounded-md bg-surface-container-highest text-[10px] text-primary font-medium">
+          Đỉnh T10: +35.0M
+        </div>
+</div>
+<!-- SVG Chart with frosted glowing wave -->
+<div class="w-full h-36 relative">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 320 120">
+<defs>
+<lineargradient id="glacierGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.32"></stop>
+<stop offset="100%" stop-color="#7dd3fc" stop-opacity="0.0"></stop>
+</lineargradient>
+<lineargradient id="lineGlow" x1="0" x2="1" y1="0" y2="0">
+<stop offset="0%" stop-color="#88b4cc"></stop>
+<stop offset="60%" stop-color="#7dd3fc"></stop>
+<stop offset="100%" stop-color="#c8a0f0"></stop>
+</lineargradient>
+</defs>
+<!-- Grid Lines -->
+<line opacity="0.5" stroke="#2a3a48" stroke-dasharray="3 3" stroke-width="0.5" x1="0" x2="320" y1="20" y2="20"></line>
+<line opacity="0.5" stroke="#2a3a48" stroke-dasharray="3 3" stroke-width="0.5" x1="0" x2="320" y1="60" y2="60"></line>
+<line opacity="0.5" stroke="#2a3a48" stroke-width="0.5" x1="0" x2="320" y1="100" y2="100"></line>
+<!-- Filled Area -->
+<path d="M 0,95 Q 45,85 80,70 T 160,50 T 240,18 T 320,38 L 320,115 L 0,115 Z" fill="url(#glacierGradient)"></path>
+<!-- Wave Line -->
+<path d="M 0,95 Q 45,85 80,70 T 160,50 T 240,18 T 320,38" fill="none" stroke="url(#lineGlow)" stroke-linecap="round" stroke-width="2.5"></path>
+<!-- Data Points -->
+<circle cx="80" cy="70" fill="#0f1524" r="3.5" stroke="#7dd3fc" stroke-width="2"></circle>
+<circle cx="160" cy="50" fill="#0f1524" r="3.5" stroke="#7dd3fc" stroke-width="2"></circle>
+<circle class="animate-pulse" cx="240" cy="18" fill="#7dd3fc" r="4.5" stroke="#c8eaff" stroke-width="2"></circle>
+<circle cx="320" cy="38" fill="#0f1524" r="3.5" stroke="#c8a0f0" stroke-width="2"></circle>
+</svg>
+<!-- Peak Tooltip Badge positioned relative -->
+<div class="absolute top-0 right-16 px-2 py-0.5 rounded-md bg-primary-container text-on-primary-container text-[9px] font-semibold shadow-md">
+          Tháng 10: +35M
+        </div>
+</div>
+<!-- X-axis Timeline Labels -->
+<div class="flex justify-between text-[10px] text-on-surface-variant font-mono pt-1">
+<span>T5</span>
+<span>T6</span>
+<span>T7</span>
+<span>T8</span>
+<span class="text-primary font-semibold">T9</span>
+<span class="text-primary font-bold">T10</span>
+</div>
+</div>
+<!-- Allocation Breakdown Progress Bar -->
+<div class="rounded-2xl bg-surface-container-high/60 backdrop-blur-xl p-4 mb-4 shadow-sm">
+<div class="flex items-center justify-between mb-2.5">
+<h2 class="text-xs font-semibold text-on-surface font-headline uppercase tracking-wider">Cơ cấu dòng tiền đối soát</h2>
+<span class="text-[10px] text-secondary font-medium">100% đã xác thực</span>
+</div>
+<!-- Segmented Bar -->
+<div class="w-full h-2.5 rounded-full bg-surface-container-highest overflow-hidden flex gap-0.5 p-0.5 mb-3">
+<div class="h-full bg-primary rounded-l-full" style="width: 70%;" title="Vốn nạp ban đầu"></div>
+<div class="h-full bg-secondary" style="width: 20%;" title="Dòng tiền tái nạp"></div>
+<div class="h-full bg-tertiary rounded-r-full" style="width: 10%;" title="Thưởng cổ tức"></div>
+</div>
+<!-- Legend Cards -->
+<div class="grid grid-cols-3 gap-2 pt-1 text-[11px]">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary shrink-0"></span>
+<div class="flex flex-col min-w-0">
+<span class="text-on-surface-variant truncate text-[10px]">Vốn nạp gốc</span>
+<span class="font-semibold text-on-surface">70%</span>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary shrink-0"></span>
+<div class="flex flex-col min-w-0">
+<span class="text-on-surface-variant truncate text-[10px]">Tái nạp tích lũy</span>
+<span class="font-semibold text-on-surface">20%</span>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary shrink-0"></span>
+<div class="flex flex-col min-w-0">
+<span class="text-on-surface-variant truncate text-[10px]">Cổ tức tiền mặt</span>
+<span class="font-semibold text-on-surface">10%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Visual Storytelling Placeholders: Partner & Reconciliation Records -->
+<div class="grid grid-cols-2 gap-2.5 mb-4">
+<div class="relative rounded-xl overflow-hidden bg-surface-container-high/70 p-3 flex flex-col justify-end h-24 shadow-sm">
+<img class="absolute inset-0 w-full h-full object-cover opacity-20" data-alt="High quality financial tech interface showing encrypted blockchain ledger reconciliation records with subtle cyan neon light in dark icy atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAltN8MPcnBady276NiKy4WXngUTYGjD1yd7KUyp817kgpMIhN2q-7VmVGiMdjAKloAHmEWY6a1EX2-ftErwTwa0Qf4U5EhrTuOSxjluxRnQzJdV0az9ZriUjhbt4-WQbbLJ-P59Zq4cpZOLWmlg7w8CuaYlN01T1YqALPEwHZOk4qkLmJPRIqd5NjkQINYfDQqorLl0Ss1G88gGVz1lXo4Q-itKwV13Ycb970L5cmhrfshxQLTayE4"/>
+<div class="relative z-10">
+<span class="material-symbols-outlined text-primary text-[18px] mb-0.5">verified_user</span>
+<p class="text-[11px] font-semibold text-on-surface leading-tight">Đối soát Napas MB</p>
+<span class="text-[9px] text-secondary">Tự động đồng bộ biên lai</span>
+</div>
+</div>
+<div class="relative rounded-xl overflow-hidden bg-surface-container-high/70 p-3 flex flex-col justify-end h-24 shadow-sm">
+<img class="absolute inset-0 w-full h-full object-cover opacity-20" data-alt="Futuristic glass vault symbolizing autonomous financial custody with soft purple and ice blue ambient reflections in deep midnight blue tone" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDs_OaCAk_HMbFwsm6_jWV0eezoRT9zOtjxEUlsTDyZzzEoBdd5ail55pebhvUcUmMZOlJnpcPpEGNkZ7kUXDI95JCENPG0OfJW9OLRa5EDprfc8s7D7Pi0BBV2OakQsIkOUXiUvH9NzbPatysafR2RqIcIDkcSBdRsp9TzFbJrphm3p6MHowCpzKP2YbYJ8FMG5n_szZegjPQ2eRoDXbPQ4etE-noIQ9ccyGKh7ROfxEwUDiIJCpA5"/>
+<div class="relative z-10">
+<span class="material-symbols-outlined text-tertiary text-[18px] mb-0.5">lock_clock</span>
+<p class="text-[11px] font-semibold text-on-surface leading-tight">Sổ cái Kira Bank</p>
+<span class="text-[9px] text-secondary">Độc lập &amp; bảo mật số dư</span>
+</div>
+</div>
+</div>
+<!-- Recent Transactions for SSI Pro Trader -->
+<div class="rounded-2xl bg-surface-container-high/60 backdrop-blur-xl p-4 mb-4 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div>
+<h2 class="text-xs font-semibold text-on-surface font-headline uppercase tracking-wider">Lịch sử sổ cái tài khoản</h2>
+<p class="text-[10px] text-on-surface-variant">3 giao dịch biên lai mới nhất</p>
+</div>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary-fixed">SSI Pro Trader</span>
+</div>
+<div class="space-y-3">
+<!-- Item 1: Pending Reconciliation Audit -->
+<div class="flex items-center justify-between p-2.5 rounded-xl bg-surface-container-lowest/50 backdrop-blur-md">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[18px]">input</span>
+</div>
+<div class="min-w-0">
+<div class="text-xs font-medium text-on-surface truncate">Nạp tiền Napas 24/7</div>
+<div class="text-[10px] text-on-surface-variant">18/10/2024 • 14:32</div>
+<div class="inline-flex items-center gap-1 mt-0.5 text-[9px] text-secondary px-1.5 py-0.2 rounded bg-surface-container-highest">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span>Đang tra soát hồ sơ #REP-093</span>
+</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<div class="text-xs font-semibold text-primary">+50.000.000 đ</div>
+<span class="text-[9px] text-on-surface-variant">Ghi nhận sổ cái</span>
+</div>
+</div>
+<!-- Item 2: Withdrawal -->
+<div class="flex items-center justify-between p-2.5 rounded-xl bg-surface-container-lowest/50 backdrop-blur-md">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-error/10 flex items-center justify-center text-error shrink-0">
+<span class="material-symbols-outlined text-[18px]">output</span>
+</div>
+<div class="min-w-0">
+<div class="text-xs font-medium text-on-surface truncate">Rút tiền về Kira Bank</div>
+<div class="text-[10px] text-on-surface-variant">10/10/2024 • 09:15</div>
+<div class="inline-flex items-center gap-1 mt-0.5 text-[9px] text-primary px-1.5 py-0.2 rounded bg-primary/10">
+<span class="material-symbols-outlined text-[11px]">check_circle</span>
+<span>Khớp đối soát 100%</span>
+</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<div class="text-xs font-semibold text-on-surface">-10.000.000 đ</div>
+<span class="text-[9px] text-on-surface-variant">Tài khoản chính</span>
+</div>
+</div>
+<!-- Item 3: Dividend -->
+<div class="flex items-center justify-between p-2.5 rounded-xl bg-surface-container-lowest/50 backdrop-blur-md">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[18px]">payments</span>
+</div>
+<div class="min-w-0">
+<div class="text-xs font-medium text-on-surface truncate">Nhận cổ tức tiền mặt</div>
+<div class="text-[10px] text-on-surface-variant">25/09/2024 • 11:20</div>
+<div class="inline-flex items-center gap-1 mt-0.5 text-[9px] text-primary px-1.5 py-0.2 rounded bg-primary/10">
+<span class="material-symbols-outlined text-[11px]">check_circle</span>
+<span>Khớp đối soát 100%</span>
+</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<div class="text-xs font-semibold text-tertiary">+15.000.000 đ</div>
+<span class="text-[9px] text-on-surface-variant">Cổ tức tiền nạp</span>
+</div>
+</div>
+</div>
+<!-- View All Button -->
+<button class="w-full mt-3 py-2 rounded-xl bg-surface-container-highest/60 hover:bg-surface-container-highest transition-colors text-xs font-medium text-primary flex items-center justify-center gap-1.5">
+<span>Xem toàn bộ 27 giao dịch của tài khoản này</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+<!-- Core Disclaimer Banner (Kira Ledger Autonomy) -->
+<div class="rounded-xl bg-surface-container-high/40 backdrop-blur-md p-3.5 flex items-start gap-3 mb-6 shadow-sm">
+<div class="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">shield</span>
+</div>
+<div class="flex-1">
+<h4 class="text-xs font-semibold text-on-surface mb-0.5">Quy tắc độc lập Sổ cái Kira Bank</h4>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+          Dữ liệu thống kê dựa trên các chứng từ/sao kê đã nạp vào Kira Bank để đối soát độc lập với SSI Pro Trader. Kira Bank không truy cập số dư chứng khoán thực tế của bạn trên sàn đối tác.
+        </p>
+</div>
+</div>
+<!-- Bottom Actions Container -->
+<div class="flex flex-col gap-2.5 pt-1 pb-4">
+<button class="w-full py-3 px-4 rounded-xl bg-primary text-on-primary font-semibold text-xs flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(125,211,252,0.25)] active:scale-[0.99] transition-transform" id="btn-export-main">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Xuất sao kê đối soát tài khoản này (PDF/Excel)</span>
+</button>
+<button class="w-full py-2.5 px-4 rounded-xl bg-surface-container-high/70 text-on-surface hover:text-primary text-xs font-medium flex items-center justify-center gap-1.5 transition-colors" id="btn-audit-help">
+<span class="material-symbols-outlined text-[16px]">contact_support</span>
+<span>Tra soát sai lệch tài khoản</span>
+</button>
+</div>
+</div>
+<!-- Micro-interaction script -->
+<script>
+    (function() {
+      const exportBtn = document.getElementById('btn-export-main');
+      const headerExportBtn = document.getElementById('btn-export');
+      const auditBtn = document.getElementById('btn-audit-help');
+
+      function triggerFeedback(btn, message) {
+        if (!btn) return;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">refresh</span> Đang khởi tạo...';
+        setTimeout(() => {
+          btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> ' + message;
+          setTimeout(() => {
+            btn.innerHTML = originalText;
+          }, 2000);
+        }, 800);
+      }
+
+      if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+          triggerFeedback(exportBtn, 'Đã xuất file đối soát');
+        });
+      }
+
+      if (headerExportBtn) {
+        headerExportBtn.addEventListener('click', function() {
+          if (exportBtn) exportBtn.click();
+        });
+      }
+
+      if (auditBtn) {
+        auditBtn.addEventListener('click', function() {
+          triggerFeedback(auditBtn, 'Đã tạo yêu cầu tra soát');
+        });
+      }
+    })();
+  </script>
+</div></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/75 backdrop-blur-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.36)]" data-active-classes="text-primary font-semibold"><div class="flex items-center justify-around h-16 px-4"><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="the-tin-dung" href="#"><span class="material-symbols-outlined text-[22px]">credit_card</span><span class="text-[11px] font-label font-medium tracking-tight">Thẻ tín dụng</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="dau-tu" href="#"><span class="material-symbols-outlined text-[22px]">trending_up</span><span class="text-[11px] font-label font-medium tracking-tight">Đầu tư</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ca-nhan" href="#"><span class="material-symbols-outlined text-[22px]">person</span><span class="text-[11px] font-label font-medium tracking-tight">Cá nhân</span></a></div></nav></body></html>

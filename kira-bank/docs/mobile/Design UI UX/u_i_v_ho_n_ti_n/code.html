@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#0a0e1a;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'primary-fixed': '#c8eaff', 'on-primary-fixed': '#001f2e', 'on-primary': '#001f2e', 'primary': '#7dd3fc', 'surface-dim': '#0f1524', 'primary-container': '#0e4d6e', 'inverse-surface': '#e0e8f0', 'on-primary-fixed-variant': '#004d73', 'outline-variant': '#2a3a48', 'secondary-container': '#1a3a4e', 'primary-fixed-dim': '#7dd3fc', 'error': '#ff6b6b', 'surface-container-highest': '#202c42', 'on-error-container': '#ffb3b3', 'surface-container-lowest': '#0a0e1a', 'surface-container-low': '#111828', 'on-primary-container': '#c8eaff', 'on-error': '#1a0000', 'tertiary-container': '#3d2060', 'error-container': '#3d1414', 'surface-bright': '#1a2438', 'on-secondary-fixed-variant': '#2a4a5e', 'on-tertiary-container': '#e8d0ff', 'background': '#0a0e1a', 'on-surface': '#e0e8f0', 'on-secondary': '#001f2e', 'surface-container-high': '#1a2438', 'inverse-on-surface': '#0a0e1a', 'surface-tint': '#7dd3fc', 'on-secondary-fixed': '#0d1f2b', 'secondary-fixed-dim': '#88b4cc', 'outline': '#4a6070', 'surface-container': '#141c2e', 'tertiary-fixed-dim': '#c8a0f0', 'secondary': '#88b4cc', 'on-secondary-container': '#c0d8e8', 'on-tertiary-fixed': '#1a002e', 'on-tertiary': '#1a002e', 'surface': '#0f1524', 'tertiary-fixed': '#e8d0ff', 'on-tertiary-fixed-variant': '#4d2a73', 'on-background': '#e0e8f0', 'tertiary': '#c8a0f0', 'on-surface-variant': '#a0b4c4', 'secondary-fixed': '#c0d8e8', 'surface-variant': '#1a2438', 'inverse-primary': '#0a4c6e' }, borderRadius: { 'DEFAULT': '0.5rem', 'lg': '1rem', 'xl': '1.5rem', 'full': '9999px' }, fontFamily: { 'headline': ['Inter'], 'display': ['Inter'], 'body': ['Inter'], 'label': ['Inter'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background font-body text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/60 backdrop-blur-2xl"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">account_balance</span></div><div class="flex flex-col"><span class="text-[11px] font-medium tracking-wider uppercase text-primary">Kira Bank</span><span class="text-base font-headline font-semibold text-on-surface leading-tight">Thẻ Tín Dụng</span></div></div><div class="flex items-center gap-1"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-background"><div class="flex flex-col w-full px-4 space-y-5">
+<!-- Card Selector Bar -->
+<div class="relative bg-surface-container/70 backdrop-blur-xl rounded-xl p-3.5 shadow-lg">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center flex-shrink-0 text-primary shadow-inner">
+<span class="material-symbols-outlined text-[20px]">credit_card</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-xs font-label text-on-surface-variant font-medium">VPBank StepUp</span>
+<span class="px-2 py-0.5 text-[10px] font-semibold tracking-wide rounded-full bg-primary/15 text-primary">Đang cấu hình</span>
+</div>
+<span class="text-sm font-headline font-semibold text-on-surface truncate">Mastercard (•••• 1204)</span>
+</div>
+</div>
+<button aria-label="Đổi thẻ tín dụng" class="w-8 h-8 rounded-full bg-surface-variant/60 hover:bg-surface-variant flex items-center justify-center text-on-surface-variant transition-colors" id="cardDropdownBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</button>
+</div>
+</div>
+<!-- Monthly Cap Metric Tile -->
+<div class="relative bg-surface-container/60 backdrop-blur-2xl rounded-xl p-5 shadow-xl overflow-hidden">
+<div class="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-primary/10 blur-2xl pointer-events-none"></div>
+<div class="flex items-start justify-between mb-4">
+<div>
+<span class="text-xs font-label text-on-surface-variant uppercase tracking-wider">Hạn mức hoàn tiền tháng</span>
+<div class="flex items-baseline gap-1.5 mt-1">
+<span class="text-2xl font-headline font-bold text-on-surface">640.000</span>
+<span class="text-xs text-on-surface-variant font-medium">/ 1.000.000 ₫</span>
+</div>
+</div>
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-variant/80 hover:bg-surface-variant text-primary text-xs font-medium flex items-center gap-1 transition-all" id="editCapBtn" type="button">
+<span class="material-symbols-outlined text-[14px]">tune</span>
+<span>Chỉnh sửa</span>
+</button>
+</div>
+<!-- Progress Visualization -->
+<div class="space-y-1.5">
+<div class="flex justify-between items-center text-xs">
+<span class="text-on-surface-variant">Đã tích lũy ước tính (64%)</span>
+<span class="text-primary font-medium">Còn 360.000 ₫</span>
+</div>
+<div class="w-full h-2.5 rounded-full bg-surface-container-highest overflow-hidden p-0.5">
+<div class="h-full rounded-full bg-gradient-to-r from-primary to-tertiary shadow-[0_0_12px_rgba(125,211,252,0.45)] transition-all duration-700" style="width: 64%;"></div>
+</div>
+</div>
+</div>
+<!-- MCC Category Rules Configuration -->
+<div class="space-y-3">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">verified</span>
+<h2 class="text-sm font-headline font-semibold text-on-surface tracking-wide">Quy tắc danh mục hoàn tiền</h2>
+</div>
+<span class="text-xs text-on-surface-variant font-medium">3 Danh mục</span>
+</div>
+<!-- Category 1: Dining -->
+<div class="bg-surface-container/60 backdrop-blur-xl rounded-xl p-4 shadow-md space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">restaurant</span>
+</div>
+<div class="min-w-0">
+<h3 class="text-sm font-headline font-semibold text-on-surface truncate">Ẩm thực &amp; Nhà hàng</h3>
+<p class="text-[11px] text-on-surface-variant">Trần: 300.000 ₫/tháng</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-bold">15%</span>
+</div>
+</div>
+<div class="space-y-1.5">
+<span class="text-[11px] font-label text-on-surface-variant">Mã MCC đã gán:</span>
+<div class="flex flex-wrap gap-1.5" id="tags-dining">
+<span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-surface-container-high text-on-surface">
+<span>5812</span>
+<span class="text-on-surface-variant">Nhà hàng</span>
+<button aria-label="Xóa 5812" class="text-on-surface-variant hover:text-error ml-0.5" onclick="this.parentElement.remove()" type="button"><span class="material-symbols-outlined text-[12px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-surface-container-high text-on-surface">
+<span>5814</span>
+<span class="text-on-surface-variant">Thức ăn nhanh</span>
+<button aria-label="Xóa 5814" class="text-on-surface-variant hover:text-error ml-0.5" onclick="this.parentElement.remove()" type="button"><span class="material-symbols-outlined text-[12px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-surface-container-high text-on-surface">
+<span>5462</span>
+<span class="text-on-surface-variant">Tiệm bánh</span>
+<button aria-label="Xóa 5462" class="text-on-surface-variant hover:text-error ml-0.5" onclick="this.parentElement.remove()" type="button"><span class="material-symbols-outlined text-[12px]">close</span></button>
+</span>
+</div>
+</div>
+</div>
+<!-- Category 2: Online Shopping -->
+<div class="bg-surface-container/60 backdrop-blur-xl rounded-xl p-4 shadow-md space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">shopping_bag</span>
+</div>
+<div class="min-w-0">
+<h3 class="text-sm font-headline font-semibold text-on-surface truncate">Mua sắm Online &amp; TMĐT</h3>
+<p class="text-[11px] text-on-surface-variant">Trần: 300.000 ₫/tháng</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-tertiary/20 text-tertiary text-xs font-bold">10%</span>
+</div>
+</div>
+<div class="space-y-1.5">
+<span class="text-[11px] font-label text-on-surface-variant">Mã MCC đã gán:</span>
+<div class="flex flex-wrap gap-1.5" id="tags-online">
+<span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-surface-container-high text-on-surface">
+<span>5311</span>
+<span class="text-on-surface-variant">Bách hóa</span>
+<button aria-label="Xóa 5311" class="text-on-surface-variant hover:text-error ml-0.5" onclick="this.parentElement.remove()" type="button"><span class="material-symbols-outlined text-[12px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-surface-container-high text-on-surface">
+<span>5999</span>
+<span class="text-on-surface-variant">Bán lẻ chuyên doanh</span>
+<button aria-label="Xóa 5999" class="text-on-surface-variant hover:text-error ml-0.5" onclick="this.parentElement.remove()" type="button"><span class="material-symbols-outlined text-[12px]">close</span></button>
+</span>
+</div>
+</div>
+</div>
+<!-- Category 3: Insurance & Health -->
+<div class="bg-surface-container/60 backdrop-blur-xl rounded-xl p-4 shadow-md space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">health_and_safety</span>
+</div>
+<div class="min-w-0">
+<h3 class="text-sm font-headline font-semibold text-on-surface truncate">Bảo hiểm &amp; Y tế</h3>
+<p class="text-[11px] text-on-surface-variant">Trần: 200.000 ₫/tháng</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary/20 text-secondary text-xs font-bold">6%</span>
+</div>
+</div>
+<div class="space-y-1.5">
+<span class="text-[11px] font-label text-on-surface-variant">Mã MCC đã gán:</span>
+<div class="flex flex-wrap gap-1.5" id="tags-health">
+<span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-surface-container-high text-on-surface">
+<span>6300</span>
+<span class="text-on-surface-variant">Bảo hiểm</span>
+<button aria-label="Xóa 6300" class="text-on-surface-variant hover:text-error ml-0.5" onclick="this.parentElement.remove()" type="button"><span class="material-symbols-outlined text-[12px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-surface-container-high text-on-surface">
+<span>8099</span>
+<span class="text-on-surface-variant">Y tế tư nhân</span>
+<button aria-label="Xóa 8099" class="text-on-surface-variant hover:text-error ml-0.5" onclick="this.parentElement.remove()" type="button"><span class="material-symbols-outlined text-[12px]">close</span></button>
+</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Fast Batch MCC Rule Editor -->
+<div class="bg-surface-container/70 backdrop-blur-xl rounded-xl p-4 shadow-xl space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[16px]">playlist_add</span>
+</div>
+<span class="text-xs font-headline font-semibold text-on-surface">Thêm nhanh mã MCC</span>
+</div>
+<span class="text-[10px] text-on-surface-variant font-label">Phân tách bằng dấu phẩy</span>
+</div>
+<div class="space-y-2">
+<div class="flex gap-2">
+<select class="h-10 px-2.5 rounded-lg bg-surface-container-high text-on-surface text-xs font-medium focus:outline-none focus:bg-surface-bright transition-colors" id="targetCategory">
+<option value="dining">Ẩm thực</option>
+<option value="online">Mua sắm Online</option>
+<option value="health">Bảo hiểm &amp; Y tế</option>
+</select>
+<div class="relative flex-1">
+<input class="w-full h-10 px-3 rounded-lg bg-surface-container-high text-on-surface placeholder:text-on-surface-variant/50 text-xs font-body focus:outline-none focus:bg-surface-bright transition-all" id="mccInput" placeholder="5812, 5411, 7011..." type="text"/>
+</div>
+<button class="h-10 px-3.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary font-medium text-xs flex items-center justify-center transition-all" id="addMccBtn" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+<div class="hidden text-[11px] px-1 transition-all" id="mccFeedback"></div>
+</div>
+</div>
+<!-- Bank Partner Exclusive Offers -->
+<div class="space-y-3">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">local_activity</span>
+<h2 class="text-sm font-headline font-semibold text-on-surface">Ưu đãi độc quyền liên kết thẻ</h2>
+</div>
+<a class="text-xs text-primary font-medium hover:underline" href="#">Tất cả</a>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<!-- Partner 1: Shopee -->
+<div class="bg-surface-container/50 backdrop-blur-md rounded-xl p-3 shadow-md flex flex-col justify-between space-y-2">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Vibrant orange retail shopping delivery package with Shopee application mobile theme and ice blue reflective subtle backdrop" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEnfozqm7VEqFvKPfcq-eXzi-MQ6VBVGqNHw79U3ozHGdlZdlq_8CaYausWLHk_bgnK2DJbDAd6_dO58nd6MKUTncKH-mP4WRTTaUdMJac6r-3mvOyxszO4fmcOkRN6w3FMzaQjqnAekdrAm_qn9o9QtG0majdYxhuCDXKIJbtUSUx_G3VU1s_rZE2lNWETyJVq4QiyInJDLhOoAo1qLiNZt0HoKGtVWrGyS2Wk-28BqECy-4Ob_N8"/>
+</div>
+<div class="min-w-0">
+<h4 class="text-xs font-headline font-semibold text-on-surface truncate">Shopee Mall</h4>
+<span class="text-[10px] text-primary font-medium">Hoàn 80.000 ₫</span>
+</div>
+</div>
+<p class="text-[10px] text-on-surface-variant line-clamp-2">Đơn từ 400.000 ₫ vào mỗi Thứ 4 &amp; Chủ Nhật hàng tuần.</p>
+</div>
+<!-- Partner 2: Grab -->
+<div class="bg-surface-container/50 backdrop-blur-md rounded-xl p-3 shadow-md flex flex-col justify-between space-y-2">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Green mobility scooter delivering fresh food packages with modern neon reflections on dark glass asphalt surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPoTh5qWn-mXhNtMQZdeFWZlEuMemysc2d_kd4Vg2SyfMT0MrHORI8ihBIKZbYph0a3j_7Hg6qzo3GqITh_Yo9_XUkE7rje4kHTTpRRuaZ0MWt7ho9Q1N7oHFRCfU9tag5lD7A_KwQ3kWoTtQa1HvTyDi-zMZOfUmAR-awkTLor5bA0w0PJ-CPolOIYoAxZG1N-rjV951t6faYsA6xfDtRSQSgHG1h6Rz6hO_Yjn7AqrN5bL9ZJvQw"/>
+</div>
+<div class="min-w-0">
+<h4 class="text-xs font-headline font-semibold text-on-surface truncate">GrabFood / Car</h4>
+<span class="text-[10px] text-primary font-medium">Giảm 25%</span>
+</div>
+</div>
+<p class="text-[10px] text-on-surface-variant line-clamp-2">Tối đa 50.000 ₫ cho chuyến xe hoặc đặt món.</p>
+</div>
+<!-- Partner 3: CGV Cinema -->
+<div class="bg-surface-container/50 backdrop-blur-md rounded-xl p-3 shadow-md flex flex-col justify-between space-y-2">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Cinema red seats with glowing ice blue cinema screen ambience and fresh popcorn box in luxury movie theatre" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpE9PyPjcuDQeixYYS1y7GYLyVTPIzXdewEmp10_QQ_SfLFTxn2_Z35ynaQwx6wBhunSloMBpvemR4Mjqt-it-9tCYq2_gInTGQGyKvitYMZ3291sz_6nbAEAv2ON4viSc5jvHqTOxaMfRsrJVez_1UiBi0P5h_WVx0gh-YyDzL-q0C19vsQLv00x_lde4e8TlTlr4Fcj47bhJuCSAUuBJ5CiaiFz8YmnBX7DDAqellFy4vdNK3san"/>
+</div>
+<div class="min-w-0">
+<h4 class="text-xs font-headline font-semibold text-on-surface truncate">CGV Cinema</h4>
+<span class="text-[10px] text-tertiary font-medium">Mua 1 Tặng 1</span>
+</div>
+</div>
+<p class="text-[10px] text-on-surface-variant line-clamp-2">Vé 2D tiêu chuẩn vào cuối tuần khi thanh toán thẻ.</p>
+</div>
+<!-- Partner 4: Starbucks -->
+<div class="bg-surface-container/50 backdrop-blur-md rounded-xl p-3 shadow-md flex flex-col justify-between space-y-2">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Iced cold brew coffee cup on polished dark marble counter with gentle glacier light refractions" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFHp7Qeol4TXeWSa5JKiDd3zXioPUUuGG0v7Iepe6aWlr4U7YNkE5Nf492Bjm053ZtSUk5FwwfJnW_h5lJsYlpQbfeCgv3VTE4-406A6g7ylon4Hz08l-umPr28l_3yCiI7Texrw5fEUi6Mv6bX2RkOvShQjVOw8vxog8zAsDjTAV6XN20sygWaoZZ6JbZkApy7yQB7GcV4Cj3fsJ8sa474uy5N0Q15r44Gz2jwVU0RJt8mKDWEGSw"/>
+</div>
+<div class="min-w-0">
+<h4 class="text-xs font-headline font-semibold text-on-surface truncate">Starbucks</h4>
+<span class="text-[10px] text-tertiary font-medium">Nâng size miễn phí</span>
+</div>
+</div>
+<p class="text-[10px] text-on-surface-variant line-clamp-2">Áp dụng mọi hóa đơn đồ uống nguyên giá.</p>
+</div>
+</div>
+</div>
+<!-- Bottom Interactive Controls -->
+<div class="pt-2 pb-6 space-y-2.5">
+<button class="w-full h-12 rounded-xl bg-primary/20 hover:bg-primary/30 active:scale-[0.99] text-primary font-headline font-semibold text-sm flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(125,211,252,0.15)] transition-all" id="saveConfigBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">save</span>
+<span>Lưu cấu hình quy tắc</span>
+</button>
+<button class="w-full h-10 rounded-xl bg-transparent hover:bg-surface-container/40 text-on-surface-variant text-xs font-medium flex items-center justify-center gap-1.5 transition-colors" id="historyBtn" type="button">
+<span class="material-symbols-outlined text-[16px]">history</span>
+<span>Xem lịch sử cập nhật</span>
+</button>
+</div>
+</div>
+<script>
+  (function() {
+    const mccInput = document.getElementById('mccInput');
+    const addMccBtn = document.getElementById('addMccBtn');
+    const targetCategory = document.getElementById('targetCategory');
+    const feedback = document.getElementById('mccFeedback');
+    const saveBtn = document.getElementById('saveConfigBtn');
+
+    // Humanized label dictionary for popular MCCs
+    const mccDict = {
+      '5411': 'Siêu thị',
+      '7011': 'Khách sạn',
+      '5541': 'Xăng dầu',
+      '5812': 'Nhà hàng',
+      '5814': 'Thức ăn nhanh',
+      '5462': 'Tiệm bánh',
+      '5311': 'Bách hóa',
+      '5999': 'Bán lẻ',
+      '6300': 'Bảo hiểm',
+      '8099': 'Y tế',
+      '4111': 'Vận tải',
+      '5732': 'Thiết bị số'
+    };
+
+    function processMccInput() {
+      const val = mccInput.value.trim();
+      if (!val) return;
+
+      const items = val.split(',').map(s => s.trim()).filter(Boolean);
+      const valid = [];
+      const invalid = [];
+
+      items.forEach(code => {
+        if (/^\d{4}$/.test(code)) {
+          if (!valid.includes(code)) valid.push(code);
+        } else {
+          invalid.push(code);
+        }
+      });
+
+      if (invalid.length > 0) {
+        feedback.className = 'text-[11px] px-1 text-error block';
+        feedback.innerText = 'Mã không đúng định dạng 4 chữ số: ' + invalid.join(', ');
+        return;
+      }
+
+      const catValue = targetCategory.value;
+      const targetContainer = document.getElementById('tags-' + catValue);
+
+      if (targetContainer && valid.length > 0) {
+        let addedCount = 0;
+        valid.forEach(code => {
+          // Check for duplicate in container
+          const existing = Array.from(targetContainer.querySelectorAll('span')).some(s => s.innerText === code);
+          if (!existing) {
+            const span = document.createElement('span');
+            span.className = 'inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-surface-container-high text-on-surface animate-pulse';
+            const name = mccDict[code] || 'Chuyên mục';
+            span.innerHTML = `<span>${code}</span><span class="text-on-surface-variant">${name}</span><button type="button" class="text-on-surface-variant hover:text-error ml-0.5" onclick="this.parentElement.remove()" aria-label="Xóa"><span class="material-symbols-outlined text-[12px]">close</span></button>`;
+            targetContainer.appendChild(span);
+            setTimeout(() => span.classList.remove('animate-pulse'), 1000);
+            addedCount++;
+          }
+        });
+
+        feedback.className = 'text-[11px] px-1 text-primary block';
+        feedback.innerText = `Đã thêm thành công ${addedCount} mã MCC mới.`;
+        mccInput.value = '';
+        setTimeout(() => { feedback.className = 'hidden'; }, 3000);
+      }
+    }
+
+    addMccBtn.addEventListener('click', processMccInput);
+    mccInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        processMccInput();
+      }
+    });
+
+    saveBtn.addEventListener('click', function() {
+      const originalHtml = saveBtn.innerHTML;
+      saveBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span><span>Đang đồng bộ quy tắc...</span>';
+      setTimeout(() => {
+        saveBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Đã lưu thành công!</span>';
+        setTimeout(() => {
+          saveBtn.innerHTML = originalHtml;
+        }, 2200);
+      }, 700);
+    });
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/75 backdrop-blur-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.36)]" data-active-classes="text-primary font-semibold"><div class="flex items-center justify-around h-16 px-4"><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="the-tin-dung" href="#"><span class="material-symbols-outlined text-[22px]">credit_card</span><span class="text-[11px] font-label font-medium tracking-tight">Thẻ tín dụng</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="dau-tu" href="#"><span class="material-symbols-outlined text-[22px]">trending_up</span><span class="text-[11px] font-label font-medium tracking-tight">Đầu tư</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[72px] h-11 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ca-nhan" href="#"><span class="material-symbols-outlined text-[22px]">person</span><span class="text-[11px] font-label font-medium tracking-tight">Cá nhân</span></a></div></nav></body></html>
