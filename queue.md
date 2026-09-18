@@ -157,7 +157,12 @@ RABBIT_VHOST=/
 # --- Playwright / crawl ---
 PLAYWRIGHT_HEADLESS=true
 PLAYWRIGHT_TEST_API_ENABLED=false
+AISCORE_VERIFICATION_TIMEOUT_MS=120000
 AISCORE_COOKIE=
+
+# --- Optional remote Cloudflare verification ---
+KIRA_QUEUE_REMOTE_DISPLAY_ENABLED=false
+KIRA_QUEUE_VNC_PASSWORD_FILE=./.secrets/kira-queue-vnc-password
 
 # --- Optional upstream (nếu không dùng crawl in-process) ---
 APP_KIRA_CRAWL_BASE_URL=http://host.docker.internal:4000
@@ -200,6 +205,9 @@ services:
       RABBIT_VHOST: ${RABBIT_VHOST}
     volumes:
       - ./logs:/app/logs
+      - kira-queue-playwright:/app/.playwright
+      # Khi bật remote display, thêm secret mount bên dưới:
+      # - ${KIRA_QUEUE_VNC_PASSWORD_FILE:-./.secrets/kira-queue-vnc-password}:/run/secrets/kira_queue_vnc_password:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     deploy:
@@ -207,10 +215,52 @@ services:
         limits:
           memory: 1.5G
     restart: unless-stopped
+
+volumes:
+  kira-queue-playwright:
 EOF
 ```
 
 > `ipc: host` giúp Chromium/Playwright ổn định hơn trong container.
+
+### 3.3 Xác minh Cloudflare từ xa (tuỳ chọn)
+
+Chế độ remote chỉ dùng khi cần xử lý challenge tương tác. Tạo file secret trên EC2, không commit
+file này vào repo:
+
+```bash
+mkdir -p .secrets
+umask 077
+printf '%s\n' '<mat-khau-VNC-toi-da-8-ky-tu>' > .secrets/kira-queue-vnc-password
+```
+
+Stack remote chạy Chromium trên Xvfb và giữ profile trong volume riêng cho từng queue. Dùng
+overlay host-network để noVNC bind đúng localhost của EC2:
+
+Khi chạy stack này từ repo monorepo, file Compose nằm trong `scripts`, nên đường dẫn secret trong
+`.env` cần là `../.secrets/kira-queue-vnc-password` (file `.env` nằm ở repo root). Với compose
+standalone ở trên, dùng `./.secrets/kira-queue-vnc-password`.
+
+```bash
+docker compose \
+  -f scripts/stack-producer-queue.yml \
+  -f scripts/stack-producer-queue-remote.yml \
+  up -d
+```
+
+Hai cổng noVNC mặc định chỉ có trên localhost của EC2:
+
+```bash
+ssh -N \
+  -L 6081:127.0.0.1:6081 \
+  -L 6082:127.0.0.1:6082 \
+  ec2-user@<EC2_PUBLIC_IP>
+```
+
+Mở `http://127.0.0.1:6081/vnc.html` cho `kira-queue-1` hoặc `http://127.0.0.1:6082/vnc.html`
+cho `kira-queue-2`, nhập mật khẩu secret và hoàn thành challenge trên đúng browser đang crawl.
+VNC chỉ bind localhost và không được publish ra ngoài. Nếu dùng host-network overlay, các giá trị
+DB/Rabbit/Gateway trong `.env` phải truy cập được từ network namespace của host.
 
 ---
 
@@ -316,6 +366,8 @@ PLATFORM=linux/amd64 PUSH=true ./scripts/build-producer-queue.sh
 | Không connect DB/Rabbit | Kiểm tra SG outbound + host/port trong `.env` |
 | `platform mismatch` | Đặt `DOCKER_PLATFORM=linux/amd64` |
 | Playwright crash | Đảm bảo `ipc: host`, `PLAYWRIGHT_HEADLESS=true` |
+| Cloudflare challenge loop | Bật remote overlay, xác minh trên đúng noVNC lane; profile volume sẽ giữ clearance sau restart |
+| noVNC không mở | Kiểm tra secret file, SSH tunnel `6081/6082` và `KIRA_QUEUE_NOVNC_BIND_ADDRESS=127.0.0.1` |
 | OOM killed | Giảm service khác trên máy; tối thiểu 4 GB nếu có Portainer |
 
 ---
@@ -324,6 +376,7 @@ PLATFORM=linux/amd64 PUSH=true ./scripts/build-producer-queue.sh
 
 - Setup Portainer + RabbitMQ + kira-producer (EC2): `docs/portainer-ec2-setup.md`
 - Compose mẫu producer + queue: `scripts/stack-producer-queue.yml`
+- Overlay remote Cloudflare verification: `scripts/stack-producer-queue-remote.yml`
 - Stack RabbitMQ (Portainer): `scripts/stack-rabbitmq.yml`
 - Stack kira-producer (Portainer): `scripts/stack-kira-producer.yml`
 - Bootstrap EC2: `scripts/ec2-bootstrap.sh`

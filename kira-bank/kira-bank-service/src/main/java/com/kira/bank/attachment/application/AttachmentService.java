@@ -7,14 +7,18 @@ import com.kira.bank.ai.AiJobProperties;
 import com.kira.bank.attachment.R2StorageService;
 import com.kira.bank.attachment.domain.Attachment;
 import com.kira.bank.attachment.domain.AttachmentAiStatus;
+import com.kira.bank.attachment.domain.InvestmentAiJobEvent;
+import com.kira.bank.attachment.domain.InvestmentAiJobEventActor;
 import com.kira.bank.attachment.infrastructure.AttachmentRepository;
+import com.kira.bank.attachment.infrastructure.InvestmentAiJobEventRepository;
+import com.kira.bank.notification.application.NotificationService;
 import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,9 +33,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
-import static com.kira.bank.attachment.application.AttachmentDtos.AiDraftResponse;
-import static com.kira.bank.attachment.application.AttachmentDtos.AiTransactionDraftResponse;
-import static com.kira.bank.attachment.application.AttachmentDtos.AttachmentResponse;
+import static com.kira.bank.attachment.application.AttachmentDtos.*;
 
 @Service
 @RequiredArgsConstructor
@@ -39,14 +41,18 @@ public class AttachmentService {
     public static final String INVESTMENT_MODULE = "investment";
     public static final String RECEIPT_DOCUMENT_TYPE = "RECEIPT";
     public static final int INVESTMENT_AI_SCHEMA_VERSION = 2;
+    private static final String AI_READY_NOTIFICATION = "INVESTMENT_AI_READY";
+    private static final String AI_FAILED_NOTIFICATION = "INVESTMENT_AI_FAILED";
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
     private static final List<String> AI_IMAGE_TYPES = List.of("image/jpeg", "image/png", "image/webp");
     private static final List<String> GENERIC_FILE_TYPES = List.of("image/jpeg", "image/png", "image/webp", "application/pdf");
 
     private final AttachmentRepository repository;
+    private final InvestmentAiJobEventRepository eventRepository;
     private final R2StorageService storage;
     private final AiJobProperties jobProperties;
     private final ObjectMapper objectMapper;
+    private final NotificationService notifications;
     @Value("${investment.transaction-import.time-zone:Asia/Ho_Chi_Minh}")
     private String importTimeZone;
 
@@ -87,6 +93,10 @@ public class AttachmentService {
         return List.of("DEPOSIT", "WITHDRAWAL", "BONUS").contains(normalized) ? normalized : null;
     }
 
+    private static String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
     private Instant parseInstant(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
@@ -104,10 +114,6 @@ public class AttachmentService {
                 }
             }
         }
-    }
-
-    private static String trimToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 
     @Transactional
@@ -146,7 +152,11 @@ public class AttachmentService {
             attachment.setAiSchemaVersion(INVESTMENT_AI_SCHEMA_VERSION);
             attachment.setAiNextAttemptAt(Instant.now());
         }
-        return toResponse(repository.save(attachment));
+        Attachment saved = repository.saveAndFlush(attachment);
+        if (isInvestmentReceipt(normalizedFlow, normalizedDocumentType)) {
+            appendEvent(saved, null, AttachmentAiStatus.PENDING, "INITIAL_UPLOAD", InvestmentAiJobEventActor.USER);
+        }
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -189,23 +199,25 @@ public class AttachmentService {
     public AttachmentResponse retry(Long userId, Long attachmentId) {
         Attachment attachment = repository.findOwnedForUpdate(attachmentId, userId)
             .orElseThrow(this::missingAttachment);
-        rerun(attachment, userId);
+        rerun(attachment, userId, InvestmentAiJobEventActor.USER);
         return toResponse(attachment);
     }
 
     @Transactional
     public AttachmentResponse retryAsAdmin(Long adminId, Long attachmentId) {
         Attachment attachment = repository.findForUpdate(attachmentId).orElseThrow(this::missingAttachment);
-        rerun(attachment, adminId);
+        rerun(attachment, adminId, InvestmentAiJobEventActor.ADMIN);
         return toResponse(attachment);
     }
 
-    private void rerun(Attachment attachment, Long actorId) {
+    private void rerun(Attachment attachment, Long actorId, InvestmentAiJobEventActor actorType) {
         requireInvestmentJob(attachment);
         if (!List.of(AttachmentAiStatus.FAILED, AttachmentAiStatus.CANCELLED).contains(attachment.getAiStatus())) {
             throw conflict("AI_JOB_NOT_RERUNNABLE", "Chỉ có thể chạy lại job FAILED hoặc CANCELLED");
         }
+        AttachmentAiStatus previousStatus = attachment.getAiStatus();
         resetForRun(attachment, actorId);
+        appendEvent(attachment, previousStatus, AttachmentAiStatus.PENDING, "MANUAL_RETRY", actorType);
     }
 
     private void resetForRun(Attachment attachment, Long actorId) {
@@ -227,23 +239,25 @@ public class AttachmentService {
     public Attachment claimImmediateRun(Long userId, Long attachmentId) {
         Attachment attachment = repository.findOwnedForUpdate(attachmentId, userId)
             .orElseThrow(this::missingAttachment);
-        return claimImmediateRun(attachment, userId);
+        return claimImmediateRun(attachment, userId, InvestmentAiJobEventActor.USER);
     }
 
     @Transactional
     public Attachment claimImmediateRunAsAdmin(Long adminId, Long attachmentId) {
         Attachment attachment = repository.findForUpdate(attachmentId).orElseThrow(this::missingAttachment);
-        return claimImmediateRun(attachment, adminId);
+        return claimImmediateRun(attachment, adminId, InvestmentAiJobEventActor.ADMIN);
     }
 
-    private Attachment claimImmediateRun(Attachment attachment, Long actorId) {
+    private Attachment claimImmediateRun(Attachment attachment, Long actorId, InvestmentAiJobEventActor actorType) {
         requireInvestmentJob(attachment);
         if (!List.of(AttachmentAiStatus.PENDING, AttachmentAiStatus.FAILED, AttachmentAiStatus.CANCELLED)
             .contains(attachment.getAiStatus())) {
             throw conflict("AI_JOB_NOT_RUNNABLE", "Chỉ có thể chạy job PENDING, FAILED hoặc CANCELLED");
         }
         if (attachment.getAiStatus() != AttachmentAiStatus.PENDING) {
+            AttachmentAiStatus previousStatus = attachment.getAiStatus();
             resetForRun(attachment, actorId);
+            appendEvent(attachment, previousStatus, AttachmentAiStatus.PENDING, "MANUAL_RUN_RESET", actorType);
         }
         Instant now = Instant.now();
         attachment.setAiStatus(AttachmentAiStatus.PROCESSING);
@@ -253,6 +267,7 @@ public class AttachmentService {
         attachment.setAiCompletedAt(null);
         attachment.setAiError(null);
         attachment.setUpdatedBy(actorId);
+        appendEvent(attachment, AttachmentAiStatus.PENDING, AttachmentAiStatus.PROCESSING, "MANUAL_RUN", actorType);
         return attachment;
     }
 
@@ -260,18 +275,18 @@ public class AttachmentService {
     public AttachmentResponse cancel(Long userId, Long attachmentId) {
         Attachment attachment = repository.findOwnedForUpdate(attachmentId, userId)
             .orElseThrow(this::missingAttachment);
-        cancel(attachment, userId);
+        cancel(attachment, userId, InvestmentAiJobEventActor.USER);
         return toResponse(attachment);
     }
 
     @Transactional
     public AttachmentResponse cancelAsAdmin(Long adminId, Long attachmentId) {
         Attachment attachment = repository.findForUpdate(attachmentId).orElseThrow(this::missingAttachment);
-        cancel(attachment, adminId);
+        cancel(attachment, adminId, InvestmentAiJobEventActor.ADMIN);
         return toResponse(attachment);
     }
 
-    private void cancel(Attachment attachment, Long actorId) {
+    private void cancel(Attachment attachment, Long actorId, InvestmentAiJobEventActor actorType) {
         requireInvestmentJob(attachment);
         if (attachment.getAiStatus() != AttachmentAiStatus.PENDING) {
             throw conflict("AI_JOB_NOT_CANCELLABLE", "Chỉ có thể hủy job đang chờ xử lý");
@@ -282,6 +297,7 @@ public class AttachmentService {
         attachment.setAiCompletedAt(Instant.now());
         attachment.setAiError(null);
         attachment.setUpdatedBy(actorId);
+        appendEvent(attachment, AttachmentAiStatus.PENDING, AttachmentAiStatus.CANCELLED, "MANUAL_CANCEL", actorType);
     }
 
     @Transactional
@@ -300,6 +316,8 @@ public class AttachmentService {
             attachment.setAiProcessingStartedAt(now);
             attachment.setAiNextAttemptAt(null);
             attachment.setAiError(null);
+            appendEvent(attachment, AttachmentAiStatus.PENDING, AttachmentAiStatus.PROCESSING,
+                "SCHEDULED_RUN", InvestmentAiJobEventActor.SYSTEM);
         }
         return claimed;
     }
@@ -314,12 +332,15 @@ public class AttachmentService {
                 attachment.setAiStatus(AttachmentAiStatus.FAILED);
                 attachment.setAiError("AI_PROCESSING_TIMEOUT");
                 attachment.setAiCompletedAt(now);
+                notifyAiFailed(attachment);
             } else {
                 attachment.setAiStatus(AttachmentAiStatus.PENDING);
                 attachment.setAiError("AI_PROCESSING_TIMEOUT");
                 attachment.setAiNextAttemptAt(now);
             }
             attachment.setAiProcessingStartedAt(null);
+            appendEvent(attachment, AttachmentAiStatus.PROCESSING, attachment.getAiStatus(),
+                "AI_PROCESSING_TIMEOUT", InvestmentAiJobEventActor.SYSTEM);
         }
     }
 
@@ -337,6 +358,9 @@ public class AttachmentService {
         attachment.setAiError(null);
         attachment.setAiProcessingStartedAt(null);
         attachment.setAiCompletedAt(Instant.now());
+        appendEvent(attachment, AttachmentAiStatus.PROCESSING, AttachmentAiStatus.READY,
+            "AI_RESULT_READY", InvestmentAiJobEventActor.SYSTEM);
+        notifyAiReady(attachment);
     }
 
     @Transactional
@@ -347,14 +371,19 @@ public class AttachmentService {
         }
         attachment.setAiError(reason);
         attachment.setAiProcessingStartedAt(null);
+        AttachmentAiStatus nextStatus;
         if (attachment.getAiAttemptCount() >= jobProperties.safeMaxAttempts()) {
             attachment.setAiStatus(AttachmentAiStatus.FAILED);
             attachment.setAiCompletedAt(Instant.now());
             attachment.setAiNextAttemptAt(null);
+            nextStatus = AttachmentAiStatus.FAILED;
+            notifyAiFailed(attachment);
         } else {
             attachment.setAiStatus(AttachmentAiStatus.PENDING);
             attachment.setAiNextAttemptAt(Instant.now().plus(jobProperties.safeRetryDelay()));
+            nextStatus = AttachmentAiStatus.PENDING;
         }
+        appendEvent(attachment, AttachmentAiStatus.PROCESSING, nextStatus, reason, InvestmentAiJobEventActor.SYSTEM);
     }
 
     @Transactional
@@ -379,11 +408,38 @@ public class AttachmentService {
         attachment.setAiStatus(AttachmentAiStatus.CONFIRMED);
         attachment.setAiConfirmedAt(Instant.now());
         attachment.setUpdatedBy(userId);
+        appendEvent(attachment, AttachmentAiStatus.READY, AttachmentAiStatus.CONFIRMED,
+            "USER_CONFIRMED", InvestmentAiJobEventActor.USER);
     }
 
     private Attachment owned(Long attachmentId, Long userId) {
         return repository.findByIdAndUserIdAndDeletedAtIsNull(attachmentId, userId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ATTACHMENT_NOT_FOUND", "Không tìm thấy tệp đính kèm"));
+    }
+
+    private void notifyAiReady(Attachment attachment) {
+        notifications.createIfAbsent(
+            attachment.getUserId(), AI_READY_NOTIFICATION, "INVESTMENT",
+            "AI đã nhận diện xong chứng từ",
+            "Chứng từ " + displayName(attachment) + " đã có kết quả để bạn kiểm tra và xác nhận.",
+            "SUCCESS", "/ai-result?id=" + attachment.getId());
+    }
+
+    private void notifyAiFailed(Attachment attachment) {
+        notifications.createIfAbsent(
+            attachment.getUserId(), AI_FAILED_NOTIFICATION, "INVESTMENT",
+            "AI không xử lý được chứng từ",
+            "Chứng từ " + displayName(attachment) + " đã hết số lần thử. Bạn có thể mở hàng đợi để thử lại hoặc nhập thủ công.",
+            "ERROR", "/queue?attachmentId=" + attachment.getId());
+    }
+
+    private String displayName(Attachment attachment) {
+        String name = attachment.getOriginalName();
+        if (name == null || name.isBlank()) {
+            return "đầu tư #" + attachment.getId();
+        }
+        String trimmed = name.trim();
+        return trimmed.length() <= 120 ? trimmed : trimmed.substring(0, 117) + "...";
     }
 
     private void requireInvestmentJob(Attachment attachment) {
@@ -466,6 +522,26 @@ public class AttachmentService {
         }
     }
 
+    private void appendEvent(Attachment attachment, AttachmentAiStatus fromStatus,
+                             AttachmentAiStatus toStatus, String reasonCode,
+                             InvestmentAiJobEventActor actorType) {
+        InvestmentAiJobEvent event = new InvestmentAiJobEvent();
+        event.setAttachmentId(attachment.getId());
+        event.setFromStatus(fromStatus);
+        event.setToStatus(toStatus);
+        event.setAttemptCount(attachment.getAiAttemptCount());
+        event.setReasonCode(safeReasonCode(reasonCode));
+        event.setActorType(actorType);
+        event.setCreatedAt(Instant.now());
+        eventRepository.save(event);
+    }
+
+    private String safeReasonCode(String reasonCode) {
+        if (reasonCode == null || reasonCode.isBlank()) return "STATE_CHANGED";
+        String normalized = reasonCode.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9_\\-]", "_");
+        return normalized.length() <= 100 ? normalized : normalized.substring(0, 100);
+    }
+
     private AiDraftResponse sanitize(AiDocumentService.AiExtraction extraction, Long attachmentId) {
         List<AiTransactionDraftResponse> transactions = new ArrayList<>();
         for (AiDocumentService.AiTransactionExtraction transaction :
@@ -474,7 +550,8 @@ public class AttachmentService {
             String type = normalizeType(transaction.transactionType());
             if (transaction.transactionType() != null && type == null) warnings.add("UNSUPPORTED_TRANSACTION_TYPE");
             String status = normalizeStatus(transaction.transactionStatus());
-            if (transaction.transactionStatus() != null && status == null) warnings.add("UNSUPPORTED_TRANSACTION_STATUS");
+            if (transaction.transactionStatus() != null && status == null)
+                warnings.add("UNSUPPORTED_TRANSACTION_STATUS");
             BigDecimal amount = transaction.amount();
             if (amount != null && amount.signum() < 0) {
                 amount = amount.abs();

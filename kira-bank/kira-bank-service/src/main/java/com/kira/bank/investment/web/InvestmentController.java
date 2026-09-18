@@ -1,7 +1,11 @@
 package com.kira.bank.investment.web;
 
+import com.kira.bank.investment.application.InvestmentReconciliationReportDtos.CreateReportRequest;
+import com.kira.bank.investment.application.InvestmentReconciliationReportService;
 import com.kira.bank.investment.application.InvestmentService;
+import com.kira.bank.investment.application.InvestmentStatisticsDtos.StatisticsResponse;
 import com.kira.bank.investment.application.InvestmentTransactionImportDtos.ConfirmBatchRequest;
+import com.kira.bank.investment.application.InvestmentTransactionImportDtos.ManualTransactionRequest;
 import com.kira.bank.investment.application.InvestmentTransactionImportService;
 import com.kira.bank.investment.domain.InvestmentTransactionStatus;
 import com.kira.bank.investment.domain.InvestmentTransactionType;
@@ -10,9 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,7 +25,8 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 
-import static com.kira.bank.investment.application.InvestmentDtos.*;
+import static com.kira.bank.investment.application.InvestmentDtos.CreateAccountRequest;
+import static com.kira.bank.investment.application.InvestmentDtos.UpdateAccountRequest;
 
 @RestController
 @RequestMapping("/api/v1/investment")
@@ -29,6 +34,7 @@ import static com.kira.bank.investment.application.InvestmentDtos.*;
 public class InvestmentController {
     private final InvestmentService service;
     private final InvestmentTransactionImportService transactionImports;
+    private final InvestmentReconciliationReportService reconciliationReports;
 
     @PostMapping("/accounts")
     @ResponseStatus(HttpStatus.CREATED)
@@ -85,6 +91,45 @@ public class InvestmentController {
                         @RequestParam(required = false) InvestmentTransactionStatus status,
                         @PageableDefault(size = 20, sort = "transactionAt", direction = Sort.Direction.DESC) Pageable p) {
         return transactionImports.transactions(user, id, fromDate, toDate, type, status, p);
+    }
+
+    @PostMapping("/accounts/{id}/manual-transactions")
+    @ResponseStatus(HttpStatus.CREATED)
+    Object manualTransaction(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                             @Valid @RequestBody ManualTransactionRequest request) {
+        return transactionImports.createManual(user, id, request);
+    }
+
+    @GetMapping("/accounts/{id}/transactions/{transactionId}")
+    Object transaction(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                       @PathVariable Long transactionId) {
+        return transactionImports.transaction(user, id, transactionId);
+    }
+
+    @GetMapping("/accounts/{id}/statistics")
+    StatisticsResponse statistics(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+                                  @RequestParam(required = false) InvestmentTransactionStatus status) {
+        return transactionImports.statistics(user, id, fromDate, toDate, status);
+    }
+
+    @PostMapping("/accounts/{id}/transactions/{transactionId}/reconciliation-reports")
+    @ResponseStatus(HttpStatus.CREATED)
+    Object createReconciliationReport(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                                      @PathVariable Long transactionId, @Valid @RequestBody CreateReportRequest request) {
+        return reconciliationReports.create(user, id, transactionId, request);
+    }
+
+    @GetMapping("/reconciliation-reports")
+    Object reconciliationReports(@AuthenticationPrincipal Long user,
+                                 @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return reconciliationReports.mine(user, pageable);
+    }
+
+    @GetMapping("/reconciliation-reports/{reportId}")
+    Object reconciliationReport(@AuthenticationPrincipal Long user, @PathVariable Long reportId) {
+        return reconciliationReports.mineOne(user, reportId);
     }
 
 }

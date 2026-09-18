@@ -1,12 +1,11 @@
 package com.kira.bank.identity.infrastructure;
 
 import com.kira.bank.identity.domain.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import jakarta.persistence.LockModeType;
 
 import java.util.Optional;
 
@@ -14,7 +13,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select u from User u where u.deletedAt is null and " +
         "(:search = '' or locate(lower(:search), lower(u.email)) > 0 or locate(lower(:search), lower(u.fullName)) > 0)")
     org.springframework.data.domain.Page<User> searchActiveRecords(@Param("search") String search,
-        org.springframework.data.domain.Pageable pageable);
+                                                                   org.springframework.data.domain.Pageable pageable);
 
     Optional<User> findByEmailIgnoreCaseAndDeletedAtIsNull(String email);
 

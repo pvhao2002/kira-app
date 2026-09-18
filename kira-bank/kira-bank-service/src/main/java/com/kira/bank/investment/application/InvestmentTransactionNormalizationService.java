@@ -8,7 +8,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HexFormat;
@@ -93,7 +96,7 @@ public class InvestmentTransactionNormalizationService {
         String canonical = externalId != null
             ? accountId + "|" + type + "|" + externalId
             : accountId + "|" + type + "|" + amount.setScale(4, RoundingMode.HALF_UP).toPlainString()
-                + "|" + currency + "|" + transactionAt.truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+            + "|" + currency + "|" + transactionAt.truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
         if (disambiguator != null) canonical += "|" + disambiguator;
         try {
             return MessageDigest.getInstance("SHA-256").digest(canonical.getBytes(StandardCharsets.UTF_8));

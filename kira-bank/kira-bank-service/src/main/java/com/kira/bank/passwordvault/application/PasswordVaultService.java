@@ -281,9 +281,17 @@ public class PasswordVaultService {
         return new ApiException(HttpStatus.BAD_REQUEST, code, message);
     }
 
-    private String normalized(String value) { return value == null ? "" : value.trim().toLowerCase(Locale.ROOT); }
-    private boolean contains(String value, String search) { return value != null && value.toLowerCase(Locale.ROOT).contains(search); }
-    private String blankToNull(String value) { return value == null || value.isBlank() ? null : value.trim(); }
+    private String normalized(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean contains(String value, String search) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(search);
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
 
     private String token() {
         byte[] bytes = new byte[32];

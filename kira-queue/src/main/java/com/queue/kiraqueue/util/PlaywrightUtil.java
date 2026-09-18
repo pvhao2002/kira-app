@@ -1,126 +1,16 @@
 package com.queue.kiraqueue.util;
 
-import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.ColorScheme;
-import com.microsoft.playwright.options.Cookie;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.options.LoadState;
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 
 @Log
 @UtilityClass
 public class PlaywrightUtil {
-    /**
-     * Chrome trên Windows, phiên bản mới — giống user thật.
-     */
-    public static final String USER_AGENT =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-
-    private static final int VIEWPORT_WIDTH = 1920;
-    private static final int VIEWPORT_HEIGHT = 1080;
-    private static final String LOCALE = "en-US";
-    private static final String ACCEPT_LANGUAGE = "en-US,en;q=0.9,vi;q=0.8";
-
-    /**
-     * Launch options giống trình duyệt thật: tắt cờ automation, dùng Chrome nếu có.
-     */
-    public static BrowserType.LaunchOptions launchOptions(boolean headless) {
-        return new BrowserType.LaunchOptions()
-                .setHeadless(headless)
-                .setArgs(List.of(
-                        "--disable-blink-features=AutomationControlled",
-                        "--no-first-run",
-                        "--no-default-browser-check",
-                        "--disable-infobars",
-                        "--window-size=%d,%d".formatted(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
-                ));
-    }
-
-    /**
-     * Context options giống user thật: viewport, locale, timezone.
-     */
-    public static Browser.NewContextOptions contextOptions() {
-        return new Browser.NewContextOptions()
-                .setUserAgent(USER_AGENT)
-                .setViewportSize(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
-                .setLocale(LOCALE)
-                .setTimezoneId("Asia/Ho_Chi_Minh")
-                .setExtraHTTPHeaders(Map.of("Accept-Language", ACCEPT_LANGUAGE))
-                .setIgnoreHTTPSErrors(false)
-                .setColorScheme(ColorScheme.LIGHT)
-                .setDeviceScaleFactor(1);
-    }
-
-    /**
-     * Script chạy trước mỗi page: giảm phát hiện automation.
-     */
-    public static final String INIT_SCRIPT_STEALTH = """
-            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-            window.chrome = window.chrome || { runtime: {} };
-            """;
-
-    private static final String DEFAULT_OPTIONS_CLOSED_COOKIE = "optionsClosed";
-
-    /**
-     * Cookie mặc định cho crawl aiscore ({@link Constants#AI_SCORE_URL} / mobile): khớp domain gốc và mọi subdomain.
-     */
-    private static void addDefaultContextCookies(BrowserContext context) {
-        long ts = System.currentTimeMillis();
-        context.addCookies(List.of(
-                new Cookie(DEFAULT_OPTIONS_CLOSED_COOKIE, Long.toString(ts))
-                        .setDomain("aiscore.com")
-                        .setPath("/")
-        ));
-    }
-
-    public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic) {
-        withPlaywright(obj, logic, null);
-    }
-
-    public <P> void withPlaywright(P obj, BiConsumer<Page, P> logic, Consumer<Exception> errorHandler) {
-        try (
-                var p = Playwright.create();
-                var b = p.chromium().launch(launchOptions(true));
-                BrowserContext context = b.newContext(contextOptions())) {
-            addDefaultContextCookies(context);
-            context.addInitScript(INIT_SCRIPT_STEALTH);
-            Page page = context.newPage();
-            logic.accept(page, obj);
-        } catch (Exception e) {
-            log.log(Level.WARNING, "withPlaywright >> Error during Playwright task", e);
-            if (errorHandler != null) {
-                errorHandler.accept(e);
-            }
-        }
-    }
-
-    public <P> void withPlaywrightPages(int pageCount, BiConsumer<List<Page>, P> logic, P obj) {
-        try (var p = Playwright.create();
-             var b = p.chromium().launch(launchOptions(isRunningProd()));
-             var context = b.newContext(contextOptions())) {
-            addDefaultContextCookies(context);
-            context.addInitScript(INIT_SCRIPT_STEALTH);
-
-            List<Page> pages = new ArrayList<>(pageCount);
-            for (int i = 0; i < pageCount; i++) {
-                pages.add(context.newPage());
-            }
-
-            logic.accept(pages, obj);
-
-        } catch (Exception e) {
-            log.log(Level.WARNING, "withPlaywrightPages >> Error during Playwright task", e);
-        }
-    }
-
-
     public void waitDomContentLoaded(Page page) {
         page.waitForLoadState();
     }
@@ -188,12 +78,4 @@ public class PlaywrightUtil {
         return src.isBlank() ? null : src.trim();
     }
 
-
-    public static boolean isRunningProd() {
-        try {
-            return "PROD".equalsIgnoreCase(System.getenv("ENV"));
-        } catch (Exception e) {
-            return false;
-        }
-    }
 }

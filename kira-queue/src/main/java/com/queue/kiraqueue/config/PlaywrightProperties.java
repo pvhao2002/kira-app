@@ -7,9 +7,9 @@ public record PlaywrightProperties(
         boolean headless,
         String channel,
         long browserTimeoutMs,
+        long verificationTimeoutMs,
         long matchesAsyncTimeoutMs,
         long oddsAsyncTimeoutMs,
-        String userAgent,
         String acceptLanguage,
         String cookie,
         String profileBaseDir,
@@ -21,12 +21,14 @@ public record PlaywrightProperties(
         String matchesBenchmarkBaseUrl
 ) {
     /**
-     * Unique per JVM: {@code port4000_pid12345}. Prevents two processes on the same HTTP port from sharing Chromium user-data.
+     * Stable across JVM restarts (e.g. {@code port2323}) so the Chromium user-data dir, and any
+     * Cloudflare clearance cookie stored in it, survives a service restart. Deliberately excludes
+     * the process id: only one instance is expected to bind a given port/profile-instance-id at a
+     * time, and Playwright's own user-data-dir lock prevents two concurrent processes from sharing it.
      */
     public String resolvedProfileInstanceId() {
-        var label = profileInstanceId != null && !profileInstanceId.isBlank()
+        return profileInstanceId != null && !profileInstanceId.isBlank()
                 ? profileInstanceId
                 : "port" + serverPort;
-        return label + "_pid" + ProcessHandle.current().pid();
     }
 }

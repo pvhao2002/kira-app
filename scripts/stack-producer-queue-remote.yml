@@ -1,0 +1,29 @@
+# Remote verification overlay for scripts/stack-producer-queue.yml.
+# Host networking keeps noVNC bound to the Docker host's loopback interface;
+# the entrypoint still binds noVNC and VNC to 127.0.0.1.
+services:
+  kira-queue-1:
+    network_mode: host
+    ports: !reset []
+    networks: !reset []
+    environment:
+      SERVER_PORT: "2323"
+      PLAYWRIGHT_HEADLESS: "false"
+      KIRA_QUEUE_REMOTE_DISPLAY_ENABLED: "true"
+      KIRA_QUEUE_NOVNC_PORT: "6081"
+      KIRA_QUEUE_VNC_PORT: "5901"
+    volumes:
+      - ${KIRA_QUEUE_VNC_PASSWORD_FILE:-../.secrets/kira-queue-vnc-password}:/run/secrets/kira_queue_vnc_password:ro
+
+  kira-queue-2:
+    network_mode: host
+    ports: !reset []
+    networks: !reset []
+    environment:
+      SERVER_PORT: "2324"
+      PLAYWRIGHT_HEADLESS: "false"
+      KIRA_QUEUE_REMOTE_DISPLAY_ENABLED: "true"
+      KIRA_QUEUE_NOVNC_PORT: "6082"
+      KIRA_QUEUE_VNC_PORT: "5902"
+    volumes:
+      - ${KIRA_QUEUE_VNC_PASSWORD_FILE:-../.secrets/kira-queue-vnc-password}:/run/secrets/kira_queue_vnc_password:ro

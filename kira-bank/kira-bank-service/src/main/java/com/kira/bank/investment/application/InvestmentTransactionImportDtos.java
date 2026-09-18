@@ -59,10 +59,22 @@ public final class InvestmentTransactionImportDtos {
                                        List<ConfirmItemResult> results) {
     }
 
+    public record ManualTransactionRequest(
+        @NotNull InvestmentTransactionType transactionType,
+        @NotNull InvestmentTransactionStatus transactionStatus,
+        @NotNull @Positive @Digits(integer = 15, fraction = 4) BigDecimal amount,
+        @NotBlank @Pattern(regexp = "(?i)[A-Z]{3}") String currency,
+        @NotNull Instant transactionAt,
+        @Size(max = 150) String externalTransactionId,
+        @Size(max = 1000) String description
+    ) {
+    }
+
     public record TransactionResponse(
         Long id, InvestmentTransactionType transactionType, InvestmentTransactionStatus transactionStatus,
         BigDecimal amount, String currency, Instant transactionAt, String externalTransactionId,
-        String description, String rawText, BigDecimal confidence, String sourceFileHash, long version
+        String description, String rawText, BigDecimal confidence, String sourceFileHash,
+        Long sourceAttachmentId, long version
     ) {
     }
 }

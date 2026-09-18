@@ -84,7 +84,7 @@ public class AuthService {
                 org.springframework.data.domain.Sort.by("id").descending())));
         var data = result.getContent().stream().map(user -> new AdminUserResponse(user.getId(), user.getEmail(),
             user.getFullName(), user.getPhone(), user.getRoles().stream().map(Role::getName)
-                .collect(java.util.stream.Collectors.toSet()), user.getStatus())).toList();
+            .collect(java.util.stream.Collectors.toSet()), user.getStatus())).toList();
         return new com.kira.bank.shared.web.ApiTypes.PageResponse<>(data,
             new com.kira.bank.shared.web.ApiTypes.PageMeta(page, size, result.getTotalElements(), result.getTotalPages()));
     }

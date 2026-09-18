@@ -332,6 +332,7 @@ create table event_odds_timeline
     line         varchar(25),
     price_a      decimal(10, 2),
     price_b      decimal(10, 2),
+    goal         varchar(25) null comment 'score at the odds timestamp, e.g. 1-0',
     match_minute varchar(10) comment 'e.g. HT, 45+, 60',
     crawled_at   datetime,
     created_at   datetime default now(),

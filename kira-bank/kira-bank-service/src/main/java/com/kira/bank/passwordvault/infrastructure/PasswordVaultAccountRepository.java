@@ -12,7 +12,9 @@ import java.util.Optional;
 
 public interface PasswordVaultAccountRepository extends JpaRepository<PasswordVaultAccount, Long> {
     List<PasswordVaultAccount> findByOwnerIdAndModuleIdAndDeletedAtIsNullOrderByDisplayNameAscIdAsc(Long ownerId, Long moduleId);
+
     Optional<PasswordVaultAccount> findByIdAndOwnerIdAndDeletedAtIsNull(Long id, Long ownerId);
+
     long countByOwnerIdAndModuleIdAndDeletedAtIsNull(Long ownerId, Long moduleId);
 
     @Modifying

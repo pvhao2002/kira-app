@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 
 import static com.kira.bank.dashboard.application.CreditCardDashboardDtos.*;
@@ -21,6 +23,7 @@ import static com.kira.bank.dashboard.application.CreditCardDashboardDtos.*;
 public class CreditCardDashboardService {
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
     private static final String DEFAULT_CURRENCY = "VND";
+    private static final ZoneId ZONE = ZoneId.of("Asia/Bangkok");
 
     private final UserCreditCardRepository cards;
     private final UserBankCreditLimitRepository creditLimits;
@@ -29,10 +32,20 @@ public class CreditCardDashboardService {
 
     @Transactional(readOnly = true)
     public CreditCardDashboardResponse dashboard(Long userId) {
+        return dashboard(userId, 6);
+    }
+
+    @Transactional(readOnly = true)
+    public CreditCardDashboardResponse dashboard(Long userId, int trendMonths) {
+        if (!Set.of(3, 6, 12).contains(trendMonths)) {
+            throw new com.kira.bank.shared.web.ApiException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "INVALID_TREND_PERIOD",
+                "Trend period must be 3, 6 or 12 months");
+        }
         List<UserCreditCard> userCards = cards.findByUserIdAndDeletedAtIsNull(userId);
         if (userCards.isEmpty()) {
             return new CreditCardDashboardResponse(zero(), zero(), zero(), zero(), rateZero(),
-                DEFAULT_CURRENCY, List.of());
+                DEFAULT_CURRENCY, List.of(), List.of());
         }
 
         Map<Long, StatementRepository.CardDebtTotals> debtByCard = debtByCard(userId, userCards);
@@ -56,7 +69,15 @@ public class CreditCardDashboardService {
         BigDecimal currentBalance = sum(bankRows.stream().map(BankDebtResponse::currentBalance).toList());
         return new CreditCardDashboardResponse(totalCreditLimit, totalStatementDebt, currentBalance,
             money(totalCreditLimit.subtract(currentBalance)), utilization(currentBalance, totalCreditLimit),
-            userCards.getFirst().getCurrency(), bankRows);
+            userCards.getFirst().getCurrency(), bankRows, monthlyTrend(userId, trendMonths));
+    }
+
+    private List<DebtTrendResponse> monthlyTrend(Long userId, int trendMonths) {
+        LocalDate fromDate = LocalDate.now(ZONE).withDayOfMonth(1).minusMonths(trendMonths - 1L);
+        return statements.findMonthlyDebtTrend(userId, fromDate).stream()
+            .map(row -> new DebtTrendResponse(row.getMonth(), row.getCurrency(),
+                money(row.getStatementDebt()), money(row.getRemainingDebt())))
+            .toList();
     }
 
     private BankDebtResponse bankRow(List<UserCreditCard> bankCards,

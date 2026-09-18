@@ -1,6 +1,7 @@
 package com.kira.bank.attachment.application;
 
 import com.kira.bank.attachment.domain.AttachmentAiStatus;
+import com.kira.bank.attachment.domain.InvestmentAiJobEventActor;
 import com.kira.bank.investment.domain.InvestmentImportBatchStatus;
 
 import java.math.BigDecimal;
@@ -59,6 +60,28 @@ public final class AttachmentDtos {
     ) {
     }
 
+    public record InvestmentAiJobEventResponse(
+        AttachmentAiStatus fromStatus,
+        AttachmentAiStatus toStatus,
+        int attemptCount,
+        String reasonCode,
+        InvestmentAiJobEventActor actorType,
+        Instant createdAt
+    ) {
+    }
+
+    public record InvestmentAiQueueSummaryResponse(
+        long total,
+        long pending,
+        long processing,
+        long ready,
+        long failed,
+        long cancelled,
+        long confirmed,
+        Instant generatedAt
+    ) {
+    }
+
     public record InvestmentAiJobResponse(
         Long attachmentId,
         AiJobOwnerResponse owner,
@@ -79,7 +102,8 @@ public final class AttachmentDtos {
         boolean canCancel,
         boolean canRun,
         List<InvestmentAiJobReviewTarget> reviewTargets,
-        AiDraftResponse detectedJson
+        AiDraftResponse detectedJson,
+        List<InvestmentAiJobEventResponse> history
     ) {
     }
 }

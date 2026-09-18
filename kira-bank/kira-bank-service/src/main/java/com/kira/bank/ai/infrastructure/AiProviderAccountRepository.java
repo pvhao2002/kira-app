@@ -13,9 +13,13 @@ import java.util.Optional;
 
 public interface AiProviderAccountRepository extends JpaRepository<AiProviderAccount, Long> {
     List<AiProviderAccount> findByDeletedAtIsNullOrderByPriorityAscIdAsc();
+
     Optional<AiProviderAccount> findByIdAndDeletedAtIsNull(Long id);
+
     boolean existsByAccountIdAndDeletedAtIsNull(String accountId);
+
     boolean existsByAccountIdAndIdNotAndDeletedAtIsNull(String accountId, Long id);
+
     Optional<AiProviderAccount> findFirstByR2PrimaryTrueAndDeletedAtIsNull();
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

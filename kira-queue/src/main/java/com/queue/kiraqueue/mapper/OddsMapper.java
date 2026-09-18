@@ -145,7 +145,7 @@ public class OddsMapper {
                     priceB,
                     stringValue(detail.get("time")),
                     toGmt7DateTime(detail.get("updateTime")),
-                    stringValue(detail.get("score")),
+                    normalizeGoal(stringValue(detail.get("score"))),
                     numberValue(detail.get("statusId"))
             ));
         }
@@ -252,6 +252,14 @@ public class OddsMapper {
         } catch (NumberFormatException ex) {
             return null;
         }
+    }
+
+    private String normalizeGoal(String value) {
+        if (value == null) {
+            return null;
+        }
+        var normalized = value.strip();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private String toGmt7DateTime(JsonNode value) {

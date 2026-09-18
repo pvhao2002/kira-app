@@ -8,11 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +23,14 @@ public class InvestmentAiJobController {
     private final InvestmentAiManualRunService manualRuns;
     private final AttachmentService attachments;
 
+    static ResponseEntity<byte[]> contentResponse(AttachmentService.AttachmentContent content) {
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(content.mimeType()))
+            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                .filename(content.originalName(), StandardCharsets.UTF_8).build().toString())
+            .body(content.bytes());
+    }
+
     @GetMapping
     Object list(
         @AuthenticationPrincipal Long user,
@@ -34,6 +38,11 @@ public class InvestmentAiJobController {
         @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return jobs.mine(user, statuses, pageable);
+    }
+
+    @GetMapping("/{id}")
+    Object detail(@AuthenticationPrincipal Long user, @PathVariable Long id) {
+        return jobs.mineOne(user, id);
     }
 
     @PostMapping("/{id}/cancel")
@@ -50,13 +59,5 @@ public class InvestmentAiJobController {
     @GetMapping("/{id}/content")
     ResponseEntity<byte[]> content(@AuthenticationPrincipal Long user, @PathVariable Long id) {
         return contentResponse(attachments.investmentJobContent(user, id));
-    }
-
-    static ResponseEntity<byte[]> contentResponse(AttachmentService.AttachmentContent content) {
-        return ResponseEntity.ok()
-            .contentType(MediaType.parseMediaType(content.mimeType()))
-            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
-                .filename(content.originalName(), StandardCharsets.UTF_8).build().toString())
-            .body(content.bytes());
     }
 }

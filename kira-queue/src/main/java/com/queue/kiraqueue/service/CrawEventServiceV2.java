@@ -29,6 +29,18 @@ public class CrawEventServiceV2 {
     private static final Set<String> SUPPORTED_ODDS_MARKETS = Set.of("hdc", "ou", "corner");
     private static final Set<String> IN_PLAY_STATUS_FALLBACK = Set.of("1H", "HT", "2H", "ET", "Penalties");
 
+    // Transient AiScore failures (403/429/503, unexpected HTML, silent fetch failure) get a
+    // bounded retry with increasing backoff before the crawl is marked failed. A Cloudflare
+    // verification challenge is handled by the visible lane and is never retried automatically.
+    // A genuinely empty odds response (no Bet365 offered) is not retried here.
+    private static final int MAX_CRAWL_RETRIES = 3;
+    private static final long[] RETRY_DELAYS_MS = {5_000L, 15_000L, 45_000L};
+    private static final Set<String> TRANSIENT_ERROR_PREFIXES = Set.of(
+            "AISCORE_UPSTREAM_UNAVAILABLE",
+            "AISCORE_UNEXPECTED_RESPONSE",
+            "AISCORE_ODDS_DETAIL_FETCH_FAILED"
+    );
+
     private static final String SQL_SELECT_EVENT = """
             select e.event_id,
                    e.external_id                 match_id,
@@ -62,8 +74,8 @@ public class CrawEventServiceV2 {
             """;
 
     private static final String SQL_INSERT_EVENT_ODDS_TIMELINE = """
-            insert into event_odds_timeline (event_id, market, line, price_a, price_b, match_minute, crawled_at)
-            values (:event_id, :market, :line, :price_a, :price_b, :match_minute, :crawled_at)
+            insert into event_odds_timeline (event_id, market, line, price_a, price_b, goal, match_minute, crawled_at)
+            values (:event_id, :market, :line, :price_a, :price_b, :goal, :match_minute, :crawled_at)
             """;
 
     private static final String SQL_DELETE_EVENT_CLAIM =
@@ -113,7 +125,7 @@ public class CrawEventServiceV2 {
                 return;
             }
 
-            MatchOddsResponseDto response = eventCrawlService.crawlEvent(matchId, eventRow);
+            MatchOddsResponseDto response = crawlEventWithRetry(matchId, eventRow);
             if (response.isEmpty()) {
                 log.warning("CrawEventServiceV2 >> empty odds crawl response (no Bet365?): eventId=" + eventId);
                 failEventClaim(eventId, "empty odds crawl response (no Bet365?)");
@@ -142,7 +154,7 @@ public class CrawEventServiceV2 {
         }
 
         try {
-            MatchOddsResponseDto response = eventCrawlService.crawlEvent(matchId, eventRow);
+            MatchOddsResponseDto response = crawlEventWithRetry(matchId, eventRow);
             if (response.isEmpty()) {
                 throw new BusinessException("Empty odds crawl response (no Bet365?): eventId=" + eventId);
             }
@@ -154,6 +166,43 @@ public class CrawEventServiceV2 {
             throw ex;
         } catch (Exception ex) {
             throw new BusinessException("Recrawl failed for eventId=" + eventId + ": " + ex.getMessage(), ex);
+        }
+    }
+
+    private MatchOddsResponseDto crawlEventWithRetry(String matchId, EventRow eventRow) {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return eventCrawlService.crawlEvent(matchId, eventRow);
+            } catch (BusinessException ex) {
+                if (!isTransientAiscoreError(ex) || attempt > MAX_CRAWL_RETRIES) {
+                    throw ex;
+                }
+                long delayMs = RETRY_DELAYS_MS[Math.min(attempt - 1, RETRY_DELAYS_MS.length - 1)];
+                log.warning("CrawEventServiceV2 >> transient AiScore error, retrying in " + delayMs
+                        + "ms (attempt " + attempt + "/" + MAX_CRAWL_RETRIES + "): " + ex.getMessage());
+                sleepUninterruptibly(delayMs);
+            }
+        }
+    }
+
+    private static boolean isTransientAiscoreError(BusinessException ex) {
+        var message = ex.getMessage();
+        if (message == null) {
+            return false;
+        }
+        for (var prefix : TRANSIENT_ERROR_PREFIXES) {
+            if (message.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void sleepUninterruptibly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -327,6 +376,7 @@ public class CrawEventServiceV2 {
                     .addValue("line", item.line())
                     .addValue("price_a", item.priceA())
                     .addValue("price_b", item.priceB())
+                    .addValue("goal", item.score())
                     .addValue("match_minute", item.matchMinute())
                     .addValue("crawled_at", parseCrawledAt(item.crawledAt(), defaultCrawledAt)));
         }

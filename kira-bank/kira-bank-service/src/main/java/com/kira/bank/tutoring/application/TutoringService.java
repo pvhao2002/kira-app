@@ -2,13 +2,17 @@ package com.kira.bank.tutoring.application;
 
 import com.kira.bank.shared.web.ApiException;
 import com.kira.bank.tutoring.domain.*;
-import com.kira.bank.tutoring.infrastructure.*;
+import com.kira.bank.tutoring.infrastructure.TutoringLessonExceptionRepository;
+import com.kira.bank.tutoring.infrastructure.TutoringScheduleSeriesRepository;
+import com.kira.bank.tutoring.infrastructure.TutoringScheduleVersionRepository;
+import com.kira.bank.tutoring.infrastructure.TutoringStudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.*;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
@@ -17,7 +21,8 @@ import java.util.stream.Collectors;
 
 import static com.kira.bank.tutoring.application.TutoringDtos.*;
 
-@Service @RequiredArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class TutoringService {
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final LocalTime EARLIEST = LocalTime.of(6, 0);
@@ -159,7 +164,7 @@ public class TutoringService {
             exceptions.findBySeriesIdInAndOccurrenceDateBetweenAndDeletedAtIsNull(seriesIds, weekStart, weekEnd)
                 .stream().collect(Collectors.toMap(value -> key(value.getSeriesId(), value.getOccurrenceDate()), Function.identity()));
         Map<Long, TutoringStudent> studentMap = students.findAllById(active.stream()
-            .map(TutoringScheduleVersion::getStudentId).collect(Collectors.toSet())).stream()
+                .map(TutoringScheduleVersion::getStudentId).collect(Collectors.toSet())).stream()
             .collect(Collectors.toMap(TutoringStudent::getId, Function.identity()));
         Map<Long, Long> seriesVersions = seriesRepository.findAllById(seriesIds).stream()
             .collect(Collectors.toMap(TutoringScheduleSeries::getId, TutoringScheduleSeries::getVersion));
@@ -227,7 +232,10 @@ public class TutoringService {
             .orElseThrow(() -> notFound("TUTORING_SERIES_NOT_ACTIVE", "Lịch không còn hiệu lực ở tuần đã chọn"));
         Instant now = Instant.now();
         versions.findBySeriesIdAndDeletedAtIsNullAndEffectiveFromGreaterThanEqual(series.getId(), effectiveFrom)
-            .forEach(value -> { value.setDeletedAt(now); value.setUpdatedBy(userId); });
+            .forEach(value -> {
+                value.setDeletedAt(now);
+                value.setUpdatedBy(userId);
+            });
         if (current.getEffectiveFrom().isBefore(effectiveFrom)) {
             current.setEffectiveTo(effectiveFrom.minusDays(1));
             current.setUpdatedBy(userId);
@@ -236,7 +244,10 @@ public class TutoringService {
             current.setUpdatedBy(userId);
         }
         exceptions.findBySeriesIdAndOccurrenceDateGreaterThanEqualAndDeletedAtIsNull(series.getId(), effectiveFrom)
-            .forEach(value -> { value.setDeletedAt(now); value.setUpdatedBy(userId); });
+            .forEach(value -> {
+                value.setDeletedAt(now);
+                value.setUpdatedBy(userId);
+            });
     }
 
     private TutoringScheduleVersion version(Long seriesId, Long userId, SeriesRequest request) {
@@ -282,11 +293,27 @@ public class TutoringService {
         if (date == null || date.getDayOfWeek() != DayOfWeek.MONDAY)
             throw bad("TUTORING_WEEK_START_INVALID", "Tuần phải bắt đầu vào Thứ Hai");
     }
-    private void requireEditableWeek(LocalDate date) { requireMonday(date); if (date.isBefore(currentWeek())) throw conflict("TUTORING_PAST_READ_ONLY", "Tuần trước chỉ được xem"); }
-    private void requireEditableOccurrence(LocalDate date) { if (monday(date).isBefore(currentWeek())) throw conflict("TUTORING_PAST_READ_ONLY", "Tuần trước chỉ được xem"); }
-    private LocalDate currentWeek() { return monday(LocalDate.now(ZONE)); }
-    private LocalDate monday(LocalDate date) { return date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)); }
-    private String key(Long seriesId, LocalDate date) { return seriesId + ":" + date; }
+
+    private void requireEditableWeek(LocalDate date) {
+        requireMonday(date);
+        if (date.isBefore(currentWeek())) throw conflict("TUTORING_PAST_READ_ONLY", "Tuần trước chỉ được xem");
+    }
+
+    private void requireEditableOccurrence(LocalDate date) {
+        if (monday(date).isBefore(currentWeek())) throw conflict("TUTORING_PAST_READ_ONLY", "Tuần trước chỉ được xem");
+    }
+
+    private LocalDate currentWeek() {
+        return monday(LocalDate.now(ZONE));
+    }
+
+    private LocalDate monday(LocalDate date) {
+        return date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    }
+
+    private String key(Long seriesId, LocalDate date) {
+        return seriesId + ":" + date;
+    }
 
     private void apply(TutoringStudent student, StudentRequest request) {
         student.setName(request.name().trim());
@@ -294,25 +321,64 @@ public class TutoringService {
         student.setColor(request.color().toUpperCase(Locale.ROOT));
         student.setNote(blank(request.note()));
     }
-    private StudentResponse studentResponse(TutoringStudent value) { return new StudentResponse(value.getId(), value.getName(), value.getPhone(), value.getColor(), value.getNote(), value.getVersion()); }
-    private TutoringStudent student(Long userId, Long id) { return students.findByIdAndUserIdAndDeletedAtIsNull(id, userId).orElseThrow(() -> notFound("TUTORING_STUDENT_NOT_FOUND", "Không tìm thấy học viên")); }
-    private TutoringScheduleSeries series(Long userId, Long id) { return seriesRepository.findByIdAndUserIdAndDeletedAtIsNull(id, userId).orElseThrow(() -> notFound("TUTORING_SERIES_NOT_FOUND", "Không tìm thấy lịch dạy")); }
-    private void requireVersion(long actual, Long requested, String code) { if (requested == null || actual != requested) throw conflict(code, "Dữ liệu đã thay đổi, hãy tải lại"); }
-    private String blank(String value) { return value == null || value.isBlank() ? null : value.trim(); }
-    private ApiException bad(String code, String message) { return new ApiException(HttpStatus.BAD_REQUEST, code, message); }
-    private ApiException conflict(String code, String message) { return new ApiException(HttpStatus.CONFLICT, code, message); }
-    private ApiException notFound(String code, String message) { return new ApiException(HttpStatus.NOT_FOUND, code, message); }
+
+    private StudentResponse studentResponse(TutoringStudent value) {
+        return new StudentResponse(value.getId(), value.getName(), value.getPhone(), value.getColor(), value.getNote(), value.getVersion());
+    }
+
+    private TutoringStudent student(Long userId, Long id) {
+        return students.findByIdAndUserIdAndDeletedAtIsNull(id, userId).orElseThrow(() -> notFound("TUTORING_STUDENT_NOT_FOUND", "Không tìm thấy học viên"));
+    }
+
+    private TutoringScheduleSeries series(Long userId, Long id) {
+        return seriesRepository.findByIdAndUserIdAndDeletedAtIsNull(id, userId).orElseThrow(() -> notFound("TUTORING_SERIES_NOT_FOUND", "Không tìm thấy lịch dạy"));
+    }
+
+    private void requireVersion(long actual, Long requested, String code) {
+        if (requested == null || actual != requested) throw conflict(code, "Dữ liệu đã thay đổi, hãy tải lại");
+    }
+
+    private String blank(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private ApiException bad(String code, String message) {
+        return new ApiException(HttpStatus.BAD_REQUEST, code, message);
+    }
+
+    private ApiException conflict(String code, String message) {
+        return new ApiException(HttpStatus.CONFLICT, code, message);
+    }
+
+    private ApiException notFound(String code, String message) {
+        return new ApiException(HttpStatus.NOT_FOUND, code, message);
+    }
 
     private static final class MutableOccurrence {
-        private final TutoringScheduleVersion version; private final long seriesVersion; private final TutoringStudent student;
-        private final LocalDate originalDate; private final LocalDate date; private final LocalTime start; private final LocalTime end;
-        private final TutoringLessonException exception; private final boolean cancelled;
+        private final TutoringScheduleVersion version;
+        private final long seriesVersion;
+        private final TutoringStudent student;
+        private final LocalDate originalDate;
+        private final LocalDate date;
+        private final LocalTime start;
+        private final LocalTime end;
+        private final TutoringLessonException exception;
+        private final boolean cancelled;
+
         private MutableOccurrence(TutoringScheduleVersion version, long seriesVersion, TutoringStudent student, LocalDate originalDate,
                                   LocalDate date, LocalTime start, LocalTime end, TutoringLessonException exception,
                                   boolean cancelled) {
-            this.version=version; this.seriesVersion=seriesVersion; this.student=student; this.originalDate=originalDate; this.date=date;
-            this.start=start; this.end=end; this.exception=exception; this.cancelled=cancelled;
+            this.version = version;
+            this.seriesVersion = seriesVersion;
+            this.student = student;
+            this.originalDate = originalDate;
+            this.date = date;
+            this.start = start;
+            this.end = end;
+            this.exception = exception;
+            this.cancelled = cancelled;
         }
+
         private LessonOccurrence response(boolean conflict) {
             return new LessonOccurrence(version.getSeriesId(), seriesVersion, student.getId(), student.getName(), student.getPhone(),
                 student.getColor(), originalDate, date, start, end, version.getSubject(), version.getTeachingMode(),

@@ -83,7 +83,8 @@ public class CreditCardBenefitService {
     @Transactional
     public CardBenefitResponse createProgram(Long userId, Long cardId, CashbackProgramRequest request) {
         UserCreditCard card = ownCard(userId, cardId);
-        if (request.version() != null) throw bad("CASHBACK_PROGRAM_VERSION_NOT_ALLOWED", "Version không được gửi khi tạo chương trình");
+        if (request.version() != null)
+            throw bad("CASHBACK_PROGRAM_VERSION_NOT_ALLOWED", "Version không được gửi khi tạo chương trình");
         validateProgram(request, false);
         CreditCardCashbackProgram program = new CreditCardCashbackProgram();
         program.setUserCardId(cardId);
@@ -122,8 +123,14 @@ public class CreditCardBenefitService {
         List<CreditCardCashbackRule> programRules = rules.findByProgramIdAndDeletedAtIsNullOrderByDisplayOrderAsc(programId);
         List<Long> ruleIds = programRules.stream().map(CreditCardCashbackRule::getId).toList();
         List<CreditCardCashbackRuleMcc> programMccs = ruleIds.isEmpty() ? List.of() : mccs.findByRuleIdInAndDeletedAtIsNull(ruleIds);
-        programRules.forEach(rule -> { rule.setDeletedAt(now); rule.setUpdatedBy(userId); });
-        programMccs.forEach(mcc -> { mcc.setDeletedAt(now); mcc.setUpdatedBy(userId); });
+        programRules.forEach(rule -> {
+            rule.setDeletedAt(now);
+            rule.setUpdatedBy(userId);
+        });
+        programMccs.forEach(mcc -> {
+            mcc.setDeletedAt(now);
+            mcc.setUpdatedBy(userId);
+        });
         try {
             mccs.saveAll(programMccs);
             rules.saveAll(programRules);
@@ -144,7 +151,8 @@ public class CreditCardBenefitService {
             CashbackRuleRequest input = requested.get(order);
             CreditCardCashbackRule rule;
             if (input.id() == null) {
-                if (input.version() != null) throw bad("CASHBACK_RULE_VERSION_NOT_ALLOWED", "Version không được gửi cho nhóm mới");
+                if (input.version() != null)
+                    throw bad("CASHBACK_RULE_VERSION_NOT_ALLOWED", "Version không được gửi cho nhóm mới");
                 rule = new CreditCardCashbackRule();
                 rule.setProgramId(program.getId());
                 rule.setCreatedBy(userId);
@@ -174,8 +182,14 @@ public class CreditCardBenefitService {
         if (!removed.isEmpty()) {
             List<Long> removedIds = removed.stream().map(CreditCardCashbackRule::getId).toList();
             List<CreditCardCashbackRuleMcc> removedMccs = mccs.findByRuleIdInAndDeletedAtIsNull(removedIds);
-            removed.forEach(rule -> { rule.setDeletedAt(now); rule.setUpdatedBy(userId); });
-            removedMccs.forEach(mcc -> { mcc.setDeletedAt(now); mcc.setUpdatedBy(userId); });
+            removed.forEach(rule -> {
+                rule.setDeletedAt(now);
+                rule.setUpdatedBy(userId);
+            });
+            removedMccs.forEach(mcc -> {
+                mcc.setDeletedAt(now);
+                mcc.setUpdatedBy(userId);
+            });
             mccs.saveAll(removedMccs);
             rules.saveAll(removed);
         }
@@ -199,19 +213,26 @@ public class CreditCardBenefitService {
             retained.add(code);
         }
         existing.values().stream().filter(mcc -> mcc.getDeletedAt() == null && !retained.contains(mcc.getMccCode()))
-            .forEach(mcc -> { mcc.setDeletedAt(now); mcc.setUpdatedBy(userId); mccs.save(mcc); });
+            .forEach(mcc -> {
+                mcc.setDeletedAt(now);
+                mcc.setUpdatedBy(userId);
+                mccs.save(mcc);
+            });
     }
 
     private void validateProgram(CashbackProgramRequest request, boolean updating) {
-        if (!validUrl(request.termsUrl())) throw bad("CASHBACK_TERMS_URL_INVALID", "Link điều khoản phải dùng HTTP hoặc HTTPS");
+        if (!validUrl(request.termsUrl()))
+            throw bad("CASHBACK_TERMS_URL_INVALID", "Link điều khoản phải dùng HTTP hoặc HTTPS");
         Set<String> categories = new HashSet<>();
         Set<String> allMccs = new HashSet<>();
         for (CashbackRuleRequest group : request.groups()) {
             String category = group.categoryName().trim().toLowerCase(Locale.ROOT);
-            if (!categories.add(category)) throw bad("CASHBACK_CATEGORY_DUPLICATE", "Tên nhóm danh mục không được trùng trong chương trình");
+            if (!categories.add(category))
+                throw bad("CASHBACK_CATEGORY_DUPLICATE", "Tên nhóm danh mục không được trùng trong chương trình");
             for (String rawCode : group.mccCodes()) {
                 String code = rawCode.trim();
-                if (!allMccs.add(code)) throw bad("CASHBACK_MCC_DUPLICATE", "Một MCC chỉ được thuộc một nhóm trong cùng chương trình");
+                if (!allMccs.add(code))
+                    throw bad("CASHBACK_MCC_DUPLICATE", "Một MCC chỉ được thuộc một nhóm trong cùng chương trình");
             }
             if (!updating && (group.id() != null || group.version() != null))
                 throw bad("CASHBACK_RULE_ID_NOT_ALLOWED", "ID và version nhóm không được gửi khi tạo chương trình");

@@ -4,6 +4,7 @@ import com.kira.bank.ai.AiJobProperties;
 import com.kira.bank.attachment.domain.Attachment;
 import com.kira.bank.attachment.domain.AttachmentAiStatus;
 import com.kira.bank.attachment.infrastructure.AttachmentRepository;
+import com.kira.bank.attachment.infrastructure.InvestmentAiJobEventRepository;
 import com.kira.bank.identity.domain.User;
 import com.kira.bank.identity.infrastructure.UserRepository;
 import com.kira.bank.investment.application.InvestmentTransactionImportService;
@@ -18,17 +19,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.kira.bank.attachment.application.AttachmentDtos.AiJobOwnerResponse;
-import static com.kira.bank.attachment.application.AttachmentDtos.InvestmentAiJobReviewTarget;
-import static com.kira.bank.attachment.application.AttachmentDtos.InvestmentAiJobResponse;
+import static com.kira.bank.attachment.application.AttachmentDtos.*;
 import static com.kira.bank.shared.web.ApiTypes.PageMeta;
 import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 
@@ -52,6 +47,7 @@ public class InvestmentAiJobService {
     );
 
     private final AttachmentRepository attachments;
+    private final InvestmentAiJobEventRepository events;
     private final AttachmentService attachmentService;
     private final InvestmentTransactionImportService transactionImports;
     private final InvestmentTransactionImportFileRepository importFiles;
@@ -79,6 +75,37 @@ public class InvestmentAiJobService {
                 page.getContent().stream().map(Attachment::getUserId).collect(Collectors.toSet()))
             .stream().collect(Collectors.toMap(User::getId, Function.identity()));
         return response(page, owners, true);
+    }
+
+    @Transactional(readOnly = true)
+    public InvestmentAiQueueSummaryResponse summary() {
+        Map<AttachmentAiStatus, Long> counts = new java.util.EnumMap<>(AttachmentAiStatus.class);
+        attachments.countAiJobsByStatus(AttachmentService.INVESTMENT_MODULE, AttachmentService.RECEIPT_DOCUMENT_TYPE)
+            .forEach(item -> counts.put(item.getStatus(), item.getCount()));
+        return new InvestmentAiQueueSummaryResponse(
+            count(counts, AttachmentAiStatus.PENDING) + count(counts, AttachmentAiStatus.PROCESSING)
+                + count(counts, AttachmentAiStatus.READY) + count(counts, AttachmentAiStatus.FAILED)
+                + count(counts, AttachmentAiStatus.CANCELLED) + count(counts, AttachmentAiStatus.CONFIRMED),
+            count(counts, AttachmentAiStatus.PENDING),
+            count(counts, AttachmentAiStatus.PROCESSING),
+            count(counts, AttachmentAiStatus.READY),
+            count(counts, AttachmentAiStatus.FAILED),
+            count(counts, AttachmentAiStatus.CANCELLED),
+            count(counts, AttachmentAiStatus.CONFIRMED),
+            java.time.Instant.now()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public InvestmentAiJobResponse mineOne(Long userId, Long attachmentId) {
+        Attachment attachment = investmentJob(owned(attachmentId, userId));
+        return response(attachment, null, reviewTargets(List.of(attachment)), history(attachmentId));
+    }
+
+    @Transactional(readOnly = true)
+    public InvestmentAiJobResponse allOne(Long attachmentId) {
+        Attachment attachment = investmentJob(existing(attachmentId));
+        return response(attachment, owner(attachment.getUserId()), reviewTargets(List.of(attachment)), history(attachmentId));
     }
 
     @Transactional
@@ -114,7 +141,8 @@ public class InvestmentAiJobService {
         Map<Long, List<InvestmentAiJobReviewTarget>> reviewTargets = reviewTargets(page.getContent());
         List<InvestmentAiJobResponse> data = page.getContent().stream()
             .map(attachment -> response(attachment, includeOwner
-                ? owner(attachment.getUserId(), owners.get(attachment.getUserId())) : null, reviewTargets))
+                    ? owner(attachment.getUserId(), owners.get(attachment.getUserId())) : null,
+                reviewTargets, List.of()))
             .toList();
         return new PageResponse<>(data, new PageMeta(
             page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages()));
@@ -122,6 +150,12 @@ public class InvestmentAiJobService {
 
     private InvestmentAiJobResponse response(Attachment attachment, AiJobOwnerResponse owner,
                                              Map<Long, List<InvestmentAiJobReviewTarget>> reviewTargets) {
+        return response(attachment, owner, reviewTargets, List.of());
+    }
+
+    private InvestmentAiJobResponse response(Attachment attachment, AiJobOwnerResponse owner,
+                                             Map<Long, List<InvestmentAiJobReviewTarget>> reviewTargets,
+                                             List<InvestmentAiJobEventResponse> history) {
         AttachmentAiStatus status = attachment.getAiStatus();
         return new InvestmentAiJobResponse(
             attachment.getId(),
@@ -144,7 +178,8 @@ public class InvestmentAiJobService {
             status == AttachmentAiStatus.PENDING || status == AttachmentAiStatus.FAILED
                 || status == AttachmentAiStatus.CANCELLED,
             reviewTargets.getOrDefault(attachment.getId(), List.of()),
-            attachmentService.parseDraft(attachment.getAiResult())
+            attachmentService.parseDraft(attachment.getAiResult()),
+            history
         );
     }
 
@@ -171,6 +206,18 @@ public class InvestmentAiJobService {
         return targets;
     }
 
+    private List<InvestmentAiJobEventResponse> history(Long attachmentId) {
+        return events.findByAttachmentIdOrderByCreatedAtAscIdAsc(attachmentId).stream()
+            .map(event -> new InvestmentAiJobEventResponse(
+                event.getFromStatus(), event.getToStatus(), event.getAttemptCount(),
+                event.getReasonCode(), event.getActorType(), event.getCreatedAt()))
+            .toList();
+    }
+
+    private long count(Map<AttachmentAiStatus, Long> counts, AttachmentAiStatus status) {
+        return counts.getOrDefault(status, 0L);
+    }
+
     private Collection<AttachmentAiStatus> statuses(Collection<AttachmentAiStatus> requested) {
         if (requested == null || requested.isEmpty()) {
             return JOB_STATUSES;
@@ -187,6 +234,14 @@ public class InvestmentAiJobService {
     private Attachment existing(Long attachmentId) {
         return attachments.findById(attachmentId).filter(value -> value.getDeletedAt() == null)
             .orElseThrow(this::missing);
+    }
+
+    private Attachment investmentJob(Attachment attachment) {
+        if (!AttachmentService.INVESTMENT_MODULE.equalsIgnoreCase(attachment.getModule())
+            || !AttachmentService.RECEIPT_DOCUMENT_TYPE.equalsIgnoreCase(attachment.getDocumentType())) {
+            throw missing();
+        }
+        return attachment;
     }
 
     private AiJobOwnerResponse owner(Long userId) {

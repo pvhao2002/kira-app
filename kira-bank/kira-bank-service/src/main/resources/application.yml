@@ -34,6 +34,8 @@ app:
 ai:
   connect-timeout: 5s
   read-timeout: 120s
+  # Optional global model override. Leave blank to use the model configured on each verified account.
+  model: ${AI_MODEL:}
   credential-encryption-key: ${AI_CREDENTIAL_ENCRYPTION_KEY:}
   account-rate-limit-cooldown: ${AI_ACCOUNT_RATE_LIMIT_COOLDOWN:PT1M}
   job:
@@ -44,6 +46,7 @@ ai:
     cron: "${AI_JOB_CRON:0 0 */3 * * *}"
     time-zone: "${AI_JOB_TIME_ZONE:Asia/Bangkok}"
 investment:
+  credential-encryption-key: ${INVESTMENT_CREDENTIAL_ENCRYPTION_KEY:}
   transaction-import:
     time-zone: "${INVESTMENT_IMPORT_TIME_ZONE:Asia/Ho_Chi_Minh}"
     retention-cron: "${INVESTMENT_IMPORT_RETENTION_CRON:0 20 2 * * *}"

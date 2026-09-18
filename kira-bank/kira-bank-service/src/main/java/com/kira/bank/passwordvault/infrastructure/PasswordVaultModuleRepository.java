@@ -8,5 +8,6 @@ import java.util.Optional;
 
 public interface PasswordVaultModuleRepository extends JpaRepository<PasswordVaultModule, Long> {
     List<PasswordVaultModule> findByOwnerIdAndDeletedAtIsNullOrderByNameAscIdAsc(Long ownerId);
+
     Optional<PasswordVaultModule> findByIdAndOwnerIdAndDeletedAtIsNull(Long id, Long ownerId);
 }

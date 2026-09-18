@@ -9,7 +9,8 @@ import org.springframework.web.client.RestClient;
 @Configuration
 @EnableConfigurationProperties(MapboxProperties.class)
 public class MapboxConfiguration {
-    @Bean RestClient mapboxRestClient(MapboxProperties properties) {
+    @Bean
+    RestClient mapboxRestClient(MapboxProperties properties) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(properties.connectTimeout() == null ? java.time.Duration.ofSeconds(5) : properties.connectTimeout());
         factory.setReadTimeout(properties.readTimeout() == null ? java.time.Duration.ofSeconds(15) : properties.readTimeout());

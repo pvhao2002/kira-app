@@ -1,1 +1,1 @@
-export { Dashboard as default } from '../../src/credit';
+export {Dashboard as default} from '../../src/credit';

@@ -1,6 +1,7 @@
 package com.kira.bank.ai.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.kira.bank.ai.AiProviderConfiguration;
 import com.kira.bank.ai.domain.AiProviderAccount;
 import com.kira.bank.ai.domain.AiProviderAccountStatus;
 import com.kira.bank.ai.infrastructure.AiCredentialCipher;
@@ -20,7 +21,9 @@ import org.springframework.web.client.RestClientResponseException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -38,6 +41,7 @@ public class AiProviderAccountService {
     private final AiProviderAccountRepository repository;
     private final AttachmentRepository attachments;
     private final AiCredentialCipher cipher;
+    private final AiProviderConfiguration config;
     private final RestClient cloudflareAiRestClient;
     private final CloudflareR2ClientFactory r2Clients;
 
@@ -57,7 +61,7 @@ public class AiProviderAccountService {
         account.setDisplayName(request.displayName().trim());
         account.setAccountId(accountId);
         account.setApiTokenCiphertext(encryptOrPlaceholder(request.apiToken()));
-        account.setAiModel(valueOrDefault(request.aiModel(), DEFAULT_MODEL));
+        account.setAiModel(valueOrDefault(request.aiModel(), configuredModelOrDefault()));
         account.setPriority(request.priority());
         account.setEnabled(false);
         account.setHealthStatus(AiProviderAccountStatus.PENDING_TEST);
@@ -85,7 +89,8 @@ public class AiProviderAccountService {
         boolean aiChanged = false;
         boolean r2Changed = false;
         if (!blank(request.accountId()) && !request.accountId().trim().equals(account.getAccountId())) {
-            if (references > 0) throw conflict("CLOUDFLARE_ACCOUNT_IN_USE", "Không thể đổi Account ID đang chứa file R2");
+            if (references > 0)
+                throw conflict("CLOUDFLARE_ACCOUNT_IN_USE", "Không thể đổi Account ID đang chứa file R2");
             String accountId = normalized(request.accountId());
             if (repository.existsByAccountIdAndIdNotAndDeletedAtIsNull(accountId, id)) throw duplicate();
             account.setAccountId(accountId);
@@ -129,7 +134,7 @@ public class AiProviderAccountService {
         assertVersion(account, request.version());
         requireCipher();
         String token = !blank(request.apiToken()) ? request.apiToken().trim() : decryptRequired(account.getApiTokenCiphertext(), "AI_TOKEN_REQUIRED");
-        String model = !blank(request.model()) ? request.model().trim() : valueOrDefault(account.getAiModel(), DEFAULT_MODEL);
+        String model = !blank(request.model()) ? request.model().trim() : effectiveModel(account);
         Instant now = Instant.now();
         try {
             JsonNode result = cloudflareAiRestClient.get()
@@ -204,21 +209,30 @@ public class AiProviderAccountService {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "R2_ACCOUNT_TEST_FAILED", "Không thể upload, đọc và xóa object kiểm tra trên R2");
         } finally {
             if (uploaded && client != null) {
-                try { client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()); }
-                catch (RuntimeException ignored) { /* Keep the safe test failure above; never log credentials. */ }
+                try {
+                    client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
+                } catch (RuntimeException ignored) { /* Keep the safe test failure above; never log credentials. */ }
             }
             if (client != null) client.close();
         }
     }
 
-    @Transactional public AccountResponse enableAi(Long adminId, Long id, VersionRequest request) { return setAiEnabled(adminId, id, request, true); }
-    @Transactional public AccountResponse disableAi(Long adminId, Long id, VersionRequest request) { return setAiEnabled(adminId, id, request, false); }
+    @Transactional
+    public AccountResponse enableAi(Long adminId, Long id, VersionRequest request) {
+        return setAiEnabled(adminId, id, request, true);
+    }
+
+    @Transactional
+    public AccountResponse disableAi(Long adminId, Long id, VersionRequest request) {
+        return setAiEnabled(adminId, id, request, false);
+    }
 
     @Transactional
     public AccountResponse makeR2Primary(Long adminId, Long id, VersionRequest request) {
         AiProviderAccount account = account(id);
         assertVersion(account, request.version());
-        if (account.getR2HealthStatus() != AiProviderAccountStatus.VERIFIED) throw conflict("R2_ACCOUNT_NOT_VERIFIED", "Cần Test R2 thành công trước khi chọn primary");
+        if (account.getR2HealthStatus() != AiProviderAccountStatus.VERIFIED)
+            throw conflict("R2_ACCOUNT_NOT_VERIFIED", "Cần Test R2 thành công trước khi chọn primary");
         repository.clearR2Primary();
         account = account(id);
         account.setR2Primary(true);
@@ -239,7 +253,8 @@ public class AiProviderAccountService {
     public AccountResponse adoptLegacyAttachments(Long adminId, Long id, VersionRequest request) {
         AiProviderAccount account = account(id);
         assertVersion(account, request.version());
-        if (account.getR2HealthStatus() != AiProviderAccountStatus.VERIFIED) throw conflict("R2_ACCOUNT_NOT_VERIFIED", "Cần Test R2 thành công trước khi gán file cũ");
+        if (account.getR2HealthStatus() != AiProviderAccountStatus.VERIFIED)
+            throw conflict("R2_ACCOUNT_NOT_VERIFIED", "Cần Test R2 thành công trước khi gán file cũ");
         attachments.adoptLegacyR2Attachments(id);
         account.setUpdatedBy(adminId);
         return response(persist(account));
@@ -249,7 +264,8 @@ public class AiProviderAccountService {
     public void delete(Long adminId, Long id, VersionRequest request) {
         AiProviderAccount account = account(id);
         assertVersion(account, request.version());
-        if (attachments.countByR2AccountId(id) > 0) throw conflict("CLOUDFLARE_ACCOUNT_IN_USE", "Không thể xóa account đang chứa file R2");
+        if (attachments.countByR2AccountId(id) > 0)
+            throw conflict("CLOUDFLARE_ACCOUNT_IN_USE", "Không thể xóa account đang chứa file R2");
         account.setEnabled(false);
         account.setR2Primary(false);
         account.setDeletedAt(Instant.now());
@@ -265,8 +281,8 @@ public class AiProviderAccountService {
             .filter(AiProviderAccount::isEnabled)
             .filter(a -> a.getHealthStatus() == AiProviderAccountStatus.VERIFIED
                 || (a.getHealthStatus() == AiProviderAccountStatus.COOLDOWN && a.getCooldownUntil() != null && !a.getCooldownUntil().isAfter(now)))
-            .filter(a -> !blank(a.getApiTokenCiphertext()) && !blank(a.getAiModel()))
-            .map(a -> new RuntimeCredential(a.getId(), a.getDisplayName(), a.getAccountId(), cipher.decrypt(a.getApiTokenCiphertext()), a.getAiModel()))
+            .filter(a -> !blank(a.getApiTokenCiphertext()) && !blank(effectiveModel(a)))
+            .map(a -> new RuntimeCredential(a.getId(), a.getDisplayName(), a.getAccountId(), cipher.decrypt(a.getApiTokenCiphertext()), effectiveModel(a)))
             .toList();
     }
 
@@ -278,19 +294,36 @@ public class AiProviderAccountService {
 
     @Transactional(readOnly = true)
     public RuntimeR2Credential r2Credential(Long id) {
-        if (id == null) throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "R2_LEGACY_PROVIDER_UNASSIGNED", "File cũ chưa được gán Cloudflare R2 account");
+        if (id == null)
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "R2_LEGACY_PROVIDER_UNASSIGNED", "File cũ chưa được gán Cloudflare R2 account");
         return runtimeR2(account(id), true);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW) public void markSuccess(Long id) { repository.markSuccess(id, AiProviderAccountStatus.VERIFIED, Instant.now()); }
-    @Transactional(propagation = Propagation.REQUIRES_NEW) public void markBlocked(Long id, String code) { repository.markFailure(id, AiProviderAccountStatus.BLOCKED, null, code, Instant.now()); }
-    @Transactional(propagation = Propagation.REQUIRES_NEW) public void markCooldown(Long id, Instant until, String code) { repository.markFailure(id, AiProviderAccountStatus.COOLDOWN, until, code, Instant.now()); }
-    @Transactional(propagation = Propagation.REQUIRES_NEW) public void markR2Success(Long id) { repository.markR2Success(id, Instant.now()); }
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markSuccess(Long id) {
+        repository.markSuccess(id, AiProviderAccountStatus.VERIFIED, Instant.now());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markBlocked(Long id, String code) {
+        repository.markFailure(id, AiProviderAccountStatus.BLOCKED, null, code, Instant.now());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markCooldown(Long id, Instant until, String code) {
+        repository.markFailure(id, AiProviderAccountStatus.COOLDOWN, until, code, Instant.now());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markR2Success(Long id) {
+        repository.markR2Success(id, Instant.now());
+    }
 
     private AccountResponse setAiEnabled(Long adminId, Long id, VersionRequest request, boolean enabled) {
         AiProviderAccount account = account(id);
         assertVersion(account, request.version());
-        if (enabled && account.getHealthStatus() != AiProviderAccountStatus.VERIFIED) throw conflict("AI_ACCOUNT_NOT_VERIFIED", "Cần Test AI thành công trước khi kích hoạt");
+        if (enabled && account.getHealthStatus() != AiProviderAccountStatus.VERIFIED)
+            throw conflict("AI_ACCOUNT_NOT_VERIFIED", "Cần Test AI thành công trước khi kích hoạt");
         account.setEnabled(enabled);
         account.setUpdatedBy(adminId);
         return response(persist(account));
@@ -307,9 +340,12 @@ public class AiProviderAccountService {
             account.getR2BucketName(), account.getR2PublicUrl());
     }
 
-    private AccountResponse response(AiProviderAccount account) { return response(account, attachments.countByR2AccountIdIsNullAndStoragePurgedAtIsNull()); }
+    private AccountResponse response(AiProviderAccount account) {
+        return response(account, attachments.countByR2AccountIdIsNullAndStoragePurgedAtIsNull());
+    }
+
     private AccountResponse response(AiProviderAccount account, long legacy) {
-        AiCapabilityResponse ai = new AiCapabilityResponse(!placeholder(account.getApiTokenCiphertext()), account.getAiModel(), account.getPriority(), account.isEnabled(),
+        AiCapabilityResponse ai = new AiCapabilityResponse(!placeholder(account.getApiTokenCiphertext()), effectiveModel(account), account.getPriority(), account.isEnabled(),
             account.getHealthStatus(), account.getCooldownUntil(), account.getLastErrorCode(), account.getLastErrorAt(), account.getLastTestedAt(), account.getLastSuccessAt());
         R2CapabilityResponse r2 = new R2CapabilityResponse(!blank(account.getR2AccessKeyCiphertext()), !blank(account.getR2SecretKeyCiphertext()),
             maskedNullable(account.getR2BucketName()), maskedUrl(account.getR2PublicUrl()), account.isR2Primary(), account.getR2HealthStatus(),
@@ -317,29 +353,139 @@ public class AiProviderAccountService {
         return new AccountResponse(account.getId(), account.getDisplayName(), masked(account.getAccountId()), ai, r2, legacy, account.getVersion());
     }
 
-    private void resetAi(AiProviderAccount a) { a.setEnabled(false); a.setHealthStatus(AiProviderAccountStatus.PENDING_TEST); a.setCooldownUntil(null); a.setLastErrorCode(null); a.setLastErrorAt(null); }
-    private void resetR2(AiProviderAccount a) { a.setR2Primary(false); a.setR2HealthStatus(AiProviderAccountStatus.PENDING_TEST); a.setR2LastErrorCode(null); a.setR2LastErrorAt(null); }
-    private void markAiTestFailure(AiProviderAccount a, Long adminId, Instant now, String code) { a.setEnabled(false); a.setHealthStatus(AiProviderAccountStatus.BLOCKED); a.setCooldownUntil(null); a.setLastErrorCode(code); a.setLastErrorAt(now); a.setLastTestedAt(now); a.setUpdatedBy(adminId); }
-    private AiProviderAccount account(Long id) { return repository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CLOUDFLARE_ACCOUNT_NOT_FOUND", "Không tìm thấy Cloudflare account")); }
-    private void assertVersion(AiProviderAccount a, Long version) { if (version == null || a.getVersion() != version) throw conflict("CLOUDFLARE_ACCOUNT_VERSION_CONFLICT", "Cloudflare account đã được cập nhật, vui lòng tải lại"); }
-    private AiProviderAccount persist(AiProviderAccount a) { try { return repository.saveAndFlush(a); } catch (ObjectOptimisticLockingFailureException ex) { throw conflict("CLOUDFLARE_ACCOUNT_VERSION_CONFLICT", "Cloudflare account đã được cập nhật, vui lòng tải lại"); } }
-    private void requireCipher() { if (!cipher.isConfigured()) throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "CLOUDFLARE_CREDENTIAL_ENCRYPTION_NOT_CONFIGURED", "Khóa mã hóa Cloudflare credential chưa được cấu hình"); }
-    private String candidate(String value, String encrypted, String code) { return !blank(value) ? value.trim() : decryptRequired(encrypted, code); }
-    private String decryptRequired(String encrypted, String code) { if (blank(encrypted) || placeholder(encrypted)) throw new ApiException(HttpStatus.BAD_REQUEST, code, "Thiếu Cloudflare credential"); return cipher.decrypt(encrypted); }
-    private String required(String value, String code) { if (blank(value)) throw new ApiException(HttpStatus.BAD_REQUEST, code, "Thiếu cấu hình Cloudflare"); return value; }
-    private String encryptOrPlaceholder(String value) { return blank(value) ? "UNCONFIGURED" : cipher.encrypt(value.trim()); }
-    private String encryptNullable(String value) { return blank(value) ? null : cipher.encrypt(value.trim()); }
-    private boolean placeholder(String value) { return "UNCONFIGURED".equals(value); }
-    private boolean blank(String value) { return value == null || value.isBlank(); }
-    private String blankToNull(String value) { return blank(value) ? null : value.trim(); }
-    private String valueOrDefault(String value, String fallback) { return blank(value) ? fallback : value.trim(); }
-    private String normalized(String value) { return value.trim(); }
-    private String masked(String value) { return value.length() <= 8 ? "****" : value.substring(0, 4) + "••••" + value.substring(value.length() - 4); }
-    private String maskedNullable(String value) { if (blank(value)) return null; return value.length() <= 6 ? "••••" : value.substring(0, 3) + "••••" + value.substring(value.length() - 3); }
-    private String maskedUrl(String value) { if (blank(value)) return null; try { java.net.URI uri = java.net.URI.create(value); return uri.getScheme() + "://" + uri.getHost(); } catch (RuntimeException ex) { return "••••"; } }
-    private ApiException duplicate() { return conflict("CLOUDFLARE_ACCOUNT_ID_EXISTS", "Cloudflare Account ID đã tồn tại"); }
-    private ApiException conflict(String code, String message) { return new ApiException(HttpStatus.CONFLICT, code, message); }
+    private void resetAi(AiProviderAccount a) {
+        a.setEnabled(false);
+        a.setHealthStatus(AiProviderAccountStatus.PENDING_TEST);
+        a.setCooldownUntil(null);
+        a.setLastErrorCode(null);
+        a.setLastErrorAt(null);
+    }
 
-    public record RuntimeCredential(Long id, String displayName, String accountId, String apiToken, String model) {}
-    public record RuntimeR2Credential(Long id, long version, String accountId, String accessKeyId, String secretAccessKey, String bucketName, String publicUrl) {}
+    private void resetR2(AiProviderAccount a) {
+        a.setR2Primary(false);
+        a.setR2HealthStatus(AiProviderAccountStatus.PENDING_TEST);
+        a.setR2LastErrorCode(null);
+        a.setR2LastErrorAt(null);
+    }
+
+    private void markAiTestFailure(AiProviderAccount a, Long adminId, Instant now, String code) {
+        a.setEnabled(false);
+        a.setHealthStatus(AiProviderAccountStatus.BLOCKED);
+        a.setCooldownUntil(null);
+        a.setLastErrorCode(code);
+        a.setLastErrorAt(now);
+        a.setLastTestedAt(now);
+        a.setUpdatedBy(adminId);
+    }
+
+    private AiProviderAccount account(Long id) {
+        return repository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CLOUDFLARE_ACCOUNT_NOT_FOUND", "Không tìm thấy Cloudflare account"));
+    }
+
+    private void assertVersion(AiProviderAccount a, Long version) {
+        if (version == null || a.getVersion() != version)
+            throw conflict("CLOUDFLARE_ACCOUNT_VERSION_CONFLICT", "Cloudflare account đã được cập nhật, vui lòng tải lại");
+    }
+
+    private AiProviderAccount persist(AiProviderAccount a) {
+        try {
+            return repository.saveAndFlush(a);
+        } catch (ObjectOptimisticLockingFailureException ex) {
+            throw conflict("CLOUDFLARE_ACCOUNT_VERSION_CONFLICT", "Cloudflare account đã được cập nhật, vui lòng tải lại");
+        }
+    }
+
+    private void requireCipher() {
+        if (!cipher.isConfigured())
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "CLOUDFLARE_CREDENTIAL_ENCRYPTION_NOT_CONFIGURED", "Khóa mã hóa Cloudflare credential chưa được cấu hình");
+    }
+
+    private String candidate(String value, String encrypted, String code) {
+        return !blank(value) ? value.trim() : decryptRequired(encrypted, code);
+    }
+
+    private String decryptRequired(String encrypted, String code) {
+        if (blank(encrypted) || placeholder(encrypted))
+            throw new ApiException(HttpStatus.BAD_REQUEST, code, "Thiếu Cloudflare credential");
+        return cipher.decrypt(encrypted);
+    }
+
+    private String required(String value, String code) {
+        if (blank(value)) throw new ApiException(HttpStatus.BAD_REQUEST, code, "Thiếu cấu hình Cloudflare");
+        return value;
+    }
+
+    private String encryptOrPlaceholder(String value) {
+        return blank(value) ? "UNCONFIGURED" : cipher.encrypt(value.trim());
+    }
+
+    private String encryptNullable(String value) {
+        return blank(value) ? null : cipher.encrypt(value.trim());
+    }
+
+    private boolean placeholder(String value) {
+        return "UNCONFIGURED".equals(value);
+    }
+
+    private boolean blank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private String blankToNull(String value) {
+        return blank(value) ? null : value.trim();
+    }
+
+    private String valueOrDefault(String value, String fallback) {
+        return blank(value) ? fallback : value.trim();
+    }
+
+    private String effectiveModel(AiProviderAccount account) {
+        return valueOrDefault(configuredModel(), valueOrDefault(account.getAiModel(), DEFAULT_MODEL));
+    }
+
+    private String configuredModelOrDefault() {
+        return valueOrDefault(configuredModel(), DEFAULT_MODEL);
+    }
+
+    private String configuredModel() {
+        return blank(config.model()) ? null : config.model().trim();
+    }
+
+    private String normalized(String value) {
+        return value.trim();
+    }
+
+    private String masked(String value) {
+        return value.length() <= 8 ? "****" : value.substring(0, 4) + "••••" + value.substring(value.length() - 4);
+    }
+
+    private String maskedNullable(String value) {
+        if (blank(value)) return null;
+        return value.length() <= 6 ? "••••" : value.substring(0, 3) + "••••" + value.substring(value.length() - 3);
+    }
+
+    private String maskedUrl(String value) {
+        if (blank(value)) return null;
+        try {
+            java.net.URI uri = java.net.URI.create(value);
+            return uri.getScheme() + "://" + uri.getHost();
+        } catch (RuntimeException ex) {
+            return "••••";
+        }
+    }
+
+    private ApiException duplicate() {
+        return conflict("CLOUDFLARE_ACCOUNT_ID_EXISTS", "Cloudflare Account ID đã tồn tại");
+    }
+
+    private ApiException conflict(String code, String message) {
+        return new ApiException(HttpStatus.CONFLICT, code, message);
+    }
+
+    public record RuntimeCredential(Long id, String displayName, String accountId, String apiToken, String model) {
+    }
+
+    public record RuntimeR2Credential(Long id, long version, String accountId, String accessKeyId,
+                                      String secretAccessKey, String bucketName, String publicUrl) {
+    }
 }

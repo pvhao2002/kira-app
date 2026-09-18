@@ -1,18 +1,21 @@
 package com.kira.bank.tutoring.infrastructure;
 
 import com.kira.bank.tutoring.domain.TutoringScheduleVersion;
-import org.springframework.data.jpa.repository.*;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 public interface TutoringScheduleVersionRepository extends JpaRepository<TutoringScheduleVersion, Long> {
     @Query("select v from TutoringScheduleVersion v, TutoringScheduleSeries s where v.seriesId=s.id " +
         "and s.userId=:userId and s.deletedAt is null and v.deletedAt is null " +
         "and v.effectiveFrom<=:weekEnd and (v.effectiveTo is null or v.effectiveTo>=:weekStart)")
     List<TutoringScheduleVersion> findForWeek(@Param("userId") Long userId,
-                                               @Param("weekStart") LocalDate weekStart,
-                                               @Param("weekEnd") LocalDate weekEnd);
+                                              @Param("weekStart") LocalDate weekStart,
+                                              @Param("weekEnd") LocalDate weekEnd);
 
     @Query("select v from TutoringScheduleVersion v where v.seriesId=:seriesId and v.deletedAt is null " +
         "and v.effectiveFrom<=:date and (v.effectiveTo is null or v.effectiveTo>=:date)")

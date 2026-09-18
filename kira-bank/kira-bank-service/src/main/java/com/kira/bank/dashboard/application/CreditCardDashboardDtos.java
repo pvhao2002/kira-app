@@ -13,7 +13,12 @@ public final class CreditCardDashboardDtos {
                                               BigDecimal availableCredit,
                                               BigDecimal utilizationRate,
                                               String currency,
-                                              List<BankDebtResponse> banks) {
+                                              List<BankDebtResponse> banks,
+                                              List<DebtTrendResponse> trend) {
+    }
+
+    public record DebtTrendResponse(String month, String currency,
+                                    BigDecimal statementDebt, BigDecimal remainingDebt) {
     }
 
     public record BankDebtResponse(Long bankId,

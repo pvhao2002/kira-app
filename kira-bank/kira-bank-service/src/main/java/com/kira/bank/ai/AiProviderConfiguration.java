@@ -8,5 +8,7 @@ import java.time.Duration;
 public record AiProviderConfiguration(
     Duration connectTimeout,
     Duration readTimeout,
-    Duration accountRateLimitCooldown
-) {}
+    Duration accountRateLimitCooldown,
+    String model
+) {
+}

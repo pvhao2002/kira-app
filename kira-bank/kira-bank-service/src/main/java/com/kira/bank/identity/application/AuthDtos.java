@@ -1,10 +1,6 @@
 package com.kira.bank.identity.application;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 import java.util.Set;
 
@@ -38,7 +34,8 @@ public final class AuthDtos {
                                         @NotBlank @Size(min = 8, max = 72) String newPassword) {
     }
 
-    public record ProfileResponse(Long id, String email, String fullName, String phone, Set<String> roles, long version) {
+    public record ProfileResponse(Long id, String email, String fullName, String phone, Set<String> roles,
+                                  long version) {
     }
 
     public record AdminUserResponse(Long id, String email, String fullName, String phone,

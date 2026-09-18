@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.util.Map;
 import java.util.Objects;
@@ -71,6 +73,9 @@ public class R2StorageService {
         cache.clear();
     }
 
-    public record StoredObject(Long accountId, String key) {}
-    private record ClientKey(Long accountId, int credentialFingerprint) {}
+    public record StoredObject(Long accountId, String key) {
+    }
+
+    private record ClientKey(Long accountId, int credentialFingerprint) {
+    }
 }

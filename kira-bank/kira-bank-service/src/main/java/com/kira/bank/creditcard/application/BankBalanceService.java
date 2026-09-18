@@ -19,8 +19,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.kira.bank.creditcard.application.CreditCardDtos.BankBalanceResponse;
-import static com.kira.bank.creditcard.application.CreditCardDtos.BankBalanceUpdateRequest;
+import static com.kira.bank.creditcard.application.CreditCardDtos.*;
 
 @Service
 @RequiredArgsConstructor
@@ -94,6 +93,19 @@ public class BankBalanceService {
 
         return response(creditLimit, bankName, previousBalance, requestedBalance,
             adjustment.getAdjustmentAmount(), nextVersion);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<BankBalanceAdjustmentResponse> history(Long userId, Long bankId) {
+        if (creditLimits.findByUserIdAndBankIdAndDeletedAtIsNull(userId, bankId).isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "BANK_CREDIT_LIMIT_NOT_FOUND", "Không tìm thấy dữ liệu");
+        }
+        return adjustments.findByUserIdAndBankIdOrderByBalanceVersionDesc(userId, bankId).stream()
+            .map(adjustment -> new BankBalanceAdjustmentResponse(adjustment.getId(), adjustment.getBankId(),
+                adjustment.getSourceBalance(), adjustment.getPreviousBalance(), adjustment.getNewBalance(),
+                adjustment.getAdjustmentAmount(), adjustment.getBalanceOffset(), adjustment.getReason(),
+                adjustment.getCurrency(), adjustment.getBalanceVersion(), adjustment.getCreatedAt()))
+            .toList();
     }
 
     private Map<Long, BigDecimal> baseBalances(Long userId, Collection<Long> bankIds) {

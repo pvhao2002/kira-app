@@ -73,7 +73,7 @@ public class AiscoreMatchPageReader {
                         .setTimeout(timeout)
         );
         page.waitForLoadState(LoadState.DOMCONTENTLOADED);
-        CloudflareSupport.waitForClearance(page, timeout);
+        CloudflareSupport.requireClearance(page, playwrightProperties.verificationTimeoutMs());
         return true;
     }
 
@@ -170,6 +170,7 @@ public class AiscoreMatchPageReader {
         } catch (RuntimeException ex) {
             return null;
         }
+        CloudflareSupport.requireUsableApiResponse(response);
         if (!response.ok()) {
             return null;
         }

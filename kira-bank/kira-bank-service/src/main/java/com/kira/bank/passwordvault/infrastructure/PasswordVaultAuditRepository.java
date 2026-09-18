@@ -6,8 +6,8 @@ import org.slf4j.MDC;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Map;
 
 @Repository
@@ -54,6 +54,8 @@ public class PasswordVaultAuditRepository {
     }
 
     public record AuditContext(String ipAddress, String userAgent) {
-        public static AuditContext empty() { return new AuditContext(null, null); }
+        public static AuditContext empty() {
+            return new AuditContext(null, null);
+        }
     }
 }

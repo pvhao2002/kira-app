@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface CreditCardCashbackRuleMccRepository extends JpaRepository<CreditCardCashbackRuleMcc, Long> {
     List<CreditCardCashbackRuleMcc> findByRuleIdInAndDeletedAtIsNull(Collection<Long> ruleIds);
+
     List<CreditCardCashbackRuleMcc> findByRuleId(Long ruleId);
+
     List<CreditCardCashbackRuleMcc> findByRuleIdIn(Collection<Long> ruleIds);
 }

@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,12 +23,22 @@ public class AdminInvestmentAiJobController {
     private final InvestmentAiManualRunService manualRuns;
     private final AttachmentService attachments;
 
+    @GetMapping("/summary")
+    Object summary() {
+        return jobs.summary();
+    }
+
     @GetMapping
     Object list(
         @RequestParam(required = false) List<AttachmentAiStatus> statuses,
         @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return jobs.all(statuses, pageable);
+    }
+
+    @GetMapping("/{id}")
+    Object detail(@PathVariable Long id) {
+        return jobs.allOne(id);
     }
 
     @PostMapping("/{id}/cancel")

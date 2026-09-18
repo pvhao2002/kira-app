@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.*;
@@ -155,9 +155,15 @@ public class PasswordVaultCipher {
         return value;
     }
 
-    private String encode(byte[] value) { return Base64.getEncoder().encodeToString(value); }
-    private byte[] decode(String value) { return Base64.getDecoder().decode(value); }
+    private String encode(byte[] value) {
+        return Base64.getEncoder().encodeToString(value);
+    }
+
+    private byte[] decode(String value) {
+        return Base64.getDecoder().decode(value);
+    }
 
     public record EncryptedSecret(String ciphertext, String secretNonce, String wrappedDek,
-                                  String wrapNonce, String keyId, short cryptoVersion) {}
+                                  String wrapNonce, String keyId, short cryptoVersion) {
+    }
 }

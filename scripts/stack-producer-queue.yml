@@ -1,3 +1,6 @@
+x-kira-queue-volumes: &kira-queue-volumes
+  - kira-queue-playwright-1:/app/.playwright
+
 x-kira-queue-base: &kira-queue-base
   image: kira2308/kira-queue:latest
   platform: ${DOCKER_PLATFORM:-linux/arm64}
@@ -17,8 +20,12 @@ x-kira-queue-base: &kira-queue-base
     APP_KIRA_CRAWL_BASE_URL: ${APP_KIRA_CRAWL_BASE_URL:-http://host.docker.internal:4000}
     APP_GATEWAY_BASE_URL: ${APP_GATEWAY_BASE_URL:-http://host.docker.internal:6868/gateway}
     PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS:-true}
+    AISCORE_VERIFICATION_TIMEOUT_MS: ${AISCORE_VERIFICATION_TIMEOUT_MS:-120000}
     PLAYWRIGHT_TEST_API_ENABLED: ${PLAYWRIGHT_TEST_API_ENABLED:-false}
     AISCORE_COOKIE: ${AISCORE_COOKIE:-}
+    KIRA_QUEUE_REMOTE_DISPLAY_ENABLED: ${KIRA_QUEUE_REMOTE_DISPLAY_ENABLED:-false}
+    KIRA_QUEUE_NOVNC_BIND_ADDRESS: ${KIRA_QUEUE_NOVNC_BIND_ADDRESS:-127.0.0.1}
+    KIRA_QUEUE_VNC_PASSWORD_FILE: /run/secrets/kira_queue_vnc_password
     KIRA_QUEUE_CONSUMER_ENABLED: ${KIRA_QUEUE_CONSUMER_ENABLED:-true}
   extra_hosts:
     - "host.docker.internal:host-gateway"
@@ -73,8 +80,11 @@ services:
       <<: *kira-queue-env
       INSTANCE_ID: docker-1
       KIRA_CRAWL_INSTANCE_ID: docker-1
+      KIRA_QUEUE_NOVNC_PORT: 6081
+      KIRA_QUEUE_VNC_PORT: 5901
       KIRA_QUEUE_CONSUMER_DATE_ENABLED: ${KIRA_QUEUE_1_CONSUMER_DATE_ENABLED:-true}
       KIRA_QUEUE_CONSUMER_EVENT_ENABLED: ${KIRA_QUEUE_1_CONSUMER_EVENT_ENABLED:-false}
+    volumes: *kira-queue-volumes
 
   kira-queue-2:
     <<: *kira-queue-base
@@ -85,9 +95,17 @@ services:
       <<: *kira-queue-env
       INSTANCE_ID: docker-2
       KIRA_CRAWL_INSTANCE_ID: docker-2
+      KIRA_QUEUE_NOVNC_PORT: 6082
+      KIRA_QUEUE_VNC_PORT: 5902
       KIRA_QUEUE_CONSUMER_DATE_ENABLED: ${KIRA_QUEUE_2_CONSUMER_DATE_ENABLED:-false}
       KIRA_QUEUE_CONSUMER_EVENT_ENABLED: ${KIRA_QUEUE_2_CONSUMER_EVENT_ENABLED:-true}
+    volumes:
+      - kira-queue-playwright-2:/app/.playwright
 
 networks:
   kira-app:
     driver: bridge
+
+volumes:
+  kira-queue-playwright-1:
+  kira-queue-playwright-2:

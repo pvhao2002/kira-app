@@ -39,6 +39,9 @@ app.env
 # docker bind-mount data (mysql, rabbitmq)
 data/
 
+# Remote browser credentials for kira-queue
+.secrets/
+
 # Playwright persistent browser profiles (kira-crawl, kira-crawl-java)
 .playwright/
 .playwright-test/

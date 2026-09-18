@@ -18,12 +18,12 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpHeaders;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,9 +31,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 
+import static com.kira.bank.investment.application.InvestmentStatisticsDtos.DailyFlow;
+import static com.kira.bank.investment.application.InvestmentStatisticsDtos.StatisticsResponse;
 import static com.kira.bank.investment.application.InvestmentTransactionDeduplicationService.Candidate;
 import static com.kira.bank.investment.application.InvestmentTransactionImportDtos.*;
 import static com.kira.bank.shared.web.ApiTypes.PageMeta;
@@ -278,6 +283,93 @@ public class InvestmentTransactionImportService {
             page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages()));
     }
 
+    @Transactional(readOnly = true)
+    public TransactionResponse transaction(Long userId, Long accountId, Long transactionId) {
+        account(accountId, userId);
+        InvestmentAccountTransaction transaction = transactions
+            .findByIdAndUserIdAndInvestmentAccountIdAndDeletedAtIsNull(transactionId, userId, accountId)
+            .orElseThrow(() -> missing("INVESTMENT_TRANSACTION_NOT_FOUND"));
+        return transactionResponse(transaction);
+    }
+
+    @Transactional
+    public TransactionResponse createManual(Long userId, Long accountId, ManualTransactionRequest request) {
+        InvestmentAccount account = account(accountId, userId);
+        InvestmentTransactionType type = request.transactionType();
+        InvestmentTransactionStatus status = request.transactionStatus();
+        BigDecimal amount = normalization.amount(request.amount());
+        String currency = normalization.currency(request.currency());
+        String externalId = normalization.externalId(request.externalTransactionId());
+        String description = trim(request.description());
+        validate(account, type, status, amount, currency, request.transactionAt());
+
+        byte[] deduplicationKey = normalization.dedupKey(accountId, type, externalId, amount, currency,
+            request.transactionAt(), null);
+        Optional<InvestmentAccountTransaction> duplicate = externalId == null
+            ? transactions.findByInvestmentAccountIdAndDeduplicationKeyAndDeletedAtIsNull(accountId, deduplicationKey)
+            : transactions.findByInvestmentAccountIdAndExternalTransactionIdAndDeletedAtIsNull(accountId, externalId);
+        if (duplicate.isPresent()) {
+            throw conflict("INVESTMENT_TRANSACTION_DUPLICATE", "Giao dịch tương tự đã tồn tại trong sổ đối soát");
+        }
+
+        InvestmentAccountTransaction transaction = new InvestmentAccountTransaction();
+        transaction.setUserId(userId);
+        transaction.setInvestmentAccountId(accountId);
+        transaction.setTransactionType(type);
+        transaction.setTransactionStatus(status);
+        transaction.setAmount(amount);
+        transaction.setCurrency(currency);
+        transaction.setTransactionAt(request.transactionAt());
+        transaction.setExternalTransactionId(externalId);
+        transaction.setDescription(description);
+        transaction.setDeduplicationKey(deduplicationKey);
+        transaction.setCreatedBy(userId);
+        transaction.setUpdatedBy(userId);
+        try {
+            transactions.saveAndFlush(transaction);
+        } catch (DataIntegrityViolationException duplicateRace) {
+            throw conflict("INVESTMENT_TRANSACTION_DUPLICATE", "Giao dịch tương tự đã tồn tại trong sổ đối soát");
+        }
+        metrics.counter("investment.transaction.manual", "type", type.name().toLowerCase(Locale.ROOT)).increment();
+        return transactionResponse(transaction);
+    }
+
+    @Transactional(readOnly = true)
+    public StatisticsResponse statistics(Long userId, Long accountId, LocalDate fromDate, LocalDate toDate,
+                                         InvestmentTransactionStatus status) {
+        InvestmentAccount account = account(accountId, userId);
+        ZoneId zone = ZoneId.of(transactionImportTimeZone);
+        Instant from = fromDate == null ? null : fromDate.atStartOfDay(zone).toInstant();
+        Instant to = toDate == null ? null : toDate.plusDays(1).atStartOfDay(zone).toInstant();
+        List<InvestmentTypeSummary> byType = transactions.summarize(userId, accountId, from, to, status);
+        BigDecimal totalAmount = byType.stream()
+            .map(InvestmentTypeSummary::amount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal netAmount = byType.stream().map(summary ->
+                summary.transactionType() == InvestmentTransactionType.WITHDRAWAL
+                    ? summary.amount().negate() : summary.amount())
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long totalCount = byType.stream().mapToLong(InvestmentTypeSummary::count).sum();
+        int zoneOffsetSeconds = zone.getRules().getOffset(Instant.now()).getTotalSeconds();
+        return new StatisticsResponse(accountId, account.getCurrency(), fromDate, toDate, status,
+            totalCount, totalAmount, netAmount, byType, transactions.summarizeDaily(userId, accountId, from, to,
+            status == null ? null : status.name(), zoneOffsetSeconds).stream().map(this::dailyFlow).toList());
+    }
+
+    private DailyFlow dailyFlow(Object[] row) {
+        return new DailyFlow(toLocalDate(row[0]), decimal(row[1]), decimal(row[2]), decimal(row[3]));
+    }
+
+    private LocalDate toLocalDate(Object value) {
+        if (value instanceof java.sql.Date date) return date.toLocalDate();
+        if (value instanceof LocalDate date) return date;
+        return LocalDate.parse(String.valueOf(value));
+    }
+
+    private BigDecimal decimal(Object value) {
+        return value instanceof BigDecimal number ? number : new BigDecimal(String.valueOf(value));
+    }
+
     private void createItems(InvestmentTransactionImportBatch batch, InvestmentAccount account, Long attachmentId,
                              AttachmentDtos.AiDraftResponse draft) {
         if (draft.transactions() == null) return;
@@ -294,7 +386,7 @@ public class InvestmentTransactionImportService {
     }
 
     private InvestmentTransactionImportItem toItem(InvestmentTransactionImportBatch batch, InvestmentAccount account,
-                                                    Long attachmentId, AttachmentDtos.AiTransactionDraftResponse raw) {
+                                                   Long attachmentId, AttachmentDtos.AiTransactionDraftResponse raw) {
         InvestmentTransactionImportItem item = new InvestmentTransactionImportItem();
         item.setItemId(UUID.randomUUID().toString());
         item.setBatchId(batch.getId());
@@ -336,7 +428,7 @@ public class InvestmentTransactionImportService {
     }
 
     private InvestmentTransactionImportItem mergeCandidate(InvestmentTransactionImportBatch batch,
-                                                            InvestmentTransactionImportItem incoming) {
+                                                           InvestmentTransactionImportItem incoming) {
         for (InvestmentTransactionImportItem existing : items.findByBatchIdAndDeletedAtIsNullOrderById(batch.getId())) {
             boolean sameExternal = incoming.getExternalTransactionId() != null
                 && incoming.getExternalTransactionId().equals(existing.getExternalTransactionId());
@@ -344,7 +436,8 @@ public class InvestmentTransactionImportService {
                 && Arrays.equals(incoming.getDeduplicationKey(), existing.getDeduplicationKey());
             if (!sameExternal && !sameKey) continue;
             List<String> warnings = new ArrayList<>(warnings(existing.getWarnings()));
-            if (!Objects.equals(existing.getTransactionType(), incoming.getTransactionType())) warnings.add("TYPE_CONFLICT");
+            if (!Objects.equals(existing.getTransactionType(), incoming.getTransactionType()))
+                warnings.add("TYPE_CONFLICT");
             if (existing.getAmount() != null && incoming.getAmount() != null
                 && existing.getAmount().compareTo(incoming.getAmount()) != 0) warnings.add("AMOUNT_CONFLICT");
             if (!Objects.equals(existing.getCurrency(), incoming.getCurrency())) warnings.add("CURRENCY_CONFLICT");
@@ -381,8 +474,10 @@ public class InvestmentTransactionImportService {
         long cancelled = batchFiles.stream().filter(file -> file.getStatus() == InvestmentImportFileStatus.CANCELLED).count();
         if (processing) batch.setStatus(InvestmentImportBatchStatus.PROCESSING);
         else if (pending) batch.setStatus(InvestmentImportBatchStatus.QUEUED);
-        else if (!batchFiles.isEmpty() && cancelled == batchFiles.size()) batch.setStatus(InvestmentImportBatchStatus.CANCELLED);
-        else if (!batchFiles.isEmpty() && failed + cancelled == batchFiles.size()) batch.setStatus(InvestmentImportBatchStatus.FAILED);
+        else if (!batchFiles.isEmpty() && cancelled == batchFiles.size())
+            batch.setStatus(InvestmentImportBatchStatus.CANCELLED);
+        else if (!batchFiles.isEmpty() && failed + cancelled == batchFiles.size())
+            batch.setStatus(InvestmentImportBatchStatus.FAILED);
         else if (failed + cancelled > 0) batch.setStatus(InvestmentImportBatchStatus.READY_WITH_ERRORS);
         else batch.setStatus(InvestmentImportBatchStatus.READY);
         List<InvestmentTransactionImportItem> batchItems = items.findByBatchIdAndDeletedAtIsNullOrderById(batch.getId());
@@ -425,7 +520,8 @@ public class InvestmentTransactionImportService {
         return new TransactionResponse(transaction.getId(), transaction.getTransactionType(),
             transaction.getTransactionStatus(), transaction.getAmount(), transaction.getCurrency(),
             transaction.getTransactionAt(), transaction.getExternalTransactionId(), transaction.getDescription(),
-            transaction.getRawText(), transaction.getAiConfidence(), transaction.getSourceFileHash(), transaction.getVersion());
+            transaction.getRawText(), transaction.getAiConfidence(), transaction.getSourceFileHash(),
+            transaction.getSourceAttachmentId(), transaction.getVersion());
     }
 
     private Candidate candidate(InvestmentTransactionImportItem item, InvestmentAccount account, List<String> warnings) {
@@ -484,7 +580,8 @@ public class InvestmentTransactionImportService {
 
     private List<String> warnings(String value) {
         try {
-            return value == null ? new ArrayList<>() : objectMapper.readValue(value, new TypeReference<>() {});
+            return value == null ? new ArrayList<>() : objectMapper.readValue(value, new TypeReference<>() {
+            });
         } catch (JsonProcessingException ex) {
             return new ArrayList<>(List.of("INVALID_STORED_WARNINGS"));
         }
@@ -508,6 +605,18 @@ public class InvestmentTransactionImportService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
+    private void validate(InvestmentAccount account, InvestmentTransactionType type,
+                          InvestmentTransactionStatus status, BigDecimal amount, String currency,
+                          Instant transactionAt) {
+        if (type == null || status == null || amount == null || amount.signum() <= 0
+            || currency == null || transactionAt == null) {
+            throw bad("INVALID_IMPORT_TRANSACTION", "Loại, trạng thái, số tiền, tiền tệ và thời gian là bắt buộc");
+        }
+        if (!Objects.equals(account.getCurrency(), currency)) {
+            throw bad("INVESTMENT_CURRENCY_MISMATCH", "Tiền tệ giao dịch phải khớp với tài khoản");
+        }
+    }
+
     private <E extends Enum<E>> E enumValue(Class<E> type, String value) {
         try {
             return value == null ? null : Enum.valueOf(type, value);
@@ -518,6 +627,10 @@ public class InvestmentTransactionImportService {
 
     private ApiException bad(String code, String message) {
         return new ApiException(HttpStatus.BAD_REQUEST, code, message);
+    }
+
+    private ApiException conflict(String code, String message) {
+        return new ApiException(HttpStatus.CONFLICT, code, message);
     }
 
     private ApiException missing(String code) {

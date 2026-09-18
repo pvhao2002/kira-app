@@ -2,6 +2,7 @@ package com.kira.bank.investment.application;
 
 import com.kira.bank.investment.domain.InvestmentAccount;
 import com.kira.bank.investment.infrastructure.InvestmentAccountRepository;
+import com.kira.bank.investment.infrastructure.InvestmentCredentialCipher;
 import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -10,9 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.kira.bank.investment.application.InvestmentDtos.AccountResponse;
-import static com.kira.bank.investment.application.InvestmentDtos.CreateAccountRequest;
-import static com.kira.bank.investment.application.InvestmentDtos.UpdateAccountRequest;
+import static com.kira.bank.investment.application.InvestmentDtos.*;
 import static com.kira.bank.shared.web.ApiTypes.PageMeta;
 import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 
@@ -20,6 +19,7 @@ import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 @RequiredArgsConstructor
 public class InvestmentService {
     private final InvestmentAccountRepository accounts;
+    private final InvestmentCredentialCipher credentialCipher;
 
     @Transactional
     public AccountResponse createAccount(Long userId, CreateAccountRequest request) {
@@ -31,25 +31,34 @@ public class InvestmentService {
         account.setAccountEmail(request.accountEmail());
         account.setPhoneNumber(request.phoneNumber());
         account.setRegisterDate(request.registerDate());
-        account.setAccountPassword(request.accountPassword());
+        account.setAccountPassword(encryptNewPassword(request.accountPassword()));
         account.setCurrency(request.currency() == null ? "VND" : request.currency());
         return dto(accounts.save(account));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public PageResponse<AccountResponse> accounts(Long userId, String search, Pageable pageable) {
         Page<AccountResponse> page = accounts.search(
             userId,
             search == null ? "" : search.trim(),
             pageable
-        ).map(this::dto);
+        ).map(account -> {
+            if (protectLegacyPassword(account)) {
+                accounts.saveAndFlush(account);
+            }
+            return dto(account);
+        });
         return new PageResponse<>(page.getContent(),
             new PageMeta(page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages()));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AccountResponse accountDetails(Long userId, Long id) {
-        return dto(account(id, userId));
+        InvestmentAccount account = account(id, userId);
+        if (protectLegacyPassword(account)) {
+            accounts.saveAndFlush(account);
+        }
+        return dto(account);
     }
 
     @Transactional
@@ -69,10 +78,14 @@ public class InvestmentService {
         account.setAccountEmail(request.accountEmail());
         account.setPhoneNumber(request.phoneNumber());
         account.setRegisterDate(request.registerDate());
-        account.setAccountPassword(request.accountPassword());
+        if (request.accountPassword() != null && !request.accountPassword().isBlank()) {
+            account.setAccountPassword(encryptNewPassword(request.accountPassword()));
+        } else {
+            protectLegacyPassword(account);
+        }
         account.setStatus(request.status());
         account.setNote(request.note());
-        return dto(accounts.save(account));
+        return dto(accounts.saveAndFlush(account));
     }
 
     private InvestmentAccount account(Long id, Long userId) {
@@ -85,8 +98,27 @@ public class InvestmentService {
         return new AccountResponse(
             account.getId(), account.getAccountCode(), account.getAccountName(), account.getAccountUsername(),
             account.getAccountEmail(), account.getPhoneNumber(), account.getRegisterDate(),
-            account.getAccountPassword(), account.getCurrency(), account.getStatus(), account.getNote(),
+            account.getAccountPassword() != null && !account.getAccountPassword().isBlank(), account.getCurrency(), account.getStatus(), account.getNote(),
             account.getVersion()
         );
+    }
+
+    private String encryptNewPassword(String password) {
+        if (!credentialCipher.isConfigured()) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
+                "INVESTMENT_CREDENTIAL_ENCRYPTION_NOT_CONFIGURED",
+                "Khóa mã hóa mật khẩu tài khoản đầu tư chưa được cấu hình");
+        }
+        return credentialCipher.encrypt(password.trim());
+    }
+
+    private boolean protectLegacyPassword(InvestmentAccount account) {
+        String password = account.getAccountPassword();
+        if (password == null || password.isBlank() || credentialCipher.isCiphertext(password)
+            || !credentialCipher.isConfigured()) {
+            return false;
+        }
+        account.setAccountPassword(credentialCipher.encrypt(password));
+        return true;
     }
 }

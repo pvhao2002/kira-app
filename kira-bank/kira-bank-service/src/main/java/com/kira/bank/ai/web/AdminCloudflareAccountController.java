@@ -15,9 +15,13 @@ import static com.kira.bank.ai.application.AiProviderAccountDtos.*;
 public class AdminCloudflareAccountController {
     private final AiProviderAccountService service;
 
-    @GetMapping Object list() { return service.list(); }
+    @GetMapping
+    Object list() {
+        return service.list();
+    }
 
-    @PostMapping @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     Object create(@AuthenticationPrincipal Long adminId, @Valid @RequestBody CreateRequest request) {
         return service.create(adminId, request);
     }
@@ -27,7 +31,8 @@ public class AdminCloudflareAccountController {
         return service.update(adminId, id, request);
     }
 
-    @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(@AuthenticationPrincipal Long adminId, @PathVariable Long id, @Valid @RequestBody VersionRequest request) {
         service.delete(adminId, id, request);
     }

@@ -1,7 +1,7 @@
 package com.kira.bank.investment.infrastructure;
 
-import com.kira.bank.investment.domain.InvestmentImportFileStatus;
 import com.kira.bank.investment.domain.InvestmentImportBatchStatus;
+import com.kira.bank.investment.domain.InvestmentImportFileStatus;
 import com.kira.bank.investment.domain.InvestmentImportResolution;
 import com.kira.bank.investment.domain.InvestmentTransactionImportFile;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,18 +14,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface InvestmentTransactionImportFileRepository extends JpaRepository<InvestmentTransactionImportFile, Long> {
-    interface AiJobReviewTargetProjection {
-        Long getAttachmentId();
-        Long getAccountId();
-        String getAccountName();
-        String getBatchId();
-        InvestmentImportBatchStatus getBatchStatus();
-        Instant getCreatedAt();
-        long getPendingItemCount();
-    }
-
     List<InvestmentTransactionImportFile> findByBatchIdAndDeletedAtIsNullOrderById(Long batchId);
+
     Optional<InvestmentTransactionImportFile> findByBatchIdAndAttachmentIdAndDeletedAtIsNull(Long batchId, Long attachmentId);
+
     List<InvestmentTransactionImportFile> findByAttachmentIdAndStatusInAndDeletedAtIsNull(
         Long attachmentId, Collection<InvestmentImportFileStatus> statuses);
 
@@ -73,4 +65,20 @@ public interface InvestmentTransactionImportFileRepository extends JpaRepository
         @Param("batchStatuses") Collection<InvestmentImportBatchStatus> batchStatuses,
         @Param("skippedResolution") InvestmentImportResolution skippedResolution
     );
+
+    interface AiJobReviewTargetProjection {
+        Long getAttachmentId();
+
+        Long getAccountId();
+
+        String getAccountName();
+
+        String getBatchId();
+
+        InvestmentImportBatchStatus getBatchStatus();
+
+        Instant getCreatedAt();
+
+        long getPendingItemCount();
+    }
 }

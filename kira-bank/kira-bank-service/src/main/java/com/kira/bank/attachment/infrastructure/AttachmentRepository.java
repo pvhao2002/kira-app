@@ -7,8 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
@@ -17,12 +17,26 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
+    @Query("""
+        select a.aiStatus as status, count(a.id) as count
+        from Attachment a
+        where a.deletedAt is null
+          and a.module = :module
+          and a.documentType = :documentType
+        group by a.aiStatus
+        """)
+    List<AiStatusCount> countAiJobsByStatus(
+        @Param("module") String module,
+        @Param("documentType") String documentType);
+
     long countByR2AccountId(Long r2AccountId);
+
     long countByR2AccountIdIsNullAndStoragePurgedAtIsNull();
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update Attachment a set a.r2AccountId = :accountId where a.r2AccountId is null and a.storagePurgedAt is null")
     int adoptLegacyR2Attachments(@Param("accountId") Long accountId);
+
     Page<Attachment> findByUserIdAndModuleAndDocumentTypeAndAiStatusInAndDeletedAtIsNull(
         Long userId, String module, String documentType, Collection<AttachmentAiStatus> statuses, Pageable pageable);
 
@@ -75,4 +89,10 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
         @Param("documentType") String documentType,
         @Param("status") AttachmentAiStatus status,
         @Param("cutoff") Instant cutoff);
+
+    interface AiStatusCount {
+        AttachmentAiStatus getStatus();
+
+        long getCount();
+    }
 }

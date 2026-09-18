@@ -1,6 +1,9 @@
 package com.kira.bank.investment.application;
 
-import com.kira.bank.investment.domain.*;
+import com.kira.bank.investment.domain.InvestmentAccountTransaction;
+import com.kira.bank.investment.domain.InvestmentProcessingAction;
+import com.kira.bank.investment.domain.InvestmentTransactionStatus;
+import com.kira.bank.investment.domain.InvestmentTransactionType;
 import com.kira.bank.investment.infrastructure.InvestmentAccountTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,7 +45,7 @@ public class InvestmentTransactionDeduplicationService {
         var existing = candidate.externalId() == null
             ? transactions.findByInvestmentAccountIdAndDeduplicationKeyAndDeletedAtIsNull(candidate.accountId(), key)
             : transactions.findByInvestmentAccountIdAndExternalTransactionIdAndDeletedAtIsNull(
-                candidate.accountId(), candidate.externalId());
+            candidate.accountId(), candidate.externalId());
 
         if (existing.isPresent()) {
             InvestmentAccountTransaction current = existing.get();

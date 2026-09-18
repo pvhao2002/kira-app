@@ -134,9 +134,6 @@ public class AiDocumentService {
         return Instant.now().plus(config.accountRateLimitCooldown());
     }
 
-    record ProviderFailure(boolean failover, boolean blocked, Instant cooldownUntil, String code) {
-    }
-
     private List<AiExtraction> extractResults(String rawResponse) {
         try {
             JsonNode root = objectMapper.readTree(rawResponse);
@@ -155,33 +152,6 @@ public class AiDocumentService {
         } catch (JsonProcessingException ex) {
             throw new AiProviderException("Cloudflare AI returned invalid JSON", ex);
         }
-    }
-
-    public record AiInputDocument(Long attachmentId, String mimeType, byte[] content) {
-    }
-
-    public record AiBatchResponse(String rawResponse, List<AiExtraction> results, String model) {
-    }
-
-    public record AiExtraction(
-        Long attachmentId,
-        List<AiTransactionExtraction> transactions
-    ) {
-    }
-
-    public record AiTransactionExtraction(
-        String transactionType,
-        String transactionStatus,
-        BigDecimal amount,
-        String currency,
-        String transactionAt,
-        String externalTransactionId,
-        String description,
-        String rawText,
-        Double confidence,
-        List<String> uncertainFields,
-        List<String> validationWarnings
-    ) {
     }
 
     private Map<String, Object> responseSchema() {
@@ -216,6 +186,36 @@ public class AiDocumentService {
             "properties", Map.of("results", Map.of("type", "array", "items", result)),
             "required", List.of("results")
         );
+    }
+
+    record ProviderFailure(boolean failover, boolean blocked, Instant cooldownUntil, String code) {
+    }
+
+    public record AiInputDocument(Long attachmentId, String mimeType, byte[] content) {
+    }
+
+    public record AiBatchResponse(String rawResponse, List<AiExtraction> results, String model) {
+    }
+
+    public record AiExtraction(
+        Long attachmentId,
+        List<AiTransactionExtraction> transactions
+    ) {
+    }
+
+    public record AiTransactionExtraction(
+        String transactionType,
+        String transactionStatus,
+        BigDecimal amount,
+        String currency,
+        String transactionAt,
+        String externalTransactionId,
+        String description,
+        String rawText,
+        Double confidence,
+        List<String> uncertainFields,
+        List<String> validationWarnings
+    ) {
     }
 
     public static class AiProviderException extends RuntimeException {

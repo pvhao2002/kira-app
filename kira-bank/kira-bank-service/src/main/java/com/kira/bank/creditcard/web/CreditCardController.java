@@ -59,6 +59,11 @@ public class CreditCardController {
         return service.updateBankBalance(u, bankId, r);
     }
 
+    @GetMapping("/credit-card-bank-balances/{bankId}/history")
+    Object bankBalanceHistory(@AuthenticationPrincipal Long u, @PathVariable Long bankId) {
+        return service.bankBalanceHistory(u, bankId);
+    }
+
     @PutMapping("/credit-cards/{id}/billing-cycle")
     Object updateBillingCycle(@AuthenticationPrincipal Long u, @PathVariable Long id,
                               @Valid @RequestBody BillingCycleUpdateRequest r) {
@@ -74,6 +79,11 @@ public class CreditCardController {
     @GetMapping("/statements")
     Object statements(@AuthenticationPrincipal Long u, @PageableDefault(size = 20, sort = "dueDate", direction = Sort.Direction.DESC) Pageable p) {
         return service.statements(u, p);
+    }
+
+    @GetMapping("/statements/{id}")
+    Object statement(@AuthenticationPrincipal Long u, @PathVariable Long id) {
+        return service.statement(u, id);
     }
 
     @PostMapping("/statements/{id}/payments")

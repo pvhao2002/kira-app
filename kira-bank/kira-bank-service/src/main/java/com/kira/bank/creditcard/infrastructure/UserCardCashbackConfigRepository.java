@@ -9,5 +9,6 @@ import java.util.Optional;
 
 public interface UserCardCashbackConfigRepository extends JpaRepository<UserCardCashbackConfig, Long> {
     Optional<UserCardCashbackConfig> findByUserCardIdAndDeletedAtIsNull(Long userCardId);
+
     List<UserCardCashbackConfig> findByUserCardIdInAndDeletedAtIsNull(Collection<Long> userCardIds);
 }

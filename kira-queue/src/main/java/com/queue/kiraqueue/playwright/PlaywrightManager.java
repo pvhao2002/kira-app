@@ -1,5 +1,7 @@
 package com.queue.kiraqueue.playwright;
 
+import com.queue.kiraqueue.config.PlaywrightProperties;
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -8,11 +10,16 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class PlaywrightManager {
     private final Map<String, PlaywrightLane> laneMap = new ConcurrentHashMap<>();
+    private final PlaywrightProperties properties;
     private static final String DATE_LANE = "date";
     private static final String EVENT_LANE = "event";
 
+    public PlaywrightManager(PlaywrightProperties properties) {
+        this.properties = properties;
+    }
+
     public PlaywrightLane getLane(String lane) {
-        return laneMap.computeIfAbsent(lane, PlaywrightLane::new);
+        return laneMap.computeIfAbsent(lane, key -> new PlaywrightLane(key, properties));
     }
 
     public PlaywrightLane getLaneByDate() {
@@ -23,6 +30,7 @@ public class PlaywrightManager {
         return getLane(EVENT_LANE);
     }
 
+    @PreDestroy
     public void closeAllLanes() {
         laneMap.values().forEach(PlaywrightLane::close);
         laneMap.clear();

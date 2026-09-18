@@ -52,6 +52,9 @@ public class EventOddsTimeline {
     @Column(name = "price_b", precision = 10, scale = 2)
     private BigDecimal priceB;
 
+    @Column(length = 25)
+    private String goal;
+
     @Column(name = "match_minute", length = 10)
     private String matchMinute;
 

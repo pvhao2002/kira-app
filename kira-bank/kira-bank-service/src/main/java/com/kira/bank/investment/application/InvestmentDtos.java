@@ -36,7 +36,7 @@ public final class InvestmentDtos {
 
     public record AccountResponse(
         Long id, String accountCode, String accountName, String accountUsername, String accountEmail,
-        String phoneNumber, LocalDate registerDate, String accountPassword,
+        String phoneNumber, LocalDate registerDate, boolean accountPasswordSet,
         String currency, String status, String note, long version
     ) {
     }

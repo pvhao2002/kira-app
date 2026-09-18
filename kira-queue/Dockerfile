@@ -72,24 +72,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon0 \
     libxrandr2 \
     libxshmfence1 \
+    novnc \
+    openbox \
+    websockify \
+    x11vnc \
+    xvfb \
     && rm -rf /var/lib/apt/lists/* \
     && chmod -R 777 /ms-playwright
 
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+COPY docker-entrypoint.sh /usr/local/bin/kira-queue-entrypoint.sh
+RUN mkdir -p /run/secrets && chmod +x /usr/local/bin/kira-queue-entrypoint.sh
 
 ENV PATH="/opt/jre-min/bin:$PATH"
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV PLAYWRIGHT_HEADLESS=true
 ENV PLAYWRIGHT_TEST_API_ENABLED=false
+ENV KIRA_QUEUE_REMOTE_DISPLAY_ENABLED=false
+ENV KIRA_QUEUE_NOVNC_PORT=6081
+ENV KIRA_QUEUE_VNC_PORT=5901
+ENV KIRA_QUEUE_VNC_PASSWORD_FILE=/run/secrets/kira_queue_vnc_password
 
 RUN useradd -m spring && chown -R spring:spring /app
 USER spring
 
-EXPOSE 2323
+EXPOSE 2323 6081 6082
 
 # Recommended at runtime: docker run --ipc=host ...
-ENTRYPOINT ["java", \
-    "-XX:MaxRAMPercentage=75", \
-    "-XX:+ExitOnOutOfMemoryError", \
-    "-jar", "app.jar"]
+ENTRYPOINT ["/usr/local/bin/kira-queue-entrypoint.sh"]

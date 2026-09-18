@@ -6,11 +6,35 @@
     "scheme": "kiralifedemo",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
-    "ios": { "supportsTablet": false },
-    "android": { "edgeToEdgeEnabled": true },
-    "web": { "bundler": "metro" },
-    "plugins": ["expo-router"],
-    "experiments": { "typedRoutes": false }
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {},
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-status-bar",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Kira Life dùng Face ID để xác thực nhanh vào ứng dụng."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kira Life cần quyền truy cập ảnh để chọn chứng từ giao dịch.",
+          "cameraPermission": "Kira Life cần quyền camera để chụp chứng từ giao dịch.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }

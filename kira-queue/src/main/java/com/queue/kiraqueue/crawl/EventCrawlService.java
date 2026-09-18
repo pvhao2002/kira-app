@@ -3,9 +3,9 @@ package com.queue.kiraqueue.crawl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.microsoft.playwright.Page;
 import com.queue.kiraqueue.browser.AiscorePageFetchClient;
+import com.queue.kiraqueue.config.BusinessException;
 import com.queue.kiraqueue.dto.aiscore.MatchOddsResponseDto;
 import com.queue.kiraqueue.mapper.OddsMapper;
-import com.queue.kiraqueue.playwright.PlaywrightLane;
 import com.queue.kiraqueue.playwright.PlaywrightManager;
 import com.queue.kiraqueue.protobuf.AiscoreProtobufService;
 import com.queue.kiraqueue.service.CrawEventServiceV2;
@@ -33,9 +33,11 @@ public class EventCrawlService {
     private static final double DEFAULT_WAIT_MS = 100;
 
     public MatchOddsResponseDto crawlEvent(String matchId, CrawEventServiceV2.EventRow event) {
+        return playwrightManager.getEventLane().withPage(page -> crawlEvent(page, matchId, event));
+    }
+
+    private MatchOddsResponseDto crawlEvent(Page page, String matchId, CrawEventServiceV2.EventRow event) {
         long crawlStart = System.nanoTime();
-        var lane = playwrightManager.getEventLane();
-        var page = lane.getPage();
 
         var oddListUrl = ODD_LIST.formatted(matchId);
         var oddListBody = aiscorePageFetchClient.fetchOptional(page, oddListUrl);
@@ -85,7 +87,12 @@ public class EventCrawlService {
             var body = aiscorePageFetchClient.fetchOptional(page, ODD_DETAIL.formatted(event.matchId(), type));
             page.waitForTimeout(DEFAULT_WAIT_MS);
             if (body == null) {
-                continue;
+                // Distinguish a silently-failed fetch (mid-crawl block) from a genuinely empty
+                // odds-detail payload: propagate so the caller keeps existing timeline rows
+                // instead of persisting a partial result.
+                throw new BusinessException(
+                        "AISCORE_ODDS_DETAIL_FETCH_FAILED: odds detail fetch returned no body for type=" + type
+                                + ", matchId=" + event.matchId());
             }
             var decoded = decodeOddsDetailBody(body);
             switch (type) {

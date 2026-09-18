@@ -13,12 +13,16 @@ import java.util.Optional;
 
 public interface InvestmentTransactionImportItemRepository extends JpaRepository<InvestmentTransactionImportItem, Long> {
     List<InvestmentTransactionImportItem> findByBatchIdAndDeletedAtIsNullOrderById(Long batchId);
+
     List<InvestmentTransactionImportItem> findByBatchIdAndPrimaryAttachmentIdAndDeletedAtIsNull(Long batchId, Long attachmentId);
+
     Optional<InvestmentTransactionImportItem> findByItemIdAndBatchIdAndDeletedAtIsNull(String itemId, Long batchId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from InvestmentTransactionImportItem i where i.itemId = :itemId and i.batchId = :batchId and i.deletedAt is null")
     Optional<InvestmentTransactionImportItem> findForUpdate(@Param("itemId") String itemId,
-                                                             @Param("batchId") Long batchId);
+                                                            @Param("batchId") Long batchId);
+
     long countByBatchIdAndProcessingActionAndConfirmedTransactionIdIsNullAndDeletedAtIsNull(
         Long batchId, InvestmentProcessingAction action);
 }

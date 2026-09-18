@@ -1,7 +1,13 @@
 package com.kira.bank.creditcard.application;
 
-import com.kira.bank.creditcard.domain.*;
-import com.kira.bank.creditcard.infrastructure.*;
+import com.kira.bank.creditcard.domain.Payment;
+import com.kira.bank.creditcard.domain.Statement;
+import com.kira.bank.creditcard.domain.UserBankCreditLimit;
+import com.kira.bank.creditcard.domain.UserCreditCard;
+import com.kira.bank.creditcard.infrastructure.PaymentRepository;
+import com.kira.bank.creditcard.infrastructure.StatementRepository;
+import com.kira.bank.creditcard.infrastructure.UserBankCreditLimitRepository;
+import com.kira.bank.creditcard.infrastructure.UserCreditCardRepository;
 import com.kira.bank.publiccatalog.infrastructure.BankRepository;
 import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +29,6 @@ import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 @Service
 @RequiredArgsConstructor
 public class CreditCardService {
-    private static final BigDecimal TOLERANCE = new BigDecimal("0.01");
     private final UserCreditCardRepository cards;
     private final UserBankCreditLimitRepository creditLimits;
     private final BankRepository banks;
@@ -125,6 +130,12 @@ public class CreditCardService {
         if (r.periodEnd().isBefore(r.periodStart()) || r.dueDate().isBefore(r.statementDate()))
             throw invalid("INVALID_STATEMENT_DATES", "Ngày sao kê không hợp lệ");
         BigDecimal balance = money(r.openingBalance().add(r.totalSpending()).add(r.totalFee()).add(r.totalInterest()).subtract(r.totalRefund()));
+        if (balance.signum() < 0)
+            throw invalid("INVALID_STATEMENT_BALANCE", "Dư nợ sao kê không thể âm");
+        if (balance.signum() > 0 && r.minimumPayment().signum() == 0)
+            throw invalid("MINIMUM_PAYMENT_REQUIRED", "Sao kê có dư nợ phải có thanh toán tối thiểu");
+        if (r.minimumPayment().compareTo(balance) > 0)
+            throw invalid("INVALID_MINIMUM_PAYMENT", "Thanh toán tối thiểu không thể vượt dư nợ sao kê");
         Statement s = new Statement();
         s.setUserId(user);
         s.setUserCardId(r.userCardId());
@@ -149,19 +160,27 @@ public class CreditCardService {
         return page(x);
     }
 
+    @Transactional(readOnly = true)
+    public StatementResponse statement(Long user, Long id) {
+        return statementDto(requireStatement(id, user));
+    }
+
     @Transactional
     public PaymentResponse pay(Long user, Long statementId, String key, PaymentRequest r) {
         requireKey(key);
         var old = payments.findByUserIdAndIdempotencyKey(user, key);
         if (old.isPresent()) {
             Payment p = old.get();
-            return new PaymentResponse(p.getId(), p.getStatus(), statementDto(statement(statementId, user)));
+            if (!Objects.equals(p.getStatementId(), statementId)) {
+                throw invalid("IDEMPOTENCY_KEY_REUSED", "Idempotency-Key đã được dùng cho một sao kê khác");
+            }
+            return new PaymentResponse(p.getId(), p.getStatus(), statementDto(requireStatement(statementId, user)));
         }
-        Statement s = statement(statementId, user);
+        Statement s = requireStatement(statementId, user);
         if ("PAID".equals(s.getStatus()) || "CANCELLED".equals(s.getStatus()))
             throw invalid("STATEMENT_NOT_PAYABLE", "Sao kê không thể thanh toán");
         BigDecimal amount = money(r.amount());
-        if (amount.subtract(s.getRemainingAmount()).compareTo(TOLERANCE) > 0)
+        if (amount.compareTo(s.getRemainingAmount()) > 0)
             throw invalid("PAYMENT_EXCEEDS_REMAINING", "Số tiền thanh toán vượt dư nợ còn lại");
         Payment p = new Payment();
         p.setUserId(user);
@@ -177,21 +196,32 @@ public class CreditCardService {
         s.setPaidAmount(money(s.getPaidAmount().add(amount)));
         BigDecimal remaining = money(s.getStatementBalance().subtract(s.getPaidAmount()).max(BigDecimal.ZERO));
         s.setRemainingAmount(remaining);
-        s.setStatus(remaining.compareTo(TOLERANCE) <= 0 ? "PAID" : "PARTIALLY_PAID");
+        s.setStatus(remaining.signum() == 0 ? "PAID" : "PARTIALLY_PAID");
         return new PaymentResponse(p.getId(), p.getStatus(), statementDto(s));
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<Payment> payments(Long user, Pageable p) {
-        return page(payments.findByUserIdAndDeletedAtIsNull(user, p));
+    public PageResponse<PaymentHistoryResponse> payments(Long user, Pageable p) {
+        return page(payments.findByUserIdAndDeletedAtIsNull(user, p).map(this::paymentDto));
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<BankBalanceAdjustmentResponse> bankBalanceHistory(Long user, Long bankId) {
+        return bankBalances.history(user, bankId);
     }
 
     private UserCreditCard ownCard(Long id, Long user) {
         return cards.findByIdAndUserIdAndDeletedAtIsNull(id, user).orElseThrow(() -> missing("USER_CARD_NOT_FOUND"));
     }
 
-    private Statement statement(Long id, Long user) {
+    private Statement requireStatement(Long id, Long user) {
         return statements.findByIdAndUserIdAndDeletedAtIsNull(id, user).orElseThrow(() -> missing("STATEMENT_NOT_FOUND"));
+    }
+
+    private PaymentHistoryResponse paymentDto(Payment payment) {
+        return new PaymentHistoryResponse(payment.getId(), payment.getStatementId(), payment.getPaymentDate(),
+            payment.getAmount(), payment.getPaymentMethod(), payment.getSourceAccount(),
+            payment.getReferenceNumber(), payment.getStatus(), payment.getNote());
     }
 
     private CardResponse cardDto(UserCreditCard c, UserBankCreditLimit creditLimit) {
@@ -276,7 +306,8 @@ public class CreditCardService {
     }
 
     private StatementResponse statementDto(Statement s) {
-        return new StatementResponse(s.getId(), s.getStatementBalance(), s.getPaidAmount(), s.getRemainingAmount(), s.getStatus(), s.getVersion());
+        return new StatementResponse(s.getId(), s.getStatementBalance(), s.getPaidAmount(), s.getRemainingAmount(), s.getStatus(), s.getVersion(),
+            s.getUserCardId(), s.getPeriodStart(), s.getPeriodEnd(), s.getStatementDate(), s.getDueDate(), s.getMinimumPayment());
     }
 
     private <T> PageResponse<T> page(Page<T> p) {

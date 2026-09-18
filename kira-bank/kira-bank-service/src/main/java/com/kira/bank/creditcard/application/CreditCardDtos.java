@@ -3,6 +3,7 @@ package com.kira.bank.creditcard.application;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
 public final class CreditCardDtos {
@@ -54,6 +55,13 @@ public final class CreditCardDtos {
                                       BigDecimal adjustmentAmount, String currency, long balanceVersion) {
     }
 
+    public record BankBalanceAdjustmentResponse(Long id, Long bankId, BigDecimal sourceBalance,
+                                                BigDecimal previousBalance, BigDecimal newBalance,
+                                                BigDecimal adjustmentAmount, BigDecimal balanceOffset,
+                                                String reason, String currency, long balanceVersion,
+                                                java.time.Instant createdAt) {
+    }
+
     public record BillingCycleUpdateRequest(@Positive Long billingCycleId,
                                             @NotNull @PositiveOrZero BigDecimal statementBalance,
                                             @NotNull @PositiveOrZero BigDecimal minimumPayment,
@@ -81,10 +89,17 @@ public final class CreditCardDtos {
     }
 
     public record StatementResponse(Long id, BigDecimal statementBalance, BigDecimal paidAmount,
-                                    BigDecimal remainingAmount, String status, long version) {
+                                    BigDecimal remainingAmount, String status, long version,
+                                    Long userCardId, LocalDate periodStart, LocalDate periodEnd,
+                                    LocalDate statementDate, LocalDate dueDate, BigDecimal minimumPayment) {
     }
 
     public record PaymentResponse(Long id, String status, StatementResponse statement) {
+    }
+
+    public record PaymentHistoryResponse(Long id, Long statementId, Instant paymentDate,
+                                         BigDecimal amount, String paymentMethod, String sourceAccount,
+                                         String referenceNumber, String status, String note) {
     }
 
 }

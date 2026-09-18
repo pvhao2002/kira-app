@@ -1,6 +1,8 @@
 package com.kira.bank.creditcard.application;
 
+import com.kira.bank.creditcard.application.CreditCardDtos.BillingCycleResponse;
 import com.kira.bank.creditcard.infrastructure.UserCreditCardRepository;
+import com.kira.bank.notification.application.NotificationService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -24,6 +26,7 @@ public class MonthlyStatementScheduler {
 
     private final UserCreditCardRepository cards;
     private final MonthlyStatementService monthlyStatements;
+    private final NotificationService notifications;
 
     @Value("${CARD_STATEMENT_JOB_TIME_ZONE:Asia/Bangkok}")
     private String timeZone;
@@ -41,6 +44,7 @@ public class MonthlyStatementScheduler {
             for (var card : batch.getContent()) {
                 try {
                     monthlyStatements.ensureCurrentCycle(card.getId(), today);
+                    createReminder(card, monthlyStatements.currentCycle(card.getUserId(), card), today);
                 } catch (DataIntegrityViolationException duplicate) {
                     log.debug("Monthly statement already exists for card {}", card.getId());
                 } catch (RuntimeException ex) {
@@ -48,5 +52,33 @@ public class MonthlyStatementScheduler {
                 }
             }
         } while (batch.hasNext());
+    }
+
+    private void createReminder(com.kira.bank.creditcard.domain.UserCreditCard card,
+                                BillingCycleResponse cycle, LocalDate today) {
+        if (cycle.billingCycleId() == null) {
+            return;
+        }
+        if ("NEEDS_INPUT".equals(cycle.billingStatus())) {
+            notifications.createIfAbsent(card.getUserId(), "CREDIT_STATEMENT_INPUT_REQUIRED", "CREDIT_CARD",
+                "Cần nhập sao kê thẻ", "Hãy nhập dư nợ sao kê cho thẻ " + card.getNickname()
+                    + " của kỳ " + cycle.statementDate(), "WARNING",
+                "/billing-cycle?id=" + card.getId());
+            return;
+        }
+        if ("OVERDUE".equals(cycle.billingStatus())) {
+            notifications.createIfAbsent(card.getUserId(), "CREDIT_STATEMENT_OVERDUE", "CREDIT_CARD",
+                "Sao kê thẻ đã quá hạn", "Sao kê thẻ " + card.getNickname() + " đã quá hạn từ "
+                    + cycle.paymentDueDate() + ". Tổng dư nợ: " + cycle.statementBalance() + " "
+                    + card.getCurrency(), "ERROR", "/statement-pay?id=" + cycle.billingCycleId());
+            return;
+        }
+        if ("UNPAID".equals(cycle.billingStatus()) && !cycle.paymentDueDate().isBefore(today)
+            && !cycle.paymentDueDate().isAfter(today.plusDays(7))) {
+            notifications.createIfAbsent(card.getUserId(), "CREDIT_STATEMENT_DUE_SOON", "CREDIT_CARD",
+                "Sao kê thẻ sắp đến hạn", "Sao kê thẻ " + card.getNickname() + " đến hạn ngày "
+                    + cycle.paymentDueDate() + ". Tổng dư nợ: " + cycle.statementBalance() + " "
+                    + card.getCurrency(), "WARNING", "/statement-pay?id=" + cycle.billingCycleId());
+        }
     }
 }

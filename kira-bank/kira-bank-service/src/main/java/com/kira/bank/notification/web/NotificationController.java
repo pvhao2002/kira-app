@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.Map;
 
+import static com.kira.bank.notification.application.NotificationDtos.NotificationResponse;
 import static com.kira.bank.shared.web.ApiTypes.PageMeta;
 import static com.kira.bank.shared.web.ApiTypes.PageResponse;
 
@@ -28,13 +29,19 @@ public class NotificationController {
     @GetMapping
     @Transactional(readOnly = true)
     Object list(@AuthenticationPrincipal Long user, @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<Notification> p = repository.findByUserIdAndDeletedAtIsNull(user, pageable);
+        Page<NotificationResponse> p = repository.findByUserIdAndDeletedAtIsNull(user, pageable).map(this::response);
         return new PageResponse<>(p.getContent(), new PageMeta(p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages()));
     }
 
     @GetMapping("/unread-count")
     Object unread(@AuthenticationPrincipal Long user) {
-        return Map.of("count", repository.countByUserIdAndReadAtIsNull(user));
+        return Map.of("count", repository.countByUserIdAndReadAtIsNullAndDeletedAtIsNull(user));
+    }
+
+    @PatchMapping("/read-all")
+    @Transactional
+    Object readAll(@AuthenticationPrincipal Long user) {
+        return Map.of("updated", repository.markAllRead(user));
     }
 
     @PatchMapping("/{id}/read")
@@ -42,6 +49,12 @@ public class NotificationController {
     Object read(@AuthenticationPrincipal Long user, @PathVariable Long id) {
         Notification n = repository.findByIdAndUserIdAndDeletedAtIsNull(id, user).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOTIFICATION_NOT_FOUND", "Không tìm thấy thông báo"));
         if (n.getReadAt() == null) n.setReadAt(Instant.now());
-        return n;
+        return response(n);
+    }
+
+    private NotificationResponse response(Notification notification) {
+        return new NotificationResponse(notification.getId(), notification.getType(), notification.getModule(),
+            notification.getTitle(), notification.getMessage(), notification.getSeverity(), notification.getReadAt(),
+            notification.getDeepLink(), notification.getCreatedAt());
     }
 }

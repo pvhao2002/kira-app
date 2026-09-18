@@ -14,6 +14,8 @@ public interface UserBankBalanceAdjustmentRepository extends Repository<UserBank
 
     Optional<UserBankBalanceAdjustment> findFirstByUserIdAndBankIdOrderByBalanceVersionDesc(Long userId, Long bankId);
 
+    List<UserBankBalanceAdjustment> findByUserIdAndBankIdOrderByBalanceVersionDesc(Long userId, Long bankId);
+
     @Query("""
         select adjustment from UserBankBalanceAdjustment adjustment
         where adjustment.userId = :userId

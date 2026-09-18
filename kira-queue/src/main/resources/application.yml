@@ -22,7 +22,7 @@ spring:
       pool:
         core-size: 120
   rabbitmq:
-    host: ${RABBIT_HOST:192.168.2.221}
+    host: ${RABBIT_HOST:127.0.0.1}
     port: ${RABBIT_PORT:5672}
     username: ${RABBIT_USERNAME:guest}
     password: ${RABBIT_PASSWORD:guest}
@@ -91,9 +91,9 @@ app:
     headless: ${PLAYWRIGHT_HEADLESS:true}
     channel: ${PLAYWRIGHT_CHANNEL:}
     browser-timeout-ms: ${AISCORE_BROWSER_TIMEOUT_MS:30000}
+    verification-timeout-ms: ${AISCORE_VERIFICATION_TIMEOUT_MS:120000}
     matches-async-timeout-ms: ${AISCORE_MATCHES_ASYNC_TIMEOUT_MS:180000}
     odds-async-timeout-ms: ${AISCORE_ODDS_ASYNC_TIMEOUT_MS:300000}
-    user-agent: ${AISCORE_USER_AGENT:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0}
     accept-language: ${AISCORE_ACCEPT_LANGUAGE:en-US,en;q=0.9}
     cookie: ${AISCORE_COOKIE:}
     profile-base-dir: ${AISCORE_PROFILE_BASE_DIR:.playwright}

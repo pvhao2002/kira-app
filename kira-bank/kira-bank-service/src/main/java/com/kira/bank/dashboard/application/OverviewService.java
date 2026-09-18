@@ -6,8 +6,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.*;
-import java.util.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Comparator;
 import java.util.stream.Stream;
 
 import static com.kira.bank.dashboard.application.OverviewDtos.*;
@@ -58,5 +61,7 @@ public class OverviewService {
             new Group<>(conflicts.size(), conflicts.stream().limit(5).toList()));
     }
 
-    public Investments investments(Long userId, int days) { return repository.investments(userId, days); }
+    public Investments investments(Long userId, int days) {
+        return repository.investments(userId, days);
+    }
 }

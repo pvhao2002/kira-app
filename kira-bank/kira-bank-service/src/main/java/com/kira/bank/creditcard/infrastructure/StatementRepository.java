@@ -79,6 +79,25 @@ public interface StatementRepository extends JpaRepository<Statement, Long> {
     List<BankCurrentBalance> findCurrentBalancesForBanks(@Param("userId") Long userId,
                                                          @Param("bankIds") Collection<Long> bankIds);
 
+    @Query(value = """
+        select date_format(s.statement_date, '%Y-%m') as month,
+               c.currency as currency,
+               coalesce(sum(s.statement_balance), 0) as statementDebt,
+               coalesce(sum(s.remaining_amount), 0) as remainingDebt
+        from statements s
+        join user_credit_cards c on c.id = s.user_card_id
+        where s.user_id = :userId
+          and c.user_id = :userId
+          and s.deleted_at is null
+          and c.deleted_at is null
+          and s.status <> 'CANCELLED'
+          and s.statement_date >= :fromDate
+        group by date_format(s.statement_date, '%Y-%m'), c.currency
+        order by month asc, currency asc
+        """, nativeQuery = true)
+    List<MonthlyDebtTrend> findMonthlyDebtTrend(@Param("userId") Long userId,
+                                                @Param("fromDate") LocalDate fromDate);
+
     interface CardDebtTotals {
         Long getUserCardId();
 
@@ -91,5 +110,15 @@ public interface StatementRepository extends JpaRepository<Statement, Long> {
         Long getBankId();
 
         BigDecimal getCurrentBalance();
+    }
+
+    interface MonthlyDebtTrend {
+        String getMonth();
+
+        String getCurrency();
+
+        BigDecimal getStatementDebt();
+
+        BigDecimal getRemainingDebt();
     }
 }
