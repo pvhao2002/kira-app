@@ -55,6 +55,7 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, buildAccessCookie(token).toString())
                 .body(Map.of(
                         "status", "ok",
+                        "accessToken", token,
                         "data", buildUserData(user.userId(), user.username(), user.role(), user.avatar())
                 ));
     }

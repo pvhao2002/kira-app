@@ -52,7 +52,7 @@ gửi thông báo cho người tạo hồ sơ.
 
 Admin cũng có màn **Cloudflare & R2** để quản lý account provider: credential chỉ nhập dạng secret và response luôn
 masked; có thể Test AI/R2, bật/tắt Workers AI, chọn hoặc dừng R2 primary, gán attachment legacy và xóa account chỉ khi
-không còn file. `AI_MODEL` trong env vẫn được ưu tiên toàn cục.
+không còn file. Model AI được lưu riêng trong DB cho từng Cloudflare account.
 
 Admin có thêm màn **Queue AI toàn hệ thống** để lọc và theo dõi attachment của tất cả người dùng, xem tổng quan số lượng
 theo trạng thái, owner/model/số lần chạy/lô chờ duyệt/kết quả chuẩn hóa, chạy lại job lỗi hoặc hủy job đang chờ. Màn này
@@ -60,8 +60,7 @@ tự polling khi còn job PENDING/PROCESSING; Admin chỉ điều khiển pipeli
 transaction. Mỗi job có màn chi tiết với lịch sử chuyển trạng thái append-only (migration V30), actor USER/ADMIN/SYSTEM,
 lần thử và reason code an toàn; danh sách queue chỉ tải lịch sử khi mở chi tiết.
 
-Compose local và Hub truyền `AI_MODEL` vào service để thay model qua môi trường; Trung tâm thông báo tải đủ lịch sử và
-giữ tham số deep-link khi mở đúng sao kê, chứng từ hoặc lô AI.
+Trung tâm thông báo tải đủ lịch sử và giữ tham số deep-link khi mở đúng sao kê, chứng từ hoặc lô AI.
 
 Thông tin tài khoản đầu tư không trả mật khẩu về mobile/API response. Mật khẩu được mã hóa AES-GCM ở backend; cần cấu
 hình `INVESTMENT_CREDENTIAL_ENCRYPTION_KEY` bằng khóa Base64 32 byte và chạy migration V26. Bản ghi cũ dạng rõ sẽ được
@@ -153,8 +152,7 @@ vì sẽ thay dữ liệu demo hiện tại.
    hủy job đang chờ. Queue tự polling khi có job đang chạy; notification READY mở thẳng kết quả, notification FAILED mở
    queue và ưu tiên đúng chứng từ.
 3. **Chứng từ giao dịch:** ảnh được kiểm tra MIME/nội dung ở backend, lưu trên R2 và gửi Cloudflare Workers AI theo
-   batch scheduler hoặc thao tác chạy thủ công. Model runtime lấy từ `AI_MODEL` nếu được cấu hình, nếu không dùng model
-   của Cloudflare account đã xác minh.
+   batch scheduler hoặc thao tác chạy thủ công. Model runtime lấy từ cấu hình DB của Cloudflare account đã xác minh.
 4. **Lịch sử → Bộ lọc:** dữ liệu lấy từ service, tải đủ các trang tài khoản/giao dịch, có lọc
    account/status/type/date/amount và tìm kiếm cục bộ. Thẻ thống kê cộng đúng các tài khoản cùng currency và luôn hiển
    thị riêng Deposit, Withdrawal và Bonus. Thống kê theo từng tài khoản có khoảng toàn thời gian, 30, 90 hoặc 365 ngày

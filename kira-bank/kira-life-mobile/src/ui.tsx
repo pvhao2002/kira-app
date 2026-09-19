@@ -322,6 +322,7 @@ const creditPages = ['cards', 'cards-manage', 'card-add', 'card-edit', 'billing-
 const investmentPages = ['import', 'manual-transaction', 'queue', 'source', 'ai-result', 'draft-edit', 'decision', 'result-partial', 'result-success', 'account-add', 'account-edit', 'account-stats', 'history', 'filter', 'transaction-detail', 'report-create', 'report-success', 'reports', 'investment-report-create', 'investment-reports', 'investment-report-detail', 'admin-investment-reports', 'admin-cloudflare', 'admin-ai-queue', 'ai-job-detail', 'admin-ai-job-detail', 'admin-source', 'admin-ai-result'];
 const travelPages = ['travel-edit'];
 const healthPages = ['health-profile'];
+const personalPages = ['favorite-songs', 'job-tracker'];
 const noBackRowPages = ['cards', 'benefits', 'import', 'queue', 'history', 'filter'];
 
 export function tabGroup(path: string) {
@@ -330,6 +331,7 @@ export function tabGroup(path: string) {
   if (page === 'investment' || investmentPages.includes(page)) return '/investment';
   if (page === 'travel' || travelPages.includes(page)) return '/travel';
   if (page === 'health' || healthPages.includes(page)) return '/health';
+  if (personalPages.includes(page)) return '/profile';
   return '/profile';
 }
 

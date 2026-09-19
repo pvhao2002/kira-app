@@ -11,7 +11,7 @@
   <div class="card-header">
     <div class="bank-info">
       @if (bankLogo()) {
-        <img [src]="bankLogo()" class="bank-logo-img" alt="">
+        <img [src]="bankLogo()!" ng-img="true" width="28" height="28" loading="lazy" decoding="async" class="bank-logo-img" alt="">
       }
       <div class="bank-title-group">
         <span class="bank-name">{{ displayBank() }}</span>

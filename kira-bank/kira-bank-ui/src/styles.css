@@ -3,18 +3,27 @@
 :root {
   font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #142033;
-  background: #f5f7fa;
+  background: #f3f7fb;
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  --navy: #071b33;
-  --blue: #0878ff;
-  --teal: #00a98f;
+  --navy: #102a46;
+  --blue: #1e5fbf;
+  --teal: #008f78;
   --surface: #fff;
-  --border: #e3e8ef;
-  --muted: #687588;
-  --shadow: 0 14px 40px rgba(12, 32, 61, .08)
+  --surface-2: #edf4fb;
+  --surface-3: #e5eef8;
+  --canvas: #f3f7fb;
+  --border: #d8e3ee;
+  --border-strong: #bfd0e1;
+  --muted: #5b6e84;
+  --shadow: 0 18px 45px rgba(16, 42, 70, .09);
+  --shadow-sm: 0 5px 18px rgba(16, 42, 70, .07);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --focus-ring: #1d4ed8
 }
 
 * {
@@ -24,7 +33,7 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: #f5f7fa;
+  background: var(--canvas);
   font-family: inherit;
 }
 
@@ -1759,4 +1768,433 @@ html[data-theme=dark] .table-tools input:focus {
   border: none !important;
   border-color: transparent !important;
   box-shadow: none !important;
+}
+
+/* ==========================================================================
+   KIRA LIFE UI PRO MAX FOUNDATION
+   Shared visual and interaction layer for the Angular application.
+   ========================================================================== */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 82px;
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% -8%, rgba(30, 95, 191, .09), transparent 31rem),
+    radial-gradient(circle at 92% 0%, rgba(0, 143, 120, .07), transparent 27rem),
+    var(--canvas);
+  color: var(--navy);
+  line-height: 1.5;
+}
+
+::selection {
+  color: #fff;
+  background: var(--blue);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 72%, transparent);
+  outline-offset: 3px;
+}
+
+.app-layout {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.app-layout > aside {
+  background: linear-gradient(180deg, #0c2744 0%, #071a2d 100%);
+  border-right: 1px solid rgba(255, 255, 255, .08);
+  box-shadow: 10px 0 30px rgba(7, 26, 45, .08);
+}
+
+.app-layout > aside .brand {
+  min-height: 44px;
+  letter-spacing: -.55px;
+}
+
+.brand-mark {
+  box-shadow: 0 8px 20px rgba(8, 120, 255, .2);
+}
+
+.side-nav > a,
+.side-nav .nav-group > a {
+  min-height: 44px;
+  margin: 4px 0;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+}
+
+.side-nav a:hover {
+  transform: translateX(2px);
+  background: rgba(255, 255, 255, .07);
+  border-color: rgba(255, 255, 255, .08);
+}
+
+.side-nav a.active {
+  background: linear-gradient(100deg, rgba(30, 95, 191, .55), rgba(0, 143, 120, .24));
+  border-color: rgba(125, 211, 252, .2);
+  box-shadow: inset 3px 0 0 #7dd3fc, 0 8px 20px rgba(0, 0, 0, .12);
+}
+
+.secure-note {
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(30, 95, 191, .2), rgba(0, 143, 120, .12));
+  border-color: rgba(125, 211, 252, .18);
+}
+
+.page-area {
+  min-width: 0;
+}
+
+.topbar {
+  min-height: 72px;
+  height: 72px;
+  padding-inline: clamp(18px, 3vw, 38px);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--border) 78%, transparent);
+  box-shadow: 0 8px 24px rgba(16, 42, 70, .04);
+  backdrop-filter: blur(16px);
+}
+
+.top-actions > button,
+.top-actions > a {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border: 1px solid transparent;
+  transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.top-actions > button:hover,
+.top-actions > a:hover {
+  border-color: var(--border);
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+
+.app-main {
+  width: 100%;
+  max-width: 1680px;
+  padding: clamp(24px, 3vw, 38px) clamp(18px, 3vw, 42px) 72px;
+}
+
+.page-heading {
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.page-heading h1 {
+  margin: 5px 0 7px;
+  font-size: clamp(25px, 2.5vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -.045em;
+}
+
+.page-heading p {
+  max-width: 680px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.eyebrow,
+.section-kicker {
+  letter-spacing: .13em;
+}
+
+.btn {
+  min-height: 44px;
+  padding: 10px 17px;
+  border-radius: 12px;
+  border-color: var(--border-strong);
+  font-size: 13px;
+  font-weight: 750;
+  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease;
+}
+
+.btn:not(:disabled):hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, #1e5fbf 0%, #0878ff 58%, #008f78 140%);
+  border-color: #1e5fbf;
+  box-shadow: 0 8px 18px rgba(30, 95, 191, .2);
+}
+
+.btn.primary:not(:disabled):hover {
+  box-shadow: 0 11px 24px rgba(30, 95, 191, .27);
+}
+
+.btn.ghost,
+.btn:not(.primary):not(.danger) {
+  background: color-mix(in srgb, var(--surface) 90%, var(--surface-2));
+}
+
+.btn.danger {
+  border-color: color-mix(in srgb, #dc2626 35%, var(--border));
+  color: #b42318;
+  background: color-mix(in srgb, #dc2626 6%, var(--surface));
+}
+
+.panel,
+.overview-panel,
+.kpi,
+.data-panel,
+.catalog-card,
+.result-card,
+.auth-card,
+.preview-card,
+.empty,
+.state-card,
+.program-card,
+.provider-card,
+.account-card,
+.metric {
+  border-radius: var(--radius-lg);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+.panel,
+.overview-panel,
+.data-panel,
+.catalog-card,
+.result-card,
+.auth-card,
+.preview-card,
+.empty,
+.state-card,
+.program-card,
+.provider-card,
+.account-card,
+.metric {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+}
+
+.panel,
+.overview-panel,
+.catalog-card,
+.result-card,
+.program-card,
+.provider-card,
+.account-card,
+.metric {
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.catalog-card:hover,
+.result-card:hover,
+.program-card:hover,
+.provider-card:hover,
+.account-card:hover {
+  border-color: color-mix(in srgb, var(--blue) 38%, var(--border));
+  box-shadow: 0 18px 42px rgba(16, 42, 70, .12);
+  transform: translateY(-2px);
+}
+
+input:not([type=checkbox]):not([type=radio]),
+select,
+textarea {
+  min-height: 44px;
+  border-color: var(--border-strong);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 96%, var(--surface-2));
+  color: var(--navy);
+  line-height: 1.45;
+}
+
+input:not([type=checkbox]):not([type=radio]):hover,
+select:hover,
+textarea:hover {
+  border-color: color-mix(in srgb, var(--blue) 55%, var(--border-strong));
+}
+
+input:not([type=checkbox]):not([type=radio]):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue) 16%, transparent);
+}
+
+textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+label {
+  color: var(--navy);
+  line-height: 1.4;
+}
+
+table {
+  border-spacing: 0;
+}
+
+tbody tr {
+  transition: background-color .16s ease;
+}
+
+tbody tr:hover td {
+  background: color-mix(in srgb, var(--blue) 4%, var(--surface));
+}
+
+th {
+  padding-block: 14px;
+  background: color-mix(in srgb, var(--surface-2) 70%, var(--surface));
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+
+td {
+  padding-block: 16px;
+}
+
+.icon-button {
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--blue);
+  font-weight: 750;
+}
+
+.icon-button:hover {
+  border-color: color-mix(in srgb, var(--blue) 28%, var(--border));
+  background: color-mix(in srgb, var(--blue) 8%, var(--surface));
+}
+
+.empty-state,
+.empty {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  padding: 44px 22px;
+}
+
+.skeleton {
+  border-radius: 14px;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--surface-2) 75%, var(--surface)) 18%, var(--surface-3) 45%, color-mix(in srgb, var(--surface-2) 75%, var(--surface)) 72%);
+}
+
+.dialog-backdrop,
+.overlay {
+  background: rgba(7, 26, 45, .58);
+  backdrop-filter: blur(6px);
+}
+
+.dialog {
+  border: 1px solid var(--border);
+  box-shadow: -22px 0 70px rgba(7, 26, 45, .22);
+}
+
+.dialog header,
+.dialog > footer {
+  border-color: var(--border);
+}
+
+.toast {
+  right: max(18px, 2vw);
+  bottom: max(18px, 2vw);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 14px;
+  box-shadow: 0 18px 42px rgba(7, 26, 45, .22);
+}
+
+.app-main > * {
+  animation: page-enter .24s ease both;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+html[data-theme=dark] {
+  --canvas: #071426;
+  --surface: #0f2338;
+  --surface-2: #142d48;
+  --surface-3: #1a3a5a;
+  --border: #2c4864;
+  --border-strong: #3f6080;
+  --navy: #edf5fc;
+  --blue: #79b8ff;
+  --teal: #63d7bf;
+  --muted: #9bb0c7;
+  --focus-ring: #7dd3fc;
+}
+
+html[data-theme=dark] body {
+  background:
+    radial-gradient(circle at 8% -8%, rgba(30, 95, 191, .22), transparent 31rem),
+    radial-gradient(circle at 92% 0%, rgba(0, 143, 120, .14), transparent 27rem),
+    var(--canvas);
+}
+
+html[data-theme=dark] .topbar {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border-bottom-color: var(--border);
+}
+
+html[data-theme=dark] .panel,
+html[data-theme=dark] .overview-panel,
+html[data-theme=dark] .data-panel,
+html[data-theme=dark] .catalog-card,
+html[data-theme=dark] .result-card,
+html[data-theme=dark] .auth-card,
+html[data-theme=dark] .preview-card,
+html[data-theme=dark] .empty,
+html[data-theme=dark] .state-card,
+html[data-theme=dark] .program-card,
+html[data-theme=dark] .provider-card,
+html[data-theme=dark] .account-card,
+html[data-theme=dark] .metric {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, .2);
+}
+
+html[data-theme=dark] input:not([type=checkbox]):not([type=radio]),
+html[data-theme=dark] select,
+html[data-theme=dark] textarea {
+  background: #0b1c2f;
+  border-color: var(--border-strong);
+  color: #f8fafc;
+}
+
+html[data-theme=dark] th {
+  background: color-mix(in srgb, var(--surface-2) 72%, var(--surface));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

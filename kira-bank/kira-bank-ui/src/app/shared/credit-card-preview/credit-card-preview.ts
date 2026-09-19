@@ -2,6 +2,7 @@ import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core
 
 @Component({
   selector: 'app-credit-card-preview',
+  imports: [],
   templateUrl: './credit-card-preview.html',
   styleUrl: './credit-card-preview.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

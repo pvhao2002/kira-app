@@ -1,4 +1,0 @@
-app.seed-development-users: false
-app.refresh-cookie-secure: true
-spring.jpa.hibernate.ddl-auto: validate
-logging.level.root: INFO

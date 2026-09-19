@@ -508,3 +508,51 @@
     margin-top: 1px;
   }
 }
+
+/* Keep authentication aligned with the shared Kira Life visual system. */
+:host {
+  background:
+    radial-gradient(circle at 85% 12%, rgba(30, 95, 191, .12), transparent 28rem),
+    var(--canvas, #f3f7fb);
+}
+
+.auth-form-side {
+  background: color-mix(in srgb, var(--surface, #fff) 92%, var(--surface-2, #edf4fb));
+}
+
+.form-header h1 {
+  color: var(--navy, #102a46);
+}
+
+.input-container {
+  min-height: 50px;
+  border-color: var(--border-strong, #bfd0e1);
+  background: color-mix(in srgb, var(--surface, #fff) 90%, var(--surface-2, #edf4fb));
+}
+
+.input-container input {
+  min-height: 48px;
+}
+
+.toggle-password-btn {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.submit-btn {
+  min-height: 50px;
+  background: linear-gradient(135deg, #1e5fbf 0%, #0878ff 58%, #008f78 140%);
+}
+
+.admin-notice {
+  background: color-mix(in srgb, var(--surface-2, #edf4fb) 72%, var(--surface, #fff));
+  border-color: var(--border-strong, #bfd0e1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-orb,
+  .alert,
+  .spinner {
+    animation: none;
+  }
+}

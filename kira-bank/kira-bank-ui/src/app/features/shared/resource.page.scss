@@ -1144,3 +1144,119 @@ tr.billing-row.billing-overdue > td {
     transform: translateY(0);
   }
 }
+
+/* Shared CRUD surfaces: calm hierarchy, stronger focus, and predictable density. */
+.resource-notice {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: var(--radius-md, 14px);
+  background: color-mix(in srgb, var(--blue) 7%, var(--surface));
+  color: var(--navy);
+  line-height: 1.5;
+}
+
+.table-tools {
+  min-height: 76px;
+  margin-bottom: 0;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2, #edf4fb) 42%, var(--surface));
+}
+
+.table-tools .search-box {
+  min-height: 44px;
+  border-color: var(--border-strong, #bfd0e1);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.tool-actions {
+  flex-wrap: wrap;
+}
+
+.tool-btn {
+  min-height: 44px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.filter-panel {
+  margin: 14px 18px 0;
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface-2, #edf4fb) 62%, var(--surface));
+  box-shadow: none;
+}
+
+.filter-panel .filter-chips .chip {
+  min-height: 40px;
+  padding-inline: 13px;
+}
+
+.responsive-table {
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+
+.row-actions {
+  flex-wrap: wrap;
+}
+
+.row-actions .icon-button {
+  min-height: 40px;
+  border-radius: 10px;
+}
+
+.resource-dialog {
+  border-radius: 20px 0 0 20px;
+}
+
+.resource-dialog > header {
+  gap: 18px;
+}
+
+.resource-dialog > header h2 {
+  max-width: 560px;
+  line-height: 1.25;
+}
+
+.resource-form-grid {
+  gap: 20px 18px;
+}
+
+.resource-form-grid label > span {
+  color: var(--navy);
+  letter-spacing: .01em;
+}
+
+.field-error,
+.form-error {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 680px) {
+  .table-tools {
+    align-items: stretch;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .table-tools .search-box,
+  .tool-actions,
+  .tool-actions .tool-btn {
+    width: 100%;
+  }
+
+  .tool-actions .tool-btn {
+    flex: 1;
+  }
+
+  .filter-panel {
+    margin-inline: 12px;
+  }
+
+  .resource-dialog {
+    border-radius: 20px 20px 0 0;
+  }
+}

@@ -4,7 +4,7 @@
 </section>
 <section class="panel users-panel">
   <form class="search" (ngSubmit)="applySearch()">
-    <input [formControl]="search" [placeholder]="t('search')" [attr.aria-label]="t('search')">
+    <input #searchInput [value]="search()" (input)="search.set($any($event.target).value)" [placeholder]="t('search')" [attr.aria-label]="t('search')">
     <button class="btn" type="submit">{{ i18n.t('common.search') }}</button>
   </form>
   @if (loading()) { <p role="status">{{ t('loading') }}</p> }

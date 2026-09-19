@@ -24,7 +24,6 @@ services:
       LOGIN_VISIT_TRUSTED_PROXIES: ${LOGIN_VISIT_TRUSTED_PROXIES:-127.0.0.1/32,::1/128}
       AI_CREDENTIAL_ENCRYPTION_KEY: ${AI_CREDENTIAL_ENCRYPTION_KEY:-}
       INVESTMENT_CREDENTIAL_ENCRYPTION_KEY: ${INVESTMENT_CREDENTIAL_ENCRYPTION_KEY:-}
-      AI_MODEL: ${AI_MODEL:-}
     depends_on:
       mysql: {condition: service_healthy}
     ports: ["8080:8080"]
@@ -40,4 +39,3 @@ services:
     ports: ["4200:80"]
 volumes:
   kira-bank-mysql:
-

@@ -19,6 +19,7 @@ export class AdminUsersPage {
   @ViewChild('createDialog') set createDialog(dialog: ElementRef<HTMLDialogElement> | undefined) {
     if (dialog && !dialog.nativeElement.open) dialog.nativeElement.showModal();
   }
+  @ViewChild('searchInput') private searchInput?: ElementRef<HTMLInputElement>;
   readonly auth = inject(AuthStore);
   readonly i18n = inject(LanguageService);
   private readonly api = inject(ApiService);
@@ -31,7 +32,7 @@ export class AdminUsersPage {
   readonly open = signal(false);
   readonly error = signal('');
   readonly formError = signal('');
-  readonly search = new FormControl('', {nonNullable: true});
+  readonly search = signal('');
   private query = '';
   readonly form = new FormGroup({
     fullName: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(150)]}),
@@ -48,7 +49,12 @@ export class AdminUsersPage {
 
   t(key: string): string { return this.i18n.t(`users.${key}`); }
 
-  applySearch(): void { this.query = this.search.value.trim(); this.load(0); }
+  applySearch(): void {
+    const query = (this.searchInput?.nativeElement.value ?? this.search()).trim();
+    this.search.set(query);
+    this.query = query;
+    this.load(0);
+  }
 
   load(page = 0): void {
     if (!this.auth.admin()) return;
@@ -81,7 +87,7 @@ export class AdminUsersPage {
       phone: value.phone.trim() || null, password: value.password}).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.saving.set(false); this.close(); this.toast.show(this.t('created'), 'success');
-        this.search.reset(); this.query = ''; this.load(0);
+        this.search.set(''); this.query = ''; this.load(0);
       },
       error: e => {
         this.saving.set(false);

@@ -64,7 +64,7 @@
             <div class="usage-bank">
               @if (bank.bankLogoUrl) {
                 <span class="bank-logo-wrap">
-                  <img (error)="hideBrokenLogo($event)" [src]="bank.bankLogoUrl" alt="">
+                  <img (error)="hideBrokenLogo($event)" [src]="bank.bankLogoUrl" ng-img="true" width="42" height="42" loading="lazy" decoding="async" alt="">
                 </span>
               }
               <div>
@@ -112,7 +112,7 @@
                 <span class="mobile-bank-logo" aria-hidden="true">
                   <span class="mobile-bank-fallback">{{ bank.bankName.slice(0, 1) }}</span>
                   @if (bank.bankLogoUrl) {
-                    <img (error)="hideMobileLogo($event)" [src]="bank.bankLogoUrl" alt="">
+                    <img (error)="hideMobileLogo($event)" [src]="bank.bankLogoUrl" ng-img="true" width="42" height="42" loading="lazy" decoding="async" alt="">
                   }
                 </span>
                 <span class="mobile-bank-name">
@@ -247,7 +247,7 @@
                     </svg>
                     @if (bank.bankLogoUrl) {
                       <span class="table-bank-logo">
-                        <img (error)="hideBrokenLogo($event)" [src]="bank.bankLogoUrl" alt="">
+                        <img (error)="hideBrokenLogo($event)" [src]="bank.bankLogoUrl" ng-img="true" width="34" height="34" loading="lazy" decoding="async" alt="">
                       </span>
                     }
                     <span><b>{{ bank.bankName }}</b><small>{{ i18n.t('creditDashboard.cards', {count: bank.cardCount}) }}</small></span>

@@ -1,7 +1,6 @@
 package com.kira.bank.ai.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.kira.bank.ai.AiProviderConfiguration;
 import com.kira.bank.ai.domain.AiProviderAccount;
 import com.kira.bank.ai.domain.AiProviderAccountStatus;
 import com.kira.bank.ai.infrastructure.AiCredentialCipher;
@@ -41,7 +40,6 @@ public class AiProviderAccountService {
     private final AiProviderAccountRepository repository;
     private final AttachmentRepository attachments;
     private final AiCredentialCipher cipher;
-    private final AiProviderConfiguration config;
     private final RestClient cloudflareAiRestClient;
     private final CloudflareR2ClientFactory r2Clients;
 
@@ -61,7 +59,8 @@ public class AiProviderAccountService {
         account.setDisplayName(request.displayName().trim());
         account.setAccountId(accountId);
         account.setApiTokenCiphertext(encryptOrPlaceholder(request.apiToken()));
-        account.setAiModel(valueOrDefault(request.aiModel(), configuredModelOrDefault()));
+        // The selected model is persisted per Cloudflare account. Runtime calls never read a model from env.
+        account.setAiModel(valueOrDefault(request.aiModel(), DEFAULT_MODEL));
         account.setPriority(request.priority());
         account.setEnabled(false);
         account.setHealthStatus(AiProviderAccountStatus.PENDING_TEST);
@@ -440,15 +439,8 @@ public class AiProviderAccountService {
     }
 
     private String effectiveModel(AiProviderAccount account) {
-        return valueOrDefault(configuredModel(), valueOrDefault(account.getAiModel(), DEFAULT_MODEL));
-    }
-
-    private String configuredModelOrDefault() {
-        return valueOrDefault(configuredModel(), DEFAULT_MODEL);
-    }
-
-    private String configuredModel() {
-        return blank(config.model()) ? null : config.model().trim();
+        String model = account.getAiModel();
+        return blank(model) ? null : model.trim();
     }
 
     private String normalized(String value) {

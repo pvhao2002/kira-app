@@ -249,9 +249,23 @@ export class ResourcePage {
     return this.definition.actions ?? [];
   }
 
+  get hasStatusFilter(): boolean {
+    return this.definition.statusFilterOptions === undefined || this.definition.statusFilterOptions.length > 0;
+  }
+
+  get statusFilterOptions(): Array<{value: string; labelKey: string}> {
+    const options = this.definition.statusFilterOptions ?? [
+      {value: 'ACTIVE', labelKey: 'option.active'},
+      {value: 'INACTIVE', labelKey: 'option.inactive'},
+      {value: 'CLOSED', labelKey: 'option.closed'}
+    ];
+    return options.map(option => ({value: String(option.value), labelKey: option.labelKey}));
+  }
+
   get flowLabel(): string {
     return this.i18n.t(this.flow === 'credit' ? 'resource.flowCredit'
-      : this.flow === 'investment' ? 'resource.flowInvestment' : 'resource.flowSystem');
+      : this.flow === 'investment' ? 'resource.flowInvestment'
+        : this.flow === 'personal' ? 'resource.flowPersonal' : 'resource.flowSystem');
   }
 
   get title(): string {
@@ -762,7 +776,9 @@ export class ResourcePage {
     this.saving.set(true);
     this.formError.set('');
     const request = method === 'put' ? this.api.put(path, body)
-      : method === 'patch' ? this.api.patch(path, body) : this.api.post(path, body, idempotent);
+      : method === 'patch' ? this.api.patch(path, body)
+        : method === 'delete' ? this.api.delete(path, body)
+          : this.api.post(path, body, idempotent);
     request.pipe(finalize(() => this.saving.set(false))).subscribe({
       next: () => {
         this.toast.show(this.i18n.t('form.saved'), 'success');

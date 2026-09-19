@@ -259,8 +259,10 @@ export const englishTranslations = {
   'aiProviders.bucketKeep': 'Leave blank to keep the current bucket.',
   'aiProviders.publicUrl': 'Public URL (optional)',
   'aiProviders.files': 'Stored files',
-  'aiProviders.testAi': 'Test AI',
-  'aiProviders.testR2': 'Test R2',
+  'aiProviders.testAi': 'Test AI connection',
+  'aiProviders.testR2': 'Test R2 connection',
+  'aiProviders.aiCredentialHint': 'Add and save the Workers AI API token before testing.',
+  'aiProviders.r2CredentialHint': 'Add and save the R2 Access Key ID, Secret Access Key, and bucket before testing.',
   'aiProviders.aiTestPassed': 'Workers AI credential and model verified.',
   'aiProviders.r2TestPassed': 'R2 upload, read and delete verified.',
   'aiProviders.makePrimary': 'Make primary',
@@ -477,6 +479,37 @@ export const englishTranslations = {
   ,'field.phoneNumber': 'Phone number'
   ,'field.registerDate': 'Register date'
   ,'field.accountPassword': 'Account password'
+  ,'field.songTitle': 'Song title'
+  ,'field.artist': 'Artist'
+  ,'field.genre': 'Genre'
+  ,'field.karaokeCode': 'Karaoke code'
+  ,'field.tone': 'Tone / key'
+  ,'field.musicLink': 'Music link'
+  ,'field.companyName': 'Company'
+  ,'field.positionTitle': 'Position'
+  ,'field.location': 'Location'
+  ,'field.jobUrl': 'Job link'
+  ,'field.salary': 'Salary range'
+  ,'field.employmentType': 'Employment type'
+  ,'field.priority': 'Priority'
+  ,'field.deadline': 'Application deadline'
+  ,'field.contactName': 'Contact name'
+  ,'field.contactEmail': 'Contact email'
+  ,'option.fullTime': 'Full-time'
+  ,'option.partTime': 'Part-time'
+  ,'option.contract': 'Contract'
+  ,'option.freelance': 'Freelance'
+  ,'option.internship': 'Internship'
+  ,'option.other': 'Other'
+  ,'job.statusSaved': 'Saved'
+  ,'job.statusApplied': 'Applied'
+  ,'job.statusInterview': 'Interview'
+  ,'job.statusOffer': 'Offer'
+  ,'job.statusRejected': 'Rejected'
+  ,'job.statusWithdrawn': 'Withdrawn'
+  ,'job.priorityLow': 'Low'
+  ,'job.priorityMedium': 'Medium'
+  ,'job.priorityHigh': 'High'
   ,'datepicker.selectDate': 'Select date'
   ,'datepicker.selectDateTime': 'Select date & time'
   ,'datepicker.selectDatePlaceholder': 'Select date...'
@@ -734,6 +767,25 @@ export const englishTranslations = {
   ,'passwordManager.locked': 'Password vault locked.'
   ,'passwordManager.actionFailed': 'The password vault action could not be completed.'
   ,'route.tutorSchedule': 'Tutor schedule'
+  ,'route.favoriteSongs': 'Favorite karaoke songs'
+  ,'route.jobApplications': 'Job tracker'
+  ,'shell.groupPersonal': 'PERSONAL LIFE'
+  ,'shell.favoriteSongs': 'Favorite songs'
+  ,'shell.jobApplications': 'Job tracker'
+  ,'resource.flowPersonal': 'PERSONAL LIFE'
+  ,'common.delete': 'Delete'
+  ,'form.addFavoriteSong': 'Add favorite song'
+  ,'form.addFavoriteSongDescription': 'Save the song details you need for your next karaoke session.'
+  ,'form.editFavoriteSong': 'Edit favorite song'
+  ,'form.editFavoriteSongDescription': 'Keep your karaoke reference information up to date.'
+  ,'form.addJob': 'Add job to tracker'
+  ,'form.addJobDescription': 'Keep a clear record of opportunities you may apply for.'
+  ,'form.editJob': 'Edit job'
+  ,'form.editJobDescription': 'Update the opportunity, application status and next details.'
+  ,'karaoke.deleteConfirm': 'Delete this favorite song?'
+  ,'job.deleteConfirm': 'Delete this job from your tracker?'
+  ,'job.status': 'Job status'
+  ,'job.priority': 'Job priority'
   ,'shell.groupTutor': 'TUTORING'
   ,'shell.tutorSchedule': 'Teaching schedule'
   ,'tutor.eyebrow': 'PERSONAL TUTORING'
@@ -1065,8 +1117,10 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'aiProviders.bucketKeep': 'Để trống để giữ bucket hiện tại.',
   'aiProviders.publicUrl': 'Public URL (không bắt buộc)',
   'aiProviders.files': 'File đang lưu',
-  'aiProviders.testAi': 'Test AI',
-  'aiProviders.testR2': 'Test R2',
+  'aiProviders.testAi': 'Kiểm tra kết nối AI',
+  'aiProviders.testR2': 'Kiểm tra kết nối R2',
+  'aiProviders.aiCredentialHint': 'Hãy nhập và lưu API token Workers AI trước khi kiểm tra.',
+  'aiProviders.r2CredentialHint': 'Hãy nhập và lưu Access Key ID, Secret Access Key và bucket R2 trước khi kiểm tra.',
   'aiProviders.aiTestPassed': 'Đã xác minh Workers AI credential và model.',
   'aiProviders.r2TestPassed': 'Đã xác minh quyền upload, đọc và xóa trên R2.',
   'aiProviders.makePrimary': 'Chọn làm primary',
@@ -1283,6 +1337,37 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'field.phoneNumber': 'Số điện thoại'
   ,'field.registerDate': 'Ngày đăng ký'
   ,'field.accountPassword': 'Mật khẩu tài khoản'
+  ,'field.songTitle': 'Tên bài hát'
+  ,'field.artist': 'Ca sĩ'
+  ,'field.genre': 'Thể loại'
+  ,'field.karaokeCode': 'Mã karaoke'
+  ,'field.tone': 'Tone / tông'
+  ,'field.musicLink': 'Link bài hát'
+  ,'field.companyName': 'Công ty'
+  ,'field.positionTitle': 'Vị trí tuyển dụng'
+  ,'field.location': 'Địa điểm'
+  ,'field.jobUrl': 'Link công việc'
+  ,'field.salary': 'Mức lương'
+  ,'field.employmentType': 'Loại hình làm việc'
+  ,'field.priority': 'Độ ưu tiên'
+  ,'field.deadline': 'Hạn ứng tuyển'
+  ,'field.contactName': 'Người liên hệ'
+  ,'field.contactEmail': 'Email liên hệ'
+  ,'option.fullTime': 'Toàn thời gian'
+  ,'option.partTime': 'Bán thời gian'
+  ,'option.contract': 'Hợp đồng'
+  ,'option.freelance': 'Freelance'
+  ,'option.internship': 'Thực tập'
+  ,'option.other': 'Khác'
+  ,'job.statusSaved': 'Đã lưu'
+  ,'job.statusApplied': 'Đã ứng tuyển'
+  ,'job.statusInterview': 'Phỏng vấn'
+  ,'job.statusOffer': 'Offer'
+  ,'job.statusRejected': 'Từ chối'
+  ,'job.statusWithdrawn': 'Đã rút hồ sơ'
+  ,'job.priorityLow': 'Thấp'
+  ,'job.priorityMedium': 'Trung bình'
+  ,'job.priorityHigh': 'Cao'
   ,'datepicker.selectDate': 'Chọn ngày'
   ,'datepicker.selectDateTime': 'Chọn ngày & giờ'
   ,'datepicker.selectDatePlaceholder': 'Chọn ngày...'
@@ -1540,6 +1625,25 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'passwordManager.locked': 'Password vault đã khóa.'
   ,'passwordManager.actionFailed': 'Không thể hoàn tất thao tác password vault.'
   ,'route.tutorSchedule': 'Lịch dạy gia sư'
+  ,'route.favoriteSongs': 'Bài hát karaoke yêu thích'
+  ,'route.jobApplications': 'Theo dõi việc làm'
+  ,'shell.groupPersonal': 'ĐỜI SỐNG CÁ NHÂN'
+  ,'shell.favoriteSongs': 'Bài hát yêu thích'
+  ,'shell.jobApplications': 'Theo dõi việc làm'
+  ,'resource.flowPersonal': 'ĐỜI SỐNG CÁ NHÂN'
+  ,'common.delete': 'Xóa'
+  ,'form.addFavoriteSong': 'Thêm bài hát yêu thích'
+  ,'form.addFavoriteSongDescription': 'Lưu thông tin cần thiết cho lần đi karaoke tiếp theo.'
+  ,'form.editFavoriteSong': 'Sửa bài hát yêu thích'
+  ,'form.editFavoriteSongDescription': 'Cập nhật thông tin tham khảo khi hát karaoke.'
+  ,'form.addJob': 'Thêm job vào danh sách'
+  ,'form.addJobDescription': 'Lưu lại các cơ hội bạn đang cân nhắc để ứng tuyển.'
+  ,'form.editJob': 'Sửa thông tin job'
+  ,'form.editJobDescription': 'Cập nhật cơ hội, trạng thái ứng tuyển và thông tin liên quan.'
+  ,'karaoke.deleteConfirm': 'Xóa bài hát yêu thích này?'
+  ,'job.deleteConfirm': 'Xóa job này khỏi danh sách?'
+  ,'job.status': 'Trạng thái job'
+  ,'job.priority': 'Độ ưu tiên job'
   ,'shell.groupTutor': 'GIA SƯ'
   ,'shell.tutorSchedule': 'Lịch dạy'
   ,'tutor.eyebrow': 'GIA SƯ CÁ NHÂN'

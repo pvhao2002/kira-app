@@ -35,12 +35,13 @@ public class SecurityConfig {
             }).sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(h -> h.contentSecurityPolicy(c -> c.policyDirectives("default-src 'self'; frame-ancestors 'none'")))
             .exceptionHandling(e -> e.authenticationEntryPoint((request, response, failure) -> {
-                // The companion refreshes an expired access token on 401; preserve legacy behavior elsewhere.
+                // The web client refreshes an expired access token on 401. Keep 403 for authenticated users
+                // that lack the required role.
                 if (request.getRequestURI().startsWith("/api/v1/health")) {
                     response.setStatus(401);
                     response.setContentType("application/json");
                     response.getWriter().write("{\"code\":\"UNAUTHORIZED\"}");
-                } else response.sendError(403);
+                } else response.sendError(401);
             }))
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/actuator/health", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
@@ -67,4 +68,3 @@ public class SecurityConfig {
         return source;
     }
 }
-

@@ -18,6 +18,10 @@ Các request tài chính quan trọng cần header `Idempotency-Key` là UUID do
 
 Nhóm chính: `/api/v1/auth`, `/api/v1/public/banks`, `/api/v1/credit-cards`, `/api/v1/statements`, `/api/v1/payments`, `/api/v1/dashboards/credit-cards`, `/api/v1/investment/accounts`, `/api/v1/attachments` và `/api/v1/lodgings`.
 
+## Cá nhân: karaoke và việc làm
+
+Xem [Personal life records](personal-life.md) cho danh sách bài hát karaoke yêu thích và job chuẩn bị ứng tuyển. Hai nhóm API là private theo user, có CRUD, tìm kiếm và optimistic locking.
+
 ## Tìm trọ
 
 `/api/v1/lodgings` là danh sách dùng chung cho mọi user đã đăng nhập. `POST` và `PUT` nhận địa chỉ, `rentPrice`, các khoản phí tùy chọn dạng `{ amount, unit }`, liên hệ, note, 1–10 `referenceLocationIds` và `version` khi cập nhật. Chủ tin hoặc `ROLE_ADMIN` mới được sửa/xóa, nhưng mọi user đều có thể xem và review.

@@ -38,7 +38,7 @@
     </select>
     <div class="selected-card">
       <div class="bank-logo">
-        @if (card.bankLogoUrl) { <img [src]="card.bankLogoUrl" [alt]="card.bankName"> }
+        @if (card.bankLogoUrl) { <img [src]="card.bankLogoUrl" ng-img="true" width="32" height="32" loading="lazy" decoding="async" [alt]="card.bankName"> }
         @else { <app-icon name="bank"/> }
       </div>
       <div>

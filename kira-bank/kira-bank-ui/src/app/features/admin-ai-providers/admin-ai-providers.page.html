@@ -26,9 +26,10 @@
               @if (account.ai.lastErrorCode) { <div><dt>{{ i18n.t('aiProviders.lastError') }}</dt><dd><code>{{ account.ai.lastErrorCode }}</code></dd></div> }
             </dl>
             <footer>
-              <button type="button" [disabled]="actingId() === account.id || !account.ai.tokenConfigured" (click)="testAi(account)">{{ i18n.t('aiProviders.testAi') }}</button>
-              <button type="button" [disabled]="actingId() === account.id || (!account.ai.enabled && account.ai.status !== 'VERIFIED')" (click)="toggleAi(account)">{{ i18n.t(account.ai.enabled ? 'aiProviders.disable' : 'aiProviders.enable') }}</button>
+              <button class="btn primary test-action" type="button" [disabled]="actingId() === account.id || !account.ai.tokenConfigured" (click)="testAi(account)">{{ i18n.t('aiProviders.testAi') }}</button>
+              <button class="btn secondary-action" type="button" [disabled]="actingId() === account.id || (!account.ai.enabled && account.ai.status !== 'VERIFIED')" (click)="toggleAi(account)">{{ i18n.t(account.ai.enabled ? 'aiProviders.disable' : 'aiProviders.enable') }}</button>
             </footer>
+            @if (!account.ai.tokenConfigured) { <p class="capability-hint">{{ i18n.t('aiProviders.aiCredentialHint') }}</p> }
           </section>
 
           <section class="capability">
@@ -41,13 +42,14 @@
               @if (account.r2.lastErrorCode) { <div><dt>{{ i18n.t('aiProviders.lastError') }}</dt><dd><code>{{ account.r2.lastErrorCode }}</code></dd></div> }
             </dl>
             <footer>
-              <button type="button" [disabled]="actingId() === account.id || !account.r2.accessKeyConfigured || !account.r2.secretKeyConfigured" (click)="testR2(account)">{{ i18n.t('aiProviders.testR2') }}</button>
-              <button type="button" [disabled]="actingId() === account.id || (!account.r2.primary && account.r2.status !== 'VERIFIED')" (click)="toggleR2Primary(account)">{{ i18n.t(account.r2.primary ? 'aiProviders.stopUploads' : 'aiProviders.makePrimary') }}</button>
-              @if (account.legacyAttachmentCount > 0) { <button type="button" [disabled]="actingId() === account.id || account.r2.status !== 'VERIFIED'" (click)="adoptLegacy(account)">{{ i18n.t('aiProviders.adoptLegacy') }} ({{ account.legacyAttachmentCount }})</button> }
+              <button class="btn primary test-action" type="button" [disabled]="actingId() === account.id || !account.r2.accessKeyConfigured || !account.r2.secretKeyConfigured || !account.r2.maskedBucketName" (click)="testR2(account)">{{ i18n.t('aiProviders.testR2') }}</button>
+              <button class="btn secondary-action" [class.danger-action]="account.r2.primary" type="button" [disabled]="actingId() === account.id || (!account.r2.primary && account.r2.status !== 'VERIFIED')" (click)="toggleR2Primary(account)">{{ i18n.t(account.r2.primary ? 'aiProviders.stopUploads' : 'aiProviders.makePrimary') }}</button>
+              @if (account.legacyAttachmentCount > 0) { <button class="btn secondary-action" type="button" [disabled]="actingId() === account.id || account.r2.status !== 'VERIFIED'" (click)="adoptLegacy(account)">{{ i18n.t('aiProviders.adoptLegacy') }} ({{ account.legacyAttachmentCount }})</button> }
             </footer>
+            @if (!account.r2.accessKeyConfigured || !account.r2.secretKeyConfigured || !account.r2.maskedBucketName) { <p class="capability-hint">{{ i18n.t('aiProviders.r2CredentialHint') }}</p> }
           </section>
 
-          <footer class="account-actions"><button class="danger" type="button" [disabled]="actingId() === account.id || account.r2.attachmentCount > 0" (click)="remove(account)">{{ i18n.t('aiProviders.delete') }}</button></footer>
+          <footer class="account-actions"><button class="btn danger-action" type="button" [disabled]="actingId() === account.id || account.r2.attachmentCount > 0" (click)="remove(account)">{{ i18n.t('aiProviders.delete') }}</button></footer>
         </article>
       }
     </div>

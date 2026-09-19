@@ -46,7 +46,7 @@ export interface SelectOption {
         (click)="toggleOpen()">
         <div class="selected-content">
           @if (selectedOption()?.iconUrl) {
-            <img [src]="selectedOption()!.iconUrl" class="trigger-icon-img" alt="">
+            <img [src]="selectedOption()!.iconUrl!" ng-img="true" width="26" height="17" loading="lazy" decoding="async" class="trigger-icon-img" alt="">
           }
           <span class="selected-text" [class.is-placeholder]="selectedValue() === null || selectedValue() === undefined">
             {{ selectedLabel() }}
@@ -90,7 +90,7 @@ export interface SelectOption {
                 [class.is-selected]="isSelected(opt.value)"
                 (click)="selectOption(opt, $event)">
                 @if (opt.iconUrl) {
-                  <img [src]="opt.iconUrl" class="option-icon-img" alt="">
+                  <img [src]="opt.iconUrl!" ng-img="true" width="28" height="18" loading="lazy" decoding="async" class="option-icon-img" alt="">
                 }
                 <div class="option-label-group">
                   <span class="option-label">{{ opt.label }}</span>

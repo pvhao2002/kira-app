@@ -17,13 +17,15 @@
   <div class="table-tools">
     <div class="search-box">
       <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input [value]="searchQuery()" (input)="onSearchInput($any($event.target).value)" [placeholder]="i18n.t('resource.searchPlaceholder')">
+      <input [attr.aria-label]="i18n.t('resource.searchPlaceholder')" [value]="searchQuery()" (input)="onSearchInput($any($event.target).value)" [placeholder]="i18n.t('resource.searchPlaceholder')">
     </div>
     <div class="tool-actions">
-      <button (click)="toggleFilter()" [class.active]="showFilterPanel() || selectedStatus() !== 'ALL'" class="btn tool-btn" type="button">
-        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-        <span>{{ i18n.t('common.filter') }}</span>
-      </button>
+      @if (hasStatusFilter) {
+        <button (click)="toggleFilter()" [class.active]="showFilterPanel() || selectedStatus() !== 'ALL'" class="btn tool-btn" type="button">
+          <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          <span>{{ i18n.t('common.filter') }}</span>
+        </button>
+      }
       <button (click)="exportData()" class="btn tool-btn" type="button">
         <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y1="3"/></svg>
         <span>{{ i18n.t('common.export') }}</span>
@@ -39,18 +41,14 @@
           {{ i18n.t('field.status') }}:
         </span>
         <div class="filter-chips">
-          <button (click)="setStatusFilter('ALL')" [class.active]="selectedStatus() === 'ALL'" class="chip">
+          <button (click)="setStatusFilter('ALL')" [attr.aria-pressed]="selectedStatus() === 'ALL'" [class.active]="selectedStatus() === 'ALL'" class="chip" type="button">
             {{ i18n.t('common.all') }}
           </button>
-          <button (click)="setStatusFilter('ACTIVE')" [class.active]="selectedStatus() === 'ACTIVE'" class="chip active-chip">
-            <span class="dot active"></span> ACTIVE
-          </button>
-          <button (click)="setStatusFilter('INACTIVE')" [class.active]="selectedStatus() === 'INACTIVE'" class="chip inactive-chip">
-            <span class="dot inactive"></span> INACTIVE
-          </button>
-          <button (click)="setStatusFilter('CLOSED')" [class.active]="selectedStatus() === 'CLOSED'" class="chip closed-chip">
-            <span class="dot closed"></span> CLOSED
-          </button>
+          @for (option of statusFilterOptions; track option.value) {
+            <button (click)="setStatusFilter(option.value)" [attr.aria-pressed]="selectedStatus() === option.value" [class.active]="selectedStatus() === option.value" class="chip active-chip" type="button">
+              {{ i18n.t(option.labelKey) }}
+            </button>
+          }
         </div>
       </div>
 
@@ -112,7 +110,7 @@
                   <div class="bank-group-summary">
                     <div class="bank-group-identity">
                       @if (group.bankLogoUrl) {
-                        <img [src]="group.bankLogoUrl" (error)="hideBrokenImage($event)" alt="">
+                        <img [src]="group.bankLogoUrl" ng-img="true" width="42" height="30" loading="lazy" decoding="async" (error)="hideBrokenImage($event)" alt="">
                       }
                       <div>
                         <strong>{{ group.bankName }}</strong>
@@ -236,7 +234,7 @@
                     @if (columnKind(column) === 'bank') {
                       <span class="bank-table-cell">
                         @if (columnImage(row, column); as logoUrl) {
-                          <img [src]="logoUrl" (error)="hideBrokenImage($event)" alt="">
+                          <img [src]="logoUrl" ng-img="true" width="32" height="22" loading="lazy" decoding="async" (error)="hideBrokenImage($event)" alt="">
                         }
                         <span class="bank-table-copy">
                           <span>{{ display(row[column]) }}</span>
@@ -317,7 +315,7 @@
             <header class="mobile-bank-header">
               <div class="bank-group-identity">
                 @if (group.bankLogoUrl) {
-                  <img [src]="group.bankLogoUrl" (error)="hideBrokenImage($event)" alt="">
+                  <img [src]="group.bankLogoUrl" ng-img="true" width="42" height="42" loading="lazy" decoding="async" (error)="hideBrokenImage($event)" alt="">
                 }
                 <div>
                   <strong>{{ group.bankName }}</strong>
@@ -572,7 +570,7 @@
       }
 
       @if (formError()) {
-        <div class="form-error">{{ formError() }}</div>
+        <div class="form-error" role="alert">{{ formError() }}</div>
       }
 
       <footer>

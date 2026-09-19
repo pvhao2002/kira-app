@@ -8,6 +8,8 @@ Module **Sức khỏe** bổ sung hồ sơ cơ thể, BMI, mục tiêu calo, k�
 
 Module **Du lịch** dành cho web tại `/app/travel`: quản lý chuyến đi, lịch trình, checklist hành lý, chia chi phí nhóm, lưu vé/booking, bản đồ địa điểm và đếm ngược ngày khởi hành. Xem [API và quy tắc Du lịch](docs/api/travel.md).
 
+Module **Cá nhân** bổ sung `/app/karaoke` và `/app/job-applications` trên web cùng hai màn hình tương ứng trong mobile: lưu bài hát karaoke yêu thích và theo dõi các cơ hội việc làm đang chuẩn bị ứng tuyển. Xem [API Personal life](docs/api/personal-life.md).
+
 - `kira-bank-service`: Java 25, Spring Boot 3.5, Security/JWT, JPA, Flyway, MySQL, OpenAPI.
 - `kira-bank-ui`: Angular 22 standalone, strict TypeScript, Signals, lazy routes, responsive light/dark UI.
 - `kira-life-ios`: SwiftUI + HealthKit, iPhone iOS 17+, chỉ đăng nhập và đồng bộ; kế hoạch và nhật ký quản lý trên web.
@@ -85,6 +87,7 @@ Chỉ được tạo khi `app.seed-development-users=true` (mặc định develo
 - `V13__remove_legacy_financial_tables.sql`: hard-delete 13 bảng nghiệp vụ cũ và chuyển `investment_accounts` thành hồ sơ tối giản. Cần backup dữ liệu trước deploy nếu muốn lưu lịch sử.
 - `V14__create_investment_transaction_import.sql`: tạo transaction history, batch/file/item staging, source links, dedup constraints và metadata retention cho attachment. Không phục hồi balance/ledger đã xóa.
 - `V19__unify_cloudflare_accounts_and_r2.sql`: hợp nhất cấu hình Workers AI/R2 và gắn attachment với đúng R2 account.
+- `V31__create_karaoke_and_job_tracker.sql`: tạo danh sách bài hát karaoke yêu thích và job tracker cá nhân, độc lập với các domain tài chính.
 
 ## Troubleshooting
 

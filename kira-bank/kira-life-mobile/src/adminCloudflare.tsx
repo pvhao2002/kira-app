@@ -258,7 +258,7 @@ export function AdminCloudflare() {
                                                                                  value={form.aiModel}
                                                                                  onChangeText={value => change('aiModel', value)}
                                                                                  maxLength={180}
-                                                                                 placeholder={t('Để trống để dùng AI_MODEL từ env')}/><Field
+                                                                                 placeholder={t('Nhập model Cloudflare AI')}/><Field
       label={t('AI priority')} value={form.priority}
       onChangeText={value => change('priority', value.replace(/[^0-9]/g, ''))} keyboardType="number-pad"/><Section
       title={t('Cấu hình R2')}/><Field label={t('R2 access key')} value={form.r2AccessKeyId}
@@ -289,7 +289,7 @@ export function AdminCloudflare() {
         onAdoptLegacy={() => setPendingAdopt(account)} onDelete={() => setPendingDelete(account)}/>) :
       <Empty title={t('Chưa có Cloudflare account')}
              description={t('Tạo account, Test AI và Test R2 trước khi bật hạ tầng cho Investment.')}/>}
-    <Info>{t('AI_MODEL trong env vẫn là cấu hình ưu tiên toàn cục; model riêng chỉ dùng khi env không ghi đè.')}</Info>
+    <Info>{t('Model AI được lưu riêng trong DB cho từng Cloudflare account.')}</Info>
     <Dialog visible={!!pendingDelete} title={t('Xóa Cloudflare account?')}
             message={t('Chỉ xóa account không còn file R2. Hành động này không thể hoàn tác.')}
             onClose={() => setPendingDelete(null)} onConfirm={confirmDelete} confirmLabel={t('Xóa')}/>

@@ -60,7 +60,7 @@ describe('InvestmentTransactionPage', () => {
     const tooMany = Array.from({length: 10}, (_, index) =>
       new File(['x'], `receipt-${index}.png`, {type: 'image/png'}));
     component.chooseFiles({target: {files: tooMany, value: ''}} as unknown as Event);
-    expect(component.error()).toContain('tối đa 10 ảnh');
+    expect(component.error()).toContain('up to 10 files');
   });
 
   it('shows editable preview and applies conflict resolution', () => {

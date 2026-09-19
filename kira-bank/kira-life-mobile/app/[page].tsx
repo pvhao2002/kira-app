@@ -29,6 +29,7 @@ import {HealthDashboard, HealthProfileEditor} from '../src/health';
 import {PasswordVault} from '../src/passwordVault';
 import {TutoringSchedule} from '../src/tutoring';
 import {Lodging} from '../src/lodging';
+import {FavoriteSongs, JobTracker} from '../src/personal';
 import {Empty, Screen} from '../src/ui';
 import {useT} from '../src/i18n';
 
@@ -81,6 +82,10 @@ export default function DetailRoute() {
         return <TutoringSchedule/>;
       case 'lodging':
         return <Lodging/>;
+      case 'favorite-songs':
+        return <FavoriteSongs/>;
+      case 'job-tracker':
+        return <JobTracker/>;
       case 'profile-settings':
         return <ProfileSettings/>;
       case 'statement-pay':

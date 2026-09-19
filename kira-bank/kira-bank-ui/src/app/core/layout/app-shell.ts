@@ -19,7 +19,7 @@ interface NavItem {
 
 interface NavGroup {
   labelKey: TranslationKey;
-  flow: 'credit' | 'investment' | 'lodging' | 'tutor' | 'health' | 'travel' | 'system';
+  flow: 'credit' | 'investment' | 'personal' | 'lodging' | 'tutor' | 'health' | 'travel' | 'system';
   items: NavItem[]
 }
 
@@ -106,6 +106,12 @@ export class AppShell {
           {labelKey: 'shell.accounts', icon: 'account', path: '/app/investment/accounts'},
           {labelKey: 'shell.investmentTransactions', icon: 'receipt', path: '/app/investment/transactions'},
           {labelKey: 'shell.investmentAiQueue', icon: 'monitor', path: '/app/investment/ai-queue'}
+        ]
+      },
+      {
+        labelKey: 'shell.groupPersonal', flow: 'personal', items: [
+          {labelKey: 'shell.favoriteSongs', icon: 'star', path: '/app/karaoke'},
+          {labelKey: 'shell.jobApplications', icon: 'calendar', path: '/app/job-applications'}
         ]
       },
       {

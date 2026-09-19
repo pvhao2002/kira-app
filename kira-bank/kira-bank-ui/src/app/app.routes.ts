@@ -76,6 +76,16 @@ export const routes: Routes = [
           .then(m => m.TutorSchedulePage),
         data: {titleKey: 'route.tutorSchedule'}
       },
+      {
+        path: 'karaoke',
+        loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage),
+        data: {resourceKey: 'favoriteSongs', titleKey: 'route.favoriteSongs'}
+      },
+      {
+        path: 'job-applications',
+        loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage),
+        data: {resourceKey: 'jobApplications', titleKey: 'route.jobApplications'}
+      },
       ...resourceRoutes(),
       {
         path: 'admin/users',

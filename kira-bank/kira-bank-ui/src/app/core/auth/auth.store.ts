@@ -1,6 +1,6 @@
 import {computed, inject, Injectable, signal} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {Observable, tap} from 'rxjs';
+import {finalize, Observable, shareReplay, tap} from 'rxjs';
 import {AuthResponse, Profile} from '../../shared/models/api.models';
 
 @Injectable({providedIn: 'root'})
@@ -9,6 +9,7 @@ export class AuthStore {
   private readonly tokenState = signal<string | null>(null);
   readonly token = this.tokenState.asReadonly();
   private readonly userState = signal<Profile | null>(null);
+  private refreshInFlight: Observable<AuthResponse> | null = null;
   readonly user = this.userState.asReadonly();
   readonly authenticated = computed(() => this.userState() !== null);
   readonly admin = computed(() => this.userState()?.roles.includes('ROLE_ADMIN') ?? false);
@@ -18,7 +19,14 @@ export class AuthStore {
   }
 
   refresh(): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>('/api/v1/auth/refresh', {}, {withCredentials: true}).pipe(tap(r => this.accept(r)));
+    if (this.refreshInFlight) return this.refreshInFlight;
+
+    this.refreshInFlight = this.http.post<AuthResponse>('/api/v1/auth/refresh', {}, {withCredentials: true}).pipe(
+      tap(r => this.accept(r)),
+      finalize(() => this.refreshInFlight = null),
+      shareReplay({bufferSize: 1, refCount: true})
+    );
+    return this.refreshInFlight;
   }
 
   logout(): Observable<void> {
@@ -35,4 +43,3 @@ export class AuthStore {
     this.userState.set(r.user);
   }
 }
-

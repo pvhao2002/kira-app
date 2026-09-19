@@ -1,7 +1,7 @@
-export type ResourceFlow = 'credit' | 'investment' | 'system';
+export type ResourceFlow = 'credit' | 'investment' | 'personal' | 'system';
 export type ResourceFieldType = 'text' | 'textarea' | 'number' | 'money' | 'percentage' | 'date' | 'datetime' | 'select' | 'hidden';
 export type LookupKey = 'banks';
-export type RequestMethod = 'post' | 'put' | 'patch';
+export type RequestMethod = 'post' | 'put' | 'patch' | 'delete';
 export type ResourceColumnKind = 'text' | 'status' | 'bank' | 'money' | 'dayOfMonth' | 'billing';
 
 export interface ResourceColumn {
@@ -70,6 +70,7 @@ export interface ResourceDefinition {
   create?: ResourceFormDefinition;
   edit?: ResourceFormDefinition;
   actions?: ResourceActionDefinition[];
+  statusFilterOptions?: SelectOption[];
   readOnlyKey?: string;
   columns?: ResourceColumn[];
   rowHighlightField?: string;
@@ -134,6 +135,74 @@ const accountFields: ResourceField[] = [
   {name: 'accountPassword', labelKey: 'field.accountPassword', type: 'text', required: true, maxLength: 100},
   {name: 'currency', labelKey: 'field.currency', type: 'select', options: currencyOptions, defaultValue: 'VND', required: true, readonlyOnEdit: true}
 ];
+
+const favoriteSongFields: ResourceField[] = [
+  {name: 'title', labelKey: 'field.songTitle', type: 'text', required: true, maxLength: 255},
+  {name: 'artist', labelKey: 'field.artist', type: 'text', maxLength: 255},
+  {name: 'genre', labelKey: 'field.genre', type: 'text', maxLength: 100},
+  {name: 'karaokeCode', labelKey: 'field.karaokeCode', type: 'text', maxLength: 100},
+  {name: 'tone', labelKey: 'field.tone', type: 'text', maxLength: 50},
+  {name: 'link', labelKey: 'field.musicLink', type: 'text', maxLength: 1000},
+  {name: 'note', labelKey: 'field.note', type: 'textarea', maxLength: 10000}
+];
+
+const jobFields: ResourceField[] = [
+  {name: 'companyName', labelKey: 'field.companyName', type: 'text', required: true, maxLength: 255},
+  {name: 'positionTitle', labelKey: 'field.positionTitle', type: 'text', required: true, maxLength: 255},
+  {name: 'location', labelKey: 'field.location', type: 'text', maxLength: 255},
+  {name: 'jobUrl', labelKey: 'field.jobUrl', type: 'text', maxLength: 1000},
+  {name: 'salary', labelKey: 'field.salary', type: 'text', maxLength: 255},
+  {
+    name: 'employmentType', labelKey: 'field.employmentType', type: 'select', options: [
+      {value: 'FULL_TIME', labelKey: 'option.fullTime'},
+      {value: 'PART_TIME', labelKey: 'option.partTime'},
+      {value: 'CONTRACT', labelKey: 'option.contract'},
+      {value: 'FREELANCE', labelKey: 'option.freelance'},
+      {value: 'INTERNSHIP', labelKey: 'option.internship'},
+      {value: 'OTHER', labelKey: 'option.other'}
+    ]
+  },
+  {
+    name: 'status', labelKey: 'field.status', type: 'select', required: true, defaultValue: 'SAVED', options: [
+      {value: 'SAVED', labelKey: 'job.statusSaved'},
+      {value: 'APPLIED', labelKey: 'job.statusApplied'},
+      {value: 'INTERVIEW', labelKey: 'job.statusInterview'},
+      {value: 'OFFER', labelKey: 'job.statusOffer'},
+      {value: 'REJECTED', labelKey: 'job.statusRejected'},
+      {value: 'WITHDRAWN', labelKey: 'job.statusWithdrawn'}
+    ]
+  },
+  {
+    name: 'priority', labelKey: 'field.priority', type: 'select', required: true, defaultValue: 'MEDIUM', options: [
+      {value: 'LOW', labelKey: 'job.priorityLow'},
+      {value: 'MEDIUM', labelKey: 'job.priorityMedium'},
+      {value: 'HIGH', labelKey: 'job.priorityHigh'}
+    ]
+  },
+  {name: 'deadline', labelKey: 'field.deadline', type: 'date'},
+  {name: 'contactName', labelKey: 'field.contactName', type: 'text', maxLength: 255},
+  {name: 'contactEmail', labelKey: 'field.contactEmail', type: 'text', maxLength: 255},
+  {name: 'notes', labelKey: 'field.note', type: 'textarea', maxLength: 10000}
+];
+
+const jobStatusOptions: SelectOption[] = [
+  {value: 'SAVED', labelKey: 'job.statusSaved'},
+  {value: 'APPLIED', labelKey: 'job.statusApplied'},
+  {value: 'INTERVIEW', labelKey: 'job.statusInterview'},
+  {value: 'OFFER', labelKey: 'job.statusOffer'},
+  {value: 'REJECTED', labelKey: 'job.statusRejected'},
+  {value: 'WITHDRAWN', labelKey: 'job.statusWithdrawn'}
+];
+
+const deleteSongAction: ResourceActionDefinition = {
+  key: 'delete', labelKey: 'common.delete', method: 'delete',
+  path: row => `karaoke/favorite-songs/${row['id']}?version=${row['version']}`, confirmKey: 'karaoke.deleteConfirm'
+};
+
+const deleteJobAction: ResourceActionDefinition = {
+  key: 'delete', labelKey: 'common.delete', method: 'delete',
+  path: row => `jobs/${row['id']}?version=${row['version']}`, confirmKey: 'job.deleteConfirm'
+};
 
 export const resourceDefinitions: Record<string, ResourceDefinition> = {
   creditCards: {
@@ -228,6 +297,63 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
       ],
       requestMetadata: [{name: 'version'}]
     }
+  },
+  favoriteSongs: {
+    key: 'favoriteSongs',
+    titleKey: 'route.favoriteSongs',
+    apiPath: 'karaoke/favorite-songs',
+    flow: 'personal',
+    statusFilterOptions: [],
+    columns: [
+      {name: 'title'},
+      {name: 'artist'},
+      {name: 'genre'},
+      {name: 'karaokeCode'},
+      {name: 'tone'},
+      {name: 'link'}
+    ],
+    create: {
+      titleKey: 'form.addFavoriteSong',
+      descriptionKey: 'form.addFavoriteSongDescription',
+      method: 'post', path: () => 'karaoke/favorite-songs', fields: favoriteSongFields
+    },
+    edit: {
+      titleKey: 'form.editFavoriteSong',
+      descriptionKey: 'form.editFavoriteSongDescription',
+      method: 'put', path: row => `karaoke/favorite-songs/${row!['id']}`,
+      fields: favoriteSongFields,
+      requestMetadata: [{name: 'version'}]
+    },
+    actions: [deleteSongAction]
+  },
+  jobApplications: {
+    key: 'jobApplications',
+    titleKey: 'route.jobApplications',
+    apiPath: 'jobs',
+    flow: 'personal',
+    statusFilterOptions: jobStatusOptions,
+    columns: [
+      {name: 'companyName'},
+      {name: 'positionTitle'},
+      {name: 'location'},
+      {name: 'status', kind: 'status'},
+      {name: 'priority', kind: 'status'},
+      {name: 'deadline'},
+      {name: 'salary'}
+    ],
+    create: {
+      titleKey: 'form.addJob',
+      descriptionKey: 'form.addJobDescription',
+      method: 'post', path: () => 'jobs', fields: jobFields
+    },
+    edit: {
+      titleKey: 'form.editJob',
+      descriptionKey: 'form.editJobDescription',
+      method: 'put', path: row => `jobs/${row!['id']}`,
+      fields: jobFields,
+      requestMetadata: [{name: 'version'}]
+    },
+    actions: [deleteJobAction]
   },
   notifications: {
     key: 'notifications',

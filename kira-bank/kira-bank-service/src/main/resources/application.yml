@@ -34,8 +34,6 @@ app:
 ai:
   connect-timeout: 5s
   read-timeout: 120s
-  # Optional global model override. Leave blank to use the model configured on each verified account.
-  model: ${AI_MODEL:}
   credential-encryption-key: ${AI_CREDENTIAL_ENCRYPTION_KEY:}
   account-rate-limit-cooldown: ${AI_ACCOUNT_RATE_LIMIT_COOLDOWN:PT1M}
   job:

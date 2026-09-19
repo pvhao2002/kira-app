@@ -44,7 +44,7 @@
         <div class="bank-card-header">
           <div class="bank-brand">
             @if (bank.logoUrl) {
-              <img [src]="bank.logoUrl" class="bank-logo" alt="">
+              <img [src]="bank.logoUrl" ng-img="true" width="42" height="42" loading="lazy" decoding="async" class="bank-logo" alt="">
             } @else {
               <div class="bank-logo-fallback">{{ bank.code.slice(0, 3) }}</div>
             }

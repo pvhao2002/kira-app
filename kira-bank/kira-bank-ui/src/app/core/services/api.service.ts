@@ -61,6 +61,10 @@ export class ApiService {
     return this.http.patch<T>(`/api/v1/${path}`, body);
   }
 
+  delete<T>(path: string, body: unknown = {}): Observable<T> {
+    return this.http.request<T>('DELETE', `/api/v1/${path}`, {body});
+  }
+
   deleteWithBody<T>(path: string, body: unknown): Observable<T> {
     return this.http.request<T>('DELETE', `/api/v1/${path}`, {body});
   }
