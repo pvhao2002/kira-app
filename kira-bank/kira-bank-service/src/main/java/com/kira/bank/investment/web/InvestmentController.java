@@ -3,6 +3,7 @@ package com.kira.bank.investment.web;
 import com.kira.bank.investment.application.InvestmentReconciliationReportDtos.CreateReportRequest;
 import com.kira.bank.investment.application.InvestmentReconciliationReportService;
 import com.kira.bank.investment.application.InvestmentService;
+import com.kira.bank.investment.application.InvestmentStatisticsService;
 import com.kira.bank.investment.application.InvestmentStatisticsDtos.StatisticsResponse;
 import com.kira.bank.investment.application.InvestmentTransactionImportDtos.ConfirmBatchRequest;
 import com.kira.bank.investment.application.InvestmentTransactionImportDtos.ManualTransactionRequest;
@@ -35,6 +36,7 @@ public class InvestmentController {
     private final InvestmentService service;
     private final InvestmentTransactionImportService transactionImports;
     private final InvestmentReconciliationReportService reconciliationReports;
+    private final InvestmentStatisticsService statistics;
 
     @PostMapping("/accounts")
     @ResponseStatus(HttpStatus.CREATED)
@@ -112,6 +114,19 @@ public class InvestmentController {
                                   @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
                                   @RequestParam(required = false) InvestmentTransactionStatus status) {
         return transactionImports.statistics(user, id, fromDate, toDate, status);
+    }
+
+    @GetMapping("/statistics")
+    Object statisticsOverview(@AuthenticationPrincipal Long user,
+                              @RequestParam(required = false) Long accountId,
+                              @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                              @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        return statistics.overview(user, accountId, fromDate, toDate);
+    }
+
+    @GetMapping("/statistics/operations")
+    Object statisticsOperations(@AuthenticationPrincipal Long user, @RequestParam(required = false) Long accountId) {
+        return statistics.operations(user, accountId);
     }
 
     @PostMapping("/accounts/{id}/transactions/{transactionId}/reconciliation-reports")

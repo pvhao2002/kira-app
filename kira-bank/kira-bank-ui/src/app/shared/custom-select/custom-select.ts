@@ -216,10 +216,11 @@ export interface SelectOption {
       width: 100%;
       min-width: 0;
       box-sizing: border-box;
-      padding: 8px 10px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      height: 44px;
+      padding: 0 12px;
+      background: var(--search-surface, #f8fafc);
+      border: 1px solid var(--search-border, #e2e8f0);
+      border-radius: 10px;
       margin-bottom: 6px;
 
       svg {
@@ -231,12 +232,18 @@ export interface SelectOption {
         flex: 1;
         min-width: 0;
         width: auto;
+        height: 100%;
         box-sizing: border-box;
-        border: none;
-        background: transparent;
-        outline: none;
+        appearance: none;
+        border: 0 !important;
+        border-color: transparent !important;
+        border-radius: 0;
+        background: transparent !important;
+        background-color: transparent !important;
+        outline: 0 !important;
         font-size: 12.5px;
         color: #0f172a;
+        box-shadow: none !important;
 
         &::placeholder {
           color: #94a3b8;
@@ -380,8 +387,8 @@ export interface SelectOption {
       }
 
       .search-box {
-        background: #0b1829;
-        border-color: #2a4362;
+        background: var(--search-surface, #0b1829);
+        border-color: var(--search-border, #2a4362);
 
         input {
           color: #f8fafc;

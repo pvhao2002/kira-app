@@ -1164,14 +1164,6 @@ tr.billing-row.billing-overdue > td {
   background: color-mix(in srgb, var(--surface-2, #edf4fb) 42%, var(--surface));
 }
 
-.table-tools .search-box {
-  min-height: 44px;
-  border-color: var(--border-strong, #bfd0e1);
-  border-radius: 12px;
-  background: var(--surface);
-  box-shadow: none;
-}
-
 .tool-actions {
   flex-wrap: wrap;
 }

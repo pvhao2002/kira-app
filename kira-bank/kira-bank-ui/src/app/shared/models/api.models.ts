@@ -192,6 +192,37 @@ export interface InvestmentAccountSummary {
   status: string
 }
 
+export interface InvestmentStatisticsDaily {
+  date: string; deposits: number; withdrawals: number; bonuses: number;
+}
+export interface InvestmentStatisticsCurrency {
+  currency: string; totalCount: number; deposits: number; withdrawals: number;
+  bonuses: number; netAmount: number; daily: InvestmentStatisticsDaily[];
+}
+export interface InvestmentStatisticsAccount {
+  accountId: number; accountName: string; accountCode: string | null; currency: string; status: string;
+  totalCount: number; deposits: number; withdrawals: number; bonuses: number; netAmount: number;
+}
+export interface InvestmentStatisticsResponse {
+  updatedAt: string; timeZone: string; accountId: number | null; fromDate: string; toDate: string;
+  currencies: InvestmentStatisticsCurrency[]; accounts: InvestmentStatisticsAccount[];
+}
+export interface InvestmentStatisticsOperations {
+  updatedAt: string; accountId: number | null;
+  ai: {pending: number; processing: number; ready: number; failed: number};
+  imports: {total: number; items: {batchId: string; accountId: number; accountName: string; status: string; createdAt: string; reviewCount: number}[]};
+  reconciliation: {total: number; open: number; inReview: number; needsInfo: number; items: {
+    id: number; accountId: number; accountName: string; transactionId: number; amount: number; currency: string;
+    reason: string; status: string; createdAt: string;
+  }[]};
+}
+export interface InvestmentReconciliationReport {
+  id: number; accountId: number; accountName: string; transactionId: number; transactionType: string;
+  transactionStatus: string; amount: number; currency: string; transactionAt: string; externalTransactionId: string | null;
+  sourceAttachmentId: number | null; reason: string; detail: string; status: string; resolutionNote: string | null;
+  createdAt: string; resolvedAt: string | null; version: number; history: {fromStatus: string; toStatus: string; note: string | null; createdAt: string}[];
+}
+
 export type InvestmentTransactionType = 'DEPOSIT' | 'WITHDRAWAL' | 'BONUS';
 export type InvestmentTransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type InvestmentImportAction = 'INSERT' | 'UPDATE' | 'DUPLICATE' | 'REVIEW' | 'IGNORE';

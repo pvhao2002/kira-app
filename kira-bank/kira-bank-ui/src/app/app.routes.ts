@@ -48,6 +48,11 @@ export const routes: Routes = [
         data: {titleKey: 'route.creditBenefits'}
       },
       {
+        path: 'investment/statistics',
+        loadComponent: () => import('./features/investment/investment-statistics.page').then(m => m.InvestmentStatisticsPage),
+        data: {titleKey: 'route.investmentStatistics'}
+      },
+      {
         path: 'investment/transactions',
         loadComponent: () =>
           import('./features/investment/investment-transaction.page').then(m => m.InvestmentTransactionPage),

@@ -9,7 +9,7 @@
   <div class="workspace">
     <aside class="trip-sidebar panel">
       <h2>{{ t('trips') }} <small>{{ trips().length }}</small></h2>
-      <input type="search" [attr.aria-label]="t('search')" [placeholder]="t('search')" [ngModel]="query()" (ngModelChange)="query.set($event)">
+      <input class="search-field" type="search" [attr.aria-label]="t('search')" [placeholder]="t('search')" [ngModel]="query()" (ngModelChange)="query.set($event)">
       <div class="trip-list">
         @for (trip of filteredTrips(); track trip.id) {
           <button class="trip-card" [class.active]="selected()?.id === trip.id" [attr.aria-pressed]="selected()?.id === trip.id" [disabled]="busy()" (click)="select(trip)">

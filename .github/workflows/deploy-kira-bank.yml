@@ -1,0 +1,93 @@
+name: CI/CD Build kira-bank
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "kira-bank/kira-bank-service/**"
+      - "kira-bank/kira-bank-ui/**"
+      - ".github/workflows/deploy-kira-bank.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "kira-bank/kira-bank-service/**"
+      - "kira-bank/kira-bank-ui/**"
+  workflow_dispatch:
+    inputs:
+      force_build_all:
+        description: "Build and push both images"
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-kira-bank-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOCKERHUB_USERNAME: kira2308
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      kira-bank-service: ${{ steps.filter.outputs.kira-bank-service }}
+      kira-bank-ui: ${{ steps.filter.outputs.kira-bank-ui }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            kira-bank-service:
+              - 'kira-bank/kira-bank-service/**'
+            kira-bank-ui:
+              - 'kira-bank/kira-bank-ui/**'
+
+  build-kira-bank-service:
+    needs: changes
+    if: >-
+      needs.changes.outputs.kira-bank-service == 'true'
+      || (github.event_name == 'workflow_dispatch' && inputs.force_build_all)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./kira-bank/kira-bank-service
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/kira-bank-service:latest
+            ${{ env.DOCKERHUB_USERNAME }}/kira-bank-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-kira-bank-ui:
+    needs: changes
+    if: >-
+      needs.changes.outputs.kira-bank-ui == 'true'
+      || (github.event_name == 'workflow_dispatch' && inputs.force_build_all)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./kira-bank/kira-bank-ui
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/kira-bank-ui:latest
+            ${{ env.DOCKERHUB_USERNAME }}/kira-bank-ui:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

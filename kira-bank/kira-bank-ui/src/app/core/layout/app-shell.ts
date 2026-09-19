@@ -104,6 +104,7 @@ export class AppShell {
       {
         labelKey: 'shell.groupInvestment', flow: 'investment', items: [
           {labelKey: 'shell.accounts', icon: 'account', path: '/app/investment/accounts'},
+          {labelKey: 'shell.investmentStatistics', icon: 'trend-up', path: '/app/investment/statistics'},
           {labelKey: 'shell.investmentTransactions', icon: 'receipt', path: '/app/investment/transactions'},
           {labelKey: 'shell.investmentAiQueue', icon: 'monitor', path: '/app/investment/ai-queue'}
         ]

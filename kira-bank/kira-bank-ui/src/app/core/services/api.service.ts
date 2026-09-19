@@ -14,6 +14,9 @@ import {
   InvestmentConfirmResponse,
   InvestmentTransaction,
   InvestmentAiJob,
+  InvestmentStatisticsResponse,
+  InvestmentStatisticsOperations,
+  InvestmentReconciliationReport,
   LodgingListing,
   LodgingListingRequest,
   LodgingReferenceLocation,
@@ -144,6 +147,19 @@ export class ApiService {
     Observable<PageResponse<InvestmentTransaction>> {
     return this.http.get<PageResponse<InvestmentTransaction>>(
       `/api/v1/investment/accounts/${accountId}/transactions`, {params: filters});
+  }
+
+  investmentStatistics(filters: Record<string, string | number> = {}): Observable<InvestmentStatisticsResponse> {
+    return this.http.get<InvestmentStatisticsResponse>('/api/v1/investment/statistics', {params: filters});
+  }
+
+  investmentStatisticsOperations(accountId?: number): Observable<InvestmentStatisticsOperations> {
+    const params: Record<string, string | number> = accountId == null ? {} : {accountId};
+    return this.http.get<InvestmentStatisticsOperations>('/api/v1/investment/statistics/operations', {params});
+  }
+
+  investmentReconciliationReport(id: number): Observable<InvestmentReconciliationReport> {
+    return this.http.get<InvestmentReconciliationReport>(`/api/v1/investment/reconciliation-reports/${id}`);
   }
 
   investmentAiJobs(adminScope: boolean, status = '', page = 0, size = 20):
