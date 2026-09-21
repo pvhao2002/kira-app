@@ -119,8 +119,12 @@ public class AiProviderAccountService {
             r2Changed = true;
         }
         if (request.r2PublicUrl() != null) account.setR2PublicUrl(blankToNull(request.r2PublicUrl()));
-        account.setDisplayName(request.displayName().trim());
-        account.setPriority(request.priority());
+        if (request.displayName() != null) {
+            if (blank(request.displayName()))
+                throw new ApiException(HttpStatus.BAD_REQUEST, "CLOUDFLARE_DISPLAY_NAME_REQUIRED", "Tên Cloudflare account không được để trống");
+            account.setDisplayName(request.displayName().trim());
+        }
+        if (request.priority() != null) account.setPriority(request.priority());
         account.setUpdatedBy(adminId);
         if (aiChanged) resetAi(account);
         if (r2Changed) resetR2(account);

@@ -52,6 +52,7 @@ export class AdminAiProvidersPage {
     this.form.reset({displayName: '', accountId: '', apiToken: '', aiModel: '@cf/moonshotai/kimi-k2.7-code', priority: 100,
       r2AccessKeyId: '', r2SecretAccessKey: '', r2BucketName: '', r2PublicUrl: ''});
     this.form.controls.accountId.setValidators([Validators.required, Validators.maxLength(64)]);
+    this.form.controls.accountId.updateValueAndValidity();
     this.formOpen.set(true);
   }
 
@@ -60,6 +61,7 @@ export class AdminAiProvidersPage {
     this.form.reset({displayName: account.displayName, accountId: '', apiToken: '', aiModel: account.ai.model,
       priority: account.ai.priority, r2AccessKeyId: '', r2SecretAccessKey: '', r2BucketName: '', r2PublicUrl: ''});
     this.form.controls.accountId.setValidators([Validators.maxLength(64)]);
+    this.form.controls.accountId.updateValueAndValidity();
     this.formOpen.set(true);
   }
 
@@ -70,9 +72,21 @@ export class AdminAiProvidersPage {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const values = this.form.getRawValue();
     const current = this.editing();
+    const payload = current ? {
+      ...(this.form.controls.displayName.dirty ? {displayName: values.displayName} : {}),
+      ...(this.form.controls.accountId.dirty ? {accountId: values.accountId} : {}),
+      ...(this.form.controls.apiToken.dirty ? {apiToken: values.apiToken} : {}),
+      ...(this.form.controls.aiModel.dirty ? {aiModel: values.aiModel} : {}),
+      ...(this.form.controls.priority.dirty ? {priority: values.priority} : {}),
+      ...(this.form.controls.r2AccessKeyId.dirty ? {r2AccessKeyId: values.r2AccessKeyId} : {}),
+      ...(this.form.controls.r2SecretAccessKey.dirty ? {r2SecretAccessKey: values.r2SecretAccessKey} : {}),
+      ...(this.form.controls.r2BucketName.dirty ? {r2BucketName: values.r2BucketName} : {}),
+      ...(this.form.controls.r2PublicUrl.dirty ? {r2PublicUrl: values.r2PublicUrl} : {}),
+      version: current.version
+    } : values;
     const request = current
-      ? this.api.put<CloudflareAccount>(`admin/cloudflare-accounts/${current.id}`, {...values, version: current.version})
-      : this.api.post<CloudflareAccount>('admin/cloudflare-accounts', values);
+      ? this.api.put<CloudflareAccount>(`admin/cloudflare-accounts/${current.id}`, payload)
+      : this.api.post<CloudflareAccount>('admin/cloudflare-accounts', payload);
     this.saving.set(true); this.error.set('');
     request.pipe(finalize(() => this.saving.set(false))).subscribe({
       next: () => { this.toast.show(this.i18n.t('aiProviders.saved'), 'success'); this.closeForm(); this.load(); },

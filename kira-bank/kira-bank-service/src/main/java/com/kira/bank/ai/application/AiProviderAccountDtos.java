@@ -23,11 +23,11 @@ public final class AiProviderAccountDtos {
     }
 
     public record UpdateRequest(
-        @NotBlank @Size(max = 100) String displayName,
+        @Size(max = 100) String displayName,
         @Size(max = 64) @Pattern(regexp = "[0-9a-fA-F]{32}") String accountId,
         @Size(max = 2048) String apiToken,
         @Size(max = 180) String aiModel,
-        @Min(0) @Max(100000) int priority,
+        @Min(0) @Max(100000) Integer priority,
         @Size(max = 2048) String r2AccessKeyId,
         @Size(max = 2048) String r2SecretAccessKey,
         @Size(max = 255) String r2BucketName,

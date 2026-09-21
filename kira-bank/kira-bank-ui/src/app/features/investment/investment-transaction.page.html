@@ -110,7 +110,7 @@
             <thead><tr><th>{{ i18n.t('investmentTransactions.review') }}</th><th>{{ i18n.t('investmentTransactions.action') }}</th><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th>{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('field.currency') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th><th>{{ i18n.t('investmentTransactions.resolution') }}</th></tr></thead>
             <tbody>
               @for (item of reviewItems(); track item.itemId) {
-                <tr [class.needs-review]="item.processingAction === 'REVIEW'">
+                <tr [class.needs-review]="item.processingAction === 'REVIEW'" [class.duplicate-row]="item.processingAction === 'DUPLICATE'">
                   <td><input type="checkbox" [(ngModel)]="item.selected" [attr.aria-label]="i18n.t('investmentTransactions.selectItem', {id: item.itemId})"></td>
                   <td><span class="action-badge" [attr.data-action]="item.processingAction">{{ processingActionLabel(item.processingAction) }}</span>
                     @if (item.warnings.length) { <small class="warnings" [title]="item.warnings.join(', ')">{{ i18n.t('investmentTransactions.warnings', {count: item.warnings.length}) }}</small> }

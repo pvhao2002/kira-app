@@ -58,7 +58,7 @@
 
 @if (formOpen()) {
   <div class="modal-backdrop" (click)="closeForm()">
-    <form class="provider-dialog" role="dialog" aria-modal="true" aria-labelledby="cloudflare-dialog-title" [formGroup]="form" (ngSubmit)="save()" (click)="$event.stopPropagation()">
+    <form class="provider-dialog" role="dialog" aria-modal="true" aria-labelledby="cloudflare-dialog-title" [formGroup]="form" (ngSubmit)="save()" (click)="$event.stopPropagation()" novalidate>
       <header><h2 id="cloudflare-dialog-title">{{ i18n.t(editing() ? 'aiProviders.editTitle' : 'aiProviders.createTitle') }}</h2><button type="button" [attr.aria-label]="i18n.t('common.close')" (click)="closeForm()">×</button></header>
       <fieldset><legend>{{ i18n.t('aiProviders.accountSection') }}</legend>
         <label><span>{{ i18n.t('aiProviders.name') }} *</span><input formControlName="displayName" type="text"></label>
@@ -75,7 +75,10 @@
         <label><span>{{ i18n.t('aiProviders.bucket') }}</span><input formControlName="r2BucketName" type="text" autocomplete="off">@if (editing()) { <small>{{ i18n.t('aiProviders.bucketKeep') }}</small> }</label>
         <label><span>{{ i18n.t('aiProviders.publicUrl') }}</span><input formControlName="r2PublicUrl" type="url" autocomplete="off"></label>
       </fieldset>
-      <footer><button type="button" (click)="closeForm()">{{ i18n.t('common.cancel') }}</button><button class="btn primary" type="submit" [disabled]="saving()">{{ saving() ? i18n.t('form.saving') : i18n.t('aiProviders.save') }}</button></footer>
+      <footer>
+        <button class="btn ghost" type="button" (click)="closeForm()">{{ i18n.t('common.cancel') }}</button>
+        <button class="btn primary" type="submit" [disabled]="saving()" [attr.aria-busy]="saving()">{{ saving() ? i18n.t('form.saving') : i18n.t('aiProviders.save') }}</button>
+      </footer>
     </form>
   </div>
 }

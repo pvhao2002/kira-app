@@ -31,6 +31,8 @@ app:
   cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   seed-development-users: ${SEED_DEVELOPMENT_USERS:true}
   refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+storage:
+  environment: ${R2_STORAGE_ENVIRONMENT:LOCAL}
 ai:
   connect-timeout: 5s
   read-timeout: 120s

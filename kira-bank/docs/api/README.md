@@ -6,7 +6,7 @@
 
 ## Cloudflare accounts
 
-Admin-only endpoints under `/api/v1/admin/cloudflare-accounts` manage one Cloudflare Account ID with independent Workers AI and R2 capabilities. Responses expose only masked metadata and credential-presence flags. Every mutation includes `version` for optimistic locking; blank secret fields retain the stored encrypted value.
+Admin-only endpoints under `/api/v1/admin/cloudflare-accounts` manage one Cloudflare Account ID with independent Workers AI and R2 capabilities. Responses expose only masked metadata and credential-presence flags. Every mutation includes `version` for optimistic locking; update fields are optional and omitted fields remain unchanged. Blank secret fields retain the stored encrypted value.
 
 AI actions are `POST /{id}/ai/test|enable|disable`; test validates the dynamic model without inference. AI detection selects enabled, verified accounts by ascending priority and fails over only for account-scoped credential/quota/rate-limit failures. There is no environment credential fallback.
 

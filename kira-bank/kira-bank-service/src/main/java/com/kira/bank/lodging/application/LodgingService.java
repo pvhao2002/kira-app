@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 
 import static com.kira.bank.lodging.application.LodgingDtos.*;
@@ -208,7 +210,10 @@ public class LodgingService {
         String mime = imageMime(data);
         if (file.isEmpty() || file.getSize() > 10L * 1024 * 1024 || mime == null || (file.getContentType() != null && !file.getContentType().equals(mime)))
             throw bad("INVALID_IMAGE", "Ảnh phải là JPEG, PNG hoặc WebP, tối đa 10 MB");
-        String key = userId + "/lodging/" + UUID.randomUUID() + extension(mime);
+        int imageNumber = images.maxActiveSortOrder(id) + 1;
+        String username = users.findById(userId).map(User::getEmail).orElse("unknown");
+        String key = storage.userImageKey(userId, username, LocalDate.now(ZoneId.of("Asia/Bangkok")),
+            imageNumber, extension(mime));
         R2StorageService.StoredObject stored = storage.upload(key, data, mime);
         Attachment attachment = new Attachment();
         attachment.setUserId(userId);
@@ -227,7 +232,7 @@ public class LodgingService {
         LodgingListingImage image = new LodgingListingImage();
         image.setListingId(id);
         image.setAttachmentId(attachment.getId());
-        image.setSortOrder(images.maxActiveSortOrder(id) + 1);
+        image.setSortOrder(imageNumber);
         image.setCreatedBy(userId);
         image.setUpdatedBy(userId);
         images.save(image);

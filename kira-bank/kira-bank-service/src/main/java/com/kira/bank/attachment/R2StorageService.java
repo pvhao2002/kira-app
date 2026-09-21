@@ -4,6 +4,7 @@ import com.kira.bank.ai.application.AiProviderAccountService;
 import com.kira.bank.ai.application.AiProviderAccountService.RuntimeR2Credential;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
@@ -12,8 +13,11 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -22,6 +26,21 @@ public class R2StorageService {
     private final AiProviderAccountService accounts;
     private final CloudflareR2ClientFactory clients;
     private final Map<ClientKey, S3Client> cache = new ConcurrentHashMap<>();
+    @Value("${storage.environment:LOCAL}")
+    private String environment;
+
+    public String userImageKey(Long userId, String username, LocalDate date, int imageNumber, String extension) {
+        String safeUsername = username == null || username.isBlank()
+            ? "unknown"
+            : username.trim().replaceAll("[^A-Za-z0-9._@-]", "_");
+        String root = environment == null || environment.isBlank()
+            ? "LOCAL"
+            : environment.trim().toUpperCase(Locale.ROOT);
+        if (!root.equals("LOCAL") && !root.equals("PROD")) {
+            throw new IllegalStateException("R2_STORAGE_ENVIRONMENT must be LOCAL or PROD");
+        }
+        return root + "/" + userId + " - " + safeUsername + "/" + date + "/image-" + imageNumber + "-" + UUID.randomUUID() + extension;
+    }
 
     public StoredObject upload(String key, byte[] data, String contentType) {
         RuntimeR2Credential credential = accounts.primaryR2Credential();

@@ -99,9 +99,10 @@ public class InvestmentTransactionImportService {
         batches.saveAndFlush(batch);
 
         Set<Long> linkedAttachments = new HashSet<>();
-        for (MultipartFile upload : uploads) {
+        for (int index = 0; index < uploads.size(); index++) {
+            MultipartFile upload = uploads.get(index);
             AttachmentDtos.AttachmentResponse attachment = attachmentService.upload(
-                userId, AttachmentService.INVESTMENT_MODULE, AttachmentService.RECEIPT_DOCUMENT_TYPE, upload);
+                userId, AttachmentService.INVESTMENT_MODULE, AttachmentService.RECEIPT_DOCUMENT_TYPE, upload, index + 1);
             if (!linkedAttachments.add(attachment.attachmentId())) continue;
             InvestmentTransactionImportFile file = new InvestmentTransactionImportFile();
             file.setBatchId(batch.getId());

@@ -11,6 +11,7 @@ import com.kira.bank.attachment.domain.InvestmentAiJobEvent;
 import com.kira.bank.attachment.domain.InvestmentAiJobEventActor;
 import com.kira.bank.attachment.infrastructure.AttachmentRepository;
 import com.kira.bank.attachment.infrastructure.InvestmentAiJobEventRepository;
+import com.kira.bank.identity.infrastructure.UserRepository;
 import com.kira.bank.notification.application.NotificationService;
 import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -50,6 +52,7 @@ public class AttachmentService {
     private final AttachmentRepository repository;
     private final InvestmentAiJobEventRepository eventRepository;
     private final R2StorageService storage;
+    private final UserRepository users;
     private final AiJobProperties jobProperties;
     private final ObjectMapper objectMapper;
     private final NotificationService notifications;
@@ -118,6 +121,11 @@ public class AttachmentService {
 
     @Transactional
     public AttachmentResponse upload(Long userId, String flow, String documentType, MultipartFile file) throws IOException {
+        return upload(userId, flow, documentType, file, null);
+    }
+
+    @Transactional
+    public AttachmentResponse upload(Long userId, String flow, String documentType, MultipartFile file, Integer imageNumber) throws IOException {
         String normalizedFlow = normalizeFlow(flow);
         String normalizedDocumentType = normalizeDocumentType(documentType);
         byte[] data = file.getBytes();
@@ -132,7 +140,9 @@ public class AttachmentService {
                 return toResponse(reusable.get());
             }
         }
-        String key = userId + "/" + UUID.randomUUID() + extensionFor(mimeType);
+        String key = isInvestmentReceipt(normalizedFlow, normalizedDocumentType) && imageNumber != null
+            ? investmentReceiptKey(userId, imageNumber, mimeType)
+            : userId + "/" + UUID.randomUUID() + extensionFor(mimeType);
         R2StorageService.StoredObject stored = storage.upload(key, data, mimeType);
 
         Attachment attachment = new Attachment();
@@ -157,6 +167,12 @@ public class AttachmentService {
             appendEvent(saved, null, AttachmentAiStatus.PENDING, "INITIAL_UPLOAD", InvestmentAiJobEventActor.USER);
         }
         return toResponse(saved);
+    }
+
+    private String investmentReceiptKey(Long userId, int imageNumber, String mimeType) {
+        String username = users.findById(userId).map(user -> user.getEmail()).orElse("unknown");
+        return storage.userImageKey(userId, username, LocalDate.now(ZoneId.of(importTimeZone)),
+            imageNumber, extensionFor(mimeType));
     }
 
     @Transactional(readOnly = true)
