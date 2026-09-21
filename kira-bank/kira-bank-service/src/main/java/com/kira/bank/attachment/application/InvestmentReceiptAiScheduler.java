@@ -86,23 +86,31 @@ public class InvestmentReceiptAiScheduler {
             log.info("Calling Cloudflare AI for {} investment receipt(s), attachmentIds={}, provider={}",
                 documents.size(), attachmentIds, ai.safeConfigurationSummary());
             AiDocumentService.AiBatchResponse response = ai.analyzeBatch(documents);
-            Map<Long, AiDocumentService.AiExtraction> resultsByAttachment = new HashMap<>();
+            // The model sometimes splits one attachment's transactions across several result
+            // entries that all share the same attachmentId instead of one entry with them all
+            // in its transactions array, so merge by attachmentId rather than keep only one.
+            Map<Long, List<AiDocumentService.AiTransactionExtraction>> transactionsByAttachment = new HashMap<>();
             Set<Long> requestedIds = new HashSet<>();
             for (AiDocumentService.AiInputDocument document : documents) {
                 requestedIds.add(document.attachmentId());
             }
             for (AiDocumentService.AiExtraction result : response.results()) {
-                if (result.attachmentId() != null && requestedIds.contains(result.attachmentId())) {
-                    resultsByAttachment.putIfAbsent(result.attachmentId(), result);
+                if (result.attachmentId() != null && requestedIds.contains(result.attachmentId())
+                    && result.transactions() != null) {
+                    transactionsByAttachment.computeIfAbsent(result.attachmentId(), id -> new ArrayList<>())
+                        .addAll(result.transactions());
                 }
             }
             for (AiDocumentService.AiInputDocument document : documents) {
-                AiDocumentService.AiExtraction result = resultsByAttachment.get(document.attachmentId());
-                if (result == null) {
+                List<AiDocumentService.AiTransactionExtraction> transactions =
+                    transactionsByAttachment.get(document.attachmentId());
+                if (transactions == null) {
                     attachments.markRetryOrFailed(document.attachmentId(), "AI_RESULT_MISSING");
                     metrics.counter("investment.import.ai.failure", "reason", "missing_result").increment();
                 } else {
-                    attachments.markReady(document.attachmentId(), result, response.rawResponse(), response.model());
+                    attachments.markReady(document.attachmentId(),
+                        new AiDocumentService.AiExtraction(document.attachmentId(), transactions),
+                        response.rawResponse(), response.model());
                 }
                 transactionImports.refreshAttachmentState(document.attachmentId());
             }

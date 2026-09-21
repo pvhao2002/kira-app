@@ -15,15 +15,59 @@
 @else if (stats().failed) { <div class="state error">{{ i18n.t('investmentStatistics.error') }} <button class="btn ghost" type="button" (click)="loadStats()">{{ i18n.t('investmentStatistics.retry') }}</button></div> }
 @else if (stats().data; as data) {
   <section class="panel">
-    <header class="panel-heading"><div><span class="eyebrow">{{ data.fromDate }} – {{ data.toDate }} · {{ data.timeZone }}</span><h2>{{ i18n.t('investmentStatistics.cashFlow') }}</h2></div>@if (data.currencies.length > 1) { <label class="currency"><span>{{ i18n.t('investmentStatistics.currency') }}</span><select [value]="chart()?.currency" (change)="chooseCurrency($any($event.target).value)">@for (item of data.currencies; track item.currency) { <option [value]="item.currency">{{ item.currency }}</option> }</select></label> }</header>
+    <header class="panel-heading"><div><span class="eyebrow">{{ data.fromDate }} – {{ data.toDate }} · {{ data.timeZone }}</span><h2>{{ i18n.t('investmentStatistics.cashFlow') }}</h2></div><div class="header-controls">@if (data.currencies.length > 1) { <label class="currency"><span>{{ i18n.t('investmentStatistics.currency') }}</span><select [value]="chart()?.currency" (change)="chooseCurrency($any($event.target).value)">@for (item of data.currencies; track item.currency) { <option [value]="item.currency">{{ item.currency }}</option> }</select></label> }<label class="currency"><span>{{ i18n.t('investmentStatistics.netFlowMode') }}</span><select [value]="netFlowMode()" (change)="chooseNetFlowMode($any($event.target).value)"><option value="WITHDRAWAL_MINUS_DEPOSIT">{{ i18n.t('investmentStatistics.netFlowModeWithdrawalMinusDeposit') }}</option><option value="WITHDRAWAL_PLUS_BONUS_MINUS_DEPOSIT">{{ i18n.t('investmentStatistics.netFlowModeWithdrawalPlusBonusMinusDeposit') }}</option></select></label></div></header>
     @if (chart(); as flow) {
-      <div class="metric-grid"><article><small>{{ i18n.t('investmentStatistics.deposits') }}</small><strong>{{ money(flow.deposits, flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.withdrawals') }}</small><strong>{{ money(flow.withdrawals, flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.bonuses') }}</small><strong>{{ money(flow.bonuses, flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.net') }}</small><strong>{{ money(flow.netAmount, flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.transactions') }}</small><strong>{{ flow.totalCount }}</strong></article></div>
+      <div class="metric-grid"><article><small>{{ i18n.t('investmentStatistics.deposits') }}</small><strong>{{ money(flow.deposits, flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.withdrawals') }}</small><strong>{{ money(flow.withdrawals, flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.bonuses') }}</small><strong>{{ money(flow.bonuses, flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.net') }}</small><strong class="net-amount" [class.positive]="netFlow(flow) >= 0" [class.negative]="netFlow(flow) < 0">{{ money(netFlow(flow), flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.transactions') }}</small><strong>{{ flow.totalCount }}</strong></article></div>
       <p class="hint">{{ i18n.t('investmentStatistics.completedHint') }}</p>
       <div class="chart-heading"><h3>{{ i18n.t('investmentStatistics.daily') }}</h3><div class="legend"><span class="deposit-key"></span>{{ i18n.t('investmentStatistics.deposits') }}<span class="withdrawal-key"></span>{{ i18n.t('investmentStatistics.withdrawals') }}<span class="bonus-key"></span>{{ i18n.t('investmentStatistics.bonuses') }}</div></div>
       @if (!flow.totalCount) { <div class="empty">{{ i18n.t('investmentStatistics.noFlow') }}</div> } @else { <div class="chart-scroll"><div class="chart-bars" [class.long]="flow.daily.length > 60">@for (point of flow.daily; track point.date) { <div class="chart-day" tabindex="0" [attr.aria-label]="date(point.date)"><div class="bar-pair"><span class="deposit-bar" [style.height.%]="chartHeight(point.deposits)"></span><span class="withdrawal-bar" [style.height.%]="chartHeight(point.withdrawals)"></span><span class="bonus-bar" [style.height.%]="chartHeight(point.bonuses)"></span></div>@if ($index % (flow.daily.length > 60 ? 15 : flow.daily.length > 30 ? 5 : 1) === 0 || $last) { <small>{{ date(point.date) }}</small> }</div> }</div></div> }
+
+      <div class="chart-heading"><h3>{{ i18n.t('investmentStatistics.netDaily') }}</h3></div>
+      @if (!flow.totalCount) { <div class="empty">{{ i18n.t('investmentStatistics.noFlow') }}</div> } @else {
+        <div class="chart-scroll">
+          <div class="line-chart-wrap" [class.long]="flow.daily.length > 60">
+            <svg class="line-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <line class="zero-line" x1="0" [attr.y1]="netFlowZeroY()" x2="100" [attr.y2]="netFlowZeroY()"></line>
+              <polyline class="net-line" [attr.points]="netFlowLinePoints()"></polyline>
+            </svg>
+            <div class="line-chart-dots">
+              @for (point of netFlowPoints(); track point.date) {
+                <span class="net-dot" [class.positive]="point.value >= 0" [class.negative]="point.value < 0" [style.left.%]="point.x" [style.top.%]="point.y"></span>
+              }
+            </div>
+            <div class="line-chart-labels">
+              @for (point of netFlowPoints(); track point.date; let i = $index; let last = $last) {
+                @if (i % (netFlowPoints().length > 60 ? 15 : netFlowPoints().length > 30 ? 5 : 1) === 0 || last) {
+                  <small [style.left.%]="point.x">{{ date(point.date) }}</small>
+                }
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <div class="chart-heading"><h3>{{ i18n.t('investmentStatistics.netMonthly') }}</h3></div>
+      @if (!flow.totalCount) { <div class="empty">{{ i18n.t('investmentStatistics.noFlow') }}</div> } @else {
+        <div class="chart-scroll">
+          <div class="month-bars" [class.long]="netFlowMonthly().length > 12">
+            @for (month of netFlowMonthly(); track month.month) {
+              <div class="month-col">
+                <div class="month-bar-top">
+                  @if (month.value >= 0) { <span class="month-bar positive" [style.height.%]="monthBarHeight(month.value)"></span> }
+                </div>
+                <div class="month-bar-zero"></div>
+                <div class="month-bar-bottom">
+                  @if (month.value < 0) { <span class="month-bar negative" [style.height.%]="monthBarHeight(month.value)"></span> }
+                </div>
+                <small>{{ monthLabel(month.month) }}</small>
+              </div>
+            }
+          </div>
+        </div>
+      }
     } @else { <div class="empty">{{ i18n.t('investmentStatistics.noFlow') }}</div> }
   </section>
-  <section class="panel"><header class="panel-heading"><h2>{{ i18n.t('investmentStatistics.byAccount') }}</h2></header><div class="table-wrap"><table><thead><tr><th>{{ i18n.t('investmentStatistics.account') }}</th><th>{{ i18n.t('investmentStatistics.statusLabel') }}</th><th>{{ i18n.t('investmentStatistics.transactions') }}</th><th>{{ i18n.t('investmentStatistics.deposits') }}</th><th>{{ i18n.t('investmentStatistics.withdrawals') }}</th><th>{{ i18n.t('investmentStatistics.bonuses') }}</th><th>{{ i18n.t('investmentStatistics.net') }}</th></tr></thead><tbody>@for (row of data.accounts; track row.accountId) { <tr (click)="selectAccountAndApply(row.accountId)" tabindex="0"><td><strong>{{ row.accountName }}</strong><small>{{ row.accountCode || '—' }} · {{ row.currency }}</small></td><td><span class="status" [attr.data-status]="row.status">{{ status(row.status) }}</span></td><td>{{ row.totalCount }}</td><td>{{ money(row.deposits, row.currency) }}</td><td>{{ money(row.withdrawals, row.currency) }}</td><td>{{ money(row.bonuses, row.currency) }}</td><td><strong>{{ money(row.netAmount, row.currency) }}</strong></td></tr> } @empty { <tr><td colspan="7" class="empty">{{ i18n.t('investmentStatistics.noAccounts') }}</td></tr> }</tbody></table></div></section>
+  <section class="panel"><header class="panel-heading"><h2>{{ i18n.t('investmentStatistics.byAccount') }}</h2></header><div class="table-wrap"><table><thead><tr><th>{{ i18n.t('investmentStatistics.account') }}</th><th>{{ i18n.t('investmentStatistics.statusLabel') }}</th><th>{{ i18n.t('investmentStatistics.transactions') }}</th><th>{{ i18n.t('investmentStatistics.deposits') }}</th><th>{{ i18n.t('investmentStatistics.withdrawals') }}</th><th>{{ i18n.t('investmentStatistics.bonuses') }}</th><th>{{ i18n.t('investmentStatistics.net') }}</th></tr></thead><tbody>@for (row of data.accounts; track row.accountId) { <tr (click)="selectAccountAndApply(row.accountId)" tabindex="0"><td><strong>{{ row.accountName }}</strong><small>{{ row.accountCode || '—' }} · {{ row.currency }}</small></td><td><span class="status" [attr.data-status]="row.status">{{ status(row.status) }}</span></td><td>{{ row.totalCount }}</td><td>{{ money(row.deposits, row.currency) }}</td><td>{{ money(row.withdrawals, row.currency) }}</td><td>{{ money(row.bonuses, row.currency) }}</td><td><strong class="net-amount" [class.positive]="netFlow(row) >= 0" [class.negative]="netFlow(row) < 0">{{ money(netFlow(row), row.currency) }}</strong></td></tr> } @empty { <tr><td colspan="7" class="empty">{{ i18n.t('investmentStatistics.noAccounts') }}</td></tr> }</tbody></table></div></section>
 }
 
 <section class="panel operations"><header class="panel-heading"><div><span class="eyebrow">{{ i18n.t('investmentStatistics.current') }}</span><h2>{{ i18n.t('investmentStatistics.operations') }}</h2></div><a routerLink="/app/investment/ai-queue">{{ i18n.t('investmentStatistics.openQueue') }}</a></header><p class="hint">{{ i18n.t('investmentStatistics.currentHint') }}</p>

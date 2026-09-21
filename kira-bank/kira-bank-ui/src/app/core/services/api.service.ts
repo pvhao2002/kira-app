@@ -149,6 +149,10 @@ export class ApiService {
       `/api/v1/investment/accounts/${accountId}/transactions`, {params: filters});
   }
 
+  deleteInvestmentTransaction(accountId: number, transactionId: number): Observable<void> {
+    return this.http.delete<void>(`/api/v1/investment/accounts/${accountId}/transactions/${transactionId}`);
+  }
+
   investmentStatistics(filters: Record<string, string | number> = {}): Observable<InvestmentStatisticsResponse> {
     return this.http.get<InvestmentStatisticsResponse>('/api/v1/investment/statistics', {params: filters});
   }

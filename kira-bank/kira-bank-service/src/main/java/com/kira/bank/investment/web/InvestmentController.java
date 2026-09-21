@@ -108,6 +108,13 @@ public class InvestmentController {
         return transactionImports.transaction(user, id, transactionId);
     }
 
+    @DeleteMapping("/accounts/{id}/transactions/{transactionId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteTransaction(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                           @PathVariable Long transactionId) {
+        transactionImports.deleteTransaction(user, id, transactionId);
+    }
+
     @GetMapping("/accounts/{id}/statistics")
     StatisticsResponse statistics(@AuthenticationPrincipal Long user, @PathVariable Long id,
                                   @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,

@@ -16,264 +16,117 @@
   </label>
 </section>
 
-<nav class="tabs" [attr.aria-label]="i18n.t('investmentTransactions.sections')">
-  <button type="button" [class.active]="activeTab() === 'import'" (click)="switchTab('import')">
-    {{ i18n.t('investmentTransactions.tabImport') }}
-  </button>
-  <button type="button" [class.active]="activeTab() === 'history'" (click)="switchTab('history')">
-    {{ i18n.t('investmentTransactions.tabHistory') }}
-  </button>
-</nav>
-
 @if (error()) {
   <div class="error-banner" role="alert">{{ error() }}</div>
 }
 
-@if (activeTab() === 'import') {
-  <section class="panel upload-panel">
-    <div class="panel-copy">
-      <h2>{{ i18n.t('investmentTransactions.uploadTitle') }}</h2>
-      <p>{{ i18n.t('investmentTransactions.uploadDescription') }}</p>
+<section class="panel upload-panel">
+  <div class="panel-copy">
+    <h2>{{ i18n.t('investmentTransactions.uploadTitle') }}</h2>
+    <p>{{ i18n.t('investmentTransactions.uploadDescription') }}</p>
+  </div>
+  <label class="drop-zone" (drop)="dropFiles($event)" (dragover)="allowDrop($event)">
+    <input type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="chooseFiles($event)">
+    <strong>{{ i18n.t('investmentTransactions.dropTitle') }}</strong>
+    <span>{{ i18n.t('investmentTransactions.dropHint') }}</span>
+  </label>
+  @if (selectedFiles().length) {
+    <div class="file-list">
+      @for (file of selectedFiles(); track file.name + file.lastModified; let index = $index) {
+        <div><span>{{ file.name }}</span><small>{{ (file.size / 1024 / 1024).toFixed(2) }} MB</small>
+          <button type="button" [attr.aria-label]="i18n.t('investmentTransactions.removeFile', {name: file.name})" (click)="removeFile(index)">
+            {{ i18n.t('investmentTransactions.removeFile', {name: file.name}) }}
+          </button>
+        </div>
+      }
     </div>
-    <label class="drop-zone" (drop)="dropFiles($event)" (dragover)="allowDrop($event)">
-      <input type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="chooseFiles($event)">
-      <strong>{{ i18n.t('investmentTransactions.dropTitle') }}</strong>
-      <span>{{ i18n.t('investmentTransactions.dropHint') }}</span>
-    </label>
-    @if (selectedFiles().length) {
-      <div class="file-list">
-        @for (file of selectedFiles(); track file.name + file.lastModified; let index = $index) {
-          <div><span>{{ file.name }}</span><small>{{ (file.size / 1024 / 1024).toFixed(2) }} MB</small>
-            <button type="button" [attr.aria-label]="i18n.t('investmentTransactions.removeFile', {name: file.name})" (click)="removeFile(index)">
-              {{ i18n.t('investmentTransactions.removeFile', {name: file.name}) }}
-            </button>
-          </div>
-        }
+    <button class="primary" type="button" [disabled]="loading() || !accountId()" (click)="upload()">
+      {{ loading() ? i18n.t('investmentTransactions.uploading') : i18n.t('investmentTransactions.createBatch') }}
+    </button>
+  }
+</section>
+
+@if (batch(); as currentBatch) {
+  <section id="batch-review-summary" class="panel batch-panel" tabindex="-1">
+    <div class="batch-heading">
+      <div><h2>{{ i18n.t('investmentTransactions.batchTitle') }}</h2><code>{{ currentBatch.batchId }}</code></div>
+      <span class="batch-status" [attr.data-status]="currentBatch.status">{{ importStatusLabel(currentBatch.status) }}</span>
+    </div>
+    <div class="summary-grid">
+      <div><strong>{{ currentBatch.summary.detected }}</strong><span>{{ i18n.t('investmentTransactions.detected') }}</span></div>
+      <div><strong>{{ currentBatch.summary.review }}</strong><span>{{ i18n.t('investmentTransactions.review') }}</span></div>
+      <div><strong>{{ currentBatch.summary.inserted }}</strong><span>{{ i18n.t('investmentTransactions.inserted') }}</span></div>
+      <div><strong>{{ currentBatch.summary.updated }}</strong><span>{{ i18n.t('investmentTransactions.updated') }}</span></div>
+      <div><strong>{{ currentBatch.summary.failed }}</strong><span>{{ i18n.t('investmentTransactions.failed') }}</span></div>
+    </div>
+    <div class="processing-files">
+      @for (file of currentBatch.files; track file.attachmentId) {
+        <article>
+          <div><strong>{{ file.originalName }}</strong><small>#{{ file.attachmentId }}</small></div>
+          <span [attr.data-file-status]="file.status">{{ importStatusLabel(file.status) }}</span>
+          @if (file.errorCode) { <code>{{ file.errorCode }}</code> }
+          @if (file.status === 'FAILED' || file.status === 'CANCELLED') {
+            <button type="button" (click)="retryFile(file.attachmentId)">{{ i18n.t('investmentTransactions.retryFile') }}</button>
+          }
+        </article>
+      }
+    </div>
+    @if (batchIsWaiting()) {
+      <div class="batch-state-note waiting" role="status">
+        <strong>{{ i18n.t('investmentTransactions.reviewWaitingTitle') }}</strong>
+        <span>{{ i18n.t('investmentTransactions.reviewWaitingDescription') }}</span>
       </div>
-      <button class="primary" type="button" [disabled]="loading() || !accountId()" (click)="upload()">
-        {{ loading() ? i18n.t('investmentTransactions.uploading') : i18n.t('investmentTransactions.createBatch') }}
-      </button>
+    } @else if (batchIsReadOnly()) {
+      <div class="batch-state-note confirmed" role="status">
+        <strong>{{ i18n.t('investmentTransactions.reviewConfirmedTitle') }}</strong>
+        <span>{{ i18n.t('investmentTransactions.reviewConfirmedDescription') }}</span>
+      </div>
+    } @else if (currentBatch.status === 'FAILED' || currentBatch.status === 'CANCELLED') {
+      <div class="batch-state-note unavailable" role="status">
+        <strong>{{ i18n.t('investmentTransactions.reviewUnavailableTitle') }}</strong>
+        <span>{{ i18n.t('investmentTransactions.reviewUnavailableDescription') }}</span>
+      </div>
     }
   </section>
 
-  @if (batch(); as currentBatch) {
-    <section id="batch-review-summary" class="panel batch-panel" tabindex="-1">
+  @if (canConfirmBatch() && reviewItems().length) {
+    <section id="review" class="panel preview-panel" tabindex="-1" aria-labelledby="investment-review-title">
       <div class="batch-heading">
-        <div><h2>{{ i18n.t('investmentTransactions.batchTitle') }}</h2><code>{{ currentBatch.batchId }}</code></div>
-        <span class="batch-status" [attr.data-status]="currentBatch.status">{{ importStatusLabel(currentBatch.status) }}</span>
+        <div><h2 id="investment-review-title">{{ i18n.t('investmentTransactions.reviewTitle') }}</h2><p>{{ i18n.t('investmentTransactions.reviewDescription') }}</p></div>
+        <button class="primary" type="button" [disabled]="loading() || !canConfirmBatch()" (click)="confirm()">{{ i18n.t('investmentTransactions.confirmSelected') }}</button>
       </div>
-      <div class="summary-grid">
-        <div><strong>{{ currentBatch.summary.detected }}</strong><span>{{ i18n.t('investmentTransactions.detected') }}</span></div>
-        <div><strong>{{ currentBatch.summary.review }}</strong><span>{{ i18n.t('investmentTransactions.review') }}</span></div>
-        <div><strong>{{ currentBatch.summary.inserted }}</strong><span>{{ i18n.t('investmentTransactions.inserted') }}</span></div>
-        <div><strong>{{ currentBatch.summary.updated }}</strong><span>{{ i18n.t('investmentTransactions.updated') }}</span></div>
-        <div><strong>{{ currentBatch.summary.failed }}</strong><span>{{ i18n.t('investmentTransactions.failed') }}</span></div>
-      </div>
-      <div class="processing-files">
-        @for (file of currentBatch.files; track file.attachmentId) {
-          <article>
-            <div><strong>{{ file.originalName }}</strong><small>#{{ file.attachmentId }}</small></div>
-            <span [attr.data-file-status]="file.status">{{ importStatusLabel(file.status) }}</span>
-            @if (file.errorCode) { <code>{{ file.errorCode }}</code> }
-            @if (file.status === 'FAILED' || file.status === 'CANCELLED') {
-              <button type="button" (click)="retryFile(file.attachmentId)">{{ i18n.t('investmentTransactions.retryFile') }}</button>
-            }
-          </article>
-        }
-      </div>
-      @if (batchIsWaiting()) {
-        <div class="batch-state-note waiting" role="status">
-          <strong>{{ i18n.t('investmentTransactions.reviewWaitingTitle') }}</strong>
-          <span>{{ i18n.t('investmentTransactions.reviewWaitingDescription') }}</span>
-        </div>
-      } @else if (batchIsReadOnly()) {
-        <div class="batch-state-note confirmed" role="status">
-          <strong>{{ i18n.t('investmentTransactions.reviewConfirmedTitle') }}</strong>
-          <span>{{ i18n.t('investmentTransactions.reviewConfirmedDescription') }}</span>
-        </div>
-      } @else if (currentBatch.status === 'FAILED' || currentBatch.status === 'CANCELLED') {
-        <div class="batch-state-note unavailable" role="status">
-          <strong>{{ i18n.t('investmentTransactions.reviewUnavailableTitle') }}</strong>
-          <span>{{ i18n.t('investmentTransactions.reviewUnavailableDescription') }}</span>
-        </div>
-      }
-    </section>
-
-    @if (canConfirmBatch() && reviewItems().length) {
-      <section id="review" class="panel preview-panel" tabindex="-1" aria-labelledby="investment-review-title">
-        <div class="batch-heading">
-          <div><h2 id="investment-review-title">{{ i18n.t('investmentTransactions.reviewTitle') }}</h2><p>{{ i18n.t('investmentTransactions.reviewDescription') }}</p></div>
-          <button class="primary" type="button" [disabled]="loading() || !canConfirmBatch()" (click)="confirm()">{{ i18n.t('investmentTransactions.confirmSelected') }}</button>
-        </div>
-        <div class="table-scroll">
-          <table>
-            <thead><tr><th>{{ i18n.t('investmentTransactions.review') }}</th><th>{{ i18n.t('investmentTransactions.action') }}</th><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th>{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('field.currency') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th><th>{{ i18n.t('investmentTransactions.resolution') }}</th></tr></thead>
-            <tbody>
-              @for (item of reviewItems(); track item.itemId) {
-                <tr [class.needs-review]="item.processingAction === 'REVIEW'" [class.duplicate-row]="item.processingAction === 'DUPLICATE'">
-                  <td><input type="checkbox" [(ngModel)]="item.selected" [attr.aria-label]="i18n.t('investmentTransactions.selectItem', {id: item.itemId})"></td>
-                  <td><span class="action-badge" [attr.data-action]="item.processingAction">{{ processingActionLabel(item.processingAction) }}</span>
-                    @if (item.warnings.length) { <small class="warnings" [title]="item.warnings.join(', ')">{{ i18n.t('investmentTransactions.warnings', {count: item.warnings.length}) }}</small> }
-                  </td>
-                  <td><input type="datetime-local" [ngModel]="toLocalDateTime(item.transactionAt)" (ngModelChange)="updateTime(item, $event)"></td>
-                  <td><app-custom-select [(ngModel)]="item.transactionType" [ariaLabel]="i18n.t('investmentTransactions.type')" [options]="reviewTypeOptions()" [placeholder]="i18n.t('investmentTransactions.notSelected')"></app-custom-select></td>
-                  <td><app-custom-select [(ngModel)]="item.transactionStatus" [ariaLabel]="i18n.t('field.status')" [options]="reviewStatusOptions()" [placeholder]="i18n.t('investmentTransactions.notSelected')"></app-custom-select></td>
-                  <td><input class="amount" type="number" min="0.0001" step="0.0001" [(ngModel)]="item.amount"></td>
-                  <td><input class="currency" maxlength="3" [(ngModel)]="item.currency"></td>
-                  <td><input [(ngModel)]="item.externalTransactionId"></td>
-                  <td><textarea rows="2" maxlength="1000" [(ngModel)]="item.description"></textarea></td>
-                  <td><button class="resolution" type="button" (click)="openResolution(item)">{{ resolutionLabel(item.resolution) }}</button></td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </section>
-    }
-  }
-
-  @if (confirmResult(); as result) {
-    <section class="confirm-summary" aria-live="polite">
-      <strong>{{ i18n.t('investmentTransactions.confirmResult') }}</strong>
-      <span>{{ i18n.t('investmentTransactions.createdCount', {count: result.inserted}) }}</span><span>{{ i18n.t('investmentTransactions.updatedCount', {count: result.updated}) }}</span>
-      <span>{{ i18n.t('investmentTransactions.skippedCount', {count: result.skipped}) }}</span><span>{{ i18n.t('investmentTransactions.failedCount', {count: result.failed}) }}</span>
-    </section>
-  }
-} @else {
-  <section class="panel history-panel">
-    <header class="history-heading">
-      <div>
-        <h2>{{ i18n.t('investmentTransactions.historyTitle') }}</h2>
-        <p>{{ i18n.t('investmentTransactions.historyDescription') }}</p>
-      </div>
-      @if (historyMeta().totalElements) {
-        <span class="history-count">{{ i18n.t('investmentTransactions.historyResults', {count: historyMeta().totalElements}) }}</span>
-      }
-    </header>
-
-    <button
-      class="history-filter-toggle"
-      type="button"
-      aria-controls="transaction-history-filters"
-      [attr.aria-expanded]="historyFiltersOpen()"
-      (click)="historyFiltersOpen.update(open => !open)">
-      <span>{{ i18n.t(historyFiltersOpen() ? 'investmentTransactions.hideFilters' : 'investmentTransactions.showFilters') }}</span>
-      @if (historyFilterCount()) {
-        <b>{{ historyFilterCount() }}</b>
-      }
-    </button>
-
-    <form
-      id="transaction-history-filters"
-      class="history-filters"
-      [class.open]="historyFiltersOpen()"
-      (keydown.enter)="$event.preventDefault(); applyHistoryFilters()"
-      (ngSubmit)="applyHistoryFilters()">
-      <label>
-        <span>{{ i18n.t('investmentTransactions.fromDate') }}</span>
-        <input type="date" name="historyFromDate" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)">
-      </label>
-      <label>
-        <span>{{ i18n.t('investmentTransactions.toDate') }}</span>
-        <input type="date" name="historyToDate" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)">
-      </label>
-      <label>
-        <span>{{ i18n.t('investmentTransactions.type') }}</span>
-        <app-custom-select
-          name="historyType"
-          [ngModel]="historyType()"
-          [ariaLabel]="i18n.t('investmentTransactions.type')"
-          [options]="historyTypeOptions()"
-          (ngModelChange)="historyType.set($event)">
-        </app-custom-select>
-      </label>
-      <label>
-        <span>{{ i18n.t('field.status') }}</span>
-        <app-custom-select
-          name="historyStatus"
-          [ngModel]="historyStatus()"
-          [ariaLabel]="i18n.t('field.status')"
-          [options]="historyStatusOptions()"
-          (ngModelChange)="historyStatus.set($event)">
-        </app-custom-select>
-      </label>
-      <div class="history-filter-actions">
-        <button class="primary" type="submit" [disabled]="historyDateRangeInvalid() || historyLoading()">
-          {{ i18n.t('investmentTransactions.filter') }}
-        </button>
-        <button class="secondary" type="button" [disabled]="historyLoading()" (click)="resetHistoryFilters()">
-          {{ i18n.t('common.reset') }}
-        </button>
-      </div>
-      @if (historyDateRangeInvalid()) {
-        <p class="history-filter-error" role="alert">{{ i18n.t('investmentTransactions.invalidDateRange') }}</p>
-      }
-    </form>
-
-    @if (historyLoading()) {
-      <div class="history-loading" aria-live="polite">
-        <span class="sr-only">{{ i18n.t('investmentTransactions.loadingHistory') }}</span>
-        @for (row of [1, 2, 3, 4, 5]; track row) {
-          <div class="history-skeleton-row"><i></i><i></i><i></i><i></i></div>
-        }
-      </div>
-    } @else if (!history().length) {
-      <div class="history-empty">
-        <span class="history-empty-icon" aria-hidden="true">↕</span>
-        <h3>{{ i18n.t(historyHasFilters() ? 'investmentTransactions.emptyFilteredTitle' : 'investmentTransactions.emptyHistoryTitle') }}</h3>
-        <p>{{ i18n.t(historyHasFilters() ? 'investmentTransactions.emptyFilteredDescription' : 'investmentTransactions.emptyHistoryDescription') }}</p>
-        @if (historyHasFilters()) {
-          <button class="secondary" type="button" (click)="resetHistoryFilters()">{{ i18n.t('investmentTransactions.clearFilters') }}</button>
-        }
-      </div>
-    } @else {
-      <div class="history-table-wrap">
-        <table class="history-table">
-          <caption class="sr-only">{{ i18n.t('investmentTransactions.historyTitle') }}</caption>
-          <thead><tr><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th class="amount-heading">{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th></tr></thead>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>{{ i18n.t('investmentTransactions.review') }}</th><th>{{ i18n.t('investmentTransactions.action') }}</th><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th>{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('field.currency') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th><th>{{ i18n.t('investmentTransactions.resolution') }}</th></tr></thead>
           <tbody>
-            @for (transaction of history(); track transaction.id) {
-              <tr>
-                <td><time [attr.datetime]="transaction.transactionAt"><strong>{{ formatHistoryDate(transaction.transactionAt) }}</strong><small>{{ formatHistoryTime(transaction.transactionAt) }}</small></time></td>
-                <td><span class="history-type" [attr.data-type]="transaction.transactionType"><i aria-hidden="true">{{ transactionTypeIcon(transaction.transactionType) }}</i>{{ transactionTypeLabel(transaction.transactionType) }}</span></td>
-                <td><span class="history-status" [attr.data-transaction-status]="transaction.transactionStatus">{{ transactionStatusLabel(transaction.transactionStatus) }}</span></td>
-                <td class="history-money" [class.credit]="transactionAmountClass(transaction.transactionType) === 'credit'" [class.debit]="transactionAmountClass(transaction.transactionType) === 'debit'">{{ transactionAmountPrefix(transaction.transactionType) }}{{ formatAmount(transaction.amount) }} <small>{{ transaction.currency }}</small></td>
-                <td><span class="history-truncate" [title]="transaction.externalTransactionId || ''">{{ transaction.externalTransactionId || '—' }}</span></td>
-                <td><span class="history-truncate description" [title]="transaction.description || ''">{{ transaction.description || '—' }}</span></td>
+            @for (item of reviewItems(); track item.itemId) {
+              <tr [class.needs-review]="item.processingAction === 'REVIEW'" [class.duplicate-row]="item.processingAction === 'DUPLICATE'">
+                <td><input type="checkbox" [(ngModel)]="item.selected" [attr.aria-label]="i18n.t('investmentTransactions.selectItem', {id: item.itemId})"></td>
+                <td><span class="action-badge" [attr.data-action]="item.processingAction">{{ processingActionLabel(item.processingAction) }}</span>
+                  @if (item.warnings.length) { <small class="warnings" [title]="item.warnings.join(', ')">{{ i18n.t('investmentTransactions.warnings', {count: item.warnings.length}) }}</small> }
+                </td>
+                <td><input type="datetime-local" [ngModel]="toLocalDateTime(item.transactionAt)" (ngModelChange)="updateTime(item, $event)"></td>
+                <td><app-custom-select [(ngModel)]="item.transactionType" [ariaLabel]="i18n.t('investmentTransactions.type')" [options]="reviewTypeOptions()" [placeholder]="i18n.t('investmentTransactions.notSelected')"></app-custom-select></td>
+                <td><app-custom-select [(ngModel)]="item.transactionStatus" [ariaLabel]="i18n.t('field.status')" [options]="reviewStatusOptions()" [placeholder]="i18n.t('investmentTransactions.notSelected')"></app-custom-select></td>
+                <td><input class="amount" type="number" min="0.0001" step="0.0001" [(ngModel)]="item.amount"></td>
+                <td><input class="currency" maxlength="3" [(ngModel)]="item.currency"></td>
+                <td><input [(ngModel)]="item.externalTransactionId"></td>
+                <td><textarea rows="2" maxlength="1000" [(ngModel)]="item.description"></textarea></td>
+                <td><button class="resolution" type="button" (click)="openResolution(item)">{{ resolutionLabel(item.resolution) }}</button></td>
               </tr>
             }
           </tbody>
         </table>
       </div>
+    </section>
+  }
+}
 
-      <div class="history-card-list">
-        @for (transaction of history(); track transaction.id) {
-          <article class="history-card">
-            <header>
-              <span class="history-type" [attr.data-type]="transaction.transactionType"><i aria-hidden="true">{{ transactionTypeIcon(transaction.transactionType) }}</i>{{ transactionTypeLabel(transaction.transactionType) }}</span>
-              <span class="history-status" [attr.data-transaction-status]="transaction.transactionStatus">{{ transactionStatusLabel(transaction.transactionStatus) }}</span>
-            </header>
-            <strong class="history-card-amount" [class.credit]="transactionAmountClass(transaction.transactionType) === 'credit'" [class.debit]="transactionAmountClass(transaction.transactionType) === 'debit'">{{ transactionAmountPrefix(transaction.transactionType) }}{{ formatAmount(transaction.amount) }} <small>{{ transaction.currency }}</small></strong>
-            <time [attr.datetime]="transaction.transactionAt">{{ formatHistoryDate(transaction.transactionAt) }} · {{ formatHistoryTime(transaction.transactionAt) }}</time>
-            <dl>
-              <div><dt>{{ i18n.t('investmentTransactions.externalId') }}</dt><dd>{{ transaction.externalTransactionId || '—' }}</dd></div>
-              <div><dt>{{ i18n.t('field.description') }}</dt><dd>{{ transaction.description || '—' }}</dd></div>
-            </dl>
-          </article>
-        }
-      </div>
-    }
-
-    @if (!historyLoading() && historyMeta().totalElements) {
-      <footer class="history-pagination">
-        <span>{{ i18n.t('investmentTransactions.paginationRange', {start: historyRangeStart(), end: historyRangeEnd(), total: historyMeta().totalElements}) }}</span>
-        <div>
-          <button type="button" [disabled]="!historyCanGoPrevious()" [attr.aria-label]="i18n.t('common.previous')" (click)="goToHistoryPage(historyMeta().page - 1)">‹</button>
-          <b>{{ i18n.t('investmentTransactions.paginationPage', {current: historyMeta().page + 1, total: historyMeta().totalPages}) }}</b>
-          <button type="button" [disabled]="!historyCanGoNext()" [attr.aria-label]="i18n.t('common.next')" (click)="goToHistoryPage(historyMeta().page + 1)">›</button>
-        </div>
-      </footer>
-    }
+@if (confirmResult(); as result) {
+  <section class="confirm-summary" aria-live="polite">
+    <strong>{{ i18n.t('investmentTransactions.confirmResult') }}</strong>
+    <span>{{ i18n.t('investmentTransactions.createdCount', {count: result.inserted}) }}</span><span>{{ i18n.t('investmentTransactions.updatedCount', {count: result.updated}) }}</span>
+    <span>{{ i18n.t('investmentTransactions.skippedCount', {count: result.skipped}) }}</span><span>{{ i18n.t('investmentTransactions.failedCount', {count: result.failed}) }}</span>
   </section>
 }
 

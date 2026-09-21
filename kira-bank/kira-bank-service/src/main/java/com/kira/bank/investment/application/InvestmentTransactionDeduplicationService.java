@@ -63,21 +63,26 @@ public class InvestmentTransactionDeduplicationService {
             }
             InvestmentProcessingAction action = current.getTransactionStatus() == InvestmentTransactionStatus.PENDING
                 && candidate.status().terminal() ? InvestmentProcessingAction.UPDATE : InvestmentProcessingAction.DUPLICATE;
-            if (hasReviewWarning(warnings)) action = InvestmentProcessingAction.REVIEW;
+            if (hasReviewWarning(warnings, true)) action = InvestmentProcessingAction.REVIEW;
             return new Decision(action, current.getId(), key, List.copyOf(warnings));
         }
 
-        InvestmentProcessingAction action = hasReviewWarning(warnings)
+        InvestmentProcessingAction action = hasReviewWarning(warnings, false)
             ? InvestmentProcessingAction.REVIEW : InvestmentProcessingAction.INSERT;
         return new Decision(action, null, key, List.copyOf(warnings));
     }
 
-    private boolean hasReviewWarning(List<String> warnings) {
-        return warnings.stream().anyMatch(w -> List.of(
-            "LOW_CONFIDENCE", "CURRENCY_MISMATCH", "CURRENCY_INFERRED_FROM_ACCOUNT",
+    private boolean hasReviewWarning(List<String> warnings, boolean matchedExisting) {
+        List<String> blocking = new ArrayList<>(List.of(
+            "CURRENCY_MISMATCH", "CURRENCY_INFERRED_FROM_ACCOUNT",
             "MISSING_TRANSACTION_TYPE", "MISSING_TRANSACTION_STATUS",
             "MISSING_OR_INVALID_AMOUNT", "MISSING_OR_INVALID_CURRENCY", "MISSING_OR_INVALID_TRANSACTION_TIME"
-        ).contains(w));
+        ));
+        // Low AI confidence about field values doesn't need a human check once the transaction is
+        // already confidently identified as the same one on record (matched by external id for
+        // deposit/withdrawal, or by day for a bonus) with no conflicting fields.
+        if (!matchedExisting) blocking.add("LOW_CONFIDENCE");
+        return warnings.stream().anyMatch(blocking::contains);
     }
 
     public record Candidate(

@@ -126,6 +126,7 @@ public class InvestmentAiJobService {
     @Transactional
     public ImmediateRunClaim claimRunMine(Long userId, Long attachmentId) {
         Attachment attachment = attachmentService.claimImmediateRun(userId, attachmentId);
+        transactionImports.resetForRerun(attachmentId);
         transactionImports.refreshAttachmentState(attachmentId);
         return new ImmediateRunClaim(attachment, response(attachment, null, Map.of()));
     }
@@ -133,6 +134,7 @@ public class InvestmentAiJobService {
     @Transactional
     public ImmediateRunClaim claimRunAsAdmin(Long adminId, Long attachmentId) {
         Attachment attachment = attachmentService.claimImmediateRunAsAdmin(adminId, attachmentId);
+        transactionImports.resetForRerun(attachmentId);
         transactionImports.refreshAttachmentState(attachmentId);
         return new ImmediateRunClaim(attachment, response(attachment, owner(attachment.getUserId()), Map.of()));
     }
@@ -176,7 +178,7 @@ public class InvestmentAiJobService {
             attachment.getStoragePurgedAt() == null,
             status == AttachmentAiStatus.PENDING,
             status == AttachmentAiStatus.PENDING || status == AttachmentAiStatus.FAILED
-                || status == AttachmentAiStatus.CANCELLED,
+                || status == AttachmentAiStatus.CANCELLED || status == AttachmentAiStatus.READY,
             reviewTargets.getOrDefault(attachment.getId(), List.of()),
             attachmentService.parseDraft(attachment.getAiResult()),
             history

@@ -1,0 +1,181 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('investmentTransactions.historyEyebrow') }}</span>
+    <h1>{{ i18n.t('route.investmentHistory') }}</h1>
+    <p>{{ i18n.t('investmentTransactions.historyDescription') }}</p>
+  </div>
+  <label class="account-picker">
+    <span>{{ i18n.t('investmentTransactions.account') }}</span>
+    <app-custom-select
+      [ariaLabel]="i18n.t('investmentTransactions.account')"
+      [ngModel]="accountId()"
+      [options]="accountOptions()"
+      [placeholder]="i18n.t('investmentTransactions.accountPlaceholder')"
+      (ngModelChange)="chooseAccount($event)">
+    </app-custom-select>
+  </label>
+</section>
+
+@if (error()) {
+  <div class="error-banner" role="alert">{{ error() }}</div>
+}
+
+<section class="panel history-panel">
+  @if (historyMeta().totalElements) {
+    <div class="history-count-row"><span class="history-count">{{ i18n.t('investmentTransactions.historyResults', {count: historyMeta().totalElements}) }}</span></div>
+  }
+
+  <button
+    class="history-filter-toggle"
+    type="button"
+    aria-controls="transaction-history-filters"
+    [attr.aria-expanded]="historyFiltersOpen()"
+    (click)="historyFiltersOpen.update(open => !open)">
+    <span>{{ i18n.t(historyFiltersOpen() ? 'investmentTransactions.hideFilters' : 'investmentTransactions.showFilters') }}</span>
+    @if (historyFilterCount()) {
+      <b>{{ historyFilterCount() }}</b>
+    }
+  </button>
+
+  <form
+    id="transaction-history-filters"
+    class="history-filters"
+    [class.open]="historyFiltersOpen()"
+    (keydown.enter)="$event.preventDefault(); applyHistoryFilters()"
+    (ngSubmit)="applyHistoryFilters()">
+    <label>
+      <span>{{ i18n.t('investmentTransactions.fromDate') }}</span>
+      <input type="date" name="historyFromDate" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)">
+    </label>
+    <label>
+      <span>{{ i18n.t('investmentTransactions.toDate') }}</span>
+      <input type="date" name="historyToDate" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)">
+    </label>
+    <label>
+      <span>{{ i18n.t('investmentTransactions.type') }}</span>
+      <app-custom-select
+        name="historyType"
+        [ngModel]="historyType()"
+        [ariaLabel]="i18n.t('investmentTransactions.type')"
+        [options]="historyTypeOptions()"
+        (ngModelChange)="historyType.set($event)">
+      </app-custom-select>
+    </label>
+    <label>
+      <span>{{ i18n.t('field.status') }}</span>
+      <app-custom-select
+        name="historyStatus"
+        [ngModel]="historyStatus()"
+        [ariaLabel]="i18n.t('field.status')"
+        [options]="historyStatusOptions()"
+        (ngModelChange)="historyStatus.set($event)">
+      </app-custom-select>
+    </label>
+    <div class="history-filter-actions">
+      <button class="primary" type="submit" [disabled]="historyDateRangeInvalid() || historyLoading()">
+        {{ i18n.t('investmentTransactions.filter') }}
+      </button>
+      <button class="secondary" type="button" [disabled]="historyLoading()" (click)="resetHistoryFilters()">
+        {{ i18n.t('common.reset') }}
+      </button>
+    </div>
+    @if (historyDateRangeInvalid()) {
+      <p class="history-filter-error" role="alert">{{ i18n.t('investmentTransactions.invalidDateRange') }}</p>
+    }
+  </form>
+
+  @if (historyLoading()) {
+    <div class="history-loading" aria-live="polite">
+      <span class="sr-only">{{ i18n.t('investmentTransactions.loadingHistory') }}</span>
+      @for (row of [1, 2, 3, 4, 5]; track row) {
+        <div class="history-skeleton-row"><i></i><i></i><i></i><i></i></div>
+      }
+    </div>
+  } @else if (!history().length) {
+    <div class="history-empty">
+      <span class="history-empty-icon" aria-hidden="true">↕</span>
+      <h3>{{ i18n.t(historyHasFilters() ? 'investmentTransactions.emptyFilteredTitle' : 'investmentTransactions.emptyHistoryTitle') }}</h3>
+      <p>{{ i18n.t(historyHasFilters() ? 'investmentTransactions.emptyFilteredDescription' : 'investmentTransactions.emptyHistoryDescription') }}</p>
+      @if (historyHasFilters()) {
+        <button class="secondary" type="button" (click)="resetHistoryFilters()">{{ i18n.t('investmentTransactions.clearFilters') }}</button>
+      }
+    </div>
+  } @else {
+    <div class="history-table-wrap">
+      <table class="history-table">
+        <caption class="sr-only">{{ i18n.t('investmentTransactions.historyTitle') }}</caption>
+        <thead><tr><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th class="amount-heading">{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th><th></th></tr></thead>
+        <tbody>
+          @for (transaction of history(); track transaction.id) {
+            <tr>
+              <td><time [attr.datetime]="transaction.transactionAt"><strong>{{ formatHistoryDate(transaction.transactionAt) }}</strong><small>{{ formatHistoryTime(transaction.transactionAt) }}</small></time></td>
+              <td><span class="history-type" [attr.data-type]="transaction.transactionType"><i aria-hidden="true">{{ transactionTypeIcon(transaction.transactionType) }}</i>{{ transactionTypeLabel(transaction.transactionType) }}</span></td>
+              <td><span class="history-status" [attr.data-transaction-status]="transaction.transactionStatus">{{ transactionStatusLabel(transaction.transactionStatus) }}</span></td>
+              <td class="history-money" [class.credit]="transactionAmountClass(transaction.transactionType) === 'credit'" [class.debit]="transactionAmountClass(transaction.transactionType) === 'debit'">{{ transactionAmountPrefix(transaction.transactionType) }}{{ formatAmount(transaction.amount) }} <small>{{ transaction.currency }}</small></td>
+              <td><span class="history-truncate" [title]="transaction.externalTransactionId || ''">{{ transaction.externalTransactionId || '—' }}</span></td>
+              <td><span class="history-truncate description" [title]="transaction.description || ''">{{ transaction.description || '—' }}</span></td>
+              <td>
+                @if (canDeleteTransaction(transaction)) {
+                  <button class="history-delete" type="button" [attr.aria-label]="i18n.t('investmentTransactions.deleteDirty')" (click)="requestDelete(transaction)">
+                    {{ i18n.t('investmentTransactions.deleteDirty') }}
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="history-card-list">
+      @for (transaction of history(); track transaction.id) {
+        <article class="history-card">
+          <header>
+            <span class="history-type" [attr.data-type]="transaction.transactionType"><i aria-hidden="true">{{ transactionTypeIcon(transaction.transactionType) }}</i>{{ transactionTypeLabel(transaction.transactionType) }}</span>
+            <span class="history-status" [attr.data-transaction-status]="transaction.transactionStatus">{{ transactionStatusLabel(transaction.transactionStatus) }}</span>
+          </header>
+          <strong class="history-card-amount" [class.credit]="transactionAmountClass(transaction.transactionType) === 'credit'" [class.debit]="transactionAmountClass(transaction.transactionType) === 'debit'">{{ transactionAmountPrefix(transaction.transactionType) }}{{ formatAmount(transaction.amount) }} <small>{{ transaction.currency }}</small></strong>
+          <time [attr.datetime]="transaction.transactionAt">{{ formatHistoryDate(transaction.transactionAt) }} · {{ formatHistoryTime(transaction.transactionAt) }}</time>
+          <dl>
+            <div><dt>{{ i18n.t('investmentTransactions.externalId') }}</dt><dd>{{ transaction.externalTransactionId || '—' }}</dd></div>
+            <div><dt>{{ i18n.t('field.description') }}</dt><dd>{{ transaction.description || '—' }}</dd></div>
+          </dl>
+          @if (canDeleteTransaction(transaction)) {
+            <button class="history-delete" type="button" (click)="requestDelete(transaction)">
+              {{ i18n.t('investmentTransactions.deleteDirty') }}
+            </button>
+          }
+        </article>
+      }
+    </div>
+  }
+
+  @if (!historyLoading() && historyMeta().totalElements) {
+    <footer class="history-pagination">
+      <span>{{ i18n.t('investmentTransactions.paginationRange', {start: historyRangeStart(), end: historyRangeEnd(), total: historyMeta().totalElements}) }}</span>
+      <div>
+        <button type="button" [disabled]="!historyCanGoPrevious()" [attr.aria-label]="i18n.t('common.previous')" (click)="goToHistoryPage(historyMeta().page - 1)">‹</button>
+        <b>{{ i18n.t('investmentTransactions.paginationPage', {current: historyMeta().page + 1, total: historyMeta().totalPages}) }}</b>
+        <button type="button" [disabled]="!historyCanGoNext()" [attr.aria-label]="i18n.t('common.next')" (click)="goToHistoryPage(historyMeta().page + 1)">›</button>
+      </div>
+    </footer>
+  }
+</section>
+
+@if (pendingDelete(); as transaction) {
+  <div class="modal-backdrop" (click)="pendingDelete.set(null)">
+    <section class="delete-dialog" role="alertdialog" aria-modal="true"
+             aria-labelledby="delete-transaction-title" aria-describedby="delete-transaction-description"
+             (click)="$event.stopPropagation()">
+      <span class="delete-dialog-icon" aria-hidden="true"><app-icon name="trash"/></span>
+      <h2 id="delete-transaction-title">{{ i18n.t('investmentTransactions.deleteConfirmTitle') }}</h2>
+      <p id="delete-transaction-description">{{ i18n.t('investmentTransactions.deleteConfirmDescription') }}</p>
+      <div class="delete-dialog-actions">
+        <button class="ghost" type="button" [disabled]="deleting()" (click)="pendingDelete.set(null)">{{ i18n.t('common.close') }}</button>
+        <button class="danger" type="button" [disabled]="deleting()" (click)="confirmDelete()">
+          {{ deleting() ? i18n.t('investmentTransactions.deleting') : i18n.t('investmentTransactions.deleteConfirm') }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

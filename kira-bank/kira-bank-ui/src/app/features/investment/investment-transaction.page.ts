@@ -16,26 +16,13 @@ import {
   InvestmentImportBatch,
   InvestmentImportItem,
   InvestmentImportResolution,
-  InvestmentTransaction,
-  InvestmentAccountSummary,
-  PageMeta,
-  PageResponse
+  InvestmentAccountSummary
 } from '../../shared/models/api.models';
 
 interface ReviewItem extends InvestmentImportItem {
   selected: boolean;
   resolution: InvestmentImportResolution
 }
-
-interface HistoryFilters {
-  fromDate: string;
-  toDate: string;
-  type: string;
-  status: string
-}
-
-const EMPTY_HISTORY_FILTERS: HistoryFilters = {fromDate: '', toDate: '', type: '', status: ''};
-const HISTORY_PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-investment-transaction',
@@ -50,38 +37,10 @@ export class InvestmentTransactionPage {
   readonly selectedFiles = signal<File[]>([]);
   readonly batch = signal<InvestmentImportBatch | null>(null);
   readonly reviewItems = signal<ReviewItem[]>([]);
-  readonly history = signal<InvestmentTransaction[]>([]);
   readonly confirmResult = signal<InvestmentConfirmResponse | null>(null);
   readonly conflictItemId = signal<string | null>(null);
-  readonly activeTab = signal<'import' | 'history'>('import');
   readonly loading = signal(false);
-  readonly historyLoading = signal(false);
   readonly error = signal<string | null>(null);
-  readonly historyType = signal('');
-  readonly historyStatus = signal('');
-  readonly fromDate = signal('');
-  readonly toDate = signal('');
-  readonly appliedHistoryFilters = signal<HistoryFilters>({...EMPTY_HISTORY_FILTERS});
-  readonly historyMeta = signal<PageMeta>({page: 0, size: HISTORY_PAGE_SIZE, totalElements: 0, totalPages: 0});
-  readonly historyFiltersOpen = signal(false);
-  readonly historyDateRangeInvalid = computed(() =>
-    !!this.fromDate() && !!this.toDate() && this.fromDate() > this.toDate());
-  readonly historyFilterCount = computed(() =>
-    Object.values(this.appliedHistoryFilters()).filter(Boolean).length);
-  readonly historyHasFilters = computed(() => this.historyFilterCount() > 0);
-  readonly historyRangeStart = computed(() => {
-    const meta = this.historyMeta();
-    return meta.totalElements ? meta.page * meta.size + 1 : 0;
-  });
-  readonly historyRangeEnd = computed(() => {
-    const meta = this.historyMeta();
-    return Math.min((meta.page + 1) * meta.size, meta.totalElements);
-  });
-  readonly historyCanGoPrevious = computed(() => this.historyMeta().page > 0 && !this.historyLoading());
-  readonly historyCanGoNext = computed(() => {
-    const meta = this.historyMeta();
-    return meta.page + 1 < meta.totalPages && !this.historyLoading();
-  });
   readonly canConfirmBatch = computed(() => {
     const status = this.batch()?.status;
     return !!status && ['READY', 'READY_WITH_ERRORS', 'PARTIALLY_CONFIRMED'].includes(status);
@@ -97,15 +56,7 @@ export class InvestmentTransactionPage {
     label: `${account.accountName} · ${account.currency} · ${this.accountStatusLabel(account.status)}`
   })));
   readonly reviewTypeOptions = computed<SelectOption[]>(() => this.transactionTypeOptions());
-  readonly historyTypeOptions = computed<SelectOption[]>(() => [
-    {value: '', label: this.i18n.t('investmentTransactions.allTypes')},
-    ...this.transactionTypeOptions()
-  ]);
   readonly reviewStatusOptions = computed<SelectOption[]>(() => this.transactionStatusOptions());
-  readonly historyStatusOptions = computed<SelectOption[]>(() => [
-    {value: '', label: this.i18n.t('investmentTransactions.allStatuses')},
-    ...this.transactionStatusOptions()
-  ]);
 
   private readonly api = inject(ApiService);
   readonly i18n = inject(LanguageService);
@@ -137,7 +88,6 @@ export class InvestmentTransactionPage {
           if (requestedAccount) {
             this.selectAccount(requestedAccount.id, false);
             if (requestedBatchId) {
-              this.activeTab.set('import');
               this.focusReviewWhenReady = true;
               this.loadBatch(requestedAccount.id, requestedBatchId, true);
             }
@@ -180,7 +130,6 @@ export class InvestmentTransactionPage {
         replaceUrl: true
       });
     }
-    this.loadHistory(0);
   }
 
   chooseFiles(event: Event): void {
@@ -200,8 +149,6 @@ export class InvestmentTransactionPage {
 
   @HostListener('document:paste', ['$event'])
   pasteImages(event: ClipboardEvent): void {
-    if (this.activeTab() !== 'import') return;
-
     const images = Array.from(event.clipboardData?.items ?? [])
       .filter(item => item.type.startsWith('image/'))
       .map(item => item.getAsFile())
@@ -282,7 +229,6 @@ export class InvestmentTransactionPage {
           count: result.inserted + result.updated + result.skipped
         }), 'success');
         this.loadBatch(accountId, batch.batchId);
-        this.loadHistory();
       },
       error: error => {
         this.loading.set(false);
@@ -306,62 +252,6 @@ export class InvestmentTransactionPage {
     return this.reviewItems().find(item => item.itemId === this.conflictItemId());
   }
 
-  switchTab(tab: 'import' | 'history'): void {
-    this.activeTab.set(tab);
-    if (tab === 'history') this.loadHistory(this.historyMeta().page);
-  }
-
-  applyHistoryFilters(): void {
-    if (this.historyDateRangeInvalid()) return;
-    this.appliedHistoryFilters.set({
-      fromDate: this.fromDate(),
-      toDate: this.toDate(),
-      type: this.historyType(),
-      status: this.historyStatus()
-    });
-    this.historyFiltersOpen.set(false);
-    this.loadHistory(0);
-  }
-
-  resetHistoryFilters(): void {
-    this.fromDate.set('');
-    this.toDate.set('');
-    this.historyType.set('');
-    this.historyStatus.set('');
-    this.appliedHistoryFilters.set({...EMPTY_HISTORY_FILTERS});
-    this.historyFiltersOpen.set(false);
-    this.loadHistory(0);
-  }
-
-  goToHistoryPage(page: number): void {
-    const meta = this.historyMeta();
-    if (page < 0 || page >= meta.totalPages || page === meta.page || this.historyLoading()) return;
-    this.loadHistory(page);
-  }
-
-  loadHistory(page = 0): void {
-    const accountId = this.accountId();
-    if (!accountId) return;
-    const applied = this.appliedHistoryFilters();
-    const filters: Record<string, string | number> = {page, size: HISTORY_PAGE_SIZE, sort: 'transactionAt,desc'};
-    if (applied.fromDate) filters['fromDate'] = applied.fromDate;
-    if (applied.toDate) filters['toDate'] = applied.toDate;
-    if (applied.type) filters['type'] = applied.type;
-    if (applied.status) filters['status'] = applied.status;
-    this.historyLoading.set(true);
-    this.api.investmentTransactions(accountId, filters).subscribe({
-      next: (response: PageResponse<InvestmentTransaction>) => {
-        this.history.set(response.data);
-        this.historyMeta.set(response.meta);
-        this.historyLoading.set(false);
-      },
-      error: () => {
-        this.historyLoading.set(false);
-        this.error.set(this.i18n.t('investmentTransactions.errorHistoryLoad'));
-      }
-    });
-  }
-
   toLocalDateTime(value: string | null): string {
     if (!value) return '';
     const date = new Date(value);
@@ -371,51 +261,6 @@ export class InvestmentTransactionPage {
 
   updateTime(item: ReviewItem, value: string): void {
     item.transactionAt = value ? new Date(value).toISOString() : null;
-  }
-
-  formatAmount(value: number): string {
-    return new Intl.NumberFormat(this.locale(), {minimumFractionDigits: 0, maximumFractionDigits: 4}).format(value);
-  }
-
-  formatDateTime(value: string): string {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat(this.locale(), {
-      dateStyle: 'short', timeStyle: 'short'
-    }).format(date);
-  }
-
-  formatHistoryDate(value: string): string {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat(this.locale(), {
-      dateStyle: 'medium'
-    }).format(date);
-  }
-
-  formatHistoryTime(value: string): string {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(this.locale(), {
-      timeStyle: 'short'
-    }).format(date);
-  }
-
-  transactionTypeIcon(value: string | null): string {
-    return ({DEPOSIT: '↓', WITHDRAWAL: '↑', BONUS: '✦'} as Record<string, string>)[value ?? ''] ?? '•';
-  }
-
-  transactionAmountPrefix(value: string | null): string {
-    return value === 'WITHDRAWAL' ? '−' : value === 'DEPOSIT' || value === 'BONUS' ? '+' : '';
-  }
-
-  transactionAmountClass(value: string | null): string {
-    return value === 'WITHDRAWAL' ? 'debit' : value === 'DEPOSIT' || value === 'BONUS' ? 'credit' : '';
-  }
-
-  transactionTypeLabel(value: string | null): string {
-    return this.enumLabel('investmentTransactions.type', value);
-  }
-
-  transactionStatusLabel(value: string | null): string {
-    return this.enumLabel('investmentTransactions.status', value);
   }
 
   importStatusLabel(value: string): string {
@@ -442,6 +287,14 @@ export class InvestmentTransactionPage {
     return keys[value]
       ? this.i18n.t(keys[value])
       : this.i18n.t('investmentTransactions.unknownValue');
+  }
+
+  private transactionTypeLabel(value: string | null): string {
+    return this.enumLabel('investmentTransactions.type', value);
+  }
+
+  private transactionStatusLabel(value: string | null): string {
+    return this.enumLabel('investmentTransactions.status', value);
   }
 
   private transactionTypeOptions(): SelectOption[] {
@@ -557,10 +410,6 @@ export class InvestmentTransactionPage {
     return this.i18n.has(key)
       ? this.i18n.t(key)
       : this.i18n.t('investmentTransactions.unknownValue');
-  }
-
-  private locale(): string {
-    return this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
   }
 
   private errorMessage(error: {error?: Partial<ApiError>}, fallbackKey: string): string {

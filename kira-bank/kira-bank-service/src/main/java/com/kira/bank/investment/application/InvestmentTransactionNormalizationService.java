@@ -93,10 +93,18 @@ public class InvestmentTransactionNormalizationService {
 
     public byte[] dedupKey(Long accountId, InvestmentTransactionType type, String externalId,
                            BigDecimal amount, String currency, Instant transactionAt, String disambiguator) {
-        String canonical = externalId != null
-            ? accountId + "|" + type + "|" + externalId
-            : accountId + "|" + type + "|" + amount.setScale(4, RoundingMode.HALF_UP).toPlainString()
-            + "|" + currency + "|" + transactionAt.truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+        String canonical;
+        if (externalId != null) {
+            canonical = accountId + "|" + type + "|" + externalId;
+        } else if (type == InvestmentTransactionType.BONUS) {
+            // Only one bonus can be earned per day, so fingerprint by day alone. This collapses
+            // re-detections of the same day's bonus across different uploaded images/re-runs
+            // (which can extract slightly different amounts/times via OCR) into one transaction.
+            canonical = accountId + "|" + type + "|" + transactionAt.atZone(defaultZone).toLocalDate();
+        } else {
+            canonical = accountId + "|" + type + "|" + amount.setScale(4, RoundingMode.HALF_UP).toPlainString()
+                + "|" + currency + "|" + transactionAt.truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+        }
         if (disambiguator != null) canonical += "|" + disambiguator;
         try {
             return MessageDigest.getInstance("SHA-256").digest(canonical.getBytes(StandardCharsets.UTF_8));

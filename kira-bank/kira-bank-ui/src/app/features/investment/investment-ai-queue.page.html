@@ -41,11 +41,13 @@
     </header>
 
     @if (loading() && !jobs().length) {
-      <div class="queue-loading" aria-live="polite">
-        <span class="spinner"></span>{{ i18n.t('investmentAiQueue.loading') }}
+      <div class="queue-skeleton" aria-busy="true" [attr.aria-label]="i18n.t('investmentAiQueue.loading')">
+        @for (row of [1, 2, 3, 4, 5]; track row) {
+          <div class="queue-skeleton-row"><i></i><i></i><i></i><i></i></div>
+        }
       </div>
     } @else if (!jobs().length) {
-      <div class="empty-state"><span aria-hidden="true">◎</span><h3>{{ i18n.t('investmentAiQueue.emptyTitle') }}</h3><p>{{ i18n.t('investmentAiQueue.emptyDescription') }}</p></div>
+      <div class="empty-state"><span aria-hidden="true"><app-icon name="receipt"/></span><h3>{{ i18n.t('investmentAiQueue.emptyTitle') }}</h3><p>{{ i18n.t('investmentAiQueue.emptyDescription') }}</p></div>
     } @else {
       <div class="queue-table-wrap">
         <table class="queue-table">
@@ -60,25 +62,29 @@
           <tbody>
             @for (job of jobs(); track job.attachmentId) {
               <tr>
-                <td><div class="job-file"><span>AI</span><div><strong [title]="job.originalName">{{ job.originalName }}</strong><small>#{{ job.attachmentId }} · {{ formatBytes(job.size) }}<br>{{ job.model || i18n.t('investmentAiQueue.modelPending') }}</small></div></div></td>
+                <td><div class="job-file"><span><app-icon name="receipt"/></span><div><strong [title]="job.originalName">{{ job.originalName }}</strong><small>#{{ job.attachmentId }} · {{ formatBytes(job.size) }}<br>{{ job.model || i18n.t('investmentAiQueue.modelPending') }}</small></div></div></td>
                 @if (isAdminScope()) { <td><div class="owner-cell"><strong>{{ job.owner?.fullName || '—' }}</strong><small>{{ job.owner?.email || ('#' + job.owner?.userId) }}</small></div></td> }
                 <td class="status-cell"><span class="status-pill" [attr.data-status]="job.status"><i aria-hidden="true"><app-icon [name]="statusIcon(job.status)"/></i>{{ statusLabel(job.status) }}</span>@if (job.error) { <code class="job-error">{{ job.error }}</code> }</td>
                 <td><strong>{{ job.attemptCount }}/{{ job.maxAttempts }}</strong></td>
                 <td><dl class="timeline"><div><dt>{{ i18n.t('investmentAiQueue.created') }}</dt><dd>{{ formatDateTime(job.createdAt) }}</dd></div><div><dt>{{ i18n.t('investmentAiQueue.started') }}</dt><dd>{{ formatDateTime(job.processingStartedAt) }}</dd></div><div><dt>{{ i18n.t('investmentAiQueue.completed') }}</dt><dd>{{ formatDateTime(job.completedAt) }}</dd></div></dl></td>
                 <td><div class="row-actions">
-                  <button type="button" [disabled]="!job.contentAvailable || isActing(job.attachmentId)" (click)="viewImage(job)">{{ i18n.t('investmentAiQueue.viewImage') }}</button>
-                  <button type="button" [disabled]="!job.detectedJson || isActing(job.attachmentId)" (click)="viewJson(job)">{{ i18n.t('investmentAiQueue.viewJson') }}</button>
-                  @if (job.status === 'READY') {
-                    <span class="review-action" [attr.title]="reviewDisabledReason(job)" [attr.tabindex]="reviewDisabledReason(job) ? 0 : null">
-                      <button class="review" type="button"
-                              [disabled]="!!reviewDisabledReason(job) || isActing(job.attachmentId)"
-                              [attr.aria-label]="reviewAriaLabel(job)" (click)="review(job, $event)">
-                        {{ i18n.t('investmentAiQueue.reviewAndConfirm') }}
-                      </button>
-                    </span>
-                  }
-                  <button class="run" type="button" [disabled]="!job.canRun || isActing(job.attachmentId)" (click)="run(job)">{{ i18n.t('investmentAiQueue.run') }}</button>
-                  <button class="cancel" type="button" [disabled]="!job.canCancel || isActing(job.attachmentId)" (click)="requestCancel(job)">{{ i18n.t('common.cancel') }}</button>
+                  <div class="row-actions-view">
+                    <button class="ghost-icon" type="button" [disabled]="!job.contentAvailable || isActing(job.attachmentId)" (click)="viewImage(job)"><app-icon name="eye"/>{{ i18n.t('investmentAiQueue.viewImage') }}</button>
+                    <button class="ghost-icon" type="button" [disabled]="!job.detectedJson || isActing(job.attachmentId)" (click)="viewJson(job)"><app-icon name="copy"/>{{ i18n.t('investmentAiQueue.viewJson') }}</button>
+                  </div>
+                  <div class="row-actions-main">
+                    @if (job.status === 'READY') {
+                      <span class="review-action" [attr.title]="reviewDisabledReason(job)" [attr.tabindex]="reviewDisabledReason(job) ? 0 : null">
+                        <button class="review" type="button"
+                                [disabled]="!!reviewDisabledReason(job) || isActing(job.attachmentId)"
+                                [attr.aria-label]="reviewAriaLabel(job)" (click)="review(job, $event)">
+                          {{ i18n.t('investmentAiQueue.reviewAndConfirm') }}
+                        </button>
+                      </span>
+                    }
+                    <button class="run" type="button" [disabled]="!job.canRun || isActing(job.attachmentId)" (click)="run(job)">{{ i18n.t(job.status === 'READY' ? 'investmentAiQueue.rerun' : 'investmentAiQueue.run') }}</button>
+                    <button class="cancel" type="button" [disabled]="!job.canCancel || isActing(job.attachmentId)" (click)="requestCancel(job)">{{ i18n.t('common.cancel') }}</button>
+                  </div>
                 </div></td>
               </tr>
             }
@@ -89,24 +95,28 @@
       <div class="queue-cards">
         @for (job of jobs(); track job.attachmentId) {
           <article class="queue-card">
-            <header><div class="job-file"><span>AI</span><div><strong>{{ job.originalName }}</strong><small>#{{ job.attachmentId }} · {{ formatBytes(job.size) }}</small></div></div><span class="status-pill" [attr.data-status]="job.status"><i aria-hidden="true"><app-icon [name]="statusIcon(job.status)"/></i>{{ statusLabel(job.status) }}</span></header>
+            <header><div class="job-file"><span><app-icon name="receipt"/></span><div><strong>{{ job.originalName }}</strong><small>#{{ job.attachmentId }} · {{ formatBytes(job.size) }}</small></div></div><span class="status-pill" [attr.data-status]="job.status"><i aria-hidden="true"><app-icon [name]="statusIcon(job.status)"/></i>{{ statusLabel(job.status) }}</span></header>
             @if (isAdminScope()) { <div class="owner-cell"><small>{{ i18n.t('investmentAiQueue.owner') }}</small><strong>{{ job.owner?.fullName || '—' }}</strong><span>{{ job.owner?.email || ('#' + job.owner?.userId) }}</span></div> }
             <dl class="card-details"><div><dt>{{ i18n.t('investmentAiQueue.attempts') }}</dt><dd>{{ job.attemptCount }}/{{ job.maxAttempts }}</dd></div><div><dt>{{ i18n.t('investmentAiQueue.created') }}</dt><dd>{{ formatDateTime(job.createdAt) }}</dd></div><div><dt>{{ i18n.t('investmentAiQueue.completed') }}</dt><dd>{{ formatDateTime(job.completedAt) }}</dd></div></dl>
             @if (job.error) { <code class="job-error">{{ job.error }}</code> }
             <footer class="row-actions">
-              <button type="button" [disabled]="!job.contentAvailable" (click)="viewImage(job)">{{ i18n.t('investmentAiQueue.viewImage') }}</button>
-              <button type="button" [disabled]="!job.detectedJson" (click)="viewJson(job)">{{ i18n.t('investmentAiQueue.viewJson') }}</button>
-              @if (job.status === 'READY') {
-                <span class="review-action" [attr.title]="reviewDisabledReason(job)" [attr.tabindex]="reviewDisabledReason(job) ? 0 : null">
-                  <button class="review" type="button"
-                          [disabled]="!!reviewDisabledReason(job) || isActing(job.attachmentId)"
-                          [attr.aria-label]="reviewAriaLabel(job)" (click)="review(job, $event)">
-                    {{ i18n.t('investmentAiQueue.reviewAndConfirm') }}
-                  </button>
-                </span>
-              }
-              <button class="run" type="button" [disabled]="!job.canRun || isActing(job.attachmentId)" (click)="run(job)">{{ i18n.t('investmentAiQueue.run') }}</button>
-              <button class="cancel" type="button" [disabled]="!job.canCancel || isActing(job.attachmentId)" (click)="requestCancel(job)">{{ i18n.t('common.cancel') }}</button>
+              <div class="row-actions-view">
+                <button class="ghost-icon" type="button" [disabled]="!job.contentAvailable" (click)="viewImage(job)"><app-icon name="eye"/>{{ i18n.t('investmentAiQueue.viewImage') }}</button>
+                <button class="ghost-icon" type="button" [disabled]="!job.detectedJson" (click)="viewJson(job)"><app-icon name="copy"/>{{ i18n.t('investmentAiQueue.viewJson') }}</button>
+              </div>
+              <div class="row-actions-main">
+                @if (job.status === 'READY') {
+                  <span class="review-action" [attr.title]="reviewDisabledReason(job)" [attr.tabindex]="reviewDisabledReason(job) ? 0 : null">
+                    <button class="review" type="button"
+                            [disabled]="!!reviewDisabledReason(job) || isActing(job.attachmentId)"
+                            [attr.aria-label]="reviewAriaLabel(job)" (click)="review(job, $event)">
+                      {{ i18n.t('investmentAiQueue.reviewAndConfirm') }}
+                    </button>
+                  </span>
+                }
+                <button class="run" type="button" [disabled]="!job.canRun || isActing(job.attachmentId)" (click)="run(job)">{{ i18n.t(job.status === 'READY' ? 'investmentAiQueue.rerun' : 'investmentAiQueue.run') }}</button>
+                <button class="cancel" type="button" [disabled]="!job.canCancel || isActing(job.attachmentId)" (click)="requestCancel(job)">{{ i18n.t('common.cancel') }}</button>
+              </div>
             </footer>
           </article>
         }
@@ -152,9 +162,9 @@
 }
 
 @if (jsonJob(); as job) {
-  <div class="modal-backdrop" (click)="closeJson()"><section class="data-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()"><header><div><span>{{ i18n.t('investmentAiQueue.detectedJson') }}</span><h2>{{ job.originalName }}</h2></div><button type="button" [attr.aria-label]="i18n.t('common.close')" (click)="closeJson()">×</button></header><p>{{ i18n.t('investmentAiQueue.normalizedJsonNotice') }}</p><pre>{{ jsonText() }}</pre></section></div>
+  <div class="modal-backdrop" (click)="closeJson()"><section class="data-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()"><header><div><span>{{ i18n.t('investmentAiQueue.detectedJson') }}</span><h2>{{ job.originalName }}</h2></div><button class="dialog-close" type="button" [attr.aria-label]="i18n.t('common.close')" (click)="closeJson()"><app-icon name="close"/></button></header><p>{{ i18n.t('investmentAiQueue.normalizedJsonNotice') }}</p><pre>{{ jsonText() }}</pre></section></div>
 }
 
 @if (imageJob(); as job) {
-  <div class="modal-backdrop" (click)="closeImage()"><section class="image-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()"><header><div><span>{{ i18n.t('investmentAiQueue.sourceImage') }}</span><h2>{{ job.originalName }}</h2></div><button type="button" [attr.aria-label]="i18n.t('common.close')" (click)="closeImage()">×</button></header>@if (imageLoading()) { <div class="image-state"><span class="spinner"></span>{{ i18n.t('investmentAiQueue.loadingImage') }}</div> } @else if (imageError()) { <div class="image-state error">{{ imageError() }}</div> } @else if (imageUrl()) { <div class="image-canvas"><img [src]="imageUrl()" [alt]="job.originalName"></div> }</section></div>
+  <div class="modal-backdrop" (click)="closeImage()"><section class="image-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()"><header><div><span>{{ i18n.t('investmentAiQueue.sourceImage') }}</span><h2>{{ job.originalName }}</h2></div><button class="dialog-close" type="button" [attr.aria-label]="i18n.t('common.close')" (click)="closeImage()"><app-icon name="close"/></button></header>@if (imageLoading()) { <div class="image-state"><span class="spinner"></span>{{ i18n.t('investmentAiQueue.loadingImage') }}</div> } @else if (imageError()) { <div class="image-state error">{{ imageError() }}</div> } @else if (imageUrl()) { <div class="image-canvas"><img [src]="imageUrl()" [alt]="job.originalName"></div> }</section></div>
 }

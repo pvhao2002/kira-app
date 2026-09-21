@@ -65,6 +65,12 @@ export const routes: Routes = [
         data: {titleKey: 'route.investmentAiQueue'}
       },
       {
+        path: 'investment/history',
+        loadComponent: () =>
+          import('./features/investment/investment-history.page').then(m => m.InvestmentHistoryPage),
+        data: {titleKey: 'route.investmentHistory'}
+      },
+      {
         path: 'lodgings',
         loadComponent: () => import('./features/lodging/lodging.page').then(m => m.LodgingPage),
         data: {titleKey: 'shell.lodgings'}

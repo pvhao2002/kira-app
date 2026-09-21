@@ -130,6 +130,26 @@ public class InvestmentTransactionImportService {
     }
 
     @Transactional
+    public void resetForRerun(Long attachmentId) {
+        List<InvestmentTransactionImportFile> readyFiles = files.findByAttachmentIdAndStatusInAndDeletedAtIsNull(
+            attachmentId, List.of(InvestmentImportFileStatus.READY));
+        Instant now = Instant.now();
+        for (InvestmentTransactionImportFile file : readyFiles) {
+            InvestmentTransactionImportBatch batch = batches.findById(file.getBatchId()).orElse(null);
+            if (batch == null) continue;
+            for (InvestmentTransactionImportItem item : items.findByBatchIdAndPrimaryAttachmentIdAndDeletedAtIsNull(
+                batch.getId(), attachmentId)) {
+                if (item.getConfirmedTransactionId() == null) {
+                    item.setDeletedAt(now);
+                }
+            }
+            file.setStatus(InvestmentImportFileStatus.PENDING);
+            file.setErrorCode(null);
+            refreshBatch(batch);
+        }
+    }
+
+    @Transactional
     public void refreshAttachmentState(Long attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId).orElse(null);
         if (attachment == null) return;
@@ -294,6 +314,21 @@ public class InvestmentTransactionImportService {
     }
 
     @Transactional
+    public void deleteTransaction(Long userId, Long accountId, Long transactionId) {
+        account(accountId, userId);
+        InvestmentAccountTransaction transaction = transactions
+            .findByIdAndUserIdAndInvestmentAccountIdAndDeletedAtIsNull(transactionId, userId, accountId)
+            .orElseThrow(() -> missing("INVESTMENT_TRANSACTION_NOT_FOUND"));
+        if (transaction.getExternalTransactionId() != null) {
+            throw bad("INVESTMENT_TRANSACTION_HAS_EXTERNAL_ID",
+                "Chỉ có thể xoá giao dịch chưa xác định được mã tham chiếu");
+        }
+        transaction.setDeletedAt(Instant.now());
+        transaction.setUpdatedBy(userId);
+        metrics.counter("investment.transaction.deleted").increment();
+    }
+
+    @Transactional
     public TransactionResponse createManual(Long userId, Long accountId, ManualTransactionRequest request) {
         InvestmentAccount account = account(accountId, userId);
         InvestmentTransactionType type = request.transactionType();
@@ -442,8 +477,13 @@ public class InvestmentTransactionImportService {
             if (existing.getAmount() != null && incoming.getAmount() != null
                 && existing.getAmount().compareTo(incoming.getAmount()) != 0) warnings.add("AMOUNT_CONFLICT");
             if (!Objects.equals(existing.getCurrency(), incoming.getCurrency())) warnings.add("CURRENCY_CONFLICT");
-            if (hasConflict(warnings) || incoming.getExternalTransactionId() == null) {
-                if (incoming.getExternalTransactionId() == null) warnings.add("FALLBACK_DEDUP_COLLISION");
+            // BONUS has no external id by design (one bonus per day identifies it), so a same-day
+            // match is a confident duplicate, not an ambiguous fallback collision like it would be
+            // for a deposit/withdrawal matched only by amount+time without an external id.
+            boolean weakFallbackMatch = incoming.getExternalTransactionId() == null
+                && incoming.getTransactionType() != InvestmentTransactionType.BONUS;
+            if (hasConflict(warnings) || weakFallbackMatch) {
+                if (weakFallbackMatch) warnings.add("FALLBACK_DEDUP_COLLISION");
                 existing.setProcessingAction(InvestmentProcessingAction.REVIEW);
             } else if (existing.getTransactionStatus() == InvestmentTransactionStatus.PENDING
                 && incoming.getTransactionStatus() != null && incoming.getTransactionStatus().terminal()) {
@@ -458,6 +498,8 @@ public class InvestmentTransactionImportService {
                 && existing.getTransactionStatus() != incoming.getTransactionStatus()) {
                 warnings.add("STATUS_CONFLICT");
                 existing.setProcessingAction(InvestmentProcessingAction.REVIEW);
+            } else {
+                existing.setProcessingAction(InvestmentProcessingAction.DUPLICATE);
             }
             existing.setWarnings(json(warnings.stream().distinct().toList()));
             return existing;

@@ -34,6 +34,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.kira.bank.attachment.application.AttachmentDtos.*;
 
@@ -266,9 +268,9 @@ public class AttachmentService {
 
     private Attachment claimImmediateRun(Attachment attachment, Long actorId, InvestmentAiJobEventActor actorType) {
         requireInvestmentJob(attachment);
-        if (!List.of(AttachmentAiStatus.PENDING, AttachmentAiStatus.FAILED, AttachmentAiStatus.CANCELLED)
-            .contains(attachment.getAiStatus())) {
-            throw conflict("AI_JOB_NOT_RUNNABLE", "Chỉ có thể chạy job PENDING, FAILED hoặc CANCELLED");
+        if (!List.of(AttachmentAiStatus.PENDING, AttachmentAiStatus.FAILED, AttachmentAiStatus.CANCELLED,
+            AttachmentAiStatus.READY).contains(attachment.getAiStatus())) {
+            throw conflict("AI_JOB_NOT_RUNNABLE", "Chỉ có thể chạy job PENDING, FAILED, CANCELLED hoặc READY");
         }
         if (attachment.getAiStatus() != AttachmentAiStatus.PENDING) {
             AttachmentAiStatus previousStatus = attachment.getAiStatus();
@@ -578,14 +580,30 @@ public class AttachmentService {
             }
             Instant transactionAt = parseInstant(transaction.transactionAt());
             if (transaction.transactionAt() != null && transactionAt == null) warnings.add("INVALID_TRANSACTION_TIME");
+            String externalId = trimToNull(transaction.externalTransactionId());
+            if (externalId == null) externalId = extractExternalId(transaction.rawText());
+            if (externalId == null) externalId = extractExternalId(transaction.description());
             transactions.add(new AiTransactionDraftResponse(
                 type, status, amount, trimToNull(transaction.currency()), transactionAt,
-                trimToNull(transaction.externalTransactionId()), trimToNull(transaction.description()),
+                externalId, trimToNull(transaction.description()),
                 trimToNull(transaction.rawText()), transaction.confidence(),
                 Optional.ofNullable(transaction.uncertainFields()).orElse(List.of()), List.copyOf(warnings)
             ));
         }
         return new AiDraftResponse(attachmentId, List.copyOf(transactions));
+    }
+
+    // The AI often omits externalTransactionId even when a reference number is spelled out in the
+    // receipt text (e.g. "E-transfer No. 5300286939", "Request N-5300286939"), which breaks dedup
+    // between a transaction's PENDING and COMPLETED receipts. Recover it deterministically instead
+    // of depending on the model to follow the prompt.
+    private static final Pattern EXTERNAL_ID_PATTERN =
+        Pattern.compile("(?iu)(?:\\bno\\.?\\s*|\\bn[º°-]\\s*|#\\s*)([A-Za-z0-9]{5,})");
+
+    private String extractExternalId(String text) {
+        if (text == null) return null;
+        Matcher matcher = EXTERNAL_ID_PATTERN.matcher(text);
+        return matcher.find() ? matcher.group(1) : null;
     }
 
     private String normalizeStatus(String raw) {

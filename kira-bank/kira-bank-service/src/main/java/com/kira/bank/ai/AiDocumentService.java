@@ -24,7 +24,8 @@ public class AiDocumentService {
         Extract every visible investment transaction from each labeled image. Never invent values.
         Keep rawText exactly as visible. Amount must be positive; use the text sign only to infer the type.
         Types are DEPOSIT, WITHDRAWAL, BONUS. Statuses are PENDING, COMPLETED, FAILED, CANCELLED.
-        Combine a visible page date with each row time and return ISO-8601 with an offset. Preserve transaction IDs as strings.
+        Combine a visible page date with each row time and return ISO-8601 with an offset. Set externalTransactionId to
+        any reference/order number printed for the row (e.g. "No. 5300286939", "N-5300286939"), digits only, as a string.
         Use null for unreadable fields and add a short validation warning. Return one result for every attachmentId.
         """;
 
