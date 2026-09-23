@@ -12,6 +12,7 @@ import {
   TutoringLesson, TutoringSeriesRequest, TutoringStudent, TutoringStudentRequest,
   TutoringTeachingMode, TutoringWeek
 } from '../../shared/models/api.models';
+import {numberFormat, dateFormat} from '../../core/i18n/formatters';
 
 @Component({
   selector: 'app-tutor-schedule',
@@ -128,11 +129,11 @@ export class TutorSchedulePage {
   goToday(): void { this.weekStart.set(this.currentWeekStart()); this.loadAll(); }
   lessonsFor(date: string): TutoringLesson[] { return this.dayLessons().get(date) ?? []; }
   isToday(date: string): boolean { return date === this.todayInZone(); }
-  dayLabel(date: string): string { return new Intl.DateTimeFormat(this.locale(), {weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC'}).format(new Date(`${date}T00:00:00Z`)); }
+  dayLabel(date: string): string { return dateFormat(this.locale(), {weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'UTC'}).format(new Date(`${date}T00:00:00Z`)); }
   weekLabel(): string {
     return `${this.shortDate(this.weekStart())} – ${this.shortDate(this.addDays(this.weekStart(), 6))}`;
   }
-  money(value: number): string { return new Intl.NumberFormat(this.locale(), {style: 'currency', currency: 'VND', maximumFractionDigits: 0}).format(value); }
+  money(value: number): string { return numberFormat(this.locale(), {style: 'currency', currency: 'VND', maximumFractionDigits: 0}).format(value); }
   time(value: string): string { return value.slice(0, 5); }
   duration(lesson: TutoringLesson): string { return `${this.time(lesson.startTime)}–${this.time(lesson.endTime)}`; }
   lessonStyle(lesson: TutoringLesson): Record<string, string> {
@@ -277,10 +278,10 @@ export class TutorSchedulePage {
   }
   private mutationDone(): void { this.lessonDialog.set(false); this.toast.show(this.i18n.t('tutor.saved'), 'success'); this.loadAll(); }
   private showError(error: HttpErrorResponse): void { this.error.set(error.error?.message ?? this.i18n.t('tutor.saveFailed')); }
-  private locale(): string { return this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US'; }
-  private shortDate(value: string): string { return new Intl.DateTimeFormat(this.locale(), {day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'}).format(new Date(`${value}T00:00:00Z`)); }
+  private locale(): string { return this.i18n.locale(); }
+  private shortDate(value: string): string { return dateFormat(this.locale(), {day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'}).format(new Date(`${value}T00:00:00Z`)); }
   private todayInZone(): string {
-    const parts = new Intl.DateTimeFormat('en-US', {timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit'}).formatToParts(new Date());
+    const parts = dateFormat('en-US', {timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit'}).formatToParts(new Date());
     const part = (type: string) => parts.find(value => value.type === type)?.value ?? '';
     return `${part('year')}-${part('month')}-${part('day')}`;
   }

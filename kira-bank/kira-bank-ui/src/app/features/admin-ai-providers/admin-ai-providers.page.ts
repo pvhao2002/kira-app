@@ -7,6 +7,7 @@ import {TranslationKey} from '../../core/i18n/translations';
 import {ApiService} from '../../core/services/api.service';
 import {ToastService} from '../../core/services/toast.service';
 import {AiProviderAccountStatus, CloudflareAccount} from '../../shared/models/api.models';
+import {dateFormat} from '../../core/i18n/formatters';
 
 @Component({
   selector: 'app-admin-cloudflare-accounts', imports: [ReactiveFormsModule],
@@ -127,7 +128,7 @@ export class AdminAiProvidersPage {
   }
 
   formatDate(value: string | null): string {
-    return value ? new Intl.DateTimeFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US',
+    return value ? dateFormat(this.i18n.locale(),
       {dateStyle: 'short', timeStyle: 'short'}).format(new Date(value)) : '—';
   }
 

@@ -12,6 +12,7 @@ import {
 } from '../../shared/bank-balance-dialog/bank-balance-dialog';
 import {IconComponent} from '../../shared/icon/icon';
 import {MoneyInputDirective} from '../../shared/money-input/money-input.directive';
+import {numberFormat} from '../../core/i18n/formatters';
 
 @Component({
   selector: 'app-credit-card-dashboard',
@@ -144,7 +145,7 @@ export class CreditCardDashboardPage {
   }
 
   formatMoney(value: number, currency: string): string {
-    return new Intl.NumberFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US', {
+    return numberFormat(this.i18n.locale(), {
       style: 'currency',
       currency,
       maximumFractionDigits: currency === 'VND' ? 0 : 2
@@ -152,7 +153,7 @@ export class CreditCardDashboardPage {
   }
 
   formatRate(value: number): string {
-    return new Intl.NumberFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US', {
+    return numberFormat(this.i18n.locale(), {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
     }).format(value);

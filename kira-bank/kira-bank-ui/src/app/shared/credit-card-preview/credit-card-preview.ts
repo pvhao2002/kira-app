@@ -1,4 +1,5 @@
 import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
+import {numberFormat} from '../../core/i18n/formatters';
 
 @Component({
   selector: 'app-credit-card-preview',
@@ -48,9 +49,9 @@ export class CreditCardPreviewComponent {
     if (isNaN(num)) return '0 ₫';
     const curr = this.currency() || 'VND';
     if (curr === 'VND') {
-      return new Intl.NumberFormat('vi-VN').format(num) + ' ₫';
+      return numberFormat('vi-VN').format(num) + ' ₫';
     }
-    return new Intl.NumberFormat('en-US', {style: 'currency', currency: curr}).format(num);
+    return numberFormat('en-US', {style: 'currency', currency: curr}).format(num);
   });
 
   readonly displayStatement = computed(() => {

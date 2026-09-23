@@ -1,6 +1,7 @@
 import {Directive, effect, ElementRef, forwardRef, inject, input, output} from '@angular/core';
 import {ControlValueAccessor, NG_VALUE_ACCESSOR} from '@angular/forms';
 import {LanguageService} from '../../core/i18n/language.service';
+import {numberFormat} from '../../core/i18n/formatters';
 
 interface ParsedMoney {
   display: string;
@@ -121,16 +122,16 @@ export class MoneyInputDirective implements ControlValueAccessor {
       return;
     }
 
-    const locale = this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
-    this.element.value = new Intl.NumberFormat(locale, {
+    const locale = this.i18n.locale();
+    this.element.value = numberFormat(locale, {
       maximumFractionDigits: this.moneyFractionDigits(),
       useGrouping: true
     }).format(this.value);
   }
 
   private separators(): {group: string; decimal: string} {
-    const locale = this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
-    const parts = new Intl.NumberFormat(locale).formatToParts(12345.6);
+    const locale = this.i18n.locale();
+    const parts = numberFormat(locale).formatToParts(12345.6);
     return {
       group: parts.find(part => part.type === 'group')?.value ?? ',',
       decimal: parts.find(part => part.type === 'decimal')?.value ?? '.'

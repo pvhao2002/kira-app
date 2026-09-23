@@ -13,6 +13,7 @@ import {
   CreditCardCashbackProgram,
   CreditCardCashbackProgramRequest
 } from '../../shared/models/api.models';
+import {numberFormat} from '../../core/i18n/formatters';
 
 interface GroupDraft {
   id: number | null;
@@ -235,7 +236,7 @@ export class CreditCardBenefitsPage {
 
   formatMoney(value: number | null): string {
     if (value === null) return '—';
-    return new Intl.NumberFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US', {
+    return numberFormat(this.i18n.locale(), {
       maximumFractionDigits: 4
     }).format(value);
   }

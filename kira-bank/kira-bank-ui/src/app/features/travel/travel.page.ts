@@ -8,6 +8,7 @@ import {TravelApiService} from '../../core/services/travel-api.service';
 import {LanguageService} from '../../core/i18n/language.service';
 import {AuthStore} from '../../core/auth/auth.store';
 import {TravelActivity, TravelBooking, TravelData, TravelExpense, TravelFile, TravelPacking, TravelPlace, TravelTrip} from '../../shared/models/travel.models';
+import {numberFormat, dateFormat} from '../../core/i18n/formatters';
 
 type Collection = 'activities' | 'packing' | 'expenses' | 'bookings' | 'places';
 type Tab = 'overview' | 'itinerary' | 'packing' | 'expenses' | 'bookings' | 'places';
@@ -102,7 +103,7 @@ export class TravelPage {
     this.editor.set(null); this.error.set(''); this.tab.set(tab);
   }
   private dateInZone(timezone: string): string {
-    const parts = new Intl.DateTimeFormat('en-US', {timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit'}).formatToParts(this.now());
+    const parts = dateFormat('en-US', {timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit'}).formatToParts(this.now());
     const get = (type: string) => parts.find(p => p.type === type)!.value;
     return `${get('year')}-${get('month')}-${get('day')}`;
   }
@@ -114,7 +115,7 @@ export class TravelPage {
     return this.t(today <= trip.data.endDate ? 'ongoing' : 'finished');
   }
   money(amount: number, currency = this.selected()?.data.currency ?? 'VND'): string {
-    return new Intl.NumberFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US', {style: 'currency', currency}).format(amount);
+    return numberFormat(this.i18n.locale(), {style: 'currency', currency}).format(amount);
   }
   moneyStep(currency = this.selected()?.data.currency ?? 'VND'): number { return ['VND', 'JPY'].includes(currency) ? 1 : .01; }
   memberName(id: string): string { return this.selected()?.data.members.find(m => m.id === id)?.name ?? id; }
@@ -138,7 +139,7 @@ export class TravelPage {
   }
   saveTrip(): void {
     const data = this.tripDraft;
-    try { new Intl.DateTimeFormat('en', {timeZone: data.timezone}).format(); }
+    try { dateFormat('en', {timeZone: data.timezone}).format(); }
     catch { this.error.set(this.t('invalid')); return; }
     const length = (Date.parse(data.endDate) - Date.parse(data.startDate)) / 86400000;
     if (!Number.isFinite(length) || length < 0 || length > 730 || data.activities.some(a => a.date < data.startDate || a.date > data.endDate)

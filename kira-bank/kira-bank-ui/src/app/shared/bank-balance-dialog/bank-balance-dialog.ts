@@ -3,6 +3,7 @@ import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/
 import {LanguageService} from '../../core/i18n/language.service';
 import {inject} from '@angular/core';
 import {MoneyInputDirective} from '../money-input/money-input.directive';
+import {numberFormat} from '../../core/i18n/formatters';
 
 export interface BankBalanceDialogTarget {
   bankId: number;
@@ -80,7 +81,7 @@ export class BankBalanceDialogComponent {
   }
 
   formatMoney(value: number, currency: string): string {
-    return new Intl.NumberFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US', {
+    return numberFormat(this.i18n.locale(), {
       style: 'currency',
       currency,
       maximumFractionDigits: currency === 'VND' ? 0 : 4

@@ -7,6 +7,7 @@ import {finalize, forkJoin, Observable} from 'rxjs';
 import {LanguageService} from '../../core/i18n/language.service';
 import {HealthApiService} from '../../core/services/health-api.service';
 import {HealthProfile, HealthWeight, HealthSummary, HealthDevice, HealthPlan, HealthPlanData, HealthJournal, HealthJournalData, HealthAiJob} from '../../shared/models/health.models';
+import {numberFormat} from '../../core/i18n/formatters';
 
 @Component({
   selector: 'app-health-page', standalone: true, imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive],
@@ -54,7 +55,7 @@ export class HealthPage {
   localDate(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
   monday(date: string) { const d = new Date(`${date}T12:00:00`); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return this.localDate(d); }
   shift(date: string, days: number) { const d = new Date(`${date}T12:00:00`); d.setDate(d.getDate() + days); return this.localDate(d); }
-  value(value: number | null | undefined) { return value == null ? '—' : new Intl.NumberFormat(this.i18n.language(), {maximumFractionDigits: 1}).format(value); }
+  value(value: number | null | undefined) { return value == null ? '—' : numberFormat(this.i18n.language(), {maximumFractionDigits: 1}).format(value); }
   reload() {
     this.loading.set(true); this.error.set('');
     forkJoin({profile: this.api.profile(), weights: this.api.weights(), summary: this.api.summary(this.date),

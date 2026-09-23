@@ -3,6 +3,7 @@ import {FormsModule} from '@angular/forms';
 import {HttpClient} from '@angular/common/http';
 import {Subscription} from 'rxjs';
 import {LanguageService} from '../../core/i18n/language.service';
+import {dateFormat} from '../../core/i18n/formatters';
 
 interface Page<T> { items: T[]; total: number; page: number; size: number; }
 interface IpRow { ip: string; views: number; reloads: number; visitors: number; sessions: number; firstSeen: string; lastSeen: string; }
@@ -39,7 +40,7 @@ export class LoginVisitsPage {
     const d = new Date(); d.setDate(d.getDate() + offset);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
-  date(value: string): string { return new Intl.DateTimeFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-GB', {dateStyle: 'short', timeStyle: 'medium'}).format(new Date(value)); }
+  date(value: string): string { return dateFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-GB', {dateStyle: 'short', timeStyle: 'medium'}).format(new Date(value)); }
   apply(): void {
     const from = new Date(`${this.from}T00:00:00`), to = new Date(`${this.to}T00:00:00`); to.setDate(to.getDate() + 1);
     if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from >= to || to.getTime() - from.getTime() > 91 * 86400000) {

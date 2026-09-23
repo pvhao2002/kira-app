@@ -6,6 +6,7 @@ import {LanguageService} from '../../core/i18n/language.service';
 import {ToastService} from '../../core/services/toast.service';
 import {IconComponent} from '../../shared/icon/icon';
 import {AddressSuggestion, LodgingFee, LodgingListing, LodgingListingRequest, LodgingReferenceLocation, LodgingReview, LodgingReviewStatus} from '../../shared/models/api.models';
+import {numberFormat} from '../../core/i18n/formatters';
 
 @Component({
   selector: 'app-lodging-page', imports: [ReactiveFormsModule, IconComponent], templateUrl: './lodging.page.html', styleUrls: ['./lodging.page.scss'], changeDetection: ChangeDetectionStrategy.OnPush
@@ -80,6 +81,6 @@ export class LodgingPage {
   saveReview(): void { const listing = this.reviewing(); const reason = this.reviewForm.controls.reason.value.trim(); if (!listing || (this.reviewStatus() === 'NOT_OK' && !reason)) { this.error.set(this.i18n.t('lodging.reviewReasonRequired')); return; } this.saving.set(true); this.api.reviewLodging(listing.id, this.reviewStatus(), reason || null).pipe(finalize(() => this.saving.set(false))).subscribe({next: () => { this.dialog.set(null); this.load(); this.toast.show(this.i18n.t('lodging.reviewSaved'), 'success'); }, error: error => this.error.set(error.error?.message ?? this.i18n.t('lodging.saveFailed'))}); }
   fee(amount: number | null, unit: string): LodgingFee | null { return amount === null || amount === undefined ? null : {amount, unit}; }
   blank(value: string): string | null { return value.trim() || null; }
-  money(value: number | null): string { return value === null ? '—' : new Intl.NumberFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US', {maximumFractionDigits: 2}).format(value) + ' VND'; }
+  money(value: number | null): string { return value === null ? '—' : numberFormat(this.i18n.locale(), {maximumFractionDigits: 2}).format(value) + ' VND'; }
   feeText(label: string, fee: LodgingFee | null): string { return fee ? `${label}: ${this.money(fee.amount)}/${fee.unit.replaceAll('_', ' ')}` : ''; }
 }

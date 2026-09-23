@@ -31,6 +31,7 @@ import {
   BankBalanceDialogComponent
 } from '../../shared/bank-balance-dialog/bank-balance-dialog';
 import {MoneyInputDirective} from '../../shared/money-input/money-input.directive';
+import {dateFormat, numberFormat} from '../../core/i18n/formatters';
 
 interface LookupOption {
   value: string | number;
@@ -151,7 +152,7 @@ export class ResourcePage {
       });
     }
 
-    const locale = this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
+    const locale = this.i18n.locale();
     const groups = [...byBank.values()].sort((left, right) =>
       left.bankName.localeCompare(right.bankName, locale, {sensitivity: 'base'})
     );
@@ -358,7 +359,7 @@ export class ResourcePage {
   }
 
   display(value: unknown): string {
-    if (typeof value === 'number') return value.toLocaleString('vi-VN');
+    if (typeof value === 'number') return numberFormat('vi-VN').format(value);
     if (value === null || value === undefined) return '—';
     return String(value);
   }
@@ -434,8 +435,8 @@ export class ResourcePage {
     if (!Number.isFinite(amount)) return this.display(value);
     const definition = this.definition.columns?.find(item => item.name === column);
     const currency = definition?.currencyField ? row[definition.currencyField] : null;
-    const locale = this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
-    const formatted = amount.toLocaleString(locale, {maximumFractionDigits: 4});
+    const locale = this.i18n.locale();
+    const formatted = numberFormat(locale, {maximumFractionDigits: 4}).format(amount);
     return currency ? `${formatted} ${String(currency)}` : formatted;
   }
 
@@ -460,8 +461,8 @@ export class ResourcePage {
   billingBalance(row: Row): string {
     const value = row['statementBalance'];
     if (value === null || value === undefined || Number(value) === 0) return '';
-    const locale = this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
-    const formatted = Number(value).toLocaleString(locale, {maximumFractionDigits: 4});
+    const locale = this.i18n.locale();
+    const formatted = numberFormat(locale, {maximumFractionDigits: 4}).format(Number(value));
     return row['currency'] ? `${formatted} ${String(row['currency'])}` : formatted;
   }
 
@@ -475,7 +476,7 @@ export class ResourcePage {
 
   private billingDate(value: unknown): string {
     if (!value) return '';
-    return new Intl.DateTimeFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US').format(
+    return dateFormat(this.i18n.locale()).format(
       new Date(`${String(value)}T00:00:00`)
     );
   }

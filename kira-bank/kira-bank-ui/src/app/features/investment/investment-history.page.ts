@@ -15,6 +15,7 @@ import {
   PageMeta,
   PageResponse
 } from '../../shared/models/api.models';
+import {numberFormat, dateFormat} from '../../core/i18n/formatters';
 
 interface HistoryFilters {
   fromDate: string;
@@ -181,19 +182,19 @@ export class InvestmentHistoryPage {
   }
 
   formatAmount(value: number): string {
-    return new Intl.NumberFormat(this.locale(), {minimumFractionDigits: 0, maximumFractionDigits: 4}).format(value);
+    return numberFormat(this.locale(), {minimumFractionDigits: 0, maximumFractionDigits: 4}).format(value);
   }
 
   formatHistoryDate(value: string): string {
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat(this.locale(), {
+    return Number.isNaN(date.getTime()) ? '—' : dateFormat(this.locale(), {
       dateStyle: 'medium'
     }).format(date);
   }
 
   formatHistoryTime(value: string): string {
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(this.locale(), {
+    return Number.isNaN(date.getTime()) ? '' : dateFormat(this.locale(), {
       timeStyle: 'short'
     }).format(date);
   }
@@ -278,7 +279,7 @@ export class InvestmentHistoryPage {
   }
 
   private locale(): string {
-    return this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US';
+    return this.i18n.locale();
   }
 
   private errorMessage(error: {error?: Partial<ApiError>}, fallbackKey: string): string {

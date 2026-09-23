@@ -7,6 +7,7 @@ import {ApiService} from '../../core/services/api.service';
 import {LanguageService} from '../../core/i18n/language.service';
 import {IconComponent} from '../../shared/icon/icon';
 import {InvestmentAccountSummary, InvestmentReconciliationReport, InvestmentStatisticsOperations, InvestmentStatisticsResponse, PageResponse} from '../../shared/models/api.models';
+import {numberFormat, dateFormat} from '../../core/i18n/formatters';
 
 interface LoadState<T> {data: T | null; loading: boolean; failed: boolean}
 const initial = <T>(): LoadState<T> => ({data: null, loading: false, failed: false});
@@ -135,11 +136,11 @@ export class InvestmentStatisticsPage {
   monthBarHeight(value: number): number { return Math.abs(value) / this.netFlowMonthlyMax() * 100; }
   monthLabel(value: string): string {
     const date = new Date(`${value}-01T00:00:00`);
-    return new Intl.DateTimeFormat(this.locale(), {month: 'short', year: '2-digit'}).format(date);
+    return dateFormat(this.locale(), {month: 'short', year: '2-digit'}).format(date);
   }
-  date(value: string): string { return new Intl.DateTimeFormat(this.locale(), {day: '2-digit', month: '2-digit'}).format(new Date(`${value}T00:00:00`)); }
-  dateTime(value: string): string { return new Intl.DateTimeFormat(this.locale(), {dateStyle: 'medium', timeStyle: 'short'}).format(new Date(value)); }
-  money(amount: number, currency: string): string { return new Intl.NumberFormat(this.locale(), {style: 'currency', currency, maximumFractionDigits: currency === 'VND' ? 0 : 2}).format(amount); }
+  date(value: string): string { return dateFormat(this.locale(), {day: '2-digit', month: '2-digit'}).format(new Date(`${value}T00:00:00`)); }
+  dateTime(value: string): string { return dateFormat(this.locale(), {dateStyle: 'medium', timeStyle: 'short'}).format(new Date(value)); }
+  money(amount: number, currency: string): string { return numberFormat(this.locale(), {style: 'currency', currency, maximumFractionDigits: currency === 'VND' ? 0 : 2}).format(amount); }
   label(type: string): string { return this.i18n.t(`investmentStatistics.type.${type.toLowerCase()}`); }
   importStatus(value: string): string {
     const key = value.toLowerCase().replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
@@ -183,5 +184,5 @@ export class InvestmentStatisticsPage {
   }
   private today(): string { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; }
   private shift(date: string, amount: number): string { const value = new Date(`${date}T00:00:00Z`); value.setUTCDate(value.getUTCDate() + amount); return value.toISOString().slice(0, 10); }
-  private locale(): string { return this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US'; }
+  private locale(): string { return this.i18n.locale(); }
 }

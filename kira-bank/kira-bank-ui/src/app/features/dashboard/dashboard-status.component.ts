@@ -1,5 +1,6 @@
 import {ChangeDetectionStrategy, Component, inject, input, output} from '@angular/core';
 import {LanguageService} from '../../core/i18n/language.service';
+import {dateFormat} from '../../core/i18n/formatters';
 
 @Component({
   selector: 'app-dashboard-status',
@@ -22,7 +23,7 @@ export class DashboardStatusComponent {
   readonly updatedAt = input<string | null>(null);
   readonly retry = output<void>();
   timestamp(): string {
-    return new Intl.DateTimeFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US', {
+    return dateFormat(this.i18n.locale(), {
       day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh'
     }).format(new Date(this.updatedAt()!));
   }

@@ -8,6 +8,7 @@ import {IconComponent, IconName} from '../../shared/icon/icon';
 import {PageResponse} from '../../shared/models/api.models';
 import {OverviewCredit, OverviewInvestments, OverviewTutoring, OverviewNotification} from '../../shared/models/overview.models';
 import {DashboardStatusComponent} from './dashboard-status.component';
+import {numberFormat, dateFormat} from '../../core/i18n/formatters';
 
 interface SectionState<T> { data: T | null; loading: boolean; failed: boolean; updatedAt: string | null }
 interface Notifications { items: OverviewNotification[]; unread: number }
@@ -105,22 +106,22 @@ export class DashboardPage {
   money(amount: number | null | undefined, currency = 'VND'): string {
     if (this.hidden()) return '••••••';
     if (amount == null) return '—';
-    return new Intl.NumberFormat(this.locale(), {style: 'currency', currency, maximumFractionDigits: currency === 'VND' ? 0 : 2}).format(amount);
+    return numberFormat(this.locale(), {style: 'currency', currency, maximumFractionDigits: currency === 'VND' ? 0 : 2}).format(amount);
   }
   percentage(value: number): string {
-    return this.hidden() ? '••••' : new Intl.NumberFormat(this.locale(), {style: 'percent', maximumFractionDigits: 2}).format(value / 100);
+    return this.hidden() ? '••••' : numberFormat(this.locale(), {style: 'percent', maximumFractionDigits: 2}).format(value / 100);
   }
   date(value: string): string {
-    return new Intl.DateTimeFormat(this.locale(), {day: '2-digit', month: '2-digit', timeZone: 'Asia/Ho_Chi_Minh'}).format(new Date(value.length === 10 ? `${value}T00:00:00+07:00` : value));
+    return dateFormat(this.locale(), {day: '2-digit', month: '2-digit', timeZone: 'Asia/Ho_Chi_Minh'}).format(new Date(value.length === 10 ? `${value}T00:00:00+07:00` : value));
   }
   currentDate(): string {
-    return new Intl.DateTimeFormat(this.locale(), {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh'}).format(this.today());
+    return dateFormat(this.locale(), {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh'}).format(this.today());
   }
   chartHeight(value: number): number { return value / this.chartMax() * 100; }
   chartLabel(date: string, deposits: number, withdrawals: number, currency: string): string {
     return `${this.date(date)} · ${this.i18n.t('overview.deposits')}: ${this.money(deposits, currency)} · ${this.i18n.t('overview.withdrawals')}: ${this.money(withdrawals, currency)}`;
   }
-  private locale(): string { return this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US'; }
+  private locale(): string { return this.i18n.locale(); }
   private storageKey(): string { return `kira-overview-hidden-${this.auth.user()?.id ?? 'guest'}`; }
   private loadHidden(): boolean { try { return localStorage.getItem(this.storageKey()) === 'true'; } catch { return false; } }
   private load<T>(key: string, state: WritableSignal<SectionState<T>>, request: Observable<T>): void {

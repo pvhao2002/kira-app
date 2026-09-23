@@ -17,6 +17,7 @@ import {
   PageResponse
 } from '../../shared/models/api.models';
 import {IconComponent, type IconName} from '../../shared/icon/icon';
+import {dateFormat} from '../../core/i18n/formatters';
 
 type QueueScope = 'all' | 'mine';
 
@@ -301,7 +302,7 @@ export class InvestmentAiQueuePage {
     if (!value) return '—';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat(this.i18n.language() === 'vi' ? 'vi-VN' : 'en-US', {
+    return dateFormat(this.i18n.locale(), {
       dateStyle: 'medium', timeStyle: 'short'
     }).format(date);
   }
