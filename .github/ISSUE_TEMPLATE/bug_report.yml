@@ -1,0 +1,71 @@
+name: Bug report
+description: Report something that is broken
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please do **not** file security vulnerabilities here —
+        follow [SECURITY.md](../blob/main/SECURITY.md) instead.
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      description: Which part of the monorepo is affected?
+      options:
+        - kira-gateway
+        - kira-producer
+        - kira-queue
+        - kira-data-manager
+        - kira-crawl-java
+        - kira-tool-service
+        - kira-websocket
+        - kira-schema
+        - kira-ui
+        - mobile-app
+        - kira-portfolio-3d
+        - kira-bank
+        - infrastructure (docker/nginx/monitoring)
+        - not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start ...
+        2. Call ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Remove tokens, passwords, and personal data before pasting.
+      render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: |
+        OS:      Windows 11
+        JDK:     21.0.5
+        Node:    22.12.0
+        Docker:  27.3.1
+        Commit:  08440f3
+    validations:
+      required: true

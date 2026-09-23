@@ -1,0 +1,54 @@
+name: Feature request
+description: Suggest a change or an addition
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      options:
+        - kira-gateway
+        - kira-producer
+        - kira-queue
+        - kira-data-manager
+        - kira-crawl-java
+        - kira-tool-service
+        - kira-websocket
+        - kira-schema
+        - kira-ui
+        - mobile-app
+        - kira-portfolio-3d
+        - kira-bank
+        - infrastructure (docker/nginx/monitoring)
+        - cross-cutting
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that is hard or impossible today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: checkboxes
+    id: contract
+    attributes:
+      label: Contract impact
+      options:
+        - label: This would change a queue name, routing key, or message DTO
+        - label: This would change an API contract shared with the UI or mobile app
+        - label: This would require a database migration
