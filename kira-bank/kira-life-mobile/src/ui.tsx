@@ -1,12 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
+  AccessibilityInfo,
   ActivityIndicator,
+  Animated,
   ColorValue,
+  Easing,
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
+  PressableProps,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,6 +34,48 @@ export const go = (screen: string, params: Record<string, string> = {}) => route
   pathname: '/[page]',
   params: {page: screen, ...params}
 });
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const PRESS_MS = 120;
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+
+function useReduceMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduced).catch(() => {
+    });
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
+    return () => sub.remove();
+  }, []);
+  return reduced;
+}
+
+// Press feedback: scale + dim on press-in, released on press-out. transform/opacity only, native driver.
+export function Touch({style, scale = 0.97, opacity = 1, ...props}: Omit<PressableProps, 'style'> & {
+  style?: ViewStyle | (ViewStyle | false | null | undefined)[];
+  scale?: number;
+  opacity?: number
+}) {
+  const reduced = useReduceMotion();
+  const press = useRef(new Animated.Value(0)).current;
+  const animate = (toValue: number) => Animated.timing(press, {
+    toValue,
+    duration: PRESS_MS,
+    easing: EASE_OUT,
+    useNativeDriver: true
+  }).start();
+  return <AnimatedPressable {...props} pressRetentionOffset={props.pressRetentionOffset ?? 12}
+                            onPressIn={event => {
+                              animate(1);
+                              props.onPressIn?.(event);
+                            }} onPressOut={event => {
+    animate(0);
+    props.onPressOut?.(event);
+  }} style={[style as ViewStyle, {
+    opacity: press.interpolate({inputRange: [0, 1], outputRange: [opacity, opacity * 0.75]}),
+    transform: reduced ? [] : [{scale: press.interpolate({inputRange: [0, 1], outputRange: [1, scale]})}]
+  }]}/>;
+}
 
 export function T({children, size = 14, color, bold = false, style}: {
   children: React.ReactNode;
@@ -105,12 +151,11 @@ export function Button({label, onPress, icon, kind = 'primary', disabled = false
 }) {
   const {colors: c} = useTheme();
   const color = kind === 'primary' ? c.ink : kind === 'danger' ? c.error : c.primary;
-  return <Pressable accessibilityRole="button" accessibilityLabel={label}
-                    accessibilityState={{disabled: disabled || loading}} disabled={disabled || loading}
-                    onPress={onPress} style={({pressed}) => [s.button, {
+  return <Touch accessibilityRole="button" accessibilityLabel={label}
+                accessibilityState={{disabled: disabled || loading}} disabled={disabled || loading}
+                opacity={disabled || loading ? 0.5 : 1} onPress={onPress} style={[s.button, {
     backgroundColor: kind === 'primary' ? c.primary : c.elevated,
-    borderColor: kind === 'danger' ? c.error + '55' : c.border,
-    opacity: disabled || loading ? 0.5 : pressed ? 0.75 : 1
+    borderColor: kind === 'danger' ? c.error + '55' : c.border
   }]}>
     {loading ? <ActivityIndicator color={color}/> : icon ? <Icon name={icon} color={color} size={18}/> : null}<T bold
                                                                                                                  color={color}
@@ -118,7 +163,7 @@ export function Button({label, onPress, icon, kind = 'primary', disabled = false
                                                                                                                    flexShrink: 1,
                                                                                                                    textAlign: 'center'
                                                                                                                  }}>{label}</T>
-  </Pressable>;
+  </Touch>;
 }
 
 export function Field({label, hint, error, accessory, ...props}: TextInputProps & {
@@ -150,14 +195,14 @@ export function Chips({values, value, onChange}: {
 }) {
   const {colors: c} = useTheme();
   return <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                     contentContainerStyle={{gap: 8, paddingVertical: 2}}>{values.map(item => <Pressable
+                     contentContainerStyle={{gap: 8, paddingVertical: 2}}>{values.map(item => <Touch
     key={item.value} hitSlop={5} accessibilityRole="button" aria-pressed={item.value === value}
     accessibilityState={{selected: item.value === value}} onPress={() => onChange(item.value)}
     style={[s.chip, {borderColor: c.border}, item.value === value && {
       backgroundColor: c.primary + '22',
       borderColor: c.primary
     }]}><T size={12} bold={item.value === value}
-           color={item.value === value ? c.primary : c.muted}>{item.label}</T></Pressable>)}</ScrollView>;
+           color={item.value === value ? c.primary : c.muted}>{item.label}</T></Touch>)}</ScrollView>;
 }
 
 export function LangSwitch() {
@@ -168,11 +213,11 @@ export function LangSwitch() {
     label: 'VI'
   }, {value: 'en' as const, label: 'EN'}]).map(item => {
     const selected = lang === item.value;
-    return <Pressable key={item.value} accessibilityRole="button"
-                      accessibilityLabel={item.value === 'vi' ? 'Tiếng Việt' : 'English'}
-                      accessibilityState={{selected}} onPress={() => setLang(item.value)}
-                      style={({pressed}) => [s.langSegmentItem, selected && {backgroundColor: c.primary}, {opacity: pressed && !selected ? 0.6 : 1}]}><T
-      size={12} bold color={selected ? c.ink : c.muted}>{item.label}</T></Pressable>;
+    return <Touch key={item.value} accessibilityRole="button"
+                  accessibilityLabel={item.value === 'vi' ? 'Tiếng Việt' : 'English'}
+                  accessibilityState={{selected}} onPress={() => setLang(item.value)}
+                  style={[s.langSegmentItem, selected && {backgroundColor: c.primary}]}><T
+      size={12} bold color={selected ? c.ink : c.muted}>{item.label}</T></Touch>;
   })}</View>;
 }
 
@@ -182,13 +227,13 @@ export function Section({title, action, onPress}: { title: string; action?: stri
   return <Row style={{justifyContent: 'space-between', marginTop: 4}}><T size={13} bold style={{
     flex: 1,
     letterSpacing: 0.7
-  }}>{title.toLocaleUpperCase(lang)}</T>{action && onPress ? <Pressable accessibilityRole="button" onPress={onPress}
-                                                                        style={{
-                                                                          minHeight: 20,
-                                                                          justifyContent: 'center',
-                                                                          paddingLeft: 10
-                                                                        }}><T size={12}
-                                                                              color={c.primary}>{action}</T></Pressable> : null}
+  }}>{title.toLocaleUpperCase(lang)}</T>{action && onPress ? <Touch accessibilityRole="button" onPress={onPress}
+                                                                    style={{
+                                                                      minHeight: 20,
+                                                                      justifyContent: 'center',
+                                                                      paddingLeft: 10
+                                                                    }}><T size={12}
+                                                                          color={c.primary}>{action}</T></Touch> : null}
   </Row>;
 }
 
@@ -300,9 +345,9 @@ function NotificationBell() {
     };
   }, []));
   const t = useT();
-  return <Pressable accessibilityRole="button" accessibilityLabel={t('Thông báo')}
-                    accessibilityHint={count ? t('{{n}} thông báo chưa đọc', {n: count}) : undefined}
-                    onPress={() => go('notifications')} style={{padding: 10}}><Icon name="notifications-outline"
+  return <Touch accessibilityRole="button" accessibilityLabel={t('Thông báo')}
+                accessibilityHint={count ? t('{{n}} thông báo chưa đọc', {n: count}) : undefined}
+                onPress={() => go('notifications')} style={{padding: 10}}><Icon name="notifications-outline"
                                                                                     color={c.muted}/>{count > 0 ? <View
     style={{
       position: 'absolute',
@@ -315,7 +360,7 @@ function NotificationBell() {
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 3
-    }}><T size={9} bold color={c.ink}>{count > 99 ? '99+' : String(count)}</T></View> : null}</Pressable>;
+    }}><T size={9} bold color={c.ink}>{count > 99 ? '99+' : String(count)}</T></View> : null}</Touch>;
 }
 
 const creditPages = ['cards', 'cards-manage', 'card-add', 'card-edit', 'billing-cycle', 'benefits', 'credit-stats', 'bank-balance', 'bank-balance-history', 'statements', 'statement-add', 'statement-pay', 'payments'];
@@ -393,31 +438,30 @@ export function Screen({title, subtitle, children, back = false, footer, sheet =
   return <KeyboardAvoidingView style={[s.screen, {backgroundColor: c.bg}]}
                                behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <View style={{backgroundColor: c.surface, paddingTop: inset.top}}><View style={s.header}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Trang chủ')} onPress={() => router.replace('/')}
-                 style={[s.iconButton, {width: 36, height: 36, backgroundColor: c.elevated}]}><Icon
-        name="business-outline" size={20}/></Pressable>
+      <Touch accessibilityRole="button" accessibilityLabel={t('Trang chủ')} onPress={() => router.replace('/')}
+             style={[s.iconButton, {width: 36, height: 36, backgroundColor: c.elevated}]}><Icon
+        name="business-outline" size={20}/></Touch>
       <View style={{flex: 1}}><T size={11} color={c.primary} style={{letterSpacing: 0.5}}>KIRA BANK</T><T size={16}
                                                                                                           bold>{brandTitle}</T></View>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Đổi ngôn ngữ')}
-                 accessibilityHint={lang === 'vi' ? 'English' : 'Tiếng Việt'} onPress={toggle}
-                 style={({pressed}) => [s.langSwitch, {
-                   backgroundColor: c.primary + '15',
-                   borderColor: c.primary + '40',
-                   opacity: pressed ? 0.7 : 1
-                 }]}>
+      <Touch accessibilityRole="button" accessibilityLabel={t('Đổi ngôn ngữ')}
+             accessibilityHint={lang === 'vi' ? 'English' : 'Tiếng Việt'} onPress={toggle}
+             style={[s.langSwitch, {
+               backgroundColor: c.primary + '15',
+               borderColor: c.primary + '40'
+             }]}>
         <Icon name="globe-outline" size={13} color={c.primary}/>
         <T size={11} bold color={c.primary} style={{letterSpacing: 0.3}}>{lang === 'vi' ? 'VI' : 'EN'}</T>
-      </Pressable>
+      </Touch>
       <NotificationBell/>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Cá nhân')} onPress={() => router.replace('/profile')}
-                 style={{
-                   width: 32,
-                   height: 32,
-                   borderRadius: 16,
-                   backgroundColor: c.primary,
-                   alignItems: 'center',
-                   justifyContent: 'center'
-                 }}><Icon name="person-outline" color={c.ink} size={18}/></Pressable>
+      <Touch accessibilityRole="button" accessibilityLabel={t('Cá nhân')} onPress={() => router.replace('/profile')}
+             style={{
+               width: 32,
+               height: 32,
+               borderRadius: 16,
+               backgroundColor: c.primary,
+               alignItems: 'center',
+               justifyContent: 'center'
+             }}><Icon name="person-outline" color={c.ink} size={18}/></Touch>
     </View></View>
     <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={sheet ? {
       marginTop: 40,
@@ -426,10 +470,10 @@ export function Screen({title, subtitle, children, back = false, footer, sheet =
       backgroundColor: c.surface
     } : undefined} contentContainerStyle={s.content}>
       {back && !noBackRowPages.includes(page) ?
-        <Row style={{paddingVertical: 8}}><Pressable accessibilityRole="button" accessibilityLabel={t('Quay lại')}
-                                                      onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
-                                                     style={[s.iconButton, {backgroundColor: c.elevated}]}><Icon
-          name="arrow-back" color={c.text}/></Pressable><View style={{flex: 1}}><T size={18} bold>{title}</T>{subtitle ?
+        <Row style={{paddingVertical: 8}}><Touch accessibilityRole="button" accessibilityLabel={t('Quay lại')}
+                                                  onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
+                                                 style={[s.iconButton, {backgroundColor: c.elevated}]}><Icon
+          name="arrow-back" color={c.text}/></Touch><View style={{flex: 1}}><T size={18} bold>{title}</T>{subtitle ?
           <T size={11} color={c.muted}>{subtitle}</T> : null}</View></Row> : subtitle ?
           <T size={12} color={c.muted}>{subtitle}</T> : null}{storageError ?
       <Info tone="warning">{t(storageError)}</Info> : null}{children}
