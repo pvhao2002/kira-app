@@ -4,11 +4,14 @@ import com.kira.bank.lodging.domain.LodgingListingImage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface LodgingListingImageRepository extends JpaRepository<LodgingListingImage, Long> {
     List<LodgingListingImage> findByListingIdAndDeletedAtIsNullOrderBySortOrder(Long listingId);
+
+    List<LodgingListingImage> findByListingIdInAndDeletedAtIsNullOrderByListingIdAscSortOrderAsc(Collection<Long> listingIds);
 
     Optional<LodgingListingImage> findByListingIdAndAttachmentIdAndDeletedAtIsNull(Long listingId, Long attachmentId);
 

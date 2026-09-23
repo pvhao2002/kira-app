@@ -4,6 +4,7 @@ import com.kira.bank.lodging.domain.LodgingReferenceLocation;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,4 +12,6 @@ public interface LodgingReferenceLocationRepository extends JpaRepository<Lodgin
     List<LodgingReferenceLocation> findByDeletedAtIsNull(Sort sort);
 
     Optional<LodgingReferenceLocation> findByIdAndDeletedAtIsNull(Long id);
+
+    List<LodgingReferenceLocation> findByIdInAndDeletedAtIsNull(Collection<Long> ids);
 }

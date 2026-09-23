@@ -27,6 +27,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.kira.bank.lodging.application.LodgingDtos.*;
 
@@ -85,7 +87,8 @@ public class LodgingService {
     @Transactional(readOnly = true)
     public Page<ListingResponse> page(Long userId, String search, Pageable pageable) {
         Page<LodgingListing> page = listings.search(normalize(search), PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "updatedAt")));
-        return page.map(listing -> response(userId, listing));
+        ListingContext context = context(userId, page.getContent());
+        return page.map(listing -> response(userId, listing, context));
     }
 
     @Transactional(readOnly = true)
@@ -133,7 +136,11 @@ public class LodgingService {
 
     @Transactional(readOnly = true)
     public List<ReferenceLocationResponse> locations(Long userId) {
-        return locations.findByDeletedAtIsNull(Sort.by("name")).stream().map(location -> locationResponse(userId, location)).toList();
+        boolean admin = admin(userId);
+        Set<Long> inUse = listingLocations.activeReferenceLocationIds();
+        return locations.findByDeletedAtIsNull(Sort.by("name")).stream()
+            .map(location -> locationResponse(location, Objects.equals(userId, location.getCreatedBy()) || admin, inUse.contains(location.getId())))
+            .toList();
     }
 
     public List<AddressSuggestionResponse> addressSuggestions(String query) {
@@ -275,36 +282,86 @@ public class LodgingService {
     @Transactional(readOnly = true)
     public List<ReviewResponse> reviews(Long userId, Long id) {
         listing(id);
-        return reviews.findByListingIdAndDeletedAtIsNullOrderByUpdatedAtDesc(id).stream().map(this::reviewResponse).toList();
+        List<LodgingReview> all = reviews.findByListingIdAndDeletedAtIsNullOrderByUpdatedAtDesc(id);
+        Map<Long, String> names = names(all.stream().map(LodgingReview::getUserId).toList());
+        return all.stream().map(review -> reviewResponse(review, names)).toList();
     }
 
     private ListingResponse response(Long userId, LodgingListing listing) {
-        List<LodgingListingImage> links = images.findByListingIdAndDeletedAtIsNullOrderBySortOrder(listing.getId());
-        Map<Long, Attachment> files = new HashMap<>();
-        attachments.findAllById(links.stream().map(LodgingListingImage::getAttachmentId).toList()).forEach(file -> files.put(file.getId(), file));
-        Map<Long, LodgingReferenceLocation> locationMap = new HashMap<>();
-        List<LodgingListingLocation> distanceLinks = listingLocations.findByListingIdAndDeletedAtIsNull(listing.getId());
-        distanceLinks.forEach(link -> locationMap.put(link.getReferenceLocationId(), location(link.getReferenceLocationId())));
-        List<LodgingReview> allReviews = reviews.findByListingIdAndDeletedAtIsNullOrderByUpdatedAtDesc(listing.getId());
+        return response(userId, listing, context(userId, List.of(listing)));
+    }
+
+    // Everything a page of listings needs, loaded with a fixed number of queries instead of six-plus per listing.
+    private record ListingContext(boolean admin, Map<Long, List<LodgingListingImage>> images,
+                                  Map<Long, Attachment> files,
+                                  Map<Long, List<LodgingListingLocation>> distances,
+                                  Map<Long, LodgingReferenceLocation> referenceLocations,
+                                  Map<Long, List<LodgingReview>> reviews, Map<Long, String> ownerNames) {
+    }
+
+    private ListingContext context(Long userId, List<LodgingListing> batch) {
+        List<Long> ids = batch.stream().map(LodgingListing::getId).toList();
+        Map<Long, List<LodgingListingImage>> imageMap = group(ids.isEmpty() ? List.of()
+            : images.findByListingIdInAndDeletedAtIsNullOrderByListingIdAscSortOrderAsc(ids), LodgingListingImage::getListingId);
+        List<Long> attachmentIds = imageMap.values().stream().flatMap(List::stream).map(LodgingListingImage::getAttachmentId).distinct().toList();
+        Map<Long, List<LodgingListingLocation>> distanceMap = group(ids.isEmpty() ? List.of()
+            : listingLocations.findByListingIdInAndDeletedAtIsNull(ids), LodgingListingLocation::getListingId);
+        List<Long> locationIds = distanceMap.values().stream().flatMap(List::stream).map(LodgingListingLocation::getReferenceLocationId).distinct().toList();
+        return new ListingContext(admin(userId), imageMap,
+            index(attachmentIds.isEmpty() ? List.of() : attachments.findAllById(attachmentIds), Attachment::getId),
+            distanceMap,
+            index(locationIds.isEmpty() ? List.of() : locations.findByIdInAndDeletedAtIsNull(locationIds), LodgingReferenceLocation::getId),
+            group(ids.isEmpty() ? List.of() : reviews.findByListingIdInAndDeletedAtIsNullOrderByUpdatedAtDesc(ids), LodgingReview::getListingId),
+            names(batch.stream().map(LodgingListing::getOwnerId).toList()));
+    }
+
+    private <T> Map<Long, List<T>> group(List<T> values, Function<T, Long> key) {
+        return values.stream().collect(Collectors.groupingBy(key));
+    }
+
+    private <T> Map<Long, T> index(List<T> values, Function<T, Long> key) {
+        return values.stream().collect(Collectors.toMap(key, Function.identity(), (first, second) -> first));
+    }
+
+    private Map<Long, String> names(Collection<Long> userIds) {
+        Set<Long> distinct = new HashSet<>(userIds);
+        if (distinct.isEmpty()) return Map.of();
+        Map<Long, String> names = new HashMap<>();
+        users.findAllById(distinct).forEach(user -> names.put(user.getId(), user.getFullName()));
+        return names;
+    }
+
+    private ListingResponse response(Long userId, LodgingListing listing, ListingContext context) {
+        List<LodgingListingImage> links = context.images().getOrDefault(listing.getId(), List.of());
+        Map<Long, Attachment> files = context.files();
+        List<LodgingListingLocation> distanceLinks = context.distances().getOrDefault(listing.getId(), List.of());
+        Map<Long, LodgingReferenceLocation> locationMap = context.referenceLocations();
+        List<LodgingReview> allReviews = context.reviews().getOrDefault(listing.getId(), List.of());
         LodgingReview mine = allReviews.stream().filter(review -> review.getUserId().equals(userId)).findFirst().orElse(null);
         long ok = allReviews.stream().filter(review -> review.getStatus() == LodgingReviewStatus.OK).count();
-        User owner = users.findById(listing.getOwnerId()).orElse(null);
-        boolean edit = canEdit(userId, listing.getOwnerId());
-        return new ListingResponse(listing.getId(), listing.getAddress(), listing.getFormattedAddress(), listing.getRentPrice(), fee(listing.getElectricityPrice(), listing.getElectricityUnit()), fee(listing.getWaterPrice(), listing.getWaterUnit()), fee(listing.getServicePrice(), listing.getServiceUnit()), fee(listing.getParkingPrice(), listing.getParkingUnit()), listing.getFacebookUrl(), listing.getPhone(), listing.getVideoUrl(), listing.getNote(), listing.getGeocodeStatus(), listing.getGeocodeError(), new OwnerResponse(listing.getOwnerId(), owner == null ? "" : owner.getFullName()), edit, edit, listing.getVersion(), links.stream().map(link -> imageResponse(link, files.get(link.getAttachmentId()))).toList(), distanceLinks.stream().map(link -> distanceResponse(link, locationMap.get(link.getReferenceLocationId()))).toList(), new ReviewSummary(ok, allReviews.size() - ok, mine == null ? null : mine.getStatus(), mine == null ? null : mine.getReason()), listing.getCreatedAt(), listing.getUpdatedAt());
+        String ownerName = context.ownerNames().getOrDefault(listing.getOwnerId(), "");
+        boolean edit = Objects.equals(userId, listing.getOwnerId()) || context.admin();
+        return new ListingResponse(listing.getId(), listing.getAddress(), listing.getFormattedAddress(), listing.getRentPrice(), fee(listing.getElectricityPrice(), listing.getElectricityUnit()), fee(listing.getWaterPrice(), listing.getWaterUnit()), fee(listing.getServicePrice(), listing.getServiceUnit()), fee(listing.getParkingPrice(), listing.getParkingUnit()), listing.getFacebookUrl(), listing.getPhone(), listing.getVideoUrl(), listing.getNote(), listing.getGeocodeStatus(), listing.getGeocodeError(), new OwnerResponse(listing.getOwnerId(), ownerName), edit, edit, listing.getVersion(), links.stream().map(link -> imageResponse(link, files.get(link.getAttachmentId()))).toList(), distanceLinks.stream().map(link -> distanceResponse(link, locationMap.get(link.getReferenceLocationId()))).toList(), new ReviewSummary(ok, allReviews.size() - ok, mine == null ? null : mine.getStatus(), mine == null ? null : mine.getReason()), listing.getCreatedAt(), listing.getUpdatedAt());
     }
 
     private ReferenceLocationResponse locationResponse(Long userId, LodgingReferenceLocation location) {
-        boolean edit = canLocationEdit(userId, location.getCreatedBy());
-        return new ReferenceLocationResponse(location.getId(), location.getName(), location.getAddress(), location.getFormattedAddress(), location.getGeocodeStatus(), location.getGeocodeError(), edit, edit && !listingLocations.existsByReferenceLocationIdAndDeletedAtIsNull(location.getId()), location.getVersion());
+        return locationResponse(location, canLocationEdit(userId, location.getCreatedBy()), listingLocations.existsByReferenceLocationIdAndDeletedAtIsNull(location.getId()));
+    }
+
+    private ReferenceLocationResponse locationResponse(LodgingReferenceLocation location, boolean edit, boolean inUse) {
+        return new ReferenceLocationResponse(location.getId(), location.getName(), location.getAddress(), location.getFormattedAddress(), location.getGeocodeStatus(), location.getGeocodeError(), edit, edit && !inUse, location.getVersion());
     }
 
     private ReviewResponse reviewResponse(LodgingReview review) {
-        User user = users.findById(review.getUserId()).orElse(null);
-        return new ReviewResponse(review.getUserId(), user == null ? "" : user.getFullName(), review.getStatus(), review.getReason(), review.getUpdatedAt());
+        return reviewResponse(review, names(List.of(review.getUserId())));
+    }
+
+    private ReviewResponse reviewResponse(LodgingReview review, Map<Long, String> names) {
+        return new ReviewResponse(review.getUserId(), names.getOrDefault(review.getUserId(), ""), review.getStatus(), review.getReason(), review.getUpdatedAt());
     }
 
     private DistanceResponse distanceResponse(LodgingListingLocation link, LodgingReferenceLocation location) {
-        return new DistanceResponse(link.getReferenceLocationId(), location.getName(), location.getAddress(), link.getDistanceMeters(), link.getDistanceStatus(), link.getDistanceError(), link.getCalculatedAt());
+        return new DistanceResponse(link.getReferenceLocationId(), location == null ? "" : location.getName(), location == null ? "" : location.getAddress(), link.getDistanceMeters(), link.getDistanceStatus(), link.getDistanceError(), link.getCalculatedAt());
     }
 
     private ImageResponse imageResponse(LodgingListingImage image, Attachment attachment) {
