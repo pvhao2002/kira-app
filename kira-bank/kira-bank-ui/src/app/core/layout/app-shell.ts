@@ -111,6 +111,11 @@ export class AppShell {
         ]
       },
       {
+        labelKey: 'shell.groupReports', flow: 'system', items: [
+          {labelKey: 'shell.financeReport', icon: 'trend-up', path: '/app/reports/finance'}
+        ]
+      },
+      {
         labelKey: 'shell.groupPersonal', flow: 'personal', items: [
           {labelKey: 'shell.favoriteSongs', icon: 'star', path: '/app/karaoke'},
           {labelKey: 'shell.jobApplications', icon: 'calendar', path: '/app/job-applications'}

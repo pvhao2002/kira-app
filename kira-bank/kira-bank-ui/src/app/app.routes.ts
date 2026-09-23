@@ -71,6 +71,11 @@ export const routes: Routes = [
         data: {titleKey: 'route.investmentHistory'}
       },
       {
+        path: 'reports/finance',
+        loadComponent: () => import('./features/reports/finance-report.page').then(m => m.FinanceReportPage),
+        data: {titleKey: 'route.financeReport'}
+      },
+      {
         path: 'lodgings',
         loadComponent: () => import('./features/lodging/lodging.page').then(m => m.LodgingPage),
         data: {titleKey: 'shell.lodgings'}

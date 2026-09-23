@@ -1,0 +1,147 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('financeReport.eyebrow') }}</span>
+    <h1>{{ i18n.t('financeReport.title') }}</h1>
+    <p>{{ i18n.t('financeReport.description') }}</p>
+  </div>
+  <button class="btn ghost" type="button" [disabled]="bank().loading || investment().loading" (click)="refresh()">
+    <app-icon name="loader"/>{{ i18n.t('financeReport.refresh') }}
+  </button>
+</section>
+
+<section class="panel filters">
+  <label><span>{{ i18n.t('financeReport.from') }}</span><input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)"/></label>
+  <label><span>{{ i18n.t('financeReport.to') }}</span><input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)"/></label>
+  <div class="quick">
+    <span>{{ i18n.t('financeReport.quickRange') }}</span>
+    <button type="button" (click)="resetDates(7)">7d</button>
+    <button type="button" (click)="resetDates(30)">30d</button>
+    <button type="button" (click)="resetDates(90)">90d</button>
+  </div>
+  <button class="btn primary apply" type="button" [disabled]="rangeInvalid()" (click)="apply()">{{ i18n.t('financeReport.apply') }}</button>
+  @if (rangeInvalid()) { <small class="range-error">{{ i18n.t('financeReport.rangeInvalid') }}</small> }
+</section>
+
+<section class="panel">
+  <header class="panel-heading">
+    <div>
+      <span class="eyebrow">{{ i18n.t('financeReport.bankEyebrow') }}</span>
+      <h2>{{ i18n.t('financeReport.bankSection') }}</h2>
+    </div>
+    <a routerLink="/app/credit-card/dashboard">{{ i18n.t('financeReport.openBankDashboard') }}</a>
+  </header>
+
+  @if (bank().loading && !bank().data) {
+    <div class="state"><span class="spinner"></span>{{ i18n.t('financeReport.loading') }}</div>
+  } @else if (bank().failed) {
+    <div class="state error">{{ i18n.t('financeReport.error') }} <button class="btn ghost" type="button" (click)="loadBank()">{{ i18n.t('financeReport.retry') }}</button></div>
+  } @else if (bank().data; as data) {
+    <div class="metric-grid">
+      <article><small>{{ i18n.t('financeReport.creditLimit') }}</small><strong>{{ money(data.totalCreditLimit, data.currency) }}</strong></article>
+      <article><small>{{ i18n.t('financeReport.statementDebt') }}</small><strong>{{ money(data.totalStatementDebt, data.currency) }}</strong></article>
+      <article><small>{{ i18n.t('financeReport.currentBalance') }}</small><strong>{{ money(data.currentBalance, data.currency) }}</strong></article>
+      <article><small>{{ i18n.t('financeReport.availableCredit') }}</small><strong>{{ money(data.availableCredit, data.currency) }}</strong></article>
+      <article><small>{{ i18n.t('financeReport.utilization') }}</small><strong>{{ percentage(data.utilizationRate) }}</strong></article>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ i18n.t('financeReport.bank') }}</th>
+            <th>{{ i18n.t('financeReport.cards') }}</th>
+            <th>{{ i18n.t('financeReport.creditLimit') }}</th>
+            <th>{{ i18n.t('financeReport.currentBalance') }}</th>
+            <th>{{ i18n.t('financeReport.availableCredit') }}</th>
+            <th>{{ i18n.t('financeReport.utilization') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of banks(); track row.bankId) {
+            <tr>
+              <td><strong>{{ row.bankName }}</strong><small>{{ row.currency }}</small></td>
+              <td>{{ row.cardCount }}</td>
+              <td>{{ money(row.totalCreditLimit, row.currency) }}</td>
+              <td>{{ money(row.currentBalance, row.currency) }}</td>
+              <td>{{ money(row.availableCredit, row.currency) }}</td>
+              <td>
+                <span class="usage"><span class="usage-bar" [class.high]="row.utilizationRate >= 80" [style.width.%]="barWidth(row.utilizationRate)"></span></span>
+                <small>{{ percentage(row.utilizationRate) }}</small>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty">{{ i18n.t('financeReport.noBanks') }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="panel">
+  <header class="panel-heading">
+    <div>
+      <span class="eyebrow">{{ date(fromDate()) }} – {{ date(toDate()) }}</span>
+      <h2>{{ i18n.t('financeReport.investmentSection') }}</h2>
+    </div>
+    <div class="header-controls">
+      @if ((investment().data?.currencies ?? []).length > 1) {
+        <label class="currency">
+          <span>{{ i18n.t('financeReport.currency') }}</span>
+          <select [value]="flow()?.currency" (change)="chooseCurrency($any($event.target).value)">
+            @for (item of investment().data?.currencies ?? []; track item.currency) { <option [value]="item.currency">{{ item.currency }}</option> }
+          </select>
+        </label>
+      }
+      <a routerLink="/app/investment/statistics">{{ i18n.t('financeReport.openInvestmentStatistics') }}</a>
+    </div>
+  </header>
+
+  @if (investment().loading && !investment().data) {
+    <div class="state"><span class="spinner"></span>{{ i18n.t('financeReport.loading') }}</div>
+  } @else if (investment().failed) {
+    <div class="state error">{{ i18n.t('financeReport.error') }} <button class="btn ghost" type="button" (click)="loadInvestment()">{{ i18n.t('financeReport.retry') }}</button></div>
+  } @else if (flow(); as data) {
+    <div class="metric-grid">
+      <article><small>{{ i18n.t('financeReport.deposits') }}</small><strong>{{ money(data.deposits, data.currency) }}</strong></article>
+      <article><small>{{ i18n.t('financeReport.withdrawals') }}</small><strong>{{ money(data.withdrawals, data.currency) }}</strong></article>
+      <article><small>{{ i18n.t('financeReport.bonuses') }}</small><strong>{{ money(data.bonuses, data.currency) }}</strong></article>
+      <article><small>{{ i18n.t('financeReport.net') }}</small><strong class="net-amount" [class.positive]="data.netAmount >= 0" [class.negative]="data.netAmount < 0">{{ money(data.netAmount, data.currency) }}</strong></article>
+      <article><small>{{ i18n.t('financeReport.transactions') }}</small><strong>{{ data.totalCount }}</strong></article>
+    </div>
+    <p class="hint">{{ i18n.t('financeReport.currencyHint') }}</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ i18n.t('financeReport.account') }}</th>
+            <th>{{ i18n.t('financeReport.statusLabel') }}</th>
+            <th>{{ i18n.t('financeReport.transactions') }}</th>
+            <th>{{ i18n.t('financeReport.deposits') }}</th>
+            <th>{{ i18n.t('financeReport.withdrawals') }}</th>
+            <th>{{ i18n.t('financeReport.bonuses') }}</th>
+            <th>{{ i18n.t('financeReport.net') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of accounts(); track row.accountId) {
+            <tr>
+              <td><strong>{{ row.accountName }}</strong><small>{{ row.accountCode || '—' }} · {{ row.currency }}</small></td>
+              <td><span class="status" [attr.data-status]="row.status">{{ status(row.status) }}</span></td>
+              <td>{{ row.totalCount }}</td>
+              <td>{{ money(row.deposits, row.currency) }}</td>
+              <td>{{ money(row.withdrawals, row.currency) }}</td>
+              <td>{{ money(row.bonuses, row.currency) }}</td>
+              <td><strong class="net-amount" [class.positive]="row.netAmount >= 0" [class.negative]="row.netAmount < 0">{{ money(row.netAmount, row.currency) }}</strong></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="empty">{{ i18n.t('financeReport.noAccounts') }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="empty">{{ i18n.t('financeReport.noFlow') }}</div>
+  }
+</section>
