@@ -1,3 +1,5 @@
+import {notificationRoute} from '../../shared/models/notification-links';
+
 export type ResourceFlow = 'credit' | 'investment' | 'personal' | 'system';
 export type ResourceFieldType = 'text' | 'textarea' | 'number' | 'money' | 'percentage' | 'date' | 'datetime' | 'select' | 'hidden';
 export type LookupKey = 'banks';
@@ -60,7 +62,9 @@ export interface ResourceActionDefinition {
   path?: (row: Record<string, unknown>) => string;
   confirmKey?: string;
   /** Navigates instead of calling the API, e.g. to a dedicated feature page for the row. */
-  route?: (row: Record<string, unknown>) => {commands: unknown[]; queryParams?: Record<string, unknown>};
+  route?: (row: Record<string, unknown>) => {commands: unknown[]; queryParams?: Record<string, unknown>} | null;
+  /** Optional PATCH path sent (fire-and-forget) before a route action navigates, e.g. mark as read. */
+  routeSideEffect?: (row: Record<string, unknown>) => string | null;
   visible?: (row: Record<string, unknown>) => boolean;
 }
 
@@ -370,6 +374,12 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
     flow: 'system',
     readOnlyKey: 'resource.notificationsReadOnly',
     actions: [{
+      key: 'openNotification',
+      labelKey: 'action.openNotification',
+      route: row => notificationRoute(row['deepLink']),
+      routeSideEffect: row => row['readAt'] ? null : `notifications/${row['id']}/read`,
+      visible: row => notificationRoute(row['deepLink']) !== null
+    }, {
       key: 'read',
       labelKey: 'action.markRead',
       method: 'patch',

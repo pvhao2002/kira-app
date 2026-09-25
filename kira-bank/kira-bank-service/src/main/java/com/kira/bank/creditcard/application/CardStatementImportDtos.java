@@ -28,7 +28,7 @@ public final class CardStatementImportDtos {
                                    String description, BigDecimal amount, CardTransactionType transactionType,
                                    String mccCode, Long cashbackRuleId, String suggestedCategory,
                                    BigDecimal confidence, boolean duplicate, boolean needsReview,
-                                   List<String> warnings) {
+                                   boolean merchantRuleApplied, List<String> warnings) {
     }
 
     public record ImportFileResponse(Long attachmentId, int pageNumber, String originalName) {
@@ -56,7 +56,8 @@ public final class CardStatementImportDtos {
         @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 15, fraction = 4) BigDecimal amount,
         @NotNull CardTransactionType transactionType,
         @Pattern(regexp = "\\d{4}") String mccCode,
-        @Positive Long cashbackRuleId) {
+        @Positive Long cashbackRuleId,
+        @Size(max = 100) String rememberPattern) {
     }
 
     public record ConfirmRequest(

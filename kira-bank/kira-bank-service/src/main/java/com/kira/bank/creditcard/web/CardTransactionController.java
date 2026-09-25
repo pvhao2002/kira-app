@@ -2,6 +2,7 @@ package com.kira.bank.creditcard.web;
 
 import com.kira.bank.creditcard.application.CardRecommendationService;
 import com.kira.bank.creditcard.application.CardTransactionService;
+import com.kira.bank.creditcard.domain.CardTransactionType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -41,10 +42,21 @@ public class CardTransactionController {
         return transactions.createManual(u, cardId, key, r);
     }
 
-    @PatchMapping("/card-transactions/{id}")
-    TransactionResponse updateCategory(@AuthenticationPrincipal Long u, @PathVariable Long id,
-                                       @Valid @RequestBody CategoryUpdateRequest r) {
-        return transactions.updateCategory(u, id, r);
+    @GetMapping("/card-transactions")
+    PageResponse<TransactionResponse> search(@AuthenticationPrincipal Long u,
+                                             @RequestParam(required = false) Long cardId,
+                                             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                                             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+                                             @RequestParam(required = false) CardTransactionType type,
+                                             @RequestParam(required = false) String q,
+                                             @PageableDefault(size = 20, sort = "transactionDate", direction = Sort.Direction.DESC) Pageable p) {
+        return transactions.search(u, cardId, fromDate, toDate, type, q, p);
+    }
+
+    @PutMapping("/card-transactions/{id}")
+    TransactionResponse update(@AuthenticationPrincipal Long u, @PathVariable Long id,
+                               @Valid @RequestBody UpdateTransactionRequest r) {
+        return transactions.update(u, id, r);
     }
 
     @DeleteMapping("/card-transactions/{id}")

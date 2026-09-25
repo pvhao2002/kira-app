@@ -3,6 +3,7 @@ import {DemoTools, ProfileSettings} from '../src/profile';
 import {Stack, useLocalSearchParams} from 'expo-router';
 import {BenefitsManagement} from '../src/benefits';
 import {CardRecommend} from '../src/cardRecommend';
+import {StatementImportStatus} from '../src/statementImportStatus';
 import {
   AccountForm,
   AiResult,
@@ -61,6 +62,8 @@ export default function DetailRoute() {
         return <BenefitsManagement/>;
       case 'card-recommend':
         return <CardRecommend/>;
+      case 'statement-import':
+        return <StatementImportStatus id={id}/>;
       case 'credit-stats':
         return <BankStats/>;
       case 'bank-balance':

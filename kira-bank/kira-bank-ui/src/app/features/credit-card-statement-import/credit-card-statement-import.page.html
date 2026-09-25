@@ -140,6 +140,36 @@
         }
       }
 
+      <div class="review-layout">
+      <aside class="source-viewer" [attr.aria-label]="i18n.t('cardImport.sourceTitle')">
+        <div class="source-heading">
+          <strong>{{ i18n.t('cardImport.sourceTitle') }}</strong>
+          @if (sourcePages().length > 1) {
+            <div class="page-tabs" role="tablist">
+              @for (page of sourcePages(); track page.attachmentId; let index = $index) {
+                <button type="button" role="tab" [attr.aria-selected]="activePage() === index" [class.active]="activePage() === index"
+                        (click)="showPage(index)">{{ i18n.t('cardImport.page', {page: page.pageNumber}) }}</button>
+              }
+            </div>
+          }
+        </div>
+        @if (sourcePages()[activePage()]; as page) {
+          @if (page.url) {
+            <button type="button" class="source-frame" [class.zoomed]="zoomed()" (click)="zoomed.set(!zoomed())"
+                    [attr.aria-label]="zoomed() ? i18n.t('cardImport.zoomOut') : i18n.t('cardImport.zoomIn')">
+              <img [src]="page.url" [alt]="i18n.t('cardImport.page', {page: page.pageNumber})">
+            </button>
+            <small>{{ zoomed() ? i18n.t('cardImport.zoomOut') : i18n.t('cardImport.zoomIn') }}</small>
+          } @else if (page.failed) {
+            <p class="source-state">{{ current()?.storagePurged ? i18n.t('cardImport.sourcePurged') : i18n.t('cardImport.sourceFailed') }}</p>
+          } @else {
+            <p class="source-state" role="status"><app-icon name="loader"></app-icon>{{ i18n.t('cardImport.loading') }}</p>
+          }
+        } @else {
+          <p class="source-state">{{ i18n.t('cardImport.sourceNone') }}</p>
+        }
+      </aside>
+
       <div class="totals-grid">
         <label><span>{{ i18n.t('cardImport.statementDate') }} *</span>
           <input type="date" [ngModel]="form.statementDate" (ngModelChange)="updateTotals({statementDate: $event})"></label>
@@ -164,6 +194,7 @@
         <label><span>{{ i18n.t('cardImport.totalInterest') }}</span>
           <input appMoneyInput [ngModel]="form.totalInterest" (ngModelChange)="updateTotals({totalInterest: $event})"></label>
       </div>
+      </div>
 
       <div class="table-heading">
         <h3>{{ i18n.t('cardImport.transactionsTitle', {selected: includedCount(), total: rows().length}) }}</h3>
@@ -186,6 +217,7 @@
                 <th>{{ i18n.t('cardImport.type') }}</th>
                 <th>{{ i18n.t('cardImport.category') }}</th>
                 <th>MCC</th>
+                <th>{{ i18n.t('cardImport.remember') }}</th>
                 <th>{{ i18n.t('cardImport.warnings') }}</th>
               </tr>
             </thead>
@@ -203,7 +235,19 @@
                   <td><app-custom-select [ariaLabel]="i18n.t('cardImport.category')" [options]="categoryOptions()"
                                          [ngModel]="categoryValue(row)" (ngModelChange)="chooseCategory(row, $event)"></app-custom-select></td>
                   <td><input class="mcc" maxlength="4" inputmode="numeric" [ngModel]="row.mccCode" (ngModelChange)="updateRow(row, {mccCode: $event})"></td>
+                  <td class="remember-cell">
+                    <label><input type="checkbox" [ngModel]="row.remember" (ngModelChange)="toggleRemember(row, $event)"
+                                  [attr.aria-label]="i18n.t('cardImport.rememberLine', {line: row.lineNumber})">
+                      <span>{{ i18n.t('cardImport.rememberShort') }}</span></label>
+                    @if (row.remember) {
+                      <input class="pattern" maxlength="100" [ngModel]="row.rememberPattern" (ngModelChange)="updateRow(row, {rememberPattern: $event})"
+                             [attr.aria-label]="i18n.t('cardImport.rememberPattern')" [placeholder]="i18n.t('cardImport.rememberPattern')">
+                    }
+                  </td>
                   <td>
+                    @if (row.merchantRuleApplied) {
+                      <span class="warning-chip rule">{{ i18n.t('cardImport.byMerchantRule') }}</span>
+                    }
                     @for (warning of row.warnings; track warning) {
                       <span class="warning-chip" [class.danger]="warning === 'DUPLICATE'">{{ warningLabel(warning) }}</span>
                     }

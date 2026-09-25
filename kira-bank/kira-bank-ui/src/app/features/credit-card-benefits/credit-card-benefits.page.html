@@ -105,7 +105,10 @@
         <p class="muted">{{ i18n.t('creditBenefits.unassignedSpending', {amount: formatMoney(current.unassignedSpending)}) }}</p>
       }
     }
-    <h3>{{ i18n.t('creditBenefits.recentTransactions') }}</h3>
+    <div class="recent-heading">
+      <h3>{{ i18n.t('creditBenefits.recentTransactions') }}</h3>
+      <a routerLink="/app/credit-card/transactions" [queryParams]="{cardId: card.cardId}">{{ i18n.t('creditBenefits.viewAllTransactions') }}</a>
+    </div>
     @if (!transactions().length) {
       <p class="muted">{{ i18n.t('creditBenefits.noTransactions') }}</p>
     } @else {

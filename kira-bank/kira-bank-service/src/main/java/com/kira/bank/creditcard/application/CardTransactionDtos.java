@@ -13,7 +13,8 @@ public final class CardTransactionDtos {
     private CardTransactionDtos() {
     }
 
-    public record TransactionResponse(Long id, Long cardId, Long statementId, Long importId,
+    public record TransactionResponse(Long id, Long cardId, String cardNickname, String cardLastFour,
+                                      Long statementId, Long importId,
                                       LocalDate transactionDate, LocalDate postingDate, String description,
                                       BigDecimal amount, String currency, CardTransactionType transactionType,
                                       String mccCode, Long cashbackRuleId, String categoryName,
@@ -29,10 +30,29 @@ public final class CardTransactionDtos {
         @Positive Long cashbackRuleId) {
     }
 
-    public record CategoryUpdateRequest(
+    public record UpdateTransactionRequest(
+        @NotNull LocalDate transactionDate,
+        @NotBlank @Size(max = 500) String description,
+        @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 15, fraction = 4) BigDecimal amount,
+        @NotNull CardTransactionType transactionType,
         @Pattern(regexp = "\\d{4}") String mccCode,
         @Positive Long cashbackRuleId,
         @NotNull @PositiveOrZero Long version) {
+    }
+
+    public record MerchantRuleRequest(
+        @NotBlank @Size(max = 100) String pattern,
+        @NotNull @Pattern(regexp = "\\d{4}") String mccCode,
+        @Size(max = 150) String label,
+        Boolean applyToExisting,
+        @PositiveOrZero Long version) {
+    }
+
+    public record MerchantRuleResponse(Long id, String pattern, String mccCode, String label, long version,
+                                       Instant updatedAt) {
+    }
+
+    public record MerchantRuleSaveResponse(MerchantRuleResponse rule, int updatedTransactions) {
     }
 
     public record GroupProgress(Long ruleId, Long programId, String programName, String categoryName,
