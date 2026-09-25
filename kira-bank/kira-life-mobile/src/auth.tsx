@@ -211,7 +211,7 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
     try {
       response = await fetch(`${API_URL}${path}`, {...init, headers});
     } catch (error) {
-      console.error('[API] request failed before receiving a response', {
+      if (__DEV__) console.error('[API] request failed before receiving a response', {
         method: init.method || 'GET',
         path,
         error: errorDetail(error)
@@ -238,7 +238,7 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
       const payload = await response.json().catch(() => null);
       const traceId = payload?.traceId || response.headers.get('X-Correlation-ID') || undefined;
       const code = payload?.code || 'UNKNOWN';
-      console.error('[API] request rejected', {
+      if (__DEV__) console.error('[API] request rejected', {
         method: init?.method || 'GET',
         path,
         status: response.status,
@@ -253,7 +253,7 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
     try {
       return JSON.parse(text);
     } catch (error) {
-      console.error('[API] response body could not be parsed as JSON', {
+      if (__DEV__) console.error('[API] response body could not be parsed as JSON', {
         method: init?.method || 'GET',
         path,
         status: response.status,

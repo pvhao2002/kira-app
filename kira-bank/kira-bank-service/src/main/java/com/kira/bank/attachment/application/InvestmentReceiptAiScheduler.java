@@ -35,8 +35,7 @@ public class InvestmentReceiptAiScheduler {
             return;
         }
         if (!running.compareAndSet(false, true)) {
-            log.debug("Investment receipt AI scheduler skipped because a previous run is still active");
-            return;
+            return; // A previous run is still active.
         }
         try {
             attachments.recoverStaleProcessing();

@@ -14,6 +14,7 @@ import {
   CreditCardCashbackProgramRequest
 } from '../../shared/models/api.models';
 import {numberFormat} from '../../core/i18n/formatters';
+import {apiErrorMessage} from '../../core/services/api-error';
 
 interface GroupDraft {
   id: number | null;
@@ -313,6 +314,6 @@ export class CreditCardBenefitsPage {
 
   private errorMessage(error: {status?: number; error?: Partial<ApiError>}, fallbackKey: string): string {
     if (error.status === 409) return this.i18n.t('creditBenefits.stale');
-    return error.error?.message || this.i18n.t(fallbackKey);
+    return apiErrorMessage(error, this.i18n.t(fallbackKey));
   }
 }

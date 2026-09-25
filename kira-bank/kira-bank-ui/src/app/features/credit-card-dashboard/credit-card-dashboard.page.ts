@@ -13,6 +13,7 @@ import {
 import {IconComponent} from '../../shared/icon/icon';
 import {MoneyInputDirective} from '../../shared/money-input/money-input.directive';
 import {numberFormat} from '../../core/i18n/formatters';
+import {apiErrorMessage} from '../../core/services/api-error';
 
 @Component({
   selector: 'app-credit-card-dashboard',
@@ -103,7 +104,7 @@ export class CreditCardDashboardPage {
           this.toast.show(this.i18n.t('form.saved'), 'success');
           this.load();
         },
-        error: error => this.limitError.set(error.error?.message ?? this.i18n.t('form.saveFailed'))
+        error: error => this.limitError.set(apiErrorMessage(error, this.i18n.t('form.saveFailed')))
       });
   }
 
@@ -140,7 +141,7 @@ export class CreditCardDashboardPage {
           this.toast.show(this.i18n.t('form.saved'), 'success');
           this.load();
         },
-        error: error => this.balanceError.set(error.error?.message ?? this.i18n.t('form.saveFailed'))
+        error: error => this.balanceError.set(apiErrorMessage(error, this.i18n.t('form.saveFailed')))
       });
   }
 

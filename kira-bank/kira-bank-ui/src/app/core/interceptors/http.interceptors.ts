@@ -5,6 +5,7 @@ import {catchError, switchMap, throwError} from 'rxjs';
 import {AuthStore} from '../auth/auth.store';
 import {LanguageService} from '../i18n/language.service';
 import {ToastService} from '../services/toast.service';
+import {apiErrorMessage} from '../services/api-error';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const token = inject(AuthStore).token();
@@ -36,14 +37,14 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         catchError(refreshError => {
           auth.clear();
           void router.navigateByUrl('/login');
-          toast.show(refreshError.error?.message ?? i18n.t('error.serverUnavailable'), 'error');
+          toast.show(apiErrorMessage(refreshError, i18n.t('error.serverUnavailable')), 'error');
           return throwError(() => refreshError);
         })
       );
     }
 
     if (isRefreshRequest) return throwError(() => e);
-    toast.show(e.error?.message ?? i18n.t('error.serverUnavailable'), 'error');
+    toast.show(apiErrorMessage(e, i18n.t('error.serverUnavailable')), 'error');
     return throwError(() => e);
   }));
 };

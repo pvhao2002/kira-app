@@ -1,6 +1,8 @@
 package com.kira.bank.identity.web;
 
 import com.kira.bank.identity.application.AuthService;
+import com.kira.bank.shared.infrastructure.ClientIpResolver;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +22,7 @@ import static com.kira.bank.identity.application.AuthDtos.*;
 public class AuthController {
     private static final String COOKIE = "kira_refresh";
     private final AuthService auth;
+    private final ClientIpResolver clientIps;
     @Value("${app.refresh-cookie-secure:false}")
     private boolean secureCookie;
 
@@ -41,8 +44,8 @@ public class AuthController {
     }
 
     @PostMapping("/api/v1/auth/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest r) {
-        return session(auth.login(r));
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest r, HttpServletRequest request) {
+        return session(auth.login(r, clientIps.resolve(request).ip()));
     }
 
     @PostMapping("/api/v1/auth/refresh")

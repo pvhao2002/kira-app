@@ -1029,6 +1029,7 @@ export const dictionary: Record<string, string> = {
   'Đăng nhập': 'Sign in',
   'Nhập email và mật khẩu.': 'Enter your email and password.',
   'Email hoặc mật khẩu không đúng.': 'Incorrect email or password.',
+  'Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau vài phút.': 'Too many sign-in attempts. Please try again in a few minutes.',
   'Không kết nối được máy chủ. Kiểm tra kết nối mạng và thử lại.': 'Could not reach the server. Check your connection and try again.',
   'Ẩn mật khẩu': 'Hide password',
   'Hiện mật khẩu': 'Show password',
