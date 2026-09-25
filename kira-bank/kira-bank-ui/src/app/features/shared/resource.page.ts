@@ -298,6 +298,11 @@ export class ResourcePage {
   }
 
   openAction(action: ResourceActionDefinition, row: Row): void {
+    if (action.route) {
+      const target = action.route(row);
+      void this.router.navigate(target.commands, {queryParams: target.queryParams});
+      return;
+    }
     if (action.form) {
       this.editing.set(false);
       this.selectedRow.set(row);

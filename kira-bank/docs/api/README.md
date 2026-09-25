@@ -23,6 +23,11 @@ Các request tài chính quan trọng cần header `Idempotency-Key` là UUID do
 
 Nhóm chính: `/api/v1/auth`, `/api/v1/public/banks`, `/api/v1/credit-cards`, `/api/v1/statements`, `/api/v1/payments`, `/api/v1/dashboards/credit-cards`, `/api/v1/investment/accounts`, `/api/v1/attachments` và `/api/v1/lodgings`.
 
+## Thẻ tín dụng: nhập sao kê bằng AI và gợi ý thẻ
+
+Xem [Credit card AI](credit-card-ai.md): upload 1–3 ảnh sao kê để AI đọc số tổng và từng giao dịch (người dùng review rồi
+confirm), giao dịch thẻ/tiến độ cashback theo kỳ, và `GET /api/v1/credit-card-recommendations` để chọn thẻ tốt nhất theo MCC.
+
 ## Cá nhân: karaoke và việc làm
 
 Xem [Personal life records](personal-life.md) cho danh sách bài hát karaoke yêu thích và job chuẩn bị ứng tuyển. Hai nhóm API là private theo user, có CRUD, tìm kiếm và optimistic locking.

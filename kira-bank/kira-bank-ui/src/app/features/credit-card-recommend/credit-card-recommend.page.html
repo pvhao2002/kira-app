@@ -1,0 +1,107 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('cardRecommend.eyebrow') }}</span>
+    <h1>{{ i18n.t('route.cardRecommend') }}</h1>
+    <p>{{ i18n.t('cardRecommend.description') }}</p>
+  </div>
+</section>
+
+<section class="panel query-panel">
+  <div class="preset-row" role="group" [attr.aria-label]="i18n.t('cardRecommend.category')">
+    @for (preset of presets; track preset.key) {
+      <button type="button" class="chip" [class.active]="presetKey() === preset.key" [attr.aria-pressed]="presetKey() === preset.key"
+              (click)="choosePreset(preset)">{{ i18n.t(preset.labelKey) }}</button>
+    }
+  </div>
+  <form class="query-form" (ngSubmit)="search()">
+    <label><span>MCC</span>
+      <input name="mcc" inputmode="numeric" maxlength="4" [ngModel]="mcc()" (ngModelChange)="changeMcc($event)"></label>
+    <label><span>{{ i18n.t('cardRecommend.amount') }}</span>
+      <input name="amount" appMoneyInput [moneyFractionDigits]="0" [ngModel]="amount()" (ngModelChange)="amount.set($event)"
+             [placeholder]="i18n.t('cardRecommend.amountPlaceholder')"></label>
+    <button class="btn primary" type="submit" [disabled]="loading() || !mccValid()">
+      {{ loading() ? i18n.t('cardRecommend.searching') : i18n.t('cardRecommend.search') }}
+    </button>
+  </form>
+  <p class="hint">{{ i18n.t('cardRecommend.hint') }}</p>
+</section>
+
+@if (error()) {
+  <div class="error-banner" role="alert">{{ error() }}</div>
+}
+
+@if (loading() && !response()) {
+  <section class="panel state" role="status"><app-icon name="loader"></app-icon>{{ i18n.t('cardRecommend.searching') }}</section>
+} @else if (response(); as result) {
+  @if (!result.cards.length) {
+    <section class="panel state">
+      <app-icon name="card"></app-icon>
+      <strong>{{ i18n.t('cardRecommend.noCards') }}</strong>
+      <a class="btn primary" routerLink="/app/credit-cards">{{ i18n.t('cardImport.addCard') }}</a>
+    </section>
+  } @else {
+    <section class="results" aria-live="polite">
+      @for (card of result.cards; track card.cardId; let index = $index) {
+        <article class="panel result" [class.best]="best() === card.cardId" [class.muted]="card.insufficientCredit || !card.ruleId">
+          <header>
+            <span class="rank">{{ index + 1 }}</span>
+            <span class="bank-logo">
+              @if (card.bankLogoUrl) { <img [src]="card.bankLogoUrl" alt=""> } @else { <app-icon name="card"></app-icon> }
+            </span>
+            <div class="card-name">
+              <strong>{{ card.nickname }}@if (card.lastFour) { · •••• {{ card.lastFour }} }</strong>
+              <span>{{ card.bankName }}@if (card.cardType) { · {{ card.cardType }} }</span>
+            </div>
+            @if (best() === card.cardId) { <span class="best-badge">{{ i18n.t('cardRecommend.best') }}</span> }
+          </header>
+
+          <div class="metrics">
+            <div>
+              <span>{{ i18n.t('cardRecommend.estimated') }}</span>
+              <strong class="cashback">{{ result.amount ? formatMoney(card.estimatedCashback, card.currency) : '—' }}</strong>
+            </div>
+            <div>
+              <span>{{ i18n.t('cardRecommend.rate') }}</span>
+              <strong>{{ formatRate(card.cashbackRate) }}</strong>
+              @if (card.categoryName) { <small>{{ card.categoryName }} · {{ card.programName }}</small> }
+            </div>
+            <div>
+              <span>{{ i18n.t('cardRecommend.available') }}</span>
+              <strong>{{ formatMoney(card.availableCredit, card.currency) }}</strong>
+            </div>
+          </div>
+
+          @if (card.ruleCap !== null) {
+            <div class="cap">
+              <div><span>{{ i18n.t('cardRecommend.groupCap') }}</span>
+                <span>{{ i18n.t('cardRecommend.remainingOf', {remaining: formatMoney(card.ruleRemaining, card.currency), cap: formatMoney(card.ruleCap, card.currency)}) }}</span></div>
+              <div class="bar" role="progressbar" [attr.aria-valuenow]="usedPercent(card.ruleRemaining, card.ruleCap)" aria-valuemin="0" aria-valuemax="100">
+                <i [style.width.%]="usedPercent(card.ruleRemaining, card.ruleCap)"></i></div>
+            </div>
+          }
+          @if (card.cardCap !== null) {
+            <div class="cap">
+              <div><span>{{ i18n.t('cardRecommend.cardCap') }}</span>
+                <span>{{ i18n.t('cardRecommend.remainingOf', {remaining: formatMoney(card.cardRemaining, card.currency), cap: formatMoney(card.cardCap, card.currency)}) }}</span></div>
+              <div class="bar" role="progressbar" [attr.aria-valuenow]="usedPercent(card.cardRemaining, card.cardCap)" aria-valuemin="0" aria-valuemax="100">
+                <i [style.width.%]="usedPercent(card.cardRemaining, card.cardCap)"></i></div>
+            </div>
+          }
+
+          <footer>
+            <div class="reasons">
+              <span class="period">{{ i18n.t('cardRecommend.period', {from: card.periodStart, to: card.periodEnd}) }}</span>
+              @for (reason of card.reasons; track reason) {
+                <span class="reason" [attr.data-reason]="reason">{{ reasonLabel(reason) }}</span>
+              }
+            </div>
+            <button class="btn ghost" type="button" [disabled]="!amount() || recordingCardId() !== null" (click)="record(card)"
+                    [title]="amount() ? '' : i18n.t('cardRecommend.recordNeedsAmount')">
+              {{ recordingCardId() === card.cardId ? i18n.t('cardImport.saving') : i18n.t('cardRecommend.record') }}
+            </button>
+          </footer>
+        </article>
+      }
+    </section>
+  }
+}

@@ -1,5 +1,6 @@
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
+import {RouterLink} from '@angular/router';
 import {finalize} from 'rxjs';
 import {ApiService} from '../../core/services/api.service';
 import {LanguageService} from '../../core/i18n/language.service';
@@ -8,6 +9,8 @@ import {IconComponent} from '../../shared/icon/icon';
 import {MoneyInputDirective} from '../../shared/money-input/money-input.directive';
 import {
   ApiError,
+  CardTransaction,
+  CashbackProgress,
   CreditCardBenefit,
   CreditCardCashbackGroup,
   CreditCardCashbackProgram,
@@ -38,7 +41,7 @@ interface ProgramDraft {
 
 @Component({
   selector: 'app-credit-card-benefits',
-  imports: [FormsModule, IconComponent, MoneyInputDirective],
+  imports: [FormsModule, RouterLink, IconComponent, MoneyInputDirective],
   templateUrl: './credit-card-benefits.page.html',
   styleUrl: './credit-card-benefits.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -60,6 +63,10 @@ export class CreditCardBenefitsPage {
   readonly monthlyCap = signal<number | null>(null);
   readonly dialogOpen = signal(false);
   readonly programDraft = signal<ProgramDraft | null>(null);
+  readonly progress = signal<CashbackProgress | null>(null);
+  readonly transactions = signal<CardTransaction[]>([]);
+  readonly activityError = signal('');
+  readonly deletingTransactionId = signal<number | null>(null);
 
   constructor() {
     this.load();
@@ -74,6 +81,7 @@ export class CreditCardBenefitsPage {
         const selected = cards.find(card => card.cardId === preserveCardId) ?? cards[0] ?? null;
         this.selectedCardId.set(selected?.cardId ?? null);
         this.monthlyCap.set(selected?.monthlyCashbackCap ?? null);
+        this.loadActivity(selected?.cardId ?? null);
       },
       error: error => this.pageError.set(this.errorMessage(error, 'creditBenefits.loadFailed'))
     });
@@ -85,6 +93,45 @@ export class CreditCardBenefitsPage {
     this.selectedCardId.set(card?.cardId ?? null);
     this.monthlyCap.set(card?.monthlyCashbackCap ?? null);
     this.pageError.set('');
+    this.loadActivity(card?.cardId ?? null);
+  }
+
+  loadActivity(cardId: number | null): void {
+    this.progress.set(null);
+    this.transactions.set([]);
+    this.activityError.set('');
+    if (cardId === null) return;
+    this.api.cardCashbackProgress(cardId).subscribe({
+      next: progress => {
+        if (this.selectedCardId() === cardId) this.progress.set(progress);
+      },
+      error: error => this.activityError.set(this.errorMessage(error, 'creditBenefits.activityFailed'))
+    });
+    this.api.cardTransactions(cardId, 0, 20).subscribe({
+      next: page => {
+        if (this.selectedCardId() === cardId) this.transactions.set(page.data);
+      },
+      error: error => this.activityError.set(this.errorMessage(error, 'creditBenefits.activityFailed'))
+    });
+  }
+
+  deleteTransaction(transaction: CardTransaction): void {
+    if (this.deletingTransactionId() !== null) return;
+    if (!confirm(this.i18n.t('creditBenefits.deleteTransactionConfirm', {description: transaction.description}))) return;
+    this.deletingTransactionId.set(transaction.id);
+    this.api.deleteCardTransaction(transaction.id, transaction.version)
+      .pipe(finalize(() => this.deletingTransactionId.set(null))).subscribe({
+      next: () => {
+        this.toast.show(this.i18n.t('creditBenefits.transactionDeleted'), 'success');
+        this.loadActivity(transaction.cardId);
+      },
+      error: error => this.activityError.set(this.errorMessage(error, 'creditBenefits.deleteFailed'))
+    });
+  }
+
+  usedPercent(remaining: number | null, cap: number | null): number {
+    if (remaining === null || cap === null || cap <= 0) return 0;
+    return Math.min(100, Math.max(0, Math.round((1 - remaining / cap) * 100)));
   }
 
   saveMonthlyCap(): void {
