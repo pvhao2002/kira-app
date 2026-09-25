@@ -1,4 +1,4 @@
-package com.kira.bank.analytics.application;
+package com.kira.bank.shared.infrastructure;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,10 +10,10 @@ import java.util.Arrays;
 import java.util.List;
 
 @Component
-public class VisitIpResolver {
+public class ClientIpResolver {
     private final List<IpAddressMatcher> proxies;
 
-    public VisitIpResolver(@Value("${analytics.trusted-proxies:127.0.0.1/32,::1/128}") String cidrs) {
+    public ClientIpResolver(@Value("${analytics.trusted-proxies:127.0.0.1/32,::1/128}") String cidrs) {
         proxies = Arrays.stream(cidrs.split(",")).map(String::trim).filter(s -> !s.isEmpty()).map(IpAddressMatcher::new).toList();
     }
 

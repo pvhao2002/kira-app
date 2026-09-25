@@ -51,6 +51,7 @@ export const englishTranslations = {
   'auth.passwordPlaceholder': 'At least 8 characters',
   'auth.validationError': 'Please check the required fields.',
   'auth.invalidCredentials': 'Incorrect email or password.',
+  'auth.tooManyAttempts': 'Too many sign-in attempts. Please try again in a few minutes.',
   'auth.invalidEmail': 'Please enter a valid email address.',
   'auth.invalidPassword': 'Password must be at least 8 characters.',
   'auth.adminNotice': 'Accounts are issued by an Administrator. Contact your Admin if you need access.',
@@ -694,6 +695,7 @@ export const englishTranslations = {
   ,'lodging.saveFailed': 'Could not save lodging listing'
   ,'lodging.loadFailed': 'Could not load lodging listings'
   ,'lodging.uploadFailed': 'Image upload failed'
+  ,'lodging.invalidImages': 'Only JPEG, PNG or WebP images up to 10 MB are accepted; other files were skipped'
   ,'lodging.retryFailed': 'Could not recalculate distance'
   ,'lodging.address': 'Address'
   ,'lodging.rent': 'Monthly rent (VND)'

@@ -23,15 +23,54 @@ public class OverviewRepository {
     @Value("${investment.transaction-import.time-zone:Asia/Ho_Chi_Minh}")
     private String transactionImportTimeZone;
 
-    public Group<Due> dues(Long userId, String condition, Object... dates) {
+    private static final String OUTSTANDING =
+        "s.status not in ('PAID','CANCELLED','NEEDS_INPUT') and s.remaining_amount > 0 and ";
+
+    /**
+     * Fixed statement filters for the credit overview. SQL fragments are compile-time constants and every value is
+     * bound as a JDBC parameter, so callers can never inject SQL through the filter.
+     */
+    public enum DueWindow {
+        OVERDUE(OUTSTANDING + "s.due_date < ?"),
+        DUE_TODAY(OUTSTANDING + "s.due_date = ?"),
+        DUE_THIS_WEEK(OUTSTANDING + "s.due_date > ? and s.due_date < ?"),
+        NEEDS_INPUT("s.status = 'NEEDS_INPUT'");
+
+        private final String condition;
+
+        DueWindow(String condition) {
+            this.condition = condition;
+        }
+
+        private List<Object> parameters(LocalDate today) {
+            return switch (this) {
+                case OVERDUE, DUE_TODAY -> List.of(java.sql.Date.valueOf(today));
+                case DUE_THIS_WEEK -> List.of(java.sql.Date.valueOf(today), java.sql.Date.valueOf(today.plusDays(7)));
+                case NEEDS_INPUT -> List.of();
+            };
+        }
+    }
+
+    private enum ImportFilter {
+        NEEDS_REVIEW("b.status in ('READY','READY_WITH_ERRORS','PARTIALLY_CONFIRMED')"),
+        FAILED("b.status = 'FAILED'");
+
+        private final String condition;
+
+        ImportFilter(String condition) {
+            this.condition = condition;
+        }
+    }
+
+    public Group<Due> dues(Long userId, DueWindow window, LocalDate today) {
         String from = """
             from statements s join user_credit_cards c on c.id = s.user_card_id and c.user_id = s.user_id
             join banks b on b.id = c.bank_id
             where s.user_id = ? and s.deleted_at is null and c.deleted_at is null and
-            """ + condition;
+            """ + window.condition;
         List<Object> args = new ArrayList<>();
         args.add(userId);
-        for (Object date : dates) args.add(java.sql.Date.valueOf((LocalDate) date));
+        args.addAll(window.parameters(today));
         long count = Objects.requireNonNull(jdbc.queryForObject("select count(*) " + from, Long.class, args.toArray()));
         List<Due> rows = jdbc.query("""
             select s.id, c.id as card_id, coalesce(nullif(b.short_name,''),b.name) as bank_name,
@@ -85,16 +124,16 @@ public class OverviewRepository {
         long accounts = Objects.requireNonNull(jdbc.queryForObject(
             "select count(*) from investment_accounts where user_id = ? and deleted_at is null and status = 'ACTIVE'", Long.class, userId));
         return new Investments(Instant.now(), days, from, today, accounts, flows,
-            imports(userId, "b.status in ('READY','READY_WITH_ERRORS','PARTIALLY_CONFIRMED')"),
-            imports(userId, "b.status = 'FAILED'"));
+            imports(userId, ImportFilter.NEEDS_REVIEW),
+            imports(userId, ImportFilter.FAILED));
     }
 
-    private Group<ImportTask> imports(Long userId, String condition) {
+    private Group<ImportTask> imports(Long userId, ImportFilter filter) {
         String from = """
             from investment_transaction_import_batches b
             join investment_accounts a on a.id = b.investment_account_id and a.user_id = b.user_id
             where b.user_id = ? and b.deleted_at is null and a.deleted_at is null and
-            """ + condition;
+            """ + filter.condition;
         long count = Objects.requireNonNull(jdbc.queryForObject("select count(*) " + from, Long.class, userId));
         var rows = jdbc.query("select b.batch_id, b.investment_account_id, a.account_name, b.status " + from
                 + " order by b.created_at asc, b.id asc limit 5",

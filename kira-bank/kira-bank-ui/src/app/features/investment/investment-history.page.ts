@@ -16,6 +16,7 @@ import {
   PageResponse
 } from '../../shared/models/api.models';
 import {numberFormat, dateFormat} from '../../core/i18n/formatters';
+import {apiError, apiErrorMessage} from '../../core/services/api-error';
 
 interface HistoryFilters {
   fromDate: string;
@@ -283,8 +284,9 @@ export class InvestmentHistoryPage {
   }
 
   private errorMessage(error: {error?: Partial<ApiError>}, fallbackKey: string): string {
-    if (!error.error?.message) return this.i18n.t(fallbackKey);
-    const trace = error.error.traceId ? ` · ${this.i18n.t('investmentTransactions.trace', {id: error.error.traceId})}` : '';
-    return `${error.error.message}${trace}`;
+    const body = apiError(error);
+    const message = apiErrorMessage(error, this.i18n.t(fallbackKey));
+    const trace = body?.traceId ? ` · ${this.i18n.t('investmentTransactions.trace', {id: body.traceId})}` : '';
+    return `${message}${trace}`;
   }
 }

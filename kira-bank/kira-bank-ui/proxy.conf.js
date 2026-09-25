@@ -3,8 +3,7 @@ const PROXY_CONFIG = {
     target: 'http://localhost:8080',
     secure: false,
     changeOrigin: true,
-    xfwd: true,
-    logLevel: 'debug'
+    xfwd: true
   },
   '/v3/api-docs': {
     target: 'http://localhost:8080',

@@ -7,6 +7,10 @@ import {ToastService} from '../../core/services/toast.service';
 import {IconComponent} from '../../shared/icon/icon';
 import {AddressSuggestion, LodgingFee, LodgingListing, LodgingListingRequest, LodgingReferenceLocation, LodgingReview, LodgingReviewStatus} from '../../shared/models/api.models';
 import {numberFormat} from '../../core/i18n/formatters';
+import {apiErrorMessage} from '../../core/services/api-error';
+
+const LODGING_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const LODGING_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 
 @Component({
   selector: 'app-lodging-page', imports: [ReactiveFormsModule, IconComponent], templateUrl: './lodging.page.html', styleUrls: ['./lodging.page.scss'], changeDetection: ChangeDetectionStrategy.OnPush
@@ -57,28 +61,35 @@ export class LodgingPage {
   chooseSuggestion(suggestion: AddressSuggestion): void { const control = this.suggestionTarget() === 'listing' ? this.listingForm.controls.address : this.locationForm.controls.address; control.setValue(suggestion.label); this.suggestions.set([]); this.suggestionTarget.set(null); }
   closeSuggestions(): void { setTimeout(() => { this.suggestions.set([]); this.suggestionTarget.set(null); }, 150); }
   updateLocations(event: Event): void { this.selectedLocationIds.set(Array.from((event.target as HTMLSelectElement).selectedOptions).map(option => Number(option.value))); }
-  selectFiles(event: Event): void { const files = Array.from((event.target as HTMLInputElement).files ?? []); this.uploadFiles.set(files.slice(0, 10)); }
+  selectFiles(event: Event): void { const files = this.acceptedImages(Array.from((event.target as HTMLInputElement).files ?? [])); this.uploadFiles.set(files.slice(0, 10)); }
   pasteImages(event: ClipboardEvent): void {
     const images = Array.from(event.clipboardData?.items ?? []).filter(item => item.type.startsWith('image/'))
       .map(item => item.getAsFile()).filter((file): file is File => file !== null);
     if (!images.length) return;
     event.preventDefault();
-    this.uploadFiles.update(files => [...files, ...images].slice(0, 10));
+    const accepted = this.acceptedImages(images);
+    this.uploadFiles.update(files => [...files, ...accepted].slice(0, 10));
   }
   saveListing(): void {
     if (this.listingForm.invalid || this.selectedLocationIds().length < 1) { this.listingForm.markAllAsTouched(); this.error.set(this.selectedLocationIds().length < 1 ? this.i18n.t('lodging.selectLocation') : ''); return; }
     const value = this.listingForm.getRawValue(); const existing = this.editing(); const request: LodgingListingRequest = {address: value.address, rentPrice: value.rentPrice!, electricity: this.fee(value.electricityAmount, value.electricityUnit), water: this.fee(value.waterAmount, value.waterUnit), service: this.fee(value.serviceAmount, value.serviceUnit), parking: this.fee(value.parkingAmount, value.parkingUnit), facebookUrl: this.blank(value.facebookUrl), phone: this.blank(value.phone), videoUrl: this.blank(value.videoUrl), note: this.blank(value.note), referenceLocationIds: this.selectedLocationIds(), version: existing?.version ?? null};
     this.saving.set(true); this.error.set(''); const request$ = existing ? this.api.updateLodging(existing.id, request) : this.api.createLodging(request);
-    request$.pipe(finalize(() => this.saving.set(false))).subscribe({next: listing => { this.uploadSequentially(listing, 0); this.dialog.set(null); this.toast.show(this.i18n.t('lodging.saved'), 'success'); this.load(); }, error: error => this.error.set(error.error?.message ?? this.i18n.t('lodging.saveFailed'))});
+    request$.pipe(finalize(() => this.saving.set(false))).subscribe({next: listing => { this.uploadSequentially(listing, 0); this.dialog.set(null); this.toast.show(this.i18n.t('lodging.saved'), 'success'); this.load(); }, error: error => this.error.set(apiErrorMessage(error, this.i18n.t('lodging.saveFailed')))});
   }
   private uploadSequentially(listing: LodgingListing, index: number): void { const files = this.uploadFiles(); if (index >= files.length) return; this.api.uploadLodgingImage(listing.id, files[index]).subscribe({next: () => { this.load(); this.uploadSequentially(listing, index + 1); }, error: () => { this.toast.show(`${files[index].name}: ${this.i18n.t('lodging.uploadFailed')}`, 'error'); this.uploadSequentially(listing, index + 1); }}); }
   deleteListing(listing: LodgingListing): void { if (!listing.canDelete || !confirm(this.i18n.t('lodging.deleteConfirm'))) return; this.api.deleteLodging(listing.id).subscribe({next: () => { this.toast.show(this.i18n.t('lodging.deleted'), 'success'); this.load(); }}); }
   retry(listing: LodgingListing): void { if (!listing.canEdit) return; this.api.recalculateLodging(listing.id).subscribe({next: () => this.load(), error: () => this.toast.show(this.i18n.t('lodging.retryFailed'), 'error')}); }
   deleteImage(listing: LodgingListing, attachmentId: number): void { if (!listing.canEdit) return; this.api.deleteLodgingImage(listing.id, attachmentId).subscribe({next: () => { this.editing.update(current => current?.id === listing.id ? {...current, images: current.images.filter(image => image.attachmentId !== attachmentId)} : current); this.load(); }}); }
   openLocation(): void { this.locationForm.reset({name: '', address: ''}); this.dialog.set('location'); }
-  saveLocation(): void { if (this.locationForm.invalid) { this.locationForm.markAllAsTouched(); return; } this.saving.set(true); this.api.createLodgingLocation({...this.locationForm.getRawValue(), version: null}).pipe(finalize(() => this.saving.set(false))).subscribe({next: location => { this.locations.update(values => [...values, location].sort((a, b) => a.name.localeCompare(b.name))); this.selectedLocationIds.update(ids => [...ids, location.id]); this.dialog.set('listing'); }, error: error => this.error.set(error.error?.message ?? this.i18n.t('lodging.saveFailed'))}); }
+  saveLocation(): void { if (this.locationForm.invalid) { this.locationForm.markAllAsTouched(); return; } this.saving.set(true); this.api.createLodgingLocation({...this.locationForm.getRawValue(), version: null}).pipe(finalize(() => this.saving.set(false))).subscribe({next: location => { this.locations.update(values => [...values, location].sort((a, b) => a.name.localeCompare(b.name))); this.selectedLocationIds.update(ids => [...ids, location.id]); this.dialog.set('listing'); }, error: error => this.error.set(apiErrorMessage(error, this.i18n.t('lodging.saveFailed')))}); }
   openReview(listing: LodgingListing): void { this.reviewing.set(listing); this.reviewStatus.set(listing.reviewSummary.myStatus ?? 'OK'); this.reviewForm.reset({reason: listing.reviewSummary.myReason ?? ''}); this.dialog.set('review'); this.api.lodgingReviews(listing.id).subscribe({next: reviews => this.reviews.set(reviews)}); }
-  saveReview(): void { const listing = this.reviewing(); const reason = this.reviewForm.controls.reason.value.trim(); if (!listing || (this.reviewStatus() === 'NOT_OK' && !reason)) { this.error.set(this.i18n.t('lodging.reviewReasonRequired')); return; } this.saving.set(true); this.api.reviewLodging(listing.id, this.reviewStatus(), reason || null).pipe(finalize(() => this.saving.set(false))).subscribe({next: () => { this.dialog.set(null); this.load(); this.toast.show(this.i18n.t('lodging.reviewSaved'), 'success'); }, error: error => this.error.set(error.error?.message ?? this.i18n.t('lodging.saveFailed'))}); }
+  saveReview(): void { const listing = this.reviewing(); const reason = this.reviewForm.controls.reason.value.trim(); if (!listing || (this.reviewStatus() === 'NOT_OK' && !reason)) { this.error.set(this.i18n.t('lodging.reviewReasonRequired')); return; } this.saving.set(true); this.api.reviewLodging(listing.id, this.reviewStatus(), reason || null).pipe(finalize(() => this.saving.set(false))).subscribe({next: () => { this.dialog.set(null); this.load(); this.toast.show(this.i18n.t('lodging.reviewSaved'), 'success'); }, error: error => this.error.set(apiErrorMessage(error, this.i18n.t('lodging.saveFailed')))}); }
+  /** Mirrors the server rules (JPEG/PNG/WebP, 1 byte–10 MB) so invalid files are rejected before upload. */
+  private acceptedImages(files: File[]): File[] {
+    const accepted = files.filter(file => LODGING_IMAGE_TYPES.has(file.type) && file.size > 0 && file.size <= LODGING_IMAGE_MAX_BYTES);
+    if (accepted.length < files.length) this.toast.show(this.i18n.t('lodging.invalidImages'), 'error');
+    return accepted;
+  }
   fee(amount: number | null, unit: string): LodgingFee | null { return amount === null || amount === undefined ? null : {amount, unit}; }
   blank(value: string): string | null { return value.trim() || null; }
   money(value: number | null): string { return value === null ? '—' : numberFormat(this.i18n.locale(), {maximumFractionDigits: 2}).format(value) + ' VND'; }

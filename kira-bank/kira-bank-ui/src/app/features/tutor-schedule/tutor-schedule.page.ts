@@ -13,6 +13,7 @@ import {
   TutoringTeachingMode, TutoringWeek
 } from '../../shared/models/api.models';
 import {numberFormat, dateFormat} from '../../core/i18n/formatters';
+import {apiErrorMessage} from '../../core/services/api-error';
 
 @Component({
   selector: 'app-tutor-schedule',
@@ -277,7 +278,7 @@ export class TutorSchedulePage {
     }});
   }
   private mutationDone(): void { this.lessonDialog.set(false); this.toast.show(this.i18n.t('tutor.saved'), 'success'); this.loadAll(); }
-  private showError(error: HttpErrorResponse): void { this.error.set(error.error?.message ?? this.i18n.t('tutor.saveFailed')); }
+  private showError(error: HttpErrorResponse): void { this.error.set(apiErrorMessage(error, this.i18n.t('tutor.saveFailed'))); }
   private locale(): string { return this.i18n.locale(); }
   private shortDate(value: string): string { return dateFormat(this.locale(), {day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'}).format(new Date(`${value}T00:00:00Z`)); }
   private todayInZone(): string {

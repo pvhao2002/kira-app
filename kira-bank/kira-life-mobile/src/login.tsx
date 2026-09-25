@@ -7,6 +7,7 @@ import {Button, Card, Field, Icon, Info, T} from './ui';
 
 const errorKey: Record<string, string> = {
   BAD_CREDENTIALS: 'Email hoặc mật khẩu không đúng.',
+  LOGIN_RATE_LIMITED: 'Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau vài phút.',
   NETWORK: 'Không kết nối được máy chủ. Kiểm tra kết nối mạng và thử lại.',
 };
 

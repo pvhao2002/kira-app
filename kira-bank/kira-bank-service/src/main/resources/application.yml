@@ -16,19 +16,36 @@ spring:
   flyway:
     enabled: true
   servlet.multipart:
+    # Per-file and per-request ceilings; each upload endpoint applies its own stricter type/size rules.
     max-file-size: 10MB
     max-request-size: 55MB
+  data.web.pageable.max-page-size: 100
 server:
   port: ${SERVER_PORT:8080}
+  # Never expose exception details through Spring's fallback /error response.
   error:
     include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+    include-exception: false
+    include-path: always
+    whitelabel.enabled: false
+  tomcat:
+    # Abort (instead of silently draining) request bodies far beyond the multipart limit.
+    max-swallow-size: 60MB
 management.endpoints.web.exposure.include: health,info
 app:
   jwt:
     secret: ${JWT_SECRET:development-secret-must-have-at-least-32-characters}
     access-ttl: PT15M
     refresh-ttl: P30D
+  # Comma-separated exact origins (scheme://host[:port]) allowed to call /api/** with credentials. No wildcards.
   cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  login-rate-limit:
+    max-attempts-per-ip: ${LOGIN_RATE_LIMIT_MAX_ATTEMPTS_PER_IP:20}
+    ip-window: ${LOGIN_RATE_LIMIT_IP_WINDOW:PT5M}
+    max-failures-per-email: ${LOGIN_RATE_LIMIT_MAX_FAILURES_PER_EMAIL:5}
+    email-window: ${LOGIN_RATE_LIMIT_EMAIL_WINDOW:PT15M}
   seed-development-users: ${SEED_DEVELOPMENT_USERS:true}
   refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
 storage:
@@ -58,6 +75,12 @@ password-vault:
   # Comma-separated keyId:Base64(32-byte-key) entries. Keep old keys during rotation.
   encryption-keys: ${PASSWORD_VAULT_ENCRYPTION_KEYS:}
   active-key-id: ${PASSWORD_VAULT_ACTIVE_KEY_ID:}
-springdoc.swagger-ui.path: /swagger-ui.html
+springdoc:
+  # Disable in production with API_DOCS_ENABLED=false so the API surface is not published.
+  api-docs.enabled: ${API_DOCS_ENABLED:true}
+  swagger-ui:
+    enabled: ${API_DOCS_ENABLED:true}
+    path: /swagger-ui.html
 analytics:
+  # Also used to resolve the client IP for login rate limiting.
   trusted-proxies: ${LOGIN_VISIT_TRUSTED_PROXIES:127.0.0.1/32,::1/128}
