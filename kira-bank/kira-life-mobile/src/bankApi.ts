@@ -106,6 +106,22 @@ export type CardBenefitResponse = {
   programs: CashbackProgramResponse[];
 };
 
+export type StatementImportStatus = 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED' | 'CONFIRMED' | 'CANCELLED';
+export type StatementImportResponse = {
+  id: number; cardId: number; status: StatementImportStatus; attemptCount: number; errorCode: string | null;
+  version: number; createdAt: string; completedAt: string | null; aiConfigured: boolean; storagePurged: boolean;
+  files: { attachmentId: number; pageNumber: number; originalName: string | null }[];
+  draft: {
+    statementDate: string | null; dueDate: string | null; statementBalance: number | null; minimumPayment: number | null;
+    currency: string; warnings: string[];
+    transactions: { needsReview: boolean; duplicate: boolean }[];
+  } | null;
+  statementId: number | null;
+  result: {
+    statementId: number; totalsApplied: boolean; inserted: number; skipped: number; supersededManual: number;
+    expectedCashback: number;
+  } | null;
+};
 export type CardRecommendation = {
   cardId: number; bankId: number; bankName: string; bankLogoUrl: string | null; nickname: string;
   cardType: string | null; lastFour: string | null; currency: string; ruleId: number | null;
@@ -153,6 +169,12 @@ export const bankErrorMessage = (error: unknown) => {
   if (error.code === 'CASHBACK_CATEGORY_DUPLICATE') return 'Tên nhóm danh mục không được trùng.';
   if (error.code === 'CASHBACK_TERMS_URL_INVALID') return 'Link điều khoản phải dùng HTTP hoặc HTTPS.';
   if (error.code === 'INVALID_MCC') return 'MCC phải gồm 4 chữ số.';
+  if (error.code === 'STATEMENT_IMPORT_NOT_FOUND') return 'Không tìm thấy lượt nhập sao kê.';
+  if (error.code === 'STATEMENT_IMPORT_VERSION_CONFLICT') return 'Lượt nhập sao kê đã thay đổi. Vui lòng tải lại.';
+  if (error.code === 'STATEMENT_IMPORT_PROCESSING') return 'AI đang xử lý sao kê, vui lòng thử lại sau.';
+  if (error.code === 'STATEMENT_IMPORT_ALREADY_CONFIRMED') return 'Sao kê đã được xác nhận.';
+  if (error.code === 'STATEMENT_IMPORT_NOT_RETRYABLE') return 'Chỉ thử lại được sao kê đã lỗi.';
+  if (error.code === 'ATTACHMENT_PURGED') return 'Ảnh sao kê đã bị xoá theo chính sách lưu trữ.';
   if (error.code === 'CASHBACK_RULE_NOT_FOUND') return 'Nhóm cashback không thuộc thẻ này.';
   if (error.code === 'CARD_TRANSACTION_DUPLICATE') return 'Khoản chi này đã được ghi nhận.';
   if (error.code === 'VALIDATION_ERROR') return 'Dữ liệu thẻ không hợp lệ.';
@@ -216,6 +238,15 @@ export function useBankApi() {
       page,
       size: 100
     })}`)),
+    getStatementImport: (id: number) => requestJson<StatementImportResponse>(`/api/v1/statement-imports/${id}`),
+    retryStatementImport: (id: number, version: number) => requestJson<StatementImportResponse>(`/api/v1/statement-imports/${id}/retry`, {
+      method: 'POST',
+      body: JSON.stringify({version})
+    }),
+    cancelStatementImport: (id: number, version: number) => requestJson<StatementImportResponse>(`/api/v1/statement-imports/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({version})
+    }),
     recommendations: (mcc: string, amount?: number) => requestJson<CardRecommendationResponse>(`/api/v1/credit-card-recommendations${query({
       mcc,
       amount

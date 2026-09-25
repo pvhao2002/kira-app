@@ -1,0 +1,53 @@
+:host { display: block; }
+.page-heading { align-items: flex-end; }
+.eyebrow { color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.panel { margin-bottom: 16px; padding: 18px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 8px 25px rgba(15, 23, 42, .04); }
+input { min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--navy); font: inherit; }
+label { display: grid; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 700; }
+label input:not([type=checkbox]) { width: 100%; }
+app-custom-select { --custom-select-height: 40px; }
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+.tabs button { padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
+.tabs button.active { border-bottom-color: var(--blue); color: var(--blue); }
+.filters { display: grid; grid-template-columns: minmax(180px, 1.2fr) repeat(3, minmax(130px, 1fr)) minmax(180px, 1.4fr); align-items: end; gap: 12px; }
+.filter-actions { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: 8px; }
+.error-banner { margin-bottom: 14px; padding: 12px 14px; border: 1px solid #fca5a5; border-radius: 10px; background: #fef2f2; color: #991b1b; font-size: 13px; }
+.state { display: grid; justify-items: center; gap: 8px; margin: 0; padding: 36px 12px; color: var(--muted); text-align: center; }
+.state app-icon { font-size: 1.8rem; color: var(--blue); }
+.hint { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.table-scroll { overflow: auto; border: 1px solid var(--border); border-radius: 12px; }
+table { width: 100%; min-width: 900px; border-collapse: collapse; }
+th { padding: 10px; background: color-mix(in srgb, var(--navy) 4%, var(--surface)); color: var(--muted); font-size: 10px; text-align: left; white-space: nowrap; }
+td { padding: 10px; border-top: 1px solid var(--border); color: var(--navy); font-size: 12px; vertical-align: middle; }
+td small { color: var(--muted); }
+td.description { display: grid; gap: 2px; max-width: 320px; }
+td.description strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.amount { text-align: right; white-space: nowrap; font-weight: 700; }
+td.amount.credit { color: #15803d; }
+.row-actions { display: flex; justify-content: flex-end; gap: 4px; white-space: nowrap; }
+.row-actions .btn, .rule-list .btn { min-height: 32px; padding: 0 10px; font-size: 12px; }
+.danger { color: #b91c1c; }
+.pager { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 12px; color: var(--muted); font-size: 12px; }
+.pager span { margin-right: auto; }
+.rule-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.rule-list li { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--border); }
+.rule-list li > div { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.rule-list strong { overflow: hidden; color: var(--navy); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.rule-list small { color: var(--muted); font-size: 11px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, .52); }
+.dialog { display: grid; width: min(560px, 100%); max-height: calc(100vh - 32px); overflow: auto; gap: 12px; padding: 22px; border-radius: 18px; background: var(--surface); box-shadow: 0 24px 70px rgba(0, 0, 0, .25); }
+.dialog h2 { margin: 0; color: var(--navy); font-size: 18px; }
+.dialog .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.dialog .check { display: flex; align-items: center; gap: 8px; color: var(--navy); font-weight: 600; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 900px) {
+  .filters { grid-template-columns: 1fr 1fr; }
+  .filters .search { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .page-heading { align-items: stretch; flex-direction: column; }
+  .filters, .dialog .two { grid-template-columns: 1fr; }
+  .pager { flex-wrap: wrap; }
+  .panel { padding: 14px; }
+}

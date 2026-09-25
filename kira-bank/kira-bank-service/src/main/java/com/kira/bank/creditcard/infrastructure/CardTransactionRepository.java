@@ -1,6 +1,7 @@
 package com.kira.bank.creditcard.infrastructure;
 
 import com.kira.bank.creditcard.domain.CardTransaction;
+import com.kira.bank.creditcard.domain.CardTransactionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -36,4 +37,22 @@ public interface CardTransactionRepository extends JpaRepository<CardTransaction
 
     List<CardTransaction> findByUserCardIdInAndStatementIdIsNullAndTransactionDateGreaterThanEqualAndDeletedAtIsNull(
         Collection<Long> cardIds, LocalDate fromDate);
+
+    /** Cross-card listing. {@code descriptionLike} is already lower-cased, LIKE-escaped with '!' and wrapped in '%'. */
+    @Query("""
+        select t from CardTransaction t
+        where t.userId = :userId
+          and t.deletedAt is null
+          and (:cardId is null or t.userCardId = :cardId)
+          and (:fromDate is null or t.transactionDate >= :fromDate)
+          and (:toDate is null or t.transactionDate <= :toDate)
+          and (:type is null or t.transactionType = :type)
+          and (:descriptionLike is null or lower(t.description) like :descriptionLike escape '!')
+        """)
+    Page<CardTransaction> filter(@Param("userId") Long userId, @Param("cardId") Long cardId,
+                                 @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate,
+                                 @Param("type") CardTransactionType type,
+                                 @Param("descriptionLike") String descriptionLike, Pageable pageable);
+
+    List<CardTransaction> findByUserIdAndMccCodeIsNullAndCashbackRuleIdIsNullAndDeletedAtIsNull(Long userId);
 }

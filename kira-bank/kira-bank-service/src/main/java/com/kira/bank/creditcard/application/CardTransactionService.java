@@ -26,7 +26,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.kira.bank.creditcard.application.CardTransactionDtos.*;
 import static com.kira.bank.shared.web.ApiTypes.PageMeta;
@@ -38,16 +41,34 @@ public class CardTransactionService {
     private final CardTransactionRepository transactions;
     private final UserCreditCardRepository cards;
     private final CardCashbackCalculator calculator;
+    private final CardMerchantRuleService merchantRules;
 
     @Transactional(readOnly = true)
     public PageResponse<TransactionResponse> list(Long userId, Long cardId, LocalDate fromDate, LocalDate toDate,
                                                   Pageable pageable) {
-        ownCard(userId, cardId);
+        UserCreditCard card = ownCard(userId, cardId);
         CardRules cardRules = calculator.load(cardId);
         Page<TransactionResponse> page = transactions.search(userId, cardId, fromDate, toDate, pageable)
-            .map(transaction -> response(transaction, cardRules));
-        return new PageResponse<>(page.getContent(), new PageMeta(page.getNumber(), page.getSize(),
-            page.getTotalElements(), page.getTotalPages()));
+            .map(transaction -> response(transaction, cardRules, card));
+        return page(page);
+    }
+
+    /** Transactions across all of the user's cards with optional filters. */
+    @Transactional(readOnly = true)
+    public PageResponse<TransactionResponse> search(Long userId, Long cardId, LocalDate fromDate, LocalDate toDate,
+                                                    CardTransactionType type, String query,
+                                                    Pageable pageable) {
+        if (cardId != null) ownCard(userId, cardId);
+        if (fromDate != null && toDate != null && toDate.isBefore(fromDate))
+            throw bad("INVALID_DATE_RANGE", "Khoảng ngày không hợp lệ");
+        Map<Long, UserCreditCard> userCards = cards.findByUserIdAndDeletedAtIsNull(userId).stream()
+            .collect(Collectors.toMap(UserCreditCard::getId, Function.identity()));
+        Page<CardTransaction> result = transactions.filter(userId, cardId, fromDate, toDate, type,
+            likePattern(query), pageable);
+        Map<Long, CardRules> rulesByCard = calculator.load(result.getContent().stream()
+            .map(CardTransaction::getUserCardId).collect(Collectors.toSet()));
+        return page(result.map(transaction -> response(transaction, rulesByCard.get(transaction.getUserCardId()),
+            userCards.get(transaction.getUserCardId()))));
     }
 
     @Transactional
@@ -60,7 +81,7 @@ public class CardTransactionService {
         requireRule(cardRules, request.cashbackRuleId());
         byte[] key = CardTransactionKeys.manual(cardId, idempotencyKey);
         var existing = transactions.findByUserCardIdAndDedupKey(cardId, key);
-        if (existing.isPresent()) return response(existing.get(), cardRules);
+        if (existing.isPresent()) return response(existing.get(), cardRules, card);
 
         CardTransaction transaction = new CardTransaction();
         transaction.setUserId(userId);
@@ -71,29 +92,38 @@ public class CardTransactionService {
         transaction.setCurrency(card.getCurrency());
         transaction.setTransactionType(request.transactionType() == null
             ? CardTransactionType.SPENDING : request.transactionType());
-        transaction.setMccCode(request.mccCode());
+        transaction.setMccCode(mccOrRule(userId, request.mccCode(), request.description()));
         transaction.setCashbackRuleId(request.cashbackRuleId());
         transaction.setSource(CardTransactionSource.MANUAL);
         transaction.setDedupKey(key);
         transaction.setCreatedBy(userId);
         transaction.setUpdatedBy(userId);
         try {
-            return response(transactions.saveAndFlush(transaction), cardRules);
+            return response(transactions.saveAndFlush(transaction), cardRules, card);
         } catch (DataIntegrityViolationException ex) {
             throw new ApiException(HttpStatus.CONFLICT, "CARD_TRANSACTION_DUPLICATE", "Giao dịch đã được ghi nhận");
         }
     }
 
+    /**
+     * Full edit. The dedup key is kept on purpose so re-importing the same statement still skips this row, and the
+     * statement totals are not touched: transactions only feed cashback tracking.
+     */
     @Transactional
-    public TransactionResponse updateCategory(Long userId, Long transactionId, CategoryUpdateRequest request) {
+    public TransactionResponse update(Long userId, Long transactionId, UpdateTransactionRequest request) {
         CardTransaction transaction = owned(userId, transactionId);
         requireVersion(transaction, request.version());
+        UserCreditCard card = ownCard(userId, transaction.getUserCardId());
         CardRules cardRules = calculator.load(transaction.getUserCardId());
         requireRule(cardRules, request.cashbackRuleId());
-        transaction.setMccCode(request.mccCode());
+        transaction.setTransactionDate(request.transactionDate());
+        transaction.setDescription(request.description().trim());
+        transaction.setAmount(request.amount().setScale(4, RoundingMode.HALF_UP));
+        transaction.setTransactionType(request.transactionType());
+        transaction.setMccCode(mccOrRule(userId, request.mccCode(), request.description()));
         transaction.setCashbackRuleId(request.cashbackRuleId());
         transaction.setUpdatedBy(userId);
-        return response(save(transaction), cardRules);
+        return response(save(transaction), cardRules, card);
     }
 
     @Transactional
@@ -125,13 +155,33 @@ public class CardTransactionService {
             usage.unassignedSpending(), groups);
     }
 
-    private TransactionResponse response(CardTransaction transaction, CardRules cardRules) {
-        String category = cardRules.ruleFor(transaction).map(ActiveRule::categoryName).orElse(null);
-        return new TransactionResponse(transaction.getId(), transaction.getUserCardId(), transaction.getStatementId(),
-            transaction.getImportId(), transaction.getTransactionDate(), transaction.getPostingDate(),
-            transaction.getDescription(), transaction.getAmount(), transaction.getCurrency(),
-            transaction.getTransactionType(), transaction.getMccCode(), transaction.getCashbackRuleId(), category,
-            transaction.getSource(), transaction.getVersion(), transaction.getCreatedAt());
+    private TransactionResponse response(CardTransaction transaction, CardRules cardRules, UserCreditCard card) {
+        String category = cardRules == null ? null
+            : cardRules.ruleFor(transaction).map(ActiveRule::categoryName).orElse(null);
+        return new TransactionResponse(transaction.getId(), transaction.getUserCardId(),
+            card == null ? null : card.getNickname(), card == null ? null : card.getLastFour(),
+            transaction.getStatementId(), transaction.getImportId(), transaction.getTransactionDate(),
+            transaction.getPostingDate(), transaction.getDescription(), transaction.getAmount(),
+            transaction.getCurrency(), transaction.getTransactionType(), transaction.getMccCode(),
+            transaction.getCashbackRuleId(), category, transaction.getSource(), transaction.getVersion(),
+            transaction.getCreatedAt());
+    }
+
+    private String mccOrRule(Long userId, String mccCode, String description) {
+        if (mccCode != null && !mccCode.isBlank()) return mccCode;
+        return merchantRules.matcher(userId).mccFor(description).orElse(null);
+    }
+
+    private static String likePattern(String query) {
+        if (query == null || query.isBlank()) return null;
+        String trimmed = query.trim().toLowerCase(Locale.ROOT);
+        if (trimmed.length() > 100) trimmed = trimmed.substring(0, 100);
+        return "%" + trimmed.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+    }
+
+    private static <T> PageResponse<T> page(Page<T> page) {
+        return new PageResponse<>(page.getContent(), new PageMeta(page.getNumber(), page.getSize(),
+            page.getTotalElements(), page.getTotalPages()));
     }
 
     private void requireRule(CardRules cardRules, Long ruleId) {

@@ -127,7 +127,9 @@
 .activity { margin-bottom: 1.25rem; padding: 1.25rem; }
 .activity > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
 .activity h2 { margin: 0; font-size: 1.05rem; }
-.activity h3 { margin: 1.25rem 0 .5rem; font-size: .95rem; }
+.activity h3 { margin: 0; font-size: .95rem; }
+.recent-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin: 1.25rem 0 .5rem; }
+.recent-heading a { color: #0878ff; font-size: .83rem; font-weight: 700; }
 .activity header p, .activity .muted { margin: .25rem 0 0; color: var(--muted); font-size: .83rem; }
 .activity-links { display: flex; flex-wrap: wrap; gap: .5rem; }
 .activity-error { color: #b91c1c; font-size: .83rem; }
