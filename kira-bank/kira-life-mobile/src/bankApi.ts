@@ -106,6 +106,19 @@ export type CardBenefitResponse = {
   programs: CashbackProgramResponse[];
 };
 
+export type CardRecommendation = {
+  cardId: number; bankId: number; bankName: string; bankLogoUrl: string | null; nickname: string;
+  cardType: string | null; lastFour: string | null; currency: string; ruleId: number | null;
+  programName: string | null; categoryName: string | null; cashbackRate: number | null; estimatedCashback: number;
+  ruleCap: number | null; ruleRemaining: number | null; cardCap: number | null; cardRemaining: number | null;
+  availableCredit: number | null; insufficientCredit: boolean; periodStart: string; periodEnd: string; reasons: string[];
+};
+export type CardRecommendationResponse = { mccCode: string; amount: number | null; cards: CardRecommendation[] };
+export type CardTransactionRequest = {
+  transactionDate: string; description: string; amount: number;
+  transactionType: 'SPENDING' | 'REFUND' | 'FEE' | 'INTEREST' | 'CASHBACK'; mccCode: string | null; cashbackRuleId: number | null;
+};
+
 export const bankErrorMessage = (error: unknown) => {
   if (!(error instanceof ApiError)) return 'Không kết nối được máy chủ. Kiểm tra kết nối mạng và thử lại.';
   if (error.code === 'BANK_NOT_FOUND') return 'Không tìm thấy ngân hàng.';
@@ -139,6 +152,9 @@ export const bankErrorMessage = (error: unknown) => {
   if (error.code === 'CASHBACK_MCC_DUPLICATE') return 'Một mã MCC chỉ được thuộc một nhóm trong cùng chương trình.';
   if (error.code === 'CASHBACK_CATEGORY_DUPLICATE') return 'Tên nhóm danh mục không được trùng.';
   if (error.code === 'CASHBACK_TERMS_URL_INVALID') return 'Link điều khoản phải dùng HTTP hoặc HTTPS.';
+  if (error.code === 'INVALID_MCC') return 'MCC phải gồm 4 chữ số.';
+  if (error.code === 'CASHBACK_RULE_NOT_FOUND') return 'Nhóm cashback không thuộc thẻ này.';
+  if (error.code === 'CARD_TRANSACTION_DUPLICATE') return 'Khoản chi này đã được ghi nhận.';
   if (error.code === 'VALIDATION_ERROR') return 'Dữ liệu thẻ không hợp lệ.';
   return 'Đã có lỗi xảy ra. Vui lòng thử lại.';
 };
@@ -200,6 +216,16 @@ export function useBankApi() {
       page,
       size: 100
     })}`)),
+    recommendations: (mcc: string, amount?: number) => requestJson<CardRecommendationResponse>(`/api/v1/credit-card-recommendations${query({
+      mcc,
+      amount
+    })}`),
+    createCardTransaction: (cardId: number, body: CardTransactionRequest, idempotencyKey: string) =>
+      requestJson<unknown>(`/api/v1/credit-cards/${cardId}/transactions`, {
+        method: 'POST',
+        headers: {'Idempotency-Key': idempotencyKey},
+        body: JSON.stringify(body)
+      }),
     listBenefits: () => requestJson<CardBenefitResponse[]>('/api/v1/credit-card-benefits'),
     updateMonthlyCashbackCap: (cardId: number, monthlyCashbackCap: number, version: number | null) => requestJson<CardBenefitResponse>(`/api/v1/credit-card-benefits/${cardId}/monthly-cap`, {
       method: 'PUT',

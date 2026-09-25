@@ -2,6 +2,7 @@ import React from 'react';
 import {DemoTools, ProfileSettings} from '../src/profile';
 import {Stack, useLocalSearchParams} from 'expo-router';
 import {BenefitsManagement} from '../src/benefits';
+import {CardRecommend} from '../src/cardRecommend';
 import {
   AccountForm,
   AiResult,
@@ -58,6 +59,8 @@ export default function DetailRoute() {
         return <BillingCycleEditor id={id}/>;
       case 'benefits':
         return <BenefitsManagement/>;
+      case 'card-recommend':
+        return <CardRecommend/>;
       case 'credit-stats':
         return <BankStats/>;
       case 'bank-balance':

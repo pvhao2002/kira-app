@@ -62,6 +62,11 @@ ai:
     processing-timeout: ${AI_PROCESSING_TIMEOUT:PT30M}
     cron: "${AI_JOB_CRON:0 0 */3 * * *}"
     time-zone: "${AI_JOB_TIME_ZONE:Asia/Bangkok}"
+credit-card:
+  statement-import:
+    # Fallback for imports the immediate run could not start (busy, AI not configured) and for retries.
+    cron: "${CARD_STATEMENT_IMPORT_CRON:0 10 * * * *}"
+    retention-cron: "${CARD_STATEMENT_IMPORT_RETENTION_CRON:0 40 2 * * *}"
 investment:
   credential-encryption-key: ${INVESTMENT_CREDENTIAL_ENCRYPTION_KEY:}
   transaction-import:

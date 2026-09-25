@@ -14,6 +14,12 @@ erDiagram
  credit_card_cashback_programs ||--|{ credit_card_cashback_rules : contains
  credit_card_cashback_rules ||--|{ credit_card_cashback_rule_mccs : includes
  statements ||--o{ payments : paid_by
+ user_credit_cards ||--o{ card_statement_imports : imports
+ card_statement_imports ||--|{ card_statement_import_files : pages
+ attachments ||--o{ card_statement_import_files : supplies
+ user_credit_cards ||--o{ card_transactions : records
+ statements ||--o{ card_transactions : lists
+ credit_card_cashback_rules ||--o{ card_transactions : categorizes
  users ||--o{ investment_accounts : owns
  users ||--o{ attachments : uploads
  users ||--o{ cloudflare_accounts : configures
@@ -45,6 +51,13 @@ V14 tạo `investment_account_transactions` làm lịch sử chính thức cùng
 V17 thêm capability tìm trọ: `lodging_listings` thuộc owner nhưng được đọc chung; `lodging_reference_locations` là danh mục điểm đến dùng chung; `lodging_listing_locations` giữ snapshot km/trạng thái Mapbox; `lodging_listing_images` liên kết attachment ảnh; `lodging_reviews` unique theo `(listing_id, user_id)` để mỗi user có đúng một review.
 
 V18 thêm `ai_provider_accounts` cho danh sách Cloudflare Workers AI theo priority. API token chỉ lưu dưới dạng AES-256-GCM ciphertext; trạng thái kiểm tra, cooldown và lỗi an toàn gần nhất phục vụ failover mà không ghi token vào audit hoặc response.
+
+V32 thêm nhập sao kê thẻ bằng AI và giao dịch thẻ (bảng `card_transactions` mới, khác bảng legacy đã xóa ở V13).
+`card_statement_imports` giữ trạng thái job AI, bản nháp đã chuẩn hóa (`ai_result`), kết quả confirm và mốc purge ảnh;
+`card_statement_import_files` nối import với các `attachments` theo số trang. `card_transactions` thuộc một thẻ, có thể gắn
+`statement_id`, `import_id` và `cashback_rule_id`; `amount > 0`, loại `SPENDING|REFUND|FEE|INTEREST|CASHBACK`, nguồn
+`AI_IMPORT|MANUAL`, unique `(user_card_id, dedup_key)` để nhập lại cùng sao kê hoặc gửi lại cùng `Idempotency-Key` không
+nhân đôi. Không có liên kết sang domain đầu tư.
 
 V19 đổi bảng thành `cloudflare_accounts`, thêm model AI và credential/trạng thái R2 độc lập. `attachments.r2_account_id` cố định nơi lưu object; generated unique key bảo đảm chỉ một R2 account active làm primary. Attachment cũ để `NULL` cho tới khi Admin xác nhận gán vào bucket đã test.
 

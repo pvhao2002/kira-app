@@ -123,3 +123,27 @@
   .program-dialog { max-height: 96vh; padding: 1rem; }
   .program-dialog > footer { bottom: -1rem; margin: 1rem -1rem -1rem; padding: .85rem 1rem; }
 }
+
+.activity { margin-bottom: 1.25rem; padding: 1.25rem; }
+.activity > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
+.activity h2 { margin: 0; font-size: 1.05rem; }
+.activity h3 { margin: 1.25rem 0 .5rem; font-size: .95rem; }
+.activity header p, .activity .muted { margin: .25rem 0 0; color: var(--muted); font-size: .83rem; }
+.activity-links { display: flex; flex-wrap: wrap; gap: .5rem; }
+.activity-error { color: #b91c1c; font-size: .83rem; }
+.progress-row { display: grid; gap: .35rem; padding: .6rem 0; border-top: 1px solid var(--border); }
+.progress-row > div:first-child { display: flex; align-items: baseline; gap: .5rem; font-size: .85rem; }
+.progress-row small { color: var(--muted); }
+.progress-row span { margin-left: auto; color: var(--muted); white-space: nowrap; }
+.bar { height: 6px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--navy) 8%, var(--surface)); }
+.bar i { display: block; height: 100%; border-radius: inherit; background: #0878ff; }
+.transaction-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.transaction-list li { display: flex; align-items: center; gap: .75rem; padding: .6rem 0; border-top: 1px solid var(--border); }
+.transaction-list li > div { display: grid; flex: 1; gap: .15rem; min-width: 0; }
+.transaction-list strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
+.transaction-list small { color: var(--muted); font-size: .75rem; }
+.transaction-list .amount { font-weight: 700; white-space: nowrap; }
+@media (max-width: 760px) {
+  .activity > header { flex-direction: column; }
+  .transaction-list li { flex-wrap: wrap; }
+}
