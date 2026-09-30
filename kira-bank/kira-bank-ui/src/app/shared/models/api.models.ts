@@ -184,6 +184,183 @@ export interface CreditCardCashbackProgramRequest {
   groups: CreditCardCashbackGroupRequest[]
 }
 
+export type CardStatementImportStatus = 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED' | 'CONFIRMED' | 'CANCELLED';
+export type CardTransactionType = 'SPENDING' | 'REFUND' | 'FEE' | 'INTEREST' | 'CASHBACK';
+
+export interface CardTransactionDraft {
+  lineNumber: number;
+  transactionDate: string | null;
+  postingDate: string | null;
+  description: string | null;
+  amount: number | null;
+  transactionType: CardTransactionType | null;
+  mccCode: string | null;
+  cashbackRuleId: number | null;
+  suggestedCategory: string | null;
+  confidence: number | null;
+  duplicate: boolean;
+  needsReview: boolean;
+  warnings: string[]
+}
+
+export interface CardStatementDraft {
+  statementDate: string | null;
+  dueDate: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  openingBalance: number | null;
+  totalSpending: number | null;
+  totalRefund: number | null;
+  totalFee: number | null;
+  totalInterest: number | null;
+  statementBalance: number | null;
+  minimumPayment: number | null;
+  currency: string;
+  cardLastFour: string | null;
+  confidence: number | null;
+  warnings: string[];
+  aiWarnings: string[];
+  ignoredPaymentRows: number;
+  transactions: CardTransactionDraft[]
+}
+
+export interface CardStatementConfirmResponse {
+  statementId: number;
+  totalsApplied: boolean;
+  inserted: number;
+  skipped: number;
+  supersededManual: number;
+  expectedCashback: number
+}
+
+export interface CardStatementImport {
+  id: number;
+  cardId: number;
+  status: CardStatementImportStatus;
+  attemptCount: number;
+  errorCode: string | null;
+  version: number;
+  createdAt: string;
+  completedAt: string | null;
+  aiConfigured: boolean;
+  storagePurged: boolean;
+  files: {attachmentId: number; pageNumber: number; originalName: string | null}[];
+  draft: CardStatementDraft | null;
+  statementId: number | null;
+  result: CardStatementConfirmResponse | null
+}
+
+export interface CardStatementConfirmTransaction {
+  include: boolean;
+  transactionDate: string;
+  postingDate: string | null;
+  description: string;
+  amount: number;
+  transactionType: CardTransactionType;
+  mccCode: string | null;
+  cashbackRuleId: number | null
+}
+
+export interface CardStatementConfirmRequest {
+  version: number;
+  statementDate: string;
+  dueDate: string;
+  periodStart: string | null;
+  periodEnd: string | null;
+  openingBalance: number | null;
+  totalSpending: number | null;
+  totalRefund: number | null;
+  totalFee: number | null;
+  totalInterest: number | null;
+  statementBalance: number;
+  minimumPayment: number;
+  transactions: CardStatementConfirmTransaction[]
+}
+
+export interface CardTransaction {
+  id: number;
+  cardId: number;
+  statementId: number | null;
+  importId: number | null;
+  transactionDate: string;
+  postingDate: string | null;
+  description: string;
+  amount: number;
+  currency: string;
+  transactionType: CardTransactionType;
+  mccCode: string | null;
+  cashbackRuleId: number | null;
+  categoryName: string | null;
+  source: 'AI_IMPORT' | 'MANUAL';
+  version: number;
+  createdAt: string
+}
+
+export interface CardTransactionRequest {
+  transactionDate: string;
+  description: string;
+  amount: number;
+  transactionType: CardTransactionType;
+  mccCode: string | null;
+  cashbackRuleId: number | null
+}
+
+export interface CashbackGroupProgress {
+  ruleId: number;
+  programId: number;
+  programName: string;
+  categoryName: string;
+  cashbackRate: number;
+  spent: number;
+  earned: number;
+  cap: number;
+  remaining: number;
+  mccCodes: string[]
+}
+
+export interface CashbackProgress {
+  cardId: number;
+  currency: string;
+  periodStart: string;
+  periodEnd: string;
+  cardCap: number | null;
+  cardEarned: number;
+  cardRemaining: number | null;
+  unassignedSpending: number;
+  groups: CashbackGroupProgress[]
+}
+
+export interface CardRecommendation {
+  cardId: number;
+  bankId: number;
+  bankName: string;
+  bankLogoUrl: string | null;
+  nickname: string;
+  cardType: string | null;
+  lastFour: string | null;
+  currency: string;
+  ruleId: number | null;
+  programName: string | null;
+  categoryName: string | null;
+  cashbackRate: number | null;
+  estimatedCashback: number;
+  ruleCap: number | null;
+  ruleRemaining: number | null;
+  cardCap: number | null;
+  cardRemaining: number | null;
+  availableCredit: number | null;
+  insufficientCredit: boolean;
+  periodStart: string;
+  periodEnd: string;
+  reasons: string[]
+}
+
+export interface CardRecommendationResponse {
+  mccCode: string;
+  amount: number | null;
+  cards: CardRecommendation[]
+}
+
 export interface InvestmentAccountSummary {
   id: number;
   accountCode: string | null;

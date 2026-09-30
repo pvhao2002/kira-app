@@ -91,7 +91,7 @@ public class InvestmentAiManualRunService {
             Attachment attachment = claimedAttachment.join();
             processor.processClaimedAttachments(List.of(attachment));
         } catch (CompletionException ex) {
-            log.debug("Manual AI run {} stopped before the attachment was claimed", attachmentId);
+            // The run stopped before the attachment was claimed; nothing to process or recover.
         } catch (RuntimeException ex) {
             log.error("Unexpected failure while manually running investment AI job {}", attachmentId, ex);
             recoverUnexpectedFailure(attachmentId);

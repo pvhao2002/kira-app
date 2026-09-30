@@ -3,6 +3,7 @@ import {overviewVietnamese} from './overview.translations';
 import {travelVietnamese} from './travel.translations';
 import {visitsVietnamese} from './login-visits.translations';
 import {usersVietnamese} from './admin-users.translations';
+import {creditCardAiVietnamese} from './credit-card-ai.translations';
 import type {TranslationKey} from './translations';
 
 export const vietnameseTranslations: Record<TranslationKey, string> = {
@@ -11,6 +12,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ...travelVietnamese,
   ...healthVietnamese,
   ...overviewVietnamese,
+  ...creditCardAiVietnamese,
   'language.change': 'Đổi ngôn ngữ',
   'language.english': 'English',
   'language.vietnamese': 'Tiếng Việt',
@@ -52,6 +54,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   'auth.passwordPlaceholder': 'Tối thiểu 8 ký tự',
   'auth.validationError': 'Vui lòng kiểm tra lại các trường bắt buộc.',
   'auth.invalidCredentials': 'Email hoặc mật khẩu không đúng.',
+  'auth.tooManyAttempts': 'Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau vài phút.',
   'auth.invalidEmail': 'Vui lòng nhập email hợp lệ.',
   'auth.invalidPassword': 'Mật khẩu phải có ít nhất 8 ký tự.',
   'auth.adminNotice': 'Tài khoản do Quản trị viên (Admin) cấp. Vui lòng liên hệ Admin nếu bạn chưa có tài khoản.',
@@ -695,6 +698,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ,'lodging.saveFailed': 'Không thể lưu tin trọ'
   ,'lodging.loadFailed': 'Không thể tải danh sách trọ'
   ,'lodging.uploadFailed': 'Tải ảnh lên thất bại'
+  ,'lodging.invalidImages': 'Chỉ nhận ảnh JPEG, PNG hoặc WebP tối đa 10 MB; các file khác đã bị bỏ qua'
   ,'lodging.retryFailed': 'Không thể tính lại khoảng cách'
   ,'lodging.address': 'Địa chỉ'
   ,'lodging.rent': 'Giá thuê/tháng (VND)'

@@ -33,8 +33,10 @@ public class AuthService {
     private final RefreshTokenRepository tokens;
     private final PasswordEncoder encoder;
     private final JwtService jwt;
+    private final LoginRateLimiter loginLimiter;
     @Value("${app.jwt.refresh-ttl}")
     private Duration refreshTtl;
+    private volatile String dummyPasswordHash;
 
     @Transactional
     public Session register(RegisterRequest request) {
@@ -90,10 +92,19 @@ public class AuthService {
     }
 
     @Transactional
-    public Session login(LoginRequest request) {
-        User user = users.findByEmailIgnoreCaseAndDeletedAtIsNull(request.email()).orElseThrow(this::badCredentials);
-        if (!"ACTIVE".equals(user.getStatus()) || !encoder.matches(request.password(), user.getPasswordHash()))
+    public Session login(LoginRequest request, String clientIp) {
+        loginLimiter.acquire(clientIp, request.email());
+        User user = users.findByEmailIgnoreCaseAndDeletedAtIsNull(request.email()).orElse(null);
+        if (user == null) {
+            // Spend the same bcrypt cost as a real check so response time does not reveal which emails exist.
+            encoder.matches(request.password(), dummyPasswordHash());
+        }
+        if (user == null || !"ACTIVE".equals(user.getStatus())
+            || !encoder.matches(request.password(), user.getPasswordHash())) {
+            loginLimiter.recordFailure(request.email());
             throw badCredentials();
+        }
+        loginLimiter.recordSuccess(request.email());
         return newSession(user, UUID.randomUUID().toString());
     }
 
@@ -166,6 +177,15 @@ public class AuthService {
     private User requireForUpdate(Long id) {
         return users.findByIdForUpdate(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
             "USER_NOT_FOUND", "Không tìm thấy người dùng"));
+    }
+
+    private String dummyPasswordHash() {
+        String hash = dummyPasswordHash;
+        if (hash == null) {
+            hash = encoder.encode(UUID.randomUUID().toString());
+            dummyPasswordHash = hash;
+        }
+        return hash;
     }
 
     private ApiException badCredentials() {

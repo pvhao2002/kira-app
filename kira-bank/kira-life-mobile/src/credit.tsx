@@ -169,12 +169,16 @@ export function Dashboard() {
       size={11} color={c.muted}>{t('Thống kê được đồng bộ từ tài khoản Kira Bank')}</T></View><Icon
       name="shield-checkmark-outline"/></Row>
     <BankOverviewCard/>
-    <Section title={t('Tác vụ nhanh')} action={t('3 phím tắt')} onPress={() => go('cards')}/><Row
+    <Section title={t('Tác vụ nhanh')} action={t('4 phím tắt')} onPress={() => go('cards')}/><Row
     style={{alignItems: 'stretch', gap: 10}}>{([{
     label: t('Thẻ của tôi'),
     icon: 'card-outline',
     target: 'cards'
   }, {label: t('Ưu đãi & Hoàn tiền'), icon: 'gift-outline', target: 'benefits'}, {
+    label: t('Nên quẹt thẻ nào'),
+    icon: 'sparkles-outline',
+    target: 'card-recommend'
+  }, {
     label: t('Điều chỉnh số dư'),
     icon: 'options-outline',
     target: 'credit-stats'

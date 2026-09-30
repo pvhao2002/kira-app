@@ -130,6 +130,9 @@ public class AttachmentService {
     public AttachmentResponse upload(Long userId, String flow, String documentType, MultipartFile file, Integer imageNumber) throws IOException {
         String normalizedFlow = normalizeFlow(flow);
         String normalizedDocumentType = normalizeDocumentType(documentType);
+        if (file == null || file.isEmpty() || file.getSize() > MAX_FILE_SIZE) {
+            throw bad("INVALID_FILE_SIZE", "File phải có dung lượng từ 1 byte đến 10 MB");
+        }
         byte[] data = file.getBytes();
         String mimeType = validateFile(normalizedFlow, normalizedDocumentType, file, data);
         String hash = sha256(data);
@@ -153,7 +156,7 @@ public class AttachmentService {
         attachment.setDocumentType(normalizedDocumentType);
         attachment.setStorageKey(key);
         attachment.setR2AccountId(stored.accountId());
-        attachment.setOriginalName(Optional.ofNullable(file.getOriginalFilename()).filter(s -> !s.isBlank()).orElse("document"));
+        attachment.setOriginalName(safeOriginalName(file.getOriginalFilename(), "document"));
         attachment.setMimeType(mimeType);
         attachment.setSizeBytes(file.getSize());
         attachment.setSha256(hash);
@@ -464,6 +467,18 @@ public class AttachmentService {
         if (!isInvestmentReceipt(attachment.getModule(), attachment.getDocumentType())) {
             throw missingAttachment();
         }
+    }
+
+    /**
+     * Client-supplied file names are display-only metadata: strip path separators and control characters and cap
+     * the length so they cannot be used for path tricks, header injection or oversized rows.
+     */
+    public static String safeOriginalName(String name, String fallback) {
+        if (name == null) return fallback;
+        String base = name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
+        String cleaned = base.replaceAll("[\\p{Cntrl}\"<>|:*?]", "_").trim();
+        if (cleaned.isEmpty() || cleaned.equals(".") || cleaned.equals("..")) return fallback;
+        return cleaned.length() <= 200 ? cleaned : cleaned.substring(0, 200);
     }
 
     private String validateFile(String flow, String documentType, MultipartFile file, byte[] data) {

@@ -1,6 +1,7 @@
 package com.kira.bank.analytics.application;
 
 import com.kira.bank.analytics.infrastructure.LoginVisitRepository;
+import com.kira.bank.shared.infrastructure.ClientIpResolver;
 import com.kira.bank.shared.web.ApiException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ import static com.kira.bank.analytics.application.LoginVisitDtos.*;
 public class LoginVisitService {
     public static final int RETENTION_DAYS = 90;
     private final LoginVisitRepository repo;
-    private final VisitIpResolver resolver;
+    private final ClientIpResolver resolver;
     private final Map<String, Bucket> buckets = new HashMap<>();
 
     // Bound the anonymous endpoint's write rate and in-memory bookkeeping.
@@ -63,7 +64,7 @@ public class LoginVisitService {
         if (!from.isBefore(to) || Duration.between(from, to).compareTo(Duration.ofDays(91)) > 0 || page < 0 || page > 100000 || size < 1 || size > 100)
             throw new ApiException(HttpStatus.BAD_REQUEST, "VISIT_FILTER_INVALID", "Choose a range up to 91 days and a valid page");
         if (ip.isBlank()) return "";
-        String normalized = VisitIpResolver.normalize(ip.trim());
+        String normalized = ClientIpResolver.normalize(ip.trim());
         if (normalized == null)
             throw new ApiException(HttpStatus.BAD_REQUEST, "VISIT_IP_INVALID", "Invalid IP address");
         return normalized;

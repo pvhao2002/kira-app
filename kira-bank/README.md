@@ -74,6 +74,7 @@ Chỉ được tạo khi `app.seed-development-users=true` (mặc định develo
 - Identity: `/api/v1/auth/register`, `/login`, `/refresh`, `/logout`, `/profile`, `/change-password`.
 - Public: `/api/v1/public/banks`.
 - Credit card: `/credit-cards`, `/statements`, `/statements/{id}/payments`, `/payments`, `/dashboards/credit-cards`.
+- Credit card AI: `/credit-cards/{id}/statement-imports` (AI đọc ảnh sao kê, review rồi confirm), `/credit-cards/{id}/transactions`, `/credit-cards/{id}/cashback-progress`, `/credit-card-recommendations?mcc=&amount=` (gợi ý nên quẹt thẻ nào). Xem [docs/api/credit-card-ai.md](docs/api/credit-card-ai.md).
 - Investment: CRUD hồ sơ tại `/investment/accounts`, import tại `/investment/accounts/{id}/transaction-imports` và lịch sử tại `/investment/accounts/{id}/transactions`.
 - Shared: `/attachments` lưu ảnh nguồn; scheduler AI xử lý tối đa 3 ảnh/request mỗi 3 giờ, luôn chờ người dùng review/confirm.
 - Admin Cloudflare: `/admin/cloudflare-accounts` quản lý Workers AI failover và R2 primary động.

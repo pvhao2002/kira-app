@@ -1,0 +1,45 @@
+:host { display: block; }
+.eyebrow { color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.panel { margin-bottom: 16px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 8px 25px rgba(15, 23, 42, .04); }
+input { min-height: 42px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--navy); font: inherit; }
+.preset-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 8px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--navy); font-size: 12px; font-weight: 700; cursor: pointer; }
+.chip:hover { border-color: var(--blue); }
+.chip.active { border-color: var(--blue); background: var(--blue); color: #fff; }
+.query-form { display: grid; grid-template-columns: 120px minmax(0, 260px) auto; align-items: end; gap: 12px; margin-top: 16px; }
+.query-form label { display: grid; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+.error-banner { margin-bottom: 16px; padding: 12px 14px; border: 1px solid #fca5a5; border-radius: 10px; background: #fef2f2; color: #991b1b; font-size: 13px; }
+.state { display: grid; justify-items: center; gap: 10px; padding: 40px 20px; color: var(--muted); text-align: center; }
+.state app-icon { font-size: 2rem; color: var(--blue); }
+.results { display: grid; gap: 12px; }
+.result header { display: flex; align-items: center; gap: 12px; }
+.result.best { border-color: color-mix(in srgb, #16a34a 55%, var(--border)); box-shadow: 0 10px 28px color-mix(in srgb, #16a34a 14%, transparent); }
+.result.muted { opacity: .8; }
+.rank { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: color-mix(in srgb, var(--navy) 8%, var(--surface)); color: var(--navy); font-size: 12px; font-weight: 800; }
+.bank-logo { display: grid; place-items: center; width: 42px; height: 42px; overflow: hidden; border-radius: 12px; background: color-mix(in srgb, var(--navy) 5%, var(--surface)); color: var(--blue); }
+.bank-logo img { width: 30px; height: 30px; object-fit: contain; }
+.card-name { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.card-name strong { overflow: hidden; color: var(--navy); text-overflow: ellipsis; white-space: nowrap; }
+.card-name span { color: var(--muted); font-size: 12px; }
+.best-badge { padding: 5px 10px; border-radius: 999px; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.metrics div { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--border); border-radius: 11px; }
+.metrics span, .metrics small { color: var(--muted); font-size: 11px; }
+.metrics strong { color: var(--navy); font-size: 17px; }
+.metrics .cashback { color: #15803d; }
+.cap { display: grid; gap: 6px; margin-top: 12px; font-size: 12px; }
+.cap > div:first-child { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
+.bar { height: 6px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--navy) 8%, var(--surface)); }
+.bar i { display: block; height: 100%; border-radius: inherit; background: var(--blue); }
+.result footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+.reasons { display: flex; flex-wrap: wrap; gap: 6px; }
+.period { color: var(--muted); font-size: 11px; }
+.reason { padding: 3px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 10px; font-weight: 700; }
+.reason[data-reason=INSUFFICIENT_CREDIT], .reason[data-reason=RULE_CAP_REACHED], .reason[data-reason=CARD_CAP_REACHED] { background: #fee2e2; color: #b91c1c; }
+@media (max-width: 760px) {
+  .query-form { grid-template-columns: 1fr; }
+  .metrics { grid-template-columns: 1fr; }
+  .result footer { align-items: stretch; flex-direction: column; }
+  .panel { padding: 16px; }
+}

@@ -1,6 +1,7 @@
 package com.kira.bank.dashboard.application;
 
 import com.kira.bank.dashboard.infrastructure.OverviewRepository;
+import com.kira.bank.dashboard.infrastructure.OverviewRepository.DueWindow;
 import com.kira.bank.tutoring.application.TutoringService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,16 +27,15 @@ public class OverviewService {
 
     public Credit credit(Long userId) {
         LocalDate today = LocalDate.now(ZONE);
-        String outstanding = "s.status not in ('PAID','CANCELLED','NEEDS_INPUT') and s.remaining_amount > 0 and ";
         var dashboard = creditCards.dashboard(userId);
         var summary = new CreditSummary(dashboard.totalCreditLimit(), dashboard.currentBalance(), dashboard.availableCredit(),
             dashboard.utilizationRate(), dashboard.currency(), dashboard.banks().size(),
             dashboard.banks().stream().mapToInt(CreditCardDashboardDtos.BankDebtResponse::cardCount).sum());
         return new Credit(Instant.now(), summary,
-            repository.dues(userId, outstanding + "s.due_date < ?", today),
-            repository.dues(userId, outstanding + "s.due_date = ?", today),
-            repository.dues(userId, outstanding + "s.due_date > ? and s.due_date < ?", today, today.plusDays(7)),
-            repository.dues(userId, "s.status = 'NEEDS_INPUT'"));
+            repository.dues(userId, DueWindow.OVERDUE, today),
+            repository.dues(userId, DueWindow.DUE_TODAY, today),
+            repository.dues(userId, DueWindow.DUE_THIS_WEEK, today),
+            repository.dues(userId, DueWindow.NEEDS_INPUT, today));
     }
 
     public Tutoring tutoring(Long userId) {

@@ -1,6 +1,6 @@
 package com.kira.bank.analytics.infrastructure;
 
-import com.kira.bank.analytics.application.VisitIpResolver.Resolved;
+import com.kira.bank.shared.infrastructure.ClientIpResolver.Resolved;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;

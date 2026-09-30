@@ -3,6 +3,8 @@ package com.kira.bank.identity.web;
 import com.kira.bank.identity.application.AuthDtos.LoginRequest;
 import com.kira.bank.identity.application.AuthDtos.ProfileResponse;
 import com.kira.bank.identity.application.AuthService;
+import com.kira.bank.shared.infrastructure.ClientIpResolver;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -17,14 +19,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MobileAuthController {
     private final AuthService auth;
+    private final ClientIpResolver clientIps;
 
     private MobileSession response(AuthService.Session s) {
         return new MobileSession(s.response().accessToken(), s.response().expiresInSeconds(), s.response().user(), s.refreshToken());
     }
 
     @PostMapping("/login")
-    public MobileSession login(@Valid @RequestBody LoginRequest r) {
-        return response(auth.login(r));
+    public MobileSession login(@Valid @RequestBody LoginRequest r, HttpServletRequest request) {
+        return response(auth.login(r, clientIps.resolve(request).ip()));
     }
 
     @PostMapping("/refresh")

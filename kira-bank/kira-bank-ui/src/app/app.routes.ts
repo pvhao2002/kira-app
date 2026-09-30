@@ -42,6 +42,18 @@ export const routes: Routes = [
         data: {titleKey: 'route.creditDashboard'}
       },
       {
+        path: 'credit-card/statement-import',
+        loadComponent: () => import('./features/credit-card-statement-import/credit-card-statement-import.page')
+          .then(m => m.CreditCardStatementImportPage),
+        data: {titleKey: 'route.cardImport'}
+      },
+      {
+        path: 'credit-card/recommend',
+        loadComponent: () => import('./features/credit-card-recommend/credit-card-recommend.page')
+          .then(m => m.CreditCardRecommendPage),
+        data: {titleKey: 'route.cardRecommend'}
+      },
+      {
         path: 'credit-card/benefits',
         loadComponent: () => import('./features/credit-card-benefits/credit-card-benefits.page')
           .then(m => m.CreditCardBenefitsPage),

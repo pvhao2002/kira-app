@@ -12,6 +12,7 @@ import {
   PasswordVaultModule,
   PasswordVaultSecret
 } from '../../shared/models/api.models';
+import {apiErrorMessage} from '../../core/services/api-error';
 
 interface ModuleDraft { name: string; websiteUrl: string; description: string }
 interface AccountDraft { displayName: string; username: string; password: string; loginUrl: string; note: string }
@@ -361,7 +362,6 @@ export class PasswordManagerPage implements OnDestroy {
   }
   private nullable(value: string): string | null { return value.trim() || null; }
   private errorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse && typeof error.error?.message === 'string') return error.error.message;
-    return this.i18n.t('passwordManager.actionFailed');
+    return apiErrorMessage(error, this.i18n.t('passwordManager.actionFailed'));
   }
 }

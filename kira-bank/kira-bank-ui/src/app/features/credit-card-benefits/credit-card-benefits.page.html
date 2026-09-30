@@ -68,6 +68,66 @@
     </div>
   </section>
 
+  <section class="activity panel">
+    <header>
+      <div>
+        <h2>{{ i18n.t('creditBenefits.progressTitle') }}</h2>
+        @if (progress(); as current) {
+          <p>{{ i18n.t('creditBenefits.progressPeriod', {from: current.periodStart, to: current.periodEnd}) }}</p>
+        }
+      </div>
+      <div class="activity-links">
+        <a class="btn ghost" routerLink="/app/credit-card/statement-import" [queryParams]="{cardId: card.cardId}">{{ i18n.t('shell.cardImport') }}</a>
+        <a class="btn ghost" routerLink="/app/credit-card/recommend">{{ i18n.t('shell.cardRecommend') }}</a>
+      </div>
+    </header>
+    @if (activityError()) {
+      <p class="activity-error" role="alert">{{ activityError() }}</p>
+    }
+    @if (progress(); as current) {
+      @if (current.cardCap !== null) {
+        <div class="progress-row">
+          <div><strong>{{ i18n.t('creditBenefits.monthlyCap') }}</strong>
+            <span>{{ formatMoney(current.cardEarned) }} / {{ formatMoney(current.cardCap) }}</span></div>
+          <div class="bar"><i [style.width.%]="usedPercent(current.cardRemaining, current.cardCap)"></i></div>
+        </div>
+      }
+      @for (group of current.groups; track group.ruleId) {
+        <div class="progress-row">
+          <div><strong>{{ group.categoryName }}</strong><small>{{ group.programName }} · {{ group.cashbackRate }}%</small>
+            <span>{{ formatMoney(group.earned) }} / {{ formatMoney(group.cap) }}</span></div>
+          <div class="bar"><i [style.width.%]="usedPercent(group.remaining, group.cap)"></i></div>
+        </div>
+      } @empty {
+        <p class="muted">{{ i18n.t('creditBenefits.progressEmpty') }}</p>
+      }
+      @if (current.unassignedSpending > 0) {
+        <p class="muted">{{ i18n.t('creditBenefits.unassignedSpending', {amount: formatMoney(current.unassignedSpending)}) }}</p>
+      }
+    }
+    <h3>{{ i18n.t('creditBenefits.recentTransactions') }}</h3>
+    @if (!transactions().length) {
+      <p class="muted">{{ i18n.t('creditBenefits.noTransactions') }}</p>
+    } @else {
+      <ul class="transaction-list">
+        @for (transaction of transactions(); track transaction.id) {
+          <li>
+            <div>
+              <strong>{{ transaction.description }}</strong>
+              <small>{{ transaction.transactionDate }} · {{ i18n.t('cardImport.type.' + transaction.transactionType.toLowerCase()) }}
+                @if (transaction.categoryName) { · {{ transaction.categoryName }} }
+                @if (transaction.mccCode) { · MCC {{ transaction.mccCode }} }
+                · {{ transaction.source === 'MANUAL' ? i18n.t('creditBenefits.sourceManual') : i18n.t('creditBenefits.sourceImport') }}</small>
+            </div>
+            <span class="amount">{{ formatMoney(transaction.amount) }} {{ transaction.currency }}</span>
+            <button class="btn ghost" type="button" [disabled]="deletingTransactionId() !== null"
+                    [attr.aria-label]="i18n.t('common.delete')" (click)="deleteTransaction(transaction)"><app-icon name="trash"/></button>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
   <section class="program-section">
     <header>
       <div><h2>{{ i18n.t('creditBenefits.programs') }}</h2><p>{{ i18n.t('creditBenefits.programsDescription') }}</p></div>

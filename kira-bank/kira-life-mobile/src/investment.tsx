@@ -642,7 +642,7 @@ export function ImportScreen() {
       setPicked([]);
       setPreview(null);
     } catch (e) {
-      console.error('[Investment import] upload failed', {
+      if (__DEV__) console.error('[Investment import] upload failed', {
         accountId,
         fileCount: picked.length,
         status: e instanceof ApiError ? e.status : undefined,

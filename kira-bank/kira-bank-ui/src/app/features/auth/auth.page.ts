@@ -49,7 +49,8 @@ export class AuthPage {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.router.navigateByUrl('/app'),
-        error: () => this.error.set(this.i18n.t('auth.invalidCredentials'))
+        error: (error: {status?: number}) => this.error.set(this.i18n.t(error.status === 429
+          ? 'auth.tooManyAttempts' : 'auth.invalidCredentials'))
       });
   }
 }

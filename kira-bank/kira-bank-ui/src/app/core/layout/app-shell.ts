@@ -98,6 +98,8 @@ export class AppShell {
           {labelKey: 'shell.dashboard', icon: 'dashboard', path: '/app/credit-card/dashboard'},
           {labelKey: 'shell.myCards', icon: 'card', path: '/app/credit-cards'},
           {labelKey: 'shell.creditBenefits', icon: 'star', path: '/app/credit-card/benefits'},
+          {labelKey: 'shell.cardImport', icon: 'receipt', path: '/app/credit-card/statement-import'},
+          {labelKey: 'shell.cardRecommend', icon: 'wallet', path: '/app/credit-card/recommend'},
           {labelKey: 'shell.banks', icon: 'bank', path: '/app/banks'}
         ]
       },

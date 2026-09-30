@@ -1,0 +1,229 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('cardImport.eyebrow') }}</span>
+    <h1>{{ i18n.t('route.cardImport') }}</h1>
+    <p>{{ i18n.t('cardImport.description') }}</p>
+  </div>
+  <label class="card-picker">
+    <span>{{ i18n.t('cardImport.card') }}</span>
+    <app-custom-select
+      [ariaLabel]="i18n.t('cardImport.card')"
+      [ngModel]="cardId()"
+      [options]="cardOptions()"
+      [placeholder]="i18n.t('cardImport.cardPlaceholder')"
+      (ngModelChange)="chooseCard($event)">
+    </app-custom-select>
+  </label>
+</section>
+
+@if (error()) {
+  <div class="error-banner" role="alert">{{ error() }}</div>
+}
+
+@if (loadingCards()) {
+  <section class="panel state" role="status"><app-icon name="loader"></app-icon>{{ i18n.t('cardImport.loading') }}</section>
+} @else if (!cards().length) {
+  <section class="panel state">
+    <app-icon name="card"></app-icon>
+    <strong>{{ i18n.t('cardImport.noCards') }}</strong>
+    <a class="btn primary" routerLink="/app/credit-cards">{{ i18n.t('cardImport.addCard') }}</a>
+  </section>
+} @else {
+  <section class="panel upload-panel">
+    <div class="panel-copy">
+      <h2>{{ i18n.t('cardImport.uploadTitle') }}</h2>
+      <p>{{ i18n.t('cardImport.uploadDescription') }}</p>
+    </div>
+    <label class="drop-zone" (drop)="dropFiles($event)" (dragover)="allowDrop($event)">
+      <input type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="chooseFiles($event)">
+      <strong>{{ i18n.t('cardImport.dropTitle') }}</strong>
+      <span>{{ i18n.t('cardImport.dropHint') }}</span>
+    </label>
+    @if (selectedFiles().length) {
+      <div class="file-list">
+        @for (file of selectedFiles(); track file.name + file.lastModified; let index = $index) {
+          <div>
+            <span>{{ i18n.t('cardImport.page', {page: index + 1}) }} · {{ file.name }}</span>
+            <small>{{ (file.size / 1024 / 1024).toFixed(2) }} MB</small>
+            <button type="button" (click)="removeFile(index)">{{ i18n.t('cardImport.removeFile') }}</button>
+          </div>
+        }
+      </div>
+      <button class="btn primary" type="button" [disabled]="busy() || !cardId()" (click)="upload()">
+        {{ busy() ? i18n.t('cardImport.uploading') : i18n.t('cardImport.startImport') }}
+      </button>
+    }
+  </section>
+
+  @if (recentImports().length) {
+    <section class="panel recent-panel">
+      <h2>{{ i18n.t('cardImport.recentTitle') }}</h2>
+      <div class="recent-list">
+        @for (item of recentImports(); track item.id) {
+          <button type="button" [class.active]="current()?.id === item.id" (click)="openImport(item.id)">
+            <span>#{{ item.id }} · {{ i18n.t('cardImport.pages', {count: item.files.length}) }}</span>
+            <span class="status-chip" [attr.data-status]="item.status">{{ statusLabel(item.status) }}</span>
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  @if (current(); as statementImport) {
+    <section class="panel status-panel" aria-live="polite">
+      <div class="status-heading">
+        <div>
+          <h2>{{ i18n.t('cardImport.importTitle', {id: statementImport.id}) }}</h2>
+          <p>{{ i18n.t('cardImport.attempts', {count: statementImport.attemptCount}) }}</p>
+        </div>
+        <span class="status-chip" [attr.data-status]="statementImport.status">{{ statusLabel(statementImport.status) }}</span>
+      </div>
+      @if (waiting()) {
+        <div class="note waiting" role="status">
+          <strong>{{ i18n.t('cardImport.waitingTitle') }}</strong>
+          <span>{{ statementImport.aiConfigured ? i18n.t('cardImport.waitingDescription') : i18n.t('cardImport.aiNotConfigured') }}</span>
+        </div>
+      } @else if (statementImport.status === 'FAILED') {
+        <div class="note failed" role="status">
+          <strong>{{ i18n.t('cardImport.failedTitle') }}</strong>
+          <span>{{ i18n.t('cardImport.failedDescription') }}@if (statementImport.errorCode) { <code>{{ statementImport.errorCode }}</code> }</span>
+        </div>
+      } @else if (statementImport.status === 'CANCELLED') {
+        <div class="note failed" role="status"><strong>{{ i18n.t('cardImport.cancelledTitle') }}</strong></div>
+      } @else if (statementImport.status === 'CONFIRMED') {
+        <div class="note confirmed" role="status">
+          <strong>{{ i18n.t('cardImport.confirmedTitle') }}</strong>
+          <a routerLink="/app/credit-cards">{{ i18n.t('cardImport.openCards') }}</a>
+        </div>
+      }
+      <div class="status-actions">
+        @if (statementImport.status === 'FAILED' && !statementImport.storagePurged) {
+          <button class="btn primary" type="button" [disabled]="busy()" (click)="retry()">{{ i18n.t('cardImport.retry') }}</button>
+        }
+        @if (statementImport.status === 'QUEUED' || statementImport.status === 'READY' || statementImport.status === 'FAILED') {
+          <button class="btn ghost" type="button" [disabled]="busy()" (click)="cancel()">{{ i18n.t('cardImport.cancel') }}</button>
+        }
+      </div>
+    </section>
+  }
+
+  @if (result(); as confirmResult) {
+    <section class="confirm-summary" aria-live="polite">
+      <strong>{{ i18n.t('cardImport.resultTitle') }}</strong>
+      <span>{{ i18n.t('cardImport.resultInserted', {count: confirmResult.inserted}) }}</span>
+      <span>{{ i18n.t('cardImport.resultSkipped', {count: confirmResult.skipped}) }}</span>
+      @if (confirmResult.supersededManual) {
+        <span>{{ i18n.t('cardImport.resultSuperseded', {count: confirmResult.supersededManual}) }}</span>
+      }
+      <span>{{ i18n.t('cardImport.resultCashback', {amount: formatMoney(confirmResult.expectedCashback)}) }}</span>
+      @if (!confirmResult.totalsApplied) {
+        <span class="warn">{{ i18n.t('cardImport.totalsNotApplied') }}</span>
+      }
+    </section>
+  }
+
+  @if (canReview() && totals(); as form) {
+    <section class="panel review-panel" aria-labelledby="card-review-title">
+      <div class="status-heading">
+        <div>
+          <h2 id="card-review-title">{{ i18n.t('cardImport.reviewTitle') }}</h2>
+          <p>{{ i18n.t('cardImport.reviewDescription') }}</p>
+        </div>
+      </div>
+
+      @if (current()?.draft; as draft) {
+        @if (draft.warnings.length || draft.aiWarnings.length) {
+          <ul class="warning-list">
+            @for (warning of draft.warnings; track warning) { <li>{{ warningLabel(warning) }}</li> }
+            @for (warning of draft.aiWarnings; track $index) { <li class="ai">{{ warning }}</li> }
+          </ul>
+        }
+      }
+
+      <div class="totals-grid">
+        <label><span>{{ i18n.t('cardImport.statementDate') }} *</span>
+          <input type="date" [ngModel]="form.statementDate" (ngModelChange)="updateTotals({statementDate: $event})"></label>
+        <label><span>{{ i18n.t('cardImport.dueDate') }} *</span>
+          <input type="date" [ngModel]="form.dueDate" (ngModelChange)="updateTotals({dueDate: $event})"></label>
+        <label><span>{{ i18n.t('cardImport.periodStart') }}</span>
+          <input type="date" [ngModel]="form.periodStart" (ngModelChange)="updateTotals({periodStart: $event})"></label>
+        <label><span>{{ i18n.t('cardImport.periodEnd') }}</span>
+          <input type="date" [ngModel]="form.periodEnd" (ngModelChange)="updateTotals({periodEnd: $event})"></label>
+        <label><span>{{ i18n.t('cardImport.statementBalance') }} *</span>
+          <input appMoneyInput [ngModel]="form.statementBalance" (ngModelChange)="updateTotals({statementBalance: $event})"></label>
+        <label><span>{{ i18n.t('cardImport.minimumPayment') }} *</span>
+          <input appMoneyInput [ngModel]="form.minimumPayment" (ngModelChange)="updateTotals({minimumPayment: $event})"></label>
+        <label><span>{{ i18n.t('cardImport.openingBalance') }}</span>
+          <input appMoneyInput [ngModel]="form.openingBalance" (ngModelChange)="updateTotals({openingBalance: $event})"></label>
+        <label><span>{{ i18n.t('cardImport.totalSpending') }}</span>
+          <input appMoneyInput [ngModel]="form.totalSpending" (ngModelChange)="updateTotals({totalSpending: $event})"></label>
+        <label><span>{{ i18n.t('cardImport.totalRefund') }}</span>
+          <input appMoneyInput [ngModel]="form.totalRefund" (ngModelChange)="updateTotals({totalRefund: $event})"></label>
+        <label><span>{{ i18n.t('cardImport.totalFee') }}</span>
+          <input appMoneyInput [ngModel]="form.totalFee" (ngModelChange)="updateTotals({totalFee: $event})"></label>
+        <label><span>{{ i18n.t('cardImport.totalInterest') }}</span>
+          <input appMoneyInput [ngModel]="form.totalInterest" (ngModelChange)="updateTotals({totalInterest: $event})"></label>
+      </div>
+
+      <div class="table-heading">
+        <h3>{{ i18n.t('cardImport.transactionsTitle', {selected: includedCount(), total: rows().length}) }}</h3>
+        <div>
+          <button class="btn ghost" type="button" (click)="toggleAll(true)">{{ i18n.t('cardImport.selectAll') }}</button>
+          <button class="btn ghost" type="button" (click)="toggleAll(false)">{{ i18n.t('cardImport.selectNone') }}</button>
+        </div>
+      </div>
+      @if (!rows().length) {
+        <p class="empty">{{ i18n.t('cardImport.noTransactions') }}</p>
+      } @else {
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ i18n.t('cardImport.include') }}</th>
+                <th>{{ i18n.t('cardImport.date') }}</th>
+                <th>{{ i18n.t('field.description') }}</th>
+                <th>{{ i18n.t('field.amount') }}</th>
+                <th>{{ i18n.t('cardImport.type') }}</th>
+                <th>{{ i18n.t('cardImport.category') }}</th>
+                <th>MCC</th>
+                <th>{{ i18n.t('cardImport.warnings') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.lineNumber) {
+                <tr [class.needs-review]="row.needsReview" [class.duplicate]="row.duplicate">
+                  <td><input type="checkbox" [ngModel]="row.include" (ngModelChange)="updateRow(row, {include: $event})"
+                             [attr.aria-label]="i18n.t('cardImport.includeLine', {line: row.lineNumber})"></td>
+                  <td><input type="date" [ngModel]="row.transactionDate" (ngModelChange)="updateRow(row, {transactionDate: $event})"></td>
+                  <td><textarea rows="2" maxlength="500" [ngModel]="row.description" (ngModelChange)="updateRow(row, {description: $event})"></textarea></td>
+                  <td><input class="amount" appMoneyInput [ngModel]="row.amount" (ngModelChange)="updateRow(row, {amount: $event})"></td>
+                  <td><app-custom-select [ariaLabel]="i18n.t('cardImport.type')" [options]="typeOptions()"
+                                         [ngModel]="row.transactionType" (ngModelChange)="updateRow(row, {transactionType: $event})"
+                                         [placeholder]="i18n.t('cardImport.notSelected')"></app-custom-select></td>
+                  <td><app-custom-select [ariaLabel]="i18n.t('cardImport.category')" [options]="categoryOptions()"
+                                         [ngModel]="categoryValue(row)" (ngModelChange)="chooseCategory(row, $event)"></app-custom-select></td>
+                  <td><input class="mcc" maxlength="4" inputmode="numeric" [ngModel]="row.mccCode" (ngModelChange)="updateRow(row, {mccCode: $event})"></td>
+                  <td>
+                    @for (warning of row.warnings; track warning) {
+                      <span class="warning-chip" [class.danger]="warning === 'DUPLICATE'">{{ warningLabel(warning) }}</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (formError()) {
+        <div class="error-banner" role="alert">{{ formError() }}</div>
+      }
+      <div class="confirm-bar">
+        <span>{{ i18n.t('cardImport.confirmHint') }}</span>
+        <button class="btn primary" type="button" [disabled]="busy()" (click)="confirm()">
+          {{ busy() ? i18n.t('cardImport.saving') : i18n.t('cardImport.confirm') }}
+        </button>
+      </div>
+    </section>
+  }
+}

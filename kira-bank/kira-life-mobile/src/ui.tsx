@@ -363,7 +363,7 @@ function NotificationBell() {
     }}><T size={9} bold color={c.ink}>{count > 99 ? '99+' : String(count)}</T></View> : null}</Touch>;
 }
 
-const creditPages = ['cards', 'cards-manage', 'card-add', 'card-edit', 'billing-cycle', 'benefits', 'credit-stats', 'bank-balance', 'bank-balance-history', 'statements', 'statement-add', 'statement-pay', 'payments'];
+const creditPages = ['cards', 'cards-manage', 'card-add', 'card-edit', 'billing-cycle', 'benefits', 'card-recommend', 'credit-stats', 'bank-balance', 'bank-balance-history', 'statements', 'statement-add', 'statement-pay', 'payments'];
 const investmentPages = ['import', 'manual-transaction', 'queue', 'source', 'ai-result', 'draft-edit', 'decision', 'result-partial', 'result-success', 'account-add', 'account-edit', 'account-stats', 'history', 'filter', 'transaction-detail', 'report-create', 'report-success', 'reports', 'investment-report-create', 'investment-reports', 'investment-report-detail', 'admin-investment-reports', 'admin-cloudflare', 'admin-ai-queue', 'ai-job-detail', 'admin-ai-job-detail', 'admin-source', 'admin-ai-result'];
 const travelPages = ['travel-edit'];
 const healthPages = ['health-profile'];

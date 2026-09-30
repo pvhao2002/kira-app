@@ -8,6 +8,13 @@ import {
   CreditCardDashboard,
   CreditCardBenefit,
   CreditCardCashbackProgramRequest,
+  CardStatementImport,
+  CardStatementConfirmRequest,
+  CardStatementConfirmResponse,
+  CardTransaction,
+  CardTransactionRequest,
+  CashbackProgress,
+  CardRecommendationResponse,
   PageResponse,
   InvestmentImportBatch,
   InvestmentConfirmItem,
@@ -118,6 +125,62 @@ export class ApiService {
   deleteCreditCardCashbackProgram(cardId: number, programId: number, version: number): Observable<void> {
     return this.http.request<void>('DELETE',
       `/api/v1/credit-card-benefits/${cardId}/programs/${programId}`, {body: {version}});
+  }
+
+  createCardStatementImport(cardId: number, files: File[]): Observable<CardStatementImport> {
+    const body = new FormData();
+    files.forEach(file => body.append('files', file, file.name));
+    return this.http.post<CardStatementImport>(`/api/v1/credit-cards/${cardId}/statement-imports`, body);
+  }
+
+  cardStatementImports(cardId: number): Observable<CardStatementImport[]> {
+    return this.http.get<CardStatementImport[]>(`/api/v1/credit-cards/${cardId}/statement-imports`);
+  }
+
+  cardStatementImport(id: number): Observable<CardStatementImport> {
+    return this.http.get<CardStatementImport>(`/api/v1/statement-imports/${id}`);
+  }
+
+  retryCardStatementImport(id: number, version: number): Observable<CardStatementImport> {
+    return this.http.post<CardStatementImport>(`/api/v1/statement-imports/${id}/retry`, {version});
+  }
+
+  cancelCardStatementImport(id: number, version: number): Observable<CardStatementImport> {
+    return this.http.post<CardStatementImport>(`/api/v1/statement-imports/${id}/cancel`, {version});
+  }
+
+  confirmCardStatementImport(id: number, request: CardStatementConfirmRequest): Observable<CardStatementConfirmResponse> {
+    return this.http.post<CardStatementConfirmResponse>(`/api/v1/statement-imports/${id}/confirm`, request);
+  }
+
+  cardTransactions(cardId: number, page = 0, size = 50): Observable<PageResponse<CardTransaction>> {
+    return this.http.get<PageResponse<CardTransaction>>(`/api/v1/credit-cards/${cardId}/transactions`,
+      {params: {page, size}});
+  }
+
+  createCardTransaction(cardId: number, request: CardTransactionRequest,
+                        idempotencyKey: string): Observable<CardTransaction> {
+    return this.http.post<CardTransaction>(`/api/v1/credit-cards/${cardId}/transactions`, request,
+      {headers: {'Idempotency-Key': idempotencyKey}});
+  }
+
+  updateCardTransactionCategory(id: number, cashbackRuleId: number | null, mccCode: string | null,
+                                version: number): Observable<CardTransaction> {
+    return this.http.patch<CardTransaction>(`/api/v1/card-transactions/${id}`, {cashbackRuleId, mccCode, version});
+  }
+
+  deleteCardTransaction(id: number, version: number): Observable<void> {
+    return this.http.delete<void>(`/api/v1/card-transactions/${id}`, {params: {version}});
+  }
+
+  cardCashbackProgress(cardId: number): Observable<CashbackProgress> {
+    return this.http.get<CashbackProgress>(`/api/v1/credit-cards/${cardId}/cashback-progress`);
+  }
+
+  cardRecommendations(mcc: string, amount: number | null): Observable<CardRecommendationResponse> {
+    const params: Record<string, string | number> = {mcc};
+    if (amount !== null) params['amount'] = amount;
+    return this.http.get<CardRecommendationResponse>('/api/v1/credit-card-recommendations', {params});
   }
 
   createInvestmentTransactionImport(accountId: number, files: File[]): Observable<InvestmentImportBatch> {

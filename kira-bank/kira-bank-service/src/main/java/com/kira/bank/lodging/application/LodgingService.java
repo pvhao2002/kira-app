@@ -1,6 +1,7 @@
 package com.kira.bank.lodging.application;
 
 import com.kira.bank.attachment.R2StorageService;
+import com.kira.bank.attachment.application.AttachmentService;
 import com.kira.bank.attachment.domain.Attachment;
 import com.kira.bank.attachment.domain.AttachmentAiStatus;
 import com.kira.bank.attachment.infrastructure.AttachmentRepository;
@@ -213,9 +214,11 @@ public class LodgingService {
         requireEditor(userId, listing);
         if (images.countByListingIdAndDeletedAtIsNull(id) >= 10)
             throw bad("IMAGE_LIMIT_EXCEEDED", "Mỗi tin tối đa 10 ảnh");
+        if (file.isEmpty() || file.getSize() > 10L * 1024 * 1024)
+            throw bad("INVALID_IMAGE", "Ảnh phải là JPEG, PNG hoặc WebP, tối đa 10 MB");
         byte[] data = file.getBytes();
         String mime = imageMime(data);
-        if (file.isEmpty() || file.getSize() > 10L * 1024 * 1024 || mime == null || (file.getContentType() != null && !file.getContentType().equals(mime)))
+        if (mime == null || (file.getContentType() != null && !file.getContentType().equals(mime)))
             throw bad("INVALID_IMAGE", "Ảnh phải là JPEG, PNG hoặc WebP, tối đa 10 MB");
         int imageNumber = images.maxActiveSortOrder(id) + 1;
         String username = users.findById(userId).map(User::getEmail).orElse("unknown");
@@ -228,7 +231,7 @@ public class LodgingService {
         attachment.setDocumentType("PHOTO");
         attachment.setStorageKey(key);
         attachment.setR2AccountId(stored.accountId());
-        attachment.setOriginalName(Optional.ofNullable(file.getOriginalFilename()).filter(value -> !value.isBlank()).orElse("photo"));
+        attachment.setOriginalName(AttachmentService.safeOriginalName(file.getOriginalFilename(), "photo"));
         attachment.setMimeType(mime);
         attachment.setSizeBytes(data.length);
         attachment.setSha256(hash(data));

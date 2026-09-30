@@ -1,6 +1,5 @@
 import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {HttpErrorResponse} from '@angular/common/http';
 import {finalize} from 'rxjs';
 import {LanguageService} from '../../core/i18n/language.service';
 import {TranslationKey} from '../../core/i18n/translations';
@@ -8,6 +7,7 @@ import {ApiService} from '../../core/services/api.service';
 import {ToastService} from '../../core/services/toast.service';
 import {AiProviderAccountStatus, CloudflareAccount} from '../../shared/models/api.models';
 import {dateFormat} from '../../core/i18n/formatters';
+import {apiErrorMessage} from '../../core/services/api-error';
 
 @Component({
   selector: 'app-admin-cloudflare-accounts', imports: [ReactiveFormsModule],
@@ -142,7 +142,6 @@ export class AdminAiProvidersPage {
   }
 
   private errorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse && typeof error.error?.message === 'string') return error.error.message;
-    return this.i18n.t('aiProviders.actionFailed');
+    return apiErrorMessage(error, this.i18n.t('aiProviders.actionFailed'));
   }
 }

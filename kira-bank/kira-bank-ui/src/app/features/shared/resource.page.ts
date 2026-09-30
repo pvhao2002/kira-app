@@ -32,6 +32,7 @@ import {
 } from '../../shared/bank-balance-dialog/bank-balance-dialog';
 import {MoneyInputDirective} from '../../shared/money-input/money-input.directive';
 import {dateFormat, numberFormat} from '../../core/i18n/formatters';
+import {apiErrorMessage} from '../../core/services/api-error';
 
 interface LookupOption {
   value: string | number;
@@ -297,6 +298,11 @@ export class ResourcePage {
   }
 
   openAction(action: ResourceActionDefinition, row: Row): void {
+    if (action.route) {
+      const target = action.route(row);
+      void this.router.navigate(target.commands, {queryParams: target.queryParams});
+      return;
+    }
     if (action.form) {
       this.editing.set(false);
       this.selectedRow.set(row);
@@ -405,7 +411,7 @@ export class ResourcePage {
           this.loadRows();
           this.loadCreditCardSummary();
         },
-        error: error => this.balanceError.set(error.error?.message ?? this.i18n.t('form.saveFailed'))
+        error: error => this.balanceError.set(apiErrorMessage(error, this.i18n.t('form.saveFailed')))
       });
   }
 
@@ -794,7 +800,7 @@ export class ResourcePage {
         }
         this.loadRows();
       },
-      error: error => this.formError.set(error.error?.message ?? this.i18n.t('form.saveFailed'))
+      error: error => this.formError.set(apiErrorMessage(error, this.i18n.t('form.saveFailed')))
     });
   }
 }

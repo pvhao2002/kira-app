@@ -1,5 +1,10 @@
 # API
 
+## Đăng nhập và lỗi chung
+
+- `POST /api/v1/auth/login` và `POST /api/v1/auth/mobile/login` trả `429 LOGIN_RATE_LIMITED` kèm `Retry-After` (giây) khi vượt 20 lần/5 phút mỗi IP hoặc 5 lần sai/15 phút mỗi email. Đăng nhập thành công xoá bộ đếm của email.
+- Body lỗi luôn theo dạng `{timestamp, status, code, message, fieldErrors, path, traceId}`. Lỗi framework dùng code chung: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE`, `PAYLOAD_TOO_LARGE`, `INVALID_PARAMETER`, `BAD_REQUEST`, `DATA_CONFLICT`, `CONCURRENT_UPDATE`, `INTERNAL_ERROR`. Không trả stack trace, SQL hay tên class.
+
 ## Quản lý User
 
 [Danh sách và tạo User dành cho Admin](admin-users.md): `GET/POST /api/v1/admin/users`. Tài khoản mới chỉ có `ROLE_USER`.
@@ -17,6 +22,11 @@ OpenAPI tương tác: `http://localhost:8080/swagger-ui.html`.
 Các request tài chính quan trọng cần header `Idempotency-Key` là UUID do client tạo. Danh sách trả `{ data, meta }`; lỗi trả `{ timestamp, status, code, message, fieldErrors, path, traceId }`.
 
 Nhóm chính: `/api/v1/auth`, `/api/v1/public/banks`, `/api/v1/credit-cards`, `/api/v1/statements`, `/api/v1/payments`, `/api/v1/dashboards/credit-cards`, `/api/v1/investment/accounts`, `/api/v1/attachments` và `/api/v1/lodgings`.
+
+## Thẻ tín dụng: nhập sao kê bằng AI và gợi ý thẻ
+
+Xem [Credit card AI](credit-card-ai.md): upload 1–3 ảnh sao kê để AI đọc số tổng và từng giao dịch (người dùng review rồi
+confirm), giao dịch thẻ/tiến độ cashback theo kỳ, và `GET /api/v1/credit-card-recommendations` để chọn thẻ tốt nhất theo MCC.
 
 ## Cá nhân: karaoke và việc làm
 

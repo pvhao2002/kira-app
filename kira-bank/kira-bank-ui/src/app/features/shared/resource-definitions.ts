@@ -59,6 +59,8 @@ export interface ResourceActionDefinition {
   method?: RequestMethod;
   path?: (row: Record<string, unknown>) => string;
   confirmKey?: string;
+  /** Navigates instead of calling the API, e.g. to a dedicated feature page for the row. */
+  route?: (row: Record<string, unknown>) => {commands: unknown[]; queryParams?: Record<string, unknown>};
   visible?: (row: Record<string, unknown>) => boolean;
 }
 
@@ -252,6 +254,12 @@ export const resourceDefinitions: Record<string, ResourceDefinition> = {
         key: 'enterBillingCycle',
         labelKey: 'action.enterStatement',
         form: billingCycleForm,
+        visible: row => row['billingStatus'] === 'NEEDS_INPUT'
+      },
+      {
+        key: 'importStatementWithAi',
+        labelKey: 'action.importStatementAi',
+        route: row => ({commands: ['/app/credit-card/statement-import'], queryParams: {cardId: row['id']}}),
         visible: row => row['billingStatus'] === 'NEEDS_INPUT'
       },
       {

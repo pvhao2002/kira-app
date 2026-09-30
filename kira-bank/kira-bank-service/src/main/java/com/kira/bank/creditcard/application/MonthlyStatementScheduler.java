@@ -46,7 +46,7 @@ public class MonthlyStatementScheduler {
                     monthlyStatements.ensureCurrentCycle(card.getId(), today);
                     createReminder(card, monthlyStatements.currentCycle(card.getUserId(), card), today);
                 } catch (DataIntegrityViolationException duplicate) {
-                    log.debug("Monthly statement already exists for card {}", card.getId());
+                    // Another instance already created this cycle's statement; nothing to do.
                 } catch (RuntimeException ex) {
                     log.warn("Unable to prepare monthly statement for card {}: {}", card.getId(), ex.getMessage());
                 }
