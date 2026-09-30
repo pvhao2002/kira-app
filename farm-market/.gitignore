@@ -1,0 +1,10 @@
+.env
+**/target/
+**/node_modules/
+**/dist/
+**/.angular/
+uploads/
+*.log
+.idea/
+.vscode/
+.DS_Store
