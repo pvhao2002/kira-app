@@ -1,0 +1,59 @@
+<div class="strip">
+  <div class="container strip-in">
+    <label class="where">
+      <span>Mua tại:</span>
+      <select [value]="branch.index()" (change)="pickBranch($event)" aria-label="Chọn chi nhánh">
+        @for (b of branch.branches; track b.id; let i = $index) {
+          <option [value]="i" [selected]="i === branch.index()">{{ b.name }}</option>
+        }
+      </select>
+    </label>
+    <span class="hide-sm">Giao nhanh 2 giờ nội thành · {{ branch.branches.length }} cửa hàng</span>
+    <span class="spacer"></span>
+    <span class="hide-sm">Hotline 1900 6868</span>
+  </div>
+</div>
+
+<header class="head">
+  <div class="container head-in">
+    <a routerLink="/" class="logo"><i class="egg"></i><span class="serif">Đồi Nắng</span></a>
+    <nav class="nav hide-sm">
+      <a routerLink="/products" routerLinkActive="on" [routerLinkActiveOptions]="{exact: true}">Sản phẩm</a>
+      @for (n of nav; track n.q) {
+        <a routerLink="/products" [queryParams]="{cat: n.q}">{{ n.label }}</a>
+      }
+    </nav>
+    <form class="search" (submit)="$event.preventDefault(); search(q.value)">
+      <input #q class="input" type="search" placeholder="Tìm gà, trứng, SKU…" aria-label="Tìm kiếm">
+    </form>
+    <a routerLink="/cart" class="btn cart">Giỏ hàng · {{ cart.count() }}</a>
+    @if (auth.user(); as u) {
+      <a [routerLink]="auth.isBackoffice() ? '/admin' : '/account'" class="avatar" [attr.aria-label]="u.name">{{ u.name[0] }}</a>
+    } @else {
+      <a routerLink="/login" class="btn secondary hide-sm">Đăng nhập</a>
+    }
+  </div>
+</header>
+
+<main class="main"><router-outlet /></main>
+
+<footer class="foot">
+  <div class="container foot-grid">
+    <div>
+      <div class="logo light"><i class="egg"></i><span class="serif">Đồi Nắng</span></div>
+      <p class="blurb">Thực phẩm tươi sạch từ nông trại đến bàn ăn. Mỗi hộp trứng đều có mã lô để tra cứu nguồn gốc.</p>
+    </div>
+    <div><h4>Mua sắm</h4><a routerLink="/products">Tất cả sản phẩm</a><a routerLink="/products" [queryParams]="{cat: 'trung'}">Trứng</a><a routerLink="/products" [queryParams]="{cat: 'ga'}">Gà</a></div>
+    <div><h4>Hỗ trợ</h4><span>Chính sách đổi trả 24 giờ</span><span>Giao hàng &amp; thanh toán</span><span>Liên hệ</span></div>
+    <div><h4>Cửa hàng</h4>@for (b of branch.branches; track b.id) {<span>{{ b.name }}</span>}</div>
+  </div>
+  <div class="container copy">© 2026 Đồi Nắng Farm</div>
+</footer>
+
+<nav class="tabbar" aria-label="Điều hướng chính">
+  <a routerLink="/" routerLinkActive="on" [routerLinkActiveOptions]="{exact: true}">Trang chủ</a>
+  <a routerLink="/products" routerLinkActive="on">Danh mục</a>
+  <a routerLink="/cart" class="fab" aria-label="Giỏ hàng">🛒<b>{{ cart.count() }}</b></a>
+  <a [routerLink]="auth.isLoggedIn() ? '/account/orders' : '/login'">Đơn hàng</a>
+  <a [routerLink]="auth.isLoggedIn() ? '/account' : '/login'">Tài khoản</a>
+</nav>
