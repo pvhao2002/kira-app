@@ -23,6 +23,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:-development-secret-must-have-at-least-32-characters}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4201}
       R2_STORAGE_ENVIRONMENT: ${R2_STORAGE_ENVIRONMENT:-LOCAL}
+      VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:-}
+      BANK_CODE: ${BANK_CODE:-}
+      BANK_NAME: ${BANK_NAME:-}
+      BANK_ACCOUNT_NO: ${BANK_ACCOUNT_NO:-}
+      BANK_ACCOUNT_NAME: ${BANK_ACCOUNT_NAME:-}
     depends_on:
       mysql: {condition: service_healthy}
     ports: ["8081:8080"]
