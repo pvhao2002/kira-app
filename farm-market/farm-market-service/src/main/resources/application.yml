@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: farm-market-service
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3308/farm_market?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:farm_market}
+    password: ${DB_PASSWORD:change-me}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+  data.web.pageable.max-page-size: 100
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+    include-exception: false
+    include-path: always
+    whitelabel.enabled: false
+management:
+  endpoints.web.exposure.include: health,info
+  endpoint.health.show-details: never
+app:
+  jwt:
+    secret: ${JWT_SECRET:development-secret-must-have-at-least-32-characters}
+    access-ttl: PT15M
+    refresh-ttl: P30D
+  # AES-GCM key (>= 32 chars) for TOTP secrets at rest. Set TOTP_ENCRYPTION_KEY outside development.
+  totp-encryption-key: ${TOTP_ENCRYPTION_KEY:development-totp-key-must-be-at-least-32-chars}
+  # Comma-separated exact origins (scheme://host[:port]). No wildcards.
+  cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4201}
+  # Dev only: demo users + demo catalogue. Must be false in production.
+  seed-development-users: ${APP_SEED_DEVELOPMENT_USERS:false}
+  seed-development-password: ${APP_SEED_DEVELOPMENT_PASSWORD:Doinang@123}
+  # Dev only: shared base32 TOTP secret enrolled for the seeded staff/manager/admin users.
+  seed-development-totp-secret: ${APP_SEED_DEVELOPMENT_TOTP_SECRET:JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP}
+  refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+  refresh-cookie-same-site: ${REFRESH_COOKIE_SAME_SITE:Lax}
+  # Business decisions: edit here, not in code. type: PERCENT (value = %), FIXED (value = VND) or FREE_SHIP.
+  loyalty:
+    rewards:
+      - {id: voucher-20k, name: "Voucher giảm 20.000₫", description: "Giảm 20.000₫ cho đơn từ 100.000₫", points-cost: 200, type: FIXED, value: 20000, min-order: 100000, valid-days: 60}
+      - {id: freeship, name: "Miễn phí vận chuyển", description: "Miễn phí vận chuyển cho một đơn hàng", points-cost: 300, type: FREE_SHIP, value: 0, min-order: 0, valid-days: 60}
+      - {id: voucher-50k, name: "Voucher giảm 50.000₫", description: "Giảm 50.000₫ cho đơn từ 300.000₫", points-cost: 450, type: FIXED, value: 50000, min-order: 300000, valid-days: 60}
+      - {id: egg-box, name: "Tặng 1 hộp trứng", description: "Quy đổi thành voucher 35.000₫ (giá một hộp trứng)", points-cost: 500, type: FIXED, value: 35000, min-order: 0, valid-days: 30}
+  # Bank transfer (VietQR image, no gateway). QR/bank details are shown only when bin, account-no and account-name are all set.
+  payment:
+    bank:
+      bin: ${VIETQR_BANK_BIN:}
+      bank-code: ${BANK_CODE:}
+      name: ${BANK_NAME:}
+      account-no: ${BANK_ACCOUNT_NO:}
+      account-name: ${BANK_ACCOUNT_NAME:}
+storage:
+  environment: ${R2_STORAGE_ENVIRONMENT:LOCAL}
+springdoc:
+  api-docs.enabled: ${API_DOCS_ENABLED:true}
+  swagger-ui:
+    enabled: ${API_DOCS_ENABLED:true}
+    path: /swagger-ui.html
