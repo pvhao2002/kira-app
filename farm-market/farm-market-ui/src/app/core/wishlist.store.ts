@@ -1,22 +1,26 @@
-import {Injectable, effect, inject, signal} from '@angular/core';
+import {Service, effect, inject, signal} from '@angular/core';
 import {Router} from '@angular/router';
-import {Api} from './api';
+import {Api, apiResource} from './api';
 import {AuthStore} from './auth.store';
 
 /** Wishlisted product ids for the signed-in customer; toggling sends anonymous visitors to login. */
-@Injectable({providedIn: 'root'})
+@Service()
 export class WishlistStore {
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
 
+  /** GET /wishlist, only for customers; idle (empty) otherwise. */
+  private readonly remote = apiResource<{productId: number}[]>(
+    () => (this.auth.user()?.role === 'customer' ? {path: '/wishlist'} : undefined),
+    {defaultValue: []}
+  );
+
   readonly ids = signal<ReadonlySet<number>>(new Set());
 
   constructor() {
-    effect(() => {
-      if (this.auth.user()?.role === 'customer') void this.reload();
-      else this.ids.set(new Set());
-    });
+    // value() throws in the error state, so fall back to an empty list then.
+    effect(() => this.ids.set(new Set((this.remote.hasValue() ? this.remote.value() : []).map(w => w.productId))));
   }
 
   has(productId: number | undefined): boolean {
@@ -39,16 +43,7 @@ export class WishlistStore {
       if (was) await this.api.delete(`/wishlist/${productId}`);
       else await this.api.put(`/wishlist/${productId}`);
     } catch {
-      await this.reload(); // roll back to the server state
-    }
-  }
-
-  private async reload(): Promise<void> {
-    try {
-      const r = await this.api.get<{productId: number}[]>('/wishlist');
-      this.ids.set(new Set(r.map(w => w.productId)));
-    } catch {
-      /* keep the previous state */
+      this.remote.reload(); // roll back to the server state
     }
   }
 }

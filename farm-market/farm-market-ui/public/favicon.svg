@@ -1,10 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="brand" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0878ff"/>
-      <stop offset="1" stop-color="#00a98f"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="16" fill="url(#brand)"/>
-  <path d="M19 14h9v15.5L41.5 14H53L36.8 31.8 54 50H42L28 34.3V50h-9V14Z" fill="#fff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="Kira Farm">
+  <circle cx="20" cy="20" r="18.5" fill="#f2d98a" stroke="#2e5233" stroke-width="2"/>
+  <path d="M11.5 30.5h17M20 30.5V19" fill="none" stroke="#2e5233" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M20 22.5C13 22.5 9.5 18 9.5 12c6.5 0 10.5 3.5 10.5 10.5Z" fill="#2e5233"/>
+  <path d="M20 18.5c0-6.5 4-10.5 10.5-10.5 0 6.5-4 10.5-10.5 10.5Z" fill="#2e5233"/>
 </svg>

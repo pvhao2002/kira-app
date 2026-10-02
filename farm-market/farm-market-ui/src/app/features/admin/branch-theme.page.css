@@ -1,0 +1,50 @@
+:host { display: block; }
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.sub { display: flex; gap: 6px; margin-bottom: 20px; }
+.sub a { padding: 8px 16px; border-radius: 999px; font-weight: 500; color: var(--muted); }
+.sub a.on { background: var(--ink); color: #fff; }
+.layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.cfg { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; }
+.small { font-size: 12px; }
+.errm { color: var(--danger); margin: 0 0 12px; }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.br { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: transparent; border: 1px solid var(--border); text-align: left; }
+.br.on { background: var(--surface); border: 1.5px solid var(--primary); }
+.disc { position: relative; width: 36px; height: 36px; flex: none; }
+.disc .p { position: absolute; inset: 0; border-radius: 50%; }
+.disc .a { position: absolute; right: -3px; bottom: -3px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--surface); }
+.bt { display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
+.bt .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.edit { display: flex; flex-direction: column; gap: 22px; }
+.h { font-size: 24px; margin: 0; }
+.group { display: flex; flex-direction: column; gap: 10px; }
+.presets { gap: 10px; }
+.sw { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); padding: 0; }
+.sw.on { box-shadow: 0 0 0 2px var(--ink); }
+input[type=color] { width: 44px; height: 36px; border: 1px solid var(--line); border-radius: 8px; padding: 2px; background: var(--surface); }
+.note { padding: 10px 14px; border-radius: 12px; font-size: 13px; }
+.okn { background: var(--tint); color: var(--primary); }
+.badn { background: var(--danger-bg); color: var(--danger); }
+.gen { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 12px; }
+.gen > div { display: flex; flex-direction: column; gap: 6px; }
+.chip { display: block; height: 36px; border-radius: 10px; border: 1px solid var(--line); }
+.prev { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 16px; }
+.shop { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--canvas); font-size: 12px; }
+.top { display: flex; justify-content: space-between; padding: 8px 14px; background: var(--primary); color: #fff; }
+.nav { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface); }
+.logo { display: flex; align-items: center; gap: 8px; font-size: 18px; }
+.cart { padding: 5px 12px; border-radius: 999px; background: var(--tint); color: var(--primary); font-weight: 600; }
+.hero { padding: 22px 14px; background: var(--primary); color: #fff; display: flex; flex-direction: column; gap: 14px; }
+.hl { font-size: 24px; line-height: 1.15; }
+.hl i { color: var(--accent); }
+.hero .btn.secondary { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .5); }
+.prods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; }
+.p { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.img { position: relative; height: 70px; border-radius: 8px; background: var(--tint); }
+.badge { position: absolute; top: 6px; left: 6px; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: var(--brown-dark); font-weight: 700; font-size: 10px; }
+.between { justify-content: space-between; }
+.price { color: var(--primary); }
+.plus { width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: #fff; display: grid; place-items: center; }
+.free { padding: 10px 14px; background: var(--tint); color: var(--primary); }
+@media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } .prev { position: static; } }
+@media (max-width: 767px) { .cfg { grid-template-columns: 1fr; } }

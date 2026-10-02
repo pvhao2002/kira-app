@@ -1,0 +1,141 @@
+<section class="container hero">
+  <div class="hero-copy">
+    <span class="tag">Trứng thu hoạch lúc 6:10 sáng nay</span>
+    <h1>Thực phẩm tươi sạch từ <i>nông trại</i> đến bàn ăn</h1>
+    <p>Gà, trứng và các sản phẩm chăn nuôi được tuyển chọn kỹ càng, đảm bảo chất lượng và nguồn gốc rõ ràng.</p>
+    <div class="row wrap">
+      <a class="btn lg" routerLink="/products">Mua ngay</a>
+      <a class="btn lg outline" routerLink="/products">Khám phá sản phẩm</a>
+    </div>
+  </div>
+  <div class="hero-media">
+    <app-image-slot class="hero-img" caption="Ảnh: đàn gà thả vườn trên đồi cỏ, nắng sớm" [radius]="28" ratio="auto" />
+    <div class="farm-tag">
+      <div class="ft-head"><span>Farm tag</span><span>Lô TG-0927</span></div>
+      <div class="serif ft-name">Trứng gà ta – 10 quả</div>
+      <dl>
+        <dt>Trại</dt><dd>Kira Farm, Đơn Dương – Lâm Đồng</dd>
+        <dt>Thu hoạch</dt><dd>06:10, 30/09/2026</dd>
+        <dt>Chăn nuôi</dt><dd>Thả vườn, ăn ngô &amp; cám</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="container sec">
+  <div class="sec-head"><h2>Danh mục</h2><a routerLink="/products" class="more">Tất cả sản phẩm →</a></div>
+  <div class="cats">
+    @for (c of categories(); track c.id) {
+      <a class="cat" routerLink="/products" [queryParams]="{cat: c.slug}">
+        <app-image-slot class="cat-img" [caption]="c.name" [radius]="18" ratio="auto" />
+        <span class="cat-row"><b>{{ c.name }}</b><span class="muted">{{ c.count }}</span></span>
+      </a>
+    }
+  </div>
+</section>
+
+<section class="container sec">
+  <div class="sec-head">
+    <h2>Sản phẩm nổi bật</h2>
+    <div class="row" role="tablist">
+      @for (t of tabs(); track t) {
+        <button type="button" role="tab" class="tab-pill" [class.on]="tab() === t" [attr.aria-selected]="tab() === t" (click)="tab.set(t)">{{ t }}</button>
+      }
+    </div>
+  </div>
+  @if (loading()) {
+    <app-state-box kind="loading" message="Đang tải sản phẩm…" />
+  } @else if (error()) {
+    <app-state-box kind="error" [message]="error()" [retryable]="true" (retry)="reload()" />
+  } @else if (featured().length) {
+    <div class="featured">
+      @for (p of featured(); track p.id) {
+        <app-product-card [product]="p" />
+      }
+    </div>
+  } @else {
+    <app-state-box message="Chưa có sản phẩm trong nhóm này." />
+  }
+</section>
+
+<section class="container sec">
+  <div class="best">
+    <div>
+      <h2>Được khách hàng yêu thích</h2>
+      <p>Bán chạy nhất 30 ngày qua.</p>
+    </div>
+    <div class="best-list">
+      @for (p of best(); track p.id; let i = $index) {
+        <div class="best-item">
+          <span class="rank serif">{{ i + 1 }}</span>
+          <a [routerLink]="['/products', p.slug]" class="thumb"><app-image-slot [caption]="p.ph" [radius]="12" ratio="1 / 1" /></a>
+          <div class="best-info">
+            <a [routerLink]="['/products', p.slug]" class="best-name">{{ p.name }}</a>
+            <div class="muted sm">★ {{ p.rating }} · {{ p.sold }}</div>
+            <div class="best-price">{{ p.price | vnd }} <span class="unit">/ {{ p.unit }}</span></div>
+          </div>
+          <button type="button" class="plus" [attr.aria-label]="'Thêm ' + p.name + ' vào giỏ'" (click)="cart.add(p)">+</button>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="promises">
+  <div class="container">
+    <h2>Cam kết của trang trại</h2>
+    <div class="pgrid">
+      @for (c of promises; track c.n) {
+        <div class="pitem"><span class="serif pn">{{ c.n }}</span><b>{{ c.t }}</b><span class="pd">{{ c.d }}</span></div>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="container about">
+  <app-image-slot class="about-img" caption="Ảnh: chuồng gà và đồi trang trại Kira Farm" [radius]="28" ratio="auto" />
+  <div>
+    <div class="eyebrow">Về trang trại</div>
+    <h2 class="about-title">12 hecta đồi cỏ ở Đơn Dương, Lâm Đồng</h2>
+    <div class="about-grid">
+      @for (a of about; track a.t) {
+        <div><b>{{ a.t }}</b><p>{{ a.d }}</p></div>
+      }
+    </div>
+    <a class="btn lg outline" routerLink="/">Về trang trại</a>
+  </div>
+</section>
+
+<section class="container sec">
+  <div class="sec-head"><h2>Từ nông trại</h2><a routerLink="/" class="more">Tất cả bài viết →</a></div>
+  <div class="posts">
+    @for (b of posts; track b.id) {
+      <article class="post">
+        <app-image-slot class="post-img" [caption]="b.ph" [radius]="18" ratio="auto" />
+        <div class="eyebrow">{{ b.tag }} · {{ b.read }}</div>
+        <h3>{{ b.title }}</h3>
+      </article>
+    }
+  </div>
+</section>
+
+<section class="container sec">
+  <div class="sec-head">
+    <div><h2>Hệ thống cửa hàng</h2><div class="muted lead">Hàng về từ trại mỗi sáng. Nhận tại cửa hàng hoặc giao từ chi nhánh gần nhất.</div></div>
+    <a routerLink="/" class="more">Tìm cửa hàng →</a>
+  </div>
+  <div class="stores">
+    <app-image-slot class="map" caption="Bản đồ các chi nhánh (TP.HCM, Đà Lạt)" [radius]="24" ratio="auto" />
+    <div class="store-list">
+      @for (b of branch.branches; track b.id; let i = $index) {
+        <button type="button" class="store" [class.on]="branch.index() === i" (click)="branch.select(i)">
+          <span class="grow">
+            <span class="store-name"><b>{{ b.name }}</b><span class="pill" [class.ok]="b.open" [class.bad]="!b.open">{{ b.open ? 'Đang mở cửa' : 'Tạm đóng' }}</span></span>
+            <span class="muted">{{ b.addr }}</span>
+          </span>
+          <span class="store-meta"><b>{{ b.dist }}</b>{{ b.hours }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</section>

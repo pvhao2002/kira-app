@@ -1,5 +1,6 @@
 /** Response shapes + small helpers for the customer account area (backend /api/v1; money is integer VND). */
-import type {ApiError} from '../../core/api';
+import type {Resource} from '@angular/core';
+import {resourceError, toApiError} from '../../core/api';
 
 /** Real list envelope: the backend nests the paging fields under `meta` (core/api.ts PageResponse is flat). */
 export interface Page<T> {
@@ -168,5 +169,15 @@ export const fmtDate = (iso: string | null | undefined): string => (iso ? new Da
 export const fmtDateTime = (iso: string | null | undefined): string =>
   iso ? new Date(iso).toLocaleString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'}) : '';
 
+/** `res.value()` throws while the resource is in an error state, so read it through this. */
+export const valueOr = <T, F>(res: Resource<T>, fallback: F): Exclude<T, undefined> | F =>
+  (res.hasValue() ? (res.value() as Exclude<T, undefined>) : fallback);
+
+/** True only for the first load / a parameter change (not for `reload()`, which keeps showing the old value). */
+export const isFirstLoad = (res: Resource<unknown>): boolean => res.status() === 'loading';
+
+/** Message of a resource's error, or '' when it has none. */
+export const resErr = (res: Resource<unknown>): string => resourceError(res)?.message ?? '';
+
 /** User-facing message from a thrown ApiError (api.ts converts every failure to one). */
-export const errMsg = (e: unknown): string => (e as Partial<ApiError>)?.message ?? 'Đã có lỗi xảy ra.';
+export const errMsg = (e: unknown): string => toApiError(e).message;

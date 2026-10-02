@@ -1,8 +1,8 @@
-import {Injectable, computed, effect, inject, signal} from '@angular/core';
-import {Api} from './api';
+import {Service, computed, effect, inject, signal, untracked} from '@angular/core';
+import {Api, apiResource} from './api';
 import {BRANCHES, Branch, BranchTheme} from './mock-data';
 
-const STORAGE_KEY = 'doinang-branch-themes';
+const STORAGE_KEY = 'kirafarm-branch-themes';
 
 function loadThemes(): BranchTheme[] {
   const defaults = BRANCHES.map(b => ({...b.defaultTheme}));
@@ -27,13 +27,16 @@ interface ApiBranch {
 }
 
 /** Current branch + per-branch theme. An effect writes the theme onto :root CSS variables. */
-@Injectable({providedIn: 'root'})
+@Service()
 export class BranchStore {
   private readonly api = inject(Api);
   private readonly list = signal<Branch[]>(BRANCHES);
-  private loading?: Promise<void>;
 
-  /** Reactive when read inside templates/computed; replaced by the API list after loadFromApi(). */
+  /** GET /branches (public), requested as soon as the store exists. */
+  private readonly remote = apiResource<ApiBranch[]>(() => ({path: '/branches'}), {defaultValue: []});
+  private applied = false;
+
+  /** Reactive when read inside templates/computed; replaced by the API list once /branches answers. */
   get branches(): Branch[] {
     return this.list();
   }
@@ -54,29 +57,27 @@ export class BranchStore {
       root.setProperty('--primary', t.primary);
       root.setProperty('--accent', t.accent);
     });
+    // Apply the API list once; the local mock values stay if the call fails. Branch index i maps to backend id i + 1.
+    effect(() => {
+      // value() throws in the error state (mock branches stay in that case).
+      const rows = this.remote.hasValue() ? this.remote.value() : [];
+      if (this.applied || !rows.length) return;
+      untracked(() => this.apply(rows));
+    });
   }
 
-  /**
-   * Replaces the local branch list/themes with GET /branches (public). Runs once; the local mock values stay
-   * if the call fails. Branch index i maps to backend id i + 1 (rows are sorted by id).
-   */
-  loadFromApi(): Promise<void> {
-    this.loading ??= (async () => {
-      try {
-        const rows = [...(await this.api.get<ApiBranch[]>('/branches'))].sort((a, b) => a.id - b.id);
-        if (!rows.length) return;
-        const prev = this.list();
-        this.list.set(rows.map((b, i) => ({
-          id: b.code.toLowerCase(), prefix: b.code, name: b.name, short: b.shortName, addr: b.address,
-          dist: prev[i]?.dist ?? '', hours: b.hours, open: b.open,
-          defaultTheme: {primary: b.themePrimary, accent: b.themeAccent}
-        })));
-        this.themes.set(rows.map(b => ({primary: b.themePrimary, accent: b.themeAccent})));
-        this.saved.set(true);
-        if (this.index() >= rows.length) this.index.set(0);
-      } catch { /* keep local defaults */ }
-    })();
-    return this.loading;
+  private apply(all: ApiBranch[]): void {
+    this.applied = true;
+    const rows = [...all].sort((x, y) => x.id - y.id);
+    const prev = this.list();
+    this.list.set(rows.map((b, i) => ({
+      id: b.code.toLowerCase(), prefix: b.code, name: b.name, short: b.shortName, addr: b.address,
+      dist: prev[i]?.dist ?? '', hours: b.hours, open: b.open,
+      defaultTheme: {primary: b.themePrimary, accent: b.themeAccent}
+    })));
+    this.themes.set(rows.map(b => ({primary: b.themePrimary, accent: b.themeAccent})));
+    this.saved.set(true);
+    if (this.index() >= rows.length) this.index.set(0);
   }
 
   select(i: number): void {

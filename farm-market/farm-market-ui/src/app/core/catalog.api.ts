@@ -1,5 +1,3 @@
-import {Injectable, inject} from '@angular/core';
-import {Api, PageResponse} from './api';
 import {Product} from './mock-data';
 
 export interface ApiProductSummary {
@@ -58,18 +56,6 @@ export interface ApiReview {
   reply: {body: string; repliedAt: string} | null;
 }
 
-export interface ProductQuery {
-  q?: string;
-  category?: string;
-  branchId?: number;
-  minPrice?: number | null;
-  maxPrice?: number | null;
-  inStock?: boolean;
-  sort?: string;
-  page?: number;
-  size?: number;
-}
-
 const soldText = (n: number): string => (n >= 1000 ? (n / 1000).toFixed(1).replace('.', ',').replace(',0', '') + 'k đã bán' : n > 0 ? n + ' đã bán' : '');
 
 /** Map a backend ProductSummary to the storefront view model. */
@@ -94,26 +80,4 @@ export function toProduct(s: ApiProductSummary): Product {
     branchId: s.branchId,
     available: s.available
   };
-}
-
-@Injectable({providedIn: 'root'})
-export class CatalogApi {
-  private readonly api = inject(Api);
-
-  categories(): Promise<Category[]> {
-    return this.api.get<Category[]>('/categories');
-  }
-
-  async search(q: ProductQuery): Promise<{items: Product[]; meta: PageResponse<unknown>['meta']}> {
-    const r = await this.api.get<PageResponse<ApiProductSummary>>('/products', {...q});
-    return {items: r.data.map(toProduct), meta: r.meta};
-  }
-
-  detail(slug: string): Promise<ApiProductDetail> {
-    return this.api.get<ApiProductDetail>('/products/' + encodeURIComponent(slug));
-  }
-
-  reviews(slug: string): Promise<PageResponse<ApiReview>> {
-    return this.api.get<PageResponse<ApiReview>>(`/products/${encodeURIComponent(slug)}/reviews`, {size: 5});
-  }
 }

@@ -1,0 +1,112 @@
+<header class="head">
+  <div>
+    <div class="eyebrow">{{ today }}</div>
+    <h1 class="page-title">Tổng quan</h1>
+  </div>
+  <div class="row wrap">
+    <span class="chip">{{ branch.current().name }}</span>
+    <span class="chip">30 ngày qua</span>
+    <a class="btn" routerLink="/admin/products">+ Thêm sản phẩm</a>
+  </div>
+</header>
+
+@if (dash.error()) {
+  <app-state-box kind="error" [message]="dashError()" [retryable]="true" (retry)="dash.reload()" />
+} @else if (d(); as d) {
+  <section class="kpis">
+    @for (k of kpis(); track k.label) {
+      <div class="card kpi">
+        <div class="muted small">{{ k.label }}</div>
+        <div class="serif val">{{ k.value }}</div>
+        <div class="delta">{{ k.sub }}</div>
+      </div>
+    }
+  </section>
+
+  <section class="two">
+    <div class="card">
+      <div class="row between">
+        <b>{{ metrics[metric()] }}</b>
+        <div class="row wrap" role="tablist">
+          @for (m of metrics; track m; let i = $index) {
+            <button type="button" role="tab" class="tab-pill" [class.on]="metric() === i" [attr.aria-selected]="metric() === i" (click)="metric.set(i)">{{ m }}</button>
+          }
+        </div>
+      </div>
+      <div class="chart" role="img" [attr.aria-label]="'Biểu đồ ' + metrics[metric()] + ' ' + d.days + ' ngày qua'">
+        @for (b of bars(); track b.date; let last = $last) {
+          <i [class.last]="last" [style.height.%]="b.h" [title]="b.tip"></i>
+        }
+      </div>
+      <div class="axis muted"><span>{{ axis()[0] }}</span><span>{{ axis()[1] }}</span><span>{{ axis()[2] }}</span></div>
+    </div>
+    <div class="card">
+      <b>Bán chạy</b>
+      @if (top().length) {
+        <div class="stack top">
+          @for (t of top(); track t.productId) {
+            <div>
+              <div class="row between"><span>{{ t.name }}</span><b>{{ t.quantity }}</b></div>
+              <div class="track"><i [style.width.%]="t.w"></i></div>
+            </div>
+          }
+        </div>
+      } @else {
+        <app-state-box kind="empty" message="Chưa có dữ liệu bán hàng." />
+      }
+    </div>
+  </section>
+
+  <section class="two b">
+    <div class="card">
+      <div class="row between">
+        <b>Đơn hàng mới</b>
+        <a class="link" routerLink="/admin/orders">Tất cả đơn →</a>
+      </div>
+      @if (orders.hasValue() && orders.value().data.length) {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Giá trị</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              @for (o of orders.value().data; track o.id) {
+                <tr>
+                  <td><a class="mono" [routerLink]="['/admin/orders', o.code]">{{ o.code }}</a></td>
+                  <td>{{ o.customerName || o.recipient }}</td>
+                  <td>{{ o.total | vnd }}</td>
+                  <td><span class="pill" [class]="status[o.status].cls">{{ status[o.status].label }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (orders.error()) {
+        <app-state-box kind="error" [message]="ordersError()" />
+      } @else if (orders.isLoading()) {
+        <app-state-box kind="loading" message="Đang tải…" />
+      } @else {
+        <app-state-box kind="empty" message="Chưa có đơn hàng mới." />
+      }
+    </div>
+    <div class="card">
+      <div class="row"><i class="dot"></i><b>Sản phẩm sắp hết hàng</b></div>
+      @if (d.lowStock.length) {
+        <ul class="low">
+          @for (l of d.lowStock; track l.productId) {
+            <li>
+              <div>
+                <div>{{ l.name }}</div>
+                <div class="muted small"><span class="mono">{{ l.sku }}</span> · {{ branch.current().short }}</div>
+              </div>
+              <b [class.bad]="l.available < 10">{{ l.available === 0 ? 'Hết' : 'Còn ' + l.available }}</b>
+            </li>
+          }
+        </ul>
+      } @else {
+        <app-state-box kind="empty" message="Tồn kho đang ổn định." />
+      }
+      <a class="btn secondary block" routerLink="/admin/inventory">Nhập kho</a>
+    </div>
+  </section>
+} @else {
+  <app-state-box kind="loading" message="Đang tải dữ liệu…" />
+}

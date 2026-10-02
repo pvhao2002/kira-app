@@ -1,4 +1,4 @@
-import {Injectable, inject} from '@angular/core';
+import {Service, inject} from '@angular/core';
 import {Api} from './api';
 
 /** Order of SHIP_OPTIONS / PAY_OPTIONS in mock-data mapped to the backend enums. */
@@ -93,13 +93,9 @@ export interface Order {
   payment: PaymentInfo | null;
 }
 
-@Injectable({providedIn: 'root'})
+@Service()
 export class CheckoutApi {
   private readonly api = inject(Api);
-
-  addresses(): Promise<Address[]> {
-    return this.api.get<Address[]>('/addresses');
-  }
 
   createAddress(r: AddressRequest): Promise<Address> {
     return this.api.post<Address>('/addresses', r);
@@ -111,9 +107,5 @@ export class CheckoutApi {
 
   placeOrder(body: CheckoutBody, idempotencyKey: string): Promise<Order> {
     return this.api.post<Order>('/orders', body, idempotencyKey);
-  }
-
-  order(code: string): Promise<Order> {
-    return this.api.get<Order>('/orders/' + encodeURIComponent(code));
   }
 }

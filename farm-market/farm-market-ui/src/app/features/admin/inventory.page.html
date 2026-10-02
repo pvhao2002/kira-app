@@ -1,0 +1,114 @@
+<header class="head">
+  <div>
+    <div class="eyebrow">Kho hàng</div>
+    <h1 class="page-title">Kho · {{ branch.current().name }}</h1>
+  </div>
+  <div class="row wrap">
+    <button type="button" class="btn secondary" (click)="toggleView()">{{ view() === 'stock' ? 'Lịch sử nhập xuất' : '← Tồn kho' }}</button>
+  </div>
+</header>
+
+@if (view() === 'stock') {
+  <div class="row wrap tabs" role="tablist">
+    @for (t of tabs; track t.key) {
+      <button type="button" role="tab" class="tab-pill" [class.on]="level() === t.key" [attr.aria-selected]="level() === t.key" (click)="setLevel(t.key)">{{ t.name }}</button>
+    }
+    <input class="input search" type="search" placeholder="Tìm tên, SKU…" aria-label="Tìm sản phẩm" [value]="qInput()" (input)="onSearch($any($event.target).value)">
+  </div>
+
+  @if (action(); as a) {
+    <form class="card form" (submit)="$event.preventDefault(); submit()">
+      <b>{{ a.kind === 'receipt' ? 'Phiếu nhập kho' : 'Điều chỉnh tồn kho' }} · {{ a.row.name }} <span class="mono muted">{{ a.row.sku }}</span></b>
+      <div class="muted small">Tồn hiện tại: {{ a.row.onHand }} {{ a.row.unit }} · Đang giữ: {{ a.row.reserved }}</div>
+      <div class="grid2">
+        <div class="field">
+          <label for="aq">{{ a.kind === 'receipt' ? 'Số lượng nhập' : 'Chênh lệch (+/−)' }}</label>
+          <input id="aq" class="input" inputmode="numeric" [value]="qty()" (input)="qty.set($any($event.target).value)">
+        </div>
+        <div class="field">
+          <label for="ar">{{ a.kind === 'receipt' ? 'Ghi chú (tuỳ chọn)' : 'Lý do (bắt buộc)' }}</label>
+          <input id="ar" class="input" maxlength="255" [value]="reason()" (input)="reason.set($any($event.target).value)">
+        </div>
+      </div>
+      @if (err()) {<p class="err small" role="alert">{{ err() }}</p>}
+      <div class="row">
+        <button type="button" class="btn secondary" [disabled]="busy()" (click)="action.set(null)">Hủy</button>
+        <button type="submit" class="btn" [disabled]="busy()">{{ busy() ? 'Đang lưu…' : 'Xác nhận' }}</button>
+      </div>
+    </form>
+  }
+
+  <div class="card panel">
+    @if (list.error()) {
+      <app-state-box kind="error" [message]="error()" [retryable]="true" (retry)="list.reload()" />
+    } @else if (!list.hasValue()) {
+      <app-state-box kind="loading" message="Đang tải tồn kho…" />
+    } @else if (list.value().data.length) {
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Sản phẩm</th><th>Tồn kho</th><th>Đang giữ</th><th>Khả dụng</th><th>Tình trạng</th><th></th></tr></thead>
+          <tbody>
+            @for (r of list.value().data; track r.productId) {
+              <tr>
+                <td><div>{{ r.name }}</div><div class="muted small mono">{{ r.sku }}</div></td>
+                <td>{{ r.onHand }}</td>
+                <td>{{ r.reserved }}</td>
+                <td [class.bad]="r.level !== 'OK'"><b>{{ r.available }}</b></td>
+                <td><span class="pill" [class]="levels[r.level].cls">{{ levels[r.level].label }}</span></td>
+                <td class="acts">
+                  <button type="button" class="btn secondary sm" [disabled]="busy()" (click)="open('receipt', r)">Nhập kho</button>
+                  <button type="button" class="btn ghost sm" [disabled]="busy()" (click)="open('adjust', r)">Điều chỉnh</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="row foot">
+        <span class="muted">{{ list.value().data.length }} / {{ list.value().meta.totalElements }} sản phẩm</span>
+        <span class="spacer"></span>
+        <button type="button" class="pg" aria-label="Trang trước" [disabled]="page() === 0" (click)="page.set(page() - 1)">‹</button>
+        <span class="muted">Trang {{ page() + 1 }} / {{ list.value().meta.totalPages || 1 }}</span>
+        <button type="button" class="pg" aria-label="Trang sau" [disabled]="page() + 1 >= list.value().meta.totalPages" (click)="page.set(page() + 1)">›</button>
+      </div>
+    } @else {
+      <app-state-box kind="empty" message="Không có sản phẩm nào ở mức này." />
+    }
+    <div class="muted foot2">Khả dụng = Tồn kho − Đang giữ (đơn đã đặt chưa giao). Cảnh báo khi khả dụng dưới {{ limit }}.</div>
+  </div>
+} @else {
+  <div class="card panel">
+    @if (moves.error()) {
+      <app-state-box kind="error" [message]="movesError()" [retryable]="true" (retry)="moves.reload()" />
+    } @else if (!moves.hasValue()) {
+      <app-state-box kind="loading" message="Đang tải lịch sử…" />
+    } @else if (moves.value().data.length) {
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Thời gian</th><th>Sản phẩm</th><th>Loại</th><th>Thay đổi</th><th>Tồn sau</th><th>Lý do</th></tr></thead>
+          <tbody>
+            @for (m of moveRows(); track m.id) {
+              <tr>
+                <td>{{ m.time }}</td>
+                <td>{{ m.product }}</td>
+                <td>{{ m.label }}</td>
+                <td [class.bad]="m.delta < 0"><b>{{ m.change }}</b></td>
+                <td>{{ m.onHandAfter }}</td>
+                <td>{{ m.reason || '—' }}@if (m.refId) { <span class="muted small mono">{{ m.refId }}</span>}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="row foot">
+        <span class="muted">{{ moves.value().data.length }} / {{ moves.value().meta.totalElements }} dòng</span>
+        <span class="spacer"></span>
+        <button type="button" class="pg" aria-label="Trang trước" [disabled]="mpage() === 0" (click)="mpage.set(mpage() - 1)">‹</button>
+        <span class="muted">Trang {{ mpage() + 1 }} / {{ moves.value().meta.totalPages || 1 }}</span>
+        <button type="button" class="pg" aria-label="Trang sau" [disabled]="mpage() + 1 >= moves.value().meta.totalPages" (click)="mpage.set(mpage() + 1)">›</button>
+      </div>
+    } @else {
+      <app-state-box kind="empty" message="Chưa có biến động kho." />
+    }
+  </div>
+}

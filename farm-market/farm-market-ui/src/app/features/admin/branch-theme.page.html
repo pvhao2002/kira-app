@@ -1,0 +1,106 @@
+<header class="head">
+  <div>
+    <div class="eyebrow">Chi nhánh / Giao diện</div>
+    <h1 class="page-title">Màu thương hiệu theo chi nhánh</h1>
+  </div>
+  <div class="row wrap">
+    <button type="button" class="btn secondary" [disabled]="saving()" (click)="store.resetTheme()">Khôi phục mặc định</button>
+    <button type="button" class="btn" [disabled]="store.saved() || saving()" (click)="save()">{{ saving() ? 'Đang lưu…' : store.saved() ? 'Đã lưu' : 'Lưu thay đổi' }}</button>
+  </div>
+</header>
+
+@if (err()) {<p class="errm" role="alert">{{ err() }}</p>}
+
+<nav class="sub" aria-label="Chi nhánh">
+  <a routerLink="/admin/branches">Danh sách</a>
+  <a class="on" routerLink="/admin/branches/theme" aria-current="page">Giao diện</a>
+</nav>
+
+<div class="layout">
+  <section class="card cfg">
+    <div class="list">
+      <div class="eyebrow">{{ allowed().length }} chi nhánh</div>
+      @for (i of allowed(); track i) {
+        <button type="button" class="br" [class.on]="i === store.index()" (click)="pickBranch(i)">
+          <span class="disc" aria-hidden="true">
+            <i class="p" [style.background]="store.themeOf(i).primary"></i><i class="a" [style.background]="store.themeOf(i).accent"></i>
+          </span>
+          <span class="bt"><b>{{ store.branches[i].name }}</b><span class="muted small">{{ store.branches[i].addr }}</span></span>
+        </button>
+      }
+    </div>
+
+    <div class="edit">
+      <h2 class="serif h">{{ store.current().name }}</h2>
+
+      <div class="group">
+        <b>Màu chủ đạo</b>
+        <p class="muted small">Nút bấm, liên kết, thanh trên cùng, giá sản phẩm.</p>
+        <div class="row wrap presets">
+          @for (c of primaries; track c) {
+            <button type="button" class="sw" [class.on]="c === store.theme().primary" [style.background]="c" [attr.aria-label]="'Màu chủ đạo ' + c" [attr.aria-pressed]="c === store.theme().primary" (click)="store.setTheme('primary', c)"></button>
+          }
+        </div>
+        <div class="row">
+          <input type="color" aria-label="Chọn màu chủ đạo" [value]="store.theme().primary" (input)="store.setTheme('primary', $any($event.target).value)">
+          <span class="mono">{{ store.theme().primary }}</span>
+        </div>
+        @if (ok()) {
+          <div class="note okn" role="status">Chữ trắng trên màu này: <b>{{ ratio() }}</b> · Đạt chuẩn dễ đọc (AA)</div>
+        } @else {
+          <div class="note badn" role="alert">Chữ trắng trên màu này: <b>{{ ratio() }}</b> · Quá sáng, chữ trên nút sẽ khó đọc. Chọn màu đậm hơn.</div>
+        }
+      </div>
+
+      <div class="group">
+        <b>Màu nhấn</b>
+        <p class="muted small">Nhãn "Bán chạy", nút "Mua ngay", điểm nhấn trên nền màu chủ đạo.</p>
+        <div class="row wrap presets">
+          @for (c of accents; track c) {
+            <button type="button" class="sw" [class.on]="c === store.theme().accent" [style.background]="c" [attr.aria-label]="'Màu nhấn ' + c" [attr.aria-pressed]="c === store.theme().accent" (click)="store.setTheme('accent', c)"></button>
+          }
+        </div>
+        <div class="row">
+          <input type="color" aria-label="Chọn màu nhấn" [value]="store.theme().accent" (input)="store.setTheme('accent', $any($event.target).value)">
+          <span class="mono">{{ store.theme().accent }}</span>
+        </div>
+      </div>
+
+      <div class="group">
+        <b>Màu tự sinh</b>
+        <div class="gen">
+          <div><i class="chip" style="background: var(--primary)"></i>Chủ đạo</div>
+          <div><i class="chip" style="background: var(--primary-dark)"></i>Hover</div>
+          <div><i class="chip" style="background: var(--tint)"></i>Nền nhạt</div>
+          <div><i class="chip" style="background: var(--accent)"></i>Nhấn</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card prev">
+    <div class="eyebrow">Xem trước</div>
+    <div class="shop" aria-label="Xem trước cửa hàng">
+      <div class="top"><span>Mua tại: <b>{{ store.current().name }}</b></span><span>1900 6868</span></div>
+      <div class="nav"><span class="logo"><app-logo [size]="18" /></span><span class="cart">Giỏ hàng · 3</span></div>
+      <div class="hero">
+        <div class="serif hl">Thực phẩm tươi sạch từ <i>nông trại</i></div>
+        <div class="row"><span class="btn accent sm">Mua ngay</span><span class="btn secondary sm">Khám phá</span></div>
+      </div>
+      <div class="prods">
+        <div class="p">
+          <div class="img"><span class="badge">Bán chạy</span></div>
+          <div class="pn">Trứng gà ta – 10 quả</div>
+          <div class="row between"><b class="price">{{ 45000 | vnd }}</b><span class="plus">+</span></div>
+        </div>
+        <div class="p">
+          <div class="img"></div>
+          <div class="pn">Gà ta thả vườn</div>
+          <div class="row between"><b class="price">{{ 189000 | vnd }}</b><span class="plus">+</span></div>
+        </div>
+      </div>
+      <div class="free">Thêm <b>{{ 64000 | vnd }}</b> để được miễn phí giao hàng</div>
+    </div>
+    <p class="muted small">Thay đổi áp dụng ngay cho toàn bộ giao diện. Bấm "Lưu thay đổi" để lưu cho chi nhánh này.</p>
+  </section>
+</div>

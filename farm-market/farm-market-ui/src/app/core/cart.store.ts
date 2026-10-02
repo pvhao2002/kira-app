@@ -1,4 +1,4 @@
-import {Injectable, computed, effect, signal} from '@angular/core';
+import {Service, computed, effect, signal} from '@angular/core';
 import {FREE_SHIP_THRESHOLD, Product, SHIP_OPTIONS} from './mock-data';
 
 export interface CartLine {
@@ -22,7 +22,7 @@ export interface AppliedPromo {
   subtotal: number;
 }
 
-const STORAGE_KEY = 'doinang-cart-v1';
+const STORAGE_KEY = 'kirafarm-cart-v1';
 
 const isLine = (l: unknown): l is CartLine => {
   const x = l as Partial<CartLine> | null;
@@ -42,7 +42,7 @@ function load(): CartLine[] {
  * Cart state, client-side only (persisted to localStorage; lines hold no personal data). All amounts are integer VND.
  * Prices are display hints: the server re-prices everything at checkout. A cart holds one branch's products.
  */
-@Injectable({providedIn: 'root'})
+@Service()
 export class CartStore {
   readonly lines = signal<CartLine[]>(load());
   readonly shipIndex = signal(0);

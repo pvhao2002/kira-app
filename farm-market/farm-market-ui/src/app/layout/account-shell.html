@@ -1,0 +1,13 @@
+<div class="container wrap">
+  <aside class="menu card">
+    <div class="who">
+      <span class="av">{{ auth.user()?.name?.[0] }}</span>
+      <div><b>{{ auth.user()?.fullName ?? auth.user()?.name }}</b>@if (tier()) {<div class="tier">Thành viên {{ tier() }}</div>}</div>
+    </div>
+    @for (m of items; track m.link) {
+      <a [routerLink]="m.link" routerLinkActive="on" [routerLinkActiveOptions]="{exact: m.link === '/account'}">{{ m.label }}</a>
+    }
+    <button type="button" class="out" [disabled]="loggingOut()" (click)="logout()">Đăng xuất</button>
+  </aside>
+  <section class="content"><router-outlet /></section>
+</div>

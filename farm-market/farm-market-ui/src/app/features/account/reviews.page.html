@@ -1,0 +1,63 @@
+<h1 class="page-title">Đánh giá của tôi</h1>
+<div class="row wrap tabs" role="tablist" aria-label="Đánh giá">
+  <button type="button" class="tab-pill" role="tab" [attr.aria-selected]="tab() === 0" [class.on]="tab() === 0" (click)="tab.set(0)">Chờ đánh giá <span class="n">{{ pending().length }}</span></button>
+  <button type="button" class="tab-pill" role="tab" [attr.aria-selected]="tab() === 1" [class.on]="tab() === 1" (click)="tab.set(1)">Đã đánh giá <span class="n">{{ doneTotal() }}</span></button>
+</div>
+@if (error()) {
+  <app-state-box kind="error" title="Không tải được dữ liệu" [message]="error()" [retryable]="true" (retry)="reload()" />
+}
+
+@if (tab() === 0) {
+  <div class="banner"><b>+50 điểm</b> cho mỗi đánh giá có ảnh, +20 điểm cho đánh giá chỉ có chữ.</div>
+  @if (earned() > 0) { <div class="banner ok" role="status" aria-live="polite">Cảm ơn bạn! Đã cộng {{ earned() }} điểm vào tài khoản.</div> }
+  @if (loading()) { <app-state-box kind="loading" message="Đang tải…" /> }
+  @for (r of pending(); track keyOf(r)) {
+    @if (drafts()[keyOf(r)]; as d) {
+      <article class="card rv">
+        <app-image-slot class="ph" caption="Ảnh" [radius]="12" ratio="1 / 1" />
+        <div class="body">
+          <div class="row top">
+            <div><div class="nm">{{ r.productName }}</div><div class="muted">Đơn {{ r.orderCode }} · Giao ngày {{ date(r.deliveredAt) }}</div></div>
+          </div>
+          <div class="row picker" role="radiogroup" aria-label="Chấm điểm">
+            @for (n of five; track n) {
+              <button type="button" class="star" [class.on]="n <= d.rating" role="radio" [attr.aria-checked]="n === d.rating" [attr.aria-label]="n + ' sao'" (click)="patch(r, {rating: n})">★</button>
+            }
+            <span class="muted">{{ labels[d.rating] }}</span>
+          </div>
+          <textarea class="input" rows="3" placeholder="Chia sẻ cảm nhận về độ tươi, đóng gói, giao hàng…" aria-label="Nội dung đánh giá" maxlength="2000"
+                    [value]="d.text" (input)="patch(r, {text: $any($event.target).value})"></textarea>
+          <input class="input" type="url" placeholder="Liên kết ảnh (https://…) để nhận +50 điểm" aria-label="Liên kết ảnh"
+                 [value]="d.photoUrl" (input)="patch(r, {photoUrl: $any($event.target).value})">
+          @if (d.error) { <div class="err" role="alert">{{ d.error }}</div> }
+          <div class="row wrap foot">
+            <span class="spacer"></span>
+            <button type="button" class="btn" [disabled]="!d.rating || d.sending" (click)="submit(r)">{{ d.sending ? 'Đang gửi…' : 'Gửi đánh giá' }}</button>
+          </div>
+        </div>
+      </article>
+    }
+  }
+  @if (!pending().length && !loading() && !error()) {
+    <app-state-box title="Bạn đã đánh giá hết" message="Sản phẩm đã giao sẽ hiện ở đây để bạn đánh giá." />
+  }
+} @else {
+  @for (r of done(); track r.id) {
+    <article class="card rv">
+      <app-image-slot class="ph" caption="Ảnh" [radius]="12" ratio="1 / 1" />
+      <div class="body">
+        <div class="row"><b>{{ r.productName }}</b><span class="spacer"></span><span class="muted">{{ date(r.createdAt) }}</span></div>
+        <app-stars [value]="r.rating" />
+        @if (r.body) { <div>{{ r.body }}</div> }
+        @if (r.reply) { <div class="reply"><b>Cửa hàng</b> phản hồi: {{ r.reply.body }}</div> }
+        <div class="muted">Đã nhận +{{ r.pointsAwarded }} điểm</div>
+      </div>
+    </article>
+  } @empty {
+    @if (loading()) {
+      <app-state-box kind="loading" message="Đang tải…" />
+    } @else {
+      <app-state-box message="Bạn chưa có đánh giá nào." />
+    }
+  }
+}

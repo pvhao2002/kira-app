@@ -1,0 +1,54 @@
+<header class="head">
+  <div>
+    <div class="eyebrow">Khách hàng</div>
+    <h1 class="page-title">Khách hàng</h1>
+  </div>
+  @if (list.hasValue()) {
+    <span class="chip">Tổng: {{ number(list.value().meta.totalElements) }} khách hàng</span>
+  }
+</header>
+
+<div class="card panel">
+  <div class="row wrap bar">
+    <input class="input search" type="search" placeholder="Tìm tên, số điện thoại, email…" aria-label="Tìm khách hàng" [value]="qInput()" (input)="onSearch($any($event.target).value)">
+  </div>
+  @if (list.error()) {
+    <app-state-box kind="error" [message]="error()" [retryable]="true" (retry)="list.reload()" />
+  } @else if (!list.hasValue()) {
+    <app-state-box kind="loading" message="Đang tải khách hàng…" />
+  } @else if (rows().length) {
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Khách hàng</th><th>Điện thoại</th><th>Email</th><th>Số đơn</th><th>Tổng chi tiêu</th><th>Ngày tham gia</th><th>Tài khoản</th>@if (isAdmin()) {<th></th>}</tr></thead>
+        <tbody>
+          @for (c of rows(); track c.id) {
+            <tr>
+              <td><div class="row"><span class="av" aria-hidden="true">{{ c.initial }}</span>{{ c.fullName }}</div></td>
+              <td>{{ c.phone || '—' }}</td>
+              <td>{{ c.email }}</td>
+              <td>{{ c.orderCount }}</td>
+              <td><b>{{ c.totalSpent | vnd }}</b></td>
+              <td>{{ c.joined }}</td>
+              <td><span class="pill" [class]="c.status === 'ACTIVE' ? 'ok' : 'bad'">{{ c.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa' }}</span></td>
+              @if (isAdmin()) {
+                <td>
+                  <button type="button" class="btn secondary sm" [disabled]="busyId() === c.id" (click)="toggle(c)">{{ c.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa' }}</button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="row foot">
+      <span class="muted">{{ list.value().data.length }} / {{ list.value().meta.totalElements }} khách hàng</span>
+      <span class="spacer"></span>
+      <button type="button" class="pg" aria-label="Trang trước" [disabled]="page() === 0" (click)="page.set(page() - 1)">‹</button>
+      <span class="muted">Trang {{ page() + 1 }} / {{ list.value().meta.totalPages || 1 }}</span>
+      <button type="button" class="pg" aria-label="Trang sau" [disabled]="page() + 1 >= list.value().meta.totalPages" (click)="page.set(page() + 1)">›</button>
+    </div>
+  } @else {
+    <app-state-box kind="empty" message="Không tìm thấy khách hàng phù hợp." />
+  }
+  @if (err()) {<p class="err small pad" role="alert">{{ err() }}</p>}
+</div>

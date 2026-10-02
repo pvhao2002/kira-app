@@ -1,0 +1,27 @@
+:host { display: block; }
+.head { margin-bottom: 20px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.layout.ro { grid-template-columns: minmax(0, 1fr); }
+.panel { padding: 0; overflow: hidden; }
+.small { font-size: 12px; }
+.code { font-weight: 700; }
+.acts { white-space: nowrap; }
+.track { width: 120px; height: 6px; border-radius: 999px; background: var(--surface-2); margin-top: 6px; overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
+.panel ::ng-deep .state-box { border: 0; border-radius: 0; }
+.form { display: flex; flex-direction: column; gap: 16px; }
+.preview { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 18px; border-radius: 14px; background: var(--primary); color: #fff; }
+.pcode { font-size: 18px; font-weight: 700; letter-spacing: .04em; }
+.pval { font-size: 28px; color: var(--accent); }
+.seg { display: flex; background: var(--surface-2); border-radius: 999px; padding: 3px; }
+.seg button { flex: 1; border: 0; background: transparent; border-radius: 999px; padding: 8px 6px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.seg button.on { background: var(--surface); color: var(--primary); font-weight: 600; box-shadow: 0 1px 2px rgba(31, 42, 28, .12); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid2 .input { padding: 10px 12px; }
+.chipb { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; }
+.chipb.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255, 255, 255, .6); }
+.rec { padding: 12px; background: var(--surface-2); border-radius: 12px; font-size: 13px; gap: 14px; }
+.err { color: var(--danger); }
+.grow { flex: 1; }
+@media (max-width: 767px) { .layout { grid-template-columns: 1fr; } }

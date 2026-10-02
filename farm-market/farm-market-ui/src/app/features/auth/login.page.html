@@ -1,0 +1,116 @@
+<div class="page">
+  <div class="left">
+    <a routerLink="/" class="logo" aria-label="Kira Farm - Trang chủ"><app-logo [size]="30" /></a>
+
+    <div class="center">
+      <div>
+        <h1>Đăng nhập</h1>
+        <div class="muted sub">Khách hàng và nhân viên dùng chung một trang đăng nhập.</div>
+      </div>
+
+      @if (!signedIn() && mode() === 'register') {
+        <form class="stack" [formRoot]="registerForm" (submit)="register()">
+          <div class="field">
+            <label for="rg-name">Họ tên</label>
+            <input id="rg-name" class="input tall" autocomplete="name" [formField]="registerForm.fullName" [class.err]="!!fieldErr('fullName')">
+            @if (fieldErr('fullName')) { <span class="err-t" role="alert">{{ fieldErr('fullName') }}</span> }
+          </div>
+          <div class="field">
+            <label for="rg-email">Email</label>
+            <input id="rg-email" class="input tall" type="email" autocomplete="email" [formField]="registerForm.email" [class.err]="!!fieldErr('email')">
+            @if (fieldErr('email')) { <span class="err-t" role="alert">{{ fieldErr('email') }}</span> }
+          </div>
+          <div class="field">
+            <label for="rg-phone">Số điện thoại (không bắt buộc)</label>
+            <input id="rg-phone" class="input tall" inputmode="tel" autocomplete="tel" [formField]="registerForm.phone" [class.err]="!!fieldErr('phone')">
+            @if (fieldErr('phone')) { <span class="err-t" role="alert">{{ fieldErr('phone') }}</span> }
+          </div>
+          <div class="field">
+            <label for="rg-pw">Mật khẩu (từ 8 ký tự)</label>
+            <input id="rg-pw" class="input tall" autocomplete="new-password" [type]="showPw() ? 'text' : 'password'" [formField]="registerForm.password" [class.err]="!!fieldErr('password')">
+            @if (fieldErr('password')) { <span class="err-t" role="alert">{{ fieldErr('password') }}</span> }
+          </div>
+          @if (error()) {
+            <span class="err-t" role="alert">{{ error() }}</span>
+          }
+          <button type="submit" class="btn block go" [disabled]="loading()">{{ loading() ? 'Đang tạo tài khoản…' : 'Đăng ký' }}</button>
+          <div class="center-t muted">Đã có tài khoản? <button type="button" class="link" (click)="setMode('login')">Đăng nhập</button></div>
+        </form>
+      } @else if (!signedIn()) {
+        <form class="stack" [formRoot]="loginForm" (submit)="submit()">
+          <div class="field">
+            <span class="label">Tài khoản demo</span>
+            <div class="chips" role="group" aria-label="Chọn tài khoản demo">
+              @for (u of users; track u.role; let i = $index) {
+                <button type="button" class="tab-pill" [class.on]="roleIdx() === i" [attr.aria-pressed]="roleIdx() === i" (click)="pickRole(i)">{{ u.label }}</button>
+              }
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="lg-id">Email hoặc số điện thoại</label>
+            <input id="lg-id" class="input tall" autocomplete="username" [formField]="loginForm.identifier" [class.err]="!!error()" (input)="error.set('')">
+          </div>
+
+          <div class="field">
+            <label for="lg-pw">Mật khẩu</label>
+            <div class="pw">
+              <input id="lg-pw" class="input tall" autocomplete="current-password" [type]="showPw() ? 'text' : 'password'" [formField]="loginForm.password" [class.err]="!!error()" (input)="error.set('')">
+              <button type="button" class="show" [attr.aria-pressed]="showPw()" (click)="showPw.set(!showPw())">{{ showPw() ? 'Ẩn' : 'Hiện' }}</button>
+            </div>
+            @if (error()) {
+              <span class="err-t" role="alert">{{ error() }}</span>
+            }
+          </div>
+
+          <div class="between">
+            <label class="rem">
+              <input type="checkbox" [formField]="loginForm.remember">
+              <span class="box">{{ loginForm.remember().value() ? '✓' : '' }}</span>Ghi nhớ đăng nhập
+            </label>
+            <button type="button" class="link">Quên mật khẩu?</button>
+          </div>
+
+          <button type="submit" class="btn block go" [disabled]="loading()">{{ loading() ? 'Đang đăng nhập…' : 'Đăng nhập' }}</button>
+          @if (dev) {
+            <div class="muted sm dev-hint">Dev: nhân viên/quản lý/quản trị cần mã OTP thật. Chạy <code>node farm-market-service/totp.js</code> để lấy mã hiện tại (bí mật dev trong README).</div>
+          }
+
+          <div class="or"><span></span>hoặc<span></span></div>
+          <div class="alts">
+            <button type="button" class="alt" disabled title="Sắp ra mắt">Mã OTP qua SMS</button>
+            <button type="button" class="alt" disabled title="Sắp ra mắt">Google</button>
+          </div>
+          <div class="center-t muted">Chưa có tài khoản? <button type="button" class="link" (click)="setMode('register')">Đăng ký</button></div>
+        </form>
+      } @else {
+        @if (user(); as u) {
+          <div class="stack">
+            <div class="hello">
+              <span class="ok-dot">✓</span>
+              <div><b class="hi">Xin chào, {{ u.name }}</b><div class="muted">Vai trò: {{ u.label }}</div></div>
+            </div>
+            <div class="dest">
+              <div class="eyebrow">Đang chuyển đến</div>
+              <div class="mono path">{{ destPath() }}</div>
+              <div class="muted">{{ u.destDesc }}</div>
+              <div class="progress"><div></div></div>
+            </div>
+            <button type="button" class="link back" (click)="back()">← Quay lại form</button>
+          </div>
+        }
+      }
+    </div>
+
+    <a routerLink="/" class="muted sm">← Về trang chủ</a>
+  </div>
+
+  <div class="right">
+    <app-image-slot class="bg" caption="Ảnh: rổ trứng và gà thả vườn buổi sáng" [radius]="28" ratio="auto" />
+    <div class="tagcard">
+      <div class="eyebrow">Farm tag</div>
+      <div class="serif lot">Lô TG-0930</div>
+      <div class="muted sm">Thu hoạch 06:05 sáng nay · Trại Kira Farm</div>
+    </div>
+  </div>
+</div>

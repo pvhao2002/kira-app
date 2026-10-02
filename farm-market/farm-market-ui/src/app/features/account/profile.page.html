@@ -1,0 +1,91 @@
+<h1 class="page-title">Xin chào, {{ auth.user()?.name }}</h1>
+@if (error()) { <app-state-box kind="error" title="Không tải được dữ liệu" [message]="error()" /> }
+
+<section class="stats">
+  <div class="hero">
+    <div class="row"><span>Điểm tích lũy</span><span class="spacer"></span>@if (sum(); as s) {<span class="pill accent">Hạng {{ s.tier.label }}</span>}</div>
+    <div class="big serif">{{ sum() ? num(sum()!.balance) : '…' }} <small>điểm</small></div>
+    <div class="bar"><div class="fill" [style.width.%]="pct()"></div></div>
+    <div class="sub">
+      @if (sum()?.nextTier; as n) { Còn {{ num(sum()!.pointsToNextTier) }} điểm để lên hạng {{ n.label }} }
+      @else if (sum()) { Bạn đang ở hạng cao nhất }
+    </div>
+  </div>
+  @for (k of stats(); track k.l) {
+    <div class="card stat">
+      <div class="muted">{{ k.l }}</div>
+      <div class="v serif">{{ k.v }}</div>
+      <div class="muted s">{{ k.s }}</div>
+    </div>
+  }
+</section>
+
+<section class="cols">
+  <div class="card">
+    <div class="row head">
+      <h2>Thông tin cá nhân</h2><span class="spacer"></span>
+      <button type="button" class="btn secondary sm" [disabled]="editing()" (click)="startEdit()">{{ editing() ? 'Đang chỉnh sửa' : 'Chỉnh sửa' }}</button>
+    </div>
+    <div class="row avatar">
+      <app-image-slot class="av" caption="Ảnh" [circle]="true" ratio="1 / 1" />
+      <button type="button" class="btn secondary sm" [disabled]="!editing()">Đổi ảnh</button>
+      <button type="button" class="btn ghost sm" [disabled]="!editing()">Xóa</button>
+    </div>
+    <div class="form">
+      <div class="field"><label for="pf-name">Họ và tên</label><input id="pf-name" class="input" maxlength="120" [value]="fullName()" (input)="fullName.set($any($event.target).value)" [disabled]="!editing()">
+        @if (fe('fullName')) {<small class="err" role="alert">{{ fe('fullName') }}</small>}</div>
+      <div class="field"><label for="pf-dob">Ngày sinh</label><input id="pf-dob" class="input" type="date" [value]="birthDate()" (input)="birthDate.set($any($event.target).value)" [disabled]="!editing()">
+        @if (fe('birthDate')) {<small class="err" role="alert">{{ fe('birthDate') }}</small>}</div>
+      <div class="field"><label for="pf-phone">Số điện thoại</label>
+        <input id="pf-phone" class="input" inputmode="tel" [value]="phone()" (input)="phone.set($any($event.target).value)" [disabled]="!editing()">
+        @if (fe('phone')) {<small class="err" role="alert">{{ fe('phone') }}</small>}</div>
+      <div class="field"><label for="pf-mail">Email</label>
+        <input id="pf-mail" class="input" [value]="auth.user()?.email ?? ''" disabled></div>
+      <div class="field"><span class="label">Giới tính</span>
+        <div class="row wrap">
+          @for (g of genders; track g; let i = $index) {
+            <button type="button" class="tab-pill" [class.on]="gender() === genderKeys[i]" [disabled]="!editing()" (click)="gender.set(genderKeys[i])">{{ g }}</button>
+          }
+        </div>
+        @if (fe('gender')) {<small class="err" role="alert">{{ fe('gender') }}</small>}</div>
+      <div class="field"><label for="pf-branch">Chi nhánh mua thường xuyên</label>
+        <select id="pf-branch" class="input" [disabled]="!editing()" (change)="branch.select(+$any($event.target).value)">
+          @for (b of branch.branches; track b.id; let i = $index) {
+            <option [value]="i" [selected]="i === branch.index()">{{ b.name }}</option>
+          }
+        </select></div>
+    </div>
+    @if (saveError()) { <p class="err" role="alert">{{ saveError() }}</p> }
+    @if (saved()) { <p class="ok-note" role="status" aria-live="polite">Đã lưu thay đổi.</p> }
+    @if (editing()) {
+      <div class="row end">
+        <button type="button" class="btn secondary" [disabled]="saving()" (click)="cancel()">Hủy</button>
+        <button type="button" class="btn" [disabled]="saving()" (click)="save()">{{ saving() ? 'Đang lưu…' : 'Lưu thay đổi' }}</button>
+      </div>
+    }
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <div class="row head"><h2>Sổ địa chỉ</h2><span class="spacer"></span><a class="btn ghost sm" routerLink="/account/addresses">+ Thêm</a></div>
+      @for (r of addrRows(); track r.a.id) {
+        @let a = r.a;
+        <div class="addr" [class.def]="a.isDefault">
+          <div class="row"><b>{{ a.label }}</b>@if (a.isDefault) {<span class="pill ok">Mặc định</span>}</div>
+          <div>{{ a.recipient }} · {{ a.phone }}</div>
+          <div class="muted">{{ r.line }}</div>
+        </div>
+      } @empty { <div class="muted">Chưa có địa chỉ.</div> }
+    </div>
+    <div class="card">
+      <h2>Bảo mật &amp; thông báo</h2>
+      <div class="row line"><span>Mật khẩu</span><span class="spacer"></span><button type="button" class="btn ghost sm">Đổi mật khẩu</button></div>
+      @for (n of notifNames; track n; let i = $index) {
+        <div class="row line">
+          <span [id]="'nf' + i">{{ n }}</span><span class="spacer"></span>
+          <button type="button" class="toggle" role="switch" [class.on]="nf()[i]" [attr.aria-checked]="nf()[i]" [attr.aria-labelledby]="'nf' + i" (click)="flip(i)"></button>
+        </div>
+      }
+    </div>
+  </div>
+</section>

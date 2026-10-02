@@ -1,0 +1,15 @@
+:host { display: block; }
+.head { margin-bottom: 20px; }
+.panel { padding: 0; overflow: hidden; }
+.bar { padding: 16px; border-bottom: 1px solid var(--border); }
+.search { max-width: 340px; flex: 1 1 220px; padding: 10px 14px; }
+.small { font-size: 12px; }
+.err { color: var(--danger); }
+.pad { padding: 0 16px 16px; }
+.acts { white-space: nowrap; }
+.chipb { padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; }
+.chipb.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.panel ::ng-deep .state-box { border: 0; border-radius: 0; }
+.foot { padding: 14px 16px; }
+.pg { min-width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.pg:disabled { opacity: .4; }

@@ -1,0 +1,134 @@
+@if (res.error()) {
+  <app-state-box kind="error" [message]="error()">
+    <a class="btn secondary" routerLink="/admin/orders">Về danh sách đơn hàng</a>
+  </app-state-box>
+} @else if (detail(); as d) {
+  @let o = d.order;
+  @let v = view()!;
+  <div class="eyebrow"><a routerLink="/admin/orders">Đơn hàng</a> / {{ o.code }}</div>
+  <header class="head">
+    <h1 class="page-title">{{ o.code }}</h1>
+    <span class="pill" [class]="status[o.status].cls">{{ status[o.status].label }}</span>
+    <span class="muted">Đặt lúc {{ v.created }} · {{ o.branchName }}</span>
+  </header>
+
+  <div class="layout">
+    <div class="stack">
+      <div class="card">
+        <b>Sản phẩm</b>
+        @for (l of o.items; track l.productId) {
+          <div class="line">
+            <i class="thumb" aria-hidden="true"></i>
+            <div class="grow"><div>{{ l.name }}</div><div class="muted small">{{ l.unitPrice | vnd }} / {{ l.unit }} · <span class="mono">{{ l.sku }}</span></div></div>
+            <span class="muted">× {{ l.quantity }}</span>
+            <b>{{ l.lineTotal | vnd }}</b>
+          </div>
+        }
+        <dl class="sum">
+          <dt class="muted">Tạm tính</dt><dd>{{ o.subtotal | vnd }}</dd>
+          <dt class="muted">Phí giao hàng</dt><dd>{{ o.shippingFee | vnd }}</dd>
+          @if (o.discount) {
+            <dt class="muted">Khuyến mãi{{ o.promoCode ? ' ' + o.promoCode : '' }}</dt><dd class="ok">−{{ o.discount | vnd }}</dd>
+          }
+          @if (o.tierDiscount) {
+            <dt class="muted">Ưu đãi hạng thành viên</dt><dd class="ok">−{{ o.tierDiscount | vnd }}</dd>
+          }
+          @if (o.pointsDiscount) {
+            <dt class="muted">Dùng {{ o.pointsUsed }} điểm</dt><dd class="ok">−{{ o.pointsDiscount | vnd }}</dd>
+          }
+          <dt><b>Tổng cộng</b></dt><dd><b class="total">{{ o.total | vnd }}</b></dd>
+        </dl>
+      </div>
+
+      <div class="two">
+        <div class="card">
+          <b>Khách hàng</b>
+          <div class="info">
+            <div>{{ d.customerName || o.shipping.recipient }}</div>
+            <div class="muted">{{ o.shipping.recipient }} · {{ o.shipping.phone }}</div>
+            <div class="muted">{{ v.address }}</div>
+            @if (o.customerNote) {<div class="muted">Ghi chú: {{ o.customerNote }}</div>}
+          </div>
+        </div>
+        <div class="card">
+          <b>Thanh toán &amp; giao hàng</b>
+          <dl class="kv">
+            <dt class="muted">Phương thức</dt><dd>{{ pay[o.paymentMethod] ?? o.paymentMethod }}</dd>
+            <dt class="muted">Trạng thái</dt><dd>{{ o.paymentStatus === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán' }}</dd>
+            <dt class="muted">Giao hàng</dt><dd>{{ ship[o.shippingMethod] ?? o.shippingMethod }}</dd>
+            <dt class="muted">Mã vận đơn</dt><dd class="mono">{{ o.trackingCode || '—' }}</dd>
+          </dl>
+          @if (o.paymentMethod === 'COD') {
+            <p class="muted small">Đơn COD tự động chuyển sang "Đã thanh toán" khi giao hàng thành công.</p>
+          } @else if (o.status === 'CANCELLED') {
+            <p class="muted small">Đơn đã hủy, không thể cập nhật thanh toán.</p>
+          } @else {
+            @if (o.paymentMethod === 'EWALLET' || o.paymentMethod === 'CARD') {
+              <p class="muted small">Chưa kết nối cổng thanh toán: nhân viên xử lý thủ công hình thức này, xác nhận khi đã nhận tiền.</p>
+            }
+            @if (o.paymentMethod === 'BANK_TRANSFER' && o.payment?.transferNote) {
+              <p class="muted small">Đối chiếu nội dung chuyển khoản: <span class="mono">{{ o.payment.transferNote }}</span></p>
+            }
+            <div class="row wrap actions">
+              @if (o.paymentStatus === 'PAID') {
+                <button type="button" class="btn secondary" [disabled]="busy()" (click)="setPaid(false)">Đánh dấu chưa thanh toán</button>
+              } @else {
+                <button type="button" class="btn" [disabled]="busy()" (click)="setPaid(true)">Xác nhận đã nhận tiền</button>
+              }
+            </div>
+          }
+          @if (payErr()) {<p class="err small" role="alert">{{ payErr() }}</p>}
+        </div>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="card">
+        <b>Cập nhật trạng thái</b>
+        <ol class="steps">
+          @for (s of steps(); track s.name) {
+            <li [class.reached]="s.reached" [class.cancel]="s.cancel">
+              <span class="mark" aria-hidden="true">{{ s.mark }}</span>
+              <div><div class="sname">{{ s.name }}</div><div class="muted small">{{ s.time }}</div></div>
+            </li>
+          }
+        </ol>
+        @if (next(); as n) {
+          @if (n.to === 'SHIPPING' && o.paymentMethod === 'BANK_TRANSFER' && o.paymentStatus !== 'PAID') {
+            <p class="warn small" role="alert">Cảnh báo: đơn chuyển khoản này chưa được xác nhận thanh toán. Hãy kiểm tra trước khi giao hàng.</p>
+          }
+          @if (n.to === 'SHIPPING') {
+            <div class="field">
+              <label for="trk">Mã vận đơn (bắt buộc)</label>
+              <input id="trk" class="input mono" maxlength="64" [value]="tracking()" (input)="tracking.set($any($event.target).value)">
+            </div>
+          }
+          <div class="row wrap actions">
+            <button type="button" class="btn grow" [disabled]="busy() || (n.to === 'SHIPPING' && !tracking().trim())" (click)="change(n.to)">{{ n.label }}</button>
+            <button type="button" class="btn danger" [disabled]="busy()" (click)="cancel()">Hủy đơn</button>
+          </div>
+        } @else {
+          <div class="row wrap actions">
+            <span class="muted grow">{{ o.status === 'DELIVERED' ? 'Đơn đã giao thành công.' : 'Đơn đã bị hủy.' }}</span>
+          </div>
+        }
+        @if (actionErr()) {<p class="err small" role="alert">{{ actionErr() }}</p>}
+      </div>
+
+      <div class="card">
+        <b>Ghi chú nội bộ</b>
+        <p class="muted small">Chỉ nhân viên chi nhánh thấy.</p>
+        @for (n of v.notes; track n.id) {
+          <p class="note"><b>{{ n.authorName }}</b> · {{ n.time }} — {{ n.body }}</p>
+        }
+        <div class="row">
+          <input class="input" #note maxlength="1000" placeholder="Thêm ghi chú…" aria-label="Ghi chú nội bộ" (keydown.enter)="addNote(note)">
+          <button type="button" class="btn secondary sm" [disabled]="busy()" (click)="addNote(note)">Thêm</button>
+        </div>
+        @if (noteErr()) {<p class="err small" role="alert">{{ noteErr() }}</p>}
+      </div>
+    </div>
+  </div>
+} @else {
+  <app-state-box kind="loading" message="Đang tải đơn hàng…" />
+}

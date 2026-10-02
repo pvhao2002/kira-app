@@ -1,0 +1,45 @@
+<div class="page">
+  <form class="card box" novalidate (submit)="$event.preventDefault(); confirm()">
+    <div class="icon" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"></rect><path d="M11 18h2"></path></svg>
+    </div>
+    <div>
+      <h1>Nhập mã xác thực</h1>
+      <div class="muted sub">
+        @if (auth.otp()?.enrolled === false) {
+          Đây là lần đầu bạn đăng nhập: thêm khóa bí mật bên dưới vào ứng dụng xác thực (Google Authenticator, Authy…), rồi nhập mã 6 số hiện trên ứng dụng.
+        } @else {
+          Nhập mã 6 số từ ứng dụng xác thực trên điện thoại của bạn.
+        }
+      </div>
+    </div>
+
+    @if (auth.otp()?.enrolled === false) {
+      @if (auth.enrollment(); as e) {
+        <div class="secret">
+          <div class="eyebrow">Khóa bí mật</div>
+          <div class="mono key">{{ e.secret }}</div>
+          <div class="eyebrow">Đường dẫn otpauth (dán vào ứng dụng hỗ trợ)</div>
+          <div class="mono uri">{{ e.otpauthUri }}</div>
+        </div>
+      } @else {
+        <span class="muted">Đang tạo khóa bí mật…</span>
+      }
+    }
+
+    <div class="digits" role="group" aria-label="Mã xác thực 6 số" (paste)="onPaste($event)">
+      @for (d of digits(); track $index; let i = $index) {
+        <input #cell class="cell" inputmode="numeric" maxlength="1" autocomplete="one-time-code"
+          [class.err]="error()" [value]="d" [attr.aria-label]="'Chữ số ' + (i + 1)"
+          (input)="onInput(i, $event)" (keydown)="onKey(i, $event)">
+      }
+    </div>
+    @if (error()) {
+      <span class="err-t" role="alert">{{ message() }}</span>
+    }
+
+    <button type="submit" class="btn block go" [disabled]="verifying() || (auth.otp()?.enrolled === false && !auth.enrollment())">{{ verifying() ? 'Đang xác nhận…' : 'Xác nhận' }}</button>
+
+    <a routerLink="/login" class="muted sm" (click)="auth.cancelOtp()">← Quay lại đăng nhập</a>
+  </form>
+</div>

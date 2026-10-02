@@ -1,0 +1,30 @@
+<article class="pc" [class.out]="product().outOfStock">
+  <a [routerLink]="['/products', product().slug]" class="media">
+    <app-image-slot [caption]="product().ph" [ratio]="'1 / 1'" [radius]="14" />
+    @if (product().badge) {
+      <span class="pill accent badge">{{ product().badge }}</span>
+    }
+  </a>
+  @if (product().productId !== undefined) {
+    <button type="button" class="heart" [class.on]="wish.has(product().productId)" [attr.aria-pressed]="wish.has(product().productId)"
+            aria-label="Yêu thích" (click)="wish.toggle(product().productId)">{{ wish.has(product().productId) ? '♥' : '♡' }}</button>
+  }
+  <div class="body">
+    <span class="eyebrow">{{ product().cat }}</span>
+    <a [routerLink]="['/products', product().slug]" class="name">{{ product().name }}</a>
+    <div class="meta">★ {{ product().rating }} · {{ product().reviews }} đánh giá</div>
+    <div class="meta">{{ product().origin }}</div>
+    <div class="price-row">
+      <span class="price">{{ product().price | vnd }}</span>
+      <span class="unit">/ {{ product().unit }}</span>
+      @if (product().old) {
+        <s class="old">{{ product().old! | vnd }}</s>
+      }
+    </div>
+    @if (product().outOfStock) {
+      <button class="btn secondary block" type="button">Báo khi có hàng</button>
+    } @else {
+      <button class="btn block" type="button" (click)="cart.add(product())">Thêm vào giỏ</button>
+    }
+  </div>
+</article>

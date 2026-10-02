@@ -1,0 +1,42 @@
+<div class="row head">
+  <h1 class="page-title">Sản phẩm yêu thích</h1><span class="spacer"></span>
+  <button type="button" class="btn" [disabled]="!inStockCount()" (click)="addAll()">Thêm tất cả vào giỏ</button>
+</div>
+<div class="row wrap tabs">
+  @for (t of tabs; track t; let i = $index) {
+    <button type="button" class="tab-pill" [class.on]="tab() === i" (click)="tab.set(i)">{{ t }} <span class="n">{{ counts()[i] }}</span></button>
+  }
+</div>
+@if (notice(); as n) { <div class="msg" role="alert">{{ n }}</div> }
+
+@if (loading()) {
+  <app-state-box kind="loading" message="Đang tải danh sách…" />
+} @else if (error()) {
+  <app-state-box kind="error" title="Không tải được danh sách" [message]="error()" [retryable]="true" (retry)="reload()" />
+} @else {
+  <div class="grid3">
+    @for (r of rows(); track r.w.productId) {
+      @let w = r.w;
+      <article class="card item">
+        <div class="photo">
+          <app-image-slot [caption]="w.name" [radius]="12" />
+          <button type="button" class="heart" aria-label="Bỏ yêu thích" [disabled]="r.removing" (click)="unlike(w)">♥</button>
+        </div>
+        <div class="name">{{ w.name }}</div>
+        <div class="avail"><span class="dot" [style.background]="r.inStock ? 'var(--primary)' : 'var(--danger)'"></span>{{ r.avail }}</div>
+        <div class="row foot">
+          <div><b>{{ r.price | vnd }}</b> <span class="muted">/ {{ w.unit }}</span></div>
+          <span class="spacer"></span>
+          @if (r.inStock) {
+            <button type="button" class="btn sm" [class.secondary]="r.added" (click)="add(w)">{{ r.added ? 'Đã thêm ✓' : 'Thêm vào giỏ' }}</button>
+          } @else {
+            <button type="button" class="btn secondary sm" disabled>Hết hàng</button>
+          }
+        </div>
+      </article>
+    }
+  </div>
+  @if (!shown().length) {
+    <app-state-box title="Chưa có sản phẩm" message="Bấm ♥ trên sản phẩm để lưu vào đây." />
+  }
+}

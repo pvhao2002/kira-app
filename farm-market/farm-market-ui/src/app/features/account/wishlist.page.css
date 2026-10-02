@@ -1,0 +1,14 @@
+:host { display: block; min-width: 0; }
+.head { margin-bottom: 20px; }
+.tabs { margin-bottom: 20px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+.item { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
+.photo { position: relative; }
+.heart { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--surface); color: var(--danger); font-size: 16px; }
+.drop { position: absolute; top: 8px; left: 8px; }
+.name { font-weight: 600; }
+.avail { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.foot { margin-top: auto; padding-top: 4px; flex-wrap: wrap; }
+.msg { font-size: 13px; padding: 10px 14px; border-radius: 12px; background: var(--surface-2); margin-bottom: 16px; }
+@media (max-width: 767px) { .grid3 { grid-template-columns: 1fr 1fr; gap: 12px; } .head { flex-wrap: wrap; } }

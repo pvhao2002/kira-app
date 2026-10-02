@@ -1,0 +1,19 @@
+<div class="shell">
+  <aside class="side" aria-label="Điều hướng quản trị">
+    <a routerLink="/" class="logo" aria-label="Kira Farm - Trang chủ"><app-logo [size]="28" /></a>
+    <label class="br">
+      <span>Chi nhánh</span>
+      <select aria-label="Chi nhánh làm việc" (change)="pick($event)">
+        @for (i of allowed(); track i) {
+          <option [value]="i" [selected]="i === branch.index()">{{ branch.branches[i]?.name }}</option>
+        }
+      </select>
+    </label>
+    @for (n of nav(); track n.link) {
+      <a class="item" [routerLink]="n.link" routerLinkActive="on" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{exact: n.exact ?? false}">{{ n.label }}</a>
+    }
+    <span class="grow"></span>
+    <button type="button" class="out" (click)="logout()">Đăng xuất ({{ auth.user()?.name }})</button>
+  </aside>
+  <main class="main"><router-outlet /></main>
+</div>

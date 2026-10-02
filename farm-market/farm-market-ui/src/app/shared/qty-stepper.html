@@ -1,0 +1,5 @@
+<div class="q">
+  <button type="button" aria-label="Giảm" [disabled]="value() <= min()" (click)="changed.emit(value() - 1)">−</button>
+  <span>{{ value() }}</span>
+  <button type="button" aria-label="Tăng" (click)="changed.emit(value() + 1)">+</button>
+</div>

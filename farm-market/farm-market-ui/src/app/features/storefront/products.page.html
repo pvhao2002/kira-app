@@ -1,0 +1,121 @@
+<div class="container">
+  <nav class="crumb" aria-label="Breadcrumb"><a routerLink="/">Trang chủ</a> / <b>Sản phẩm</b></nav>
+  <div class="top">
+    <h1 class="page-title title">Tất cả sản phẩm</h1>
+    <div class="search">
+      <form class="search-box" (submit)="$event.preventDefault(); submit()">
+        <input class="input" type="search" placeholder="Tìm gà, trứng, SKU…" aria-label="Tìm sản phẩm"
+          [value]="qText()" (input)="onType($event)" (focus)="focused.set(true)" (blur)="blur()">
+      </form>
+      @if (focused() && suggestions().length) {
+        <div class="sugg" role="listbox">
+          <div class="sugg-h">Sản phẩm</div>
+          @for (s of suggestions(); track s.id; let i = $index) {
+            <a class="sugg-row" [class.on]="i === 0" role="option" [routerLink]="['/products', s.slug]">
+              <span class="sugg-img"><app-image-slot caption="Ảnh" [radius]="8" ratio="1 / 1" /></span>
+              <span class="grow">{{ s.name }}</span>
+              <span class="mono sku">{{ s.price | vnd }}</span>
+            </a>
+          }
+          @if (suggestCat(); as c) {
+            <a class="sugg-cat" routerLink="/products" [queryParams]="{cat: c.slug}">Danh mục: {{ c.name }} ({{ c.count }} sản phẩm) →</a>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <button type="button" class="btn secondary filter-toggle" [attr.aria-expanded]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())">
+    Bộ lọc{{ chips().length ? ' (' + chips().length + ')' : '' }}
+  </button>
+
+  <div class="layout">
+    <aside class="filters" [class.open]="filtersOpen()">
+      <div>
+        <div class="f-title">Danh mục</div>
+        <div class="f-list">
+          @for (c of categories(); track c.id) {
+            <label class="check">
+              <input type="checkbox" [checked]="cat() === c.slug" (change)="toggleCat(c.slug)">
+              <span class="box">{{ cat() === c.slug ? '✓' : '' }}</span>
+              <span class="grow">{{ c.name }}</span>
+              <span class="cnt">{{ c.count }}</span>
+            </label>
+          }
+        </div>
+      </div>
+      <div>
+        <div class="f-title">Khoảng giá</div>
+        <div class="row">
+          <input class="input" type="number" min="0" step="1000" placeholder="₫20.000" aria-label="Giá từ" [value]="minPrice() ?? ''" (change)="setPrice('min', $event)">
+          <input class="input" type="number" min="0" step="1000" placeholder="₫250.000" aria-label="Giá đến" [value]="maxPrice() ?? ''" (change)="setPrice('max', $event)">
+        </div>
+      </div>
+      <div>
+        <div class="f-title">Chi nhánh</div>
+        <select class="input" aria-label="Chi nhánh" [value]="branch.index()" (change)="pickBranch($event)">
+          @for (b of branch.branches; track b.id; let i = $index) {
+            <option [value]="i" [selected]="i === branch.index()">{{ b.name }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <div class="f-title">Tình trạng</div>
+        <div class="row between">
+          <span>Còn hàng tại chi nhánh</span>
+          <button type="button" class="toggle" [class.on]="inStock()" role="switch" [attr.aria-checked]="inStock()" aria-label="Chỉ hiện sản phẩm còn hàng" (click)="inStock.set(!inStock())"></button>
+        </div>
+      </div>
+    </aside>
+
+    <section>
+      <div class="bar">
+        <div class="row wrap">
+          <span class="muted">{{ total() }} sản phẩm</span>
+          @for (c of chips(); track c.key) {
+            <button type="button" class="chip" (click)="c.clear()">{{ c.label }} ✕</button>
+          }
+        </div>
+        <label class="sort">Sắp xếp:
+          <select aria-label="Sắp xếp" (change)="onSort($event)">
+            @for (s of sorts; track s.id) {
+              <option [value]="s.id" [selected]="s.id === sort()">{{ s.name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      @if (loading()) {
+        <div class="grid-p">
+          @for (n of skeletons; track n) {
+            <div class="skel" aria-hidden="true">
+              <div class="s-img"></div>
+              <div class="s-line w40"></div><div class="s-line w85"></div><div class="s-line w60"></div>
+            </div>
+          }
+        </div>
+      } @else if (error()) {
+        <app-state-box kind="error" title="Không tải được sản phẩm." [message]="error()" [retryable]="true" (retry)="reload()" />
+      } @else if (!items().length) {
+        <app-state-box title="Không tìm thấy sản phẩm phù hợp." message="Thử bỏ bớt bộ lọc hoặc đổi từ khóa tìm kiếm.">
+          <button type="button" class="btn" (click)="reset()">Xóa bộ lọc</button>
+        </app-state-box>
+      } @else {
+        <div class="grid-p">
+          @for (p of items(); track p.id) {
+            <app-product-card [product]="p" />
+          }
+        </div>
+        @if (pages() > 1) {
+          <nav class="pager" aria-label="Phân trang">
+            <button type="button" class="pg" aria-label="Trang trước" [disabled]="page() === 1" (click)="page.set(page() - 1)">‹</button>
+            @for (n of pageNums(); track n) {
+              <button type="button" class="pg" [class.on]="n === page()" [attr.aria-current]="n === page() ? 'page' : null" (click)="page.set(n)">{{ n }}</button>
+            }
+            <button type="button" class="pg" aria-label="Trang sau" [disabled]="page() === pages()" (click)="page.set(page() + 1)">›</button>
+          </nav>
+        }
+      }
+    </section>
+  </div>
+</div>

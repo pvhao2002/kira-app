@@ -1,0 +1,60 @@
+<div class="container">
+  <div class="head">
+    <h1 class="page-title">Giỏ hàng</h1>
+    <span class="muted">{{ cart.count() }} sản phẩm</span>
+  </div>
+
+  @if (cart.lines().length === 0) {
+    <div class="empty">
+      <div class="egg-wrap"><div class="egg"></div></div>
+      <div class="serif title">Giỏ hàng của bạn đang trống.</div>
+      <div class="muted">Trứng mới thu hoạch mỗi sáng.</div>
+      <a class="btn" routerLink="/products">Khám phá sản phẩm</a>
+    </div>
+  } @else {
+    <div class="layout">
+      <div>
+        <div class="ship-note" role="status">
+          @if (cart.freeShipRemaining() > 0) {
+            Thêm <b>{{ cart.freeShipRemaining() | vnd }}</b> để được miễn phí giao hàng
+          } @else {
+            Đơn của bạn đã được miễn phí giao hàng
+          }
+          <div class="bar"><div class="fill" [style.width.%]="progress()"></div></div>
+        </div>
+
+        <ul class="lines">
+          @for (l of cart.lines(); track l.id) {
+            <li class="line">
+              <div class="thumb"><app-image-slot caption="Ảnh" [radius]="12" ratio="1 / 1" /></div>
+              <div class="mid">
+                <div class="name-row">
+                  <span class="name">{{ l.name }}</span>
+                  <button type="button" class="x" [attr.aria-label]="'Xóa ' + l.name" (click)="cart.remove(l.id)">✕</button>
+                </div>
+                <span class="muted sm">{{ l.unitLabel ? l.unitLabel + ' · ' : '' }}{{ l.unitPrice | vnd }}{{ l.unit ? ' / ' + l.unit : '' }}</span>
+                <div class="bottom">
+                  <app-qty-stepper [value]="l.qty" (changed)="cart.setQty(l.id, $event)" />
+                  <b class="sub">{{ l.unitPrice * l.qty | vnd }}</b>
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+      </div>
+
+      <aside class="summary">
+        <div class="rows">
+          <span class="muted">Tạm tính</span><span>{{ cart.subtotal() | vnd }}</span>
+          <span class="muted">Phí giao hàng</span><span>{{ cart.shipFee() | vnd }}</span>
+          @if (cart.discount() > 0) {
+            <span class="muted">Giảm giá</span><span class="green">−{{ cart.discount() | vnd }}</span>
+          }
+          <b class="tot-l">Tổng cộng</b><b class="tot">{{ cart.total() | vnd }}</b>
+        </div>
+        <a class="btn block go" routerLink="/checkout">Tiến hành thanh toán</a>
+        <a class="btn ghost block" routerLink="/products">Tiếp tục mua sắm</a>
+      </aside>
+    </div>
+  }
+</div>

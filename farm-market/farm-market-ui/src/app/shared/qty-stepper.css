@@ -1,0 +1,4 @@
+.q { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+button { width: 34px; height: 34px; border: 0; background: transparent; font-size: 18px; border-radius: 50%; }
+button:disabled { opacity: .35; cursor: not-allowed; }
+span { min-width: 28px; text-align: center; font-weight: 600; }

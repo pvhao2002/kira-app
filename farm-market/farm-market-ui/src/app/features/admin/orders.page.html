@@ -1,0 +1,59 @@
+<header class="head">
+  <div>
+    <div class="eyebrow">Đơn hàng</div>
+    <h1 class="page-title">Đơn hàng · {{ branch.current().short }}</h1>
+  </div>
+</header>
+
+<div class="row wrap tabs" role="tablist">
+  @for (t of tabs(); track t.key) {
+    <button type="button" role="tab" class="tab-pill" [class.on]="tab() === t.key" [attr.aria-selected]="tab() === t.key" (click)="setTab(t.key)">
+      {{ t.name }} <span class="n">{{ t.n }}</span>
+    </button>
+  }
+</div>
+
+<div class="card panel" [attr.aria-busy]="list.isLoading()">
+  <div class="row wrap filters">
+    <input class="input search" type="search" placeholder="Tìm mã đơn, tên, số điện thoại…" aria-label="Tìm đơn hàng" [value]="qInput()" (input)="onSearch($any($event.target).value)">
+    <label class="date">Từ <input class="input" type="date" [value]="from()" (change)="setDate('from', $any($event.target).value)"></label>
+    <label class="date">Đến <input class="input" type="date" [value]="to()" (change)="setDate('to', $any($event.target).value)"></label>
+  </div>
+  @if (list.error()) {
+    <app-state-box kind="error" [message]="error()" [retryable]="true" (retry)="list.reload()" />
+  } @else if (!list.hasValue()) {
+    <app-state-box kind="loading" message="Đang tải đơn hàng…" />
+  } @else if (rows().length) {
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày đặt</th><th>SP</th><th>Tổng tiền</th><th>Thanh toán</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+          @for (o of rows(); track o.code) {
+            <tr class="clickable" (click)="open(o.code)">
+              <td><a class="mono id" [routerLink]="['/admin/orders', o.code]" (click)="$event.stopPropagation()">{{ o.code }}</a></td>
+              <td><div>{{ o.customerName || o.recipient }}</div>@if (o.customerName && o.recipient !== o.customerName) {<div class="muted small">Nhận: {{ o.recipient }}</div>}</td>
+              <td>{{ o.time }}</td>
+              <td>{{ o.itemCount }}</td>
+              <td><b>{{ o.total | vnd }}</b></td>
+              <td>{{ o.pay }}</td>
+              <td><span class="pill" [class]="status[o.status].cls">{{ status[o.status].label }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <app-state-box kind="empty" message="Không có đơn hàng nào phù hợp." />
+  }
+  @if (list.hasValue()) {
+    <div class="row foot">
+      <span class="muted">Hiển thị {{ list.value().data.length }} / {{ list.value().meta.totalElements }} đơn</span>
+      <span class="spacer"></span>
+      <div class="row">
+        <button type="button" class="pg" aria-label="Trang trước" [disabled]="page() === 0" (click)="page.set(page() - 1)">‹</button>
+        <span class="muted">Trang {{ page() + 1 }} / {{ list.value().meta.totalPages || 1 }}</span>
+        <button type="button" class="pg" aria-label="Trang sau" [disabled]="page() + 1 >= list.value().meta.totalPages" (click)="page.set(page() + 1)">›</button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,110 @@
+<header class="head">
+  <div>
+    <div class="eyebrow">Sản phẩm</div>
+    <h1 class="page-title">{{ branch.current().name }}</h1>
+  </div>
+  @if (canWrite()) {<button type="button" class="btn" (click)="create()">+ Thêm sản phẩm</button>}
+</header>
+
+<div class="row wrap chips">
+  @for (i of auth.allowedBranches(); track i) {
+    <button type="button" class="chipb" [class.on]="i === branch.index()" (click)="pick(i)">
+      <i class="dot" [style.background]="branch.themeOf(i).primary"></i>{{ branch.branches[i].short }}
+    </button>
+  }
+</div>
+
+<div class="layout" [class.open]="draft() !== null">
+  <div class="card panel">
+    <div class="row wrap bar">
+      <div class="row wrap" role="tablist">
+        @for (t of tabs; track t.key) {
+          <button type="button" role="tab" class="tab-pill" [class.on]="tab() === t.key" [attr.aria-selected]="tab() === t.key" (click)="setTab(t.key)">{{ t.name }}</button>
+        }
+      </div>
+      <input class="input search" type="search" placeholder="Tìm tên, SKU…" aria-label="Tìm sản phẩm" [value]="qInput()" (input)="onSearch($any($event.target).value)">
+    </div>
+    @if (list.error()) {
+      <app-state-box kind="error" [message]="error()" [retryable]="true" (retry)="list.reload()" />
+    } @else if (!list.hasValue()) {
+      <app-state-box kind="loading" message="Đang tải sản phẩm…" />
+    } @else if (list.value().data.length) {
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Sản phẩm</th><th>Nhóm tương tự</th><th>Giá</th><th>Tồn</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            @for (p of list.value().data; track p.id) {
+              <tr [class.clickable]="canWrite()" [class.sel]="draft()?.id === p.id" tabindex="0" (click)="edit(p)" (keydown.enter)="edit(p)">
+                <td>
+                  <div class="row"><i class="thumb" aria-hidden="true"></i><div><div>{{ p.name }}</div><div class="muted small mono">{{ p.sku }}</div></div></div>
+                </td>
+                <td><span class="pill">{{ p.groupName || '—' }}</span></td>
+                <td><b>{{ p.price | vnd }}</b>@if (p.oldPrice) { <s class="muted small">{{ p.oldPrice | vnd }}</s>} <span class="muted small">/ {{ p.unit }}</span></td>
+                <td [class.low]="p.available < 10" [class.bad]="p.available === 0">{{ p.available }}</td>
+                <td><span class="pill" [class]="statusMap[p.status].cls">{{ statusMap[p.status].label }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="row foot">
+        <span class="muted">{{ list.value().data.length }} / {{ list.value().meta.totalElements }} sản phẩm</span>
+        <span class="spacer"></span>
+        <button type="button" class="pg" aria-label="Trang trước" [disabled]="page() === 0" (click)="page.set(page() - 1)">‹</button>
+        <span class="muted">Trang {{ page() + 1 }} / {{ list.value().meta.totalPages || 1 }}</span>
+        <button type="button" class="pg" aria-label="Trang sau" [disabled]="page() + 1 >= list.value().meta.totalPages" (click)="page.set(page() + 1)">›</button>
+      </div>
+    } @else {
+      <app-state-box kind="empty" message="Không có sản phẩm phù hợp." />
+    }
+  </div>
+
+  @if (draft(); as d) {
+    <aside class="card drawer" role="dialog" [attr.aria-label]="d.id ? 'Sửa sản phẩm' : 'Thêm sản phẩm'" (keydown.escape)="close()">
+      <div class="row between"><b>{{ d.id ? 'Sửa sản phẩm' : 'Thêm sản phẩm' }}</b><button type="button" class="x" aria-label="Đóng" (click)="close()">✕</button></div>
+      <div class="field"><label for="pn">Tên sản phẩm</label><input id="pn" class="input" maxlength="200" [value]="d.name" (input)="patch('name', $any($event.target).value)"></div>
+      <div class="grid2">
+        <div class="field"><label for="pk">SKU</label><input id="pk" class="input mono" maxlength="40" [value]="d.sku" (input)="patch('sku', $any($event.target).value)"></div>
+        <div class="field">
+          <label for="pc">Danh mục</label>
+          <select id="pc" class="input" (change)="patch('category', $any($event.target).value)">
+            @for (c of categories(); track c.slug) {<option [value]="c.slug" [selected]="c.slug === d.category">{{ c.name }}</option>}
+          </select>
+        </div>
+        <div class="field"><label for="pp">Giá (₫)</label><input id="pp" class="input" inputmode="numeric" [value]="d.price" (input)="patchNum('price', $any($event.target).value)"></div>
+        <div class="field"><label for="ps">Giá gốc gạch ngang (₫)</label><input id="ps" class="input" inputmode="numeric" placeholder="Không" [value]="d.oldPrice ?? ''" (input)="patchOld($any($event.target).value)"></div>
+        <div class="field"><label for="pt">Tồn kho{{ d.id ? ' (' + d.reserved + ' đang giữ)' : ' ban đầu' }}</label><input id="pt" class="input" inputmode="numeric" [value]="d.stock" (input)="patchNum('stock', $any($event.target).value)"></div>
+        <div class="field">
+          <label for="pst">Trạng thái</label>
+          <select id="pst" class="input" (change)="patch('status', $any($event.target).value)">
+            @for (s of statusKeys; track s) {<option [value]="s" [selected]="s === d.status">{{ statusMap[s].label }}</option>}
+          </select>
+        </div>
+      </div>
+      @if (d.id && d.stock !== d.onHand) {
+        <div class="field">
+          <label for="pr">Lý do điều chỉnh tồn kho ({{ d.onHand }} → {{ d.stock }})</label>
+          <input id="pr" class="input" maxlength="255" placeholder="Ví dụ: kiểm kho cuối ngày" [value]="d.reason" (input)="patch('reason', $any($event.target).value)">
+        </div>
+      }
+      <div class="field">
+        <span class="label">Đơn vị</span>
+        <div class="row wrap">
+          @for (u of units; track u) {
+            <button type="button" class="chipb" [class.on]="d.unit.toLowerCase() === u.toLowerCase()" (click)="patch('unit', u.toLowerCase())">{{ u }}</button>
+          }
+        </div>
+      </div>
+      <div class="row rec">
+        <span class="grow">Gợi ý sản phẩm của chi nhánh khác khi khách xem sản phẩm này</span>
+        <button type="button" class="toggle" [class.on]="d.suggest" role="switch" [attr.aria-checked]="d.suggest" aria-label="Gợi ý sản phẩm của chi nhánh khác" (click)="patch('suggest', !d.suggest)"></button>
+      </div>
+      @if (err()) {<p class="err small" role="alert">{{ err() }}</p>}
+      <div class="row foot2">
+        @if (d.id) {<button type="button" class="btn danger" [disabled]="busy()" (click)="hide()">Ẩn</button>}
+        <button type="button" class="btn secondary grow" [disabled]="busy()" (click)="close()">Hủy</button>
+        <button type="button" class="btn grow" [disabled]="busy()" (click)="save()">{{ busy() ? 'Đang lưu…' : 'Lưu' }}</button>
+      </div>
+    </aside>
+  }
+</div>

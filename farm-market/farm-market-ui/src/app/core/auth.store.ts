@@ -1,5 +1,5 @@
-import {Injectable, computed, inject, signal} from '@angular/core';
-import {Api} from './api';
+import {Service, computed, effect, inject, signal, untracked} from '@angular/core';
+import {Api, apiResource} from './api';
 
 export type Role = 'customer' | 'staff' | 'manager' | 'admin';
 
@@ -31,12 +31,12 @@ export interface AuthUser {
 }
 
 /** Demo accounts matching the mockup's redirect rules (screen 6d); the dev seed creates them with a shared password. */
-export const DEMO_PASSWORD = 'Doinang@123';
+export const DEMO_PASSWORD = 'KiraFarm@123';
 export const DEMO_USERS: AuthUser[] = [
   {role: 'customer', label: 'Khách hàng', name: 'Lan', email: 'lan.nguyen@gmail.com', branches: [], dest: '/account', destDesc: 'Trang tài khoản: đơn hàng, địa chỉ, wishlist. Nếu đang thanh toán dở, quay lại /checkout.'},
-  {role: 'staff', label: 'Nhân viên chi nhánh', name: 'Minh', email: 'minh.tran@doinang.vn', branches: [0], dest: '/admin/orders', destDesc: 'Danh sách đơn hàng của chi nhánh Quận 7, sau bước OTP.'},
-  {role: 'manager', label: 'Quản lý nhiều chi nhánh', name: 'Ngọc', email: 'ngoc.le@doinang.vn', branches: [1, 2], dest: '/admin', destDesc: 'Chọn chi nhánh làm việc, sau đó vào trang tổng quan của chi nhánh đó.'},
-  {role: 'admin', label: 'Quản trị viên', name: 'Toàn', email: 'admin@doinang.vn', branches: [0, 1, 2, 3, 4], dest: '/admin', destDesc: 'Tổng quan tất cả chi nhánh, có quyền cấu hình màu và phân quyền.'}
+  {role: 'staff', label: 'Nhân viên chi nhánh', name: 'Minh', email: 'minh.tran@kirafarm.vn', branches: [0], dest: '/admin/orders', destDesc: 'Danh sách đơn hàng của chi nhánh Quận 7, sau bước OTP.'},
+  {role: 'manager', label: 'Quản lý nhiều chi nhánh', name: 'Ngọc', email: 'ngoc.le@kirafarm.vn', branches: [1, 2], dest: '/admin', destDesc: 'Chọn chi nhánh làm việc, sau đó vào trang tổng quan của chi nhánh đó.'},
+  {role: 'admin', label: 'Quản trị viên', name: 'Toàn', email: 'admin@kirafarm.vn', branches: [0, 1, 2, 3, 4], dest: '/admin', destDesc: 'Tổng quan tất cả chi nhánh, có quyền cấu hình màu và phân quyền.'}
 ];
 
 interface ApiProfile {
@@ -67,7 +67,7 @@ export interface OtpEnrollment {
   otpauthUri: string;
 }
 
-const SESSION_HINT = 'doinang-session';
+const SESSION_HINT = 'kirafarm-session';
 const hint = {
   has: () => { try { return localStorage.getItem(SESSION_HINT) === '1'; } catch { return false; } },
   set: (on: boolean) => { try { on ? localStorage.setItem(SESSION_HINT, '1') : localStorage.removeItem(SESSION_HINT); } catch { /* ignore */ } }
@@ -84,7 +84,7 @@ const DEST: Record<Role, {label: string; dest: string; destDesc: string}> = {
  * Session state. The access token lives only in memory; the refresh token is an HttpOnly cookie
  * (`farm_refresh`), so a page reload restores the session through `restore()`.
  */
-@Injectable({providedIn: 'root'})
+@Service()
 export class AuthStore {
   private readonly api = inject(Api);
 
@@ -156,9 +156,19 @@ export class AuthStore {
     }
   }
 
-  /** Reloads the editable profile fields (phone, birth date, gender) from GET /auth/me. */
-  async loadProfile(): Promise<void> {
-    this.merge(await this.api.get<ApiProfile>('/auth/me'));
+  /**
+   * GET /auth/me for customers (editable profile fields: phone, birth date, gender). Keyed on the user id so merging the
+   * response back into `user` does not retrigger the request. Use `profile.reload()` to refresh.
+   */
+  readonly profile = apiResource<ApiProfile>(() => (this.profileKey() ? {path: '/auth/me'} : undefined));
+  private readonly profileKey = computed(() => (this.user()?.role === 'customer' ? this.user()?.id : undefined));
+
+  constructor() {
+    effect(() => {
+      // value() throws while the resource is in the error state, so read it only when there is one.
+      const p = this.profile.hasValue() ? this.profile.value() : undefined;
+      if (p) untracked(() => this.merge(p));
+    });
   }
 
   /** PUT /auth/me; throws ApiError (fieldErrors) on validation problems. Keeps the header name in sync. */

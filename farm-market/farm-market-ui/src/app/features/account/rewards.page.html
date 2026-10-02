@@ -1,0 +1,81 @@
+<h1 class="page-title">Điểm thưởng</h1>
+@if (error()) { <div class="msg err" role="alert">{{ error() }} <button type="button" class="btn sm" (click)="reload()">Thử lại</button></div> }
+@if (notice(); as n) { <div class="msg" [class.err]="noticeErr()" [attr.role]="noticeErr() ? 'alert' : 'status'" aria-live="polite">{{ n }}</div> }
+
+@if (sum(); as s) {
+<section class="top">
+  <div class="hero">
+    <div class="row"><span>Điểm hiện có</span><span class="spacer"></span><span class="pill accent">Hạng {{ s.tier.label }}</span></div>
+    <div class="big serif">{{ num(s.balance) }} <small>điểm</small></div>
+    <div class="note">1 điểm = {{ s.pointValueVnd | vnd }} khi thanh toán@if (s.expiringSoonPoints) { · {{ num(s.expiringSoonPoints) }} điểm hết hạn ngày {{ date(s.expiringSoonAt) }} }</div>
+    <div class="tiers">
+      <div class="tier cur"><div class="seg"></div><div class="tn">{{ s.tier.label }}</div><div class="tm">từ {{ num(s.tier.minPoints) }} điểm</div></div>
+      @if (s.nextTier; as n) {
+        <div class="tier off"><div class="seg"></div><div class="tn">{{ n.label }}</div><div class="tm">từ {{ num(n.minPoints) }} điểm · còn {{ num(s.pointsToNextTier) }}</div></div>
+      }
+    </div>
+  </div>
+  <div class="card">
+    <h2>Quyền lợi hạng {{ s.tier.label }}</h2>
+    @for (p of s.tier.perks; track p) { <div class="perk"><span class="tick">✓</span><span>{{ p }}</span></div> }
+    @if (s.nextTier; as n) {
+      <div class="muted next">Lên {{ n.label }} khi đạt {{ num(n.minPoints) }} điểm tích lũy trong năm (hiện có {{ num(s.yearPoints) }}).
+        Quyền lợi: {{ n.perks.join('; ') }}</div>
+    }
+  </div>
+</section>
+} @else if (loading()) {
+  <app-state-box kind="loading" message="Đang tải…" />
+}
+
+<div class="row sec"><h2>Đổi điểm lấy ưu đãi</h2><span class="spacer"></span><span class="pill ok">{{ availableVouchers() }} mã đang có</span></div>
+<div class="rewards">
+  @for (x of rewardRows(); track x.r.id) {
+    @let r = x.r;
+    <div class="card rw">
+      <div class="serif rv">{{ r.title }}</div>
+      <div class="muted">{{ r.minOrder ? 'Cho đơn từ ' + (r.minOrder | vnd) : 'Không yêu cầu đơn tối thiểu' }} · hạn {{ r.validDays }} ngày</div>
+      <div class="row foot">
+        <span class="muted">{{ num(r.pointsCost) }} điểm</span><span class="spacer"></span>
+        <button type="button" class="btn sm" [class.secondary]="!x.can" [disabled]="!x.can" (click)="redeem(r)">{{ redeemingId() === r.id ? 'Đang đổi…' : 'Đổi' }}</button>
+      </div>
+    </div>
+  }
+</div>
+
+@if (vouchers().length) {
+  <div class="card hist vch">
+    <h2>Mã giảm giá của tôi</h2>
+    @for (v of vouchers(); track v.id) {
+      <div class="row hrow">
+        <div class="grow"><div><b>{{ v.code }}</b> · {{ v.title }}</div><div class="muted">Hết hạn {{ date(v.expiresAt) }}</div></div>
+        <span class="pill" [class.ok]="v.status === 'AVAILABLE'">{{ v.status === 'AVAILABLE' ? 'Dùng được' : v.status === 'USED' ? 'Đã dùng' : 'Hết hạn' }}</span>
+      </div>
+    }
+  </div>
+}
+
+<div class="card hist">
+  <div class="row wrap"><h2>Lịch sử điểm</h2><span class="spacer"></span>
+    @for (t of tabs; track t[1]) {
+      <button type="button" class="tab-pill" [class.on]="tab() === t[1]" (click)="setTab(t[1])">{{ t[0] }}</button>
+    }
+  </div>
+  @for (x of historyRows(); track x.h.id) {
+    @let h = x.h;
+    <div class="row hrow">
+      <span class="sign" [class.neg]="h.delta < 0">{{ h.delta > 0 ? '+' : '−' }}</span>
+      <div class="grow"><div>{{ x.desc }}</div><div class="muted">{{ date(h.createdAt) }}</div></div>
+      <b [class.negt]="h.delta < 0">{{ h.delta > 0 ? '+' : '−' }}{{ x.abs }}</b>
+    </div>
+  } @empty {
+    @if (histLoading()) {
+      <app-state-box kind="loading" message="Đang tải…" />
+    } @else {
+      <app-state-box message="Chưa có giao dịch điểm." />
+    }
+  }
+  @if (page() + 1 < totalPages()) {
+    <button type="button" class="btn secondary sm more" [disabled]="moreBusy()" (click)="more()">Xem thêm</button>
+  }
+</div>

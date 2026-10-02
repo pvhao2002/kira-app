@@ -1,0 +1,15 @@
+:host { display: block; }
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.tabs { margin-bottom: 16px; }
+.panel { padding: 0; overflow: hidden; }
+.filters { padding: 16px; border-bottom: 1px solid var(--border); }
+.search { max-width: 340px; flex: 1 1 220px; padding: 10px 14px; }
+.date { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.date .input { padding: 8px 10px; }
+.small { font-size: 12px; }
+.id { color: var(--primary); font-weight: 600; }
+.foot { padding: 14px 16px; }
+.pg { min-width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.pg:disabled { opacity: .4; }
+.panel ::ng-deep .state-box { border: 0; border-radius: 0; }
+@media (max-width: 767px) { .search { max-width: none; } }

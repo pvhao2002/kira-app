@@ -1,0 +1,7 @@
+:host { display: inline-flex; align-items: center; gap: .4em; line-height: 1; }
+.mark { width: var(--logo-size, 30px); height: var(--logo-size, 30px); flex: none; }
+.disc { fill: var(--accent); stroke: var(--primary); stroke-width: 2; }
+.ground, .stem { fill: none; stroke: var(--primary); stroke-width: 2.4; stroke-linecap: round; }
+.leaf { fill: var(--primary); }
+.word { font-family: var(--serif); font-weight: 500; letter-spacing: -.02em; white-space: nowrap; }
+.word em { font-style: italic; font-weight: 400; }

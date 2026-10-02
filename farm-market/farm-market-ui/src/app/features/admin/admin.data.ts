@@ -1,4 +1,4 @@
-import {PageResponse} from '../../core/api';
+import {PageResponse, toApiError} from '../../core/api';
 
 /** Shared types/labels for the admin screens (data comes from the API). Money is integer VND. */
 
@@ -36,11 +36,11 @@ export const LOW_STOCK_LIMIT = 10;
 /** List endpoints return `{data, meta}`. */
 export type Paged<T> = PageResponse<T>;
 
-/** User-facing text for a thrown ApiError (or the Error Angular's resource() wraps around it). */
+/** User-facing text for an error (field errors joined, else the message). */
 export function errMsg(e: unknown): string {
-  const x = ((e as {cause?: unknown})?.cause ?? e) as {message?: string; fieldErrors?: Record<string, string>} | undefined;
-  const fields = Object.values(x?.fieldErrors ?? {});
-  return fields.length ? fields.join(' · ') : (x?.message ?? 'Đã có lỗi xảy ra.');
+  const x = toApiError(e);
+  const fields = Object.values(x.fieldErrors);
+  return fields.length ? fields.join(' · ') : x.message;
 }
 
 const TZ = 'Asia/Ho_Chi_Minh';

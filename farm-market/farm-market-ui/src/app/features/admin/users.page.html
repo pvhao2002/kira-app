@@ -1,0 +1,65 @@
+<header class="head">
+  <div>
+    <div class="eyebrow">Quản trị</div>
+    <h1 class="page-title">Người dùng &amp; phân quyền chi nhánh</h1>
+  </div>
+</header>
+
+<div class="card panel">
+  <div class="row wrap bar">
+    <input class="input search" type="search" placeholder="Tìm tên, email…" aria-label="Tìm người dùng" [value]="qInput()" (input)="onSearch($any($event.target).value)">
+  </div>
+  @if (list.error()) {
+    <app-state-box kind="error" [message]="error()" [retryable]="true" (retry)="list.reload()" />
+  } @else if (!list.hasValue()) {
+    <app-state-box kind="loading" message="Đang tải người dùng…" />
+  } @else if (rows().length) {
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Người dùng</th><th>Vai trò</th><th>Tài khoản</th><th>Chi nhánh được phân công</th><th></th></tr></thead>
+        <tbody>
+          @for (u of rows(); track u.id) {
+            <tr>
+              <td><div>{{ u.fullName }}</div><div class="muted small">{{ u.email }}</div></td>
+              <td>{{ u.roleLabel }}</td>
+              <td><span class="pill" [class]="u.status === 'ACTIVE' ? 'ok' : 'bad'">{{ u.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa' }}</span></td>
+              <td>
+                @if (u.role === 'admin') {
+                  <span class="muted">Tất cả chi nhánh</span>
+                } @else if (editing()?.id === u.id) {
+                  <div class="row wrap">
+                    @for (b of branch.branches; track b.id; let i = $index) {
+                      <button type="button" class="chipb" [class.on]="sel().includes(i + 1)" [attr.aria-pressed]="sel().includes(i + 1)" (click)="toggle(i + 1)">{{ b.short }}</button>
+                    }
+                  </div>
+                } @else {
+                  {{ u.branchText }}
+                }
+              </td>
+              <td class="acts">
+                @if (u.role !== 'admin') {
+                  @if (editing()?.id === u.id) {
+                    <button type="button" class="btn sm" [disabled]="busy()" (click)="save()">{{ busy() ? 'Đang lưu…' : 'Lưu' }}</button>
+                    <button type="button" class="btn secondary sm" [disabled]="busy()" (click)="editing.set(null)">Hủy</button>
+                  } @else {
+                    <button type="button" class="btn secondary sm" [disabled]="busy()" (click)="edit(u)">Phân công</button>
+                  }
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="row foot">
+      <span class="muted">{{ list.value().data.length }} / {{ list.value().meta.totalElements }} người dùng</span>
+      <span class="spacer"></span>
+      <button type="button" class="pg" aria-label="Trang trước" [disabled]="page() === 0" (click)="page.set(page() - 1)">‹</button>
+      <span class="muted">Trang {{ page() + 1 }} / {{ list.value().meta.totalPages || 1 }}</span>
+      <button type="button" class="pg" aria-label="Trang sau" [disabled]="page() + 1 >= list.value().meta.totalPages" (click)="page.set(page() + 1)">›</button>
+    </div>
+  } @else {
+    <app-state-box kind="empty" message="Không tìm thấy người dùng." />
+  }
+  @if (err()) {<p class="err small pad" role="alert">{{ err() }}</p>}
+</div>

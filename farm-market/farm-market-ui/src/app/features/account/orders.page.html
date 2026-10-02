@@ -1,0 +1,101 @@
+<div class="row head">
+  <h1 class="page-title">Lịch sử đơn hàng</h1><span class="spacer"></span>
+  <input class="input search" type="search" placeholder="Tìm mã đơn, tên sản phẩm (trang hiện tại)…" aria-label="Tìm đơn hàng"
+         [value]="query()" (input)="query.set($any($event.target).value)">
+</div>
+<div class="row wrap tabs">
+  @for (t of tabs; track t[1]) {
+    <button type="button" class="tab-pill" [class.on]="tab() === t[1]" (click)="setTab(t[1])">{{ t[0] }}</button>
+  }
+</div>
+@if (notice(); as n) { <div class="msg" [class.err]="noticeErr()" [attr.role]="noticeErr() ? 'alert' : 'status'" aria-live="polite">{{ n }}</div> }
+
+@if (loading() && !orders().length) {
+  <app-state-box kind="loading" message="Đang tải đơn hàng…" />
+} @else if (error()) {
+  <app-state-box kind="error" title="Không tải được đơn hàng" [message]="error()" [retryable]="true" (retry)="reload()" />
+} @else {
+<div class="layout">
+  <div class="list">
+    @for (r of rows(); track r.o.code) {
+      @let o = r.o;
+      <div class="card order" [class.sel]="o.code === selCode()" tabindex="0" (click)="select(o)" (keydown.enter)="select(o)">
+        <div class="row wrap top">
+          <b>{{ o.code }}</b><span class="muted">{{ r.date }}</span>
+          <span class="br"><span class="dot" [style.background]="r.dot"></span>{{ r.branch }}</span>
+          <span class="spacer"></span>
+          <span class="pill" [class]="r.status.cls">{{ r.status.name }}</span>
+        </div>
+        <div class="row mid">
+          @for (it of r.thumbs; track it.productId) { <app-image-slot class="th" caption="Ảnh" [radius]="10" ratio="1 / 1" /> }
+          <span class="sum">{{ r.summary }}</span>
+          <div class="tot"><div class="muted">{{ o.itemCount }} sản phẩm</div><b>{{ o.total | vnd }}</b></div>
+        </div>
+        <div class="row acts">
+          @if (o.status === 'PENDING' || o.status === 'CONFIRMED') {
+            <button type="button" class="btn sm danger" [disabled]="busyCodes().has(o.code)" (click)="cancel($event, o)">Hủy đơn</button>
+          }
+          @if (o.status === 'DELIVERED') {
+            <button type="button" class="btn sm secondary" (click)="review($event)">Đánh giá</button>
+          }
+          @if (o.status === 'DELIVERED' || o.status === 'CANCELLED') {
+            <button type="button" class="btn sm" [disabled]="busyCodes().has(o.code)" (click)="reorderBtn($event, o)">Mua lại</button>
+          } @else {
+            <button type="button" class="btn sm secondary" (click)="select(o)">Theo dõi đơn</button>
+          }
+        </div>
+      </div>
+    } @empty {
+      <app-state-box title="Chưa có đơn nào" message="Các đơn ở trạng thái này sẽ hiện ở đây." />
+    }
+    @if (totalPages() > 1) {
+      <div class="row pager">
+        <button type="button" class="btn secondary sm" [disabled]="page() === 0" (click)="go(page() - 1)">‹ Trước</button>
+        <span class="muted">Trang {{ page() + 1 }} / {{ totalPages() }}</span>
+        <button type="button" class="btn secondary sm" [disabled]="page() + 1 >= totalPages()" (click)="go(page() + 1)">Sau ›</button>
+      </div>
+    }
+  </div>
+
+  @if (selCode()) {
+    <aside class="card detail">
+      @if (detailLoading()) { <div class="muted">Đang tải chi tiết…</div> }
+      @else if (detailError()) { <div class="msg err" role="alert">{{ detailError() }}</div> }
+      @else if (detail(); as d) {
+        <div class="row"><div><div class="muted">Chi tiết đơn</div><b>{{ d.code }}</b></div><span class="spacer"></span>
+          <span class="pill" [class]="ORDER_STATUS[d.status].cls">{{ ORDER_STATUS[d.status].name }}</span></div>
+        <ol class="steps">
+          @for (s of steps(); track s.key) {
+            <li [class.on]="s.on" [class.bad]="s.bad"><span class="mark"></span><div><div class="sn">{{ s.name }}</div><div class="muted">{{ s.time }}</div></div></li>
+          }
+        </ol>
+        @for (it of d.items; track it.productId) {
+          <div class="row item">
+            <app-image-slot class="th" caption="Ảnh" [radius]="8" ratio="1 / 1" />
+            <div class="grow"><div>{{ it.name }}</div><div class="muted">× {{ it.quantity }}</div></div>
+            <b>{{ it.unitPrice ? (it.lineTotal | vnd) : 'Quà tặng' }}</b>
+          </div>
+        }
+        <div class="totals">
+          <span class="muted">Tạm tính</span><span>{{ d.subtotal | vnd }}</span>
+          <span class="muted">Phí giao hàng</span><span>{{ d.shippingFee ? (d.shippingFee | vnd) : 'Miễn phí' }}</span>
+          @if (d.discount) { <span class="muted">Khuyến mãi</span><span>−{{ d.discount | vnd }}</span> }
+          @if (d.tierDiscount) { <span class="muted">Ưu đãi hạng</span><span>−{{ d.tierDiscount | vnd }}</span> }
+          @if (d.pointsDiscount) { <span class="muted">Dùng điểm</span><span>−{{ d.pointsDiscount | vnd }}</span> }
+          <span class="muted">Thanh toán</span><span>{{ detailPay() }}</span>
+          <b>Tổng cộng</b><b>{{ d.total | vnd }}</b>
+        </div>
+        <div class="ship"><div class="muted">Giao đến</div>
+          <div>{{ d.shipping.recipient }} · {{ d.shipping.phone }}</div>
+          <div>{{ detailAddr() }}</div>
+          <div class="muted">Xuất từ {{ d.branchName }}</div>
+          @if (d.trackingCode) { <div class="muted">Mã vận đơn: {{ d.trackingCode }}</div> }</div>
+        <div class="row">
+          <button type="button" class="btn grow" [disabled]="busyCodes().has(d.code)" (click)="reorder(d.code)">{{ reordered() === d.code ? 'Đã thêm vào giỏ ✓' : 'Mua lại cả đơn' }}</button>
+          <button type="button" class="btn secondary" (click)="invoice(d)">Tải hóa đơn</button>
+        </div>
+      }
+    </aside>
+  }
+</div>
+}

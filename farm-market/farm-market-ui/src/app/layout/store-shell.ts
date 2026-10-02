@@ -3,13 +3,14 @@ import {Router, RouterLink, RouterLinkActive, RouterOutlet} from '@angular/route
 import {AuthStore} from '../core/auth.store';
 import {BranchStore} from '../core/branch.store';
 import {CartStore} from '../core/cart.store';
+import {AppLogo} from '../shared/logo';
 
 @Component({
   selector: 'app-store-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [AppLogo, RouterOutlet, RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './store-shell.html',
-  styleUrl: './store-shell.scss'
+  styleUrl: './store-shell.css'
 })
 export class StoreShell {
   readonly branch = inject(BranchStore);
@@ -19,9 +20,6 @@ export class StoreShell {
 
   readonly menuOpen = signal(false);
 
-  constructor() {
-    void this.branch.loadFromApi();
-  }
   readonly nav = [
     {label: 'Gà', q: 'ga'}, {label: 'Trứng', q: 'trung'}, {label: 'Gia cầm', q: 'giacam'},
     {label: 'Gia súc', q: 'giasuc'}, {label: 'Thức ăn chăn nuôi', q: 'thucan'}, {label: 'Con giống', q: 'giong'}

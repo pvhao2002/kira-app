@@ -1,5 +1,5 @@
-import {HttpClient, HttpErrorResponse, HttpHeaders, HttpParams} from '@angular/common/http';
-import {Injectable, inject} from '@angular/core';
+import {HttpClient, HttpErrorResponse, HttpHeaders, HttpResourceRef, httpResource} from '@angular/common/http';
+import {Injector, Service, inject} from '@angular/core';
 import {firstValueFrom} from 'rxjs';
 
 export const API_BASE = '/api/v1';
@@ -24,15 +24,21 @@ const isApiError = (e: unknown): e is ApiError => {
   return !!x && typeof x === 'object' && typeof x.status === 'number' && typeof x.code === 'string' && typeof x.message === 'string';
 };
 
-/** Idempotent: `Api` already throws ApiError, so pages that call this again keep the original code and message. */
+/**
+ * Idempotent: keeps an ApiError as is, and unwraps the HttpErrorResponse that `httpResource` / `resource()` may
+ * carry in `cause`, so pages can call it on whatever they caught.
+ */
 export function toApiError(e: unknown): ApiError {
   if (isApiError(e)) return e;
-  if (e instanceof HttpErrorResponse) {
-    const b = (e.error ?? {}) as Partial<ApiError>;
+  const cause = (e as {cause?: unknown} | null)?.cause;
+  const err = e instanceof HttpErrorResponse ? e : cause instanceof HttpErrorResponse ? cause : null;
+  if (err) {
+    const b = (err.error ?? {}) as Partial<ApiError>;
     return {
-      status: e.status,
-      code: b.code ?? (e.status === 0 ? 'NETWORK' : 'UNKNOWN'),
-      message: e.status === 0 ? 'Mất kết nối mạng. Vui lòng thử lại.' : (b.message ?? 'Đã có lỗi xảy ra.'),
+      status: err.status,
+      code: b.code ?? (err.status === 0 ? 'NETWORK' : 'UNKNOWN'),
+      message: err.status === 0 ? 'Mất kết nối mạng. Vui lòng thử lại.'
+        : (b.message ?? (err.status >= 500 ? 'Máy chủ chưa phản hồi. Vui lòng thử lại sau ít phút.' : 'Đã có lỗi xảy ra.')),
       fieldErrors: b.fieldErrors ?? {},
       traceId: b.traceId
     };
@@ -40,16 +46,44 @@ export function toApiError(e: unknown): ApiError {
   return {status: 0, code: 'UNKNOWN', message: 'Đã có lỗi xảy ra.', fieldErrors: {}};
 }
 
-/** Thin promise-based wrapper over HttpClient for `/api/v1`. Errors are thrown as ApiError. */
-@Injectable({providedIn: 'root'})
+/** Request description for {@link apiResource}: `path` is relative to `/api/v1`; empty params are dropped. */
+export interface ApiRequest {
+  path: string;
+  params?: Record<string, string | number | boolean | null | undefined>;
+}
+
+interface ApiResourceOptions {
+  injector?: Injector;
+  debugName?: string;
+}
+
+/**
+ * Reactive GET for `/api/v1` built on `httpResource` (signal-based reads: `value()`, `isLoading()`, `error()`,
+ * `reload()`). The request function re-runs when any signal it reads changes; return `undefined` to stay idle.
+ * Reads only: mutations go through {@link Api}.post / put / delete (HttpClient).
+ */
+export function apiResource<T>(request: () => ApiRequest | undefined, options: ApiResourceOptions & {defaultValue: NoInfer<T>}): HttpResourceRef<T>;
+export function apiResource<T>(request: () => ApiRequest | undefined, options?: ApiResourceOptions): HttpResourceRef<T | undefined>;
+export function apiResource<T>(request: () => ApiRequest | undefined, options?: ApiResourceOptions & {defaultValue?: T}): HttpResourceRef<T | undefined> {
+  return httpResource<T>(() => {
+    const r = request();
+    if (!r) return undefined;
+    const params: Record<string, string | number | boolean> = {};
+    for (const [k, v] of Object.entries(r.params ?? {})) if (v !== undefined && v !== null && v !== '') params[k] = v;
+    return {url: API_BASE + r.path, params};
+  }, options as never) as HttpResourceRef<T | undefined>;
+}
+
+/** The resource's error as an ApiError, or null when there is none. */
+export function resourceError(res: {error: () => unknown}): ApiError | null {
+  const e = res.error();
+  return e ? toApiError(e) : null;
+}
+
+/** Mutations (POST / PUT / DELETE) over HttpClient; errors are thrown as ApiError. */
+@Service()
 export class Api {
   private readonly http = inject(HttpClient);
-
-  get<T>(path: string, params?: Record<string, string | number | boolean | undefined | null>): Promise<T> {
-    let p = new HttpParams();
-    for (const [k, v] of Object.entries(params ?? {})) if (v !== undefined && v !== null && v !== '') p = p.set(k, String(v));
-    return this.run(this.http.get<T>(API_BASE + path, {params: p}));
-  }
 
   post<T>(path: string, body: unknown = {}, idempotencyKey?: string): Promise<T> {
     const headers = idempotencyKey ? new HttpHeaders({'Idempotency-Key': idempotencyKey}) : undefined;

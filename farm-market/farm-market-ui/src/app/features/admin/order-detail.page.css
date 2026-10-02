@@ -1,0 +1,35 @@
+:host { display: block; }
+.eyebrow a { color: inherit; }
+.head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 4px 0 24px; }
+.layout { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; align-items: start; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.small { font-size: 12px; }
+.err { color: var(--danger); }
+.warn { color: #a15c00; background: #fff4dc; border-radius: 10px; padding: 10px 12px; margin: 8px 0 0; }
+.grow { flex: 1; min-width: 0; }
+.line { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.thumb { width: 48px; height: 48px; border-radius: 10px; background: var(--tint); flex: none; }
+.sum { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 16px 0 0; }
+.sum dd, .kv dd { margin: 0; text-align: right; }
+.sum .ok { color: var(--primary); }
+.total { font-size: 18px; }
+.info { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 10px 0 0; }
+.steps { list-style: none; margin: 16px 0; padding: 0; }
+.steps li { position: relative; display: flex; gap: 14px; padding-bottom: 20px; color: rgba(31, 42, 28, .45); }
+.steps li:last-child { padding-bottom: 0; }
+.steps li::before { content: ''; position: absolute; left: 10px; top: 22px; bottom: 0; width: 2px; background: var(--line); }
+.steps li:last-child::before { display: none; }
+.steps li.reached { color: var(--ink); }
+.steps li.reached:not(:last-child)::before { background: var(--primary); }
+.steps li.cancel { color: var(--danger); }
+.steps li.cancel::before { background: var(--line); }
+.mark { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); color: #fff; font-size: 12px; display: grid; place-items: center; flex: none; z-index: 1; }
+.reached .mark { background: var(--primary); border-color: var(--primary); }
+.cancel .mark { background: var(--danger); border-color: var(--danger); }
+.sname { font-weight: 600; }
+.actions { margin-top: 8px; }
+.note { margin: 8px 0 12px; padding: 12px; background: var(--surface-2); border-radius: 12px; font-size: 13px; }
+@media (max-width: 767px) {
+  .layout, .two { grid-template-columns: 1fr; }
+}

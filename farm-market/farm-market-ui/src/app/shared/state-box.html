@@ -1,0 +1,12 @@
+<div class="state-box" [attr.role]="kind() === 'error' ? 'alert' : kind() === 'loading' ? 'status' : null" [attr.aria-busy]="kind() === 'loading' ? 'true' : null">
+  @if (title()) {
+    <div class="serif big">{{ title() }}</div>
+  }
+  @if (message()) {
+    <div>{{ message() }}</div>
+  }
+  @if (kind() === 'error' && retryable()) {
+    <button type="button" class="btn secondary" (click)="retry.emit()">{{ retryLabel() }}</button>
+  }
+  <ng-content />
+</div>

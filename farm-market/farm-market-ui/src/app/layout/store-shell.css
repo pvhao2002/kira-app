@@ -8,7 +8,6 @@
 .head-in { display: flex; align-items: center; gap: 24px; padding-top: 14px; padding-bottom: 14px; }
 .logo { display: flex; align-items: center; gap: 10px; font-size: 26px; }
 .logo.light { color: var(--accent); }
-.egg { width: 26px; height: 30px; background: var(--accent); border: 2px solid var(--primary); border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%; display: inline-block; }
 .nav { display: flex; gap: 18px; font-weight: 500; }
 .nav a { padding: 6px 0; border-bottom: 2px solid transparent; }
 .nav a.on { border-color: var(--primary); }

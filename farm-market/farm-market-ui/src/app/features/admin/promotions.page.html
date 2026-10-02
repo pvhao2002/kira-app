@@ -1,0 +1,103 @@
+<header class="head">
+  <div>
+    <div class="eyebrow">Khuyến mãi</div>
+    <h1 class="page-title">Mã khuyến mãi</h1>
+  </div>
+</header>
+
+<div class="layout" [class.ro]="!canWrite()">
+  <div class="card panel">
+    @if (list.error()) {
+      <app-state-box kind="error" [message]="error()" [retryable]="true" (retry)="list.reload()" />
+    } @else if (!list.hasValue()) {
+      <app-state-box kind="loading" message="Đang tải khuyến mãi…" />
+    } @else if (rows().length) {
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Mã</th><th>Ưu đãi</th><th>Áp dụng</th><th>Đã dùng</th><th>Trạng thái</th>@if (canWrite()) {<th></th>}</tr></thead>
+          <tbody>
+            @for (p of rows(); track p.id) {
+              <tr>
+                <td><div class="mono code">{{ p.code }}</div><div class="muted small">{{ p.range }}</div></td>
+                <td><div>{{ p.deal }}</div><div class="muted small">{{ p.minText }}</div></td>
+                <td>{{ p.where }}</td>
+                <td>
+                  <div class="small">{{ p.used }}</div>
+                  @if (p.usageLimit) {
+                    <div class="track" role="img" [attr.aria-label]="'Đã dùng ' + p.pct + '%'"><i [style.width.%]="p.pct"></i></div>
+                  }
+                </td>
+                <td><span class="pill" [class]="statusMap[p.status].cls">{{ statusMap[p.status].label }}</span></td>
+                @if (canWrite()) {
+                  <td class="acts">
+                    <button type="button" class="btn secondary sm" [disabled]="deletingId() === p.id" (click)="edit(p)">Sửa</button>
+                    <button type="button" class="btn ghost sm" [disabled]="deletingId() !== null" (click)="remove(p)">Xóa</button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <app-state-box kind="empty" message="Chưa có mã khuyến mãi nào." />
+    }
+  </div>
+
+  @if (canWrite()) {
+    <form class="card form" (submit)="$event.preventDefault(); save()">
+      <b>{{ editingId() ? 'Sửa mã' : 'Tạo mã mới' }}</b>
+      <div class="preview">
+        <div><div class="small">Xem trước</div><div class="mono pcode">{{ code() || 'MÃ MỚI' }}</div></div>
+        <div class="serif pval">{{ preview() }}</div>
+      </div>
+      <div class="field"><label for="pc">Mã</label><input id="pc" class="input mono" maxlength="40" [value]="code()" (input)="code.set($any($event.target).value.toUpperCase().replace(' ', ''))"></div>
+      <div class="field">
+        <span class="label">Loại ưu đãi</span>
+        <div class="seg" role="radiogroup" aria-label="Loại ưu đãi">
+          @for (t of types; track t.key) {
+            <button type="button" role="radio" [attr.aria-checked]="type() === t.key" [class.on]="type() === t.key" (click)="type.set(t.key)">{{ t.label }}</button>
+          }
+        </div>
+      </div>
+      <div class="grid2">
+        @if (type() !== 'FREE_SHIP') {
+          <div class="field">
+            <label for="pv">{{ type() === 'PERCENT' ? 'Phần trăm giảm (%)' : 'Số tiền giảm (₫)' }}</label>
+            <input id="pv" class="input" inputmode="numeric" [value]="value()" (input)="value.set(digits($any($event.target).value))">
+          </div>
+        }
+        @if (type() === 'PERCENT') {
+          <div class="field"><label for="pmx">Giảm tối đa (₫)</label><input id="pmx" class="input" inputmode="numeric" placeholder="Không giới hạn" [value]="maxDiscount()" (input)="maxDiscount.set(digits($any($event.target).value))"></div>
+        }
+        <div class="field"><label for="pm">Đơn tối thiểu (₫)</label><input id="pm" class="input" inputmode="numeric" [value]="min()" (input)="min.set(digits($any($event.target).value))"></div>
+        <div class="field"><label for="ps">Bắt đầu</label><input id="ps" class="input" type="date" [value]="start()" (change)="start.set($any($event.target).value)"></div>
+        <div class="field"><label for="pe">Kết thúc</label><input id="pe" class="input" type="date" [value]="end()" (change)="end.set($any($event.target).value)"></div>
+        <div class="field"><label for="pl">Tổng lượt dùng</label><input id="pl" class="input" inputmode="numeric" placeholder="Không giới hạn" [value]="limit()" (input)="limit.set(digits($any($event.target).value))"></div>
+        <div class="field"><label for="pu">Lượt / khách</label><input id="pu" class="input" inputmode="numeric" placeholder="Không giới hạn" [value]="perUser()" (input)="perUser.set(digits($any($event.target).value))"></div>
+      </div>
+      <div class="field">
+        <span class="label">Áp dụng tại chi nhánh</span>
+        <div class="row wrap">
+          <button type="button" class="chipb" [class.on]="allBranches()" [attr.aria-pressed]="allBranches()" (click)="allBranches.set(!allBranches())">Tất cả chi nhánh</button>
+          @if (!allBranches()) {
+            @for (b of branch.branches; track b.id; let i = $index) {
+              <button type="button" class="chipb" [class.on]="branchSel().includes(i + 1)" [attr.aria-pressed]="branchSel().includes(i + 1)" (click)="toggleBranch(i + 1)">
+                <i class="dot" [style.background]="branch.themeOf(i).primary"></i>{{ b.short }}
+              </button>
+            }
+          }
+        </div>
+      </div>
+      <div class="row rec">
+        <span class="grow">Đang hoạt động</span>
+        <button type="button" class="toggle" [class.on]="active()" role="switch" [attr.aria-checked]="active()" aria-label="Đang hoạt động" (click)="active.set(!active())"></button>
+      </div>
+      @if (err()) {<p class="err small" role="alert">{{ err() }}</p>}
+      <div class="row">
+        @if (editingId()) {<button type="button" class="btn secondary grow" (click)="reset()">Hủy sửa</button>}
+        <button type="submit" class="btn grow" [disabled]="!valid() || busy() || deletingId() !== null">{{ busy() ? 'Đang lưu…' : editingId() ? 'Lưu thay đổi' : 'Kích hoạt mã' }}</button>
+      </div>
+    </form>
+  }
+</div>

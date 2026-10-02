@@ -16,7 +16,7 @@
 
 <header class="head">
   <div class="container head-in">
-    <a routerLink="/" class="logo"><i class="egg"></i><span class="serif">Đồi Nắng</span></a>
+    <a routerLink="/" class="logo" aria-label="Kira Farm - Trang chủ"><app-logo [size]="32" /></a>
     <nav class="nav hide-sm">
       <a routerLink="/products" routerLinkActive="on" [routerLinkActiveOptions]="{exact: true}">Sản phẩm</a>
       @for (n of nav; track n.q) {
@@ -40,14 +40,14 @@
 <footer class="foot">
   <div class="container foot-grid">
     <div>
-      <div class="logo light"><i class="egg"></i><span class="serif">Đồi Nắng</span></div>
+      <div class="logo light"><app-logo [size]="32" /></div>
       <p class="blurb">Thực phẩm tươi sạch từ nông trại đến bàn ăn. Mỗi hộp trứng đều có mã lô để tra cứu nguồn gốc.</p>
     </div>
     <div><h4>Mua sắm</h4><a routerLink="/products">Tất cả sản phẩm</a><a routerLink="/products" [queryParams]="{cat: 'trung'}">Trứng</a><a routerLink="/products" [queryParams]="{cat: 'ga'}">Gà</a></div>
     <div><h4>Hỗ trợ</h4><span>Chính sách đổi trả 24 giờ</span><span>Giao hàng &amp; thanh toán</span><span>Liên hệ</span></div>
     <div><h4>Cửa hàng</h4>@for (b of branch.branches; track b.id) {<span>{{ b.name }}</span>}</div>
   </div>
-  <div class="container copy">© 2026 Đồi Nắng Farm</div>
+  <div class="container copy">© 2026 Kira Farm</div>
 </footer>
 
 <nav class="tabbar" aria-label="Điều hướng chính">

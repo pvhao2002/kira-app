@@ -6,7 +6,7 @@ export const routes: Routes = [
     path: '',
     loadComponent: () => import('./layout/store-shell').then(m => m.StoreShell),
     children: [
-      {path: '', title: 'Đồi Nắng Farm', loadComponent: () => import('./features/storefront/home.page').then(m => m.HomePage)},
+      {path: '', title: 'Kira Farm', loadComponent: () => import('./features/storefront/home.page').then(m => m.HomePage)},
       {path: 'products', title: 'Sản phẩm', loadComponent: () => import('./features/storefront/products.page').then(m => m.ProductsPage)},
       {path: 'products/:slug', title: 'Chi tiết sản phẩm', loadComponent: () => import('./features/storefront/product-detail.page').then(m => m.ProductDetailPage)},
       {path: 'cart', title: 'Giỏ hàng', loadComponent: () => import('./features/storefront/cart.page').then(m => m.CartPage)},

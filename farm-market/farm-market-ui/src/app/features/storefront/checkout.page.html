@@ -1,0 +1,158 @@
+<div class="container">
+  <ol class="steps" aria-label="Các bước đặt hàng">
+    <li class="done">✓ Giỏ hàng</li><li class="line"></li>
+    <li class="cur" aria-current="step">2 Thanh toán</li><li class="line"></li>
+    <li class="todo">3 Hoàn tất</li>
+  </ol>
+
+  @if (cart.lines().length === 0) {
+    <app-state-box class="empty" title="Giỏ hàng của bạn đang trống." message="Thêm sản phẩm trước khi thanh toán.">
+      <a class="btn" routerLink="/products">Khám phá sản phẩm</a>
+    </app-state-box>
+  } @else {
+    <form class="layout" [formRoot]="f" (submit)="place()">
+      <div class="left">
+        @if (legacyLines().length) {
+          <div class="alert" role="alert">
+            Một số sản phẩm trong giỏ không còn liên kết với danh mục hiện tại, vui lòng xóa và thêm lại từ trang sản phẩm:
+            @for (l of legacyLines(); track l.id) {
+              <button type="button" class="chip-x" (click)="cart.remove(l.id)">{{ l.name }} ✕</button>
+            }
+          </div>
+        }
+        @if (error()) {
+          <div class="alert" role="alert"><b>{{ error() }}</b>@if (errorCode()) { <span class="mono sm"> ({{ errorCode() }})</span> }</div>
+        }
+
+        <section>
+          <h2>Thông tin giao hàng</h2>
+          @if (loadingAddr()) {
+            <div class="muted" role="status">Đang tải địa chỉ…</div>
+          } @else {
+            @if (addresses().length && !adding()) {
+              <div class="pay" role="radiogroup" aria-label="Địa chỉ giao hàng">
+                @for (a of addresses(); track a.id) {
+                  <button type="button" role="radio" class="choice" [class.on]="addressId() === a.id" [attr.aria-checked]="addressId() === a.id" (click)="addressId.set(a.id)">
+                    <span class="dot"></span>
+                    <span class="grow"><b>{{ a.label }} · {{ a.recipient }}</b> <span class="muted">{{ a.phone }}</span><br><span class="muted sm">{{ addrText(a) }}</span></span>
+                  </button>
+                }
+              </div>
+              <button type="button" class="change add" (click)="adding.set(true)">+ Thêm địa chỉ mới</button>
+            } @else {
+              <div class="form">
+                <div class="field">
+                  <label for="co-name">Họ tên người nhận</label>
+                  <input id="co-name" class="input" [formField]="f.name" [class.err]="tried() && f.name().invalid()" autocomplete="name">
+                  @if (tried() && f.name().invalid()) {
+                    <span class="err-t">{{ f.name().errors()[0].message }}</span>
+                  }
+                </div>
+                <div class="field">
+                  <label for="co-phone">Số điện thoại</label>
+                  <input id="co-phone" class="input" inputmode="tel" [formField]="f.phone" [class.err]="tried() && f.phone().invalid()" autocomplete="tel">
+                  @if (tried() && f.phone().invalid()) {
+                    <span class="err-t">{{ f.phone().errors()[0].message }}</span>
+                  }
+                </div>
+                <div class="field span2">
+                  <label for="co-addr">Địa chỉ</label>
+                  <input id="co-addr" class="input" [formField]="f.address" [class.err]="tried() && f.address().invalid()" autocomplete="street-address">
+                  @if (tried() && f.address().invalid()) {
+                    <span class="err-t">{{ f.address().errors()[0].message }}</span>
+                  }
+                </div>
+                <div class="span2 three">
+                  <div class="field">
+                    <label for="co-ward">Phường/xã</label>
+                    <input id="co-ward" class="input" [formField]="f.ward">
+                  </div>
+                  <div class="field">
+                    <label for="co-dist">Quận/huyện</label>
+                    <input id="co-dist" class="input" [formField]="f.district">
+                  </div>
+                  <div class="field">
+                    <label for="co-prov">Tỉnh/thành</label>
+                    <input id="co-prov" class="input" [formField]="f.province">
+                  </div>
+                </div>
+              </div>
+              @if (addresses().length) {
+                <button type="button" class="change add" (click)="adding.set(false)">← Dùng địa chỉ đã lưu</button>
+              }
+            }
+            <div class="field note-f">
+              <label for="co-note">Ghi chú đơn hàng</label>
+              <textarea id="co-note" class="input" rows="3" placeholder="Ví dụ: gọi trước khi giao" [formField]="f.note"></textarea>
+            </div>
+          }
+        </section>
+
+        <section>
+          <h2>Giao hàng</h2>
+          <div class="ship-grid" role="radiogroup" aria-label="Phương thức giao hàng">
+            @for (o of shipOptions; track o.name; let i = $index) {
+              <button type="button" role="radio" class="choice ship" [class.on]="cart.shipIndex() === i" [attr.aria-checked]="cart.shipIndex() === i" (click)="pickShip(i)">
+                <span class="dot"></span>
+                <span class="grow">
+                  <b>{{ o.name }}</b>
+                  <span class="muted eta">{{ o.eta }}</span>
+                  <b class="fee">{{ (i === 0 && cart.subtotal() >= freeShipFrom ? 0 : o.fee) | vnd }}</b>
+                </span>
+              </button>
+            }
+          </div>
+          <div class="note">
+            <span class="grow">{{ fulfilNote() }}</span>
+          </div>
+        </section>
+
+        <section>
+          <h2>Thanh toán</h2>
+          <div class="pay" role="radiogroup" aria-label="Phương thức thanh toán">
+            @for (o of payOptions; track o.name; let i = $index) {
+              <button type="button" role="radio" class="choice" [class.on]="cart.payIndex() === i" [attr.aria-checked]="cart.payIndex() === i" (click)="cart.payIndex.set(i)">
+                <span class="dot"></span><b class="grow">{{ o.name }}</b><span class="muted">{{ o.note }}</span>
+              </button>
+            }
+          </div>
+        </section>
+      </div>
+
+      <aside class="summary">
+        <div class="s-title">Đơn hàng ({{ cart.count() }} sản phẩm)</div>
+        <div class="items">
+          @for (l of cart.lines(); track l.id) {
+            <div class="item">
+              <div class="it-img"><app-image-slot caption="Ảnh" [radius]="12" ratio="1 / 1" /><span class="qb">{{ l.qty }}</span></div>
+              <div class="grow"><div class="it-name">{{ l.name }}</div><div class="muted sm">{{ l.unitPrice | vnd }}{{ l.unit ? ' / ' + l.unit : '' }}</div></div>
+              <b>{{ l.unitPrice * l.qty | vnd }}</b>
+            </div>
+          }
+        </div>
+        <div class="promo">
+          <input class="code mono" aria-label="Mã giảm giá" placeholder="Mã giảm giá" [formField]="promoForm.code" (input)="promoMsg.set('')">
+          @if (cart.promo()) {
+            <button type="button" class="applied" (click)="removePromo()">Bỏ mã</button>
+          } @else {
+            <button type="button" class="applied off" [disabled]="promoBusy() || !promoForm.code().value().trim()" (click)="applyPromo()">{{ promoBusy() ? '…' : 'Áp dụng' }}</button>
+          }
+        </div>
+        @if (promoMsg()) {
+          <div class="err-t promo-msg" role="alert">{{ promoMsg() }}</div>
+        }
+        <div class="rows">
+          <span class="muted">Tạm tính</span><span>{{ cart.subtotal() | vnd }}</span>
+          <span class="muted">Phí giao hàng</span><span>{{ cart.shipFee() | vnd }}</span>
+          @if (cart.discount() > 0) {
+            <span class="muted">Giảm giá ({{ cart.promo()?.code }})</span><span class="green">−{{ cart.discount() | vnd }}</span>
+          }
+        </div>
+        <div class="total"><b>Tạm tính tổng</b><b class="amt">{{ cart.total() | vnd }}</b></div>
+        <div class="muted sm center total-note">Tổng cuối cùng do hệ thống tính khi đặt hàng (có thể có ưu đãi hạng thành viên).</div>
+        <button type="submit" class="btn block place" [disabled]="placing() || legacyLines().length > 0">{{ placing() ? 'Đang đặt hàng…' : 'Đặt hàng' }}</button>
+        <div class="muted sm center">Đổi trả trong 24 giờ nếu trứng vỡ hoặc hàng không tươi</div>
+      </aside>
+    </form>
+  }
+</div>

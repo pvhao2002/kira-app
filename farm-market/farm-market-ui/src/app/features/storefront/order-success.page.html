@@ -1,0 +1,101 @@
+<div class="container wrap">
+  @if (loading()) {
+    <app-state-box kind="loading" message="Đang tải đơn hàng…" />
+  } @else if (error()) {
+    <app-state-box kind="error" title="Không tải được đơn hàng." [message]="error()">
+      <a class="btn" routerLink="/account/orders">Xem đơn hàng của tôi</a>
+    </app-state-box>
+  } @else if (order(); as o) {
+    <div class="head">
+      <div class="check" aria-hidden="true">{{ o.status === 'CANCELLED' ? '✕' : '✓' }}</div>
+      <div>
+        <h1>{{ o.status === 'CANCELLED' ? 'Đơn hàng đã hủy' : 'Đặt hàng thành công!' }}</h1>
+        <div class="muted lead">Cảm ơn {{ customer() }}. Chúng tôi sẽ cập nhật trạng thái đơn của bạn tại đây.</div>
+      </div>
+    </div>
+
+    <div class="info">
+      <div><div class="k">Mã đơn hàng</div><div class="mono code">{{ o.code }}</div></div>
+      <div><div class="k">Tổng tiền</div><div class="total">{{ o.total | vnd }}</div></div>
+      <div><div class="k">Thanh toán</div><div class="v">{{ payName() }}</div><div class="pstat" [class.paid]="o.paymentStatus === 'PAID'">{{ o.paymentStatus === 'PAID' ? 'Đã thanh toán' : 'Chờ thanh toán' }}</div></div>
+      <div><div class="k">Giao hàng</div><div class="v">{{ shipName() }}</div></div>
+      <div class="from">
+        <span class="muted">Xuất từ: </span><b>{{ o.branchName }}</b>
+        <span class="muted">  ·  Giao đến: </span>{{ address() }}
+      </div>
+    </div>
+
+    @if (o.status !== 'CANCELLED' && o.paymentMethod !== 'COD' && o.paymentStatus !== 'PAID') {
+      <div class="pay-card">
+        @if (o.paymentMethod === 'BANK_TRANSFER') {
+          @if (o.payment?.qrUrl; as qr) {
+            <b>Chuyển khoản qua mã VietQR</b>
+            <div class="qr-row">
+              <img class="qr" [src]="qr" width="240" height="240" alt="Mã VietQR thanh toán đơn hàng">
+              <dl class="bank">
+                <dt class="muted">Ngân hàng</dt><dd>{{ o.payment.bankName }}</dd>
+                <dt class="muted">Số tài khoản</dt><dd class="mono">{{ o.payment.accountNo }}</dd>
+                <dt class="muted">Chủ tài khoản</dt><dd>{{ o.payment.accountName }}</dd>
+                <dt class="muted">Số tiền</dt><dd><b>{{ o.total | vnd }}</b></dd>
+                <dt class="muted">Nội dung</dt>
+                <dd><span class="mono">{{ o.payment.transferNote }}</span>
+                  <button type="button" class="btn secondary sm" (click)="copy(o.payment.transferNote)">{{ copied() ? 'Đã sao chép' : 'Sao chép' }}</button></dd>
+              </dl>
+            </div>
+            <p class="muted sm">Vui lòng giữ nguyên nội dung chuyển khoản để chúng tôi xác nhận nhanh. Đơn được xử lý sau khi nhân viên nhận được tiền.</p>
+          } @else {
+            <b>Chuyển khoản theo hướng dẫn</b>
+            <p class="muted">Cửa hàng sẽ liên hệ để gửi thông tin tài khoản chuyển khoản cho đơn <span class="mono">{{ o.code }}</span>. Vui lòng ghi mã đơn trong nội dung chuyển khoản.</p>
+          }
+        } @else {
+          <b>Thanh toán online</b>
+          <p class="muted">Hình thức thanh toán trực tuyến này hiện được nhân viên xử lý thủ công, chưa kết nối cổng thanh toán. Cửa hàng sẽ liên hệ để hướng dẫn và xác nhận thanh toán cho đơn <span class="mono">{{ o.code }}</span>.</p>
+        }
+      </div>
+    }
+
+    <div class="lines-card">
+      @for (l of o.items; track l.productId) {
+        <div class="ln"><span>{{ l.name }} <span class="muted">× {{ l.quantity }}</span></span><b>{{ l.lineTotal | vnd }}</b></div>
+      }
+      <div class="ln sub"><span class="muted">Tạm tính</span><span>{{ o.subtotal | vnd }}</span></div>
+      <div class="ln sub"><span class="muted">Phí giao hàng</span><span>{{ o.shippingFee | vnd }}</span></div>
+      @if (o.discount > 0) {
+        <div class="ln sub"><span class="muted">Giảm giá{{ o.promoCode ? ' (' + o.promoCode + ')' : '' }}</span><span>−{{ o.discount | vnd }}</span></div>
+      }
+      @if (o.tierDiscount > 0) {
+        <div class="ln sub"><span class="muted">Ưu đãi hạng thành viên</span><span>−{{ o.tierDiscount | vnd }}</span></div>
+      }
+      @if (o.pointsDiscount > 0) {
+        <div class="ln sub"><span class="muted">Dùng điểm</span><span>−{{ o.pointsDiscount | vnd }}</span></div>
+      }
+      <div class="ln sub"><b>Tổng cộng</b><b class="total">{{ o.total | vnd }}</b></div>
+    </div>
+
+    @if (o.status !== 'CANCELLED') {
+      <div class="timeline-card">
+        <div class="tl-head"><b>Trạng thái đơn hàng</b><span class="muted sm">Đặt lúc {{ placedAt() }}</span></div>
+        <ol class="tl">
+          @for (t of timeline(); track t.status; let i = $index) {
+            <li [class.done]="i < stage()" [class.cur]="i === stage()" [attr.aria-current]="i === stage() ? 'step' : null">
+              <div class="tl-top">
+                <span class="dotm">{{ i < stage() ? '✓' : '' }}</span>
+                <span class="seg"></span>
+              </div>
+              <div class="tl-name">{{ t.name }}</div>
+              <div class="muted sm">{{ t.time }}</div>
+            </li>
+          }
+        </ol>
+        @if (o.trackingCode) {
+          <div class="muted sm track">Mã vận đơn: <span class="mono">{{ o.trackingCode }}</span></div>
+        }
+      </div>
+    }
+
+    <div class="row wrap actions">
+      <a class="btn lg" routerLink="/account/orders">Xem đơn hàng</a>
+      <a class="btn lg outline" routerLink="/products">Tiếp tục mua sắm</a>
+    </div>
+  }
+</div>

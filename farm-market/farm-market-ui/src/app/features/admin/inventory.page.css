@@ -1,0 +1,18 @@
+:host { display: block; }
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.tabs { margin-bottom: 16px; align-items: center; }
+.search { max-width: 260px; padding: 9px 14px; margin-left: auto; }
+.form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.grid2 { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+.grid2 .input { padding: 10px 12px; }
+.err { color: var(--danger); }
+.panel { padding: 0; overflow: hidden; }
+.small { font-size: 12px; }
+td.bad { color: var(--danger); }
+.acts { white-space: nowrap; }
+.panel ::ng-deep .state-box { border: 0; border-radius: 0; }
+.foot { padding: 14px 16px; }
+.foot2 { padding: 14px 16px; font-size: 12px; }
+.pg { min-width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.pg:disabled { opacity: .4; }
+@media (max-width: 767px) { .grid2 { grid-template-columns: 1fr; } .search { max-width: none; margin-left: 0; flex: 1 1 100%; } }
