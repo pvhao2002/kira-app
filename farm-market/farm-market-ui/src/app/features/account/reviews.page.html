@@ -27,12 +27,22 @@
           </div>
           <textarea class="input" rows="3" placeholder="Chia sẻ cảm nhận về độ tươi, đóng gói, giao hàng…" aria-label="Nội dung đánh giá" maxlength="2000"
                     [value]="d.text" (input)="patch(r, {text: $any($event.target).value})"></textarea>
-          <input class="input" type="url" placeholder="Liên kết ảnh (https://…) để nhận +50 điểm" aria-label="Liên kết ảnh"
-                 [value]="d.photoUrl" (input)="patch(r, {photoUrl: $any($event.target).value})">
+          <div class="photo">
+            @if (d.photoUrl) {
+              <img class="thumb" [src]="d.photoUrl" alt="Ảnh đánh giá đã chọn">
+              <button type="button" class="btn secondary sm" [disabled]="d.sending" (click)="removePhoto(r)">Xóa ảnh</button>
+            } @else {
+              <label class="btn secondary sm pick" [class.off]="d.uploading">
+                {{ d.uploading ? 'Đang tải ảnh…' : 'Chọn ảnh để nhận +50 điểm' }}
+                <input type="file" accept="image/jpeg,image/png,image/webp" [disabled]="d.uploading" (change)="pickPhoto(r, $any($event.target))">
+              </label>
+              <span class="muted hint">JPEG, PNG hoặc WebP, tối đa 5MB</span>
+            }
+          </div>
           @if (d.error) { <div class="err" role="alert">{{ d.error }}</div> }
           <div class="row wrap foot">
             <span class="spacer"></span>
-            <button type="button" class="btn" [disabled]="!d.rating || d.sending" (click)="submit(r)">{{ d.sending ? 'Đang gửi…' : 'Gửi đánh giá' }}</button>
+            <button type="button" class="btn" [disabled]="!d.rating || d.sending || d.uploading" (click)="submit(r)">{{ d.sending ? 'Đang gửi…' : 'Gửi đánh giá' }}</button>
           </div>
         </div>
       </article>

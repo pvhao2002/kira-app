@@ -2,6 +2,7 @@ package com.kira.farm.account.application;
 
 import com.kira.farm.account.domain.Address;
 import com.kira.farm.catalog.domain.ProductStatus;
+import com.kira.farm.media.application.MediaUrl;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -61,7 +62,7 @@ public final class AccountDtos {
         @NotNull Long productId,
         @Min(1) @Max(5) int rating,
         @Size(max = 2000) String body,
-        @Pattern(regexp = "^https://\\S{1,490}$", message = "Liên kết ảnh phải bắt đầu bằng https://") String photoUrl) {
+        @Pattern(regexp = MediaUrl.REGEX_OR_EMPTY, message = MediaUrl.MESSAGE) @Size(max = 500) String photoUrl) {
     }
 
     public record ReplyRequest(@NotBlank(message = "Vui lòng nhập phản hồi") @Size(max = 2000) String body) {

@@ -64,6 +64,7 @@ const TABS: {key: PStatus | ''; name: string}[] = [
   {key: 'HIDDEN', name: 'Ẩn'}
 ];
 const SIZE = 20;
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 @Component({
   selector: 'app-admin-products-page',
@@ -91,8 +92,11 @@ export class AdminProductsPage {
   readonly page = linkedSignal({source: () => this.branch.branchId(), computation: () => 0});
   readonly draft = signal<Draft | null>(null);
   readonly busy = signal(false);
+  readonly uploading = signal(false);
   readonly err = signal('');
   private timer?: ReturnType<typeof setTimeout>;
+  /** Bumped whenever the draft is opened/closed so an in-flight upload can tell it is stale. */
+  private seq = 0;
 
   readonly list = apiResource<Paged<Product>>(() => ({
     path: '/admin/products',
@@ -123,6 +127,7 @@ export class AdminProductsPage {
 
   create(): void {
     if (!this.canWrite()) return;
+    this.seq++;
     this.err.set('');
     this.draft.set({
       id: null, sku: '', name: '', slug: '', category: this.categories()[0]?.slug ?? '', groupName: '', description: '',
@@ -133,6 +138,7 @@ export class AdminProductsPage {
 
   edit(p: Product): void {
     if (!this.canWrite()) return;
+    this.seq++;
     this.err.set('');
     this.draft.set({
       id: p.id, sku: p.sku, name: p.name, slug: p.slug, category: p.category, groupName: p.groupName ?? '',
@@ -143,6 +149,7 @@ export class AdminProductsPage {
   }
 
   close(): void {
+    this.seq++;
     this.draft.set(null);
     this.err.set('');
   }
@@ -158,6 +165,31 @@ export class AdminProductsPage {
   patchOld(raw: string): void {
     const n = Math.round(Number(raw.replace(/\D/g, '')) || 0);
     this.patch('oldPrice', n > 0 ? n : null);
+  }
+
+  async pickImage(input: HTMLInputElement): Promise<void> {
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.uploading()) return;
+    // Type is checked by the server (magic bytes) and the accept attribute; file.type can be empty/odd in browsers.
+    if (file.size > IMAGE_MAX_BYTES) {
+      this.err.set('Ảnh tối đa 5MB.');
+      return;
+    }
+    // ponytail: orphaned uploads are not swept; upgrade = scheduled sweep of files not referenced by products.image_url / reviews.photo_url.
+    const seq = this.seq;
+    this.uploading.set(true);
+    this.err.set('');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await this.api.postForm<{url: string}>('/admin/media/products', form);
+      if (seq === this.seq) this.patch('imageUrl', res.url); // drawer changed meanwhile: drop the result
+    } catch (e) {
+      this.err.set(errMsg(e));
+    } finally {
+      this.uploading.set(false);
+    }
   }
 
   async save(): Promise<void> {

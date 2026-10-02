@@ -79,7 +79,17 @@
     </div>
     <div class="card">
       <h2>Bảo mật &amp; thông báo</h2>
-      <div class="row line"><span>Mật khẩu</span><span class="spacer"></span><button type="button" class="btn ghost sm">Đổi mật khẩu</button></div>
+      <div class="row line"><span>Mật khẩu</span><span class="spacer"></span><button type="button" class="btn ghost sm" [attr.aria-expanded]="pwOpen()" aria-controls="pw-form" (click)="togglePw()">{{ pwOpen() ? 'Đóng' : 'Đổi mật khẩu' }}</button></div>
+      @if (pwDone()) { <p class="ok-note" role="status" aria-live="polite">Đã đổi mật khẩu. Các thiết bị khác đã bị đăng xuất.</p> }
+      @if (pwOpen()) {
+        <form id="pw-form" class="pwform" novalidate (submit)="$event.preventDefault(); changePassword()">
+          <div class="field"><label for="pw-cur">Mật khẩu hiện tại</label><input id="pw-cur" class="input" type="password" autocomplete="current-password" maxlength="72" [value]="curPw()" (input)="curPw.set($any($event.target).value)"></div>
+          <div class="field"><label for="pw-new">Mật khẩu mới (từ 8 ký tự)</label><input id="pw-new" class="input" type="password" autocomplete="new-password" maxlength="72" [value]="newPw()" (input)="newPw.set($any($event.target).value)"></div>
+          <div class="field"><label for="pw-new2">Nhập lại mật khẩu mới</label><input id="pw-new2" class="input" type="password" autocomplete="new-password" maxlength="72" [value]="newPw2()" (input)="newPw2.set($any($event.target).value)"></div>
+          @if (pwError()) { <p class="err" role="alert">{{ pwError() }}</p> }
+          <button type="submit" class="btn sm" [disabled]="pwBusy()">{{ pwBusy() ? 'Đang lưu…' : 'Lưu mật khẩu' }}</button>
+        </form>
+      }
       @for (n of notifNames; track n; let i = $index) {
         <div class="row line">
           <span [id]="'nf' + i">{{ n }}</span><span class="spacer"></span>
