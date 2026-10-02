@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -23,16 +24,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Shared base of every *IT: ONE MySQL container for the whole JVM (singleton, never stopped explicitly; run with
- * TESTCONTAINERS_RYUK_DISABLED=true, failsafe sets it) and one Spring context. Flyway V1..V5 run on startup, the
+ * TESTCONTAINERS_RYUK_DISABLED=true, failsafe sets it) and one Spring context. Flyway V1..V6 run on startup, the
  * dev seeder creates the demo users. Tests isolate themselves by creating their own customers/products/staff.
  */
+@Import(SqlCounter.Config.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
     "app.seed-development-users=true",
     "app.seed-development-password=" + IntegrationTestBase.PASSWORD,
     "app.seed-development-totp-secret=" + IntegrationTestBase.TOTP_SECRET,
     "app.refresh-cookie-secure=false"})
 public abstract class IntegrationTestBase {
-    public static final String PASSWORD = "Doinang@123";
+    public static final String PASSWORD = "KiraFarm@123";
     public static final String TOTP_SECRET = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
     public static final long Q7 = 1, Q3 = 2, TD = 3, DL = 5; // branch ids fixed by V2
 

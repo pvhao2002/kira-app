@@ -12,6 +12,7 @@ import com.kira.farm.loyalty.application.LoyaltyService;
 import com.kira.farm.loyalty.domain.Tier;
 import com.kira.farm.loyalty.domain.Voucher;
 import com.kira.farm.loyalty.infrastructure.VoucherRepository;
+import com.kira.farm.order.application.CheckoutPricing.VoucherTerms;
 import com.kira.farm.order.domain.*;
 import com.kira.farm.order.infrastructure.OrderItemRepository;
 import com.kira.farm.order.infrastructure.OrderRepository;
@@ -26,8 +27,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -69,7 +68,34 @@ public class OrderService {
         Optional<ShopOrder> replay = orders.findByUserIdAndIdempotencyKey(userId, key);
         if (replay.isPresent()) return assembler.detail(replay.get());
 
-        // 1. Basket from the database only.
+        Basket basket = loadBasket(r);
+        Address address = addresses.findByIdAndUserId(r.addressId(), userId)
+            .orElseThrow(() -> ApiException.notFound("ADDRESS_NOT_FOUND", "Không tìm thấy địa chỉ giao hàng"));
+        Applied applied = applyDiscounts(userId, r, basket);
+        CheckoutPricing pricing = applied.pricing();
+
+        // Reserve stock: each call is an atomic conditional UPDATE; a shortage throws 409 and rolls everything back.
+        for (var e : basket.qty().entrySet()) inventory.reserve(basket.branchId(), e.getKey(), e.getValue());
+
+        String dayKey = LocalDate.now(VN).format(DAY_KEY);
+        orders.nextSequence(dayKey);
+        String code = "KF-" + dayKey + "-" + String.format("%04d", orders.lastInsertId());
+        ShopOrder o = orders.saveAndFlush(newOrder(code, key, userId, r, basket, address, applied));
+
+        List<OrderItem> lines = items.saveAll(orderLines(o.getId(), basket));
+        OrderStatusHistory first = workflow.record(o.getId(), null, OrderStatus.PENDING, "Đặt hàng");
+
+        // Consume promo / voucher / points in the same transaction.
+        if (applied.promo() != null)
+            promotions.redeem(applied.promo().promotionId(), userId, o.getId(), applied.promo().totalDiscount());
+        if (applied.voucher() != null && vouchers.markUsed(applied.voucher().getCode(), userId, o.getId()) == 0)
+            throw ApiException.unprocessable("VOUCHER_UNAVAILABLE", "Voucher đã được dùng hoặc đã hết hạn");
+        loyalty.spendForOrder(userId, pricing.pointsUsed(), code);
+        return assembler.detail(o, lines, List.of(first), basket.branch().getName());
+    }
+
+    /** The basket as the database sees it: one open branch, ACTIVE products only, subtotal from current prices. */
+    private Basket loadBasket(CheckoutRequest r) {
         Map<Long, Integer> qty = new TreeMap<>(); // sorted by product id: stable lock order, no deadlocks
         for (CheckoutLine l : r.items()) qty.merge(l.productId(), l.quantity(), Integer::sum);
         if (qty.values().stream().anyMatch(q -> q > 999))
@@ -91,88 +117,74 @@ public class OrderService {
         for (Product p : found.values())
             if (p.getStatus() != ProductStatus.ACTIVE)
                 throw ApiException.unprocessable("PRODUCT_UNAVAILABLE", "Sản phẩm \"" + p.getName() + "\" hiện không bán");
-        Address address = addresses.findByIdAndUserId(r.addressId(), userId)
-            .orElseThrow(() -> ApiException.notFound("ADDRESS_NOT_FOUND", "Không tìm thấy địa chỉ giao hàng"));
-
-        // 2. Money (long VND; percentages via BigDecimal inside Tier/PromotionService).
         long subtotal = 0;
         for (var e : qty.entrySet())
             subtotal = Math.addExact(subtotal, Math.multiplyExact(found.get(e.getKey()).getPrice(), (long) e.getValue()));
+        return new Basket(qty, found, branch, subtotal);
+    }
+
+    /** Validates promo code, voucher and points against the basket and prices the order (see CheckoutPricing). */
+    private Applied applyDiscounts(Long userId, CheckoutRequest r, Basket basket) {
         Tier tier = loyalty.tierFor(userId);
-        long fee = r.shippingMethod().fee(subtotal, tier.freeFastDelivery());
-        long tierDiscount = tier.discount(subtotal);
-
-        ValidateResponse promo = r.promoCode() == null || r.promoCode().isBlank() ? null
-            : promotions.evaluate(r.promoCode(), userId, branchId, subtotal, fee);
-        Voucher voucher = null;
-        long voucherGoods = 0;
-        long voucherShip = 0;
-        if (r.voucherCode() != null && !r.voucherCode().isBlank()) {
-            voucher = vouchers.findByCodeAndUserId(r.voucherCode().trim().toUpperCase(Locale.ROOT), userId)
-                .orElseThrow(() -> ApiException.notFound("VOUCHER_NOT_FOUND", "Voucher không tồn tại"));
-            if (!voucher.usableAt(Instant.now()))
-                throw ApiException.unprocessable("VOUCHER_UNAVAILABLE", "Voucher đã được dùng hoặc đã hết hạn");
-            if (subtotal < voucher.getMinOrder())
-                throw ApiException.unprocessable("VOUCHER_MIN_ORDER", "Đơn hàng chưa đạt giá trị tối thiểu để dùng voucher");
-            switch (voucher.getDiscountType()) {
-                case PERCENT -> voucherGoods = percent(subtotal, voucher.getValue());
-                case FIXED -> voucherGoods = voucher.getValue();
-                case FREE_SHIP -> voucherShip = fee;
-            }
-        }
-        long goodsDiscount = Math.min(subtotal - tierDiscount, (promo == null ? 0 : promo.discount()) + voucherGoods);
-        long shipDiscount = Math.min(fee, (promo == null ? 0 : promo.shippingDiscount()) + voucherShip);
-        long discount = goodsDiscount + shipDiscount;
-        long payable = subtotal + fee - tierDiscount - discount;
-
+        long subtotal = basket.subtotal();
+        long fee = CheckoutPricing.shippingFee(subtotal, r.shippingMethod(), tier);
+        ValidateResponse promo = isBlank(r.promoCode()) ? null
+            : promotions.evaluate(r.promoCode(), userId, basket.branchId(), subtotal, fee);
+        Voucher voucher = isBlank(r.voucherCode()) ? null : usableVoucher(r.voucherCode(), userId, subtotal);
+        CheckoutPricing pricing = CheckoutPricing.price(subtotal, r.shippingMethod(), tier,
+            promo == null ? 0 : promo.discount(), promo == null ? 0 : promo.shippingDiscount(),
+            voucher == null ? null : new VoucherTerms(voucher.getDiscountType(), voucher.getValue()));
         int points = r.usePoints() == null ? 0 : r.usePoints();
-        long pointsDiscount = Math.multiplyExact((long) points, (long) LoyaltyService.POINT_VALUE_VND);
-        if (points > 0) {
-            if (points > loyalty.balance(userId))
-                throw ApiException.unprocessable("INSUFFICIENT_POINTS", "Bạn không đủ điểm để sử dụng");
-            if (pointsDiscount > payable)
-                throw ApiException.unprocessable("POINTS_EXCEED_TOTAL", "Số điểm sử dụng vượt quá giá trị đơn hàng");
-        }
-        long total = payable - pointsDiscount;
+        if (points > 0 && points > loyalty.balance(userId))
+            throw ApiException.unprocessable("INSUFFICIENT_POINTS", "Bạn không đủ điểm để sử dụng");
+        return new Applied(promo, voucher, pricing.withPoints(points));
+    }
 
-        // 3. Reserve stock (each call is an atomic conditional UPDATE; a shortage throws 409 and rolls everything back).
-        for (var e : qty.entrySet()) inventory.reserve(branchId, e.getKey(), e.getValue());
+    private Voucher usableVoucher(String rawCode, Long userId, long subtotal) {
+        Voucher voucher = vouchers.findByCodeAndUserId(rawCode.trim().toUpperCase(Locale.ROOT), userId)
+            .orElseThrow(() -> ApiException.notFound("VOUCHER_NOT_FOUND", "Voucher không tồn tại"));
+        if (!voucher.usableAt(Instant.now()))
+            throw ApiException.unprocessable("VOUCHER_UNAVAILABLE", "Voucher đã được dùng hoặc đã hết hạn");
+        if (subtotal < voucher.getMinOrder())
+            throw ApiException.unprocessable("VOUCHER_MIN_ORDER", "Đơn hàng chưa đạt giá trị tối thiểu để dùng voucher");
+        return voucher;
+    }
 
-        // 4. Persist.
-        String dayKey = LocalDate.now(VN).format(DAY_KEY);
-        orders.nextSequence(dayKey);
-        String code = "DN-" + dayKey + "-" + String.format("%04d", orders.lastInsertId());
-
+    private static ShopOrder newOrder(String code, String idempotencyKey, Long userId, CheckoutRequest r, Basket basket,
+                                      Address address, Applied applied) {
+        CheckoutPricing p = applied.pricing();
         ShopOrder o = new ShopOrder();
         o.setCode(code);
         o.setUserId(userId);
-        o.setBranchId(branchId);
+        o.setBranchId(basket.branchId());
         o.setPaymentMethod(r.paymentMethod());
         o.setShippingMethod(r.shippingMethod());
-        o.setShippingFee(fee);
-        o.setSubtotal(subtotal);
-        o.setDiscount(discount);
-        o.setTierDiscount(tierDiscount);
-        o.setPointsUsed(points);
-        o.setPointsDiscount(pointsDiscount);
-        o.setTotal(total);
-        o.setPromoCode(promo == null ? null : promo.code());
-        o.setVoucherCode(voucher == null ? null : voucher.getCode());
+        o.setShippingFee(p.shippingFee());
+        o.setSubtotal(p.subtotal());
+        o.setDiscount(p.discount());
+        o.setTierDiscount(p.tierDiscount());
+        o.setPointsUsed(p.pointsUsed());
+        o.setPointsDiscount(p.pointsDiscount());
+        o.setTotal(p.total());
+        o.setPromoCode(applied.promo() == null ? null : applied.promo().code());
+        o.setVoucherCode(applied.voucher() == null ? null : applied.voucher().getCode());
         o.setShipRecipient(address.getRecipient());
         o.setShipPhone(address.getPhone());
         o.setShipLine1(address.getLine1());
         o.setShipWard(address.getWard());
         o.setShipDistrict(address.getDistrict());
         o.setShipCity(address.getCity());
-        o.setCustomerNote(r.customerNote() == null || r.customerNote().isBlank() ? null : r.customerNote().trim());
-        o.setIdempotencyKey(key);
-        o = orders.saveAndFlush(o);
+        o.setCustomerNote(isBlank(r.customerNote()) ? null : r.customerNote().trim());
+        o.setIdempotencyKey(idempotencyKey);
+        return o;
+    }
 
+    private static List<OrderItem> orderLines(Long orderId, Basket basket) {
         List<OrderItem> lines = new ArrayList<>();
-        for (var e : qty.entrySet()) {
-            Product p = found.get(e.getKey());
+        for (var e : basket.qty().entrySet()) {
+            Product p = basket.products().get(e.getKey());
             OrderItem i = new OrderItem();
-            i.setOrderId(o.getId());
+            i.setOrderId(orderId);
             i.setProductId(p.getId());
             i.setSku(p.getSku());
             i.setProductName(p.getName());
@@ -182,24 +194,14 @@ public class OrderService {
             i.setLineTotal(p.getPrice() * e.getValue());
             lines.add(i);
         }
-        items.saveAll(lines);
-        workflow.record(o.getId(), null, OrderStatus.PENDING, "Đặt hàng");
-
-        // 5. Consume promo / voucher / points in the same transaction.
-        if (promo != null) promotions.redeem(promo.promotionId(), userId, o.getId(), promo.totalDiscount());
-        if (voucher != null && vouchers.markUsed(voucher.getCode(), userId, o.getId()) == 0)
-            throw ApiException.unprocessable("VOUCHER_UNAVAILABLE", "Voucher đã được dùng hoặc đã hết hạn");
-        loyalty.spendForOrder(userId, points, code);
-        return assembler.detail(o);
+        return lines;
     }
 
     @Transactional(readOnly = true)
     public PageResponse<OrderSummary> list(OrderStatus status, int page, int size) {
         Collection<OrderStatus> statuses = status == null ? List.of(OrderStatus.values()) : List.of(status);
         var result = orders.findByUserIdAndStatusInOrderByIdDesc(CurrentUser.id(), statuses, Paging.of(page, size));
-        List<OrderSummary> data = assembler.summaries(result.getContent());
-        return new PageResponse<>(data, new com.kira.farm.shared.web.ApiTypes.PageMeta(result.getNumber(),
-            result.getSize(), result.getTotalElements(), result.getTotalPages()));
+        return PageResponse.of(result, assembler.summaries(result.getContent()));
     }
 
     @Transactional(readOnly = true)
@@ -226,6 +228,7 @@ public class OrderService {
         List<OrderItem> lines = items.findByOrderIdOrderByIdAsc(o.getId());
         Map<Long, Product> current = products.findAllById(lines.stream().map(OrderItem::getProductId).toList()).stream()
             .collect(Collectors.toMap(Product::getId, Function.identity()));
+        Map<Long, Integer> stock = inventory.availableByProduct(current.keySet());
         List<ReorderLine> ok = new ArrayList<>();
         List<ReorderSkipped> skipped = new ArrayList<>();
         for (OrderItem l : lines) {
@@ -234,7 +237,7 @@ public class OrderService {
                 skipped.add(new ReorderSkipped(l.getProductId(), l.getProductName(), "UNAVAILABLE"));
                 continue;
             }
-            int available = inventory.available(p.getBranchId(), p.getId());
+            int available = stock.getOrDefault(p.getId(), 0);
             if (available <= 0) {
                 skipped.add(new ReorderSkipped(p.getId(), p.getName(), "OUT_OF_STOCK"));
                 continue;
@@ -253,8 +256,17 @@ public class OrderService {
         return ApiException.notFound("ORDER_NOT_FOUND", "Không tìm thấy đơn hàng");
     }
 
-    private static long percent(long amount, long percent) {
-        return BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(percent))
-            .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP).longValueExact();
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+    private record Basket(Map<Long, Integer> qty, Map<Long, Product> products, Branch branch, long subtotal) {
+        Long branchId() {
+            return branch.getId();
+        }
+    }
+
+    /** Validated promotion/voucher (either may be null) and the resulting price. */
+    private record Applied(ValidateResponse promo, Voucher voucher, CheckoutPricing pricing) {
     }
 }

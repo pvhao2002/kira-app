@@ -1,5 +1,6 @@
 package com.kira.farm.order.infrastructure;
 
+import com.kira.farm.order.application.StatusCount;
 import com.kira.farm.order.domain.OrderStatus;
 import com.kira.farm.order.domain.ShopOrder;
 import jakarta.persistence.LockModeType;
@@ -40,11 +41,11 @@ public interface OrderRepository extends JpaRepository<ShopOrder, Long> {
                            @Param("statuses") Collection<OrderStatus> statuses, @Param("from") Instant from,
                            @Param("to") Instant to, @Param("q") String q, Pageable pageable);
 
-    /** Rows of [status, count] for the same filters as search (without the status filter). */
-    @Query("select o.status, count(o) from ShopOrder o where o.branchId in :branchIds "
+    /** Per-status counts for the same filters as search (without the status filter). */
+    @Query("select new com.kira.farm.order.application.StatusCount(o.status, count(o)) from ShopOrder o where o.branchId in :branchIds "
         + "and o.createdAt >= :from and o.createdAt < :to "
         + "and (lower(o.code) like :q or lower(o.shipRecipient) like :q or o.shipPhone like :q) group by o.status")
-    List<Object[]> countByStatus(@Param("branchIds") Collection<Long> branchIds, @Param("from") Instant from,
+    List<StatusCount> countByStatus(@Param("branchIds") Collection<Long> branchIds, @Param("from") Instant from,
                                  @Param("to") Instant to, @Param("q") String q);
 
     /** Atomically bumps the per-day counter; read the value with lastInsertId() on the same connection. */

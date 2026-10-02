@@ -6,14 +6,14 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Context load = Flyway V1..V5 applied and every JPQL/native repository query validated against real MySQL. */
+/** Context load = Flyway V1..V6 applied and every JPQL/native repository query validated against real MySQL. */
 class SchemaAndContextIT extends IntegrationTestBase {
 
     @Test
-    void flywayAppliedAllFiveMigrationsCleanly() {
+    void flywayAppliedAllMigrationsCleanly() {
         List<String> versions = jdbc.queryForList(
             "SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank", String.class);
-        assertEquals(List.of("1", "2", "3", "4", "5"), versions);
+        assertEquals(List.of("1", "2", "3", "4", "5", "6"), versions);
         // V2 reference data, V3 column, V5 columns exist.
         assertEquals(5, jdbc.queryForObject("SELECT COUNT(*) FROM branches", Integer.class));
         assertEquals(6, jdbc.queryForObject("SELECT COUNT(*) FROM categories", Integer.class));
@@ -25,9 +25,9 @@ class SchemaAndContextIT extends IntegrationTestBase {
     @Test
     void developmentSeederCreatedDemoUsersWithOtpEnrolled() {
         assertEquals(1, jdbc.queryForObject(
-            "SELECT COUNT(*) FROM users WHERE email='admin@doinang.vn' AND role='ADMIN' AND totp_enabled = 1", Integer.class));
+            "SELECT COUNT(*) FROM users WHERE email='admin@kirafarm.vn' AND role='ADMIN' AND totp_enabled = 1", Integer.class));
         assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM user_branch_assignments a JOIN users u ON u.id=a.user_id "
-            + "WHERE u.email='ngoc.le@doinang.vn'", Integer.class));
+            + "WHERE u.email='ngoc.le@kirafarm.vn'", Integer.class));
     }
 
     @Test

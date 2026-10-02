@@ -1,7 +1,7 @@
 package com.kira.farm.loyalty.domain;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import com.kira.farm.shared.domain.Money;
+
 import java.util.List;
 
 /**
@@ -52,8 +52,7 @@ public enum Tier {
     /** Tier discount on a goods subtotal in VND, rounded half-up. */
     public long discount(long subtotal) {
         if (discountPercent == 0 || subtotal <= 0) return 0L;
-        return BigDecimal.valueOf(subtotal).multiply(BigDecimal.valueOf(discountPercent))
-            .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP).longValueExact();
+        return Money.percentOf(subtotal, discountPercent);
     }
 
     public static Tier of(long pointsEarnedThisYear) {

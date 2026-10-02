@@ -1,6 +1,5 @@
 package com.kira.farm.branch.application;
 
-import com.kira.farm.branch.domain.Branch;
 import com.kira.farm.branch.infrastructure.BranchRepository;
 import com.kira.farm.shared.security.AuthPrincipal;
 import com.kira.farm.shared.security.CurrentUser;
@@ -9,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Single place that decides which branches the current back-office user may touch. Admin: every branch.
@@ -24,7 +22,7 @@ public class BranchAccess {
     public Set<Long> accessibleBranchIds() {
         AuthPrincipal p = CurrentUser.require();
         if (!p.isBackoffice()) throw denied();
-        if (p.isAdmin()) return branches.findAll().stream().map(Branch::getId).collect(Collectors.toUnmodifiableSet());
+        if (p.isAdmin()) return Set.copyOf(branches.findAllIds());
         return Set.copyOf(p.branchIds());
     }
 

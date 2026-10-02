@@ -8,8 +8,11 @@ import java.util.Map;
 /** Domain error with a stable machine-readable code and a Vietnamese user message. */
 @Getter
 public class ApiException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     private final HttpStatus status;
     private final String code;
+    @SuppressWarnings("serial") // always an immutable Map.copyOf (serializable)
     private final Map<String, String> fieldErrors;
 
     public ApiException(HttpStatus status, String code, String message) {

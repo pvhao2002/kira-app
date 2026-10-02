@@ -40,9 +40,9 @@ public class DevelopmentDataSeeder implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         seed("lan.nguyen@gmail.com", "0903128456", "Nguyễn Thị Lan", Role.CUSTOMER);
-        seed("minh.tran@doinang.vn", "0901000001", "Trần Văn Minh", Role.STAFF, "Q7");
-        seed("ngoc.le@doinang.vn", "0901000002", "Lê Thị Ngọc", Role.MANAGER, "Q3", "TD");
-        seed("admin@doinang.vn", "0901000003", "Quản trị viên", Role.ADMIN);
+        seed("minh.tran@kirafarm.vn", "0901000001", "Trần Văn Minh", Role.STAFF, "Q7");
+        seed("ngoc.le@kirafarm.vn", "0901000002", "Lê Thị Ngọc", Role.MANAGER, "Q3", "TD");
+        seed("admin@kirafarm.vn", "0901000003", "Quản trị viên", Role.ADMIN);
         log.warn("Development users seeded (APP_SEED_DEVELOPMENT_USERS=true). Never enable this in production.");
     }
 

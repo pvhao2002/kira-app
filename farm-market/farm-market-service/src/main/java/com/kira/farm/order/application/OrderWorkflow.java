@@ -73,13 +73,13 @@ public class OrderWorkflow {
         record(orderId, from, to, note);
     }
 
-    public void record(Long orderId, OrderStatus from, OrderStatus to, String note) {
+    public OrderStatusHistory record(Long orderId, OrderStatus from, OrderStatus to, String note) {
         OrderStatusHistory h = new OrderStatusHistory();
         h.setOrderId(orderId);
         h.setFromStatus(from);
         h.setToStatus(to);
         h.setActorUserId(CurrentUser.id());
         h.setNote(note == null || note.isBlank() ? null : note.trim());
-        history.save(h);
+        return history.save(h);
     }
 }

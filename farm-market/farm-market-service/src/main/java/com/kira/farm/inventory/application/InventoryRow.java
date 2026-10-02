@@ -3,7 +3,7 @@ package com.kira.farm.inventory.application;
 /** Admin inventory list row. Top-level (not nested) so JPQL constructor expressions resolve it reliably. */
 public record InventoryRow(Long productId, String sku, String name, String unit, Long branchId, int onHand,
                            int reserved) {
-    public static final int LOW_STOCK_LIMIT = 10;
+    public static final int LOW_STOCK_LIMIT = StockLevel.LOW_STOCK_LIMIT;
 
     public int available() {
         return onHand - reserved;
@@ -11,7 +11,6 @@ public record InventoryRow(Long productId, String sku, String name, String unit,
 
     /** OUT (hết hàng) when nothing is available, LOW (sắp hết) below the limit, otherwise OK. */
     public String level() {
-        int a = available();
-        return a <= 0 ? "OUT" : a < LOW_STOCK_LIMIT ? "LOW" : "OK";
+        return StockLevel.of(available()).name();
     }
 }

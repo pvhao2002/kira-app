@@ -7,6 +7,7 @@ import com.kira.farm.identity.domain.User;
 import com.kira.farm.identity.domain.UserStatus;
 import com.kira.farm.identity.infrastructure.RefreshTokenRepository;
 import com.kira.farm.identity.infrastructure.UserRepository;
+import com.kira.farm.shared.security.Hashing;
 import com.kira.farm.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,12 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -37,7 +34,7 @@ public class AuthService {
     private final TotpCrypto totpCrypto;
     @Value("${app.jwt.refresh-ttl}")
     private Duration refreshTtl;
-    private static final String OTP_ISSUER = "Doi Nang";
+    private static final String OTP_ISSUER = "Kira Farm";
     private volatile String dummyHash;
 
     /** Public self-registration always creates a CUSTOMER; staff/manager/admin are provisioned by an admin. */
@@ -135,7 +132,7 @@ public class AuthService {
     /** Rotates the refresh token; reuse of a revoked token revokes the whole family. */
     @Transactional(noRollbackFor = ApiException.class)
     public Session refresh(String raw) {
-        RefreshToken old = tokens.findByTokenHash(hash(raw)).orElseThrow(this::invalidRefresh);
+        RefreshToken old = tokens.findByTokenHash(Hashing.sha256Hex(raw)).orElseThrow(this::invalidRefresh);
         if (old.getRevokedAt() != null || old.getExpiresAt().isBefore(Instant.now())) {
             tokens.findByFamilyIdAndRevokedAtIsNull(old.getFamilyId()).forEach(t -> t.setRevokedAt(Instant.now()));
             throw invalidRefresh();
@@ -146,25 +143,23 @@ public class AuthService {
         }
         old.setRevokedAt(Instant.now());
         Session session = newSession(old.getUser(), old.getFamilyId());
-        old.setReplacedByHash(hash(session.refreshToken()));
+        old.setReplacedByHash(Hashing.sha256Hex(session.refreshToken()));
         return session;
     }
 
     @Transactional
     public void logout(String raw) {
-        if (raw != null) tokens.findByTokenHash(hash(raw)).ifPresent(t -> t.setRevokedAt(Instant.now()));
+        if (raw != null) tokens.findByTokenHash(Hashing.sha256Hex(raw)).ifPresent(t -> t.setRevokedAt(Instant.now()));
     }
 
     @Transactional(readOnly = true)
     public UserProfile me(Long userId) {
-        return profile(users.findById(userId).orElseThrow(() -> ApiException.notFound("USER_NOT_FOUND",
-            "Không tìm thấy người dùng")));
+        return profile(users.requireById(userId));
     }
 
     @Transactional
     public UserProfile updateProfile(Long userId, UpdateProfileRequest r) {
-        User user = users.findById(userId).orElseThrow(() -> ApiException.notFound("USER_NOT_FOUND",
-            "Không tìm thấy người dùng"));
+        User user = users.requireById(userId);
         String phone = normalizePhone(r.phone());
         if (phone != null && users.existsByPhoneAndIdNot(phone, userId))
             throw ApiException.conflict("PHONE_EXISTS", "Số điện thoại đã được sử dụng");
@@ -186,7 +181,7 @@ public class AuthService {
         String raw = UUID.randomUUID() + "." + UUID.randomUUID();
         RefreshToken token = new RefreshToken();
         token.setUser(user);
-        token.setTokenHash(hash(raw));
+        token.setTokenHash(Hashing.sha256Hex(raw));
         token.setFamilyId(family);
         token.setExpiresAt(Instant.now().plus(refreshTtl));
         tokens.save(token);
@@ -208,14 +203,6 @@ public class AuthService {
     private ApiException invalidRefresh() {
         return new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN",
             "Phiên đăng nhập không hợp lệ hoặc đã hết hạn");
-    }
-
-    private static String hash(String value) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     /** Exactly one of session (customers) or challenge (back-office, password ok, OTP pending) is set. */

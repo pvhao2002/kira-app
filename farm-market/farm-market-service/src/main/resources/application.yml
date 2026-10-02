@@ -3,21 +3,63 @@ spring:
     name: farm-market-service
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  # Tomcat request threads and @Async/scheduling run on virtual threads: blocking JDBC waits are cheap, so the
+  # real concurrency limit is the Hikari pool below (not a thread count).
+  threads.virtual.enabled: true
+  # Let in-flight requests finish on SIGTERM (rolling deploys) before the context closes.
+  lifecycle.timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT:30s}
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3308/farm_market?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${DB_USERNAME:farm_market}
     password: ${DB_PASSWORD:change-me}
+    hikari:
+      # Bounded on purpose: with virtual threads an unbounded pool would just move the queue into MySQL.
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:5000}   # fail fast with 5xx instead of hanging 30s
+      validation-timeout: 3000
+      idle-timeout: 600000
+      # Must stay below MySQL wait_timeout (default 8h) and any proxy/firewall idle cut-off.
+      max-lifetime: ${DB_MAX_LIFETIME_MS:1740000}
+      # 0 = off. Set e.g. DB_LEAK_DETECTION_MS=20000 while hunting a connection leak.
+      leak-detection-threshold: ${DB_LEAK_DETECTION_MS:0}
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        rewriteBatchedStatements: true
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: none
     properties:
       hibernate.jdbc.time_zone: UTC
+      # Insert/update batching (note: IDENTITY ids still disable insert batching for those entities).
+      hibernate.jdbc.batch_size: ${HIBERNATE_BATCH_SIZE:50}
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
+      # Lazy proxies/collections of a result page load with one IN query per 32 ids instead of one query each.
+      hibernate.default_batch_fetch_size: ${HIBERNATE_FETCH_BATCH_SIZE:32}
+      hibernate.query.in_clause_parameter_padding: true
+      hibernate.query.fail_on_pagination_over_collection_fetch: true
   flyway:
     enabled: true
   data.web.pageable.max-page-size: 100
 server:
   port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  compression:
+    enabled: ${HTTP_COMPRESSION:true}
+    mime-types: application/json,application/problem+json
+    min-response-size: 1KB
+  tomcat:
+    # Request threads are virtual (see spring.threads.virtual), so threads.max is not the limit; these are.
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:4096}
+    accept-count: ${TOMCAT_ACCEPT_COUNT:100}
+    connection-timeout: 20s
+    keep-alive-timeout: 30s
+    max-keep-alive-requests: 200
+    mbeanregistry.enabled: true   # Tomcat session/thread/connection metrics in /actuator/metrics
   error:
     include-stacktrace: never
     include-message: never
@@ -26,8 +68,16 @@ server:
     include-path: always
     whitelabel.enabled: false
 management:
-  endpoints.web.exposure.include: health,info
-  endpoint.health.show-details: never
+  # health is public (probes); every other actuator endpoint, metrics included, is ADMIN-only (SecurityConfig).
+  endpoints.web.exposure.include: health,info,metrics
+  endpoint.health:
+    show-details: never
+    show-components: never
+    probes.enabled: true   # /actuator/health/liveness and /readiness
+    group:
+      liveness.include: livenessState
+      readiness.include: readinessState,db
+  metrics.tags.application: ${spring.application.name}
 app:
   jwt:
     secret: ${JWT_SECRET:development-secret-must-have-at-least-32-characters}
@@ -39,7 +89,7 @@ app:
   cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4201}
   # Dev only: demo users + demo catalogue. Must be false in production.
   seed-development-users: ${APP_SEED_DEVELOPMENT_USERS:false}
-  seed-development-password: ${APP_SEED_DEVELOPMENT_PASSWORD:Doinang@123}
+  seed-development-password: ${APP_SEED_DEVELOPMENT_PASSWORD:KiraFarm@123}
   # Dev only: shared base32 TOTP secret enrolled for the seeded staff/manager/admin users.
   seed-development-totp-secret: ${APP_SEED_DEVELOPMENT_TOTP_SECRET:JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP}
   refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}

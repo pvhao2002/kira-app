@@ -31,8 +31,10 @@ public class CatalogService {
 
     @Transactional(readOnly = true)
     public List<CategoryResponse> categories() {
+        Map<Long, Long> counts = products.countByCategory(ProductStatus.ACTIVE).stream()
+            .collect(Collectors.toMap(CategoryCount::categoryId, CategoryCount::count));
         return categories.findAllByOrderBySortOrderAscIdAsc().stream().map(c -> new CategoryResponse(c.getId(),
-            c.getSlug(), c.getName(), products.countByCategoryIdAndStatus(c.getId(), ProductStatus.ACTIVE))).toList();
+            c.getSlug(), c.getName(), counts.getOrDefault(c.getId(), 0L))).toList();
     }
 
     /** sort: popular (default) | newest | price_asc | price_desc | rating. */

@@ -62,8 +62,8 @@ class TotpTest {
 
     @Test
     void otpauthUriShape() {
-        assertEquals("otpauth://totp/Doi%20Nang:a%40b.vn?secret=ABC&issuer=Doi%20Nang",
-            Totp.otpauthUri("Doi Nang", "a@b.vn", "ABC"));
+        assertEquals("otpauth://totp/Kira%20Farm:a%40b.vn?secret=ABC&issuer=Kira%20Farm",
+            Totp.otpauthUri("Kira Farm", "a@b.vn", "ABC"));
     }
 
     @Test

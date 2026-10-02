@@ -5,7 +5,6 @@ import com.kira.farm.dashboard.infrastructure.DashboardRepository;
 import com.kira.farm.inventory.application.InventoryRow;
 import com.kira.farm.inventory.infrastructure.InventoryRepository;
 import com.kira.farm.order.domain.OrderStatus;
-import com.kira.farm.shared.infrastructure.Rows;
 import com.kira.farm.shared.security.CurrentUser;
 import com.kira.farm.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -50,32 +49,27 @@ public class DashboardService {
             return new DashboardResponse(branchId, days, new Kpis(0, 0, 0, 0, 0, 0), byStatus, series(firstDay, today, Map.of()),
                 List.of(), List.of());
 
-        long[] day = revenue(scope, startToday, endToday);
-        long[] month = revenue(scope, startMonth, endToday);
         boolean all = CurrentUser.require().isAdmin() && branchId == null;
-        int allFlag = all ? 1 : 0;
-        Kpis kpis = new Kpis(day[0], month[0], day[1], month[1],
-            repo.newCustomers(allFlag, scope, startToday, endToday), repo.newCustomers(allFlag, scope, startMonth, endToday));
+        var revenue = repo.revenue(scope, startToday, startMonth, endToday);
+        var customers = repo.newCustomers(all ? 1 : 0, scope, startToday, startMonth, endToday);
+        Kpis kpis = new Kpis(revenue.getRevenueToday().longValue(), revenue.getRevenueMonth().longValue(),
+            revenue.getOrdersToday().longValue(), revenue.getOrdersMonth().longValue(),
+            customers.getToday().longValue(), customers.getMonth().longValue());
 
-        for (Object[] row : repo.statusCounts(scope, startRange, endToday))
-            byStatus.put(OrderStatus.valueOf((String) row[0]), Rows.num(row[1]));
+        for (var row : repo.statusCounts(scope, startRange, endToday))
+            byStatus.put(OrderStatus.valueOf(row.getStatus()), row.getTotal().longValue());
 
         Map<LocalDate, DayPoint> daily = new HashMap<>();
-        for (Object[] row : repo.daily(scope, startRange, endToday)) {
-            LocalDate d = Rows.date(row[0]);
-            daily.put(d, new DayPoint(d, Rows.num(row[1]), Rows.num(row[2])));
+        for (var row : repo.daily(scope, startRange, endToday)) {
+            LocalDate d = LocalDate.parse(row.getDay());
+            daily.put(d, new DayPoint(d, row.getRevenue().longValue(), row.getOrders().longValue()));
         }
         List<TopSeller> top = repo.topSellers(scope, startRange, endToday, 5).stream()
-            .map(r -> new TopSeller(Rows.num(r[0]), (String) r[1], Rows.num(r[2]), Rows.num(r[3]))).toList();
-        List<LowStockItem> low = inventory.search(scope, "%%", Integer.MIN_VALUE, InventoryRow.LOW_STOCK_LIMIT - 1,
-                PageRequest.of(0, 10)).getContent().stream()
+            .map(r -> new TopSeller(r.getProductId().longValue(), r.getName(), r.getQuantity().longValue(),
+                r.getRevenue().longValue())).toList();
+        List<LowStockItem> low = inventory.lowStock(scope, InventoryRow.LOW_STOCK_LIMIT - 1, PageRequest.of(0, 10)).stream()
             .map(i -> new LowStockItem(i.productId(), i.sku(), i.name(), i.branchId(), i.available(), i.level())).toList();
         return new DashboardResponse(branchId, days, kpis, byStatus, series(firstDay, today, daily), top, low);
-    }
-
-    private long[] revenue(Set<Long> scope, Instant from, Instant to) {
-        Object[] row = repo.revenue(scope, from, to).getFirst();
-        return new long[]{Rows.num(row[0]), Rows.num(row[1])};
     }
 
     /** One point per day, zero-filled. */

@@ -2,6 +2,7 @@ package com.kira.farm.identity.domain;
 
 import com.kira.farm.shared.domain.BaseEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -40,7 +41,8 @@ public class User extends BaseEntity {
     /** Last accepted TOTP time step; codes at or below it are replays. */
     private Long totpLastStep;
     /** Staff/manager branch assignments (user_branch_assignments). Admin ignores this and sees every branch. */
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
+    @BatchSize(size = 50)
     @CollectionTable(name = "user_branch_assignments", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "branch_id")
     private Set<Long> branchIds = new HashSet<>();

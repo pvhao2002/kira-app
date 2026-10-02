@@ -84,7 +84,7 @@ public class CatalogSeeder implements ApplicationRunner {
                     p.setOldPrice(g.q7OldPrice());
                     p.setBadge(g.q7Badge());
                 }
-                p.setOrigin("Trại Đồi Nắng · Lâm Đồng");
+                p.setOrigin("Trại Kira Farm · Lâm Đồng");
                 p.setRatingAvg(new BigDecimal("4.8"));
                 p.setReviewCount(12);
                 p.setSoldCount(100 * (GROUPS.length - i));

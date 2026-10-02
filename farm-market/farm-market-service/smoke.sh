@@ -2,7 +2,7 @@
 # Smoke test against a running farm-market-service (dev seed users). Usage: ./smoke.sh [base-url]
 # Needs: curl, node. Exits non-zero on the first failed check.
 B=${1:-http://localhost:8081/api/v1}
-PW='Doinang@123'
+PW='KiraFarm@123'
 fail() { echo "FAIL: $*"; exit 1; }
 js() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const o=JSON.parse(s);const v=($1);console.log(v===undefined?'':typeof v==='object'?JSON.stringify(v):v)})"; }
 post() { curl -s -X POST "$B$1" -H "Authorization: Bearer $2" -H 'Content-Type: application/json' ${4:+-H "Idempotency-Key: $4"} -d "$3"; }
@@ -18,8 +18,8 @@ login() {
 }
 
 CUST=$(login lan.nguyen@gmail.com); [ -n "$CUST" ] || fail customer login
-STAFF=$(login minh.tran@doinang.vn); [ -n "$STAFF" ] || fail staff login
-ADMIN=$(login admin@doinang.vn); [ -n "$ADMIN" ] || fail admin login
+STAFF=$(login minh.tran@kirafarm.vn); [ -n "$STAFF" ] || fail staff login
+ADMIN=$(login admin@kirafarm.vn); [ -n "$ADMIN" ] || fail admin login
 echo "ok logins"
 
 PID=$(curl -s "$B/products?branchId=1&size=1" | js 'o.data[0].id')
@@ -81,7 +81,7 @@ echo "ok profile update"
 NP='{"branchId":1,"name":"Smoke product","sku":"SMK-'$$'","category":"trung","price":1000,"unit":"hop","initialStock":1}'
 [ "$(post /admin/products "$STAFF" "$NP" | js 'o.status')" = "403" ] || fail "staff created a product"
 echo "ok staff blocked from product writes"
-MGR=$(login ngoc.le@doinang.vn); NPM=${NP/\"branchId\":1/\"branchId\":2}
+MGR=$(login ngoc.le@kirafarm.vn); NPM=${NP/\"branchId\":1/\"branchId\":2}
 [ "$(post /admin/products "$MGR" "$NPM" | js 'o.id')" != "" ] || fail "manager could not create a product"
 echo "ok manager can create products in own branch"
 echo "ALL OK"

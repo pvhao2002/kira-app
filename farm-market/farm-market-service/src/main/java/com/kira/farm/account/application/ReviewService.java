@@ -6,6 +6,7 @@ import com.kira.farm.branch.application.BranchAccess;
 import com.kira.farm.catalog.domain.Product;
 import com.kira.farm.catalog.domain.ProductStatus;
 import com.kira.farm.catalog.infrastructure.ProductRepository;
+import com.kira.farm.identity.application.UserName;
 import com.kira.farm.identity.domain.User;
 import com.kira.farm.identity.infrastructure.UserRepository;
 import com.kira.farm.loyalty.application.LoyaltyService;
@@ -94,8 +95,8 @@ public class ReviewService {
         Product p = products.findBySlug(slug).filter(x -> x.getStatus() == ProductStatus.ACTIVE)
             .orElseThrow(() -> ApiException.notFound("PRODUCT_NOT_FOUND", "Không tìm thấy sản phẩm"));
         var result = reviews.findByProductIdOrderByIdDesc(p.getId(), Paging.of(page, size));
-        Map<Long, String> names = users.findAllById(result.getContent().stream().map(Review::getUserId).toList()).stream()
-            .collect(Collectors.toMap(User::getId, User::getFullName));
+        Map<Long, String> names = users.findNames(result.getContent().stream().map(Review::getUserId).toList()).stream()
+            .collect(Collectors.toMap(UserName::id, UserName::fullName));
         return PageResponse.of(result, r -> toPublic(r, names.get(r.getUserId())));
     }
 

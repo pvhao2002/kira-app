@@ -38,14 +38,15 @@ public class CustomerAdminService {
         var pageable = Paging.of(page, size);
         Set<Long> scope = access.accessibleBranchIds();
         boolean admin = CurrentUser.require().isAdmin();
-        if (scope.isEmpty() && !admin) return new PageResponse<>(List.of(), new PageMeta(page, size, 0, 0));
+        if (scope.isEmpty() && !admin) return new PageResponse<>(List.of(), PageMeta.empty(page, size));
         List<Long> ids = scope.isEmpty() ? List.of(-1L) : List.copyOf(scope);
         int all = admin ? 1 : 0;
         String like = "%" + (q == null ? "" : q.trim().toLowerCase(Locale.ROOT)) + "%";
         long total = repo.countCustomers(all, ids, like);
         List<CustomerResponse> data = repo.customers(all, ids, like, size, pageable.getOffset()).stream()
-            .map(r -> new CustomerResponse(Rows.num(r[0]), (String) r[1], (String) r[2], (String) r[3],
-                UserStatus.valueOf((String) r[4]), Rows.instant(r[5]), Rows.num(r[6]), Rows.num(r[7]))).toList();
+            .map(r -> new CustomerResponse(r.getId().longValue(), r.getFullName(), r.getEmail(), r.getPhone(),
+                UserStatus.valueOf(r.getStatus()), Rows.instant(r.getCreatedAt()), r.getOrderCount().longValue(),
+                r.getTotalSpent().longValue())).toList();
         return new PageResponse<>(data, new PageMeta(page, size, total, (int) Math.ceil(total / (double) size)));
     }
 

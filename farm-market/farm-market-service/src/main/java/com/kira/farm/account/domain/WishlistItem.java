@@ -33,6 +33,8 @@ public class WishlistItem {
     @AllArgsConstructor
     @EqualsAndHashCode
     public static class Key implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private Long userId;
         private Long productId;
     }

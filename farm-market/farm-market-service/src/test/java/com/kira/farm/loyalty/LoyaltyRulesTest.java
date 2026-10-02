@@ -70,21 +70,21 @@ class LoyaltyRulesTest {
     void purchaseAwardsOnePointPerTenThousand() {
         LoyaltyRepository ledger = mock(LoyaltyRepository.class);
         LoyaltyService svc = new LoyaltyService(ledger, mock(VoucherRepository.class), mock(UserRepository.class), props());
-        svc.awardPurchase(1L, "DN-1", 129_999);
-        verify(ledger).insertExpiring(eq(1L), eq(12), eq("PURCHASE"), eq("ORDER"), eq("DN-1"), any());
-        svc.awardPurchase(1L, "DN-2", 9_999); // under one point: nothing written
-        verify(ledger, never()).insertExpiring(anyLong(), anyInt(), anyString(), anyString(), eq("DN-2"), any());
+        svc.awardPurchase(1L, "KF-1", 129_999);
+        verify(ledger).insertExpiring(eq(1L), eq(12), eq("PURCHASE"), eq("ORDER"), eq("KF-1"), any());
+        svc.awardPurchase(1L, "KF-2", 9_999); // under one point: nothing written
+        verify(ledger, never()).insertExpiring(anyLong(), anyInt(), anyString(), anyString(), eq("KF-2"), any());
     }
 
     @Test
     void refundIsIdempotentViaLedgerUniqueKey() {
         LoyaltyRepository ledger = mock(LoyaltyRepository.class);
         LoyaltyService svc = new LoyaltyService(ledger, mock(VoucherRepository.class), mock(UserRepository.class), props());
-        when(ledger.insertPermanent(1L, 40, "ORDER_CANCEL_REFUND", "ORDER", "DN-1")).thenReturn(1, 0);
-        assertTrue(svc.refundForOrder(1L, 40, "DN-1"));
-        assertFalse(svc.refundForOrder(1L, 40, "DN-1")); // retry: unique key ignores the second insert
-        assertFalse(svc.refundForOrder(1L, 0, "DN-1"));
-        verify(ledger, times(2)).insertPermanent(1L, 40, "ORDER_CANCEL_REFUND", "ORDER", "DN-1");
+        when(ledger.insertPermanent(1L, 40, "ORDER_CANCEL_REFUND", "ORDER", "KF-1")).thenReturn(1, 0);
+        assertTrue(svc.refundForOrder(1L, 40, "KF-1"));
+        assertFalse(svc.refundForOrder(1L, 40, "KF-1")); // retry: unique key ignores the second insert
+        assertFalse(svc.refundForOrder(1L, 0, "KF-1"));
+        verify(ledger, times(2)).insertPermanent(1L, 40, "ORDER_CANCEL_REFUND", "ORDER", "KF-1");
     }
 
     @Test

@@ -4,81 +4,153 @@ import com.kira.farm.shared.web.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
-/** Blocks credential stuffing per identifier. ponytail: in-memory per instance; move to Redis when running >1 replica. */
+/**
+ * Blocks credential stuffing per identifier and OTP guessing per user. ponytail: in-memory per instance; move to Redis
+ * when running >1 replica. Memory is bounded: expired windows are swept at most once a minute, and if a flood of
+ * distinct identifiers still fills the map, the least recently failing entries are evicted.
+ */
 @Component
 public class LoginRateLimiter {
-    private static final int MAX_FAILURES = 5;
-    private static final Duration WINDOW = Duration.ofMinutes(15);
-    private static final int OTP_MAX_FAILURES = 5;
-    private static final Duration OTP_WINDOW = Duration.ofMinutes(5);
-    private final ConcurrentHashMap<Long, Deque<Instant>> otpFailures = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Deque<Instant>> failures = new ConcurrentHashMap<>();
+    static final int DEFAULT_MAX_KEYS = 50_000;
+    private final FailureWindow<String> login;
+    private final FailureWindow<Long> otp;
+
+    public LoginRateLimiter() {
+        this(Clock.systemUTC(), DEFAULT_MAX_KEYS);
+    }
+
+    LoginRateLimiter(Clock clock, int maxKeys) {
+        this.login = new FailureWindow<>(clock, 5, Duration.ofMinutes(15), maxKeys);
+        this.otp = new FailureWindow<>(clock, 5, Duration.ofMinutes(5), maxKeys);
+    }
 
     public void check(String identifier) {
-        Deque<Instant> q = failures.get(key(identifier));
-        if (q == null) return;
-        synchronized (q) {
-            prune(q);
-            if (q.size() >= MAX_FAILURES)
-                throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_ATTEMPTS",
-                    "Bạn đã thử quá nhiều lần, vui lòng thử lại sau ít phút");
-        }
+        if (login.blocked(key(identifier)))
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_ATTEMPTS",
+                "Bạn đã thử quá nhiều lần, vui lòng thử lại sau ít phút");
     }
 
     public void recordFailure(String identifier) {
-        Deque<Instant> q = failures.computeIfAbsent(key(identifier), k -> new ArrayDeque<>());
-        synchronized (q) {
-            prune(q);
-            q.addLast(Instant.now());
-        }
+        login.record(key(identifier));
     }
 
     public void recordSuccess(String identifier) {
-        failures.remove(key(identifier));
+        login.clear(key(identifier));
     }
 
     /** OTP attempts are capped per user id: 5 failures within 5 minutes. */
     public void checkOtp(Long userId) {
-        Deque<Instant> q = otpFailures.get(userId);
-        if (q == null) return;
-        synchronized (q) {
-            pruneOtp(q);
-            if (q.size() >= OTP_MAX_FAILURES)
-                throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "OTP_RATE_LIMITED",
-                    "Bạn đã nhập sai quá nhiều lần, vui lòng thử lại sau ít phút");
-        }
+        if (otp.blocked(userId))
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "OTP_RATE_LIMITED",
+                "Bạn đã nhập sai quá nhiều lần, vui lòng thử lại sau ít phút");
     }
 
     public void recordOtpFailure(Long userId) {
-        Deque<Instant> q = otpFailures.computeIfAbsent(userId, k -> new ArrayDeque<>());
-        synchronized (q) {
-            pruneOtp(q);
-            q.addLast(Instant.now());
-        }
+        otp.record(userId);
     }
 
     public void recordOtpSuccess(Long userId) {
-        otpFailures.remove(userId);
+        otp.clear(userId);
     }
 
-    private static void pruneOtp(Deque<Instant> q) {
-        Instant cutoff = Instant.now().minus(OTP_WINDOW);
-        while (!q.isEmpty() && q.peekFirst().isBefore(cutoff)) q.pollFirst();
-    }
-
-    private static void prune(Deque<Instant> q) {
-        Instant cutoff = Instant.now().minus(WINDOW);
-        while (!q.isEmpty() && q.peekFirst().isBefore(cutoff)) q.pollFirst();
+    /** Number of tracked identifiers (login + OTP); for tests and diagnostics. */
+    int trackedKeys() {
+        return login.size() + otp.size();
     }
 
     private static String key(String identifier) {
         return identifier.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /** Sliding window of failure timestamps per key, with bounded memory. */
+    private static final class FailureWindow<K> {
+        private static final long SWEEP_EVERY_MILLIS = 60_000;
+        private final ConcurrentHashMap<K, Deque<Instant>> failures = new ConcurrentHashMap<>();
+        private final AtomicLong lastSweepMillis;
+        private final Clock clock;
+        private final int maxFailures;
+        private final Duration window;
+        private final int maxKeys;
+
+        FailureWindow(Clock clock, int maxFailures, Duration window, int maxKeys) {
+            this.clock = clock;
+            this.maxFailures = maxFailures;
+            this.window = window;
+            this.maxKeys = maxKeys;
+            this.lastSweepMillis = new AtomicLong(clock.millis());
+        }
+
+        boolean blocked(K key) {
+            Deque<Instant> q = failures.get(key);
+            if (q == null) return false;
+            synchronized (q) {
+                prune(q);
+                return q.size() >= maxFailures;
+            }
+        }
+
+        void record(K key) {
+            maintain();
+            failures.compute(key, (k, q) -> {
+                Deque<Instant> d = q == null ? new ArrayDeque<>() : q;
+                synchronized (d) {
+                    prune(d);
+                    d.addLast(clock.instant());
+                }
+                return d;
+            });
+        }
+
+        void clear(K key) {
+            failures.remove(key);
+        }
+
+        int size() {
+            return failures.size();
+        }
+
+        private void prune(Deque<Instant> q) {
+            Instant cutoff = clock.instant().minus(window);
+            while (!q.isEmpty() && q.peekFirst().isBefore(cutoff)) q.pollFirst();
+        }
+
+        /** Drops expired windows (at most once a minute) and, if still over the cap, the stalest entries. */
+        private void maintain() {
+            long now = clock.millis();
+            long last = lastSweepMillis.get();
+            boolean due = now - last >= SWEEP_EVERY_MILLIS && lastSweepMillis.compareAndSet(last, now);
+            if (!due && failures.size() < maxKeys) return;
+            failures.entrySet().removeIf(e -> {
+                synchronized (e.getValue()) {
+                    prune(e.getValue());
+                    return e.getValue().isEmpty();
+                }
+            });
+            int keep = maxKeys - Math.max(1, maxKeys / 10);
+            if (failures.size() >= maxKeys) {
+                failures.entrySet().stream()
+                    .sorted(Comparator.comparing((Map.Entry<K, Deque<Instant>> e) -> lastFailure(e.getValue())))
+                    .limit(failures.size() - keep)
+                    .map(Map.Entry::getKey).toList()
+                    .forEach(failures::remove);
+            }
+        }
+
+        private static Instant lastFailure(Deque<Instant> q) {
+            synchronized (q) {
+                return q.isEmpty() ? Instant.MIN : q.peekLast();
+            }
+        }
     }
 }

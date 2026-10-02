@@ -2,6 +2,7 @@ package com.kira.farm.promotion.domain;
 
 import com.kira.farm.shared.domain.BaseEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -38,7 +39,8 @@ public class Promotion extends BaseEntity {
     private boolean active = true;
     @Column(nullable = false)
     private boolean allBranches = true;
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
+    @BatchSize(size = 50)
     @CollectionTable(name = "promotion_branches", joinColumns = @JoinColumn(name = "promotion_id"))
     @Column(name = "branch_id")
     private Set<Long> branchIds = new HashSet<>();

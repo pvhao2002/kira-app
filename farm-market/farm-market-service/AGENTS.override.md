@@ -2,7 +2,7 @@
 
 ## Scope
 
-Java 25 Spring Boot 3.5 modular monolith for the "Đồi Nắng" multi-branch farm store. One package per capability under
+Java 25 Spring Boot 3.5 modular monolith for the "Kira Farm" multi-branch farm store. One package per capability under
 `com.kira.farm` (`identity`, `branch`, `catalog`, `inventory`, `promotion`, `order`, `loyalty`, `account`,
 `dashboard`), each split into `domain`, `application`, `infrastructure`, `web`. Cross-cutting code lives in `shared`.
 
@@ -18,7 +18,20 @@ Java 25 Spring Boot 3.5 modular monolith for the "Đồi Nắng" multi-branch fa
   Never log tokens, passwords, phones, addresses, or payment payloads.
 - Schema changes are new Flyway files in `src/main/resources/db/migration`; never edit an applied migration.
 - Dev seed (users + demo catalogue) only when `APP_SEED_DEVELOPMENT_USERS=true`; branches/categories come from `V2`.
-- Keep `/api/v1` stable; update `farm-market-ui` models when a contract changes.
+- Keep `/api/v1` stable; update `farm-market-ui` models when a contract changes. `OpenApiContractIT` compares `/v3/api-docs`
+  with `src/test/resources/openapi-baseline.json`; only regenerate it (env `OPENAPI_REGEN=true`) for a deliberate change.
+- Performance conventions: request threads are virtual (`spring.threads.virtual.enabled`); the Hikari pool is the
+  concurrency limit, so never hold a connection across a slow call. No N+1: associations are LAZY (no `EAGER`), pages load
+  related rows with one `IN` query (`default_batch_fetch_size`, `@EntityGraph`, or an explicit `findAllById`/projection
+  such as `UserRepository.findNames`), aggregates are computed in SQL, and pure reads use `@Transactional(readOnly = true)`.
+  When you add or change a list/read endpoint, add it to `QueryCountIT` with a bound that does not grow with page size.
+  Add an index only with EXPLAIN evidence in `IndexExplainIT` (V1 already indexes most predicates).
+- Pure money/eligibility rules live in small immutable classes with unit tests (`CheckoutPricing`, `PromotionRules`,
+  `StockLevel`, `Money`); services orchestrate I/O around them. Native-query rows use interface/record projections, not `Object[]`.
+- Public cache headers: only `PublicCacheFilter` sets `Cache-Control: public` (+ ETag) and only for anonymous GETs of
+  branches, categories, the product list and one product, with a short `max-age` and `must-revalidate`. Never cache
+  anything authenticated or `/admin`; errors are never cached. Keep new public endpoints out of the filter unless stale data is harmless.
+- In-memory state (`LoginRateLimiter`) must be bounded: expire entries and cap the map; per-instance only (move to Redis for >1 replica).
 
 ## Verification
 

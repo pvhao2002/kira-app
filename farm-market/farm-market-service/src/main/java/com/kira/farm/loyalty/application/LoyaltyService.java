@@ -6,6 +6,7 @@ import com.kira.farm.loyalty.domain.Voucher;
 import com.kira.farm.loyalty.infrastructure.LoyaltyRepository;
 import com.kira.farm.loyalty.infrastructure.VoucherRepository;
 import com.kira.farm.shared.security.CurrentUser;
+import com.kira.farm.shared.security.Hashing;
 import com.kira.farm.shared.web.ApiException;
 import com.kira.farm.shared.web.ApiTypes.PageResponse;
 import com.kira.farm.shared.web.IdempotencyKey;
@@ -14,14 +15,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -155,7 +152,7 @@ public class LoyaltyService {
             .orElseThrow(() -> ApiException.notFound("REWARD_NOT_FOUND", "Phần thưởng không tồn tại"));
         Long userId = CurrentUser.id();
         lockUser(userId);
-        String refId = sha256Hex(userId + ":" + reward.id() + ":" + key);
+        String refId = Hashing.sha256Hex(userId + ":" + reward.id() + ":" + key);
         String code = "VC" + refId.substring(0, 10).toUpperCase(Locale.ROOT);
         Instant now = Instant.now();
         Optional<Voucher> existing = vouchers.findByCodeAndUserId(code, userId);
@@ -180,13 +177,5 @@ public class LoyaltyService {
     public List<VoucherResponse> vouchers() {
         Instant now = Instant.now();
         return vouchers.findByUserIdOrderByIdDesc(CurrentUser.id()).stream().map(v -> VoucherResponse.of(v, now)).toList();
-    }
-
-    private static String sha256Hex(String value) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

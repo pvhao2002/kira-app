@@ -68,11 +68,6 @@ public class InventoryService {
         log(branchId, productId, MovementType.RETURN, qty, "Hoàn kho", refType, refId, actorOrNull());
     }
 
-    @Transactional(readOnly = true)
-    public int available(Long branchId, Long productId) {
-        return inventory.findByBranchIdAndProductId(branchId, productId).map(InventoryItem::available).orElse(0);
-    }
-
     /** productId -> available (missing rows are absent from the map; treat as 0). */
     @Transactional(readOnly = true)
     public Map<Long, Integer> availableByProduct(Collection<Long> productIds) {
@@ -102,15 +97,9 @@ public class InventoryService {
         int min = Integer.MIN_VALUE;
         int max = Integer.MAX_VALUE;
         if (level != null && !level.isBlank()) {
-            switch (level.toUpperCase(Locale.ROOT)) {
-                case "OUT" -> max = 0;
-                case "LOW" -> {
-                    min = 1;
-                    max = InventoryRow.LOW_STOCK_LIMIT - 1;
-                }
-                case "OK" -> min = InventoryRow.LOW_STOCK_LIMIT;
-                default -> throw ApiException.badRequest("INVALID_PARAMETER", "Mức tồn không hợp lệ");
-            }
+            StockLevel l = StockLevel.parse(level);
+            min = l.minAvailable();
+            max = l.maxAvailable();
         }
         String like = "%" + (q == null ? "" : q.trim().toLowerCase(Locale.ROOT)) + "%";
         return PageResponse.of(inventory.search(branchIds, like, min, max, Paging.of(page, size)), StockResponse::of);

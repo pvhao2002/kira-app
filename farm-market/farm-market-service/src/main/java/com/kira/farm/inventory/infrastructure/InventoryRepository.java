@@ -42,16 +42,21 @@ public interface InventoryRepository extends JpaRepository<InventoryItem, Long> 
         + "WHERE branch_id = :branchId AND product_id = :productId AND on_hand + :delta >= reserved", nativeQuery = true)
     int addOnHand(@Param("branchId") Long branchId, @Param("productId") Long productId, @Param("delta") int delta);
 
-    @Query(value = "select new com.kira.farm.inventory.application.InventoryRow(p.id, p.sku, p.name, p.unit, "
-        + "i.branchId, i.onHand, i.reserved) from InventoryItem i, Product p "
-        + "where i.productId = p.id and i.branchId in :branchIds "
-        + "and (lower(p.name) like :q or lower(p.sku) like :q) "
-        + "and (i.onHand - i.reserved) between :minAvailable and :maxAvailable order by p.name asc, p.id asc",
-        countQuery = "select count(i) from InventoryItem i, Product p "
-            + "where i.productId = p.id and i.branchId in :branchIds "
-            + "and (lower(p.name) like :q or lower(p.sku) like :q) "
-            + "and (i.onHand - i.reserved) between :minAvailable and :maxAvailable")
+    String ROW_SELECT = "select new com.kira.farm.inventory.application.InventoryRow(p.id, p.sku, p.name, p.unit, "
+        + "i.branchId, i.onHand, i.reserved) from InventoryItem i, Product p where i.productId = p.id "
+        + "and i.branchId in :branchIds ";
+    String NAME_FILTER = "and (lower(p.name) like :q or lower(p.sku) like :q) ";
+    String AVAILABLE_FILTER = "and (i.onHand - i.reserved) between :minAvailable and :maxAvailable ";
+
+    @Query(value = ROW_SELECT + NAME_FILTER + AVAILABLE_FILTER + "order by p.name asc, p.id asc",
+        countQuery = "select count(i) from InventoryItem i, Product p where i.productId = p.id "
+            + "and i.branchId in :branchIds " + NAME_FILTER + AVAILABLE_FILTER)
     Page<InventoryRow> search(@Param("branchIds") Collection<Long> branchIds, @Param("q") String q,
                               @Param("minAvailable") int minAvailable, @Param("maxAvailable") int maxAvailable,
                               Pageable pageable);
+
+    /** Rows with at most `maxAvailable` units available, by name; no count query (dashboard widget). */
+    @Query(ROW_SELECT + "and (i.onHand - i.reserved) <= :maxAvailable order by p.name asc, p.id asc")
+    List<InventoryRow> lowStock(@Param("branchIds") Collection<Long> branchIds,
+                                @Param("maxAvailable") int maxAvailable, Pageable pageable);
 }

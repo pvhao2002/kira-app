@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Bank account configured: BANK_TRANSFER orders carry a VietQR block and staff reconcile payments by hand. */
 @TestPropertySource(properties = {"app.payment.bank.bin=970436", "app.payment.bank.name=Vietcombank",
-    "app.payment.bank.account-no=0123456789", "app.payment.bank.account-name=CONG TY DOI NANG"})
+    "app.payment.bank.account-no=0123456789", "app.payment.bank.account-name=CONG TY KIRA FARM"})
 class PaymentIT extends IntegrationTestBase {
 
     private Res placeOrder(Customer c, long product, String method) {
@@ -42,7 +42,7 @@ class PaymentIT extends IntegrationTestBase {
         assertEquals("Vietcombank", p.path("bankName").asText());
         assertEquals("0123456789", p.path("accountNo").asText());
         assertEquals("https://img.vietqr.io/image/970436-0123456789-compact2.png?amount=" + r.num("total")
-            + "&addInfo=" + r.str("code") + "&accountName=CONG%20TY%20DOI%20NANG", p.path("qrUrl").asText());
+            + "&addInfo=" + r.str("code") + "&accountName=CONG%20TY%20KIRA%20FARM", p.path("qrUrl").asText());
         // The owner can read it back; COD / e-wallet orders have no payment block.
         assertEquals(p, api.get("/api/v1/orders/" + r.str("code"), c.token()).json().path("payment"));
         assertTrue(placeOrder(c, product, "COD").json().path("payment").isNull());

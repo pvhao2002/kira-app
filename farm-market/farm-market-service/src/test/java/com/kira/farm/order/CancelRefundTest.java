@@ -51,7 +51,7 @@ class CancelRefundTest {
     ShopOrder order(OrderStatus status) {
         ShopOrder o = new ShopOrder();
         o.setId(5L);
-        o.setCode("DN-260101-0001");
+        o.setCode("KF-260101-0001");
         o.setUserId(9L);
         o.setBranchId(2L);
         o.setStatus(status);
@@ -70,7 +70,7 @@ class CancelRefundTest {
         workflow.apply(order(OrderStatus.CONFIRMED), OrderStatus.CANCELLED, null, "x");
 
         verify(inventory).release(2L, 11L, 3);
-        verify(loyalty).refundForOrder(9L, 40, "DN-260101-0001");
+        verify(loyalty).refundForOrder(9L, 40, "KF-260101-0001");
         verify(vouchers).release(5L);
         verify(promotions).release(5L);
         verify(loyalty, never()).awardPurchase(any(), any(), anyLong());

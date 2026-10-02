@@ -52,7 +52,7 @@ public class AdminUserService {
     /** Clears the TOTP secret so the person must enroll again at next login. Never returns the secret. */
     @Transactional
     public void resetOtp(Long id, Long adminId) {
-        User u = users.findById(id).orElseThrow(() -> ApiException.notFound("USER_NOT_FOUND", "Người dùng không tồn tại"));
+        User u = users.requireById(id);
         u.setTotpSecret(null);
         u.setTotpEnabled(false);
         u.setTotpLastStep(null);
@@ -63,7 +63,7 @@ public class AdminUserService {
     /** Replaces the user's branch assignments. Only STAFF and MANAGER accounts are branch-scoped. */
     @Transactional
     public UserSummary assignBranches(Long id, BranchAssignmentRequest r) {
-        User u = users.findById(id).orElseThrow(() -> ApiException.notFound("USER_NOT_FOUND", "Người dùng không tồn tại"));
+        User u = users.requireById(id);
         if (u.getRole() != Role.STAFF && u.getRole() != Role.MANAGER)
             throw ApiException.unprocessable("USER_NOT_BRANCH_SCOPED", "Chỉ nhân viên và quản lý mới được gán chi nhánh");
         if (branches.findAllById(r.branchIds()).size() != r.branchIds().size())

@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class VietQrTest {
     @Test
     void buildsUrlWithAmountNoteAndEncodedAccountName() {
-        assertEquals("https://img.vietqr.io/image/970436-0123456789-compact2.png?amount=1250000&addInfo=DN-20260001"
+        assertEquals("https://img.vietqr.io/image/970436-0123456789-compact2.png?amount=1250000&addInfo=KF-20260001"
                 + "&accountName=NGUY%E1%BB%84N%20V%C4%82N%20A%20%26%20CO",
-            VietQr.imageUrl("970436", "0123456789", "NGUYỄN VĂN A & CO", 1_250_000L, "DN-20260001"));
+            VietQr.imageUrl("970436", "0123456789", "NGUYỄN VĂN A & CO", 1_250_000L, "KF-20260001"));
     }
 
     @Test

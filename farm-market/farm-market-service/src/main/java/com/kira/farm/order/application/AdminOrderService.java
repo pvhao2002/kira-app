@@ -45,17 +45,17 @@ public class AdminOrderService {
         Set<Long> scope = access.scope(branchId);
         Map<OrderStatus, Long> counts = new EnumMap<>(OrderStatus.class);
         for (OrderStatus s : OrderStatus.values()) counts.put(s, 0L);
-        if (scope.isEmpty()) return new AdminOrderList(List.of(), new PageMeta(page, size, 0, 0), counts);
+        if (scope.isEmpty()) return new AdminOrderList(List.of(), PageMeta.empty(page, size), counts);
 
         Instant fromAt = from == null ? Instant.EPOCH : from.atStartOfDay(VN).toInstant();
         Instant toAt = to == null ? FAR_FUTURE : to.plusDays(1).atStartOfDay(VN).toInstant();
         String like = "%" + (q == null ? "" : q.trim().toLowerCase(Locale.ROOT)) + "%";
-        for (Object[] row : orders.countByStatus(scope, fromAt, toAt, like))
-            counts.put((OrderStatus) row[0], ((Number) row[1]).longValue());
+        for (StatusCount row : orders.countByStatus(scope, fromAt, toAt, like))
+            counts.put(row.status(), row.count());
         Collection<OrderStatus> statuses = status == null ? List.of(OrderStatus.values()) : List.of(status);
         Page<ShopOrder> result = orders.search(scope, statuses, fromAt, toAt, like, pageable);
         return new AdminOrderList(assembler.adminSummaries(result.getContent()),
-            new PageMeta(result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages()), counts);
+            PageMeta.of(result), counts);
     }
 
     @Transactional(readOnly = true)

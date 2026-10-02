@@ -2,9 +2,10 @@ package com.kira.farm.order.application;
 
 import com.kira.farm.branch.domain.Branch;
 import com.kira.farm.branch.infrastructure.BranchRepository;
-import com.kira.farm.identity.domain.User;
+import com.kira.farm.identity.application.UserName;
 import com.kira.farm.identity.infrastructure.UserRepository;
 import com.kira.farm.order.domain.OrderItem;
+import com.kira.farm.order.domain.OrderStatusHistory;
 import com.kira.farm.order.domain.PaymentMethod;
 import com.kira.farm.order.domain.ShopOrder;
 import com.kira.farm.order.infrastructure.OrderItemRepository;
@@ -28,10 +29,15 @@ class OrderAssembler {
     private final BankPaymentProperties bank;
 
     OrderResponse detail(ShopOrder o) {
-        List<OrderLine> lines = items.findByOrderIdOrderByIdAsc(o.getId()).stream().map(OrderLine::of).toList();
-        List<HistoryEntry> trail = history.findByOrderIdOrderByIdAsc(o.getId()).stream()
+        return detail(o, items.findByOrderIdOrderByIdAsc(o.getId()), history.findByOrderIdOrderByIdAsc(o.getId()),
+            branches.findById(o.getBranchId()).map(Branch::getName).orElse(null));
+    }
+
+    /** Detail from rows the caller already holds (checkout has just written them; no re-read). */
+    OrderResponse detail(ShopOrder o, List<OrderItem> lineItems, List<OrderStatusHistory> trailRows, String branchName) {
+        List<OrderLine> lines = lineItems.stream().map(OrderLine::of).toList();
+        List<HistoryEntry> trail = trailRows.stream()
             .map(h -> new HistoryEntry(h.getFromStatus(), h.getToStatus(), h.getNote(), h.getCreatedAt())).toList();
-        String branchName = branches.findById(o.getBranchId()).map(Branch::getName).orElse(null);
         return new OrderResponse(o.getId(), o.getCode(), o.getStatus(), o.getPaymentMethod(), o.getPaymentStatus(),
             o.getShippingMethod(), o.getShippingFee(), o.getSubtotal(), o.getDiscount(), o.getTierDiscount(),
             o.getPointsUsed(), o.getPointsDiscount(), o.getTotal(), o.getPromoCode(), o.getVoucherCode(),
@@ -69,7 +75,7 @@ class OrderAssembler {
 
     Map<Long, String> customerNames(Collection<Long> userIds) {
         if (userIds.isEmpty()) return Map.of();
-        return users.findAllById(userIds).stream().collect(Collectors.toMap(User::getId, User::getFullName));
+        return users.findNames(userIds).stream().collect(Collectors.toMap(UserName::id, UserName::fullName));
     }
 
     private Map<Long, List<OrderItem>> linesByOrder(List<ShopOrder> orders) {

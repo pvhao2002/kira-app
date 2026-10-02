@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ") && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 Long id = jwt.subject(header.substring(7));
-                users.findById(id).filter(u -> u.getStatus() == UserStatus.ACTIVE).ifPresent(u -> {
+                users.findWithBranchesById(id).filter(u -> u.getStatus() == UserStatus.ACTIVE).ifPresent(u -> {
                     var principal = new AuthPrincipal(u.getId(), u.getRole(), Set.copyOf(u.getBranchIds()));
                     SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                         principal, null, List.of(new SimpleGrantedAuthority(u.getRole().authority()))));

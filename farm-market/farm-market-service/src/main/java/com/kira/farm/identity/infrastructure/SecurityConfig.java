@@ -58,6 +58,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/swagger-ui/**", "/swagger-ui.html",
                     "/v3/api-docs/**").permitAll()
+                // Everything else under /actuator (metrics, info) is operator-only.
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login",
                     "/api/v1/auth/refresh", "/api/v1/auth/logout", "/api/v1/auth/otp/enroll",
                     "/api/v1/auth/otp/verify").permitAll()

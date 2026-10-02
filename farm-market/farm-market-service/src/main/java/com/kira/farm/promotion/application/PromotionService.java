@@ -15,8 +15,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Locale;
@@ -38,32 +36,11 @@ public class PromotionService {
     public ValidateResponse evaluate(String code, Long userId, Long branchId, long subtotal, long shippingFee) {
         Promotion p = promotions.findByCode(code.trim().toUpperCase(Locale.ROOT)).orElseThrow(
             () -> ApiException.notFound("PROMO_NOT_FOUND", "Mã khuyến mãi không tồn tại"));
-        Instant now = Instant.now();
-        if (!p.isActive()) throw ApiException.unprocessable("PROMO_INACTIVE", "Mã khuyến mãi đang tạm dừng");
-        if (now.isBefore(p.getStartsAt()))
-            throw ApiException.unprocessable("PROMO_NOT_STARTED", "Mã khuyến mãi chưa đến thời gian áp dụng");
-        if (now.isAfter(p.getEndsAt())) throw ApiException.unprocessable("PROMO_EXPIRED", "Mã khuyến mãi đã hết hạn");
-        if (!p.isAllBranches() && !p.getBranchIds().contains(branchId))
-            throw ApiException.unprocessable("PROMO_BRANCH_NOT_ELIGIBLE", "Mã không áp dụng cho chi nhánh này");
-        if (subtotal < p.getMinOrder())
-            throw ApiException.unprocessable("PROMO_MIN_ORDER", "Đơn hàng chưa đạt giá trị tối thiểu để dùng mã");
-        if (p.getUsageLimit() != null && p.getUsedCount() >= p.getUsageLimit())
-            throw ApiException.unprocessable("PROMO_USAGE_LIMIT", "Mã khuyến mãi đã hết lượt sử dụng");
+        PromotionRules.requireEligible(p, Instant.now(), branchId, subtotal);
         if (p.getPerUserLimit() != null && promotions.countRedemptions(p.getId(), userId) >= p.getPerUserLimit())
             throw ApiException.unprocessable("PROMO_USER_LIMIT", "Bạn đã dùng hết lượt cho mã này");
-        long discount = 0;
-        long shippingDiscount = 0;
-        switch (p.getType()) {
-            case PERCENT -> {
-                discount = percentOf(subtotal, p.getValue());
-                if (p.getMaxDiscount() != null) discount = Math.min(discount, p.getMaxDiscount());
-            }
-            case FIXED -> discount = p.getValue();
-            case FREE_SHIP -> shippingDiscount = Math.max(0, shippingFee);
-        }
-        discount = Math.min(discount, Math.max(0, subtotal));
-        return new ValidateResponse(p.getId(), p.getCode(), p.getType(), discount, shippingDiscount,
-            discount + shippingDiscount);
+        var d = PromotionRules.discount(p, subtotal, shippingFee);
+        return new ValidateResponse(p.getId(), p.getCode(), p.getType(), d.goods(), d.shipping(), d.total());
     }
 
     /**
@@ -85,12 +62,6 @@ public class PromotionService {
     public void release(Long orderId) {
         for (Long promotionId : promotions.redeemedPromotionIds(orderId))
             if (promotions.deleteRedemption(promotionId, orderId) > 0) promotions.decrementUsage(promotionId);
-    }
-
-    /** Integer VND percentage, rounded half-up. */
-    static long percentOf(long amount, long percent) {
-        return BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(percent))
-            .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP).longValueExact();
     }
 
     // ---- Admin CRUD ----------------------------------------------------------------------------------------------
