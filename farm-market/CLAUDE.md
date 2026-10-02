@@ -4,31 +4,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working in `far
 
 ## What this is
 
-Farm Market ("Đồi Nắng") is a multi-branch e-commerce platform for a farm business in Vietnam: eggs, animal feed
+Farm Market ("Kira Farm") is a multi-branch e-commerce platform for a farm business in Vietnam: eggs, animal feed
 ("Thức ăn chăn nuôi"), livestock/breeding stock ("Con giống"), and a blog. UI copy is **Vietnamese**; currency is VND
 (₫). Orders ship from the customer's nearest branch.
 
 **Current state: UI and backend are built and wired together.** `farm-market-ui` implements every screen of the mockup
-`designs/Doi Nang Farm Mockups.html` (source of truth for screens, routes, roles and copy) and talks to
+`designs/Kira Farm Mockups.html` (source of truth for screens, routes, roles and copy) and talks to
 `farm-market-service` through `core/api.ts` (`/api/v1`, dev proxy in `proxy.conf.json`, bearer access token in memory +
 HttpOnly `farm_refresh` cookie, `core/auth.interceptor.ts`). `core/mock-data.ts` now only holds static option lists and
 view-model types (branch defaults, shipping/payment options). `farm-market-service` implements identity/JWT, branches,
 catalog, inventory, promotions, orders (idempotent checkout, state machine), loyalty, addresses/wishlist/reviews and admin
-dashboard/customers/users under `/api/v1`, with Flyway V1-V4. Verified manually against MySQL 8: Flyway, startup,
+dashboard/customers/users under `/api/v1`, with Flyway V1-V6. Verified manually against MySQL 8: Flyway, startup,
 login, catalog, checkout, status changes, loyalty points, admin dashboard and theme save, plus `farm-market-service/smoke.sh`.
 `docker compose build` was not verified (Docker Hub login was rejected on the dev machine). `docs/`, `infrastructure/`
 and `scripts/` are empty.
 
-Staff/manager/admin log in with a real TOTP second factor (`/auth/login` returns `{otpRequired, challengeToken, enrolled}`, then `/auth/otp/enroll` + `/auth/otp/verify`; secrets AES-GCM encrypted with `TOTP_ENCRYPTION_KEY`; dev seed secret in README; helper `farm-market-service/totp.js`; Flyway V5).
+Staff/manager/admin log in with a real TOTP second factor (`/auth/login` returns `{otpRequired, challengeToken, enrolled}`, then `/auth/otp/enroll` + `/auth/otp/verify`; secrets AES-GCM encrypted with `TOTP_ENCRYPTION_KEY`; dev seed secret in README; helper `farm-market-service/totp.js`; Flyway V5). Flyway V6 adds two query-driven indexes (`ix_orders_dashboard`, `ix_users_role_created`; EXPLAIN evidence in `IndexExplainIT`).
 
-Known gaps: no real wallet/card gateway (EWALLET/CARD are recorded and confirmed manually by staff; BANK_TRANSFER shows a VietQR image from `app.payment.bank` and staff confirm via `POST /admin/orders/{code}/payment`, which writes an internal order note, no migration), no OTP backup codes/QR image, no UI tests (backend: 32 pure unit tests via `./mvnw.cmd test`, no DB; 30 integration tests `*IT` via `./mvnw.cmd verify`, see Build / verify). Loyalty rewards are configuration (`app.loyalty.rewards` in `application.yml`, `LoyaltyProperties`, validated at startup): business decisions, edit config not code. Cancelling an
+Known gaps: no real wallet/card gateway (EWALLET/CARD are recorded and confirmed manually by staff; BANK_TRANSFER shows a VietQR image from `app.payment.bank` and staff confirm via `POST /admin/orders/{code}/payment`, which writes an internal order note, no migration), no OTP backup codes/QR image, no UI tests (backend: 43 pure unit tests via `./mvnw.cmd test`, no DB; 44 integration tests `*IT` via `./mvnw.cmd verify`, see Build / verify). Loyalty rewards are configuration (`app.loyalty.rewards` in `application.yml`, `LoyaltyProperties`, validated at startup): business decisions, edit config not code. Cancelling an
 order refunds spent points (`ORDER_CANCEL_REFUND`), re-opens a used voucher and releases the promotion redemption in the
 same transaction (`OrderWorkflow`). `PUT /auth/me` edits name/phone/birth date/gender. Product writes are manager/admin only.
 
 Local run: `docker compose up -d mysql`, then in `farm-market-service` set `DB_URL=jdbc:mysql://localhost:3308/farm_market?...`,
 `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `APP_SEED_DEVELOPMENT_USERS=true`, `SERVER_PORT=8081` and run
 `./mvnw.cmd spring-boot:run`; then `npm start` in `farm-market-ui` (needs Node >= 22.22.3). Dev users share the password
-`Doinang@123`. Do not use `MYSQL` column names that are reserved words (e.g. `last_value`).
+`KiraFarm@123`. Do not use `MYSQL` column names that are reserved words (e.g. `last_value`).
 
 Angular 22's CLI needs Node >= 22.22.3 / 24.15 / 26. If the default Node is older, run the CLI with a newer one. If
 `npm install` fails with `edgesOut`, retry with `--legacy-peer-deps`.
@@ -68,6 +68,8 @@ Nothing to build yet. Once modules exist, verify only the module you changed, by
 - Java: `cd farm-market-service` then `./mvnw.cmd compile` (Windows, Java 25). Do not run tests, packaging, Flyway,
   containers or other modules unless explicitly asked.
 - Integration tests (`*IT`, Testcontainers MySQL `mysql:8.0`, needs a running Docker, nothing is pulled if the image is already local): `cd farm-market-service` then `$env:TESTCONTAINERS_RYUK_DISABLED='true'; .\mvnw.cmd verify` (PowerShell; failsafe also sets it). `.\mvnw.cmd test` stays DB-free and skips `*IT`. ITs share ONE container and one Spring context (`it/IntegrationTestBase`), seed users via the dev seeder, and isolate themselves by creating their own customers/products/staff.
+- `farm-market-service` guard rails inside `verify`: `OpenApiContractIT` (the `/v3/api-docs` document must equal `src/test/resources/openapi-baseline.json`; regenerate ONLY for a conscious contract change with env `OPENAPI_REGEN=true`), `QueryCountIT` (statements per request via the test-only `SqlCounter` DataSource proxy; fails when a list endpoint grows with page size or exceeds its bound; `QC_BASELINE=1` prints the table and skips the bounds), `IndexExplainIT` (EXPLAIN on 150k scratch orders), `PublicCacheHeadersIT`, `OperationalConfigIT`.
+- Runtime knobs (all env-overridable in `application.yml`): `DB_POOL_MAX` (20), `DB_POOL_MIN_IDLE` (5), `DB_CONNECTION_TIMEOUT_MS` (5000), `DB_MAX_LIFETIME_MS` (1740000, keep below MySQL `wait_timeout`), `DB_LEAK_DETECTION_MS` (0 = off), `HIBERNATE_BATCH_SIZE` (50), `HIBERNATE_FETCH_BATCH_SIZE` (32), `SHUTDOWN_TIMEOUT` (30s), `HTTP_COMPRESSION`, `TOMCAT_MAX_CONNECTIONS`, `TOMCAT_ACCEPT_COUNT`, `API_DOCS_ENABLED`; `app.http-cache.*` (`enabled`, `static-max-age-seconds` 60, `product-max-age-seconds` 10). Request threads are virtual (`spring.threads.virtual.enabled`), so the Hikari pool, not a thread count, is the concurrency limit. Probes: `/actuator/health/liveness` and `/readiness` are public and detail-free; every other `/actuator/**` (metrics, info) is ADMIN-only.
 - UI: do not run `npm run build`, lint, tests or a dev server unless requested; a build is not proof of correct UI.
 - `docker compose up -d` only when local infrastructure is needed for a manual runtime check.
 - API or contract changes: update backend DTO/controller, frontend models/callers and docs together, and inspect both
