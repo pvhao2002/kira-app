@@ -24,6 +24,8 @@ public interface OrderRepository extends JpaRepository<ShopOrder, Long> {
 
     Optional<ShopOrder> findByIdAndUserId(Long id, Long userId);
 
+    boolean existsByUserIdAndStatus(Long userId, OrderStatus status);
+
     Optional<ShopOrder> findByUserIdAndIdempotencyKey(Long userId, String idempotencyKey);
 
     /** Row lock so concurrent status changes/cancellations of one order cannot double-release or double-commit stock. */

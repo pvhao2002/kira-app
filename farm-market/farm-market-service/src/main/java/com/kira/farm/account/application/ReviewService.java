@@ -10,6 +10,7 @@ import com.kira.farm.identity.application.UserName;
 import com.kira.farm.identity.domain.User;
 import com.kira.farm.identity.infrastructure.UserRepository;
 import com.kira.farm.loyalty.application.LoyaltyService;
+import com.kira.farm.media.application.MediaService;
 import com.kira.farm.order.domain.OrderStatus;
 import com.kira.farm.order.domain.ShopOrder;
 import com.kira.farm.order.infrastructure.OrderItemRepository;
@@ -40,6 +41,7 @@ public class ReviewService {
     private final UserRepository users;
     private final LoyaltyService loyalty;
     private final BranchAccess access;
+    private final MediaService media;
 
     @Transactional(readOnly = true)
     public List<PendingReview> pending() {
@@ -74,6 +76,8 @@ public class ReviewService {
             () -> ApiException.notFound("PRODUCT_NOT_FOUND", "Không tìm thấy sản phẩm"));
 
         boolean photo = r.photoUrl() != null && !r.photoUrl().isBlank();
+        if (photo && !media.isStoredUrl(r.photoUrl()))
+            throw ApiException.unprocessable("REVIEW_PHOTO_NOT_FOUND", "Ảnh đánh giá không tồn tại, vui lòng tải ảnh lên lại");
         Review review = new Review();
         review.setUserId(userId);
         review.setProductId(p.getId());
@@ -81,7 +85,7 @@ public class ReviewService {
         review.setRating(r.rating());
         review.setBody(r.body() == null || r.body().isBlank() ? null : r.body().trim());
         review.setHasPhoto(photo);
-        review.setPhotoUrl(photo ? r.photoUrl().trim() : null);
+        review.setPhotoUrl(photo ? r.photoUrl() : null);
         review = reviews.saveAndFlush(review);
         products.refreshRating(p.getId());
         loyalty.awardReview(userId, review.getId(), photo);

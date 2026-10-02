@@ -1,0 +1,33 @@
+<div class="page">
+  <form class="card box" novalidate (submit)="$event.preventDefault(); submit()">
+    <div>
+      <h1>Đặt lại mật khẩu</h1>
+      <div class="muted sub">Nhập mật khẩu mới cho tài khoản của bạn. Sau khi đổi, bạn sẽ được đăng xuất khỏi mọi thiết bị.</div>
+    </div>
+    @if (!hasToken) {
+      <p class="err-t" role="alert">Liên kết đặt lại mật khẩu không hợp lệ. Vui lòng yêu cầu liên kết mới.</p>
+      <a routerLink="/forgot-password" class="btn block go">Yêu cầu liên kết mới</a>
+    } @else if (done()) {
+      <p class="ok-note" role="status" aria-live="polite">Đã đặt lại mật khẩu. Bạn có thể đăng nhập bằng mật khẩu mới.</p>
+      <a routerLink="/login" class="btn block go">Đăng nhập</a>
+    } @else {
+      <div class="field">
+        <label for="rs-pw">Mật khẩu mới (từ 8 ký tự)</label>
+        <div class="pw">
+          <input id="rs-pw" class="input tall" autocomplete="new-password" maxlength="72" [attr.aria-invalid]="error() ? 'true' : null" [attr.aria-describedby]="error() ? 'rs-err' : null" [type]="showPw() ? 'text' : 'password'" [value]="password()" (input)="edit(password, $any($event.target).value)">
+          <button type="button" class="show" aria-label="Hiện mật khẩu" [attr.aria-pressed]="showPw()" (click)="showPw.set(!showPw())">{{ showPw() ? 'Ẩn' : 'Hiện' }}</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="rs-pw2">Nhập lại mật khẩu mới</label>
+        <input id="rs-pw2" class="input tall" autocomplete="new-password" maxlength="72" [attr.aria-invalid]="error() ? 'true' : null" [attr.aria-describedby]="error() ? 'rs-err' : null" [type]="showPw() ? 'text' : 'password'" [value]="confirm()" (input)="edit(confirm, $any($event.target).value)">
+      </div>
+      @if (error()) {
+        <p id="rs-err" class="err-t" role="alert">{{ error() }}</p>
+        @if (serverError()) {<a routerLink="/forgot-password" class="link">Yêu cầu liên kết mới</a>}
+      }
+      <button type="submit" class="btn block go" [disabled]="busy()">{{ busy() ? 'Đang lưu…' : 'Đặt lại mật khẩu' }}</button>
+      <a routerLink="/login" class="link">← Quay lại đăng nhập</a>
+    }
+  </form>
+</div>

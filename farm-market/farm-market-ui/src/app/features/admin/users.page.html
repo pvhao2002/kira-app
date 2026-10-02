@@ -3,7 +3,42 @@
     <div class="eyebrow">Quản trị</div>
     <h1 class="page-title">Người dùng &amp; phân quyền chi nhánh</h1>
   </div>
+  <button type="button" class="btn" (click)="openCreate()">+ Thêm nhân viên</button>
 </header>
+
+@if (draft(); as d) {
+  <form class="card panel form" (submit)="$event.preventDefault(); create()" aria-label="Thêm nhân viên">
+    <b>Thêm nhân viên</b>
+    <div class="grid2">
+      <div class="field"><label for="nu-name">Họ tên</label><input id="nu-name" class="input" aria-required="true" maxlength="120" autocomplete="off" [value]="d.fullName" (input)="patch('fullName', $any($event.target).value)"></div>
+      <div class="field"><label for="nu-email">Email</label><input id="nu-email" class="input" aria-required="true" type="email" maxlength="190" autocomplete="off" [value]="d.email" (input)="patch('email', $any($event.target).value)"></div>
+      <div class="field"><label for="nu-phone">Số điện thoại (không bắt buộc)</label><input id="nu-phone" class="input" inputmode="tel" autocomplete="off" [value]="d.phone" (input)="patch('phone', $any($event.target).value)"></div>
+      <div class="field"><label for="nu-pw">Mật khẩu tạm (từ 8 ký tự)</label><input id="nu-pw" class="input" aria-required="true" type="password" maxlength="72" autocomplete="new-password" [value]="d.password" (input)="patch('password', $any($event.target).value)"></div>
+      <div class="field">
+        <label for="nu-role">Vai trò</label>
+        <select id="nu-role" class="input" (change)="patch('role', $any($event.target).value)">
+          @for (r of roleOptions; track r.key) {<option [value]="r.key" [selected]="r.key === d.role">{{ r.label }}</option>}
+        </select>
+      </div>
+    </div>
+    @if (d.role !== 'admin') {
+      <div class="field">
+        <span class="label" id="nu-branches">Chi nhánh được phân công</span>
+        <div class="row wrap" role="group" aria-labelledby="nu-branches">
+          @for (b of branch.branches; track b.id; let i = $index) {
+            <button type="button" class="chipb" [class.on]="d.branchIds.includes(i + 1)" [attr.aria-pressed]="d.branchIds.includes(i + 1)" (click)="toggleNew(i + 1)">{{ b.short }}</button>
+          }
+        </div>
+      </div>
+    }
+    <p class="muted small">Người dùng mới sẽ tự thiết lập mã xác thực hai lớp (OTP) ở lần đăng nhập đầu tiên.</p>
+    @if (err()) {<p class="err small" role="alert">{{ err() }}</p>}
+    <div class="row">
+      <button type="submit" class="btn" [disabled]="busy()">{{ busy() ? 'Đang tạo…' : 'Tạo tài khoản' }}</button>
+      <button type="button" class="btn secondary" [disabled]="busy()" (click)="closeCreate()">Hủy</button>
+    </div>
+  </form>
+}
 
 <div class="card panel">
   <div class="row wrap bar">
@@ -21,7 +56,15 @@
           @for (u of rows(); track u.id) {
             <tr>
               <td><div>{{ u.fullName }}</div><div class="muted small">{{ u.email }}</div></td>
-              <td>{{ u.roleLabel }}</td>
+              <td>
+                @if (u.id === myId() || u.role === 'customer') {
+                  {{ u.roleLabel }}
+                } @else {
+                  <select class="input role-sel" [attr.aria-label]="'Vai trò của ' + u.fullName" [disabled]="busy()" (change)="changeRole(u, $any($event.target).value)">
+                    @for (r of roleOptions; track r.key) {<option [value]="r.key" [selected]="r.key === u.role">{{ r.label }}</option>}
+                  </select>
+                }
+              </td>
               <td><span class="pill" [class]="u.status === 'ACTIVE' ? 'ok' : 'bad'">{{ u.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa' }}</span></td>
               <td>
                 @if (u.role === 'admin') {
@@ -61,5 +104,5 @@
   } @else {
     <app-state-box kind="empty" message="Không tìm thấy người dùng." />
   }
-  @if (err()) {<p class="err small pad" role="alert">{{ err() }}</p>}
+  @if (err() && !draft()) {<p class="err small pad" role="alert">{{ err() }}</p>}
 </div>

@@ -152,6 +152,30 @@ public class AuthService {
         if (raw != null) tokens.findByTokenHash(Hashing.sha256Hex(raw)).ifPresent(t -> t.setRevokedAt(Instant.now()));
     }
 
+    /**
+     * Wrong current passwords are rate limited per user. Every other session is revoked; the caller's own session
+     * (the family of the farm_refresh cookie) survives, and without a usable cookie all sessions are revoked.
+     */
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest r, String currentRefreshRaw) {
+        limiter.checkPasswordChange(userId);
+        User user = users.requireById(userId);
+        if (!encoder.matches(r.currentPassword(), user.getPasswordHash())) {
+            limiter.recordPasswordChangeFailure(userId);
+            throw ApiException.unprocessable("CURRENT_PASSWORD_INVALID", "Mật khẩu hiện tại không đúng");
+        }
+        limiter.recordPasswordChangeSuccess(userId);
+        user.setPasswordHash(encoder.encode(r.newPassword()));
+        users.saveAndFlush(user);
+        String family = currentRefreshRaw == null ? null
+            : tokens.findByTokenHash(Hashing.sha256Hex(currentRefreshRaw))
+                .filter(t -> t.getRevokedAt() == null && t.getUser().getId().equals(userId))
+                .map(RefreshToken::getFamilyId).orElse(null);
+        Instant now = Instant.now();
+        if (family == null) tokens.revokeAllByUser(userId, now);
+        else tokens.revokeOthersByUser(userId, family, now);
+    }
+
     @Transactional(readOnly = true)
     public UserProfile me(Long userId) {
         return profile(users.requireById(userId));

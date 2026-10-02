@@ -6,6 +6,10 @@ spring:
   # Tomcat request threads and @Async/scheduling run on virtual threads: blocking JDBC waits are cheap, so the
   # real concurrency limit is the Hikari pool below (not a thread count).
   threads.virtual.enabled: true
+  # Image uploads: MediaService enforces app.media.max-bytes; these cap the request before it is buffered.
+  servlet.multipart:
+    max-file-size: 5MB
+    max-request-size: 6MB
   # Let in-flight requests finish on SIGTERM (rolling deploys) before the context closes.
   lifecycle.timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT:30s}
   datasource:
@@ -59,6 +63,8 @@ server:
     connection-timeout: 20s
     keep-alive-timeout: 30s
     max-keep-alive-requests: 200
+    # Drain an over-limit upload (multipart max-request-size is 6MB) so the client reads a clean 413 instead of a reset.
+    max-swallow-size: 8MB
     mbeanregistry.enabled: true   # Tomcat session/thread/connection metrics in /actuator/metrics
   error:
     include-stacktrace: never
@@ -85,6 +91,18 @@ app:
     refresh-ttl: P30D
   # AES-GCM key (>= 32 chars) for TOTP secrets at rest. Set TOTP_ENCRYPTION_KEY outside development.
   totp-encryption-key: ${TOTP_ENCRYPTION_KEY:development-totp-key-must-be-at-least-32-chars}
+  # Public base URL of the web app, used for links in emails (password reset). MUST be set via APP_PUBLIC_URL outside
+  # development, otherwise reset links point at localhost.
+  public-url: ${APP_PUBLIC_URL:http://localhost:4201}
+  # Forgot-password token lifetime (single use, only its SHA-256 is stored).
+  password-reset:
+    ttl: ${APP_PASSWORD_RESET_TTL:PT30M}
+  # Image uploads on local disk (mount a volume at APP_UPLOAD_DIR). One instance only until moved to object storage.
+  media:
+    dir: ${APP_UPLOAD_DIR:./uploads}
+    # Keep in step with spring.servlet.multipart.max-file-size (5MB): multipart rejects first, so raise both together.
+    max-bytes: 5242880
+    public-base-url: ${APP_MEDIA_PUBLIC_BASE_URL:}
   # Comma-separated exact origins (scheme://host[:port]). No wildcards.
   cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4201}
   # Dev only: demo users + demo catalogue. Must be false in production.
@@ -92,6 +110,12 @@ app:
   seed-development-password: ${APP_SEED_DEVELOPMENT_PASSWORD:KiraFarm@123}
   # Dev only: shared base32 TOTP secret enrolled for the seeded staff/manager/admin users.
   seed-development-totp-secret: ${APP_SEED_DEVELOPMENT_TOTP_SECRET:JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP}
+  # First admin for a fresh install (independent of the dev seed). Both email and password (>= 12 chars) must be set;
+  # created only when no admin exists yet, never overwrites a user. The admin enrolls TOTP at first login.
+  bootstrap-admin:
+    email: ${APP_BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:}
+    name: ${APP_BOOTSTRAP_ADMIN_NAME:}
   refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
   refresh-cookie-same-site: ${REFRESH_COOKIE_SAME_SITE:Lax}
   # Business decisions: edit here, not in code. type: PERCENT (value = %), FIXED (value = VND) or FREE_SHIP.

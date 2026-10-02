@@ -6,14 +6,14 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Context load = Flyway V1..V6 applied and every JPQL/native repository query validated against real MySQL. */
+/** Context load = Flyway V1..V7 applied and every JPQL/native repository query validated against real MySQL. */
 class SchemaAndContextIT extends IntegrationTestBase {
 
     @Test
     void flywayAppliedAllMigrationsCleanly() {
         List<String> versions = jdbc.queryForList(
             "SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank", String.class);
-        assertEquals(List.of("1", "2", "3", "4", "5", "6"), versions);
+        assertEquals(List.of("1", "2", "3", "4", "5", "6", "7"), versions);
         // V2 reference data, V3 column, V5 columns exist.
         assertEquals(5, jdbc.queryForObject("SELECT COUNT(*) FROM branches", Integer.class));
         assertEquals(6, jdbc.queryForObject("SELECT COUNT(*) FROM categories", Integer.class));

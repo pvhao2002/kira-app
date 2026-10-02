@@ -8,14 +8,17 @@ import {MyReviewDto, Page, PendingReviewDto, REVIEW_LABELS, errMsg, fmtDate, isF
 interface Draft {
   rating: number;
   text: string;
-  /** https:// link; the backend awards +50 instead of +20 when present */
+  /** URL returned by POST /media/reviews; the backend awards +50 instead of +20 when present */
   photoUrl: string;
+  uploading: boolean;
   sending: boolean;
   error: string;
 }
 
 const key = (r: PendingReviewDto): string => `${r.orderId}-${r.productId}`;
-const blank = (): Draft => ({rating: 0, text: '', photoUrl: '', sending: false, error: ''});
+const blank = (): Draft => ({rating: 0, text: '', photoUrl: '', uploading: false, sending: false, error: ''});
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 
 @Component({
   selector: 'app-reviews-page',
@@ -56,12 +59,43 @@ export class ReviewsPage {
   }
 
   protected patch(r: PendingReviewDto, p: Partial<Draft>): void {
-    this.drafts.update(all => ({...all, [key(r)]: {...all[key(r)], ...p}}));
+    // a draft removed by a reload while an upload/submit was in flight must not be recreated half-empty
+    this.drafts.update(all => all[key(r)] ? {...all, [key(r)]: {...all[key(r)], ...p}} : all);
+  }
+
+  protected async pickPhoto(r: PendingReviewDto, input: HTMLInputElement): Promise<void> {
+    const file = input.files?.[0];
+    input.value = '';
+    const d = this.drafts()[key(r)];
+    if (!file || !d || d.uploading) return;
+    if (!PHOTO_TYPES.includes(file.type)) {
+      this.patch(r, {error: 'Chỉ nhận ảnh JPEG, PNG hoặc WebP.'});
+      return;
+    }
+    if (file.size > PHOTO_MAX_BYTES) {
+      this.patch(r, {error: 'Ảnh tối đa 5MB.'});
+      return;
+    }
+    this.patch(r, {uploading: true, error: ''});
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await this.api.postForm<{url: string}>('/media/reviews', form);
+      this.patch(r, {photoUrl: res.url});
+    } catch (e) {
+      this.patch(r, {error: errMsg(e)});
+    } finally {
+      this.patch(r, {uploading: false});
+    }
+  }
+
+  protected removePhoto(r: PendingReviewDto): void {
+    this.patch(r, {photoUrl: '', error: ''});
   }
 
   protected async submit(r: PendingReviewDto): Promise<void> {
     const d = this.drafts()[key(r)];
-    if (!d?.rating || d.sending) return;
+    if (!d?.rating || d.sending || d.uploading) return;
     this.patch(r, {sending: true, error: ''});
     try {
       const res = await this.api.post<MyReviewDto>('/reviews', {

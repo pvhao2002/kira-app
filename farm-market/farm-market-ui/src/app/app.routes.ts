@@ -28,6 +28,8 @@ export const routes: Routes = [
     ]
   },
   {path: 'login', title: 'Đăng nhập', loadComponent: () => import('./features/auth/login.page').then(m => m.LoginPage)},
+  {path: 'forgot-password', title: 'Quên mật khẩu', loadComponent: () => import('./features/auth/forgot.page').then(m => m.ForgotPage)},
+  {path: 'reset-password', title: 'Đặt lại mật khẩu', loadComponent: () => import('./features/auth/reset.page').then(m => m.ResetPage)},
   {path: 'login/otp', title: 'Xác thực OTP', loadComponent: () => import('./features/auth/otp.page').then(m => m.OtpPage)},
   {
     path: 'admin',

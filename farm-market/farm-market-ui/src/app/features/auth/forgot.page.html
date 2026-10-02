@@ -1,0 +1,19 @@
+<div class="page">
+  <form class="card box" novalidate (submit)="$event.preventDefault(); submit()">
+    <div>
+      <h1>Quên mật khẩu</h1>
+      <div class="muted sub">Nhập email đăng ký, chúng tôi sẽ gửi liên kết đặt lại mật khẩu (có hiệu lực 30 phút).</div>
+    </div>
+    @if (sent()) {
+      <p class="ok-note" role="status" aria-live="polite">Nếu email này có tài khoản, liên kết đặt lại mật khẩu sẽ được gửi trong ít phút. Vui lòng kiểm tra hộp thư.</p>
+    } @else {
+      <div class="field">
+        <label for="fg-email">Email</label>
+        <input id="fg-email" class="input tall" type="email" autocomplete="email" maxlength="190" [value]="email()" (input)="email.set($any($event.target).value); error.set('')">
+        @if (error()) {<span class="err-t" role="alert">{{ error() }}</span>}
+      </div>
+      <button type="submit" class="btn block go" [disabled]="busy()">{{ busy() ? 'Đang gửi…' : 'Gửi liên kết đặt lại' }}</button>
+    }
+    <a routerLink="/login" class="link">← Quay lại đăng nhập</a>
+  </form>
+</div>

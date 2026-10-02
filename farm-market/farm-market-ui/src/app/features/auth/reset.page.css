@@ -1,0 +1,15 @@
+:host { display: block; min-height: 100vh; background: var(--canvas); }
+.page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.box { width: 520px; max-width: 100%; padding: 48px 56px; display: flex; flex-direction: column; gap: 24px; }
+h1 { font-family: var(--serif); font-weight: 400; font-size: 34px; margin-bottom: 8px; }
+.sub { font-size: 15px; line-height: 1.55; }
+.input.tall { height: 52px; font-size: 16px; padding: 0 16px; }
+.err-t { font-size: 13px; color: var(--danger); }
+.ok-note { color: var(--primary); font-size: 14px; line-height: 1.5; }
+.go { height: 54px; font-size: 16px; }
+.link { font-weight: 600; color: var(--primary); font-size: 14px; }
+.pw { position: relative; }
+.pw .input { padding-right: 64px; }
+.show { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: 0; padding: 8px; font-weight: 600; font-size: 13px; color: var(--primary); }
+a.go { display: flex; align-items: center; justify-content: center; }
+@media (max-width: 767px) { .box { padding: 28px 20px; gap: 20px; } }

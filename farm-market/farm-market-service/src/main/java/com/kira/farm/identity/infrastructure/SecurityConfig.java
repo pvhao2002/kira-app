@@ -1,5 +1,6 @@
 package com.kira.farm.identity.infrastructure;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
@@ -55,6 +56,8 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, failure) ->
                     writeError(response, HttpStatus.FORBIDDEN, "FORBIDDEN")))
             .authorizeHttpRequests(a -> a
+                // Container error dispatches (firewall/Tomcat 400s) must keep their status, not be turned into 401.
+                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/swagger-ui/**", "/swagger-ui.html",
                     "/v3/api-docs/**").permitAll()
@@ -62,9 +65,9 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login",
                     "/api/v1/auth/refresh", "/api/v1/auth/logout", "/api/v1/auth/otp/enroll",
-                    "/api/v1/auth/otp/verify").permitAll()
+                    "/api/v1/auth/otp/verify", "/api/v1/auth/password/forgot", "/api/v1/auth/password/reset").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/branches", "/api/v1/categories",
-                    "/api/v1/products", "/api/v1/products/**").permitAll()
+                    "/api/v1/products", "/api/v1/products/**", "/api/v1/files/**").permitAll()
                 // Staff and managers see only their assigned branches (enforced by BranchAccess); admin sees all.
                 .requestMatchers("/api/v1/admin/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                 .anyRequest().authenticated())

@@ -2,12 +2,16 @@ package com.kira.farm.identity.infrastructure;
 
 import com.kira.farm.identity.domain.Role;
 import com.kira.farm.identity.domain.User;
+import com.kira.farm.identity.domain.UserStatus;
 import com.kira.farm.shared.web.ApiException;
 import com.kira.farm.identity.application.UserName;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -35,12 +39,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select u from User u where u.role in :roles and (lower(u.fullName) like :q or lower(u.email) like :q) "
         + "order by u.id desc")
-    org.springframework.data.domain.Page<User> searchByRole(@Param("roles") java.util.Collection<Role> roles,
-                                                            @Param("q") String q,
-                                                            org.springframework.data.domain.Pageable pageable);
+    Page<User> searchByRole(@Param("roles") Collection<Role> roles, @Param("q") String q, Pageable pageable);
 
     /** Atomically advances the replay marker; 0 rows means the step was already used (or a concurrent request won). */
-    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update User u set u.totpLastStep = :step where u.id = :id and (u.totpLastStep is null or u.totpLastStep < :step)")
     int advanceTotpStep(@Param("id") Long id, @Param("step") long step);
 
@@ -51,6 +53,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmailIgnoreCase(String email);
 
     boolean existsByPhone(String phone);
+
+    boolean existsByRole(Role role);
+
+    long countByRoleAndStatusAndIdNot(Role role, UserStatus status, Long id);
 
     boolean existsByPhoneAndIdNot(String phone, Long id);
 }

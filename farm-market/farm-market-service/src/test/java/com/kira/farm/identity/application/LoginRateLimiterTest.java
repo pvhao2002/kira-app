@@ -82,4 +82,34 @@ class LoginRateLimiterTest {
         for (int i = 0; i < 5; i++) limiter.recordFailure("flood999");
         assertThrows(ApiException.class, () -> limiter.check("flood999"));
     }
+
+    @Test
+    void forgotIsCappedPerEmailAndWindowExpires() {
+        var limiter = new LoginRateLimiter(clock, 100);
+        for (int i = 0; i < 5; i++) limiter.checkForgot(" A@x.vn");
+        assertEquals("RESET_RATE_LIMITED", assertThrows(ApiException.class, () -> limiter.checkForgot("a@x.vn")).getCode());
+        assertDoesNotThrow(() -> limiter.checkForgot("b@x.vn"));
+        clock.advance(Duration.ofMinutes(16));
+        assertDoesNotThrow(() -> limiter.checkForgot("a@x.vn"));
+    }
+
+    @Test
+    void uploadIsCappedAtTwentyPerUserPerWindow() {
+        var limiter = new LoginRateLimiter(clock, 100);
+        for (int i = 0; i < 20; i++) limiter.checkUpload(7L);
+        assertEquals("UPLOAD_RATE_LIMITED", assertThrows(ApiException.class, () -> limiter.checkUpload(7L)).getCode());
+        assertDoesNotThrow(() -> limiter.checkUpload(8L));
+        clock.advance(Duration.ofMinutes(11));
+        assertDoesNotThrow(() -> limiter.checkUpload(7L));
+    }
+
+    @Test
+    void forgotFloodIsBounded() {
+        var limiter = new LoginRateLimiter(clock, 100);
+        for (int i = 0; i < 1_000; i++) {
+            clock.advance(Duration.ofMillis(1));
+            limiter.checkForgot("flood" + i);
+        }
+        assertTrue(limiter.trackedKeys() <= 100, "tracked " + limiter.trackedKeys());
+    }
 }

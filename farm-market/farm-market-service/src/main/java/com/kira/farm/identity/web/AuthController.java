@@ -1,6 +1,7 @@
 package com.kira.farm.identity.web;
 
 import com.kira.farm.identity.application.AuthService;
+import com.kira.farm.identity.application.PasswordResetService;
 import com.kira.farm.shared.security.AuthPrincipal;
 import com.kira.farm.shared.security.CurrentUser;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +25,7 @@ import static com.kira.farm.identity.application.AuthDtos.*;
 public class AuthController {
     private static final String COOKIE = "farm_refresh";
     private final AuthService auth;
+    private final PasswordResetService passwordReset;
     @Value("${app.refresh-cookie-secure:false}")
     private boolean secureCookie;
     @Value("${app.refresh-cookie-same-site:Lax}")
@@ -73,6 +75,28 @@ public class AuthController {
     @PutMapping("/me")
     public UserProfile updateMe(@Valid @RequestBody UpdateProfileRequest r) {
         return auth.updateProfile(CurrentUser.require().userId(), r);
+    }
+
+    /** Authenticated. Revokes the user's other sessions; the one behind the farm_refresh cookie stays signed in. */
+    @PostMapping("/password/change")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(@Valid @RequestBody ChangePasswordRequest r,
+                               @CookieValue(value = COOKIE, required = false) String token) {
+        auth.changePassword(CurrentUser.require().userId(), r, token);
+    }
+
+    /** Public. 202 for known and unknown emails alike, unless rate limited (429 after 5 requests per email within 15 minutes). */
+    @PostMapping("/password/forgot")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest r) {
+        passwordReset.forgot(r.email());
+    }
+
+    /** Public. Redeems a one-time token and revokes every session of the user. */
+    @PostMapping("/password/reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest r) {
+        passwordReset.reset(r.token(), r.newPassword());
     }
 
     private ResponseEntity<AuthResponse> session(HttpStatus status, AuthService.Session s) {
