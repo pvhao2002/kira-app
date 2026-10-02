@@ -48,6 +48,12 @@ export const routes: Routes = [
         data: {titleKey: 'route.cardImport'}
       },
       {
+        path: 'credit-card/transactions',
+        loadComponent: () => import('./features/credit-card-transactions/credit-card-transactions.page')
+          .then(m => m.CreditCardTransactionsPage),
+        data: {titleKey: 'route.cardTransactions'}
+      },
+      {
         path: 'credit-card/recommend',
         loadComponent: () => import('./features/credit-card-recommend/credit-card-recommend.page')
           .then(m => m.CreditCardRecommendPage),

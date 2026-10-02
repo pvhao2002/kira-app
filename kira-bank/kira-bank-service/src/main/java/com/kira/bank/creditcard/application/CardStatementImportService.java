@@ -61,6 +61,7 @@ public class CardStatementImportService {
     private final AttachmentService attachmentService;
     private final AttachmentRepository attachments;
     private final CardCashbackCalculator calculator;
+    private final CardMerchantRuleService merchantRules;
     private final NotificationService notifications;
     private final AiDocumentService ai;
     private final AiJobProperties jobProperties;
@@ -223,6 +224,9 @@ public class CardStatementImportService {
             if (!Boolean.TRUE.equals(row.include())) continue;
             if (row.cashbackRuleId() != null && cardRules.byId(row.cashbackRuleId()).isEmpty())
                 throw bad("CASHBACK_RULE_NOT_FOUND", "Nhóm cashback không thuộc thẻ này");
+            if (row.rememberPattern() != null && !row.rememberPattern().isBlank() && row.mccCode() != null) {
+                merchantRules.upsert(userId, row.rememberPattern(), row.mccCode(), null, false);
+            }
             CardTransaction transaction = transactions.findByUserCardIdAndDedupKey(card.getId(), key).orElse(null);
             if (transaction != null && transaction.getDeletedAt() == null) {
                 skipped++;
@@ -319,7 +323,8 @@ public class CardStatementImportService {
         CardStatementImport statementImport = imports.findForUpdate(importId).orElse(null);
         if (statementImport == null || statementImport.getStatus() != CardStatementImportStatus.PROCESSING) return;
         UserCreditCard card = cards.findById(statementImport.getUserCardId()).orElseThrow();
-        StatementDraft draft = normalize(card, calculator.load(card.getId()), extraction);
+        StatementDraft draft = normalize(card, calculator.load(card.getId()),
+            merchantRules.matcher(statementImport.getUserId()), extraction);
         statementImport.setStatus(CardStatementImportStatus.READY);
         statementImport.setAiModel(model);
         statementImport.setAiResult(write(draft));
@@ -386,7 +391,9 @@ public class CardStatementImportService {
 
     // ---------------------------------------------------------------- draft normalization
 
-    private StatementDraft normalize(UserCreditCard card, CardRules cardRules, AiCardStatementExtraction extraction) {
+    private StatementDraft normalize(UserCreditCard card, CardRules cardRules,
+                                     CardMerchantRuleService.Matcher merchantMatcher,
+                                     AiCardStatementExtraction extraction) {
         List<String> warnings = new ArrayList<>();
         String currency = trim(extraction.currency());
         if (currency != null && !currency.equalsIgnoreCase(card.getCurrency())) warnings.add("CURRENCY_MISMATCH");
@@ -425,7 +432,17 @@ public class CardStatementImportService {
             if (rowConfidence != null && rowConfidence.compareTo(REVIEW_CONFIDENCE) < 0) rowWarnings.add("LOW_CONFIDENCE");
             if (row.uncertainFields() != null && !row.uncertainFields().isEmpty()) rowWarnings.add("UNCERTAIN_FIELDS");
             String mcc = digits(row.mccCode(), 4);
-            Optional<ActiveRule> rule = cardRules.byCategoryName(row.suggestedCategory());
+            boolean merchantRuleApplied = false;
+            if (mcc == null) {
+                // A remembered merchant is the user's own decision, so it beats the AI's category guess.
+                Optional<String> remembered = merchantMatcher.mccFor(description);
+                if (remembered.isPresent()) {
+                    mcc = remembered.get();
+                    merchantRuleApplied = true;
+                }
+            }
+            Optional<ActiveRule> rule = merchantRuleApplied ? cardRules.bestForMcc(mcc) : Optional.empty();
+            if (rule.isEmpty()) rule = cardRules.byCategoryName(row.suggestedCategory());
             if (rule.isEmpty()) rule = cardRules.bestForMcc(mcc);
             boolean duplicate = false;
             if (type != null && date != null && amount != null) {
@@ -438,7 +455,7 @@ public class CardStatementImportService {
             rows.add(new TransactionDraft(line++, date, date(row.postingDate()), description, amount, type, mcc,
                 rule.map(ActiveRule::ruleId).orElse(null), truncate(trim(row.suggestedCategory()), 150),
                 rowConfidence, duplicate, !rowWarnings.isEmpty() && !(duplicate && rowWarnings.size() == 1),
-                rowWarnings));
+                merchantRuleApplied, rowWarnings));
         }
         BigDecimal totalSpending = amount(extraction.totalSpending(), true);
         if (totalSpending != null && !rows.isEmpty()

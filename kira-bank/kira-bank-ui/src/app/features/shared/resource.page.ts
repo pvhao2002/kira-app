@@ -300,6 +300,9 @@ export class ResourcePage {
   openAction(action: ResourceActionDefinition, row: Row): void {
     if (action.route) {
       const target = action.route(row);
+      if (!target) return;
+      const sideEffect = action.routeSideEffect?.(row);
+      if (sideEffect) this.api.patch(sideEffect).subscribe({error: () => undefined});
       void this.router.navigate(target.commands, {queryParams: target.queryParams});
       return;
     }

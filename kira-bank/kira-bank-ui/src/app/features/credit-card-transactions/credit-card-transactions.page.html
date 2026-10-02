@@ -1,0 +1,212 @@
+<section class="page-heading">
+  <div>
+    <span class="eyebrow">{{ i18n.t('cardTransactions.eyebrow') }}</span>
+    <h1>{{ i18n.t('route.cardTransactions') }}</h1>
+    <p>{{ i18n.t('cardTransactions.description') }}</p>
+  </div>
+  @if (tab() === 'transactions') {
+    <button class="btn primary" type="button" [disabled]="!cards().length" (click)="openCreate()">
+      <app-icon name="plus"></app-icon> {{ i18n.t('cardTransactions.add') }}
+    </button>
+  } @else {
+    <button class="btn primary" type="button" (click)="openRule(null)">
+      <app-icon name="plus"></app-icon> {{ i18n.t('cardTransactions.addRule') }}
+    </button>
+  }
+</section>
+
+<div class="tabs" role="tablist">
+  <button type="button" role="tab" [attr.aria-selected]="tab() === 'transactions'" [class.active]="tab() === 'transactions'"
+          (click)="switchTab('transactions')">{{ i18n.t('cardTransactions.tabTransactions') }}</button>
+  <button type="button" role="tab" [attr.aria-selected]="tab() === 'rules'" [class.active]="tab() === 'rules'"
+          (click)="switchTab('rules')">{{ i18n.t('cardTransactions.tabRules') }} ({{ rules().length }})</button>
+</div>
+
+@if (tab() === 'transactions') {
+  <form class="panel filters" (ngSubmit)="applyFilter()">
+    <label><span>{{ i18n.t('cardImport.card') }}</span>
+      <app-custom-select name="card" [ariaLabel]="i18n.t('cardImport.card')" [options]="filterCardOptions()"
+                         [ngModel]="filter().cardId ?? ''" (ngModelChange)="chooseFilterCard($event)"></app-custom-select></label>
+    <label><span>{{ i18n.t('cardTransactions.from') }}</span>
+      <input name="from" type="date" [ngModel]="filter().fromDate" (ngModelChange)="updateFilter({fromDate: $event || null})"></label>
+    <label><span>{{ i18n.t('cardTransactions.to') }}</span>
+      <input name="to" type="date" [ngModel]="filter().toDate" (ngModelChange)="updateFilter({toDate: $event || null})"></label>
+    <label><span>{{ i18n.t('cardImport.type') }}</span>
+      <app-custom-select name="type" [ariaLabel]="i18n.t('cardImport.type')" [options]="filterTypeOptions()"
+                         [ngModel]="filter().type ?? ''" (ngModelChange)="chooseFilterType($event)"></app-custom-select></label>
+    <label class="search"><span>{{ i18n.t('cardTransactions.search') }}</span>
+      <input name="q" maxlength="100" [ngModel]="filter().q" (ngModelChange)="updateFilter({q: $event})"
+             [placeholder]="i18n.t('cardTransactions.searchPlaceholder')"></label>
+    <div class="filter-actions">
+      <button class="btn primary" type="submit" [disabled]="loading()">{{ i18n.t('cardTransactions.apply') }}</button>
+      <button class="btn ghost" type="button" (click)="resetFilter()">{{ i18n.t('cardTransactions.reset') }}</button>
+    </div>
+  </form>
+
+  @if (error()) {
+    <div class="error-banner" role="alert">{{ error() }}</div>
+  }
+
+  <section class="panel list-panel" aria-live="polite">
+    @if (loading() && !result()) {
+      <p class="state" role="status"><app-icon name="loader"></app-icon>{{ i18n.t('cardImport.loading') }}</p>
+    } @else if (result(); as page) {
+      @if (!page.data.length) {
+        <div class="state">
+          <app-icon name="receipt"></app-icon>
+          <strong>{{ i18n.t('cardTransactions.empty') }}</strong>
+          <span>{{ i18n.t('cardTransactions.emptyHint') }}</span>
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ i18n.t('cardImport.date') }}</th>
+                <th>{{ i18n.t('cardImport.card') }}</th>
+                <th>{{ i18n.t('field.description') }}</th>
+                <th>{{ i18n.t('cardImport.type') }}</th>
+                <th>{{ i18n.t('cardImport.category') }}</th>
+                <th>MCC</th>
+                <th class="amount">{{ i18n.t('field.amount') }}</th>
+                <th><span class="sr-only">{{ i18n.t('cardTransactions.actions') }}</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (transaction of page.data; track transaction.id) {
+                <tr>
+                  <td>{{ transaction.transactionDate }}</td>
+                  <td>{{ transaction.cardNickname }}@if (transaction.cardLastFour) { <small> · {{ transaction.cardLastFour }}</small> }</td>
+                  <td class="description">
+                    <strong>{{ transaction.description }}</strong>
+                    <small>{{ transaction.source === 'MANUAL' ? i18n.t('creditBenefits.sourceManual') : i18n.t('creditBenefits.sourceImport') }}</small>
+                  </td>
+                  <td>{{ typeLabel(transaction.transactionType) }}</td>
+                  <td>{{ transaction.categoryName ?? '—' }}</td>
+                  <td>{{ transaction.mccCode ?? '—' }}</td>
+                  <td class="amount" [class.credit]="transaction.transactionType === 'REFUND' || transaction.transactionType === 'CASHBACK'">
+                    {{ formatMoney(transaction.amount, transaction.currency) }}</td>
+                  <td class="row-actions">
+                    <button class="btn ghost" type="button" (click)="openEdit(transaction)">{{ i18n.t('common.edit') }}</button>
+                    <button class="btn ghost" type="button" (click)="rememberFrom(transaction)">{{ i18n.t('cardTransactions.remember') }}</button>
+                    <button class="btn ghost danger" type="button" [attr.aria-label]="i18n.t('common.delete')" (click)="remove(transaction)">
+                      <app-icon name="trash"></app-icon></button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <nav class="pager" [attr.aria-label]="i18n.t('cardTransactions.pagination')">
+          <span>{{ i18n.t('cardTransactions.pageInfo', {page: page.meta.page + 1, total: totalPages(), count: page.meta.totalElements}) }}</span>
+          <button class="btn ghost" type="button" [disabled]="page.meta.page === 0 || loading()" (click)="goToPage(page.meta.page - 1)">
+            {{ i18n.t('cardTransactions.previous') }}</button>
+          <button class="btn ghost" type="button" [disabled]="page.meta.page + 1 >= totalPages() || loading()" (click)="goToPage(page.meta.page + 1)">
+            {{ i18n.t('cardTransactions.next') }}</button>
+        </nav>
+      }
+    }
+  </section>
+} @else {
+  @if (ruleError() && !ruleForm()) {
+    <div class="error-banner" role="alert">{{ ruleError() }}</div>
+  }
+  <section class="panel list-panel">
+    <p class="hint">{{ i18n.t('cardTransactions.rulesHint') }}</p>
+    @if (rulesLoading() && !rules().length) {
+      <p class="state" role="status"><app-icon name="loader"></app-icon>{{ i18n.t('cardImport.loading') }}</p>
+    } @else if (!rules().length) {
+      <div class="state">
+        <app-icon name="star"></app-icon>
+        <strong>{{ i18n.t('cardTransactions.rulesEmpty') }}</strong>
+      </div>
+    } @else {
+      <ul class="rule-list">
+        @for (rule of rules(); track rule.id) {
+          <li>
+            <div>
+              <strong>"{{ rule.pattern }}" → MCC {{ rule.mccCode }}</strong>
+              @if (rule.label) { <small>{{ rule.label }}</small> }
+            </div>
+            <button class="btn ghost" type="button" [disabled]="busyRuleId() !== null" (click)="openRule(rule)">{{ i18n.t('common.edit') }}</button>
+            <button class="btn ghost danger" type="button" [disabled]="busyRuleId() !== null" [attr.aria-label]="i18n.t('common.delete')"
+                    (click)="deleteRule(rule)"><app-icon name="trash"></app-icon></button>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+}
+
+@if (form(); as current) {
+  <div class="modal-backdrop" (click)="closeForm()">
+    <form class="dialog" role="dialog" aria-modal="true" aria-labelledby="transaction-dialog-title"
+          (click)="$event.stopPropagation()" (ngSubmit)="save()">
+      <h2 id="transaction-dialog-title">{{ editing() ? i18n.t('cardTransactions.editTitle') : i18n.t('cardTransactions.addTitle') }}</h2>
+      <label><span>{{ i18n.t('cardImport.card') }} *</span>
+        <app-custom-select name="formCard" [ariaLabel]="i18n.t('cardImport.card')" [options]="cardOptions()"
+                           [disabled]="!!editing()" [ngModel]="current.cardId" (ngModelChange)="chooseFormCard($event)"
+                           [placeholder]="i18n.t('cardImport.cardPlaceholder')"></app-custom-select></label>
+      <div class="two">
+        <label><span>{{ i18n.t('cardImport.date') }} *</span>
+          <input name="date" type="date" [ngModel]="current.transactionDate" (ngModelChange)="updateForm({transactionDate: $event})"></label>
+        <label><span>{{ i18n.t('field.amount') }} *</span>
+          <input name="amount" appMoneyInput [ngModel]="current.amount" (ngModelChange)="updateForm({amount: $event})"></label>
+      </div>
+      <label><span>{{ i18n.t('field.description') }} *</span>
+        <input name="description" maxlength="500" [ngModel]="current.description" (ngModelChange)="updateForm({description: $event})"></label>
+      <div class="two">
+        <label><span>{{ i18n.t('cardImport.type') }}</span>
+          <app-custom-select name="formType" [ariaLabel]="i18n.t('cardImport.type')" [options]="typeOptions()"
+                             [ngModel]="current.transactionType" (ngModelChange)="updateForm({transactionType: $event})"></app-custom-select></label>
+        <label><span>MCC</span>
+          <input name="mcc" maxlength="4" inputmode="numeric" [ngModel]="current.mccCode" (ngModelChange)="updateForm({mccCode: $event})"
+                 [placeholder]="i18n.t('cardTransactions.mccAuto')"></label>
+      </div>
+      <label><span>{{ i18n.t('cardImport.category') }}</span>
+        <app-custom-select name="formCategory" [ariaLabel]="i18n.t('cardImport.category')" [options]="formCategoryOptions()"
+                           [ngModel]="formCategoryValue()" (ngModelChange)="chooseFormCategory($event)"></app-custom-select></label>
+      @if (editing()?.statementId) {
+        <p class="hint">{{ i18n.t('cardTransactions.statementNote') }}</p>
+      }
+      @if (formError()) {
+        <div class="error-banner" role="alert">{{ formError() }}</div>
+      }
+      <div class="dialog-actions">
+        <button class="btn ghost" type="button" [disabled]="saving()" (click)="closeForm()">{{ i18n.t('common.cancel') }}</button>
+        <button class="btn primary" type="submit" [disabled]="saving()">{{ saving() ? i18n.t('cardImport.saving') : i18n.t('common.save') }}</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (ruleForm(); as current) {
+  <div class="modal-backdrop" (click)="ruleForm.set(null)">
+    <form class="dialog" role="dialog" aria-modal="true" aria-labelledby="rule-dialog-title"
+          (click)="$event.stopPropagation()" (ngSubmit)="saveRule()">
+      <h2 id="rule-dialog-title">{{ current.id ? i18n.t('cardTransactions.editRule') : i18n.t('cardTransactions.addRule') }}</h2>
+      <p class="hint">{{ i18n.t('cardTransactions.ruleHelp') }}</p>
+      <label><span>{{ i18n.t('cardTransactions.pattern') }} *</span>
+        <input name="pattern" maxlength="100" [ngModel]="current.pattern" (ngModelChange)="updateRuleForm({pattern: $event})"
+               [placeholder]="i18n.t('cardTransactions.patternPlaceholder')"></label>
+      <div class="two">
+        <label><span>MCC *</span>
+          <input name="ruleMcc" maxlength="4" inputmode="numeric" [ngModel]="current.mccCode" (ngModelChange)="updateRuleForm({mccCode: $event})"></label>
+        <label><span>{{ i18n.t('cardTransactions.label') }}</span>
+          <input name="label" maxlength="150" [ngModel]="current.label" (ngModelChange)="updateRuleForm({label: $event})"></label>
+      </div>
+      @if (!current.id) {
+        <label class="check"><input name="apply" type="checkbox" [ngModel]="current.applyToExisting"
+                                    (ngModelChange)="updateRuleForm({applyToExisting: $event})">
+          <span>{{ i18n.t('cardTransactions.applyToExisting') }}</span></label>
+      }
+      @if (ruleError()) {
+        <div class="error-banner" role="alert">{{ ruleError() }}</div>
+      }
+      <div class="dialog-actions">
+        <button class="btn ghost" type="button" (click)="ruleForm.set(null)">{{ i18n.t('common.cancel') }}</button>
+        <button class="btn primary" type="submit" [disabled]="busyRuleId() !== null">{{ i18n.t('common.save') }}</button>
+      </div>
+    </form>
+  </div>
+}

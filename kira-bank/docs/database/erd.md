@@ -20,6 +20,7 @@ erDiagram
  user_credit_cards ||--o{ card_transactions : records
  statements ||--o{ card_transactions : lists
  credit_card_cashback_rules ||--o{ card_transactions : categorizes
+ users ||--o{ card_merchant_rules : remembers
  users ||--o{ investment_accounts : owns
  users ||--o{ attachments : uploads
  users ||--o{ cloudflare_accounts : configures
@@ -58,6 +59,9 @@ V32 thêm nhập sao kê thẻ bằng AI và giao dịch thẻ (bảng `card_tra
 `statement_id`, `import_id` và `cashback_rule_id`; `amount > 0`, loại `SPENDING|REFUND|FEE|INTEREST|CASHBACK`, nguồn
 `AI_IMPORT|MANUAL`, unique `(user_card_id, dedup_key)` để nhập lại cùng sao kê hoặc gửi lại cùng `Idempotency-Key` không
 nhân đôi. Không có liên kết sang domain đầu tư.
+
+V33 thêm `card_merchant_rules`: quy tắc theo user "mô tả chứa `pattern` → `mcc_code`", unique `(user_id, pattern)`,
+có version và xoá mềm; tạo lại cùng pattern sẽ hồi sinh bản ghi cũ.
 
 V19 đổi bảng thành `cloudflare_accounts`, thêm model AI và credential/trạng thái R2 độc lập. `attachments.r2_account_id` cố định nơi lưu object; generated unique key bảo đảm chỉ một R2 account active làm primary. Attachment cũ để `NULL` cho tới khi Admin xác nhận gán vào bucket đã test.
 

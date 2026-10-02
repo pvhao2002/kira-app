@@ -38,7 +38,17 @@ interface ReviewRow {
   cashbackRuleId: number | null;
   duplicate: boolean;
   needsReview: boolean;
+  merchantRuleApplied: boolean;
+  remember: boolean;
+  rememberPattern: string;
   warnings: string[]
+}
+
+interface SourcePage {
+  attachmentId: number;
+  pageNumber: number;
+  url: string | null;
+  failed: boolean
 }
 
 interface TotalsForm {
@@ -84,6 +94,11 @@ export class CreditCardStatementImportPage {
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
   readonly formError = signal<string | null>(null);
+  readonly sourcePages = signal<SourcePage[]>([]);
+  readonly activePage = signal(0);
+  readonly zoomed = signal(false);
+  private sourceImportId: number | null = null;
+  private sourceRequests: Subscription[] = [];
 
   readonly selectedCard = computed(() => this.cards().find(card => card.id === this.cardId()) ?? null);
   readonly cardOptions = computed<SelectOption[]>(() => this.cards().map(card => ({
@@ -101,6 +116,13 @@ export class CreditCardStatementImportPage {
     benefit?.programs.filter(program => program.active).forEach(program => program.groups.forEach(group =>
       options.push({value: group.id, label: group.categoryName, sublabel: program.name})));
     return options;
+  });
+  /** MCC codes of each cashback group of the selected card, used to pre-fill MCC when a group is chosen. */
+  private readonly groupMccs = computed(() => {
+    const map = new Map<number, string[]>();
+    this.benefits().find(item => item.cardId === this.cardId())?.programs
+      .forEach(program => program.groups.forEach(group => map.set(group.id, group.mccCodes)));
+    return map;
   });
   readonly waiting = computed(() => ['QUEUED', 'PROCESSING'].includes(this.current()?.status ?? ''));
   readonly canReview = computed(() => this.current()?.status === 'READY' && !!this.totals());
@@ -129,7 +151,10 @@ export class CreditCardStatementImportPage {
       next: benefits => this.benefits.set(benefits),
       error: () => this.benefits.set([])
     });
-    this.destroyRef.onDestroy(() => this.polling?.unsubscribe());
+    this.destroyRef.onDestroy(() => {
+      this.polling?.unsubscribe();
+      this.clearSource();
+    });
   }
 
   chooseCard(value: number | string): void {
@@ -285,7 +310,8 @@ export class CreditCardStatementImportPage {
           amount: row.amount!,
           transactionType: row.transactionType!,
           mccCode: row.mccCode.trim() || null,
-          cashbackRuleId: row.cashbackRuleId
+          cashbackRuleId: row.cashbackRuleId,
+          rememberPattern: row.include && row.remember && row.mccCode.trim() ? row.rememberPattern.trim() : null
         }))
     };
     this.busy.set(true);
@@ -324,11 +350,25 @@ export class CreditCardStatementImportPage {
 
   chooseCategory(row: ReviewRow, value: number | string): void {
     const id = Number(value);
-    this.updateRow(row, {cashbackRuleId: value === '' || !Number.isFinite(id) ? null : id});
+    const ruleId = value === '' || !Number.isFinite(id) ? null : id;
+    const patch: Partial<ReviewRow> = {cashbackRuleId: ruleId};
+    // A remembered merchant needs an MCC; take the group's first one when the row has none yet.
+    if (ruleId !== null && !row.mccCode.trim()) patch.mccCode = this.groupMccs().get(ruleId)?.[0] ?? '';
+    this.updateRow(row, patch);
+  }
+
+  toggleRemember(row: ReviewRow, remember: boolean): void {
+    this.updateRow(row, {remember, rememberPattern: row.rememberPattern || this.suggestPattern(row.description)});
+  }
+
+  showPage(index: number): void {
+    this.activePage.set(index);
+    this.zoomed.set(false);
   }
 
   private selectCard(id: number, updateUrl: boolean): void {
     this.polling?.unsubscribe();
+    this.clearSource();
     this.cardId.set(id);
     this.current.set(null);
     this.rows.set([]);
@@ -386,6 +426,7 @@ export class CreditCardStatementImportPage {
   private applyImport(statementImport: CardStatementImport): void {
     const previous = this.current();
     this.current.set(statementImport);
+    this.loadSource(statementImport);
     if (statementImport.result) this.result.set(statementImport.result);
     const draft = statementImport.draft;
     const sameDraft = previous?.id === statementImport.id && previous.status === statementImport.status && !!this.totals();
@@ -421,6 +462,9 @@ export class CreditCardStatementImportPage {
       cashbackRuleId: row.cashbackRuleId,
       duplicate: row.duplicate,
       needsReview: row.needsReview,
+      merchantRuleApplied: row.merchantRuleApplied,
+      remember: false,
+      rememberPattern: '',
       warnings: row.warnings
     })));
   }
@@ -443,7 +487,64 @@ export class CreditCardStatementImportPage {
       return this.i18n.t('cardImport.validation.minimumExceeds');
     const invalid = this.rows().find(row => row.include && !this.rowComplete(row));
     if (invalid) return this.i18n.t('cardImport.validation.row', {line: invalid.lineNumber});
+    const badRemember = this.rows().find(row => row.include && row.remember
+      && (!row.mccCode.trim() || row.rememberPattern.trim().length < 2 || row.rememberPattern.trim().length > 100));
+    if (badRemember) return this.i18n.t('cardImport.validation.remember', {line: badRemember.lineNumber});
     return null;
+  }
+
+  /** Loads the statement pages once per import so the user can compare the draft with the original. */
+  private loadSource(statementImport: CardStatementImport): void {
+    if (this.sourceImportId === statementImport.id) return;
+    this.clearSource();
+    this.sourceImportId = statementImport.id;
+    const pages = statementImport.files.map(file => ({
+      attachmentId: file.attachmentId, pageNumber: file.pageNumber, url: null, failed: statementImport.storagePurged
+    }));
+    this.sourcePages.set(pages);
+    if (statementImport.storagePurged) return;
+    this.sourceRequests = pages.map(page => this.api.attachmentContent(page.attachmentId).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        if (this.sourceImportId !== statementImport.id) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        this.sourcePages.update(items => items.map(item =>
+          item.attachmentId === page.attachmentId ? {...item, url} : item));
+      },
+      error: () => this.sourcePages.update(items => items.map(item =>
+        item.attachmentId === page.attachmentId ? {...item, failed: true} : item))
+    }));
+  }
+
+  private clearSource(): void {
+    this.sourceRequests.forEach(request => request.unsubscribe());
+    this.sourceRequests = [];
+    this.sourcePages().forEach(page => {
+      if (page.url) URL.revokeObjectURL(page.url);
+    });
+    this.sourcePages.set([]);
+    this.activePage.set(0);
+    this.zoomed.set(false);
+    this.sourceImportId = null;
+  }
+
+  /**
+   * Merchant keyword suggestion. It must stay a contiguous piece of the normalized description (lower-case, single
+   * spaces) because the backend matches rules with "contains": cut at the first digit or reference symbol and keep
+   * the first three words.
+   */
+  private suggestPattern(description: string): string {
+    const normalized = description.toLowerCase().replace(/\s+/g, ' ').trim();
+    const cut = normalized.search(/[0-9*#]/);
+    return (cut > 0 ? normalized.slice(0, cut) : normalized)
+      .trim()
+      .split(' ')
+      .slice(0, 3)
+      .join(' ')
+      .slice(0, 40)
+      .replace(/[\s\-.,:/_]+$/, '');
   }
 
   private updateUrl(cardId: number, importId: number | null): void {
