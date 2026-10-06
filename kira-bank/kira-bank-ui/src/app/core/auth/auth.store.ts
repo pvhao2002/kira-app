@@ -14,7 +14,7 @@ export class AuthStore {
   readonly authenticated = computed(() => this.userState() !== null);
   readonly admin = computed(() => this.userState()?.roles.includes('ROLE_ADMIN') ?? false);
 
-  login(body: { email: string; password: string }): Observable<AuthResponse> {
+  login(body: { email: string; password: string; clientIp?: string | null }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>('/api/v1/auth/login', body, {withCredentials: true}).pipe(tap(r => this.accept(r)));
   }
 

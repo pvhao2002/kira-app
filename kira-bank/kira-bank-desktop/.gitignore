@@ -1,0 +1,11 @@
+node_modules
+src-tauri/target
+src-tauri/gen
+# dist/ holds the committed fallback page; re-include it past the root and kira-bank dist/ ignores.
+!dist/
+.env
+.env.local
+.DS_Store
+Thumbs.db
+*.swp
+*~

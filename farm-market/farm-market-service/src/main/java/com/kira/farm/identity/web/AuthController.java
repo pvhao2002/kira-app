@@ -3,7 +3,9 @@ package com.kira.farm.identity.web;
 import com.kira.farm.identity.application.AuthService;
 import com.kira.farm.shared.security.AuthPrincipal;
 import com.kira.farm.shared.security.CurrentUser;
+import com.kira.farm.shared.infrastructure.ClientIpResolver;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +26,7 @@ import static com.kira.farm.identity.application.AuthDtos.*;
 public class AuthController {
     private static final String COOKIE = "farm_refresh";
     private final AuthService auth;
+    private final ClientIpResolver clientIps;
     @Value("${app.refresh-cookie-secure:false}")
     private boolean secureCookie;
     @Value("${app.refresh-cookie-same-site:Lax}")
@@ -37,8 +40,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest r) {
-        AuthService.LoginResult result = auth.login(r);
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest r, HttpServletRequest request) {
+        AuthService.LoginResult result = auth.login(r, clientIps.resolve(request), request.getHeader(HttpHeaders.USER_AGENT));
         if (result.challenge() != null) return ResponseEntity.ok(result.challenge());
         return session(HttpStatus.OK, result.session());
     }

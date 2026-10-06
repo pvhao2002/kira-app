@@ -5,11 +5,14 @@ import com.kira.farm.identity.domain.RefreshToken;
 import com.kira.farm.identity.domain.Role;
 import com.kira.farm.identity.domain.User;
 import com.kira.farm.identity.domain.UserStatus;
+import com.kira.farm.identity.infrastructure.LoginHistoryRepository;
 import com.kira.farm.identity.infrastructure.RefreshTokenRepository;
 import com.kira.farm.identity.infrastructure.UserRepository;
+import com.kira.farm.shared.infrastructure.ClientIpResolver;
 import com.kira.farm.shared.security.Hashing;
 import com.kira.farm.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,9 +26,11 @@ import java.util.UUID;
 
 import static com.kira.farm.identity.application.AuthDtos.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private final LoginHistoryRepository loginHistory;
     private final UserRepository users;
     private final RefreshTokenRepository tokens;
     private final PasswordEncoder encoder;
@@ -57,7 +62,7 @@ public class AuthService {
     }
 
     @Transactional
-    public LoginResult login(LoginRequest request) {
+    public LoginResult login(LoginRequest request, ClientIpResolver.Resolved serverIp, String userAgent) {
         String id = request.identifier().trim();
         limiter.check(id);
         String phone = normalizePhone(id);
@@ -72,10 +77,21 @@ public class AuthService {
         if (user.getStatus() != UserStatus.ACTIVE)
             throw ApiException.forbidden("ACCOUNT_LOCKED", "Tài khoản đã bị khóa");
         limiter.recordSuccess(id);
+        recordLoginHistory(user, request.clientIp(), serverIp, userAgent);
         // Back-office roles get no tokens until the second factor is verified.
         if (user.getRole().isBackoffice())
             return new LoginResult(null, new OtpChallenge(true, jwt.issueChallenge(user.getId()), user.isTotpEnabled()));
         return new LoginResult(newSession(user, UUID.randomUUID().toString()), null);
+    }
+
+    /** Best-effort: a history failure must never fail a valid login, and IPs are not logged. */
+    private void recordLoginHistory(User user, String clientIp, ClientIpResolver.Resolved serverIp, String userAgent) {
+        try {
+            String agent = userAgent == null ? null : userAgent.substring(0, Math.min(userAgent.length(), 255));
+            loginHistory.insert(user.getId(), ClientIpResolver.normalize(clientIp), serverIp, agent);
+        } catch (RuntimeException e) {
+            log.warn("login history not recorded for userId={}", user.getId());
+        }
     }
 
     /** Creates (or replaces, while still unconfirmed) the user's TOTP secret. Enabled only by a valid verify. */

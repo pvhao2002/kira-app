@@ -3199,6 +3199,11 @@
             "type" : "string",
             "maxLength" : 72,
             "minLength" : 0
+          },
+          "clientIp" : {
+            "type" : "string",
+            "maxLength" : 45,
+            "minLength" : 0
           }
         },
         "required" : [ "identifier", "password" ]

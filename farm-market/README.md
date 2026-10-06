@@ -2,7 +2,7 @@
 
 Nền tảng thương mại điện tử nhiều chi nhánh cho trang trại Kira Farm: bán trứng, thức ăn chăn nuôi, con giống và nội dung blog. Khách hàng đặt hàng và nhận giao từ chi nhánh gần nhất; nhân viên và quản trị viên quản lý đơn, kho, khuyến mãi theo chi nhánh.
 
-> Trạng thái: `farm-market-ui` (Angular 22) dựng đủ các màn hình của mockup [`designs/Kira Farm Mockups.html`](designs/Kira%20Farm%20Mockups.html) và đã nối với `farm-market-service` (Spring Boot, `/api/v1`, MySQL). Đã kiểm tra thủ công với MySQL: đăng nhập 4 vai trò (khách, nhân viên, quản lý, quản trị), xem sản phẩm, yêu thích, đặt hàng, xử lý đơn, hủy đơn hoàn điểm, đổi thưởng, đánh giá, sửa hồ sơ và đổi màu chi nhánh. Backend có 32 test đơn vị (`./mvnw.cmd test`, không cần DB) và 30 test tích hợp `*IT` chạy trên MySQL thật qua Testcontainers (`$env:TESTCONTAINERS_RYUK_DISABLED='true'; .\mvnw.cmd verify` trong `farm-market-service`, cần Docker đang chạy và image `mysql:8.0` có sẵn). Chưa có: cổng thanh toán ví/thẻ thật (chuyển khoản VietQR đã có, nhân viên đối soát thủ công), mã dự phòng/QR cho OTP, UI test; `docker compose build` chưa được kiểm tra vì Docker Hub từ chối đăng nhập trên máy dev (cần `docker login`).
+> Trạng thái: `farm-market-ui` (Angular 22) dựng đủ các màn hình của mockup [`designs/Kira Farm Mockups.html`](designs/Kira%20Farm%20Mockups.html) và đã nối với `farm-market-service` (Spring Boot, `/api/v1`, MySQL). Đã kiểm tra thủ công với MySQL: đăng nhập 4 vai trò (khách, nhân viên, quản lý, quản trị), xem sản phẩm, yêu thích, đặt hàng, xử lý đơn, hủy đơn hoàn điểm, đổi thưởng, đánh giá, sửa hồ sơ và đổi màu chi nhánh. Đã thêm tài khoản nhân viên/quản trị đầu tiên, quên/đổi mật khẩu và tải ảnh lên (xem các mục bên dưới; UI của ba tính năng này chưa được build hay kiểm tra bằng mắt). Backend có test đơn vị (`./mvnw.cmd test`, không cần DB) và test tích hợp `*IT` chạy trên MySQL thật qua Testcontainers (`$env:TESTCONTAINERS_RYUK_DISABLED='true'; .\mvnw.cmd verify` trong `farm-market-service`, cần Docker đang chạy và image `mysql:8.0` có sẵn). Chưa có: cổng thanh toán ví/thẻ thật (chuyển khoản VietQR đã có, nhân viên đối soát thủ công), mã dự phòng/QR cho OTP, UI test; `docker compose build` chưa được kiểm tra vì Docker Hub từ chối đăng nhập trên máy dev (cần `docker login`).
 >
 > Chạy thử cục bộ:
 > 1. `docker compose up -d mysql` (cổng 3308).
@@ -49,6 +49,10 @@ docker compose up --build
 ```
 
 UI: http://localhost:4201, API: http://localhost:8081, MySQL host port 3308. Compose chỉ chạy được sau khi tạo `farm-market-service` và `farm-market-ui`.
+
+## Ứng dụng desktop cho admin (Tauri v2)
+
+`farm-market-admin-desktop/` là vỏ desktop mỏng (macOS / Linux / Windows) mở giao diện đã triển khai tại `<FARM_ADMIN_URL>/admin`; không sao chép mã UI và không đổi API. Đặt `FARM_ADMIN_URL` (xem `.env.example`) rồi chạy `npm install && npm run build` trên từng hệ điều hành, hoặc dùng workflow `.github/workflows/farm-admin-desktop.yml`. Bản dựng chưa ký (macOS Gatekeeper / Windows SmartScreen sẽ cảnh báo). Chi tiết: `farm-market-admin-desktop/AGENTS.override.md`.
 
 ## Giấy phép
 

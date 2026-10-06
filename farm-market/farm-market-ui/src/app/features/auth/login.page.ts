@@ -3,6 +3,7 @@ import {FormField, FormRoot, form, required, validate} from '@angular/forms/sign
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {Api, ApiError, toApiError} from '../../core/api';
 import {AuthStore, AuthUser, DEMO_PASSWORD, DEMO_USERS} from '../../core/auth.store';
+import {fetchPublicIp} from '../../core/public-ip';
 import {ImageSlot} from '../../shared/image-slot';
 import {AppLogo} from '../../shared/logo';
 
@@ -22,6 +23,7 @@ export class LoginPage {
   private readonly route = inject(ActivatedRoute);
   readonly dev = isDevMode();
   private readonly timers: ReturnType<typeof setTimeout>[] = [];
+  private clientIp: string | null = null;
 
   readonly users = DEMO_USERS;
   readonly roleIdx = signal(0);
@@ -51,6 +53,7 @@ export class LoginPage {
   });
 
   constructor() {
+    void fetchPublicIp().then(ip => this.clientIp = ip);
     inject(DestroyRef).onDestroy(() => this.timers.forEach(clearTimeout));
   }
 
@@ -78,7 +81,7 @@ export class LoginPage {
       return;
     }
     const {identifier, password} = this.loginModel();
-    await this.authenticate(() => this.auth.signIn(identifier.trim(), password));
+    await this.authenticate(() => this.auth.signIn(identifier.trim(), password, this.clientIp));
   }
 
   async register(): Promise<void> {
@@ -90,7 +93,7 @@ export class LoginPage {
     const password = m.password;
     await this.authenticate(async () => {
       await this.api.post('/auth/register', {fullName: m.fullName.trim(), email, phone: m.phone.trim(), password});
-      return this.auth.signIn(email, password);
+      return this.auth.signIn(email, password, this.clientIp);
     });
   }
 

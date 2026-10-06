@@ -27,7 +27,7 @@ public class MobileAuthController {
 
     @PostMapping("/login")
     public MobileSession login(@Valid @RequestBody LoginRequest r, HttpServletRequest request) {
-        return response(auth.login(r, clientIps.resolve(request).ip()));
+        return response(auth.login(r, clientIps.resolve(request), request.getHeader("User-Agent")));
     }
 
     @PostMapping("/refresh")

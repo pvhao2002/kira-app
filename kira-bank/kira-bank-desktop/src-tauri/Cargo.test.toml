@@ -1,0 +1,67 @@
+# Cargo.toml test specification
+# This file documents test expectations for Cargo.toml configuration
+# Format: [test_category]
+#         description: what to verify
+#         happy_path: expected behavior
+#         edge_case: boundary conditions
+#         error_branch: what should fail
+
+[package_metadata]
+description = "Verify basic Cargo package configuration"
+happy_path = "name=kira-bank-desktop, version=0.1.0, edition=2021"
+edge_case = "Supports future edition upgrades (2024, etc)"
+error_branch = "Edition must be valid (2015, 2018, 2021, 2024)"
+
+[dependencies]
+description = "Verify Tauri dependency is correctly configured"
+happy_path = "tauri v2.x dependency present"
+edge_case = "No v1 Tauri dependencies mixed in"
+error_branch = "Would fail if tauri v1 is also included"
+
+[build_dependencies]
+description = "Verify build-time dependencies"
+happy_path = "tauri-build v2 is present"
+edge_case = "No other build dependencies needed (minimal)"
+error_branch = "Missing tauri-build would prevent compilation"
+
+[profile_release]
+description = "Verify optimized release profile per Tauri recommendations"
+happy_path = """
+codegen-units = 1       # Single-threaded for better optimization
+lto = true              # Link-time optimization for smaller binary
+opt-level = 's'         # Optimize for size (s) or speed (3)
+panic = 'abort'         # Smaller panic handler (desktop doesn't need stack unwind)
+strip = true            # Remove symbols from binary
+"""
+edge_case = "Can switch opt-level to 3 if speed is more important than size"
+error_branch = "Missing or incorrect profile would produce large/slow binary"
+
+[testing]
+description = "Rust tests in src/main.rs"
+happy_path = """
+#[test] functions compile and run under 'cargo test'
+Must have MSVC C++ Build Tools on Windows
+Tests verify:
+  - navigation lock with various URL schemes
+  - configuration URL parsing
+  - external link opening (platform-specific)
+"""
+edge_case = "Tests may skip if platform-specific code isn't compiled for current OS"
+error_branch = """
+Fails to compile: linker link.exe not found
+  Solution: Install MSVC C++ Build Tools
+Fails during test: panics in URL parsing
+  Solution: All test URLs must parse successfully
+"""
+
+[no_dangerous_deps]
+description = "Verify no supply-chain risks"
+happy_path = "Only tauri and tauri-build, both official"
+edge_case = "No git dependencies or path dependencies"
+error_branch = "Any unvetted dependencies would be a security risk"
+
+[size_optimization]
+description = "Desktop app should be lean"
+happy_path = "Release binary ~30-50 MB (Tauri overhead + app logic)"
+edge_case = "With LTO and strip, should be significantly smaller than unoptimized"
+error_branch = "Debug build could be 500+ MB, unoptimized release could be 100+ MB"

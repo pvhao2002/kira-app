@@ -27,7 +27,11 @@ public final class AuthDtos {
     ) {
     }
 
-    public record LoginRequest(@Email @NotBlank @Size(max = 254) String email, @NotBlank @Size(max = 128) String password) {
+    /**
+     * clientIp: IP công khai do trình duyệt tự lấy từ ipify (tuỳ chọn, client tự khai nên chỉ mang tính tham khảo).
+     */
+    public record LoginRequest(@Email @NotBlank @Size(max = 254) String email, @NotBlank @Size(max = 128) String password,
+                               @Size(max = 45) String clientIp) {
     }
 
     public record ChangePasswordRequest(@NotBlank String currentPassword,

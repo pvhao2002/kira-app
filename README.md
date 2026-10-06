@@ -42,6 +42,8 @@ Every module builds, runs, and is verified on its own — **there is no root bui
 - **A second product in the tree** — [`kira-bank` / *Kira Life*](#kira-bank-kira-life): credit
   cards, AI-assisted investment imports, health, travel and tutoring, in its own repository with
   its own stack.
+- **A third product: Kira Farm** — [`farm-market`](#farm-market-kira-farm): a multi-branch
+  e-commerce site for a farm (eggs, feed, livestock), with its own Spring Boot API and Angular UI.
 
 ---
 
@@ -59,6 +61,7 @@ Every module builds, runs, and is verified on its own — **there is no root bui
 - [Testing](#testing)
 - [Deployment](#deployment)
 - [kira-bank (Kira Life)](#kira-bank-kira-life)
+- [farm-market (Kira Farm)](#farm-market-kira-farm)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [Roadmap](#roadmap)
@@ -83,6 +86,7 @@ kira-app/
 ├── mobile-app/           Expo 54 / React Native app
 ├── kira-portfolio-3d/    Standalone Next.js + three.js portfolio site
 ├── kira-bank/            Nested, separately git-tracked product (Kira Life)
+├── farm-market/          Multi-branch farm e-commerce (Kira Farm): service + UI
 ├── docker-compose*.yml   Local, crawl-only, and production stacks
 ├── nginx/                Reverse proxy config + templates
 ├── monitoring/           Grafana dashboards, Loki and Promtail configs
@@ -134,7 +138,7 @@ kira-app/
 
 | Tool | Version | Needed for |
 | --- | --- | --- |
-| JDK | 21 (25 for `kira-bank-service`) | All Java modules |
+| JDK | 21 (25 for `kira-bank-service` and `farm-market-service`) | All Java modules |
 | Maven | Only for `kira-crawl-java` | Every other module ships `mvnw` / `mvnw.cmd` |
 | Node.js | 20+ (22+ recommended) | `kira-ui`, `mobile-app`, `kira-portfolio-3d` |
 | npm | 9+ | Same |
@@ -446,6 +450,7 @@ placeholders, never hard-coded in source.
 | kira-websocket | `8080` (Spring default) | — |
 | MySQL | `3310` → `3306` | — |
 | RabbitMQ | `5672`, UI `15672` | — |
+| farm-market (UI / API / MySQL) | `4201` / `8081` / `3308` | `/api/v1` |
 
 ---
 
@@ -656,6 +661,38 @@ Architecture, ERD, business rules, API and deployment notes live in `kira-bank/d
 
 Because it carries its own `.git`, commits, branches and pushes for `kira-bank` happen from
 inside that directory — not from this repo.
+
+---
+
+## farm-market (Kira Farm)
+
+`farm-market` is a multi-branch e-commerce platform for a farm business in Vietnam: eggs, animal
+feed, livestock and a blog. Orders ship from the customer's nearest branch. UI copy is Vietnamese
+and currency is VND. Unlike `kira-bank`, it is tracked in this repository, but it shares no
+database, broker, or deploy pipeline with the platform services.
+
+| Module | Stack |
+| --- | --- |
+| `farm-market-service` | Java 25, Spring Boot 3.5 — modular monolith, JWT + TOTP for staff, JPA, Flyway, MySQL 8, OpenAPI |
+| `farm-market-ui` | Angular 22 standalone, strict TypeScript, Signals, lazy routes |
+
+What it covers: catalog and per-branch inventory, promotions, idempotent checkout with an order
+state machine, loyalty points and vouchers, addresses / wishlist / reviews, VietQR bank transfer
+(staff confirm payment manually; no wallet/card gateway yet), staff accounts with a bootstrap
+admin, password reset, and image upload. Roles are customer, staff, manager and admin. API lives
+under `/api/v1`.
+
+```bash
+cd farm-market
+docker compose up -d mysql                          # MySQL :3308
+cd farm-market-service && ./mvnw spring-boot:run    # API :8081 (see farm-market/README.md for env vars)
+cd farm-market-ui && npm install --legacy-peer-deps && npm start   # UI :4201, needs Node >= 22.22.3
+```
+
+Dev seed users exist only with `APP_SEED_DEVELOPMENT_USERS=true`. Integration tests (`*IT`) use
+Testcontainers MySQL and run with `mvnw verify`. Schema changes are additive Flyway migrations.
+Details, demo accounts and configuration are in `farm-market/README.md` (Vietnamese) and
+`farm-market/CLAUDE.md`.
 
 ---
 

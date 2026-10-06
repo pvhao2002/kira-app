@@ -2,7 +2,7 @@
 
 ## Đăng nhập và lỗi chung
 
-- `POST /api/v1/auth/login` và `POST /api/v1/auth/mobile/login` trả `429 LOGIN_RATE_LIMITED` kèm `Retry-After` (giây) khi vượt 20 lần/5 phút mỗi IP hoặc 5 lần sai/15 phút mỗi email. Đăng nhập thành công xoá bộ đếm của email.
+- `POST /api/v1/auth/login` và `POST /api/v1/auth/mobile/login` trả `429 LOGIN_RATE_LIMITED` kèm `Retry-After` (giây) khi vượt 20 lần/5 phút mỗi IP hoặc 5 lần sai/15 phút mỗi email. Đăng nhập thành công xoá bộ đếm của email. Body login nhận thêm `clientIp` (tuỳ chọn, IP công khai từ ipify, client tự khai); đăng nhập thành công ghi một dòng `login_history` gồm `client_ip` và `server_ip` do backend tự xác định.
 - Body lỗi luôn theo dạng `{timestamp, status, code, message, fieldErrors, path, traceId}`. Lỗi framework dùng code chung: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE`, `PAYLOAD_TOO_LARGE`, `INVALID_PARAMETER`, `BAD_REQUEST`, `DATA_CONFLICT`, `CONCURRENT_UPDATE`, `INTERNAL_ERROR`. Không trả stack trace, SQL hay tên class.
 
 ## Quản lý User

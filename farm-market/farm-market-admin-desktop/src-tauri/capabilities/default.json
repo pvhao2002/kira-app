@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "No IPC permissions. The window loads remote content; never add permissions or a `remote` block here.",
+  "windows": ["main"],
+  "permissions": []
+}

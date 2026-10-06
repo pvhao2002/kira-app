@@ -27,7 +27,9 @@ public final class AuthDtos {
     public record LoginRequest(
         @NotBlank(message = "Vui lòng nhập email hoặc số điện thoại") @Size(max = 190)
         @JsonAlias({"email", "phone"}) String identifier,
-        @NotBlank(message = "Vui lòng nhập mật khẩu") @Size(max = 72) String password) {
+        @NotBlank(message = "Vui lòng nhập mật khẩu") @Size(max = 72) String password,
+        /** Public IP the browser got from ipify; optional and self-reported, so informational only. */
+        @Size(max = 45) String clientIp) {
     }
 
     public record UserProfile(Long id, String email, String phone, String fullName, LocalDate birthDate, Gender gender,

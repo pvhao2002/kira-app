@@ -1,0 +1,5 @@
+node_modules
+src-tauri/target
+src-tauri/gen
+# dist/ holds the committed fallback page; re-include it past the root and farm-market dist/ ignores.
+!dist/

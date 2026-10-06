@@ -92,6 +92,8 @@ app:
   seed-development-password: ${APP_SEED_DEVELOPMENT_PASSWORD:KiraFarm@123}
   # Dev only: shared base32 TOTP secret enrolled for the seeded staff/manager/admin users.
   seed-development-totp-secret: ${APP_SEED_DEVELOPMENT_TOTP_SECRET:JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP}
+  # CIDRs of reverse proxies whose X-Forwarded-For is trusted for the login IP. Add the nginx container network in Docker.
+  trusted-proxies: ${TRUSTED_PROXIES:127.0.0.1/32,::1/128}
   refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
   refresh-cookie-same-site: ${REFRESH_COOKIE_SAME_SITE:Lax}
   # Business decisions: edit here, not in code. type: PERCENT (value = %), FIXED (value = VND) or FREE_SHIP.

@@ -1,0 +1,25 @@
+[package]
+name = "farm-market-admin-desktop"
+version = "0.1.0"
+edition = "2021"
+
+# Distinct lib name avoids the Windows lib/bin output-filename collision (cargo#8519).
+[lib]
+name = "farm_market_admin_desktop_lib"
+
+[build-dependencies]
+tauri-build = "2"
+
+[dependencies]
+tauri = "2"
+
+[dev-dependencies]
+url = "2.5"
+
+# Size-oriented release profile recommended by Tauri.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

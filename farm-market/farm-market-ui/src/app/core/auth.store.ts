@@ -104,8 +104,8 @@ export class AuthStore {
    * Real sign-in against the API. Resolves the user for customers, or null when a second factor is required
    * (then continue on /login/otp with enroll()/verifyOtp()). Throws ApiError on bad credentials.
    */
-  async signIn(identifier: string, password: string): Promise<AuthUser | null> {
-    const res = await this.api.post<ApiAuthResponse | ApiOtpChallenge>('/auth/login', {identifier, password});
+  async signIn(identifier: string, password: string, clientIp: string | null = null): Promise<AuthUser | null> {
+    const res = await this.api.post<ApiAuthResponse | ApiOtpChallenge>('/auth/login', {identifier, password, clientIp});
     if ('otpRequired' in res) {
       this.otp.set({token: res.challengeToken, enrolled: res.enrolled});
       this.enrollment.set(null);

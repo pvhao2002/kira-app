@@ -1,0 +1,13 @@
+{
+  "name": "kira-bank-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "test": "node --test package.test.js .env.example.test.js .gitignore.test.js src-tauri/tauri.conf.test.js"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

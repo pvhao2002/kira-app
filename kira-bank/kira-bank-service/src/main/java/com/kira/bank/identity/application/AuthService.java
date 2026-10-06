@@ -3,11 +3,14 @@ package com.kira.bank.identity.application;
 import com.kira.bank.identity.domain.RefreshToken;
 import com.kira.bank.identity.domain.Role;
 import com.kira.bank.identity.domain.User;
+import com.kira.bank.identity.infrastructure.LoginHistoryRepository;
 import com.kira.bank.identity.infrastructure.RefreshTokenRepository;
 import com.kira.bank.identity.infrastructure.RoleRepository;
 import com.kira.bank.identity.infrastructure.UserRepository;
+import com.kira.bank.shared.infrastructure.ClientIpResolver;
 import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,9 +28,11 @@ import java.util.UUID;
 
 import static com.kira.bank.identity.application.AuthDtos.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private final LoginHistoryRepository loginHistory;
     private final UserRepository users;
     private final RoleRepository roles;
     private final RefreshTokenRepository tokens;
@@ -92,8 +97,8 @@ public class AuthService {
     }
 
     @Transactional
-    public Session login(LoginRequest request, String clientIp) {
-        loginLimiter.acquire(clientIp, request.email());
+    public Session login(LoginRequest request, ClientIpResolver.Resolved serverIp, String userAgent) {
+        loginLimiter.acquire(serverIp.ip(), request.email());
         User user = users.findByEmailIgnoreCaseAndDeletedAtIsNull(request.email()).orElse(null);
         if (user == null) {
             // Spend the same bcrypt cost as a real check so response time does not reveal which emails exist.
@@ -105,7 +110,18 @@ public class AuthService {
             throw badCredentials();
         }
         loginLimiter.recordSuccess(request.email());
+        recordLoginHistory(user, request.clientIp(), serverIp, userAgent);
         return newSession(user, UUID.randomUUID().toString());
+    }
+
+    private void recordLoginHistory(User user, String clientIp, ClientIpResolver.Resolved serverIp, String userAgent) {
+        try {
+            String agent = userAgent == null ? null : userAgent.substring(0, Math.min(userAgent.length(), 255));
+            loginHistory.insert(user.getId(), ClientIpResolver.normalize(clientIp), serverIp, agent);
+        } catch (RuntimeException e) {
+            // History is best-effort: never fail a valid login (and never log IPs) because of it.
+            log.warn("login history not recorded for userId={}", user.getId());
+        }
     }
 
     @Transactional(noRollbackFor = ApiException.class)

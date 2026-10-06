@@ -45,7 +45,7 @@ public class AuthController {
 
     @PostMapping("/api/v1/auth/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest r, HttpServletRequest request) {
-        return session(auth.login(r, clientIps.resolve(request).ip()));
+        return session(auth.login(r, clientIps.resolve(request), request.getHeader(HttpHeaders.USER_AGENT)));
     }
 
     @PostMapping("/api/v1/auth/refresh")

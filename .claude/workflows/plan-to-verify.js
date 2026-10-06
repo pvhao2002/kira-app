@@ -3,7 +3,7 @@ export const meta = {
   description: 'Plan → execute → tests → review/refactor theo nhóm file → verify',
   whenToUse: 'Implement một task end-to-end, có review + test + verify. Duyệt plan: chạy {task, planOnly:true}, rồi chạy lại {task, plan}',
   phases: [
-    { title: 'Plan' }, { title: 'Execute' }, { title: 'Test' },
+    { title: 'Plan', model: 'opus' }, { title: 'Execute', model: 'sonnet' }, { title: 'Test', model: 'haiku' },
     { title: 'Review' }, { title: 'Refactor' }, { title: 'Verify' },
   ],
 }
@@ -47,11 +47,11 @@ const DIRTY_STEP = `Chạy "git status --porcelain -uall" và đưa đường d�
 // 1. Plan — chỉ đọc; nếu đã có plan duyệt sẵn thì chỉ chụp git status
 phase('Plan')
 const planned = opts.plan
-  ? await agent(`${DIRTY_STEP} Để "plan" rỗng.`, { phase: 'Plan', label: 'snapshot', effort: 'low', schema: PLAN })
+  ? await agent(`${DIRTY_STEP} Để "plan" rỗng.`, { phase: 'Plan', label: 'snapshot', model: 'opus', effort: 'low', schema: PLAN })
   : await agent(
       `Lập kế hoạch cho task: "${task}". Đọc AGENTS.override.md của module liên quan, chạy gitnexus impact cho các symbol sẽ sửa.
        KHÔNG sửa file. "plan": các bước, file sẽ tạo/sửa, rủi ro, lệnh verify của module. ${DIRTY_STEP}`,
-      { phase: 'Plan', schema: PLAN })
+      { phase: 'Plan', model: 'opus', schema: PLAN })
 if (!planned) throw new Error('Plan agent bị skip/lỗi — dừng workflow')
 const plan = opts.plan ?? planned.plan
 if (opts.planOnly) return { plan, next: 'Duyệt/sửa plan rồi chạy lại với args {task, plan}' }
@@ -61,7 +61,7 @@ phase('Execute')
 const exec = await agent(
   `Thực hiện đúng plan sau, không mở rộng scope:\n${plan}\n
    Xong thì chạy "git status --porcelain -uall" và trả về đường dẫn từng file (không phải thư mục) mà task này đã tạo/sửa.`,
-  { phase: 'Execute', schema: FILES })
+  { phase: 'Execute', model: 'sonnet', schema: FILES })
 if (!exec) throw new Error('Execute agent bị skip/lỗi — dừng workflow')
 // ponytail: file đã dirty từ trước bị loại khỏi review, kể cả khi task sửa tiếp nó — chạy với working tree sạch
 const preexisting = new Set(planned.dirty)
@@ -75,7 +75,7 @@ const tests = await agent(
   `Viết testcase cho các thay đổi (theo convention test đã có trong module):\n${codeFiles.join('\n')}\n
    Bao phủ happy path + edge case + nhánh lỗi. Summary: ${exec.summary}
    KHÔNG sửa code production. Trả về đường dẫn các file test đã tạo/sửa.`,
-  { phase: 'Test', schema: FILES })
+  { phase: 'Test', model: 'haiku', schema: FILES })
 
 // 4+5. Review → Refactor theo nhóm file cùng thư mục (thấy được trùng lặp/contract giữa các file)
 const byDir = {}

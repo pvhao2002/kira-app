@@ -9,15 +9,10 @@ Farm Market ("Kira Farm") is a multi-branch e-commerce platform for a farm busin
 (₫). Orders ship from the customer's nearest branch.
 
 **Current state: UI and backend are built and wired together.** `farm-market-ui` implements every screen of the mockup
-`designs/Kira Farm Mockups.html` (source of truth for screens, routes, roles and copy) and talks to
-`farm-market-service` through `core/api.ts` (`/api/v1`, dev proxy in `proxy.conf.json`, bearer access token in memory +
-HttpOnly `farm_refresh` cookie, `core/auth.interceptor.ts`). `core/mock-data.ts` now only holds static option lists and
-view-model types (branch defaults, shipping/payment options). `farm-market-service` implements identity/JWT, branches,
-catalog, inventory, promotions, orders (idempotent checkout, state machine), loyalty, addresses/wishlist/reviews and admin
-dashboard/customers/users under `/api/v1`, with Flyway V1-V6. Verified manually against MySQL 8: Flyway, startup,
-login, catalog, checkout, status changes, loyalty points, admin dashboard and theme save, plus `farm-market-service/smoke.sh`.
-`docker compose build` was not verified (Docker Hub login was rejected on the dev machine). `docs/`, `infrastructure/`
-and `scripts/` are empty.
+`designs/Kira Farm Mockups.html` (source of truth for screens, routes, roles and copy) and talks to `farm-market-service`
+through `core/api.ts` (`/api/v1`, dev proxy in `proxy.conf.json`). Verified manually against MySQL 8 plus
+`farm-market-service/smoke.sh`. `docker compose build` was not verified (Docker Hub login was rejected on the dev machine).
+`docs/`, `infrastructure/` and `scripts/` are empty.
 
 Staff/manager/admin log in with a real TOTP second factor (`/auth/login` returns `{otpRequired, challengeToken, enrolled}`, then `/auth/otp/enroll` + `/auth/otp/verify`; secrets AES-GCM encrypted with `TOTP_ENCRYPTION_KEY`; dev seed secret in README; helper `farm-market-service/totp.js`; Flyway V5). Flyway V6 adds two query-driven indexes (`ix_orders_dashboard`, `ix_users_role_created`; EXPLAIN evidence in `IndexExplainIT`).
 
@@ -37,21 +32,10 @@ Angular 22's CLI needs Node >= 22.22.3 / 24.15 / 26. If the default Node is olde
 `../CLAUDE.md` and `../AGENTS.md` for general rules, and the conventions of the sibling `../kira-bank` for stack
 choices. Add an `AGENTS.override.md` in each new module with its scope and exact verification command.
 
-## Planned layout (mirror `kira-bank`)
-
-- `farm-market-service` — Java 25 Spring Boot 3.5 modular monolith (domain / application / infrastructure / web per
-  business capability), JPA, Flyway (`src/main/resources/db/migration`), MySQL 8, OpenAPI, JWT auth.
-- `farm-market-ui` — Angular standalone client, strict TypeScript, Signals, lazy routes, responsive.
-- `docs/` (architecture, ERD, business rules, API, deployment), `infrastructure/`, `scripts/`.
-
-Both modules exist. Create further modules only when asked. Host ports are offset from kira-bank: MySQL 3308, API 8081, UI 4201.
+Three modules exist (`farm-market-service`, `farm-market-ui`, `farm-market-admin-desktop`). Create further modules only when asked. Host ports are offset from kira-bank: MySQL 3308, API 8081, UI 4201.
 
 ## Product model (from the mockup)
 
-- Routes (customer): `/products`, `/products/:slug`, `/checkout`, `/login`, `/account`, `/account/orders`,
-  `/account/addresses`, `/account/wishlist`, `/account/rewards`, `/account/reviews`.
-- Routes (admin): `/admin`, `/admin/orders`, `/admin/products`, `/admin/inventory`, `/admin/customers`,
-  `/admin/promotions`, `/admin/branches`, `/admin/branches/theme`.
 - Roles: Customer, Staff, Admin. Customers hitting `/admin` are redirected home. Staff see only data for branches they
   are assigned to. Admin sees all branches and can configure branch theme colors and staff permissions. An
   unauthenticated user sent to login from checkout returns to `/checkout`, not `/account`.
@@ -63,13 +47,12 @@ Both modules exist. Create further modules only when asked. Host ports are offse
 
 ## Build / verify commands
 
-Nothing to build yet. Once modules exist, verify only the module you changed, by the method its override specifies:
+Verify only the module you changed, by the method its override specifies:
 
 - Java: `cd farm-market-service` then `./mvnw.cmd compile` (Windows, Java 25). Do not run tests, packaging, Flyway,
   containers or other modules unless explicitly asked.
 - Integration tests (`*IT`, Testcontainers MySQL `mysql:8.0`, needs a running Docker, nothing is pulled if the image is already local): `cd farm-market-service` then `$env:TESTCONTAINERS_RYUK_DISABLED='true'; .\mvnw.cmd verify` (PowerShell; failsafe also sets it). `.\mvnw.cmd test` stays DB-free and skips `*IT`. ITs share ONE container and one Spring context (`it/IntegrationTestBase`), seed users via the dev seeder, and isolate themselves by creating their own customers/products/staff.
 - `farm-market-service` guard rails inside `verify`: `OpenApiContractIT` (the `/v3/api-docs` document must equal `src/test/resources/openapi-baseline.json`; regenerate ONLY for a conscious contract change with env `OPENAPI_REGEN=true`), `QueryCountIT` (statements per request via the test-only `SqlCounter` DataSource proxy; fails when a list endpoint grows with page size or exceeds its bound; `QC_BASELINE=1` prints the table and skips the bounds), `IndexExplainIT` (EXPLAIN on 150k scratch orders), `PublicCacheHeadersIT`, `OperationalConfigIT`.
-- Runtime knobs (all env-overridable in `application.yml`): `DB_POOL_MAX` (20), `DB_POOL_MIN_IDLE` (5), `DB_CONNECTION_TIMEOUT_MS` (5000), `DB_MAX_LIFETIME_MS` (1740000, keep below MySQL `wait_timeout`), `DB_LEAK_DETECTION_MS` (0 = off), `HIBERNATE_BATCH_SIZE` (50), `HIBERNATE_FETCH_BATCH_SIZE` (32), `SHUTDOWN_TIMEOUT` (30s), `HTTP_COMPRESSION`, `TOMCAT_MAX_CONNECTIONS`, `TOMCAT_ACCEPT_COUNT`, `API_DOCS_ENABLED`; `app.http-cache.*` (`enabled`, `static-max-age-seconds` 60, `product-max-age-seconds` 10). Request threads are virtual (`spring.threads.virtual.enabled`), so the Hikari pool, not a thread count, is the concurrency limit. Probes: `/actuator/health/liveness` and `/readiness` are public and detail-free; every other `/actuator/**` (metrics, info) is ADMIN-only.
 - UI: do not run `npm run build`, lint, tests or a dev server unless requested; a build is not proof of correct UI.
 - `docker compose up -d` only when local infrastructure is needed for a manual runtime check.
 - API or contract changes: update backend DTO/controller, frontend models/callers and docs together, and inspect both
