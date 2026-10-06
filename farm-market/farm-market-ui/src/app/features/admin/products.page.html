@@ -81,6 +81,18 @@
           </select>
         </div>
       </div>
+      <div class="field">
+        <span class="label">Ảnh sản phẩm</span>
+        <div class="row wrap imgrow">
+          @if (d.imageUrl) {<img class="preview" [src]="d.imageUrl" alt="Ảnh sản phẩm">}
+          <label class="btn secondary sm pick" [class.off]="uploading()">
+            {{ uploading() ? 'Đang tải ảnh…' : (d.imageUrl ? 'Đổi ảnh' : 'Chọn ảnh') }}
+            <input type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploading()" (change)="pickImage($any($event.target))">
+          </label>
+          @if (d.imageUrl) {<button type="button" class="btn ghost sm" [disabled]="uploading()" (click)="patch('imageUrl', '')">Xóa ảnh</button>}
+        </div>
+        <span class="muted small">JPEG, PNG hoặc WebP, tối đa 5MB</span>
+      </div>
       @if (d.id && d.stock !== d.onHand) {
         <div class="field">
           <label for="pr">Lý do điều chỉnh tồn kho ({{ d.onHand }} → {{ d.stock }})</label>
@@ -103,7 +115,7 @@
       <div class="row foot2">
         @if (d.id) {<button type="button" class="btn danger" [disabled]="busy()" (click)="hide()">Ẩn</button>}
         <button type="button" class="btn secondary grow" [disabled]="busy()" (click)="close()">Hủy</button>
-        <button type="button" class="btn grow" [disabled]="busy()" (click)="save()">{{ busy() ? 'Đang lưu…' : 'Lưu' }}</button>
+        <button type="button" class="btn grow" [disabled]="busy() || uploading()" (click)="save()">{{ busy() ? 'Đang lưu…' : 'Lưu' }}</button>
       </div>
     </aside>
   }

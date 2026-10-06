@@ -16,7 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Blocks credential stuffing per identifier and OTP guessing per user. ponytail: in-memory per instance; move to Redis
+ * Request throttle: credential stuffing per identifier, wrong current-password attempts, OTP guessing per user,
+ * forgot-password requests per email and image uploads per user. checkForgot/checkUpload also record the hit.
+ * ponytail: in-memory per instance; move to Redis
  * when running >1 replica. Memory is bounded: expired windows are swept at most once a minute, and if a flood of
  * distinct identifiers still fills the map, the least recently failing entries are evicted.
  */
@@ -24,7 +26,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class LoginRateLimiter {
     static final int DEFAULT_MAX_KEYS = 50_000;
     private final FailureWindow<String> login;
+    private final FailureWindow<Long> pwChange;
     private final FailureWindow<Long> otp;
+    private final FailureWindow<String> forgot;
+    private final FailureWindow<Long> upload;
 
     public LoginRateLimiter() {
         this(Clock.systemUTC(), DEFAULT_MAX_KEYS);
@@ -32,7 +37,10 @@ public class LoginRateLimiter {
 
     LoginRateLimiter(Clock clock, int maxKeys) {
         this.login = new FailureWindow<>(clock, 5, Duration.ofMinutes(15), maxKeys);
+        this.pwChange = new FailureWindow<>(clock, 5, Duration.ofMinutes(15), maxKeys);
         this.otp = new FailureWindow<>(clock, 5, Duration.ofMinutes(5), maxKeys);
+        this.forgot = new FailureWindow<>(clock, 5, Duration.ofMinutes(15), maxKeys);
+        this.upload = new FailureWindow<>(clock, 20, Duration.ofMinutes(10), maxKeys);
     }
 
     public void check(String identifier) {
@@ -47,6 +55,21 @@ public class LoginRateLimiter {
 
     public void recordSuccess(String identifier) {
         login.clear(key(identifier));
+    }
+
+    /** Wrong current passwords on change-password: 5 failures per 15 minutes per user id (separate from login keys). */
+    public void checkPasswordChange(Long userId) {
+        if (pwChange.blocked(userId))
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_ATTEMPTS",
+                "Bạn đã thử quá nhiều lần, vui lòng thử lại sau ít phút");
+    }
+
+    public void recordPasswordChangeFailure(Long userId) {
+        pwChange.record(userId);
+    }
+
+    public void recordPasswordChangeSuccess(Long userId) {
+        pwChange.clear(userId);
     }
 
     /** OTP attempts are capped per user id: 5 failures within 5 minutes. */
@@ -64,9 +87,29 @@ public class LoginRateLimiter {
         otp.clear(userId);
     }
 
-    /** Number of tracked identifiers (login + OTP); for tests and diagnostics. */
+    /**
+     * Forgot-password requests are capped per email: 5 per 15 minutes, counted whether or not the account exists, so
+     * the 429 reveals nothing. Every call counts as one request.
+     */
+    public void checkForgot(String email) {
+        String k = key(email);
+        if (forgot.blocked(k))
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "RESET_RATE_LIMITED",
+                "Bạn đã yêu cầu quá nhiều lần, vui lòng thử lại sau ít phút");
+        forgot.record(k);
+    }
+
+    /** Image uploads are capped per user: 20 per 10 minutes. Every call counts as one upload attempt. */
+    public void checkUpload(Long userId) {
+        if (upload.blocked(userId))
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "UPLOAD_RATE_LIMITED",
+                "Bạn tải ảnh quá nhanh, vui lòng thử lại sau ít phút");
+        upload.record(userId);
+    }
+
+    /** Number of tracked identifiers (login + password change + OTP + forgot + upload); for tests and diagnostics. */
     int trackedKeys() {
-        return login.size() + otp.size();
+        return login.size() + pwChange.size() + otp.size() + forgot.size() + upload.size();
     }
 
     private static String key(String identifier) {

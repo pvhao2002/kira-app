@@ -50,11 +50,40 @@ kết quả đã lưu (idempotent). Mã lỗi: `STATEMENT_IMPORT_NOT_FOUND`, `ST
 
 | Method | Path | Mô tả |
 |---|---|---|
-| GET | `/credit-cards/{cardId}/transactions?fromDate&toDate&page&size` | danh sách `{data, meta}` |
+| GET | `/card-transactions?cardId&fromDate&toDate&type&q&page&size` | mọi thẻ của user; `q` tìm trong mô tả; mỗi dòng có `cardNickname`, `cardLastFour` |
+| GET | `/credit-cards/{cardId}/transactions?fromDate&toDate&page&size` | danh sách `{data, meta}` của một thẻ |
 | POST | `/credit-cards/{cardId}/transactions` | ghi tay; header `Idempotency-Key` bắt buộc; body `{transactionDate, description, amount, transactionType?, mccCode?, cashbackRuleId?}` |
-| PATCH | `/card-transactions/{id}` | đổi nhóm `{cashbackRuleId, mccCode, version}` |
+| PUT | `/card-transactions/{id}` | sửa đầy đủ `{transactionDate, description, amount, transactionType, mccCode, cashbackRuleId, version}`; không đổi dedup key và không đổi số tổng statement |
 | DELETE | `/card-transactions/{id}?version=` | xóa mềm |
 | GET | `/credit-cards/{cardId}/cashback-progress` | đã chi/đã hoàn/còn lại từng nhóm và trần tháng trong kỳ hiện tại |
+
+MCC để trống khi thêm/sửa sẽ được tự điền theo quy tắc cửa hàng. Mã lỗi: `CARD_TRANSACTION_NOT_FOUND`,
+`CARD_TRANSACTION_VERSION_CONFLICT`, `CARD_TRANSACTION_DUPLICATE`, `IDEMPOTENCY_KEY_REQUIRED`, `INVALID_DATE_RANGE`.
+
+## Quy tắc cửa hàng (merchant rules)
+
+Sao kê ngân hàng Việt Nam hầu như không in MCC, nên người dùng lưu quy tắc "mô tả chứa từ khoá → MCC" theo user (không
+theo thẻ; nhóm cashback của từng thẻ được suy ra từ MCC).
+
+| Method | Path | Mô tả |
+|---|---|---|
+| GET | `/card-merchant-rules` | danh sách quy tắc |
+| POST | `/card-merchant-rules` | `{pattern, mccCode, label?, applyToExisting?}` → `{rule, updatedTransactions}` |
+| PUT | `/card-merchant-rules/{id}` | `{pattern, mccCode, label?, version}` |
+| DELETE | `/card-merchant-rules/{id}?version=` | xoá mềm; giao dịch cũ giữ MCC |
+
+- Từ khoá được chuẩn hoá (chữ thường, gộp khoảng trắng), dài 2–100 ký tự, duy nhất theo user
+  (`MERCHANT_RULE_DUPLICATE`, `MERCHANT_RULE_PATTERN_INVALID`, `MERCHANT_RULE_VERSION_CONFLICT`, `MERCHANT_RULE_NOT_FOUND`).
+- Khớp bằng "mô tả chứa từ khoá", từ khoá dài nhất thắng. Áp dụng khi AI tạo bản nháp (dòng không có MCC in trên sao kê;
+  `merchantRuleApplied=true` và quy tắc được ưu tiên hơn nhóm AI đoán), khi thêm/sửa giao dịch với MCC trống.
+- `applyToExisting` chỉ điền MCC cho giao dịch chưa có MCC và chưa gán nhóm.
+- Confirm sao kê: mỗi dòng có thể gửi `rememberPattern`; nếu dòng được lưu và có MCC, quy tắc được tạo hoặc cập nhật.
+
+## Deep link thông báo
+
+`deepLink` lưu theo slug mobile. Web ánh xạ `/statement-import?id=X` → `/app/credit-card/statement-import?importId=X`,
+`/billing-cycle`, `/statement-pay` → `/app/credit-cards`, `/ai-result`, `/queue` → `/app/investment/ai-queue`; action "Mở"
+đánh dấu đã đọc rồi điều hướng. Mobile mở màn hình trạng thái chỉ-xem (thử lại/huỷ; xác nhận thực hiện trên web).
 
 ## Gợi ý thẻ
 

@@ -1,6 +1,6 @@
 import {HttpClient, HttpErrorResponse, HttpHeaders, HttpResourceRef, httpResource} from '@angular/common/http';
 import {Injector, Service, inject} from '@angular/core';
-import {firstValueFrom} from 'rxjs';
+import {firstValueFrom, type Observable} from 'rxjs';
 
 export const API_BASE = '/api/v1';
 
@@ -90,6 +90,11 @@ export class Api {
     return this.run(this.http.post<T>(API_BASE + path, body, {headers}));
   }
 
+  /** Multipart upload. No Content-Type is set by hand: the browser adds it together with the boundary. */
+  postForm<T>(path: string, form: FormData): Promise<T> {
+    return this.run(this.http.post<T>(API_BASE + path, form));
+  }
+
   put<T>(path: string, body: unknown = {}): Promise<T> {
     return this.run(this.http.put<T>(API_BASE + path, body));
   }
@@ -98,7 +103,7 @@ export class Api {
     return this.run(this.http.delete<T>(API_BASE + path));
   }
 
-  private async run<T>(obs: import('rxjs').Observable<T>): Promise<T> {
+  private async run<T>(obs: Observable<T>): Promise<T> {
     try {
       return await firstValueFrom(obs);
     } catch (e) {

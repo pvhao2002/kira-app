@@ -13,6 +13,11 @@ import {
   CardStatementConfirmResponse,
   CardTransaction,
   CardTransactionRequest,
+  CardTransactionUpdateRequest,
+  CardTransactionFilter,
+  CardMerchantRule,
+  CardMerchantRuleRequest,
+  CardMerchantRuleSaveResponse,
   CashbackProgress,
   CardRecommendationResponse,
   PageResponse,
@@ -164,9 +169,38 @@ export class ApiService {
       {headers: {'Idempotency-Key': idempotencyKey}});
   }
 
-  updateCardTransactionCategory(id: number, cashbackRuleId: number | null, mccCode: string | null,
-                                version: number): Observable<CardTransaction> {
-    return this.http.patch<CardTransaction>(`/api/v1/card-transactions/${id}`, {cashbackRuleId, mccCode, version});
+  searchCardTransactions(filter: CardTransactionFilter, page = 0, size = 20): Observable<PageResponse<CardTransaction>> {
+    const params: Record<string, string | number> = {page, size};
+    if (filter.cardId !== null) params['cardId'] = filter.cardId;
+    if (filter.fromDate) params['fromDate'] = filter.fromDate;
+    if (filter.toDate) params['toDate'] = filter.toDate;
+    if (filter.type) params['type'] = filter.type;
+    if (filter.q.trim()) params['q'] = filter.q.trim();
+    return this.http.get<PageResponse<CardTransaction>>('/api/v1/card-transactions', {params});
+  }
+
+  updateCardTransaction(id: number, request: CardTransactionUpdateRequest): Observable<CardTransaction> {
+    return this.http.put<CardTransaction>(`/api/v1/card-transactions/${id}`, request);
+  }
+
+  cardMerchantRules(): Observable<CardMerchantRule[]> {
+    return this.http.get<CardMerchantRule[]>('/api/v1/card-merchant-rules');
+  }
+
+  createCardMerchantRule(request: CardMerchantRuleRequest): Observable<CardMerchantRuleSaveResponse> {
+    return this.http.post<CardMerchantRuleSaveResponse>('/api/v1/card-merchant-rules', request);
+  }
+
+  updateCardMerchantRule(id: number, request: CardMerchantRuleRequest): Observable<CardMerchantRule> {
+    return this.http.put<CardMerchantRule>(`/api/v1/card-merchant-rules/${id}`, request);
+  }
+
+  deleteCardMerchantRule(id: number, version: number): Observable<void> {
+    return this.http.delete<void>(`/api/v1/card-merchant-rules/${id}`, {params: {version}});
+  }
+
+  attachmentContent(attachmentId: number): Observable<Blob> {
+    return this.http.get(`/api/v1/attachments/${attachmentId}/content`, {responseType: 'blob'});
   }
 
   deleteCardTransaction(id: number, version: number): Observable<void> {

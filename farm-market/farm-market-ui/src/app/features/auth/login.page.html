@@ -68,7 +68,7 @@
               <input type="checkbox" [formField]="loginForm.remember">
               <span class="box">{{ loginForm.remember().value() ? '✓' : '' }}</span>Ghi nhớ đăng nhập
             </label>
-            <button type="button" class="link">Quên mật khẩu?</button>
+            <a routerLink="/forgot-password" class="link">Quên mật khẩu?</a>
           </div>
 
           <button type="submit" class="btn block go" [disabled]="loading()">{{ loading() ? 'Đang đăng nhập…' : 'Đăng nhập' }}</button>

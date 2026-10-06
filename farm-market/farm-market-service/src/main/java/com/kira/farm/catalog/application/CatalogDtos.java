@@ -1,6 +1,7 @@
 package com.kira.farm.catalog.application;
 
 import com.kira.farm.catalog.domain.ProductStatus;
+import com.kira.farm.media.application.MediaUrl;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -50,7 +51,7 @@ public final class CatalogDtos {
         @Size(max = 160) String groupName,
         @Size(max = 5000) String description,
         @Size(max = 160) String origin,
-        @Size(max = 500) String imageUrl,
+        @Size(max = 500) @Pattern(regexp = MediaUrl.REGEX_OR_EMPTY, message = MediaUrl.MESSAGE) String imageUrl,
         @Size(max = 40) String badge,
         @Min(value = 0, message = "Giá không hợp lệ") @Max(1_000_000_000L) long price,
         @Min(0) @Max(1_000_000_000L) Long oldPrice,

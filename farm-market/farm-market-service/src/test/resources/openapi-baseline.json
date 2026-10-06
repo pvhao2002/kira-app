@@ -87,6 +87,43 @@
         }
       }
     },
+    "/api/v1/admin/users/{id}/role" : {
+      "put" : {
+        "tags" : [ "Admin users" ],
+        "operationId" : "changeRole",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeRoleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/users/{id}/branches" : {
       "put" : {
         "tags" : [ "Admin users" ],
@@ -564,6 +601,40 @@
         }
       }
     },
+    "/api/v1/media/reviews" : {
+      "post" : {
+        "tags" : [ "Media" ],
+        "operationId" : "reviewPhoto",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/loyalty/rewards/{id}/redeem" : {
       "post" : {
         "tags" : [ "Loyalty" ],
@@ -648,6 +719,77 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password/reset" : {
+      "post" : {
+        "tags" : [ "Auth" ],
+        "operationId" : "resetPassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password/forgot" : {
+      "post" : {
+        "tags" : [ "Auth" ],
+        "operationId" : "forgotPassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password/change" : {
+      "post" : {
+        "tags" : [ "Auth" ],
+        "operationId" : "changePassword",
+        "parameters" : [ {
+          "name" : "farm_refresh",
+          "in" : "cookie",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -755,6 +897,84 @@
         }
       }
     },
+    "/api/v1/admin/users" : {
+      "get" : {
+        "tags" : [ "Admin users" ],
+        "operationId" : "list_1",
+        "parameters" : [ {
+          "name" : "role",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "customer", "staff", "manager", "admin" ]
+          }
+        }, {
+          "name" : "q",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseUserSummary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Admin users" ],
+        "operationId" : "create_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateUserRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/users/{id}/otp/reset" : {
       "post" : {
         "tags" : [ "Admin users" ],
@@ -815,7 +1035,7 @@
     "/api/v1/admin/promotions" : {
       "get" : {
         "tags" : [ "Promotions" ],
-        "operationId" : "list_1",
+        "operationId" : "list_2",
         "parameters" : [ {
           "name" : "q",
           "in" : "query",
@@ -857,7 +1077,7 @@
       },
       "post" : {
         "tags" : [ "Promotions" ],
-        "operationId" : "create_1",
+        "operationId" : "create_2",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -885,7 +1105,7 @@
     "/api/v1/admin/products" : {
       "get" : {
         "tags" : [ "Admin products" ],
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "parameters" : [ {
           "name" : "branchId",
           "in" : "query",
@@ -943,7 +1163,7 @@
       },
       "post" : {
         "tags" : [ "Admin products" ],
-        "operationId" : "create_2",
+        "operationId" : "create_3",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1076,6 +1296,40 @@
         }
       }
     },
+    "/api/v1/admin/media/products" : {
+      "post" : {
+        "tags" : [ "Media" ],
+        "operationId" : "productImage",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/inventory/receipts" : {
       "post" : {
         "tags" : [ "Admin inventory" ],
@@ -1161,7 +1415,7 @@
     "/api/v1/addresses" : {
       "get" : {
         "tags" : [ "Addresses" ],
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -1180,7 +1434,7 @@
       },
       "post" : {
         "tags" : [ "Addresses" ],
-        "operationId" : "create_3",
+        "operationId" : "create_4",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1235,7 +1489,7 @@
     "/api/v1/wishlist" : {
       "get" : {
         "tags" : [ "Wishlist" ],
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "parameters" : [ {
           "name" : "branchId",
           "in" : "query",
@@ -1612,6 +1866,33 @@
         }
       }
     },
+    "/api/v1/files/{name}" : {
+      "get" : {
+        "tags" : [ "Media" ],
+        "operationId" : "file",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/categories" : {
       "get" : {
         "tags" : [ "Catalog" ],
@@ -1636,7 +1917,7 @@
     "/api/v1/branches" : {
       "get" : {
         "tags" : [ "Branches" ],
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -1647,58 +1928,6 @@
                   "items" : {
                     "$ref" : "#/components/schemas/BranchResponse"
                   }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/users" : {
-      "get" : {
-        "tags" : [ "Admin users" ],
-        "operationId" : "list_6",
-        "parameters" : [ {
-          "name" : "role",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "enum" : [ "customer", "staff", "manager", "admin" ]
-          }
-        }, {
-          "name" : "q",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "page",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 0
-          }
-        }, {
-          "name" : "size",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 20
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/PageResponseUserSummary"
                 }
               }
             }
@@ -2084,21 +2313,15 @@
           }
         }
       },
-      "BranchAssignmentRequest" : {
+      "ChangeRoleRequest" : {
         "type" : "object",
         "properties" : {
-          "branchIds" : {
-            "type" : "array",
-            "items" : {
-              "type" : "integer",
-              "format" : "int64"
-            },
-            "maxItems" : 50,
-            "minItems" : 0,
-            "uniqueItems" : true
+          "role" : {
+            "type" : "string",
+            "enum" : [ "customer", "staff", "manager", "admin" ]
           }
         },
-        "required" : [ "branchIds" ]
+        "required" : [ "role" ]
       },
       "UserSummary" : {
         "type" : "object",
@@ -2133,6 +2356,22 @@
             "format" : "date-time"
           }
         }
+      },
+      "BranchAssignmentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "branchIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "branchIds" ]
       },
       "PromotionRequest" : {
         "type" : "object",
@@ -2311,7 +2550,8 @@
           "imageUrl" : {
             "type" : "string",
             "maxLength" : 500,
-            "minLength" : 0
+            "minLength" : 0,
+            "pattern" : "^$|^(https://[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?)?/api/v1/files/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|png|webp)$"
           },
           "badge" : {
             "type" : "string",
@@ -2609,7 +2849,9 @@
           },
           "photoUrl" : {
             "type" : "string",
-            "pattern" : "^https://\\S{1,490}$"
+            "maxLength" : 500,
+            "minLength" : 0,
+            "pattern" : "^$|^(https://[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?)?/api/v1/files/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|png|webp)$"
           }
         },
         "required" : [ "orderId", "productId" ]
@@ -3062,6 +3304,14 @@
           }
         }
       },
+      "UploadResponse" : {
+        "type" : "object",
+        "properties" : {
+          "url" : {
+            "type" : "string"
+          }
+        }
+      },
       "VoucherResponse" : {
         "type" : "object",
         "properties" : {
@@ -3149,6 +3399,50 @@
           }
         }
       },
+      "ResetPasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "token" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "newPassword" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 8
+          }
+        },
+        "required" : [ "newPassword", "token" ]
+      },
+      "ForgotPasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "maxLength" : 190,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "email" ]
+      },
+      "ChangePasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "currentPassword" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 0
+          },
+          "newPassword" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 8
+          }
+        },
+        "required" : [ "currentPassword", "newPassword" ]
+      },
       "OtpVerifyRequest" : {
         "type" : "object",
         "properties" : {
@@ -3207,6 +3501,46 @@
           }
         },
         "required" : [ "identifier", "password" ]
+      },
+      "CreateUserRequest" : {
+        "type" : "object",
+        "properties" : {
+          "fullName" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "maxLength" : 190,
+            "minLength" : 0
+          },
+          "phone" : {
+            "type" : "string",
+            "pattern" : "^$|^(\\+84|0)[0-9 .]{8,12}$"
+          },
+          "password" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 8
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "customer", "staff", "manager", "admin" ]
+          },
+          "branchIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "maxItems" : 50,
+            "minItems" : 0,
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "email", "fullName", "password", "role" ]
       },
       "ReplyRequest" : {
         "type" : "object",

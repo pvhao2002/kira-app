@@ -2,10 +2,12 @@ package com.kira.farm.identity.web;
 
 import com.kira.farm.identity.application.AdminUserService;
 import com.kira.farm.identity.domain.Role;
+import com.kira.farm.shared.security.CurrentUser;
 import com.kira.farm.shared.web.ApiTypes.PageResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,13 +30,24 @@ public class AdminUserController {
     }
 
     @PostMapping("/{id}/otp/reset")
-    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resetOtp(@PathVariable Long id) {
-        service.resetOtp(id, com.kira.farm.shared.security.CurrentUser.id());
+        service.resetOtp(id, CurrentUser.id());
     }
 
     @PutMapping("/{id}/branches")
     public UserSummary assignBranches(@PathVariable Long id, @Valid @RequestBody BranchAssignmentRequest request) {
         return service.assignBranches(id, request);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserSummary create(@Valid @RequestBody CreateUserRequest request) {
+        return service.create(request);
+    }
+
+    @PutMapping("/{id}/role")
+    public UserSummary changeRole(@PathVariable Long id, @Valid @RequestBody ChangeRoleRequest request) {
+        return service.changeRole(id, CurrentUser.id(), request);
     }
 }

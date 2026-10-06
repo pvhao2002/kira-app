@@ -1,6 +1,10 @@
 :host { display: block; }
-.head { margin-bottom: 20px; }
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid2 .input { padding: 10px 12px; }
+.role-sel { padding: 6px 10px; min-width: 140px; }
 .panel { padding: 0; overflow: hidden; }
+.form.panel { display: flex; flex-direction: column; gap: 14px; padding: 16px; margin-bottom: 20px; overflow: visible; }
 .bar { padding: 16px; border-bottom: 1px solid var(--border); }
 .search { max-width: 340px; flex: 1 1 220px; padding: 10px 14px; }
 .small { font-size: 12px; }
@@ -13,3 +17,6 @@
 .foot { padding: 14px 16px; }
 .pg { min-width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
 .pg:disabled { opacity: .4; }
+@media (max-width: 767px) {
+  .grid2 { grid-template-columns: 1fr; }
+}

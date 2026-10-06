@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked} from '@angular/core';
 import {RouterLink} from '@angular/router';
-import {ApiError, apiResource} from '../../core/api';
+import {Api, apiResource, toApiError} from '../../core/api';
 import {AuthStore, Gender} from '../../core/auth.store';
 import {num} from '../../core/format';
 import {BranchStore} from '../../core/branch.store';
@@ -17,7 +17,15 @@ import {AddressDto, LoyaltySummary, OrderSummary, Page, VoucherDto, resErr, valu
 })
 export class ProfilePage {
   protected readonly auth = inject(AuthStore);
+  private readonly api = inject(Api);
   protected readonly branch = inject(BranchStore);
+  protected readonly pwOpen = signal(false);
+  protected readonly curPw = signal('');
+  protected readonly newPw = signal('');
+  protected readonly newPw2 = signal('');
+  protected readonly pwBusy = signal(false);
+  protected readonly pwError = signal('');
+  protected readonly pwDone = signal(false);
   protected readonly num = num;
   protected readonly editing = signal(false);
   protected readonly genderKeys: Gender[] = ['MALE', 'FEMALE', 'OTHER'];
@@ -104,7 +112,7 @@ export class ProfilePage {
       this.saved.set(true);
       this.editing.set(false);
     } catch (e) {
-      const err = e as ApiError;
+      const err = toApiError(e);
       this.fieldErrors.set(err.fieldErrors ?? {});
       this.saveError.set(Object.keys(err.fieldErrors ?? {}).length ? '' : (err.message ?? 'Không lưu được thay đổi.'));
     } finally {
@@ -114,5 +122,39 @@ export class ProfilePage {
 
   protected flip(i: number): void {
     this.nf.update(a => a.map((v, j) => (j === i ? !v : v)));
+  }
+
+  protected togglePw(): void {
+    this.pwOpen.update(v => !v);
+    if (!this.pwOpen()) {
+      this.curPw.set('');
+      this.newPw.set('');
+      this.newPw2.set('');
+    }
+    this.pwError.set('');
+    this.pwDone.set(false);
+  }
+
+  protected async changePassword(): Promise<void> {
+    if (this.pwBusy()) return;
+    this.pwDone.set(false);
+    if (!this.curPw()) return this.pwError.set('Vui lòng nhập mật khẩu hiện tại.');
+    if (this.newPw().length < 8 || this.newPw().length > 72) return this.pwError.set('Mật khẩu mới từ 8 đến 72 ký tự.');
+    if (this.newPw() !== this.newPw2()) return this.pwError.set('Mật khẩu nhập lại chưa khớp.');
+    this.pwBusy.set(true);
+    this.pwError.set('');
+    try {
+      await this.api.post('/auth/password/change', {currentPassword: this.curPw(), newPassword: this.newPw()});
+      this.curPw.set('');
+      this.newPw.set('');
+      this.newPw2.set('');
+      this.pwDone.set(true);
+      this.pwOpen.set(false);
+    } catch (e) {
+      const err = toApiError(e);
+      this.pwError.set(Object.values(err.fieldErrors)[0] ?? err.message);
+    } finally {
+      this.pwBusy.set(false);
+    }
   }
 }

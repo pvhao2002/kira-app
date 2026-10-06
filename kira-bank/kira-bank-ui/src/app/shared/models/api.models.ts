@@ -200,6 +200,7 @@ export interface CardTransactionDraft {
   confidence: number | null;
   duplicate: boolean;
   needsReview: boolean;
+  merchantRuleApplied: boolean;
   warnings: string[]
 }
 
@@ -258,7 +259,8 @@ export interface CardStatementConfirmTransaction {
   amount: number;
   transactionType: CardTransactionType;
   mccCode: string | null;
-  cashbackRuleId: number | null
+  cashbackRuleId: number | null;
+  rememberPattern: string | null
 }
 
 export interface CardStatementConfirmRequest {
@@ -280,6 +282,8 @@ export interface CardStatementConfirmRequest {
 export interface CardTransaction {
   id: number;
   cardId: number;
+  cardNickname: string | null;
+  cardLastFour: string | null;
   statementId: number | null;
   importId: number | null;
   transactionDate: string;
@@ -303,6 +307,40 @@ export interface CardTransactionRequest {
   transactionType: CardTransactionType;
   mccCode: string | null;
   cashbackRuleId: number | null
+}
+
+export interface CardTransactionUpdateRequest extends CardTransactionRequest {
+  version: number
+}
+
+export interface CardTransactionFilter {
+  cardId: number | null;
+  fromDate: string | null;
+  toDate: string | null;
+  type: CardTransactionType | null;
+  q: string
+}
+
+export interface CardMerchantRule {
+  id: number;
+  pattern: string;
+  mccCode: string;
+  label: string | null;
+  version: number;
+  updatedAt: string
+}
+
+export interface CardMerchantRuleRequest {
+  pattern: string;
+  mccCode: string;
+  label: string | null;
+  applyToExisting?: boolean;
+  version?: number | null
+}
+
+export interface CardMerchantRuleSaveResponse {
+  rule: CardMerchantRule;
+  updatedTransactions: number
 }
 
 export interface CashbackGroupProgress {
