@@ -51,8 +51,9 @@ public class LodgingService {
     private final R2StorageService storage;
     private final MapboxClient mapbox;
 
+    /** Returns the new listing id; callers build the response via {@link #detail} after distance calculation. */
     @Transactional
-    public ListingResponse create(Long userId, ListingRequest request) {
+    public Long create(Long userId, ListingRequest request) {
         validateListing(request);
         LodgingListing listing = new LodgingListing();
         listing.setOwnerId(userId);
@@ -61,11 +62,12 @@ public class LodgingService {
         apply(listing, request);
         listings.save(listing);
         replaceLocations(listing, request.referenceLocationIds(), userId);
-        return response(userId, listing);
+        return listing.getId();
     }
 
+    /** Returns whether the address or reference-location set changed, i.e. distances need recalculating. */
     @Transactional
-    public ListingResponse update(Long userId, Long id, ListingRequest request) {
+    public boolean update(Long userId, Long id, ListingRequest request) {
         validateListing(request);
         LodgingListing listing = listing(id);
         requireEditor(userId, listing);
@@ -74,7 +76,10 @@ public class LodgingService {
         apply(listing, request);
         listing.setUpdatedBy(userId);
         if (recalculate) replaceLocations(listing, request.referenceLocationIds(), userId);
-        return response(userId, listing);
+        // Unchanged inputs skip Mapbox, except when a previous geocode/distance run did not succeed (save retries it).
+        return recalculate || listing.getGeocodeStatus() != LodgingStatus.READY
+            || listingLocations.findByListingIdAndDeletedAtIsNull(listing.getId()).stream()
+            .anyMatch(link -> link.getDistanceStatus() != LodgingStatus.READY);
     }
 
     @Transactional
@@ -144,6 +149,11 @@ public class LodgingService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public ReferenceLocationResponse location(Long userId, Long id) {
+        return locationResponse(userId, location(id));
+    }
+
     public List<AddressSuggestionResponse> addressSuggestions(String query) {
         return mapbox.suggest(query).stream().map(value -> new AddressSuggestionResponse(value.mapboxId(), value.label())).toList();
     }
@@ -175,7 +185,7 @@ public class LodgingService {
             listing.setGeocodeError(null);
             listings.save(listing);
             List<LodgingListingLocation> links = listingLocations.findByListingIdAndDeletedAtIsNull(id);
-            List<LodgingReferenceLocation> selected = links.stream().map(link -> location(link.getReferenceLocationId())).toList();
+            List<LodgingReferenceLocation> selected = locationsInOrder(links.stream().map(LodgingListingLocation::getReferenceLocationId).toList());
             if (selected.stream().anyMatch(value -> value.getGeocodeStatus() != LodgingStatus.READY || value.getLongitude() == null || value.getLatitude() == null)) {
                 log.warn("Lodging distance calculation deferred listingId={} actorId={} code=MAPBOX_LOCATION_NOT_READY", id, userId);
                 links.forEach(link -> failed(link, "MAPBOX_LOCATION_NOT_READY"));
@@ -376,15 +386,25 @@ public class LodgingService {
         listingLocations.deleteAllInBatch(old);
         List<Long> distinct = ids.stream().distinct().toList();
         if (distinct.size() != ids.size()) throw bad("DUPLICATE_LOCATION", "Không được chọn trùng địa điểm");
-        distinct.forEach(locationId -> {
-            location(locationId);
+        locationsInOrder(distinct);
+        listingLocations.saveAll(distinct.stream().map(locationId -> {
             LodgingListingLocation link = new LodgingListingLocation();
             link.setListingId(listing.getId());
             link.setReferenceLocationId(locationId);
             link.setCreatedBy(userId);
             link.setUpdatedBy(userId);
-            listingLocations.save(link);
-        });
+            return link;
+        }).toList());
+    }
+
+    // One query for all ids; same LOCATION_NOT_FOUND as location(id) when any is missing or deleted.
+    private List<LodgingReferenceLocation> locationsInOrder(List<Long> ids) {
+        Map<Long, LodgingReferenceLocation> byId = index(ids.isEmpty() ? List.of() : locations.findByIdInAndDeletedAtIsNull(ids), LodgingReferenceLocation::getId);
+        return ids.stream().map(id -> {
+            LodgingReferenceLocation value = byId.get(id);
+            if (value == null) throw notFound("LOCATION_NOT_FOUND", "Không tìm thấy địa điểm");
+            return value;
+        }).toList();
     }
 
     private void apply(LodgingListing listing, ListingRequest request) {

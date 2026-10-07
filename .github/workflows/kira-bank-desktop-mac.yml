@@ -1,0 +1,50 @@
+name: kira-bank-desktop-mac
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['kira-bank-desktop-v*']
+
+concurrency:
+  group: kira-bank-desktop-mac-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write # tauri-action creates/uploads the draft release on tag pushes
+
+jobs:
+  build:
+    runs-on: macos-latest # universal binary: Apple Silicon + Intel
+    defaults:
+      run:
+        working-directory: kira-bank/kira-bank-desktop
+    env:
+      KIRA_BANK_URL: https://bank.kira.id.vn/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: kira-bank/kira-bank-desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: kira-bank/kira-bank-desktop/src-tauri -> target
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: kira-bank/kira-bank-desktop
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseDraft: true
+          args: --target universal-apple-darwin --bundles dmg
+      # Manual runs have no release, so expose the dmg as a workflow artifact.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kira-bank-desktop-dmg
+          path: kira-bank/kira-bank-desktop/src-tauri/target/**/release/bundle/dmg/*.dmg
+          if-no-files-found: error

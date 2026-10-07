@@ -108,7 +108,7 @@
                 [attr.aria-label]="i18n.t('theme.label') + ' ' + themeLabel()"
                 class="desktop-theme-action"
                 type="button"><app-icon [name]="themeIcon()"/></button>
-        <a [attr.aria-label]="i18n.t('shell.notifications')" routerLink="/app/notifications"><app-icon name="bell"/><i></i></a>
+        <a [attr.aria-label]="i18n.t('shell.notifications') + (unreadNotifications() ? ' (' + unreadNotifications() + ')' : '')" routerLink="/app/notifications"><app-icon name="bell"/>@if (unreadNotifications() > 0) {<i></i>}</a>
         <button #avatarButton
                 (click)="toggleUserMenu()"
                 [attr.aria-controls]="'user-account-menu'"

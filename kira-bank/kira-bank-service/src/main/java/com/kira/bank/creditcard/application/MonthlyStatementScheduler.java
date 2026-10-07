@@ -3,11 +3,12 @@ package com.kira.bank.creditcard.application;
 import com.kira.bank.creditcard.application.CreditCardDtos.BillingCycleResponse;
 import com.kira.bank.creditcard.infrastructure.UserCreditCardRepository;
 import com.kira.bank.notification.application.NotificationService;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -33,7 +34,7 @@ public class MonthlyStatementScheduler {
 
     @Scheduled(cron = "${CARD_STATEMENT_JOB_CRON:0 5 0 * * *}",
         zone = "${CARD_STATEMENT_JOB_TIME_ZONE:Asia/Bangkok}")
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void createCurrentMonthlyStatements() {
         LocalDate today = LocalDate.now(ZoneId.of(timeZone));
         int page = 0;

@@ -31,8 +31,10 @@ export class InvestmentStatisticsPage {
   private statsRequest?: Subscription;
   private operationsRequest?: Subscription;
   private accountRequest?: Subscription;
+  private monthRequest?: Subscription;
   readonly stats = signal(initial<InvestmentStatisticsResponse>());
   readonly operations = signal(initial<InvestmentStatisticsOperations>());
+  readonly month = signal(initial<InvestmentStatisticsResponse>());
   readonly report = signal<InvestmentReconciliationReport | null>(null);
   readonly reportLoading = signal(false);
   readonly accountOptions = signal<InvestmentAccountSummary[]>([]);
@@ -89,6 +91,13 @@ export class InvestmentStatisticsPage {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, inputs]) => ({month, value: this.netFlow(inputs)}));
   });
+  readonly monthFlow = computed(() => {
+    const values = this.month().data?.currencies ?? [];
+    return values.find(item => item.currency === this.currency()) ?? values[0] ?? null;
+  });
+  readonly monthMax = computed(() => Math.max(1, ...(this.monthFlow()?.daily.flatMap(day => [day.deposits, day.withdrawals]) ?? [])));
+  readonly monthProfitDaily = computed(() => (this.monthFlow()?.daily ?? []).map(day => ({date: day.date, value: day.withdrawals - day.deposits})));
+  readonly monthProfitMax = computed(() => Math.max(1, ...this.monthProfitDaily().map(day => Math.abs(day.value))));
   readonly netFlowMonthlyMax = computed(() => Math.max(1, ...this.netFlowMonthly().map(m => Math.abs(m.value))));
 
   constructor() {
@@ -100,7 +109,7 @@ export class InvestmentStatisticsPage {
     this.toDate.set(params.get('toDate') || today);
     this.loadAccounts();
     this.loadAll();
-    this.destroyRef.onDestroy(() => { this.statsRequest?.unsubscribe(); this.operationsRequest?.unsubscribe(); this.accountRequest?.unsubscribe(); });
+    this.destroyRef.onDestroy(() => { this.statsRequest?.unsubscribe(); this.operationsRequest?.unsubscribe(); this.accountRequest?.unsubscribe(); this.monthRequest?.unsubscribe(); });
   }
 
   apply(): void {
@@ -133,6 +142,8 @@ export class InvestmentStatisticsPage {
       : row.withdrawals + row.bonuses - row.deposits;
   }
   chartHeight(value: number): number { return value / this.chartMax() * 100; }
+  monthChartHeight(value: number): number { return value / this.monthMax() * 100; }
+  monthProfitHeight(value: number): number { return Math.abs(value) / this.monthProfitMax() * 100; }
   monthBarHeight(value: number): number { return Math.abs(value) / this.netFlowMonthlyMax() * 100; }
   monthLabel(value: string): string {
     const date = new Date(`${value}-01T00:00:00`);
@@ -155,7 +166,7 @@ export class InvestmentStatisticsPage {
     });
   }
   closeReport(): void { this.report.set(null); }
-  private loadAll(): void { this.loadStats(); this.loadOperations(); }
+  private loadAll(): void { this.loadStats(); this.loadMonth(); this.loadOperations(); }
   private loadAccounts(page = this.accountPage()): void {
     this.accountRequest?.unsubscribe();
     this.accountLoading.set(true);
@@ -172,6 +183,17 @@ export class InvestmentStatisticsPage {
     this.statsRequest = this.api.investmentStatistics(params).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: data => { this.stats.set({data, loading: false, failed: false}); if (!data.currencies.some(item => item.currency === this.currency())) this.currency.set(data.currencies[0]?.currency ?? ''); },
       error: () => this.stats.update(value => ({...value, loading: false, failed: true}))
+    });
+  }
+  loadMonth(): void {
+    this.monthRequest?.unsubscribe();
+    this.month.update(value => ({...value, loading: true, failed: false}));
+    const today = this.today();
+    const params: Record<string, string | number> = {fromDate: `${today.slice(0, 8)}01`, toDate: today};
+    if (this.accountId() != null) params['accountId'] = this.accountId()!;
+    this.monthRequest = this.api.investmentStatistics(params).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: data => this.month.set({data, loading: false, failed: false}),
+      error: () => this.month.update(value => ({...value, loading: false, failed: true}))
     });
   }
   loadOperations(): void {

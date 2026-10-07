@@ -7,6 +7,7 @@ import {LanguageService} from '../i18n/language.service';
 import {TranslationKey} from '../i18n/translations';
 import {ApiService} from '../services/api.service';
 import {ToastService} from '../services/toast.service';
+import {NotificationSocketService} from '../services/notification-socket.service';
 import {LanguageSwitcherComponent} from '../../shared/language-switcher/language-switcher';
 import {IconComponent, IconName} from '../../shared/icon/icon';
 import {PageResponse, UserCreditCard} from '../../shared/models/api.models';
@@ -64,6 +65,7 @@ export class AppShell {
   readonly auth = inject(AuthStore);
   readonly i18n = inject(LanguageService);
   readonly toast = inject(ToastService);
+  readonly unreadNotifications = inject(NotificationSocketService).unread;
   readonly menuOpen = signal(false);
   readonly userMenu = signal(false);
   readonly theme = signal<'light' | 'dark' | 'system'>((localStorage.getItem('kira-theme') as 'light' | 'dark' | 'system') || 'system');

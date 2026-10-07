@@ -8,6 +8,7 @@ import com.kira.bank.ai.AiDocumentService.AiCardTransactionExtraction;
 import com.kira.bank.ai.AiJobProperties;
 import com.kira.bank.attachment.application.AttachmentDtos.AttachmentResponse;
 import com.kira.bank.attachment.application.AttachmentService;
+import com.kira.bank.attachment.application.AttachmentService.PreparedUpload;
 import com.kira.bank.attachment.domain.Attachment;
 import com.kira.bank.attachment.infrastructure.AttachmentRepository;
 import com.kira.bank.creditcard.application.CardCashbackCalculator.ActiveRule;
@@ -23,11 +24,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.ByteBuffer;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -67,6 +70,7 @@ public class CardStatementImportService {
     private final AiJobProperties jobProperties;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher events;
+    private final TransactionTemplate transactionTemplate;
 
     /** Published after an import becomes QUEUED so the runner can start it once the transaction commits. */
     public record ImportQueuedEvent(Long importId) {
@@ -81,7 +85,7 @@ public class CardStatementImportService {
 
     // ---------------------------------------------------------------- user API
 
-    @Transactional
+    /** R2 uploads run before the (short) DB transaction so a slow PUT never holds a connection. */
     public StatementImportResponse create(Long userId, Long cardId, List<MultipartFile> files) throws IOException {
         UserCreditCard card = ownCard(userId, cardId);
         List<MultipartFile> uploads = files == null ? List.of()
@@ -94,29 +98,36 @@ public class CardStatementImportService {
             if (!isSupportedImage(upload.getBytes()))
                 throw bad("INVALID_FILE_TYPE", "Sao kê chỉ hỗ trợ ảnh JPEG, PNG hoặc WebP");
         }
-
-        CardStatementImport statementImport = new CardStatementImport();
-        statementImport.setUserId(userId);
-        statementImport.setUserCardId(card.getId());
-        statementImport.setStatus(CardStatementImportStatus.QUEUED);
-        statementImport.setNextAttemptAt(Instant.now());
-        statementImport.setCreatedBy(userId);
-        statementImport.setUpdatedBy(userId);
-        imports.saveAndFlush(statementImport);
-
-        int page = 1;
+        List<PreparedUpload> stored = new ArrayList<>();
         for (MultipartFile upload : uploads) {
-            AttachmentResponse stored = attachmentService.upload(userId, MODULE, DOCUMENT_TYPE, upload);
-            CardStatementImportFile file = new CardStatementImportFile();
-            file.setImportId(statementImport.getId());
-            file.setAttachmentId(stored.attachmentId());
-            file.setPageNumber(page++);
-            file.setCreatedBy(userId);
-            file.setUpdatedBy(userId);
-            importFiles.save(file);
+            stored.add(attachmentService.store(userId, MODULE, DOCUMENT_TYPE, upload, null));
         }
-        events.publishEvent(new ImportQueuedEvent(statementImport.getId()));
-        return response(statementImport);
+
+        return transactionTemplate.execute(status -> {
+            CardStatementImport statementImport = new CardStatementImport();
+            statementImport.setUserId(userId);
+            statementImport.setUserCardId(card.getId());
+            statementImport.setStatus(CardStatementImportStatus.QUEUED);
+            statementImport.setNextAttemptAt(Instant.now());
+            statementImport.setCreatedBy(userId);
+            statementImport.setUpdatedBy(userId);
+            imports.saveAndFlush(statementImport);
+
+            int page = 1;
+            for (PreparedUpload prepared : stored) {
+                AttachmentResponse attachment = attachmentService.record(userId, prepared);
+                CardStatementImportFile file = new CardStatementImportFile();
+                file.setImportId(statementImport.getId());
+                file.setAttachmentId(attachment.attachmentId());
+                file.setPageNumber(page++);
+                file.setCreatedBy(userId);
+                file.setUpdatedBy(userId);
+                importFiles.save(file);
+            }
+            // Published inside the transaction so the AFTER_COMMIT runner only starts once the rows are visible.
+            events.publishEvent(new ImportQueuedEvent(statementImport.getId()));
+            return response(statementImport);
+        });
     }
 
     @Transactional(readOnly = true)
@@ -128,9 +139,17 @@ public class CardStatementImportService {
     public List<StatementImportResponse> list(Long userId, Long cardId) {
         ownCard(userId, cardId);
         boolean aiConfigured = ai.isConfigured();
-        return imports.findByUserIdAndUserCardIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId, cardId,
-                PageRequest.of(0, 20))
-            .stream().map(statementImport -> response(statementImport, aiConfigured)).toList();
+        List<CardStatementImport> page = imports.findByUserIdAndUserCardIdAndDeletedAtIsNullOrderByCreatedAtDesc(
+            userId, cardId, PageRequest.of(0, 20));
+        if (page.isEmpty()) return List.of();
+        // Files and attachment names for the whole page in two queries instead of two per import.
+        List<CardStatementImportFile> files = importFiles.findByImportIdInAndDeletedAtIsNullOrderByPageNumberAsc(
+            page.stream().map(CardStatementImport::getId).toList());
+        Map<Long, List<CardStatementImportFile>> filesByImport = files.stream()
+            .collect(Collectors.groupingBy(CardStatementImportFile::getImportId));
+        Map<Long, Attachment> byId = attachmentsById(files);
+        return page.stream().map(statementImport -> response(statementImport, aiConfigured,
+            filesByImport.getOrDefault(statementImport.getId(), List.of()), byId)).toList();
     }
 
     @Transactional
@@ -218,16 +237,31 @@ public class CardStatementImportService {
         int inserted = 0;
         int skipped = 0;
         CardTransactionKeys.OccurrenceCounter keys = new CardTransactionKeys.OccurrenceCounter();
+        // Keys are taken for every row (included or not) in request order so occurrence indexes stay stable.
+        List<byte[]> rowKeys = new ArrayList<>();
+        List<byte[]> includedKeys = new ArrayList<>();
         for (ConfirmTransactionRequest row : request.transactions()) {
             byte[] key = keys.next(card.getId(), row.transactionDate(), money(row.amount()), row.transactionType(),
                 row.description());
+            rowKeys.add(key);
+            if (Boolean.TRUE.equals(row.include())) includedKeys.add(key);
+        }
+        Map<ByteBuffer, CardTransaction> existingByKey = existingByKey(card.getId(), includedKeys);
+        // Re-saving a rule with the same MCC is a no-op, so only call upsert when the rule's MCC would change.
+        Map<String, String> rememberedMcc = new HashMap<>();
+        for (int i = 0; i < request.transactions().size(); i++) {
+            ConfirmTransactionRequest row = request.transactions().get(i);
+            byte[] key = rowKeys.get(i);
             if (!Boolean.TRUE.equals(row.include())) continue;
             if (row.cashbackRuleId() != null && cardRules.byId(row.cashbackRuleId()).isEmpty())
                 throw bad("CASHBACK_RULE_NOT_FOUND", "Nhóm cashback không thuộc thẻ này");
             if (row.rememberPattern() != null && !row.rememberPattern().isBlank() && row.mccCode() != null) {
-                merchantRules.upsert(userId, row.rememberPattern(), row.mccCode(), null, false);
+                String pattern = CardMerchantRuleService.normalizePattern(row.rememberPattern());
+                if (!row.mccCode().equals(rememberedMcc.put(pattern, row.mccCode()))) {
+                    merchantRules.upsert(userId, row.rememberPattern(), row.mccCode(), null, false);
+                }
             }
-            CardTransaction transaction = transactions.findByUserCardIdAndDedupKey(card.getId(), key).orElse(null);
+            CardTransaction transaction = existingByKey.get(ByteBuffer.wrap(key));
             if (transaction != null && transaction.getDeletedAt() == null) {
                 skipped++;
                 continue;
@@ -260,10 +294,8 @@ public class CardStatementImportService {
             // The imported statement is now the source of truth for its period; manual entries logged for the same
             // period would otherwise be counted twice against cashback caps and available credit.
             for (CardTransaction manual : transactions
-                .findByUserCardIdInAndStatementIdIsNullAndTransactionDateGreaterThanEqualAndDeletedAtIsNull(
-                    List.of(card.getId()), statement.getPeriodStart())) {
-                if (manual.getSource() != CardTransactionSource.MANUAL
-                    || manual.getTransactionDate().isAfter(statement.getPeriodEnd())) continue;
+                .findByUserCardIdAndStatementIdIsNullAndSourceAndTransactionDateBetweenAndDeletedAtIsNull(
+                    card.getId(), CardTransactionSource.MANUAL, statement.getPeriodStart(), statement.getPeriodEnd())) {
                 manual.setDeletedAt(Instant.now());
                 manual.setUpdatedBy(userId);
                 transactions.save(manual);
@@ -410,6 +442,7 @@ public class CardStatementImportService {
             warnings.add("FIELD_MISSING");
 
         List<TransactionDraft> rows = new ArrayList<>();
+        List<byte[]> rowKeys = new ArrayList<>();
         int ignoredPayments = 0;
         int line = 1;
         BigDecimal spendingTotal = BigDecimal.ZERO;
@@ -444,18 +477,27 @@ public class CardStatementImportService {
             Optional<ActiveRule> rule = merchantRuleApplied ? cardRules.bestForMcc(mcc) : Optional.empty();
             if (rule.isEmpty()) rule = cardRules.byCategoryName(row.suggestedCategory());
             if (rule.isEmpty()) rule = cardRules.bestForMcc(mcc);
-            boolean duplicate = false;
-            if (type != null && date != null && amount != null) {
-                byte[] key = keys.next(card.getId(), date, amount, type, description);
-                duplicate = transactions.findByUserCardIdAndDedupKey(card.getId(), key)
-                    .filter(existing -> existing.getDeletedAt() == null).isPresent();
-                if (duplicate) rowWarnings.add("DUPLICATE");
-            }
+            rowKeys.add(type != null && date != null && amount != null
+                ? keys.next(card.getId(), date, amount, type, description) : null);
             if (type == CardTransactionType.SPENDING && amount != null) spendingTotal = spendingTotal.add(amount);
             rows.add(new TransactionDraft(line++, date, date(row.postingDate()), description, amount, type, mcc,
                 rule.map(ActiveRule::ruleId).orElse(null), truncate(trim(row.suggestedCategory()), 150),
-                rowConfidence, duplicate, !rowWarnings.isEmpty() && !(duplicate && rowWarnings.size() == 1),
-                merchantRuleApplied, rowWarnings));
+                rowConfidence, false, !rowWarnings.isEmpty(), merchantRuleApplied, rowWarnings));
+        }
+        // One lookup for every row's dedup key instead of a query per row; duplicates are flagged afterwards.
+        Map<ByteBuffer, CardTransaction> existingByKey = existingByKey(card.getId(),
+            rowKeys.stream().filter(Objects::nonNull).toList());
+        for (int i = 0; i < rows.size(); i++) {
+            byte[] key = rowKeys.get(i);
+            CardTransaction existing = key == null ? null : existingByKey.get(ByteBuffer.wrap(key));
+            if (existing == null || existing.getDeletedAt() != null) continue;
+            TransactionDraft draft = rows.get(i);
+            List<String> rowWarnings = draft.warnings();
+            rowWarnings.add("DUPLICATE");
+            rows.set(i, new TransactionDraft(draft.lineNumber(), draft.transactionDate(), draft.postingDate(),
+                draft.description(), draft.amount(), draft.transactionType(), draft.mccCode(),
+                draft.cashbackRuleId(), draft.suggestedCategory(), draft.confidence(), true,
+                rowWarnings.size() > 1, draft.merchantRuleApplied(), rowWarnings));
         }
         BigDecimal totalSpending = amount(extraction.totalSpending(), true);
         if (totalSpending != null && !rows.isEmpty()
@@ -520,9 +562,24 @@ public class CardStatementImportService {
     private StatementImportResponse response(CardStatementImport statementImport, boolean aiConfigured) {
         List<CardStatementImportFile> files =
             importFiles.findByImportIdAndDeletedAtIsNullOrderByPageNumberAsc(statementImport.getId());
-        Map<Long, Attachment> byId = attachments.findAllById(
-                files.stream().map(CardStatementImportFile::getAttachmentId).toList())
+        return response(statementImport, aiConfigured, files, attachmentsById(files));
+    }
+
+    private Map<Long, Attachment> attachmentsById(List<CardStatementImportFile> files) {
+        return attachments.findAllById(
+                files.stream().map(CardStatementImportFile::getAttachmentId).distinct().toList())
             .stream().collect(Collectors.toMap(Attachment::getId, Function.identity()));
+    }
+
+    /** Dedup key lookup in one query; keys are wrapped because byte[] has identity equality. */
+    private Map<ByteBuffer, CardTransaction> existingByKey(Long cardId, List<byte[]> keys) {
+        if (keys.isEmpty()) return Map.of();
+        return transactions.findByUserCardIdAndDedupKeyIn(cardId, keys).stream()
+            .collect(Collectors.toMap(t -> ByteBuffer.wrap(t.getDedupKey()), Function.identity()));
+    }
+
+    private StatementImportResponse response(CardStatementImport statementImport, boolean aiConfigured,
+                                             List<CardStatementImportFile> files, Map<Long, Attachment> byId) {
         List<ImportFileResponse> fileResponses = files.stream().map(file -> new ImportFileResponse(
             file.getAttachmentId(), file.getPageNumber(),
             Optional.ofNullable(byId.get(file.getAttachmentId())).map(Attachment::getOriginalName).orElse(null)))

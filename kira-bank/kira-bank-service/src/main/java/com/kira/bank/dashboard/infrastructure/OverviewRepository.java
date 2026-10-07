@@ -62,16 +62,35 @@ public class OverviewRepository {
         }
     }
 
-    public Group<Due> dues(Long userId, DueWindow window, LocalDate today) {
-        String from = """
-            from statements s join user_credit_cards c on c.id = s.user_card_id and c.user_id = s.user_id
-            join banks b on b.id = c.bank_id
-            where s.user_id = ? and s.deleted_at is null and c.deleted_at is null and
-            """ + window.condition;
+    private static final String DUE_FROM = """
+        from statements s join user_credit_cards c on c.id = s.user_card_id and c.user_id = s.user_id
+        join banks b on b.id = c.bank_id
+        where s.user_id = ? and s.deleted_at is null and c.deleted_at is null
+        """;
+
+    /**
+     * Counts every {@link DueWindow} in one scan; same predicates as {@link #dues}, zero when nothing matches.
+     */
+    public Map<DueWindow, Long> dueCounts(Long userId, LocalDate today) {
+        StringJoiner select = new StringJoiner(", ", "select ", " ");
+        List<Object> args = new ArrayList<>();
+        for (DueWindow window : DueWindow.values()) {
+            select.add("coalesce(sum(case when " + window.condition + " then 1 else 0 end),0)");
+            args.addAll(window.parameters(today));
+        }
+        args.add(userId);
+        return jdbc.queryForObject(select + DUE_FROM, (rs, row) -> {
+            Map<DueWindow, Long> counts = new EnumMap<>(DueWindow.class);
+            for (DueWindow window : DueWindow.values()) counts.put(window, rs.getLong(window.ordinal() + 1));
+            return counts;
+        }, args.toArray());
+    }
+
+    public Group<Due> dues(Long userId, DueWindow window, LocalDate today, long count) {
+        String from = DUE_FROM + " and " + window.condition;
         List<Object> args = new ArrayList<>();
         args.add(userId);
         args.addAll(window.parameters(today));
-        long count = Objects.requireNonNull(jdbc.queryForObject("select count(*) " + from, Long.class, args.toArray()));
         List<Due> rows = jdbc.query("""
             select s.id, c.id as card_id, coalesce(nullif(b.short_name,''),b.name) as bank_name,
                    c.nickname, c.last_four, s.due_date, s.remaining_amount, c.currency

@@ -17,6 +17,10 @@ public interface PasswordVaultAccountRepository extends JpaRepository<PasswordVa
 
     long countByOwnerIdAndModuleIdAndDeletedAtIsNull(Long ownerId, Long moduleId);
 
+    @Query("select a.moduleId, count(a) from PasswordVaultAccount a " +
+        "where a.ownerId = :ownerId and a.deletedAt is null group by a.moduleId")
+    List<Object[]> countActiveByModule(@Param("ownerId") Long ownerId);
+
     @Modifying
     @Query("update PasswordVaultAccount a set a.deletedAt = :deletedAt, a.updatedBy = :userId, a.version = a.version + 1 " +
         "where a.ownerId = :userId and a.moduleId = :moduleId and a.deletedAt is null")

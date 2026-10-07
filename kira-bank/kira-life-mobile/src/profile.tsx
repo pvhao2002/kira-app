@@ -5,6 +5,7 @@ import {Linking, Pressable, Switch, View} from 'react-native';
 import {router} from 'expo-router';
 import {useDemo} from './store';
 import {ApiError, useAuth} from './auth';
+import {syncPushRegistration} from './push';
 import {useT} from './i18n';
 import {ThemeName, useTheme} from './theme';
 import {
@@ -228,7 +229,8 @@ export function Profile() {
     biometricEnabled,
     setBiometricEnabled,
     lockWhenBackground,
-    setLockWhenBackground
+    setLockWhenBackground,
+    requestJson
   } = useAuth();
   const initials = (session?.user.fullName || 'K').split(/\s+/).filter(Boolean).slice(-2).map(part => part[0]).join('').toUpperCase();
   const roleLabel = session?.user.roles?.includes('ADMIN') ? t('Quản trị viên') : t('Tài khoản đã xác thực');
@@ -319,7 +321,11 @@ export function Profile() {
     <LangSwitch/>, () => {
     })}{setting('notifications-outline', t('Thông báo & Báo động thẻ'), t('Lưu tùy chọn hiển thị cảnh báo trên thiết bị.'),
     <Switch accessibilityLabel={t('Thông báo & Báo động thẻ')} value={notifications}
-            onValueChange={setBoolean('kira-life-notifications', setNotifications)}
+            onValueChange={value => {
+              setNotifications(value);
+              AsyncStorage.setItem('kira-life-notifications', String(value)).then(() => syncPushRegistration(requestJson)).catch(() => {
+              });
+            }}
             trackColor={{false: c.elevated, true: c.primary}} thumbColor={c.surface}/>, () => {
     })}{setting('lock-closed-outline', t('Password Vault'), t('Quản lý thông tin đăng nhập được mã hóa, chỉ mở khóa tạm thời.'), undefined, () => go('password-vault'))}{setting('calendar-outline', t('Lịch dạy gia sư'), t('Quản lý học viên, lịch lặp và học phí dự kiến.'), undefined, () => go('tutoring'))}{setting('headset-outline', t('Hướng dẫn & Trợ giúp kỹ thuật'), t('Hướng dẫn theo dõi thông báo, AI và dữ liệu đối soát.'), undefined, () => notify(t('Trợ giúp: hãy mở mục Thông báo để theo dõi trạng thái xử lý, hoặc vào Hàng đợi AI để kiểm tra chứng từ.')))}</Card>
     <Section title={t('Màu sắc giao diện')}/><Card><T size={12} bold>{t('Chọn màu nhấn cho ứng dụng')}</T><T size={11}

@@ -36,9 +36,9 @@ public class LodgingController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     ListingResponse create(@AuthenticationPrincipal Long user, @Valid @RequestBody ListingRequest request) {
-        ListingResponse created = service.create(user, request);
-        service.tryRecalculate(user, created.id());
-        return service.detail(user, created.id());
+        Long created = service.create(user, request);
+        service.tryRecalculate(user, created);
+        return service.detail(user, created);
     }
 
     @GetMapping("/{id}")
@@ -48,9 +48,8 @@ public class LodgingController {
 
     @PutMapping("/{id}")
     ListingResponse update(@AuthenticationPrincipal Long user, @PathVariable Long id, @Valid @RequestBody ListingRequest request) {
-        ListingResponse updated = service.update(user, id, request);
-        service.tryRecalculate(user, id);
-        return service.detail(user, updated.id());
+        if (service.update(user, id, request)) service.tryRecalculate(user, id);
+        return service.detail(user, id);
     }
 
     @DeleteMapping("/{id}")
@@ -109,14 +108,14 @@ public class LodgingController {
     ReferenceLocationResponse createLocation(@AuthenticationPrincipal Long user, @Valid @RequestBody ReferenceLocationRequest request) {
         ReferenceLocationResponse created = service.createLocation(user, request);
         service.tryGeocodeLocation(user, created.id());
-        return service.locations(user).stream().filter(value -> value.id().equals(created.id())).findFirst().orElseThrow();
+        return service.location(user, created.id());
     }
 
     @PutMapping("/reference-locations/{id}")
     ReferenceLocationResponse updateLocation(@AuthenticationPrincipal Long user, @PathVariable Long id, @Valid @RequestBody ReferenceLocationRequest request) {
         ReferenceLocationResponse updated = service.updateLocation(user, id, request);
         if (updated.geocodeStatus().name().equals("PENDING")) service.tryGeocodeLocation(user, id);
-        return service.locations(user).stream().filter(value -> value.id().equals(id)).findFirst().orElseThrow();
+        return service.location(user, id);
     }
 
     @DeleteMapping("/reference-locations/{id}")
@@ -128,6 +127,6 @@ public class LodgingController {
     @PostMapping("/reference-locations/{id}/geocode")
     ReferenceLocationResponse geocode(@AuthenticationPrincipal Long user, @PathVariable Long id) {
         service.tryGeocodeLocation(user, id);
-        return service.locations(user).stream().filter(value -> value.id().equals(id)).findFirst().orElseThrow();
+        return service.location(user, id);
     }
 }

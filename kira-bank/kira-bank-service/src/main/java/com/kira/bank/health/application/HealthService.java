@@ -247,13 +247,14 @@ public class HealthService {
 
     public Summary summary(long user, LocalDate date) {
         var pv = profile(user);
-        Profile p = pv == null ? null : pv.data();
-        var weight = repo.weights(user).stream().filter(w -> !w.date().isAfter(date)).findFirst().orElse(null);
+        return summary(pv == null ? null : pv.data(), repo.latestWeight(user, date), date, repo.day(user, date), repo.journals(user, date, date));
+    }
+
+    private Summary summary(Profile p, Weight weight, LocalDate date, Day day, List<JournalView> journals) {
         Double bmi = null, rest = null, target = null;
         String source = "MISSING_PROFILE";
-        Day day = repo.day(user, date);
         Double active = day == null ? null : day.activeCalories(), basal = day == null ? null : day.restingCalories();
-        double eaten = repo.journals(user, date, date).stream().filter(j -> j.data().kind().equals("MEAL")).mapToDouble(j -> j.data().calories()).sum();
+        double eaten = journals.stream().filter(j -> j.data().kind().equals("MEAL")).mapToDouble(j -> j.data().calories()).sum();
         if (p != null && weight != null && !date.isBefore(p.birthDate().plusYears(20))) {
             bmi = weight.kg() / Math.pow(p.heightCm() / 100, 2);
             rest = 10 * weight.kg() + 6.25 * p.heightCm() - 5 * Period.between(p.birthDate(), date).getYears() + (p.formulaSex().equals("MALE") ? 5 : -161);
@@ -278,6 +279,12 @@ public class HealthService {
 
     public List<Summary> statistics(long user, LocalDate from, LocalDate to) {
         range(from, to);
-        return from.datesUntil(to.plusDays(1)).map(d -> summary(user, d)).toList();
+        var pv = profile(user);
+        Profile p = pv == null ? null : pv.data();
+        List<Weight> weights = repo.weights(user);
+        Map<LocalDate, Day> days = repo.days(user, from, to);
+        Map<LocalDate, List<JournalView>> journals = new HashMap<>();
+        for (var j : repo.journals(user, from, to)) journals.computeIfAbsent(j.date(), k -> new ArrayList<>()).add(j);
+        return from.datesUntil(to.plusDays(1)).map(d -> summary(p, weights.stream().filter(w -> !w.date().isAfter(d)).findFirst().orElse(null), d, days.get(d), journals.getOrDefault(d, List.of()))).toList();
     }
 }

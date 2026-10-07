@@ -27,6 +27,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -68,18 +69,32 @@ public class InvestmentTransactionImportService {
     private final ObjectMapper objectMapper;
     private final MeterRegistry metrics;
     private final EntityManager entityManager;
+    private final TransactionTemplate transactionTemplate;
     @Value("${investment.transaction-import.time-zone:Asia/Ho_Chi_Minh}")
     private String transactionImportTimeZone;
 
-    @Transactional
+    /**
+     * R2 uploads run before any DB transaction; the user lock, batch, attachment and file rows are then written in
+     * one short transaction so a PENDING receipt is never visible to the AI scheduler without its batch.
+     */
     public ImportBatchResponse createBatch(Long userId, Long accountId, List<MultipartFile> uploads) throws IOException {
         if (!ai.isConfigured()) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI_NOT_CONFIGURED",
                 "AI import chưa được cấu hình");
         }
-        InvestmentAccount account = account(accountId, userId);
+        account(accountId, userId);
         validateBatch(uploads);
-        users.findByIdForUpdate(userId).orElseThrow();
+        // Non-locking pre-check so a rate-limited request does not upload anything; re-checked under the lock below.
+        checkBatchRateLimit(userId);
+        List<AttachmentService.PreparedUpload> prepared = new ArrayList<>(uploads.size());
+        for (int index = 0; index < uploads.size(); index++) {
+            prepared.add(attachmentService.store(userId, AttachmentService.INVESTMENT_MODULE,
+                AttachmentService.RECEIPT_DOCUMENT_TYPE, uploads.get(index), index + 1));
+        }
+        return transactionTemplate.execute(status -> createBatchRows(userId, accountId, uploads.size(), prepared));
+    }
+
+    private void checkBatchRateLimit(Long userId) {
         if (batches.countByUserIdAndCreatedAtGreaterThanEqualAndDeletedAtIsNull(
             userId, Instant.now().minusSeconds(60)) >= 5) {
             HttpHeaders headers = new HttpHeaders();
@@ -87,6 +102,13 @@ public class InvestmentTransactionImportService {
             throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "IMPORT_RATE_LIMITED",
                 "Bạn đã vượt quá 5 batch trong một phút", headers);
         }
+    }
+
+    private ImportBatchResponse createBatchRows(Long userId, Long accountId, int numberOfImages,
+                                                List<AttachmentService.PreparedUpload> prepared) {
+        users.findByIdForUpdate(userId).orElseThrow();
+        checkBatchRateLimit(userId);
+        InvestmentAccount account = account(accountId, userId);
 
         InvestmentTransactionImportBatch batch = new InvestmentTransactionImportBatch();
         batch.setBatchId(UUID.randomUUID().toString());
@@ -99,10 +121,8 @@ public class InvestmentTransactionImportService {
         batches.saveAndFlush(batch);
 
         Set<Long> linkedAttachments = new HashSet<>();
-        for (int index = 0; index < uploads.size(); index++) {
-            MultipartFile upload = uploads.get(index);
-            AttachmentDtos.AttachmentResponse attachment = attachmentService.upload(
-                userId, AttachmentService.INVESTMENT_MODULE, AttachmentService.RECEIPT_DOCUMENT_TYPE, upload, index + 1);
+        for (AttachmentService.PreparedUpload upload : prepared) {
+            AttachmentDtos.AttachmentResponse attachment = attachmentService.record(userId, upload);
             if (!linkedAttachments.add(attachment.attachmentId())) continue;
             InvestmentTransactionImportFile file = new InvestmentTransactionImportFile();
             file.setBatchId(batch.getId());
@@ -119,7 +139,7 @@ public class InvestmentTransactionImportService {
         refreshBatch(batch);
         metrics.counter("investment.import.batch.created").increment();
         log.info("Investment import queued batchId={} userId={} accountId={} numberOfImages={}",
-            batch.getBatchId(), userId, accountId, uploads.size());
+            batch.getBatchId(), userId, accountId, numberOfImages);
         return response(batch);
     }
 
@@ -134,8 +154,9 @@ public class InvestmentTransactionImportService {
         List<InvestmentTransactionImportFile> readyFiles = files.findByAttachmentIdAndStatusInAndDeletedAtIsNull(
             attachmentId, List.of(InvestmentImportFileStatus.READY));
         Instant now = Instant.now();
+        Map<Long, InvestmentTransactionImportBatch> batchesById = batchesById(readyFiles);
         for (InvestmentTransactionImportFile file : readyFiles) {
-            InvestmentTransactionImportBatch batch = batches.findById(file.getBatchId()).orElse(null);
+            InvestmentTransactionImportBatch batch = batchesById.get(file.getBatchId());
             if (batch == null) continue;
             for (InvestmentTransactionImportItem item : items.findByBatchIdAndPrimaryAttachmentIdAndDeletedAtIsNull(
                 batch.getId(), attachmentId)) {
@@ -156,8 +177,9 @@ public class InvestmentTransactionImportService {
         List<InvestmentTransactionImportFile> linked = files.findByAttachmentIdAndStatusInAndDeletedAtIsNull(
             attachmentId, List.of(InvestmentImportFileStatus.PENDING, InvestmentImportFileStatus.PROCESSING,
                 InvestmentImportFileStatus.FAILED, InvestmentImportFileStatus.CANCELLED));
+        Map<Long, InvestmentTransactionImportBatch> batchesById = batchesById(linked);
         for (InvestmentTransactionImportFile file : linked) {
-            InvestmentTransactionImportBatch batch = batches.findById(file.getBatchId()).orElse(null);
+            InvestmentTransactionImportBatch batch = batchesById.get(file.getBatchId());
             if (batch == null) continue;
             if (attachment.getAiStatus() == AttachmentAiStatus.READY || attachment.getAiStatus() == AttachmentAiStatus.CONFIRMED) {
                 file.setStatus(InvestmentImportFileStatus.READY);
@@ -182,6 +204,16 @@ public class InvestmentTransactionImportService {
             }
             refreshBatch(batch);
         }
+    }
+
+    private Map<Long, InvestmentTransactionImportBatch> batchesById(List<InvestmentTransactionImportFile> batchFiles) {
+        Map<Long, InvestmentTransactionImportBatch> result = new HashMap<>();
+        if (batchFiles.isEmpty()) return result;
+        for (InvestmentTransactionImportBatch batch : batches.findAllById(
+            batchFiles.stream().map(InvestmentTransactionImportFile::getBatchId).distinct().toList())) {
+            result.put(batch.getId(), batch);
+        }
+        return result;
     }
 
     @Transactional
@@ -272,14 +304,15 @@ public class InvestmentTransactionImportService {
         long unresolvedItems = batchItems.stream().filter(item -> item.getConfirmedTransactionId() == null
             && item.getResolution() != InvestmentImportResolution.SKIP).count();
         batch.setReviewCount((int) unresolvedReview);
-        boolean fileFailure = files.findByBatchIdAndDeletedAtIsNullOrderById(batch.getId()).stream()
+        List<InvestmentTransactionImportFile> batchFiles = files.findByBatchIdAndDeletedAtIsNullOrderById(batch.getId());
+        boolean fileFailure = batchFiles.stream()
             .anyMatch(file -> file.getStatus() == InvestmentImportFileStatus.FAILED);
         batch.setStatus(unresolvedItems == 0 && failed == 0 && !fileFailure
             ? InvestmentImportBatchStatus.CONFIRMED : InvestmentImportBatchStatus.PARTIALLY_CONFIRMED);
         if (batch.getStatus() == InvestmentImportBatchStatus.CONFIRMED) {
             batch.setCompletedAt(Instant.now());
             batch.setRetentionUntil(Instant.now().plus(RETENTION));
-            for (InvestmentTransactionImportFile file : files.findByBatchIdAndDeletedAtIsNullOrderById(batch.getId())) {
+            for (InvestmentTransactionImportFile file : batchFiles) {
                 if (file.getStatus() == InvestmentImportFileStatus.READY) {
                     attachmentService.markConfirmed(userId, file.getAttachmentId());
                     file.setStatus(InvestmentImportFileStatus.CONFIRMED);
@@ -409,11 +442,15 @@ public class InvestmentTransactionImportService {
     private void createItems(InvestmentTransactionImportBatch batch, InvestmentAccount account, Long attachmentId,
                              AttachmentDtos.AiDraftResponse draft) {
         if (draft.transactions() == null) return;
+        // Loaded once; new rows are appended (highest id last) so later rows still merge into earlier ones.
+        List<InvestmentTransactionImportItem> batchItems =
+            new ArrayList<>(items.findByBatchIdAndDeletedAtIsNullOrderById(batch.getId()));
         for (AttachmentDtos.AiTransactionDraftResponse raw : draft.transactions()) {
             InvestmentTransactionImportItem item = toItem(batch, account, attachmentId, raw);
-            InvestmentTransactionImportItem merged = mergeCandidate(batch, item);
+            InvestmentTransactionImportItem merged = mergeCandidate(batchItems, item);
             if (merged == null) {
                 items.saveAndFlush(item);
+                batchItems.add(item);
                 linkSource(item.getId(), attachmentId);
             } else {
                 linkSource(merged.getId(), attachmentId);
@@ -463,9 +500,9 @@ public class InvestmentTransactionImportService {
         return item;
     }
 
-    private InvestmentTransactionImportItem mergeCandidate(InvestmentTransactionImportBatch batch,
+    private InvestmentTransactionImportItem mergeCandidate(List<InvestmentTransactionImportItem> batchItems,
                                                            InvestmentTransactionImportItem incoming) {
-        for (InvestmentTransactionImportItem existing : items.findByBatchIdAndDeletedAtIsNullOrderById(batch.getId())) {
+        for (InvestmentTransactionImportItem existing : batchItems) {
             boolean sameExternal = incoming.getExternalTransactionId() != null
                 && incoming.getExternalTransactionId().equals(existing.getExternalTransactionId());
             boolean sameKey = incoming.getDeduplicationKey() != null && existing.getDeduplicationKey() != null
@@ -539,9 +576,15 @@ public class InvestmentTransactionImportService {
     }
 
     private ImportBatchResponse response(InvestmentTransactionImportBatch batch) {
-        List<ImportFileResponse> fileResponses = files.findByBatchIdAndDeletedAtIsNullOrderById(batch.getId()).stream()
+        List<InvestmentTransactionImportFile> batchFiles = files.findByBatchIdAndDeletedAtIsNullOrderById(batch.getId());
+        Map<Long, Attachment> attachments = new HashMap<>();
+        if (!batchFiles.isEmpty()) {
+            attachmentRepository.findAllById(batchFiles.stream().map(InvestmentTransactionImportFile::getAttachmentId)
+                .distinct().toList()).forEach(attachment -> attachments.put(attachment.getId(), attachment));
+        }
+        List<ImportFileResponse> fileResponses = batchFiles.stream()
             .map(file -> {
-                Attachment attachment = attachmentRepository.findById(file.getAttachmentId()).orElseThrow();
+                Attachment attachment = Optional.ofNullable(attachments.get(file.getAttachmentId())).orElseThrow();
                 return new ImportFileResponse(attachment.getId(), attachment.getOriginalName(),
                     "/api/v1/attachments/" + attachment.getId() + "/content", file.getStatus(), file.getErrorCode());
             }).toList();

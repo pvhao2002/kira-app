@@ -37,3 +37,19 @@ Each section keeps previously loaded data after errors and shows the last succes
 ## Verification
 
 Compile only the affected backend module with Java 25. Do not run tests or UI builds unless requested. Browser checks must use a backend process that has loaded the new endpoints; old processes return section errors until restarted. Verify counts and sums against their owning screens, date/currency boundaries, partial errors, hidden amounts, links, mobile layout and both themes. Do not create financial records merely to populate a preview.
+
+## Realtime notifications
+
+`GET /api/v1/ws/notifications` upgrades to a plain WebSocket. The client's first text frame must be the access
+token (no header or query string); otherwise the server closes with code `4401` after 10 seconds. Once
+authenticated, and after every create/read/read-all commit, the server sends
+`{"unreadCount": number, "notification": NotificationResponse | null}` — `notification` is set only for a new one.
+
+## Mobile push notifications
+
+`PUT /api/v1/notifications/push-devices` `{token, platform: IOS|ANDROID}` registers an Expo push token for the caller
+(a token moves to the account that registered it last); `DELETE /api/v1/notifications/push-devices` `{token}` removes
+it (logout, or the "Thông báo" preference turned off). After a notification commits, the service sends only its
+`title` plus `data: {notificationId, deepLink}` through Expo — never the message body — and drops tokens Expo reports
+as `DeviceNotRegistered`. Optional `EXPO_ACCESS_TOKEN` is sent when Expo enhanced push security is on. Remote push needs
+an EAS `projectId` and a development/production build (Expo Go on Android cannot receive remote push).

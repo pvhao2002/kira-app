@@ -204,6 +204,13 @@ export type InvestmentCurrencyFlow = {
   netDeposits: number;
   daily: InvestmentDailyFlow[]
 };
+export type InvestmentStatisticsCurrency = {
+  currency: string; totalCount: number; deposits: number; withdrawals: number; bonuses: number; netAmount: number;
+  daily: InvestmentDailyFlow[]
+};
+export type InvestmentStatisticsOverview = {
+  fromDate: string; toDate: string; timeZone: string; accountId: number | null; currencies: InvestmentStatisticsCurrency[]
+};
 export type InvestmentImportTask = { batchId: string; accountId: number; accountName: string; status: string };
 export type InvestmentTaskGroup = { total: number; items: InvestmentImportTask[] };
 export type InvestmentOverview = {
@@ -404,6 +411,8 @@ export function useInvestmentApi() {
       status?: InvestmentTransactionStatus
     }) =>
       requestJson<InvestmentStatisticsResponse>(`/api/v1/investment/accounts/${accountId}/statistics${q(params)}`),
+    getAllStatistics: (params: { fromDate: string; toDate: string; accountId?: number }) =>
+      requestJson<InvestmentStatisticsOverview>(`/api/v1/investment/statistics${q(params)}`),
     getOverview: (days: 7 | 30 | 90 = 30) => requestJson<InvestmentOverview>(`/api/v1/dashboards/overview/investments?days=${days}`),
 
     listAiJobs: (statuses?: AttachmentAiStatus[], page = 0, size = 20) =>

@@ -19,6 +19,7 @@ import {
   InvestmentImportFileStatus,
   InvestmentImportResolution,
   InvestmentOverview,
+  InvestmentStatisticsOverview,
   InvestmentTransactionStatus,
   InvestmentTransactionType,
   useInvestmentApi,
@@ -90,6 +91,89 @@ export function InvestmentNav({active}: { active: string }) {
     pathname: '/[page]',
     params: {page: v}
   })}/></View>;
+}
+
+function localToday() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function DayTicks({dates}: { dates: string[] }) {
+  const {colors: c} = useTheme();
+  return <View style={{flexDirection: 'row'}}>{dates.map((date, index) => <View key={date} style={{flex: 1}}>
+    {index % 7 === 0 || index === dates.length - 1 ? <T size={8} color={c.muted} style={{width: 24}}>{date.slice(8)}</T> : null}
+  </View>)}</View>;
+}
+
+function InvestmentMonthCard() {
+  const api = useInvestmentApi();
+  const t = useT();
+  const {lang} = useLanguage();
+  const {colors: c} = useTheme();
+  const [data, setData] = useState<InvestmentStatisticsOverview | null>(null);
+  const [currency, setCurrency] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const load = useCallback(() => {
+    const today = localToday();
+    setLoading(true);
+    api.getAllStatistics({fromDate: `${today.slice(0, 8)}01`, toDate: today}).then(value => {
+      setData(value);
+      setError('');
+    }).catch(e => setError(t(errorMessage(e)))).finally(() => setLoading(false));
+  }, [t]);
+  useFocusEffect(useCallback(() => {
+    load();
+  }, [load]));
+  if (loading && !data) return <Card><ActivityIndicator color={c.primary}/></Card>;
+  if (error && !data) return <Card><Info tone="error">{error}</Info><Button label={t('Thử lại')} kind="secondary"
+                                                                            onPress={load}/></Card>;
+  if (!data) return null;
+  const flow = data.currencies.find(item => item.currency === currency) ?? data.currencies[0];
+  const daily = flow?.daily ?? [];
+  const dates = daily.map(day => day.date);
+  const profit = flow ? flow.withdrawals - flow.deposits : 0;
+  const flowMax = Math.max(1, ...daily.flatMap(day => [day.deposits, day.withdrawals]));
+  const profitDaily = daily.map(day => ({date: day.date, value: day.withdrawals - day.deposits}));
+  const profitMax = Math.max(1, ...profitDaily.map(day => Math.abs(day.value)));
+  const key = (color: string) => <View style={{width: 8, height: 8, borderRadius: 2, backgroundColor: color}}/>;
+  return <Card tint>
+    <Row><View style={{flex: 1}}><T size={11} color={c.primary}>{t('THÁNG NÀY')}</T><T size={10}
+                                                                                   color={c.muted}>{data.fromDate} → {data.toDate}</T></View><Pressable
+      accessibilityRole="button" accessibilityLabel={t('Tải lại')} onPress={load} style={{padding: 6}}><Icon
+      name="refresh-outline" size={18}/></Pressable></Row>
+    {data.currencies.length > 1 ? <Chips value={flow?.currency ?? ''} onChange={setCurrency}
+                                         values={data.currencies.map(item => ({value: item.currency, label: item.currency}))}/> : null}
+    {!flow || !flow.totalCount ?
+      <T size={11} color={c.muted}>{t('Chưa có giao dịch hoàn tất trong khoảng thời gian này.')}</T> : <>
+        <Row><Metric label={t('Deposit')} value={money(flow.deposits, flow.currency, lang)}/><Metric
+          label={t('Withdrawal')} value={money(flow.withdrawals, flow.currency, lang)}/><Metric
+          label={t('Lợi nhuận')} value={money(profit, flow.currency, lang)} color={profit < 0 ? c.error : c.success}/></Row>
+        <Row><T size={11} bold style={{flex: 1}}>{t('Nạp / Rút theo ngày')}</T>{key(c.primary)}<T size={9}
+                                                                                              color={c.muted}>{t('Deposit')}</T>{key(c.warning)}<T
+          size={9} color={c.muted}>{t('Withdrawal')}</T></Row>
+        <View style={{flexDirection: 'row', alignItems: 'flex-end', height: 110, gap: 2, borderBottomWidth: 1, borderColor: c.border}}>
+          {daily.map(day => <View key={day.date}
+                                  accessibilityLabel={`${dateLabel(day.date)} · ${t('Deposit')} ${money(day.deposits, flow.currency, lang)} · ${t('Withdrawal')} ${money(day.withdrawals, flow.currency, lang)}`}
+                                  style={{flex: 1, height: '100%', flexDirection: 'row', alignItems: 'flex-end', gap: 1}}>
+            <View style={{flex: 1, height: `${day.deposits / flowMax * 100}%`, backgroundColor: c.primary, borderTopLeftRadius: 2, borderTopRightRadius: 2}}/>
+            <View style={{flex: 1, height: `${day.withdrawals / flowMax * 100}%`, backgroundColor: c.warning, borderTopLeftRadius: 2, borderTopRightRadius: 2}}/>
+          </View>)}
+        </View>
+        <DayTicks dates={dates}/>
+        <T size={11} bold>{t('Lợi nhuận theo ngày (Rút − Nạp)')}</T>
+        <View style={{height: 120}}>
+          <View style={{flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 2}}>{profitDaily.map(day => <View
+            key={day.date} accessibilityLabel={`${dateLabel(day.date)} · ${money(day.value, flow.currency, lang)}`}
+            style={{flex: 1, height: `${Math.max(0, day.value) / profitMax * 100}%`, backgroundColor: c.success, borderTopLeftRadius: 2, borderTopRightRadius: 2}}/>)}</View>
+          <View style={{height: 1, backgroundColor: c.border}}/>
+          <View style={{flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 2}}>{profitDaily.map(day => <View
+            key={day.date}
+            style={{flex: 1, height: `${Math.max(0, -day.value) / profitMax * 100}%`, backgroundColor: c.error, borderBottomLeftRadius: 2, borderBottomRightRadius: 2}}/>)}</View>
+        </View>
+        <DayTicks dates={dates}/>
+      </>}
+  </Card>;
 }
 
 function InvestmentOverviewCard() {
@@ -204,7 +288,7 @@ export function Accounts() {
   const inactiveCount = accounts.filter(a => a.status === 'INACTIVE').length;
   const closedCount = accounts.filter(a => a.status === 'CLOSED').length;
 
-  return <Screen title={t('Đầu tư')}><InvestmentNav active="accounts"/><InvestmentOverviewCard/><Row><View
+  return <Screen title={t('Đầu tư')}><InvestmentNav active="accounts"/><InvestmentMonthCard/><InvestmentOverviewCard/><Row><View
     style={{flex: 1}}><T size={19} bold>{t('Danh sách tài khoản đầu tư')}</T><T size={11}
                                                                                 color={c.muted}>{t('Quản lý định danh và thông tin xác thực dữ liệu')}</T></View><Badge>{t('{{n}} tài khoản', {n: accounts.length})}</Badge></Row><Row
     style={{alignItems: 'flex-end'}}><View style={{flex: 1}}><Field label={t('Tìm tài khoản')} value={query}

@@ -27,7 +27,7 @@ import {router, useFocusEffect, usePathname} from 'expo-router';
 import {colors as c, fonts, useTheme} from './theme';
 import {useDemo} from './store';
 import {useLanguage, useT} from './i18n';
-import {useNotificationApi} from './notificationApi';
+import {useNotificationSocket} from './notificationApi';
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
 export const go = (screen: string, params: Record<string, string> = {}) => router.push({
@@ -320,30 +320,23 @@ export function useNotice() {
 }
 
 function NotificationBell() {
-  const api = useNotificationApi();
   const {colors: c} = useTheme();
   const [count, setCount] = useState(0);
+  const [enabled, setEnabled] = useState(false);
   useFocusEffect(useCallback(() => {
     let active = true;
-    const refresh = () => AsyncStorage.getItem('kira-life-notifications').then(value => {
+    AsyncStorage.getItem('kira-life-notifications').then(value => {
       if (!active) return;
-      if (value === 'false') {
-        setCount(0);
-        return;
-      }
-      api.unreadCount().then(result => {
-        if (active) setCount(result.count);
-      }).catch(() => {
-      });
+      setEnabled(value !== 'false');
+      if (value === 'false') setCount(0);
     }).catch(() => {
     });
-    refresh();
-    const timer = setInterval(refresh, 30000);
     return () => {
       active = false;
-      clearInterval(timer);
+      setEnabled(false);
     };
   }, []));
+  useNotificationSocket(enabled, push => setCount(push.unreadCount));
   const t = useT();
   return <Touch accessibilityRole="button" accessibilityLabel={t('Thông báo')}
                 accessibilityHint={count ? t('{{n}} thông báo chưa đọc', {n: count}) : undefined}

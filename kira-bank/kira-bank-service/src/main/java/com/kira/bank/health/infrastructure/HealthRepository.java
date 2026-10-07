@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kira.bank.health.application.HealthDtos.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Repository
 @RequiredArgsConstructor
@@ -50,6 +53,10 @@ public class HealthRepository {
 
     public List<Weight> weights(long user) {
         return jdbc.query("SELECT measured_on,kg FROM health_weights WHERE user_id=? ORDER BY measured_on DESC", (r, n) -> new Weight(r.getDate(1).toLocalDate(), r.getDouble(2)), user);
+    }
+
+    public Weight latestWeight(long user, LocalDate onOrBefore) {
+        return jdbc.query("SELECT measured_on,kg FROM health_weights WHERE user_id=? AND measured_on<=? ORDER BY measured_on DESC LIMIT 1", (r, n) -> new Weight(r.getDate(1).toLocalDate(), r.getDouble(2)), user, onOrBefore).stream().findFirst().orElse(null);
     }
 
     public void weight(long user, Weight w) {
@@ -121,13 +128,20 @@ public class HealthRepository {
     }
 
     public void sync(long user, Sync s) {
-        for (Day d : s.days())
-            jdbc.update("INSERT INTO health_days(user_id,day,data) VALUES (?,?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)", user, d.date(), json(d));
+        if (!s.days().isEmpty())
+            jdbc.batchUpdate("INSERT INTO health_days(user_id,day,data) VALUES (?,?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)",
+                s.days().stream().map(d -> new Object[]{user, d.date(), json(d)}).toList());
         jdbc.update("UPDATE health_devices SET last_revision=?,last_synced_at=CURRENT_TIMESTAMP(6) WHERE user_id=?", s.revision(), user);
     }
 
     public Day day(long user, LocalDate date) {
         return jdbc.query("SELECT data FROM health_days WHERE user_id=? AND day=?", (r, n) -> read(r.getString(1), Day.class), user, date).stream().findFirst().orElse(null);
+    }
+
+    public Map<LocalDate, Day> days(long user, LocalDate from, LocalDate to) {
+        Map<LocalDate, Day> days = new HashMap<>();
+        jdbc.query("SELECT day,data FROM health_days WHERE user_id=? AND day BETWEEN ? AND ?", (RowCallbackHandler) r -> days.put(r.getDate(1).toLocalDate(), read(r.getString(2), Day.class)), user, from, to);
+        return days;
     }
 
     public void expireJobs(long user) {

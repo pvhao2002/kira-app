@@ -1,8 +1,11 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {ActivityIndicator, Pressable, View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {dateLabel} from './data';
-import {notificationErrorMessage, NotificationResponse, useNotificationApi} from './notificationApi';
+import * as PushNotifications from 'expo-notifications';
+import {useAuth} from './auth';
+import {notificationErrorMessage, NotificationResponse, useNotificationApi, useNotificationSocket} from './notificationApi';
+import {syncPushRegistration} from './push';
 import {useT} from './i18n';
 import {useTheme} from './theme';
 import {Badge, Button, Card, Chips, Empty, go, Icon, Info, Row, Screen, T} from './ui';
@@ -76,9 +79,17 @@ export function Notifications() {
       setError('');
     }).catch(e => setError(t(notificationErrorMessage(e)))).finally(() => setLoading(false));
   }, [t]);
+  const [focused, setFocused] = useState(false);
   useFocusEffect(useCallback(() => {
     load();
+    setFocused(true);
+    return () => setFocused(false);
   }, [load]));
+  useNotificationSocket(focused, push => {
+    setUnread(push.unreadCount);
+    const created = push.notification;
+    if (created) setItems(previous => [created, ...previous.filter(item => item.id !== created.id)]);
+  });
 
   async function open(item: NotificationResponse) {
     let current = item;
@@ -128,4 +139,29 @@ export function Notifications() {
                                                                                                 onOpen={() => open(item)}/>) :
       <Empty title={filter === 'unread' ? t('Không có thông báo chưa đọc') : t('Chưa có thông báo')}
              description={t('Các cảnh báo mới sẽ xuất hiện tại đây.')}/>}</Screen>;
+}
+
+let handledPushResponse: string | undefined;
+
+/** Keeps this device's push token registered for the signed-in account and opens a tapped push notification. */
+export function PushBridge() {
+  const {session, requestJson} = useAuth();
+  const api = useNotificationApi();
+  const userId = session?.user.id;
+  useEffect(() => {
+    if (userId) syncPushRegistration(requestJson);
+  }, [userId]);
+  const response = PushNotifications.useLastNotificationResponse();
+  useEffect(() => {
+    if (!response || response.actionIdentifier !== PushNotifications.DEFAULT_ACTION_IDENTIFIER) return;
+    const id = response.notification.request.identifier;
+    if (handledPushResponse === id) return; // the last response survives lock/unlock remounts
+    handledPushResponse = id;
+    const data = response.notification.request.content.data ?? {};
+    if (typeof data.notificationId === 'number') api.markRead(data.notificationId).catch(() => {
+    });
+    const target = notificationTarget(typeof data.deepLink === 'string' ? data.deepLink : null);
+    if (target) go(target.page, target.params); else go('notifications');
+  }, [response]);
+  return null;
 }

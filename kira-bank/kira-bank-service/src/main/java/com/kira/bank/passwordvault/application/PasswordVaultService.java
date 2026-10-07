@@ -46,10 +46,12 @@ public class PasswordVaultService {
     @Transactional(readOnly = true)
     public List<ModuleResponse> modules(Long userId, String search) {
         String normalized = normalized(search);
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : accounts.countActiveByModule(userId)) counts.put((Long) row[0], (Long) row[1]);
         return modules.findByOwnerIdAndDeletedAtIsNullOrderByNameAscIdAsc(userId).stream()
             .filter(module -> normalized.isBlank() || contains(module.getName(), normalized)
                 || contains(module.getWebsiteUrl(), normalized))
-            .map(module -> moduleResponse(userId, module)).toList();
+            .map(module -> moduleResponse(module, counts.getOrDefault(module.getId(), 0L))).toList();
     }
 
     @Transactional
@@ -235,9 +237,12 @@ public class PasswordVaultService {
     }
 
     private ModuleResponse moduleResponse(Long userId, PasswordVaultModule module) {
+        return moduleResponse(module, accounts.countByOwnerIdAndModuleIdAndDeletedAtIsNull(userId, module.getId()));
+    }
+
+    private ModuleResponse moduleResponse(PasswordVaultModule module, long accountCount) {
         return new ModuleResponse(module.getId(), module.getName(), module.getWebsiteUrl(), module.getDescription(),
-            accounts.countByOwnerIdAndModuleIdAndDeletedAtIsNull(userId, module.getId()), module.getVersion(),
-            module.getCreatedAt(), module.getUpdatedAt());
+            accountCount, module.getVersion(), module.getCreatedAt(), module.getUpdatedAt());
     }
 
     private AccountResponse accountResponse(PasswordVaultAccount account) {

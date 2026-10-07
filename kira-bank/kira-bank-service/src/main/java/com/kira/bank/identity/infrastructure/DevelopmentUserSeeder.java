@@ -27,7 +27,7 @@ public class DevelopmentUserSeeder implements ApplicationRunner {
     }
 
     private void create(String email, String password, String name, boolean admin) {
-        if (users.existsByEmailIgnoreCase(email)) return;
+        if (users.existsByEmail(email)) return;
         User u = new User();
         u.setEmail(email);
         u.setPasswordHash(encoder.encode(password));
