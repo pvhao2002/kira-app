@@ -7,6 +7,7 @@ import {DemoProvider, useDemo} from '../src/store';
 import {AuthProvider, useAuth} from '../src/auth';
 import {ImportReviewProvider} from '../src/importReview';
 import {Login} from '../src/login';
+import {PushBridge} from '../src/notifications';
 import {LanguageProvider, useT} from '../src/i18n';
 import {ThemeProvider, useTheme} from '../src/theme';
 
@@ -19,10 +20,10 @@ function Routes() {
   if (!session || !unlocked) return <Login/>;
   if (!demoReady) return <View
     style={{flex: 1, backgroundColor: colors.bg, justifyContent: 'center'}}><ActivityIndicator color={colors.primary}/></View>;
-  return <Stack
+  return <><PushBridge/><Stack
     screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.bg}, animation: 'slide_from_right'}}>
     <Stack.Screen name="(tabs)" options={{animation: 'none'}}/>
-  </Stack>;
+  </Stack></>;
 }
 
 function Inner() {

@@ -46,7 +46,7 @@ public class AuthService {
     @Transactional
     public Session register(RegisterRequest request) {
         String email = request.email().trim().toLowerCase(Locale.ROOT);
-        if (users.existsByEmailIgnoreCase(email))
+        if (users.existsByEmail(email))
             throw new ApiException(HttpStatus.CONFLICT, "EMAIL_EXISTS", "Email đã được sử dụng");
         User user = new User();
         user.setEmail(email);
@@ -63,7 +63,7 @@ public class AuthService {
         if (request.roles() != null && request.roles().stream().anyMatch(role -> !"ROLE_USER".equals(role)))
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_USER_ROLES", "Chỉ được tạo tài khoản User");
         String email = request.email().trim().toLowerCase(Locale.ROOT);
-        if (users.existsByEmailIgnoreCase(email))
+        if (users.existsByEmail(email))
             throw new ApiException(HttpStatus.CONFLICT, "EMAIL_EXISTS", "Email đã được sử dụng");
         User user = new User();
         user.setEmail(email);
@@ -99,7 +99,7 @@ public class AuthService {
     @Transactional
     public Session login(LoginRequest request, ClientIpResolver.Resolved serverIp, String userAgent) {
         loginLimiter.acquire(serverIp.ip(), request.email());
-        User user = users.findByEmailIgnoreCaseAndDeletedAtIsNull(request.email()).orElse(null);
+        User user = users.findByEmailAndDeletedAtIsNull(request.email().trim().toLowerCase(Locale.ROOT)).orElse(null);
         if (user == null) {
             // Spend the same bcrypt cost as a real check so response time does not reveal which emails exist.
             encoder.matches(request.password(), dummyPasswordHash());

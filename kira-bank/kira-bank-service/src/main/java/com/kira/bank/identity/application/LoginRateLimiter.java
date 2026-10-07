@@ -88,6 +88,8 @@ public class LoginRateLimiter {
     private Window increment(Map<String, Window> windows, String key, Duration length, Instant now) {
         if (windows.size() >= MAX_TRACKED_KEYS && !windows.containsKey(key)) {
             windows.values().removeIf(window -> !window.active(now));
+            // Still full of live windows: refuse to track (and so refuse) the new key rather than grow unbounded.
+            if (windows.size() >= MAX_TRACKED_KEYS) return new Window(now.plus(length), Integer.MAX_VALUE);
         }
         return windows.compute(key, (ignored, current) -> current == null || !current.active(now)
             ? new Window(now.plus(length), 1)

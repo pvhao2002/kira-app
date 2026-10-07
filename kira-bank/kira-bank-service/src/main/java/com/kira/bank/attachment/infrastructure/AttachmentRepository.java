@@ -3,12 +3,14 @@ package com.kira.bank.attachment.infrastructure;
 import com.kira.bank.attachment.domain.Attachment;
 import com.kira.bank.attachment.domain.AttachmentAiStatus;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
@@ -58,7 +60,9 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
     @Query("select a from Attachment a where a.id = :id and a.deletedAt is null")
     Optional<Attachment> findForUpdate(@Param("id") Long id);
 
+    // lock.timeout -2 = SKIP LOCKED: a concurrent claimer takes the next jobs instead of waiting on these rows.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     @Query("""
         select a from Attachment a
         where a.deletedAt is null

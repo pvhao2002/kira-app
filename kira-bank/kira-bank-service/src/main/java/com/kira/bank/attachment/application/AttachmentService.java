@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -58,6 +59,7 @@ public class AttachmentService {
     private final AiJobProperties jobProperties;
     private final ObjectMapper objectMapper;
     private final NotificationService notifications;
+    private final TransactionTemplate transactions;
     @Value("${investment.transaction-import.time-zone:Asia/Ho_Chi_Minh}")
     private String importTimeZone;
 
@@ -126,8 +128,25 @@ public class AttachmentService {
         return upload(userId, flow, documentType, file, null);
     }
 
-    @Transactional
+    /** Stores and records a file. The R2 PUT runs before the (short) DB transaction, never inside it. */
     public AttachmentResponse upload(Long userId, String flow, String documentType, MultipartFile file, Integer imageNumber) throws IOException {
+        PreparedUpload prepared = store(userId, flow, documentType, file, imageNumber);
+        return transactions.execute(status -> record(userId, prepared));
+    }
+
+    /**
+     * A validated file already written to R2, or an existing attachment whose AI result can be reused. Persist it with
+     * {@link #record} inside the caller's transaction.
+     */
+    public record PreparedUpload(String flow, String documentType, String key, Long r2AccountId, String originalName,
+                                 String mimeType, long sizeBytes, String sha256, Attachment reusable) {
+    }
+
+    /**
+     * Validates, dedupes and uploads to R2 without any DB transaction, so callers can upload several files before
+     * opening one short transaction for the rows. A failed transaction afterwards leaves only an orphan R2 object.
+     */
+    public PreparedUpload store(Long userId, String flow, String documentType, MultipartFile file, Integer imageNumber) throws IOException {
         String normalizedFlow = normalizeFlow(flow);
         String normalizedDocumentType = normalizeDocumentType(documentType);
         if (file == null || file.isEmpty() || file.getSize() > MAX_FILE_SIZE) {
@@ -142,33 +161,41 @@ public class AttachmentService {
                     userId, normalizedFlow, normalizedDocumentType, hash, INVESTMENT_AI_SCHEMA_VERSION);
             if (reusable.isPresent() && reusable.get().getAiResult() != null
                 && List.of(AttachmentAiStatus.READY, AttachmentAiStatus.CONFIRMED).contains(reusable.get().getAiStatus())) {
-                return toResponse(reusable.get());
+                return new PreparedUpload(normalizedFlow, normalizedDocumentType, null, null, null, mimeType,
+                    file.getSize(), hash, reusable.get());
             }
         }
         String key = isInvestmentReceipt(normalizedFlow, normalizedDocumentType) && imageNumber != null
             ? investmentReceiptKey(userId, imageNumber, mimeType)
             : userId + "/" + UUID.randomUUID() + extensionFor(mimeType);
         R2StorageService.StoredObject stored = storage.upload(key, data, mimeType);
+        return new PreparedUpload(normalizedFlow, normalizedDocumentType, key, stored.accountId(),
+            safeOriginalName(file.getOriginalFilename(), "document"), mimeType, file.getSize(), hash, null);
+    }
 
+    @Transactional
+    public AttachmentResponse record(Long userId, PreparedUpload prepared) {
+        if (prepared.reusable() != null) return toResponse(prepared.reusable());
+        boolean receipt = isInvestmentReceipt(prepared.flow(), prepared.documentType());
         Attachment attachment = new Attachment();
         attachment.setUserId(userId);
-        attachment.setModule(normalizedFlow);
-        attachment.setDocumentType(normalizedDocumentType);
-        attachment.setStorageKey(key);
-        attachment.setR2AccountId(stored.accountId());
-        attachment.setOriginalName(safeOriginalName(file.getOriginalFilename(), "document"));
-        attachment.setMimeType(mimeType);
-        attachment.setSizeBytes(file.getSize());
-        attachment.setSha256(hash);
+        attachment.setModule(prepared.flow());
+        attachment.setDocumentType(prepared.documentType());
+        attachment.setStorageKey(prepared.key());
+        attachment.setR2AccountId(prepared.r2AccountId());
+        attachment.setOriginalName(prepared.originalName());
+        attachment.setMimeType(prepared.mimeType());
+        attachment.setSizeBytes(prepared.sizeBytes());
+        attachment.setSha256(prepared.sha256());
         attachment.setCreatedBy(userId);
         attachment.setUpdatedBy(userId);
-        if (isInvestmentReceipt(normalizedFlow, normalizedDocumentType)) {
+        if (receipt) {
             attachment.setAiStatus(AttachmentAiStatus.PENDING);
             attachment.setAiSchemaVersion(INVESTMENT_AI_SCHEMA_VERSION);
             attachment.setAiNextAttemptAt(Instant.now());
         }
         Attachment saved = repository.saveAndFlush(attachment);
-        if (isInvestmentReceipt(normalizedFlow, normalizedDocumentType)) {
+        if (receipt) {
             appendEvent(saved, null, AttachmentAiStatus.PENDING, "INITIAL_UPLOAD", InvestmentAiJobEventActor.USER);
         }
         return toResponse(saved);
@@ -186,20 +213,20 @@ public class AttachmentService {
             userId, INVESTMENT_MODULE, RECEIPT_DOCUMENT_TYPE, statuses, pageable).map(this::toResponse);
     }
 
-    @Transactional(readOnly = true)
+    // No transaction: the R2 GET must not hold a DB connection; the lookup is a single query.
     public AttachmentContent content(Long userId, Long attachmentId) {
         Attachment attachment = owned(attachmentId, userId);
         return content(attachment);
     }
 
-    @Transactional(readOnly = true)
+    // No transaction: the R2 GET must not hold a DB connection; the lookup is a single query.
     public AttachmentContent investmentJobContent(Long userId, Long attachmentId) {
         Attachment attachment = owned(attachmentId, userId);
         requireInvestmentJob(attachment);
         return content(attachment);
     }
 
-    @Transactional(readOnly = true)
+    // No transaction: the R2 GET must not hold a DB connection; the lookup is a single query.
     public AttachmentContent investmentJobContentAsAdmin(Long attachmentId) {
         Attachment attachment = repository.findById(attachmentId)
             .filter(value -> value.getDeletedAt() == null)

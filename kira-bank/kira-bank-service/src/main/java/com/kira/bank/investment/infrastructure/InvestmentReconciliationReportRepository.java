@@ -18,8 +18,7 @@ public interface InvestmentReconciliationReportRepository extends JpaRepository<
 
     Page<InvestmentReconciliationReport> findByDeletedAtIsNull(Pageable pageable);
 
-    @Query("select r from InvestmentReconciliationReport r where r.deletedAt is null and (:status is null or r.status = :status)")
-    Page<InvestmentReconciliationReport> findByStatusOrAll(@Param("status") InvestmentReconciliationReportStatus status, Pageable pageable);
+    Page<InvestmentReconciliationReport> findByStatusAndDeletedAtIsNull(InvestmentReconciliationReportStatus status, Pageable pageable);
 
     Optional<InvestmentReconciliationReport> findByIdAndUserIdAndDeletedAtIsNull(Long id, Long userId);
 

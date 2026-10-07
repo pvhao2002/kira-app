@@ -1,6 +1,7 @@
 package com.kira.bank.creditcard.infrastructure;
 
 import com.kira.bank.creditcard.domain.CardTransaction;
+import com.kira.bank.creditcard.domain.CardTransactionSource;
 import com.kira.bank.creditcard.domain.CardTransactionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,8 @@ public interface CardTransactionRepository extends JpaRepository<CardTransaction
     Optional<CardTransaction> findByIdAndUserIdAndDeletedAtIsNull(Long id, Long userId);
 
     Optional<CardTransaction> findByUserCardIdAndDedupKey(Long userCardId, byte[] dedupKey);
+
+    List<CardTransaction> findByUserCardIdAndDedupKeyIn(Long userCardId, Collection<byte[]> dedupKeys);
 
     @Query("""
         select t from CardTransaction t
@@ -35,8 +38,8 @@ public interface CardTransactionRepository extends JpaRepository<CardTransaction
 
     List<CardTransaction> findByStatementIdAndDeletedAtIsNull(Long statementId);
 
-    List<CardTransaction> findByUserCardIdInAndStatementIdIsNullAndTransactionDateGreaterThanEqualAndDeletedAtIsNull(
-        Collection<Long> cardIds, LocalDate fromDate);
+    List<CardTransaction> findByUserCardIdAndStatementIdIsNullAndSourceAndTransactionDateBetweenAndDeletedAtIsNull(
+        Long userCardId, CardTransactionSource source, LocalDate fromDate, LocalDate toDate);
 
     /** Cross-card listing. {@code descriptionLike} is already lower-cased, LIKE-escaped with '!' and wrapped in '%'. */
     @Query("""

@@ -15,9 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.kira.bank.investment.application.InvestmentReconciliationReportDtos.*;
 import static com.kira.bank.shared.web.ApiTypes.PageMeta;
@@ -78,7 +78,10 @@ public class InvestmentReconciliationReportService {
 
     @Transactional(readOnly = true)
     public PageResponse<ReportResponse> all(Pageable pageable, InvestmentReconciliationReportStatus status) {
-        Page<InvestmentReconciliationReport> page = reports.findByStatusOrAll(status, pageable);
+        // Separate queries so the status filter can use the (status, created_at) index.
+        Page<InvestmentReconciliationReport> page = status == null
+            ? reports.findByDeletedAtIsNull(pageable)
+            : reports.findByStatusAndDeletedAtIsNull(status, pageable);
         return page(page, null, true);
     }
 
@@ -111,11 +114,36 @@ public class InvestmentReconciliationReportService {
     }
 
     private PageResponse<ReportResponse> page(Page<InvestmentReconciliationReport> page, Long userId, boolean admin) {
-        List<ReportResponse> data = page.getContent().stream().map(report -> {
+        List<InvestmentReconciliationReport> content = page.getContent();
+        // Batch-load related rows, then apply the same ownership filters as accountOrNull/transactionOrNull in memory.
+        Map<Long, InvestmentAccount> accountsById = byId(accounts.findAllById(ids(content,
+            InvestmentReconciliationReport::getInvestmentAccountId)), InvestmentAccount::getId);
+        Map<Long, InvestmentAccountTransaction> transactionsById = byId(transactions.findAllById(ids(content,
+            InvestmentReconciliationReport::getTransactionId)), InvestmentAccountTransaction::getId);
+        Map<Long, List<InvestmentReconciliationReportEvent>> eventsByReport = content.isEmpty() ? Map.of()
+            : events.findByReportIdInOrderByReportIdAscCreatedAtAscIdAsc(ids(content, InvestmentReconciliationReport::getId))
+            .stream().collect(Collectors.groupingBy(InvestmentReconciliationReportEvent::getReportId));
+        List<ReportResponse> data = content.stream().map(report -> {
             Long ownerId = admin ? report.getUserId() : userId;
-            return response(report, accountOrNull(ownerId, report.getInvestmentAccountId()), transactionOrNull(report, ownerId));
+            InvestmentAccount account = ownerId == null || report.getInvestmentAccountId() == null ? null
+                : accountsById.get(report.getInvestmentAccountId());
+            if (account != null && (!ownerId.equals(account.getUserId()) || account.getDeletedAt() != null)) account = null;
+            InvestmentAccountTransaction transaction = ownerId == null || report.getTransactionId() == null ? null
+                : transactionsById.get(report.getTransactionId());
+            if (transaction != null && (!ownerId.equals(transaction.getUserId())
+                || !Objects.equals(report.getInvestmentAccountId(), transaction.getInvestmentAccountId())
+                || transaction.getDeletedAt() != null)) transaction = null;
+            return response(report, account, transaction, eventsByReport.getOrDefault(report.getId(), List.of()));
         }).toList();
         return new PageResponse<>(data, new PageMeta(page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages()));
+    }
+
+    private List<Long> ids(List<InvestmentReconciliationReport> content, Function<InvestmentReconciliationReport, Long> id) {
+        return content.stream().map(id).filter(Objects::nonNull).distinct().toList();
+    }
+
+    private <T> Map<Long, T> byId(List<T> rows, Function<T, Long> id) {
+        return rows.stream().collect(Collectors.toMap(id, Function.identity()));
     }
 
     private InvestmentAccount account(Long userId, Long accountId) {
@@ -135,7 +163,13 @@ public class InvestmentReconciliationReportService {
 
     private ReportResponse response(InvestmentReconciliationReport report, InvestmentAccount account,
                                     InvestmentAccountTransaction transaction) {
-        List<ReportEventResponse> history = events.findByReportIdOrderByCreatedAtAscIdAsc(report.getId()).stream()
+        return response(report, account, transaction, events.findByReportIdOrderByCreatedAtAscIdAsc(report.getId()));
+    }
+
+    private ReportResponse response(InvestmentReconciliationReport report, InvestmentAccount account,
+                                    InvestmentAccountTransaction transaction,
+                                    List<InvestmentReconciliationReportEvent> reportEvents) {
+        List<ReportEventResponse> history = reportEvents.stream()
             .map(event -> new ReportEventResponse(event.getFromStatus(), event.getToStatus(), event.getNote(), event.getCreatedAt()))
             .toList();
         return new ReportResponse(report.getId(), report.getInvestmentAccountId(),

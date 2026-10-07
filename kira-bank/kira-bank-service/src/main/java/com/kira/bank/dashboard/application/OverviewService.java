@@ -31,11 +31,12 @@ public class OverviewService {
         var summary = new CreditSummary(dashboard.totalCreditLimit(), dashboard.currentBalance(), dashboard.availableCredit(),
             dashboard.utilizationRate(), dashboard.currency(), dashboard.banks().size(),
             dashboard.banks().stream().mapToInt(CreditCardDashboardDtos.BankDebtResponse::cardCount).sum());
+        var counts = repository.dueCounts(userId, today);
         return new Credit(Instant.now(), summary,
-            repository.dues(userId, DueWindow.OVERDUE, today),
-            repository.dues(userId, DueWindow.DUE_TODAY, today),
-            repository.dues(userId, DueWindow.DUE_THIS_WEEK, today),
-            repository.dues(userId, DueWindow.NEEDS_INPUT, today));
+            repository.dues(userId, DueWindow.OVERDUE, today, counts.get(DueWindow.OVERDUE)),
+            repository.dues(userId, DueWindow.DUE_TODAY, today, counts.get(DueWindow.DUE_TODAY)),
+            repository.dues(userId, DueWindow.DUE_THIS_WEEK, today, counts.get(DueWindow.DUE_THIS_WEEK)),
+            repository.dues(userId, DueWindow.NEEDS_INPUT, today, counts.get(DueWindow.NEEDS_INPUT)));
     }
 
     public Tutoring tutoring(Long userId) {

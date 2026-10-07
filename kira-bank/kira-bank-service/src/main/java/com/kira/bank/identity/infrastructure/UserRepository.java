@@ -15,9 +15,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     org.springframework.data.domain.Page<User> searchActiveRecords(@Param("search") String search,
                                                                    org.springframework.data.domain.Pageable pageable);
 
-    Optional<User> findByEmailIgnoreCaseAndDeletedAtIsNull(String email);
+    Optional<User> findByEmailAndDeletedAtIsNull(String email);
 
-    boolean existsByEmailIgnoreCase(String email);
+    boolean existsByEmail(String email);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.id = :id and u.deletedAt is null")

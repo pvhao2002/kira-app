@@ -18,6 +18,7 @@
       "expo-font",
       "expo-status-bar",
       "expo-secure-store",
+      "expo-notifications",
       [
         "expo-local-authentication",
         {

@@ -2,6 +2,7 @@ package com.kira.bank.creditcard.application;
 
 import com.kira.bank.ai.AiDocumentService;
 import com.kira.bank.attachment.R2StorageService;
+import com.kira.bank.attachment.domain.Attachment;
 import com.kira.bank.attachment.infrastructure.AttachmentRepository;
 import com.kira.bank.creditcard.domain.CardStatementImport;
 import com.kira.bank.creditcard.domain.CardStatementImportFile;
@@ -17,8 +18,11 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** Fallback for imports the immediate runner could not start, retries, stale runs and 30-day image purge. */
 @Component
@@ -63,11 +67,19 @@ public class CardStatementImportScheduler {
         Instant now = Instant.now();
         List<CardStatementImport> expired = importRepository.findExpired(List.of(CardStatementImportStatus.READY,
             CardStatementImportStatus.CONFIRMED, CardStatementImportStatus.FAILED, CardStatementImportStatus.CANCELLED), now, PageRequest.of(0, 200));
+        if (expired.isEmpty()) return;
+        // Files and attachments for the whole batch in two queries instead of one per import and per file.
+        Map<Long, List<CardStatementImportFile>> filesByImport = files
+            .findByImportIdInAndDeletedAtIsNullOrderByPageNumberAsc(
+                expired.stream().map(CardStatementImport::getId).toList())
+            .stream().collect(Collectors.groupingBy(CardStatementImportFile::getImportId));
+        Map<Long, Attachment> attachmentsById = attachments.findAllById(filesByImport.values().stream()
+                .flatMap(List::stream).map(CardStatementImportFile::getAttachmentId).distinct().toList())
+            .stream().collect(Collectors.toMap(Attachment::getId, Function.identity()));
         for (CardStatementImport statementImport : expired) {
             boolean allPurged = true;
-            for (CardStatementImportFile file :
-                files.findByImportIdAndDeletedAtIsNullOrderByPageNumberAsc(statementImport.getId())) {
-                allPurged &= purgeAttachment(file.getAttachmentId(), now);
+            for (CardStatementImportFile file : filesByImport.getOrDefault(statementImport.getId(), List.of())) {
+                allPurged &= purgeAttachment(file.getAttachmentId(), attachmentsById.get(file.getAttachmentId()), now);
             }
             if (allPurged) {
                 statementImport.setStoragePurgedAt(now);
@@ -76,8 +88,7 @@ public class CardStatementImportScheduler {
         }
     }
 
-    private boolean purgeAttachment(Long attachmentId, Instant now) {
-        var attachment = attachments.findById(attachmentId).orElse(null);
+    private boolean purgeAttachment(Long attachmentId, Attachment attachment, Instant now) {
         if (attachment == null || attachment.getStoragePurgedAt() != null) return true;
         try {
             storage.delete(attachment.getR2AccountId(), attachment.getStorageKey());

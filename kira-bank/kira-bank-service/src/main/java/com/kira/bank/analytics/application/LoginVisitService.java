@@ -61,7 +61,7 @@ public class LoginVisitService {
     }
 
     public String validate(Instant from, Instant to, String ip, int page, int size) {
-        if (!from.isBefore(to) || Duration.between(from, to).compareTo(Duration.ofDays(91)) > 0 || page < 0 || page > 100000 || size < 1 || size > 100)
+        if (!from.isBefore(to) || Duration.between(from, to).compareTo(Duration.ofDays(91)) > 0 || page < 0 || size < 1 || size > 100 || (long) page * size > 100_000)
             throw new ApiException(HttpStatus.BAD_REQUEST, "VISIT_FILTER_INVALID", "Choose a range up to 91 days and a valid page");
         if (ip.isBlank()) return "";
         String normalized = ClientIpResolver.normalize(ip.trim());

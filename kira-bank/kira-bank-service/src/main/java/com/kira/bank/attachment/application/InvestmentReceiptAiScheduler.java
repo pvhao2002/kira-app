@@ -82,8 +82,9 @@ public class InvestmentReceiptAiScheduler {
             .map(AiDocumentService.AiInputDocument::attachmentId)
             .toList();
         try {
-            log.info("Calling Cloudflare AI for {} investment receipt(s), attachmentIds={}, provider={}",
-                documents.size(), attachmentIds, ai.safeConfigurationSummary());
+            log.info("Calling Cloudflare AI for {} investment receipt(s), attachmentIds={}", documents.size(), attachmentIds);
+            // The provider summary loads and decrypts every account; only build it when debugging.
+            if (log.isDebugEnabled()) log.debug("AI provider: {}", ai.safeConfigurationSummary());
             AiDocumentService.AiBatchResponse response = ai.analyzeBatch(documents);
             // The model sometimes splits one attachment's transactions across several result
             // entries that all share the same attachmentId instead of one entry with them all

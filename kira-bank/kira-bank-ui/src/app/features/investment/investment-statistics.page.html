@@ -11,6 +11,21 @@
   <button class="btn primary apply" type="button" [disabled]="rangeInvalid()" (click)="apply()">{{ i18n.t('investmentStatistics.apply') }}</button>
 </section>
 
+<section class="panel">
+  <header class="panel-heading"><div><span class="eyebrow">{{ month().data?.fromDate }} – {{ month().data?.toDate }}</span><h2>{{ i18n.t('investmentStatistics.currentMonth') }}</h2></div></header>
+  @if (month().loading && !month().data) { <div class="state"><span class="spinner"></span>{{ i18n.t('investmentStatistics.loading') }}</div> }
+  @else if (month().failed) { <div class="state error">{{ i18n.t('investmentStatistics.error') }} <button class="btn ghost" type="button" (click)="loadMonth()">{{ i18n.t('investmentStatistics.retry') }}</button></div> }
+  @else if (monthFlow(); as flow) {
+    <div class="metric-grid four"><article><small>{{ i18n.t('investmentStatistics.deposits') }}</small><strong>{{ money(flow.deposits, flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.withdrawals') }}</small><strong>{{ money(flow.withdrawals, flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.profit') }}</small><strong class="net-amount" [class.positive]="flow.withdrawals - flow.deposits >= 0" [class.negative]="flow.withdrawals - flow.deposits < 0">{{ money(flow.withdrawals - flow.deposits, flow.currency) }}</strong></article><article><small>{{ i18n.t('investmentStatistics.transactions') }}</small><strong>{{ flow.totalCount }}</strong></article></div>
+    @if (!flow.totalCount) { <div class="empty">{{ i18n.t('investmentStatistics.noFlow') }}</div> } @else {
+      <div class="chart-heading"><h3>{{ i18n.t('investmentStatistics.monthDepositWithdrawal') }}</h3><div class="legend"><span class="deposit-key"></span>{{ i18n.t('investmentStatistics.deposits') }}<span class="withdrawal-key"></span>{{ i18n.t('investmentStatistics.withdrawals') }}</div></div>
+      <div class="chart-scroll"><div class="chart-bars">@for (point of flow.daily; track point.date) { <div class="chart-day" tabindex="0" [attr.aria-label]="date(point.date) + ' · ' + money(point.deposits, flow.currency) + ' / ' + money(point.withdrawals, flow.currency)" [title]="date(point.date) + ' · ' + money(point.deposits, flow.currency) + ' / ' + money(point.withdrawals, flow.currency)"><div class="bar-pair"><span class="deposit-bar" [style.height.%]="monthChartHeight(point.deposits)"></span><span class="withdrawal-bar" [style.height.%]="monthChartHeight(point.withdrawals)"></span></div>@if ($index % 5 === 0 || $last) { <small>{{ date(point.date) }}</small> }</div> }</div></div>
+      <div class="chart-heading"><h3>{{ i18n.t('investmentStatistics.monthProfit') }}</h3></div>
+      <div class="chart-scroll"><div class="month-bars">@for (day of monthProfitDaily(); track day.date) { <div class="month-col" tabindex="0" [attr.aria-label]="date(day.date) + ' · ' + money(day.value, flow.currency)" [title]="date(day.date) + ' · ' + money(day.value, flow.currency)"><div class="month-bar-top">@if (day.value > 0) { <span class="month-bar positive" [style.height.%]="monthProfitHeight(day.value)"></span> }</div><div class="month-bar-zero"></div><div class="month-bar-bottom">@if (day.value < 0) { <span class="month-bar negative" [style.height.%]="monthProfitHeight(day.value)"></span> }</div><small [style.visibility]="$index % 5 === 0 || $last ? 'visible' : 'hidden'">{{ date(day.date) }}</small></div> }</div></div>
+    }
+  } @else { <div class="empty">{{ i18n.t('investmentStatistics.noFlow') }}</div> }
+</section>
+
 @if (stats().loading && !stats().data) { <div class="state"><span class="spinner"></span>{{ i18n.t('investmentStatistics.loading') }}</div> }
 @else if (stats().failed) { <div class="state error">{{ i18n.t('investmentStatistics.error') }} <button class="btn ghost" type="button" (click)="loadStats()">{{ i18n.t('investmentStatistics.retry') }}</button></div> }
 @else if (stats().data; as data) {

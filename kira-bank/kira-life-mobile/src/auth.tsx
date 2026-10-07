@@ -3,6 +3,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import React, {createContext, useContext, useEffect, useRef, useState} from 'react';
 import {AppState, Platform} from 'react-native';
+import {unregisterPush} from './push';
 
 const KEY = 'kira-life-session';
 const BIOMETRIC_KEY = 'kira-life-biometric';
@@ -167,6 +168,8 @@ export function AuthProvider({children}: { children: React.ReactNode }) {
   }
 
   async function logout() {
+    // Best effort, capped so a dead network never blocks signing out.
+    if (current.current) await Promise.race([unregisterPush(requestJson), new Promise(resolve => setTimeout(resolve, 3000))]);
     const refreshToken = current.current?.refreshToken;
     await persist(null);
     setUnlocked(false);

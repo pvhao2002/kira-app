@@ -3,6 +3,7 @@ package com.kira.bank.notification.application;
 import com.kira.bank.notification.domain.Notification;
 import com.kira.bank.notification.infrastructure.NotificationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class NotificationService {
     private final NotificationRepository notifications;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public void createIfAbsent(Long userId, String type, String module, String title,
@@ -28,5 +30,6 @@ public class NotificationService {
         notification.setCreatedBy(userId);
         notification.setUpdatedBy(userId);
         notifications.save(notification);
+        events.publishEvent(new NotificationDtos.NotificationChanged(userId, NotificationDtos.NotificationResponse.of(notification)));
     }
 }
