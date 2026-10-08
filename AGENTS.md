@@ -23,7 +23,7 @@ Do not commit real secrets. Use `.env.example`, `.env.host-dev.example`, `.env.c
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **kira-app** (22582 symbols, 44895 relationships, 836 execution flows).
+This project is indexed by GitNexus as **kira-app** (28226 symbols, 55948 relationships, 787 execution flows).
 
 > Index stale? Run `node .gitnexus/run.cjs analyze --index-only` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? Bootstrap with `npx`, `bunx`, or `pnpm dlx` — e.g. `bunx gitnexus@latest analyze` (npm 11 npx crash; #1939).
 
@@ -64,3 +64,20 @@ This project is indexed by GitNexus as **kira-app** (22582 symbols, 44895 relati
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+# Default Development Behavior
+
+For implementation, bug fixing, refactoring,
+or feature development requests:
+
+- Use the dev-workflow skill as the entry point.
+- Let dev-workflow coordinate installed tools and skills.
+- Ask only essential requirement questions.
+- Do not request confirmation for routine, safe steps.
+- Respect mandatory design and safety approvals.
+- Continue through implementation and verification
+  when all required gates are satisfied.
+
+For simple questions or explanations:
+- Answer normally without invoking the full workflow.
+
