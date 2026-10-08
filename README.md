@@ -90,7 +90,9 @@ kira-app/
 ├── docker-compose*.yml   Local, crawl-only, and production stacks
 ├── nginx/                Reverse proxy config + templates
 ├── monitoring/           Grafana dashboards, Loki and Promtail configs
-├── mysql/                Primary/replica MySQL configuration
+├── model-ai/             Standalone local-model Docker Compose
+├── n8n/                  Standalone n8n + PostgreSQL Docker Compose
+├── prompt/               Reference agent prompts
 ├── scripts/              EC2 bootstrap, deploy, Swarm stack files
 └── docs/                 Design and operations notes
 ```
@@ -575,14 +577,16 @@ Portainer setup.
 
 ### CI
 
-`.github/workflows/deploy-kira-bank.yml` builds and pushes the **kira-bank** service and UI images
-when their paths change on `main`/`master`. The platform services are built and deployed manually
-via the scripts above.
+`.github/workflows/` holds `deploy-kira-bank.yml` (builds and pushes the **kira-bank** service and
+UI images when their paths change on `main`/`master`), `kira-bank-desktop-mac.yml` (macOS dmg of
+the kira-bank desktop app) and `farm-admin-desktop.yml` (farm admin desktop build). The platform
+services are built and deployed manually via the scripts above.
 
 ### Observability
 
 `monitoring/` holds Loki, Promtail (single-host and distributed) and Grafana configuration.
-`nginx/`, `mysql/` (primary + replica configs) and `docs/` cover the rest of the operational setup.
+`nginx/` and `docs/` cover the rest of the operational setup. The old `mysql/` config directory was
+removed; MySQL flags now live in the `command:` block of `docker-compose.yml`.
 
 ---
 
@@ -793,7 +797,7 @@ issues go through [SECURITY.md](SECURITY.md), never a public issue.
 Not a commitment, but the direction of travel:
 
 - [ ] Automated migrations for the platform services, replacing hand-applied SQL
-- [ ] CI for the platform modules — today only `kira-bank` has a workflow
+- [ ] CI for the platform modules — today only `kira-bank` and the farm admin desktop have workflows
 - [ ] Meaningful test coverage across the backend services
 - [ ] OpenAPI documentation published for the gateway and data-manager
 - [ ] A single Compose profile that brings up the whole stack reproducibly from images
