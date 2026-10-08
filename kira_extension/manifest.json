@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Kira AiScore Odds Copier",
+  "version": "1.0.0",
+  "description": "Copy AiScore match odds (AH, OU, Corners) to the clipboard as a prediction prompt. Hotkey: Alt+Shift+C.",
+  "content_scripts": [
+    {
+      "matches": ["https://www.aiscore.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

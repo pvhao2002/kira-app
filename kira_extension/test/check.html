@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- Self-check: open headless Chrome with --dump-dom; result lands in #result. See ../AGENTS.override.md. -->
+<html><body>
+<div id="fixture"><div class="flex odds"><div class="table flex-1 oddType"><div class="head"><i class="iconfont icon-xiala"></i> <div class="oddContent"><img src="#" alt="#" class="oddType"></div></div> <div class="row box"><span class="flex align-center">
+            Opening odds
+        </span></div><div class="row box"><span class="flex align-center">
+            Pre-match odds
+        </span></div><div class="row box"><span class="flex align-center"><img src="#" alt="#" class="liveOdds">
+            In-play odds
+        </span></div></div><div class="table flex-1 eu"><div class="head"><span>1</span> <span>X</span> <span>2</span> <div class="oddContent"></div></div> <div class="row box"><div class="flex w100"><div class="col cur-pointer"><span>2.62</span></div> <div class="col cur-pointer"><span>3.20</span></div> <div class="col cur-pointer"><span>2.40</span></div></div></div><div class="row box"><div class="flex w100"><div class="col cur-pointer"><span>2.45</span></div> <div class="col cur-pointer"><span>3.20</span></div> <div class="col cur-pointer"><span>2.60</span></div></div></div><div class="row box"><div class="flex w100"><div class="col cur-pointer"><span>7.00</span></div> <div class="col cur-pointer"><span>1.28</span></div> <div class="col cur-pointer"><span>6.00</span></div></div></div></div><div class="table flex-1 asia"><div class="head"><span>Asian Handicap</span> <div class="oddContent"></div></div> <div class="row box"><div class="flex w100"><div class="col cur-pointer"><span class="flex-1 handicap leftText">0</span> <span class="flex-1 rightText">
+                       2.02
+                        </span></div> <div class="col cur-pointer"><span class="flex-1 handicap leftText">0</span> <span class="flex-1 rightText">
+                       1.77
+                        </span></div></div></div><div class="row box"><div class="flex w100"><div class="col cur-pointer"><span class="flex-1 handicap leftText">0</span> <span class="flex-1 rightText">
+                       1.95
+                        </span></div> <div class="col cur-pointer"><span class="flex-1 handicap leftText">0</span> <span class="flex-1 rightText">
+                       1.85
+                        </span></div></div></div><div class="row box"><div class="flex w100"><div class="col cur-pointer"><span class="flex-1 handicap leftText">0</span> <span class="flex-1 rightText">
+                       2.02
+                        </span></div> <div class="col cur-pointer"><span class="flex-1 handicap leftText">0</span> <span class="flex-1 rightText">
+                       1.77
+                        </span></div></div></div></div><div class="table flex-1 bs"><div class="head"><span>Goals</span> <span>Over</span> <span>Under</span> <div class="oddContent"></div></div> <div class="row box"><div class="flex w100"><div class="col color-999 cur-pointer"><span class="handicap">
+                        2/2.5
+                    </span></div> <div class="col cur-pointer"><span>1.82</span></div> <div class="col cur-pointer"><span>1.97</span></div></div></div><div class="row box"><div class="flex w100"><div class="col color-999 cur-pointer"><span class="handicap">
+                        2/2.5
+                    </span></div> <div class="col cur-pointer"><span>1.87</span></div> <div class="col cur-pointer"><span>1.92</span></div></div></div><div class="row box"><div class="flex w100"><div class="col color-999 cur-pointer"><span class="handicap">
+                        2.5
+                    </span></div> <div class="col cur-pointer"><span>3.45</span></div> <div class="col cur-pointer"><span>1.30</span></div></div></div></div><div class="table flex-1 corner"><div class="head"><span>Corners</span> <span>Over</span> <span>Under</span> <div class="oddContent"></div></div> <div class="row box"><div class="flex w100"><div class="col color-999 cur-pointer"><div class="flex align-center">-</div></div> <div class="col cur-pointer"><div class="flex align-center">-</div></div> <div class="col cur-pointer"><div class="flex align-center">-</div></div></div></div><div class="row box"><div class="flex w100"><div class="col color-999 cur-pointer"><div class="flex align-center">-</div></div> <div class="col cur-pointer"><div class="flex align-center">-</div></div> <div class="col cur-pointer"><div class="flex align-center">-</div></div></div></div><div class="row box"><div class="flex w100"><div class="col color-999 cur-pointer"><div class="flex align-center">-</div></div> <div class="col cur-pointer"><div class="flex align-center">-</div></div> <div class="col cur-pointer"><div class="flex align-center">-</div></div></div></div></div></div></div>
+<pre id="result"></pre>
+<script src="../content.js"></script>
+<script>
+  const HEAD = 'Run 1,000 Monte Carlo simulations of this football match and recommend the bet with the best value, based on the simulated win probability (%) versus the implied probability of the odds.\nUse the following odds lines:\n';
+  const fails = [];
+  const eq = (name, got, want) => { if (got !== want) fails.push(`${name}:\n--- got\n${got}\n--- want\n${want}`); };
+
+  eq('with in-play', kiraBuildPrompt(document), HEAD +
+`- Asian Handicap:
+   + Pre-match: Home 0 @ 1.95, Away 0 @ 1.85
+   + Live: Home 0 @ 2.02, Away 0 @ 1.77
+- Goals Over/Under:
+   + Pre-match: Line 2/2.5, Over @ 1.87, Under @ 1.92
+   + Live: Line 2.5, Over @ 3.45, Under @ 1.30`);
+
+  // Pre-match only: drop the in-play label row and the last row of every market.
+  document.querySelectorAll('.flex.odds > .table').forEach((t) => t.querySelectorAll(':scope > .row')[2].remove());
+  eq('no in-play', kiraBuildPrompt(document), HEAD +
+`- Asian Handicap:
+   + Pre-match: Home 0 @ 1.95, Away 0 @ 1.85
+- Goals Over/Under:
+   + Pre-match: Line 2/2.5, Over @ 1.87, Under @ 1.92`);
+
+  document.getElementById('fixture').remove();
+  eq('no odds', kiraBuildPrompt(document), null);
+
+  document.getElementById('result').textContent = fails.length ? 'FAIL\n' + fails.join('\n\n') : 'PASS';
+</script>
+</body></html>
