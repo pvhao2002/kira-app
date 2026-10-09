@@ -30,31 +30,130 @@
     return `Line ${line}, Over @ ${over}, Under @ ${under}`;
   }
 
-  function buildPrompt(doc) {
+  function readDesktop(doc) {
     const odds = doc.querySelector('.flex.odds');
     if (!odds) return null;
     const { pre, live } = phaseRows(odds);
-    const markets = [
+    return [
       ['Asian Handicap', ah, odds.querySelector('.table.asia')],
       ['Goals Over/Under', overUnder, odds.querySelector('.table.bs')],
       ['Corners Over/Under', overUnder, odds.querySelector('.table.corner')],
-    ];
-    const found = markets.map(([name, fmt, table]) => ({ name, pre: fmt(table, pre), live: fmt(table, live) }));
-    // Any live odds on the page → the live phase is the only one worth betting; otherwise fall back to pre-match.
-    const phase = found.some((m) => m.live) ? 'live' : 'pre';
-    const label = phase === 'live' ? 'Live' : 'Pre-match';
-    const sections = found.filter((m) => m[phase]).map((m) => `- ${m.name}:\n   + ${label}: ${m[phase]}`);
+    ].map(([name, fmt, table]) => ({ name, pre: fmt(table, pre), live: fmt(table, live) }));
+  }
+
+  // ---- Mobile (m.aiscore.com): one tab per market, one block per bookmaker, rows border1/2/3 = open/pre-match/live.
+  // Pre-match is locked (lock icon, no numbers) once the match is live; the bookmaker's history popup still has it.
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function until(fn, ms = 2000) {
+    const end = Date.now() + ms;
+    let v;
+    while (!(v = fn()) && Date.now() < end) await wait(50);
+    return v || null;
+  }
+
+  const ODD = /^\d+(\.\d+)?$/;
+  const MINUTE = /^\d+(\+\d+)?\s*['’′]/;
+
+  // A side is one odds cell: optional `.handicap` line plus the price. The price may be a nested leaf span or the cell itself.
+  function sideOf(side) {
+    const leaves = [...side.querySelectorAll('span')].filter((s) => !s.children.length && !s.classList.contains('handicap'));
+    return {
+      line: text(side.querySelector('.handicap')),
+      odd: (leaves.length ? leaves : [side]).map(text).find((t) => ODD.test(t)),
+    };
+  }
+
+  function readRow(row, sideSelector) {
+    const sides = [...row.querySelectorAll(sideSelector)].map(sideOf);
+    return { lines: sides.map((s) => s.line).filter(Boolean), odds: sides.map((s) => s.odd).filter(Boolean) };
+  }
+
+  const fmtAh = ({ lines, odds }) =>
+    lines.length === 2 && odds.length === 2 ? `Home ${lines[0]} @ ${odds[0]}, Away ${lines[1]} @ ${odds[1]}` : null;
+  const fmtOu = ({ lines, odds }) =>
+    lines.length >= 1 && odds.length === 2 ? `Line ${lines[0]}, Over @ ${odds[0]}, Under @ ${odds[1]}` : null;
+
+  const openPopup = (doc) =>
+    [...doc.querySelectorAll('.van-popup')].find((p) => getComputedStyle(p).display !== 'none' && p.querySelector('ul.oddContent > li'));
+
+  // History is newest first. The earliest live row is the last one with a minute; the pre-match odd is the first valid row after it.
+  function preMatchFromPopup(popup, fmt) {
+    const rows = [...popup.querySelectorAll('ul.oddContent > li')].map((li) => ({
+      live: MINUTE.test(text(li.firstElementChild)),
+      value: fmt(readRow(li, ':scope > .oddsBox')),
+    }));
+    return rows.slice(rows.map((r) => r.live).lastIndexOf(true) + 1).find((r) => r.value)?.value ?? null;
+  }
+
+  async function readPopup(doc, company, fmt) {
+    for (const opener of [company.querySelector('.oddsBoxRight'), company.querySelector('.oddsBoxContent')]) {
+      if (!opener) continue;
+      opener.click();
+      const popup = await until(() => openPopup(doc), 1500);
+      if (!popup) continue;
+      try {
+        return preMatchFromPopup(popup, fmt);
+      } finally {
+        popup.querySelector('.top .right')?.click();
+        await until(() => !openPopup(doc), 1500);
+      }
+    }
+    return null;
+  }
+
+  async function readMobile(doc) {
+    const tabAt = (i) => doc.querySelectorAll('.oddTypesBox > span')[i];
+    if (!tabAt(1)) return null;
+    const original = [...doc.querySelectorAll('.oddTypesBox > span')].findIndex((t) => t.classList.contains('activeTab'));
+    const found = [];
+    try {
+      // Tab 0 is 1X2 (not used); tabs are positional because their labels are localized.
+      for (const [name, fmt, i] of [['Asian Handicap', fmtAh, 1], ['Goals Over/Under', fmtOu, 2], ['Corners Over/Under', fmtOu, 3]]) {
+        const tab = tabAt(i);
+        if (!tab) continue;
+        if (!tab.classList.contains('activeTab')) {
+          tab.click();
+          await until(() => tabAt(i)?.classList.contains('activeTab'), 1500);
+          await wait(100);
+        }
+        const company = doc.querySelector('.oddsContent > .oddsBox');
+        if (!company) continue;
+        const at = (n) => {
+          const row = company.querySelector(`.oddsBoxContent > .border${n}`);
+          return row ? fmt(readRow(row, ':scope > span')) : null;
+        };
+        const live = at(3);
+        const pre = at(2) || (await readPopup(doc, company, fmt));
+        found.push({ name, pre, live });
+      }
+    } finally {
+      if (original >= 0 && !tabAt(original)?.classList.contains('activeTab')) tabAt(original)?.click();
+    }
+    return found;
+  }
+
+  // Any live odds → recommend live only (pre-match stays as reference for line movement); otherwise pre-match.
+  function composePrompt(found) {
+    const hasLive = found?.some((m) => m.live);
+    const sections = (found || [])
+      .filter((m) => m.pre || m.live)
+      .map((m) => {
+        const lines = [m.pre && `   + Pre-match${hasLive ? ' (reference only)' : ''}: ${m.pre}`, m.live && `   + Live: ${m.live}`].filter(Boolean);
+        return `- ${m.name}:\n${lines.join('\n')}`;
+      });
     if (!sections.length) return null;
     return [
       'Run 1,000 Monte Carlo simulations of this football match and recommend the bet with the best value, based on the simulated win probability (%) versus the implied probability of the odds.',
-      phase === 'live'
-        ? 'Live (in-play) odds are available, so recommend live bets only; ignore pre-match odds.'
+      hasLive
+        ? 'Live (in-play) odds are available, so recommend live bets only. Use the pre-match odds only as a reference for how the lines moved.'
         : 'Only pre-match odds are available, so recommend pre-match bets.',
       'Use the following odds lines:',
       ...sections,
       'Finish with a summary: the recommended bets ranked by priority (best value first), each with its market, line, odds, simulated win probability and edge.',
     ].join('\n');
   }
+
+  const buildPrompt = (doc) => composePrompt(readDesktop(doc));
 
   function toast(msg, ok) {
     const el = document.createElement('div');
@@ -89,7 +188,7 @@
   }
 
   async function copyOdds() {
-    const prompt = buildPrompt(document);
+    const prompt = composePrompt(readDesktop(document) || (await readMobile(document)));
     if (!prompt) {
       toast('Kira: no odds found on this page', false);
       // On a phone there is no DevTools, so hand back what the page looks like for fixing the selectors.
@@ -138,6 +237,7 @@
 
   // Exposed for the headless self-check (test/check.html); harmless on the page.
   globalThis.kiraBuildPrompt = buildPrompt;
+  globalThis.kiraBuildPromptMobile = async (doc) => composePrompt(await readMobile(doc));
 
   if (globalThis.kiraBookmarklet) return void copyOdds();
 

@@ -30,7 +30,7 @@
 <script src="../content.js"></script>
 <script>
   const BASE = 'Run 1,000 Monte Carlo simulations of this football match and recommend the bet with the best value, based on the simulated win probability (%) versus the implied probability of the odds.\n';
-  const LIVE = BASE + 'Live (in-play) odds are available, so recommend live bets only; ignore pre-match odds.\nUse the following odds lines:\n';
+  const LIVE = BASE + 'Live (in-play) odds are available, so recommend live bets only. Use the pre-match odds only as a reference for how the lines moved.\nUse the following odds lines:\n';
   const PRE = BASE + 'Only pre-match odds are available, so recommend pre-match bets.\nUse the following odds lines:\n';
   const TAIL = '\nFinish with a summary: the recommended bets ranked by priority (best value first), each with its market, line, odds, simulated win probability and edge.';
   const fails = [];
@@ -38,8 +38,10 @@
 
   eq('with in-play', kiraBuildPrompt(document), LIVE +
 `- Asian Handicap:
+   + Pre-match (reference only): Home 0 @ 1.95, Away 0 @ 1.85
    + Live: Home 0 @ 2.02, Away 0 @ 1.77
 - Goals Over/Under:
+   + Pre-match (reference only): Line 2/2.5, Over @ 1.87, Under @ 1.92
    + Live: Line 2.5, Over @ 3.45, Under @ 1.30` + TAIL);
 
   // Pre-match only: drop the in-play label row and the last row of every market.

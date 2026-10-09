@@ -1,0 +1,62 @@
+<!doctype html>
+<!-- Self-check for the m.aiscore.com reader: a tiny stand-in for the Vue app (tabs swap content, arrow opens the history popup). -->
+<html><body>
+<div id="app"></div>
+<pre id="result"></pre>
+<script src="../content.js"></script>
+<script>
+  const side = (line, odd) => `<span class="flex flex-1 justify-center align-center borderR"><span class="handicap flex justify-center align-center handicapRight flex-1 justify-end"> ${line} </span> <span class="flex justify-center align-center flex-1 justify-start"> ${odd} </span></span>`;
+  const locked = '<span class="flex flex-1 justify-center align-center borderR"><i class="iconfont icon-suo"></i></span> <!----> <span class="flex flex-1 justify-center align-center"><i class="iconfont icon-suo"></i></span>';
+  const row = (n, inner) => `<div class="oddsItem flex flex-1 border${n}">${inner}</div>`;
+  const pair = (a, b) => `${side(...a)} <!----> ${side(...b)}`;
+  // Tab content. AH layout is from the real page; the Goals O/U layout (line + price per side) is assumed to match it.
+  const TABS = [
+    '<p class="oddsType flex"><span class="oddsItem"> 1 </span></p>',
+    row(1, pair(['+0.5', '1.82'], ['-0.5', '1.97'])) + row(2, locked) + row(3, pair(['+0/0.5', '2.02'], ['-0/0.5', '1.77'])),
+    row(1, pair(['2.5', '1.90'], ['2.5', '1.90'])) + row(2, pair(['2.5', '1.85'], ['2.5', '1.95'])) + row(3, pair(['3', '2.10'], ['3', '1.70'])),
+  ];
+  const li = (minute, inner) => `<li class="flex"><span class="icon firstSpan"> ${minute} </span> <span class="icon firstSpan"> 0-0 </span> ${inner}</li>`;
+  const box = (a, b) => `<span class="flex flex-1 oddsBox firstSpan"><span class="flex flex-1"><span class="handicap"> ${a[0]} </span> <span class="flex-1"> ${a[1]} </span></span><i class="iconfont icon-shangsheng"></i></span> <!----> <span class="flex flex-1 oddsBox firstSpan"><span class="flex flex-1"><span class="handicap"> ${b[0]} </span> <span class="flex-1"> ${b[1]} </span></span></span>`;
+  const lockedLi = li('', '<span class="flex flex-1 oddsBox firstSpan"><i class="iconfont icon-suo"></i></span> <!----> <span class="flex flex-1 oddsBox firstSpan"><i class="iconfont icon-suo"></i></span>');
+  const POPUPS = [
+    null,
+    li("21'", box(['+0/0.5', '2.02'], ['-0/0.5', '1.77'])) + li("15'", box(['+0/0.5', '2.00'], ['-0/0.5', '1.80'])) + lockedLi + li('', box(['+0.5', '1.88'], ['-0.5', '1.91'])) + li('', box(['+0.5', '1.82'], ['-0.5', '1.97'])),
+    li("30'", box(['3', '2.10'], ['3', '1.70'])) + li('', box(['2.5', '1.85'], ['2.5', '1.95'])),
+  ];
+  let tab = 0;
+  function render() {
+    const labels = ['1 X 2', 'Kèo châu Á', 'Tài/Xỉu'];
+    document.getElementById('app').innerHTML =
+      `<div class="oddsBox"><div class="oddTypesBox">${labels.map((l, i) => `<span class="${i === tab ? 'activeTab' : ''}"> ${l} </span>`).join(' ')}<!----></div>` +
+      `<div class="oddsContent"><div class="oddsBox flex"><div class="oddsBoxLeft"></div><div class="oddsBoxContent flex-1">${TABS[tab]}</div><div class="oddsBoxRight"><i class="iconfont icon-youjiantou"></i></div></div></div></div>`;
+    document.querySelectorAll('.oddTypesBox > span').forEach((el, i) => el.addEventListener('click', () => { tab = i; render(); }));
+    document.querySelector('.oddsBoxRight').addEventListener('click', () => {
+      const p = document.createElement('div');
+      p.className = 'van-popup';
+      p.innerHTML = `<div class="wrapper"><p class="top flex"><span class="left">bet365</span><span class="right"><i class="iconfont icon-guanbi"></i></span></p><ul class="oddContent">${POPUPS[tab] || ''}</ul></div>`;
+      p.querySelector('.top .right').addEventListener('click', () => p.remove());
+      document.body.appendChild(p);
+    });
+  }
+  render();
+  document.querySelector('.oddTypesBox > span:nth-child(2)').click(); // the app opens on AH in the failing sample
+
+  const HEAD = 'Run 1,000 Monte Carlo simulations of this football match and recommend the bet with the best value, based on the simulated win probability (%) versus the implied probability of the odds.\nLive (in-play) odds are available, so recommend live bets only. Use the pre-match odds only as a reference for how the lines moved.\nUse the following odds lines:\n';
+  const TAIL = '\nFinish with a summary: the recommended bets ranked by priority (best value first), each with its market, line, odds, simulated win probability and edge.';
+  (async () => {
+    const got = await kiraBuildPromptMobile(document);
+    const want = HEAD +
+`- Asian Handicap:
+   + Pre-match (reference only): Home +0.5 @ 1.88, Away -0.5 @ 1.91
+   + Live: Home +0/0.5 @ 2.02, Away -0/0.5 @ 1.77
+- Goals Over/Under:
+   + Pre-match (reference only): Line 2.5, Over @ 1.85, Under @ 1.95
+   + Live: Line 3, Over @ 2.10, Under @ 1.70` + TAIL;
+    const problems = [];
+    if (got !== want) problems.push(`prompt:\n--- got\n${got}\n--- want\n${want}`);
+    if (document.querySelector('.van-popup')) problems.push('popup left open');
+    if (!document.querySelector('.oddTypesBox > span:nth-child(2)').classList.contains('activeTab')) problems.push('original tab not restored');
+    document.getElementById('result').textContent = problems.length ? 'FAIL\n' + problems.join('\n\n') : 'PASS';
+  })();
+</script>
+</body></html>
