@@ -5,7 +5,7 @@
   "description": "Copy AiScore match odds (AH, OU, Corners) to the clipboard as a prediction prompt. Hotkey: Alt+Shift+C.",
   "content_scripts": [
     {
-      "matches": ["https://www.aiscore.com/*"],
+      "matches": ["https://www.aiscore.com/*", "https://m.aiscore.com/*"],
       "js": ["content.js"]
     }
   ]

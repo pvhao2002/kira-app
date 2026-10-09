@@ -39,19 +39,20 @@
       ['Goals Over/Under', overUnder, odds.querySelector('.table.bs')],
       ['Corners Over/Under', overUnder, odds.querySelector('.table.corner')],
     ];
-    const sections = markets
-      .map(([name, fmt, table]) => {
-        const lines = [['Pre-match', fmt(table, pre)], ['Live', fmt(table, live)]]
-          .filter(([, v]) => v)
-          .map(([phase, v]) => `   + ${phase}: ${v}`);
-        return lines.length ? `- ${name}:\n${lines.join('\n')}` : null;
-      })
-      .filter(Boolean);
+    const found = markets.map(([name, fmt, table]) => ({ name, pre: fmt(table, pre), live: fmt(table, live) }));
+    // Any live odds on the page → the live phase is the only one worth betting; otherwise fall back to pre-match.
+    const phase = found.some((m) => m.live) ? 'live' : 'pre';
+    const label = phase === 'live' ? 'Live' : 'Pre-match';
+    const sections = found.filter((m) => m[phase]).map((m) => `- ${m.name}:\n   + ${label}: ${m[phase]}`);
     if (!sections.length) return null;
     return [
       'Run 1,000 Monte Carlo simulations of this football match and recommend the bet with the best value, based on the simulated win probability (%) versus the implied probability of the odds.',
+      phase === 'live'
+        ? 'Live (in-play) odds are available, so recommend live bets only; ignore pre-match odds.'
+        : 'Only pre-match odds are available, so recommend pre-match bets.',
       'Use the following odds lines:',
       ...sections,
+      'Finish with a summary: the recommended bets ranked by priority (best value first), each with its market, line, odds, simulated win probability and edge.',
     ].join('\n');
   }
 
