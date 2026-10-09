@@ -32,7 +32,7 @@
       `<div class="oddsBox"><div class="oddTypesBox">${labels.map((l, i) => `<span class="${i === tab ? 'activeTab' : ''}"> ${l} </span>`).join(' ')}<!----></div>` +
       `<div class="oddsContent"><div class="oddsBox flex"><div class="oddsBoxLeft"></div><div class="oddsBoxContent flex-1">${TABS[tab]}</div><div class="oddsBoxRight"><i class="iconfont icon-youjiantou"></i></div></div></div></div>`;
     document.querySelectorAll('.oddTypesBox > span').forEach((el, i) => el.addEventListener('click', () => { tab = i; render(); }));
-    document.querySelector('.oddsBoxRight').addEventListener('click', () => {
+    document.querySelector('.oddsBoxRight i').addEventListener('click'  /* handler only on the arrow icon: clicking its parent does nothing */, () => {
       const p = document.createElement('div');
       p.className = 'van-popup';
       p.innerHTML = `<div class="wrapper"><p class="top flex"><span class="left">bet365</span><span class="right"><i class="iconfont icon-guanbi"></i></span></p><ul class="oddContent">${POPUPS[tab] || ''}</ul></div>`;

@@ -104,12 +104,24 @@
   }
 
   async function readPopup(doc, company, fmt, trace) {
-    for (const opener of [company.querySelector('.oddsBoxRight'), company.querySelector('.oddsBoxContent'), company]) {
-      if (!opener) continue;
+    // Click handlers sit on an unknown element and clicks only bubble up, so try the deepest candidates first.
+    const openers = [
+      ['arrow icon', company.querySelector('.oddsBoxRight i')],
+      ['arrow', company.querySelector('.oddsBoxRight')],
+      ['live row', company.querySelector('.oddsBoxContent > .border3')],
+      ['live row cell', company.querySelector('.oddsBoxContent > .border3 > span')],
+      ['pre-match row', company.querySelector('.oddsBoxContent > .border2')],
+      ['odds box', company.querySelector('.oddsBoxContent')],
+      ['bookmaker', company],
+    ].filter(([, el]) => el);
+    for (const [i, [label, opener]] of openers.entries()) {
       opener.click();
       // The history is fetched when the popup opens, so give a slow connection time before trying the next opener.
-      const popup = await until(() => openPopup(doc), 4000);
-      if (!popup) continue;
+      const popup = await until(() => openPopup(doc), i === 0 ? 4000 : 2000);
+      if (!popup) {
+        trace.push(`no popup after click on ${label}`);
+        continue;
+      }
       try {
         const { value, rows } = await preMatchFromPopup(popup, fmt);
         if (!value) trace.push(`popup rows=${rows.length}: ${rows.map((r) => `${r.minute || '-'}${r.value ? '+' : '?'}`).join(' ')}\n${popup.outerHTML.replace(/\s+/g, ' ').slice(-3000)}`);
@@ -120,7 +132,8 @@
         if (!(await until(() => !openPopup(doc), 1500))) close?.click();
       }
     }
-    trace.push('popup did not open');
+    const seen = [...doc.querySelectorAll('.van-popup')].map((p) => `${getComputedStyle(p).display}/li=${p.querySelectorAll('li').length}`);
+    trace.push(`popup did not open; .van-popup in page: ${seen.join(', ') || 'none'}\nbookmaker html: ${company.outerHTML.replace(/\s+/g, ' ').slice(0, 2500)}`);
     return null;
   }
 
