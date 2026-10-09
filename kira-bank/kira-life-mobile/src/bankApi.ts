@@ -135,6 +135,26 @@ export type CardTransactionRequest = {
   transactionType: 'SPENDING' | 'REFUND' | 'FEE' | 'INTEREST' | 'CASHBACK'; mccCode: string | null; cashbackRuleId: number | null;
 };
 
+export type CardTransactionType = CardTransactionRequest['transactionType'];
+export type CardTransaction = {
+  id: number; cardId: number; cardNickname: string | null; cardLastFour: string | null; statementId: number | null;
+  importId: number | null; transactionDate: string; postingDate: string | null; description: string; amount: number;
+  currency: string; transactionType: CardTransactionType; mccCode: string | null; cashbackRuleId: number | null;
+  categoryName: string | null; source: 'AI_IMPORT' | 'MANUAL'; version: number; createdAt: string;
+};
+export type CardTransactionFilter = {
+  cardId?: number; fromDate?: string; toDate?: string; type?: CardTransactionType; q?: string;
+};
+export type CardMerchantRule = {
+  id: number; pattern: string; mccCode: string; label: string | null; version: number; updatedAt: string;
+};
+export type CardMerchantRuleRequest = {
+  pattern: string; mccCode: string; label: string | null; applyToExisting?: boolean; version?: number | null;
+};
+export type CreditCardBankLimit = {
+  bankId: number; bankName: string; bankLogoUrl: string | null; creditLimit: number; currency: string; version: number;
+};
+
 export const bankErrorMessage = (error: unknown) => {
   if (!(error instanceof ApiError)) return 'Không kết nối được máy chủ. Kiểm tra kết nối mạng và thử lại.';
   if (error.code === 'BANK_NOT_FOUND') return 'Không tìm thấy ngân hàng.';
@@ -334,6 +354,27 @@ export function useBankApi() {
       method: 'PUT',
       body: JSON.stringify({currentBalance, reason, version})
     }),
+    searchCardTransactions: (filter: CardTransactionFilter, page = 0, size = 20) =>
+      requestJson<PageResponse<CardTransaction>>(`/api/v1/card-transactions${query({...filter, page, size})}`),
+    updateCardTransaction: (id: number, body: CardTransactionRequest & { version: number }) =>
+      requestJson<CardTransaction>(`/api/v1/card-transactions/${id}`, {method: 'PUT', body: JSON.stringify(body)}),
+    deleteCardTransaction: (id: number, version: number) =>
+      requestJson<void>(`/api/v1/card-transactions/${id}${query({version})}`, {method: 'DELETE'}),
+    listMerchantRules: () => requestJson<CardMerchantRule[]>('/api/v1/card-merchant-rules'),
+    createMerchantRule: (body: CardMerchantRuleRequest) =>
+      requestJson<{ rule: CardMerchantRule; updatedTransactions: number }>('/api/v1/card-merchant-rules', {
+        method: 'POST',
+        body: JSON.stringify(body)
+      }),
+    updateMerchantRule: (id: number, body: CardMerchantRuleRequest) =>
+      requestJson<CardMerchantRule>(`/api/v1/card-merchant-rules/${id}`, {method: 'PUT', body: JSON.stringify(body)}),
+    deleteMerchantRule: (id: number, version: number) =>
+      requestJson<void>(`/api/v1/card-merchant-rules/${id}${query({version})}`, {method: 'DELETE'}),
+    updateBankLimit: (bankId: number, creditLimit: number, version: number) =>
+      requestJson<CreditCardBankLimit>(`/api/v1/credit-card-bank-limits/${bankId}`, {
+        method: 'PUT',
+        body: JSON.stringify({creditLimit, version})
+      }),
     listBankBalanceHistory: (bankId: number) => requestJson<BankBalanceAdjustmentResponse[]>(`/api/v1/credit-card-bank-balances/${bankId}/history`),
   };
 }

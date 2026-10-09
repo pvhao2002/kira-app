@@ -1,4 +1,4 @@
-CREATE TABLE login_history
+CREATE TABLE IF NOT EXISTS login_history
 (
   id         BIGINT PRIMARY KEY AUTO_INCREMENT,
   user_id    BIGINT       NOT NULL,

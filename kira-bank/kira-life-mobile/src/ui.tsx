@@ -8,7 +8,6 @@ import {
   Easing,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   PressableProps,
   ScrollView,
@@ -429,7 +428,7 @@ export function Screen({title, subtitle, children, back = false, footer, sheet =
   const brandTitle = group === '/' ? t('Thẻ Tín Dụng') : group === '/investment' ? t('Đầu Tư') : group === '/travel' ? t('Du Lịch') : group === '/health' ? t('Sức Khỏe') : t('Cá Nhân');
   const page = pathname.replace(/^\//, '');
   return <KeyboardAvoidingView style={[s.screen, {backgroundColor: c.bg}]}
-                               behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                               behavior="padding">
     <View style={{backgroundColor: c.surface, paddingTop: inset.top}}><View style={s.header}>
       <Touch accessibilityRole="button" accessibilityLabel={t('Trang chủ')} onPress={() => router.replace('/')}
              style={[s.iconButton, {width: 36, height: 36, backgroundColor: c.elevated}]}><Icon

@@ -308,14 +308,17 @@ export function Profile() {
     <Switch accessibilityLabel={t('Liên kết Open Banking / VietQR')} value={openBanking}
             onValueChange={setOpenBankingPreference} trackColor={{false: c.elevated, true: c.primary}}
             thumbColor={c.surface}/>, () => {
-    })}{setting('analytics-outline', t('Danh mục đầu tư liên kết'), t('Mở danh sách tài khoản đầu tư đang quản lý.'), undefined, () => router.replace('/investment'))}{setting('camera-outline', t('Quyền thiết bị (Camera & Ảnh)'), t('Chọn hoặc chụp chứng từ giao dịch để AI nhận diện.'), undefined, requestPhotoAccess)}{setting('heart-outline', t('Sức khỏe & Apple Health'), t('Theo dõi BMI, năng lượng, nhật ký và kế hoạch tuần.'), undefined, () => go('health'))}{setting('home-outline', t('Chỗ ở & Tin trọ'), t('Theo dõi giá thuê, chi phí, khoảng cách và đánh giá tin trọ.'), undefined, () => go('lodging'))}{setting('musical-notes-outline', t('Bài hát karaoke yêu thích'), t('Lưu mã karaoke, tone và link các bài thường hát.'), undefined, () => go('favorite-songs'))}{setting('briefcase-outline', t('Theo dõi việc làm'), t('Lưu job đang cân nhắc và trạng thái ứng tuyển.'), undefined, () => go('job-tracker'))}</Card>
+    })}{setting('document-text-outline', t('Báo cáo tài chính'), t('Tổng hợp tín dụng, dòng tiền đầu tư và vận hành.'), undefined, () => go('finance-report'))}{setting('swap-horizontal-outline', t('Giao dịch thẻ tín dụng'), t('Lọc, sửa giao dịch và quy tắc merchant → MCC.'), undefined, () => go('card-transactions'))}{setting('business-outline', t('Danh mục ngân hàng'), t('Tra cứu ngân hàng hỗ trợ khi thêm thẻ.'), undefined, () => go('banks'))}{setting('analytics-outline', t('Danh mục đầu tư liên kết'), t('Mở danh sách tài khoản đầu tư đang quản lý.'), undefined, () => router.replace('/investment'))}{setting('camera-outline', t('Quyền thiết bị (Camera & Ảnh)'), t('Chọn hoặc chụp chứng từ giao dịch để AI nhận diện.'), undefined, requestPhotoAccess)}{setting('heart-outline', t('Sức khỏe & Apple Health'), t('Theo dõi BMI, năng lượng, nhật ký và kế hoạch tuần.'), undefined, () => go('health'))}{setting('home-outline', t('Chỗ ở & Tin trọ'), t('Theo dõi giá thuê, chi phí, khoảng cách và đánh giá tin trọ.'), undefined, () => go('lodging'))}{setting('musical-notes-outline', t('Bài hát karaoke yêu thích'), t('Lưu mã karaoke, tone và link các bài thường hát.'), undefined, () => go('favorite-songs'))}{setting('briefcase-outline', t('Theo dõi việc làm'), t('Lưu job đang cân nhắc và trạng thái ứng tuyển.'), undefined, () => go('job-tracker'))}</Card>
     {session?.user.roles?.includes('ADMIN') ? <><Section title={t('Quản trị hệ thống')}/><Button
       label={t('Quản lý hồ sơ tra soát')} kind="secondary" icon="shield-checkmark-outline"
       onPress={() => go('admin-investment-reports')}/><Button label={t('Theo dõi queue AI toàn hệ thống')}
                                                               kind="secondary" icon="pulse-outline"
                                                               onPress={() => go('admin-ai-queue')}/><Button
       label={t('Quản lý Cloudflare AI / R2')} kind="secondary" icon="cloud-outline"
-      onPress={() => go('admin-cloudflare')}/></> : null}
+      onPress={() => go('admin-cloudflare')}/><Button label={t('Quản lý người dùng')} kind="secondary"
+                                                      icon="people-outline" onPress={() => go('admin-users')}/><Button
+      label={t('Lượt truy cập đăng nhập')} kind="secondary" icon="globe-outline"
+      onPress={() => go('admin-login-visits')}/></> : null}
     <Section
       title={t('Tùy chọn ứng dụng')}/><Card>{setting('globe-outline', t('Ngôn ngữ hiển thị'), t('Giao diện ngôn ngữ chính'),
     <LangSwitch/>, () => {

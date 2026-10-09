@@ -23,7 +23,10 @@ import {AdminCloudflare} from '../src/adminCloudflare';
 import {AdminInvestmentQueue} from '../src/adminInvestmentQueue';
 import {AiJobDetail} from '../src/aiJobDetail';
 import {TravelEditor} from '../src/travel';
-import {BankBalanceEditor, BankBalanceHistory, BankStats} from '../src/bankStats';
+import {BankBalanceEditor, BankBalanceHistory, BankCatalog, BankLimitEditor, BankStats} from '../src/bankStats';
+import {CardTransactions} from '../src/cardTransactions';
+import {FinanceReport} from '../src/financeReport';
+import {AdminLoginVisits, AdminUsers} from '../src/admin';
 import {BillingCycleEditor, CardEditor, CardManagement} from '../src/bankCards';
 import {PaymentHistory, StatementEditor, StatementPayment, StatementsManagement} from '../src/statements';
 import {Notifications} from '../src/notifications';
@@ -70,6 +73,18 @@ export default function DetailRoute() {
         return <BankStats/>;
       case 'bank-balance':
         return <BankBalanceEditor id={id}/>;
+      case 'bank-limit':
+        return <BankLimitEditor id={id}/>;
+      case 'banks':
+        return <BankCatalog/>;
+      case 'card-transactions':
+        return <CardTransactions/>;
+      case 'finance-report':
+        return <FinanceReport/>;
+      case 'admin-users':
+        return <AdminUsers/>;
+      case 'admin-login-visits':
+        return <AdminLoginVisits/>;
       case 'bank-balance-history':
         return <BankBalanceHistory id={id}/>;
       case 'statements':

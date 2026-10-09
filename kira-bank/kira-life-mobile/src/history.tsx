@@ -1,5 +1,5 @@
 import React, {useRef, useState} from 'react';
-import {KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View} from 'react-native';
+import {KeyboardAvoidingView, Modal, Pressable, ScrollView, View} from 'react-native';
 import {router} from 'expo-router';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {dateLabel, emptyFilter, Filter, filteredTransactions, money, Transaction, typeNames, validDate} from './data';
@@ -101,7 +101,7 @@ export function FilterSheet({visible, onClose}: { visible: boolean; onClose: () 
   }
 
   return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}><KeyboardAvoidingView
-    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    behavior="padding"
     style={{flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000088'}}><Pressable accessibilityRole="button"
                                                                                            accessibilityLabel={t('Đóng bộ lọc')}
                                                                                            style={{

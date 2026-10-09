@@ -12,8 +12,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.testcontainers.containers.MySQLContainer;
 
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,18 +25,11 @@ class InvestmentReportServiceIT {
     static long accountA, accountB, accountOther;
 
     @BeforeAll
-    static void start() throws Exception {
+    static void start() {
         mysql.start();
-        // V33 exists twice in the repo (Flyway rejects duplicates); migrate a copy holding only V1..V32.
-        Path dir = Files.createTempDirectory("flyway");
-        try (var files = Files.list(Path.of("src/main/resources/db/migration"))) {
-            for (Path f : files.toList()) {
-                int version = Integer.parseInt(f.getFileName().toString().substring(1, f.getFileName().toString().indexOf("__")));
-                if (version <= 32 || (version >= 34 && version <= 36)) Files.copy(f, dir.resolve(f.getFileName()));
-            }
-        }
+        // the real, complete migration set (also guards against duplicate or broken versions)
         Flyway.configure().dataSource(mysql.getJdbcUrl(), mysql.getUsername(), mysql.getPassword())
-            .locations("filesystem:" + dir).load().migrate();
+            .locations("classpath:db/migration").load().migrate();
         jdbc = new JdbcTemplate(new DriverManagerDataSource(mysql.getJdbcUrl(), mysql.getUsername(), mysql.getPassword()));
         service = new InvestmentReportService(jdbc);
         ReflectionTestUtils.setField(service, "timeZone", "Asia/Ho_Chi_Minh");
@@ -261,5 +252,13 @@ class InvestmentReportServiceIT {
         assertEquals(0, vnd.totals().deposits().compareTo(vnd.months().stream().map(m -> m.deposits()).reduce(BigDecimal.ZERO, BigDecimal::add)));
         assertEquals(vnd.totals().transactions(), vnd.months().stream().mapToLong(m -> m.transactions()).sum());
         assertTrue(vnd.months().stream().allMatch(m -> m.month().matches("\\d{4}-\\d{2}")));
+    }
+
+    @Test
+    void theCompleteMigrationSetAppliesWithUniqueVersions() {
+        assertEquals(2L, jdbc.queryForObject("select count(*) from information_schema.tables where table_schema = database() and table_name in ('login_history','card_merchant_rules')", Long.class));
+        assertEquals(0L, jdbc.queryForObject("select count(*) from flyway_schema_history where success = 0", Long.class));
+        assertEquals(jdbc.queryForObject("select count(distinct version) from flyway_schema_history where version is not null", Long.class),
+            jdbc.queryForObject("select count(*) from flyway_schema_history where version is not null", Long.class));
     }
 }

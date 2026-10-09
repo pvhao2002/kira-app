@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {KeyboardAvoidingView, Platform, Pressable, ScrollView, View} from 'react-native';
+import {KeyboardAvoidingView, Pressable, ScrollView, View} from 'react-native';
 import {authErrorCode, useAuth} from './auth';
 import {useT} from './i18n';
 import {useTheme} from './theme';
@@ -103,7 +103,7 @@ function ManualLogin() {
   }
 
   return <KeyboardAvoidingView style={{flex: 1, backgroundColor: c.bg}}
-                               behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                               behavior="padding">
     <ScrollView keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{flexGrow: 1, justifyContent: 'center', padding: 24, gap: 24}}>
       <Brand/>

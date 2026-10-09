@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {ActivityIndicator, Pressable, Share, View} from 'react-native';
 import {router, useFocusEffect} from 'expo-router';
 import {dateLabel, money} from './data';
-import {BankBalanceAdjustmentResponse, BankDashboard, BankDebt, bankErrorMessage, useBankApi} from './bankApi';
+import {BankBalanceAdjustmentResponse, BankCatalogItem, BankDashboard, BankDebt, bankErrorMessage, useBankApi} from './bankApi';
 import {useLanguage, useT} from './i18n';
 import {useTheme} from './theme';
 import {Badge, Button, Card, Chips, Empty, Field, go, Icon, Info, Metric, Row, Screen, Section, T} from './ui';
@@ -35,7 +35,9 @@ function BankRow({bank}: { bank: BankDebt }) {
     size={10} color={c.muted}>•••• {card.lastFour} · {card.status}</T></View><T size={11}
                                                                                 color={c.primary}>{money(card.statementDebt, card.currency, lang)}</T></Row></Pressable>)}<Button
     label={t('Điều chỉnh số dư ngân hàng')} kind="secondary" icon="options-outline"
-    onPress={() => go('bank-balance', {id: String(bank.bankId)})}/></Card>;
+    onPress={() => go('bank-balance', {id: String(bank.bankId)})}/><Button
+    label={t('Điều chỉnh hạn mức chung')} kind="secondary" icon="speedometer-outline"
+    onPress={() => go('bank-limit', {id: String(bank.bankId)})}/></Card>;
 }
 
 function DebtTrend({trend, months, onMonthsChange}: {
@@ -230,5 +232,92 @@ export function BankBalanceEditor({id}: { id: string }) {
                                        multiline/><Info>{t('Điều chỉnh được lưu thành lịch sử bất biến và không làm thay đổi hạn mức tín dụng.')}</Info></Card><Button
     label={t('Xem lịch sử điều chỉnh')} kind="secondary" icon="time-outline"
     onPress={() => go('bank-balance-history', {id})}/></> : <Empty title={t('Không tìm thấy ngân hàng')}/>}
+  </Screen>;
+}
+
+export function BankLimitEditor({id}: { id: string }) {
+  const api = useBankApi();
+  const t = useT();
+  const {lang} = useLanguage();
+  const {colors: c} = useTheme();
+  const bankId = Number(id);
+  const [bank, setBank] = useState<BankDebt | null>(null);
+  const [limit, setLimit] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api.dashboard().then(result => {
+      const found = result.banks.find(item => item.bankId === bankId);
+      if (found) {
+        setBank(found);
+        setLimit(String(found.totalCreditLimit));
+      } else setError(t('Không tìm thấy ngân hàng.'));
+    }).catch(e => setError(t(bankErrorMessage(e)))).finally(() => setLoading(false));
+  }, [bankId, t]);
+
+  async function save() {
+    const amount = Number(limit);
+    if (!bank || !Number.isFinite(amount) || amount <= 0) {
+      setError(t('Hạn mức phải lớn hơn 0.'));
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await api.updateBankLimit(bank.bankId, amount, bank.creditLimitVersion);
+      router.back();
+    } catch (e) {
+      setError(t(bankErrorMessage(e)));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <Screen title={t('Hạn mức chung')} back><ActivityIndicator color={c.primary}/></Screen>;
+  return <Screen title={t('Hạn mức chung')} subtitle={bank?.bankName || t('Ngân hàng')} back
+                 footer={<Row><View style={{flex: 1}}><Button label={t('Hủy')} kind="secondary"
+                                                              onPress={() => router.back()}/></View><View
+                   style={{flex: 2}}><Button label={t('Lưu hạn mức')} icon="checkmark-circle-outline" onPress={save}
+                                             loading={saving} disabled={!bank}/></View></Row>}>
+    {error ? <Info tone="error">{error}</Info> : null}{bank ? <Card tint><T size={11}
+                                                                         color={c.primary}>{t('HẠN MỨC HIỆN TẠI')}</T><T
+    size={21} bold>{money(bank.totalCreditLimit, bank.currency, lang)}</T><Field label={t('Hạn mức chung mới')} value={limit}
+                                                                                onChangeText={value => setLimit(value.replace(/[^0-9.]/g, ''))}
+                                                                                keyboardType="decimal-pad"/><Info>{t('Hạn mức chung áp dụng cho tất cả thẻ của ngân hàng này.')}</Info></Card> :
+    <Empty title={t('Không tìm thấy ngân hàng')}/>}
+  </Screen>;
+}
+
+export function BankCatalog() {
+  const api = useBankApi();
+  const t = useT();
+  const {colors: c} = useTheme();
+  const [search, setSearch] = useState('');
+  const [items, setItems] = useState<BankCatalogItem[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const load = useCallback((nextPage: number) => {
+    setLoading(true);
+    api.listBanks(search.trim(), nextPage, 50).then(result => {
+      setItems(current => nextPage ? [...current, ...result.data] : result.data);
+      setPage(nextPage);
+      setTotalPages(result.meta.totalPages);
+      setError('');
+    }).catch(e => setError(t(bankErrorMessage(e)))).finally(() => setLoading(false));
+  }, [search, t]);
+  useEffect(() => load(0), []);
+  return <Screen title={t('Danh mục ngân hàng')} subtitle={t('Ngân hàng hỗ trợ khi thêm thẻ')} back>
+    <Field label={t('Tìm ngân hàng')} value={search} onChangeText={setSearch} returnKeyType="search"
+           onSubmitEditing={() => load(0)} placeholder={t('Tên, mã hoặc BIN')}/>
+    {error ? <Info tone="error">{error}</Info> : null}
+    {loading && !items.length ? <ActivityIndicator color={c.primary}/> : items.length ? items.map(bank => <Card
+      key={bank.id}><Row><Icon name="business-outline" size={20} color={bank.brandColor || c.primary}/><View
+      style={{flex: 1}}><T size={14} bold>{bank.shortName || bank.name}</T><T size={10}
+                                                                             color={c.muted}>{bank.name}</T></View><Badge>{bank.code}</Badge></Row>{bank.bin ?
+      <T size={10} color={c.muted}>BIN: {bank.bin}</T> : null}</Card>) : <Empty title={t('Không tìm thấy ngân hàng')}/>}
+    {page + 1 < totalPages ? <Button label={t('Tải thêm')} kind="secondary" loading={loading} onPress={() => load(page + 1)}/> : null}
   </Screen>;
 }

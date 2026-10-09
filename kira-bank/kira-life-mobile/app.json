@@ -9,7 +9,17 @@
     "ios": {
       "supportsTablet": false
     },
-    "android": {},
+    "android": {
+      "package": "com.kira.life",
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
     "web": {
       "bundler": "metro"
     },
@@ -31,6 +41,14 @@
           "photosPermission": "Kira Life cần quyền truy cập ảnh để chọn chứng từ giao dịch.",
           "cameraPermission": "Kira Life cần quyền camera để chụp chứng từ giao dịch.",
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
       ]
     ],

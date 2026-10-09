@@ -201,6 +201,7 @@ export function Dashboard() {
     justifyContent: 'center'
   }}><Icon name={item.icon} color={item.target === 'benefits' ? c.lavender : c.primary} size={20}/></View><T size={11}
                                                                                                              style={{textAlign: 'center'}}>{item.label}</T></Pressable>)}</Row>
+    <Section title={t('Giao dịch thẻ')} action={t('Xem tất cả')} onPress={() => go('card-transactions')}/>
     <StatementsPreview/>
     <Section title={t('Hạn mức theo Ngân hàng')} action={t('Xem thống kê')} onPress={() => go('credit-stats')}/>
     <ManagedCardsPreview/>{dialog}
