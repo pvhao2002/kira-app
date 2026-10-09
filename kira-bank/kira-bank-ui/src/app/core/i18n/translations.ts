@@ -1,4 +1,5 @@
 import {healthEnglish} from './health.translations';
+import {investmentReportsEnglish} from './investment-reports.translations';
 import {overviewEnglish} from './overview.translations';
 import {travelEnglish} from './travel.translations';
 import {visitsEnglish} from './login-visits.translations';
@@ -10,6 +11,7 @@ export const englishTranslations = {
   ...visitsEnglish,
   ...travelEnglish,
   ...healthEnglish,
+  ...investmentReportsEnglish,
   ...overviewEnglish,
   ...creditCardAiEnglish,
   'language.change': 'Change language',

@@ -1,6 +1,7 @@
 <section class="page-heading">
   <div><span class="eyebrow">{{ i18n.t('investmentStatistics.eyebrow') }}</span><h1>{{ i18n.t('investmentStatistics.title') }}</h1><p>{{ i18n.t('investmentStatistics.description') }}</p></div>
-  <button class="btn ghost" type="button" [disabled]="stats().loading || operations().loading" (click)="refresh()"><app-icon name="loader"/>{{ i18n.t('investmentStatistics.refresh') }}</button>
+  <div class="heading-actions"><a class="btn ghost" routerLink="/app/investment/reports" [queryParams]="{accountId: accountId(), fromDate: fromDate(), toDate: toDate()}"><app-icon name="trend-up"/>{{ i18n.t('shell.investmentReports') }}</a>
+  <button class="btn ghost" type="button" [disabled]="stats().loading || operations().loading" (click)="refresh()"><app-icon name="loader"/>{{ i18n.t('investmentStatistics.refresh') }}</button></div>
 </section>
 
 <section class="panel filters">

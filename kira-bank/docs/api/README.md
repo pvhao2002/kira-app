@@ -96,6 +96,7 @@ CRUD `/api/v1/investment/accounts` chỉ quản lý hồ sơ. Request create/upd
 - `GET /api/v1/investment/accounts/{accountId}/transaction-imports/{batchId}`: polling trạng thái batch, file errors và preview items.
 - `POST .../files/{attachmentId}/retry`: retry file AI lỗi khi batch chưa hoàn tất.
 - `POST .../{batchId}/confirm`: chỉ nhận batch `READY`, `READY_WITH_ERRORS` hoặc `PARTIALLY_CONFIRMED`; trạng thái khác trả `409 IMPORT_BATCH_NOT_REVIEWABLE`. Request nhận từng `itemId`, `version`, `selected`, dữ liệu đã sửa và `resolution` (`ACCEPT`, `MERGE_EXISTING`, `SAVE_AS_NEW`, `SKIP`). Backend không tin action/dedup key từ client và xử lý từng item bằng transaction độc lập.
+- Báo cáo đầu tư (`GET /api/v1/investment/reports/{type}`): xem [investment-reports.md](investment-reports.md).
 - `GET /api/v1/investment/accounts/{accountId}/transactions`: lọc `fromDate`, `toDate`, `type`, `status`, hỗ trợ page/size/sort.
 
 ### Investment AI Queue

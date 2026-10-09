@@ -31,6 +31,13 @@ const errorMessages: Record<string, string> = {
   ATTACHMENT_PURGED: 'Ảnh gốc đã bị xóa khỏi hệ thống lưu trữ.',
   IMPORT_CONCURRENT_CONFIRM_FAILED: 'Có xung đột khi xác nhận đồng thời. Vui lòng thử lại.',
   INVESTMENT_REPORT_NOT_FOUND: 'Không tìm thấy hồ sơ tra soát.',
+  INVESTMENT_REPORT_TYPE_NOT_FOUND: 'Không tìm thấy loại báo cáo này.',
+  INVALID_REPORT_RANGE: 'Khoảng ngày không hợp lệ: ngày bắt đầu phải trước hoặc bằng ngày kết thúc.',
+  REPORT_RANGE_TOO_LARGE: 'Khoảng ngày tối đa là 5 năm.',
+  INVALID_REPORT_GRANULARITY: 'Cách nhóm kỳ không hợp lệ.',
+  INVESTMENT_GOAL_NOT_FOUND: 'Không tìm thấy mục tiêu.',
+  INVALID_GOAL_CURRENCY: 'Bạn chưa có tài khoản đầu tư nào dùng loại tiền này.',
+  TOO_MANY_GOALS: 'Bạn đã đạt số mục tiêu tối đa (20).',
   INVESTMENT_REPORT_ALREADY_OPEN: 'Giao dịch này đã có hồ sơ tra soát đang mở.',
   INVESTMENT_REPORT_VERSION_CONFLICT: 'Hồ sơ tra soát đã thay đổi ở nơi khác. Vui lòng tải lại.',
   INVESTMENT_REPORT_CLOSED: 'Hồ sơ tra soát đã được đóng.',
@@ -208,8 +215,139 @@ export type InvestmentStatisticsCurrency = {
   currency: string; totalCount: number; deposits: number; withdrawals: number; bonuses: number; netAmount: number;
   daily: InvestmentDailyFlow[]
 };
+export type InvestmentStatisticsAccount = {
+  accountId: number; accountName: string; accountCode: string | null; currency: string; status: string;
+  totalCount: number; deposits: number; withdrawals: number; bonuses: number; netAmount: number;
+};
 export type InvestmentStatisticsOverview = {
-  fromDate: string; toDate: string; timeZone: string; accountId: number | null; currencies: InvestmentStatisticsCurrency[]
+  fromDate: string; toDate: string; timeZone: string; accountId: number | null; currencies: InvestmentStatisticsCurrency[];
+  accounts?: InvestmentStatisticsAccount[]
+};
+export type ReportTotals = { count: number; deposits: number; withdrawals: number; bonuses: number; net: number; netWithBonus: number };
+export type InvestmentReport<T> = {
+  type: string; fromDate: string; toDate: string; timeZone: string; accountId: number | null;
+  currencies: { currency: string; data: T }[]
+};
+export type PeriodRow = {
+  period: string; start: string; totals: ReportTotals; cumulativeNet: number; netChange: number | null; netChangePct: number | null
+};
+export type PeriodicReport = {
+  granularity: string; totals: ReportTotals; averageNet: number; best: PeriodRow | null; worst: PeriodRow | null;
+  profitablePeriods: number; losingPeriods: number; rows: PeriodRow[]
+};
+export type AccountRowReport = {
+  accountId: number; accountName: string; totals: ReportTotals; roiPct: number | null; averageDeposit: number;
+  averageWithdrawal: number; firstDate: string; lastDate: string; daysSinceLast: number; netSharePct: number | null
+};
+export type AccountsReport = { totals: ReportTotals; rows: AccountRowReport[] };
+export type EquityPoint = { date: string; net: number; cumulativeNet: number; peak: number; drawdown: number };
+export type DayNet = { date: string; net: number };
+export type EquityReport = {
+  points: EquityPoint[]; finalNet: number; peakNet: number; maxDrawdown: number; maxDrawdownDate: string | null;
+  currentDrawdown: number; bestDay: DayNet | null; worstDay: DayNet | null; activeDays: number; winDays: number;
+  lossDays: number; longestWinStreak: number; longestLossStreak: number; currentStreak: number
+};
+export type ReportSlot = { key: number; totals: ReportTotals };
+export type ActivityReport = { byWeekday: ReportSlot[]; byHour: ReportSlot[]; byDayOfMonth: ReportSlot[]; matrix: number[][]; busiestWeekday: number; busiestHour: number; busiestDayOfMonth: number };
+export type TypeStats = { type: string; count: number; total: number; min: number; max: number; average: number; median: number; p90: number };
+export type SizeBucket = { from: number; to: number; deposits: number; withdrawals: number; bonuses: number };
+export type TopTransaction = { accountName: string; type: string; amount: number; at: string };
+export type DistributionReport = { byType: TypeStats[]; buckets: SizeBucket[]; largest: TopTransaction[] };
+export type MetricDelta = { metric: string; current: number; previous: number; change: number; changePct: number | null };
+export type ComparisonReport = { previousFrom: string; previousTo: string; current: ReportTotals; previous: ReportTotals; deltas: MetricDelta[] };
+export type DayRow = { date: string; totals: ReportTotals };
+export type DailyReport = {
+  totals: ReportTotals; days: DayRow[]; best: DayRow | null; worst: DayRow | null;
+  averageNetPerActiveDay: number; averageTransactionsPerActiveDay: number
+};
+export type RollingPoint = { date: string; net: number; rolling7: number; rolling30: number };
+export type RollingReport = {
+  points: RollingPoint[]; latest7: number; latest30: number; best7: number | null; worst7: number | null;
+  averageDailyNet: number; volatility: number
+};
+export type BonusRow = { key: string; label: string; bonuses: number; deposits: number; bonusPctOfDeposits: number | null; bonusCount: number };
+export type BonusReport = {
+  totalBonuses: number; totalDeposits: number; bonusPctOfDeposits: number | null; bonusPctOfPositiveNet: number | null;
+  averageBonus: number; largestBonus: number; byMonth: BonusRow[]; byAccount: BonusRow[]
+};
+export type PaybackRow = {
+  accountId: number; accountName: string; deposits: number; withdrawals: number; recoveredPct: number | null; outstanding: number;
+  brokeEven: boolean; firstDate: string; breakEvenDate: string | null; daysToBreakEven: number | null
+};
+export type PaybackReport = {
+  deposits: number; withdrawals: number; recoveredPct: number | null; outstanding: number; accountsBrokeEven: number;
+  accountsOutstanding: number; rows: PaybackRow[]
+};
+export type SeasonalMonth = { month: number; occurrences: number; winningOccurrences: number; count: number; totalNet: number; averageNet: number };
+export type SeasonalityReport = { months: SeasonalMonth[]; best: SeasonalMonth | null; worst: SeasonalMonth | null };
+export type ProjectionReport = {
+  asOf: string; monthToDateNet: number; daysElapsed: number; daysRemaining: number; dailyRunRate30: number; projectedMonthEnd: number;
+  projectedNext30: number; projectedYear: number; trailing30: number; trailing90: number; observedDays: number
+};
+export type LedgerRow = { at: string; accountId: number; accountName: string; type: string; amount: number; signedNet: number; runningNet: number };
+export type LedgerReport = { totals: ReportTotals; truncated: boolean; limit: number; rows: LedgerRow[] };
+export type AccountBrief = { accountId: number; accountName: string; net: number };
+export type OverviewReport = {
+  totals: ReportTotals; activeAccounts: number; activeDays: number; firstDate: string | null; lastDate: string | null; lastAt: string | null;
+  averageTransaction: number; withdrawalToDepositPct: number | null; bestAccount: AccountBrief | null; worstAccount: AccountBrief | null;
+  currentMonth: string; currentMonthNet: number; previousMonthNet: number; monthNetChange: number
+};
+export type MatrixRow = { accountId: number; accountName: string; cells: number[]; cumulative: number[]; total: number };
+export type MatrixReport = { months: string[]; rows: MatrixRow[]; monthTotals: number[]; cumulativeTotals: number[] };
+export type DrawdownEpisode = {
+  peakDate: string; startDate: string; troughDate: string; recoveryDate: string | null; depth: number; daysToTrough: number;
+  daysToRecover: number | null; durationDays: number
+};
+export type DrawdownReport = { episodes: DrawdownEpisode[]; count: number; ongoing: boolean; longestDays: number; deepest: number };
+export type CadenceRow = {
+  accountId: number; accountName: string; transactions: number; averageGapDays: number | null; longestGapDays: number;
+  longestGapFrom: string | null; longestGapTo: string | null; avgDaysDepositToWithdrawal: number | null
+};
+export type CadenceReport = { averageGapDays: number | null; avgDaysDepositToWithdrawal: number | null; rows: CadenceRow[] };
+export type GoalProgress = {
+  id: number; period: 'MONTH' | 'YEAR'; target: number; achieved: number; remaining: number; pct: number; elapsedPct: number;
+  onTrack: boolean; reached: boolean; requiredDaily: number; daysRemaining: number
+};
+export type GoalsReport = { asOf: string; goals: GoalProgress[] };
+export type Insight = { code: string; severity: 'WARN' | 'INFO' | 'GOOD'; accountId: number | null; accountName: string | null; value: number | null; date: string | null };
+export type InsightsReport = { asOf: string; insights: Insight[] };
+export type PerformanceReport = {
+  activeDays: number; winDays: number; lossDays: number; winRatePct: number | null; grossWin: number; grossLoss: number; averageWin: number;
+  averageLoss: number; payoffRatio: number | null; profitFactor: number | null; expectancyPerDay: number; medianDayNet: number;
+  largestWin: number; largestLoss: number; totalNet: number; maxDrawdown: number; recoveryFactor: number | null
+};
+export type Lot = {
+  accountId: number; accountName: string; depositDate: string; amount: number; recovered: number; outstanding: number; recoveredDate: string | null;
+  daysToRecover: number | null; ageDays: number
+};
+export type LotsReport = {
+  lotCount: number; recoveredLots: number; averageDaysToRecover: number | null; totalDeposited: number; totalRecovered: number;
+  outstanding: number; aging: { bucket: string; lots: number; outstanding: number }[]; truncated: boolean; lots: Lot[]
+};
+export type AdminInvestmentSummary = {
+  fromDate: string; toDate: string; timeZone: string;
+  currencies: {
+    currency: string;
+    totals: { transactions: number; users: number; accounts: number; deposits: number; withdrawals: number; bonuses: number; net: number };
+    months: { month: string; transactions: number; deposits: number; withdrawals: number; bonuses: number; net: number }[];
+    topUsers: { userId: number; email: string; fullName: string; transactions: number; deposits: number; withdrawals: number; net: number }[]
+  }[]
+};
+export type AllocationRow = { accountId: number; accountName: string; deposits: number; withdrawals: number; outstanding: number; outstandingSharePct: number | null; depositSharePct: number | null };
+export type AllocationReport = { totalDeposits: number; totalOutstanding: number; hhi: number | null; concentration: 'NONE' | 'DIVERSIFIED' | 'MODERATE' | 'CONCENTRATED'; topSharePct: number | null; rows: AllocationRow[] };
+export type InvestmentStatisticsOperations = {
+  updatedAt: string; accountId: number | null;
+  ai: { pending: number; processing: number; ready: number; failed: number };
+  imports: {
+    total: number;
+    items: { batchId: string; accountId: number; accountName: string; status: string; createdAt: string; reviewCount: number }[]
+  };
+  reconciliation: {
+    total: number; open: number; inReview: number; needsInfo: number; items: {
+      id: number; accountId: number; accountName: string; transactionId: number; amount: number; currency: string;
+      reason: string; status: string; createdAt: string;
+    }[]
+  };
 };
 export type InvestmentImportTask = { batchId: string; accountId: number; accountName: string; status: string };
 export type InvestmentTaskGroup = { total: number; items: InvestmentImportTask[] };
@@ -413,6 +551,15 @@ export function useInvestmentApi() {
       requestJson<InvestmentStatisticsResponse>(`/api/v1/investment/accounts/${accountId}/statistics${q(params)}`),
     getAllStatistics: (params: { fromDate: string; toDate: string; accountId?: number }) =>
       requestJson<InvestmentStatisticsOverview>(`/api/v1/investment/statistics${q(params)}`),
+    getReport: <T, >(type: string, params: Record<string, string | number | undefined>) =>
+      requestJson<InvestmentReport<T>>(`/api/v1/investment/reports/${type}${q(params)}`),
+    saveGoal: (body: { currency: string; period: string; targetAmount: number }) =>
+      requestJson<{ id: number }>('/api/v1/investment/goals', {method: 'PUT', body: JSON.stringify(body)}),
+    deleteGoal: (id: number) => requestJson<void>(`/api/v1/investment/goals/${id}`, {method: 'DELETE'}),
+    getAdminSummary: (params: { fromDate: string; toDate: string }) =>
+      requestJson<AdminInvestmentSummary>(`/api/v1/admin/investment/reports/summary${q(params)}`),
+    getOperations: (accountId?: number) =>
+      requestJson<InvestmentStatisticsOperations>(`/api/v1/investment/statistics/operations${q({accountId})}`),
     getOverview: (days: 7 | 30 | 90 = 30) => requestJson<InvestmentOverview>(`/api/v1/dashboards/overview/investments?days=${days}`),
 
     listAiJobs: (statuses?: AttachmentAiStatus[], page = 0, size = 20) =>

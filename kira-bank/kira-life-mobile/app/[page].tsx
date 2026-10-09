@@ -32,10 +32,12 @@ import {PasswordVault} from '../src/passwordVault';
 import {TutoringSchedule} from '../src/tutoring';
 import {Lodging} from '../src/lodging';
 import {FavoriteSongs, JobTracker} from '../src/personal';
+import {InvestmentAnalytics} from '../src/investmentAnalytics';
+import {AdminInvestmentSummaryScreen} from '../src/adminInvestmentSummary';
 import {Empty, Screen} from '../src/ui';
 import {useT} from '../src/i18n';
 
-const lateralPages = ['import', 'queue', 'investment-reports'];
+const lateralPages = ['import', 'queue', 'investment-reports', 'investment-analytics'];
 export default function DetailRoute() {
   const params = useLocalSearchParams<{ page: string; id?: string; accountId?: string; attachmentId?: string }>();
   const id = params.id || '';
@@ -150,6 +152,10 @@ export default function DetailRoute() {
         return <TransactionDetail id={id} success/>;
       case 'reports':
         return <Reports/>;
+      case 'admin-investment-summary':
+        return <AdminInvestmentSummaryScreen/>;
+      case 'investment-analytics':
+        return <InvestmentAnalytics/>;
       case 'account-stats':
         return <InvestmentAccountStats id={id}/>;
       case 'travel-edit':

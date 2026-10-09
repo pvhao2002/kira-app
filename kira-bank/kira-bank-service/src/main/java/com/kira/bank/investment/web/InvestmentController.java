@@ -3,6 +3,8 @@ package com.kira.bank.investment.web;
 import com.kira.bank.investment.application.InvestmentReconciliationReportDtos.CreateReportRequest;
 import com.kira.bank.investment.application.InvestmentReconciliationReportService;
 import com.kira.bank.investment.application.InvestmentService;
+import com.kira.bank.investment.application.InvestmentReportDtos;
+import com.kira.bank.investment.application.InvestmentReportService;
 import com.kira.bank.investment.application.InvestmentStatisticsService;
 import com.kira.bank.investment.application.InvestmentStatisticsDtos.StatisticsResponse;
 import com.kira.bank.investment.application.InvestmentTransactionImportDtos.ConfirmBatchRequest;
@@ -37,6 +39,7 @@ public class InvestmentController {
     private final InvestmentTransactionImportService transactionImports;
     private final InvestmentReconciliationReportService reconciliationReports;
     private final InvestmentStatisticsService statistics;
+    private final InvestmentReportService reports;
 
     @PostMapping("/accounts")
     @ResponseStatus(HttpStatus.CREATED)
@@ -134,6 +137,33 @@ public class InvestmentController {
     @GetMapping("/statistics/operations")
     Object statisticsOperations(@AuthenticationPrincipal Long user, @RequestParam(required = false) Long accountId) {
         return statistics.operations(user, accountId);
+    }
+
+    @GetMapping("/goals")
+    Object goals(@AuthenticationPrincipal Long user) {
+        return reports.listGoals(user);
+    }
+
+    @PutMapping("/goals")
+    Object saveGoal(@AuthenticationPrincipal Long user, @Valid @RequestBody InvestmentReportDtos.GoalRequest request) {
+        return reports.saveGoal(user, request);
+    }
+
+    @DeleteMapping("/goals/{goalId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteGoal(@AuthenticationPrincipal Long user, @PathVariable Long goalId) {
+        reports.deleteGoal(user, goalId);
+    }
+
+    @GetMapping("/reports/{type}")
+    Object report(@AuthenticationPrincipal Long user, @PathVariable String type,
+                  @RequestParam(required = false) Long accountId,
+                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+                  @RequestParam(required = false) String granularity,
+                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate compareFromDate,
+                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate compareToDate) {
+        return reports.report(type, user, accountId, fromDate, toDate, granularity, compareFromDate, compareToDate);
     }
 
     @PostMapping("/accounts/{id}/transactions/{transactionId}/reconciliation-reports")

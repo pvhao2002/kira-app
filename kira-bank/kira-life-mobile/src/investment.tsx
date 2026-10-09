@@ -26,6 +26,7 @@ import {
 } from './investmentApi';
 import {useLanguage, useT} from './i18n';
 import {useTheme} from './theme';
+import {InsightsTeaser} from './analyticsTeaser';
 import {
   Badge,
   Button,
@@ -87,7 +88,7 @@ export function InvestmentNav({active}: { active: string }) {
   }, {label: t('Nhập giao dịch'), value: 'import'}, {label: t('Hàng đợi AI'), value: 'queue'}, {
     label: t('Tra soát'),
     value: 'investment-reports'
-  }]} onChange={v => v === 'accounts' ? router.replace('/investment') : router.replace({
+  }, {label: t('Báo cáo'), value: 'investment-analytics'}]} onChange={v => v === 'accounts' ? router.replace('/investment') : router.replace({
     pathname: '/[page]',
     params: {page: v}
   })}/></View>;
@@ -288,7 +289,7 @@ export function Accounts() {
   const inactiveCount = accounts.filter(a => a.status === 'INACTIVE').length;
   const closedCount = accounts.filter(a => a.status === 'CLOSED').length;
 
-  return <Screen title={t('Đầu tư')}><InvestmentNav active="accounts"/><InvestmentMonthCard/><InvestmentOverviewCard/><Row><View
+  return <Screen title={t('Đầu tư')}><InvestmentNav active="accounts"/><InvestmentMonthCard/><InsightsTeaser/><InvestmentOverviewCard/><Row><View
     style={{flex: 1}}><T size={19} bold>{t('Danh sách tài khoản đầu tư')}</T><T size={11}
                                                                                 color={c.muted}>{t('Quản lý định danh và thông tin xác thực dữ liệu')}</T></View><Badge>{t('{{n}} tài khoản', {n: accounts.length})}</Badge></Row><Row
     style={{alignItems: 'flex-end'}}><View style={{flex: 1}}><Field label={t('Tìm tài khoản')} value={query}

@@ -27,6 +27,9 @@ import {
   InvestmentTransaction,
   InvestmentAiJob,
   InvestmentStatisticsResponse,
+  AdminInvestmentSummary,
+  InvestmentGoal,
+  InvestmentReport,
   InvestmentStatisticsOperations,
   InvestmentReconciliationReport,
   LodgingListing,
@@ -252,6 +255,22 @@ export class ApiService {
 
   investmentStatistics(filters: Record<string, string | number> = {}): Observable<InvestmentStatisticsResponse> {
     return this.http.get<InvestmentStatisticsResponse>('/api/v1/investment/statistics', {params: filters});
+  }
+
+  investmentReport<T>(type: string, params: Record<string, string | number>): Observable<InvestmentReport<T>> {
+    return this.http.get<InvestmentReport<T>>(`/api/v1/investment/reports/${type}`, {params});
+  }
+
+  adminInvestmentSummary(params: Record<string, string>): Observable<AdminInvestmentSummary> {
+    return this.http.get<AdminInvestmentSummary>('/api/v1/admin/investment/reports/summary', {params});
+  }
+
+  saveInvestmentGoal(body: {currency: string; period: string; targetAmount: number}): Observable<InvestmentGoal> {
+    return this.http.put<InvestmentGoal>('/api/v1/investment/goals', body);
+  }
+
+  deleteInvestmentGoal(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/v1/investment/goals/${id}`);
   }
 
   investmentStatisticsOperations(accountId?: number): Observable<InvestmentStatisticsOperations> {

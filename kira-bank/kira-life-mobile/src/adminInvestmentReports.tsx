@@ -12,7 +12,7 @@ import {
 import {useAuth} from './auth';
 import {useLanguage, useT} from './i18n';
 import {useTheme} from './theme';
-import {Badge, Button, Card, Chips, Empty, Field, Icon, Info, Row, Screen, Section, T, useNotice} from './ui';
+import {Badge, Button, Card, Chips, Empty, Field, go, Icon, Info, Row, Screen, Section, T, useNotice} from './ui';
 
 const statuses: InvestmentReconciliationReportStatus[] = ['OPEN', 'IN_REVIEW', 'NEEDS_INFO', 'RESOLVED', 'REJECTED'];
 const statusLabels: Record<InvestmentReconciliationReportStatus, string> = {
@@ -181,6 +181,7 @@ export function AdminInvestmentReports() {
   if (!session.user.roles.includes('ADMIN')) return <Screen title={t('Quản trị tra soát')} back><Empty
     title={t('Màn hình này chỉ dành cho Admin.')}/></Screen>;
   return <Screen title={t('Quản trị tra soát')} subtitle={t('Xử lý hồ sơ sai lệch từ toàn bộ người dùng')} back>
+    <Button label={t('Tổng hợp đầu tư toàn hệ thống')} kind="secondary" onPress={() => go('admin-investment-summary')}/>
     <Card tint><Row><Icon name="shield-checkmark-outline"/><View style={{flex: 1}}><T size={13}
                                                                                       bold>{t('Hàng đợi tra soát Admin')}</T><T
       size={10} color={c.muted}>{t('{{n}} hồ sơ trong bộ lọc hiện tại', {n: totalReports})}</T></View><Pressable

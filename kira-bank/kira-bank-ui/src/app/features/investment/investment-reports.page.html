@@ -1,0 +1,51 @@
+<section class="page-heading">
+  <div><span class="eyebrow">{{ i18n.t('investmentReports.eyebrow') }}</span><h1>{{ i18n.t('investmentReports.title') }}</h1><p>{{ i18n.t('investmentReports.description') }}</p></div>
+  <button class="btn ghost no-print" type="button" (click)="print()">{{ i18n.t('investmentReports.print') }}</button>
+</section>
+
+<section class="panel filters">
+  <label><span>{{ i18n.t('investmentReports.account') }}</span><select [value]="accountId() ?? ''" (change)="chooseAccount($any($event.target).value)"><option value="" [selected]="accountId() === null">{{ i18n.t('investmentReports.allAccounts') }}</option>@for (account of accounts(); track account.id) { <option [value]="account.id" [selected]="account.id === accountId()">{{ account.accountName }} · {{ account.currency }}</option> }</select></label>
+  <label><span>{{ i18n.t('investmentReports.from') }}</span><input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)"/></label>
+  <label><span>{{ i18n.t('investmentReports.to') }}</span><input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)"/></label>
+  @if (currencies().length > 1) { <label><span>{{ i18n.t('investmentReports.currency') }}</span><select [value]="currency()" (change)="currency.set($any($event.target).value)">@for (item of currencies(); track item) { <option [value]="item" [selected]="item === currency()">{{ item }}</option> }</select></label> }
+  @if (tab() === 'comparison') {
+    <label><span>{{ i18n.t('investmentReports.comparison.compareFrom') }}</span><input type="date" [ngModel]="compareFrom()" (ngModelChange)="compareFrom.set($event)"/></label>
+    <label><span>{{ i18n.t('investmentReports.comparison.compareTo') }}</span><input type="date" [ngModel]="compareTo()" (ngModelChange)="compareTo.set($event)"/></label>
+  }
+  <button class="btn primary" type="button" [disabled]="rangeInvalid() || loading()" (click)="apply()">{{ i18n.t('investmentReports.apply') }}</button>
+</section>
+
+<nav class="tabs" role="tablist">@for (item of tabs; track item) { <button type="button" role="tab" [attr.aria-selected]="tab() === item" [class.active]="tab() === item" (click)="choose(item)">{{ i18n.t('investmentReports.tab.' + item) }}</button> }</nav>
+
+@if (tooLong()) { <p class="hint warn" role="alert">{{ i18n.t('investmentReports.rangeTooLong') }}</p> }
+<p class="hint">{{ i18n.t('investmentReports.netHint') }}</p>
+
+@if (loading()) { <div class="state"><span class="spinner"></span>{{ i18n.t('investmentReports.loading') }}</div> }
+@else if (failed()) { <div class="state error">{{ i18n.t('investmentReports.error') }} <button class="btn ghost" type="button" (click)="load()">{{ i18n.t('investmentReports.retry') }}</button></div> }
+@else if (data() === null && tab() !== 'goals') { <div class="empty">{{ i18n.t('investmentReports.empty') }}</div> }
+@else {
+  @switch (tab()) {
+    @case ('performance') { <app-performance-report [data]="asPerformance()" [currency]="currency()"/> }
+    @case ('insights') { <app-insights-report [data]="asInsights()" [currency]="currency()"/> }
+    @case ('goals') { <app-goals-report [data]="asGoals()" [currency]="currency() || 'VND'" (save)="saveGoal($event)" (remove)="removeGoal($event)"/> }
+    @case ('overview') { <app-overview-report [data]="asOverview()" [currency]="currency()"/> }
+    @case ('matrix') { <app-matrix-report [data]="asMatrix()" [currency]="currency()"/> }
+    @case ('drawdowns') { <app-drawdowns-report [data]="asDrawdowns()" [currency]="currency()"/> }
+    @case ('cadence') { <app-cadence-report [data]="asCadence()" [currency]="currency()"/> }
+    @case ('periodic') { <app-periodic-report [data]="asPeriodic()" [currency]="currency()" [granularity]="granularity()" (granularityChange)="chooseGranularity($event)"/> }
+    @case ('accounts') { <app-accounts-report [data]="asAccounts()" [currency]="currency()" (select)="drillInto($event)"/> }
+    @case ('equity') { <app-equity-report [data]="asEquity()" [currency]="currency()"/> }
+    @case ('activity') { <app-activity-report [data]="asActivity()" [currency]="currency()"/> }
+    @case ('distribution') { <app-distribution-report [data]="asDistribution()" [currency]="currency()"/> }
+    @case ('rolling') { <app-rolling-report [data]="asRolling()" [currency]="currency()"/> }
+    @case ('daily') { <app-daily-report [data]="asDaily()" [currency]="currency()" [fromDate]="report()!.fromDate" [toDate]="report()!.toDate"/> }
+    @case ('bonus') { <app-bonus-report [data]="asBonus()" [currency]="currency()"/> }
+    @case ('ledger') { <app-ledger-report [data]="asLedger()" [currency]="currency()"/> }
+    @case ('allocation') { <app-allocation-report [data]="asAllocation()" [currency]="currency()"/> }
+    @case ('lots') { <app-lots-report [data]="asLots()" [currency]="currency()"/> }
+    @case ('payback') { <app-payback-report [data]="asPayback()" [currency]="currency()"/> }
+    @case ('seasonality') { <app-seasonality-report [data]="asSeasonality()" [currency]="currency()"/> }
+    @case ('projection') { <app-projection-report [data]="asProjection()" [currency]="currency()"/> }
+    @case ('comparison') { <app-comparison-report [data]="asComparison()" [currency]="currency()"/> }
+  }
+}

@@ -357,7 +357,7 @@ function NotificationBell() {
 }
 
 const creditPages = ['cards', 'cards-manage', 'card-add', 'card-edit', 'billing-cycle', 'benefits', 'card-recommend', 'statement-import', 'credit-stats', 'bank-balance', 'bank-balance-history', 'statements', 'statement-add', 'statement-pay', 'payments'];
-const investmentPages = ['import', 'manual-transaction', 'queue', 'source', 'ai-result', 'draft-edit', 'decision', 'result-partial', 'result-success', 'account-add', 'account-edit', 'account-stats', 'history', 'filter', 'transaction-detail', 'report-create', 'report-success', 'reports', 'investment-report-create', 'investment-reports', 'investment-report-detail', 'admin-investment-reports', 'admin-cloudflare', 'admin-ai-queue', 'ai-job-detail', 'admin-ai-job-detail', 'admin-source', 'admin-ai-result'];
+const investmentPages = ['import', 'manual-transaction', 'queue', 'source', 'ai-result', 'draft-edit', 'decision', 'result-partial', 'result-success', 'account-add', 'account-edit', 'account-stats', 'history', 'filter', 'transaction-detail', 'report-create', 'report-success', 'reports', 'investment-report-create', 'investment-reports', 'investment-analytics', 'investment-report-detail', 'admin-investment-reports', 'admin-investment-summary', 'admin-cloudflare', 'admin-ai-queue', 'ai-job-detail', 'admin-ai-job-detail', 'admin-source', 'admin-ai-result'];
 const travelPages = ['travel-edit'];
 const healthPages = ['health-profile'];
 const personalPages = ['favorite-songs', 'job-tracker'];

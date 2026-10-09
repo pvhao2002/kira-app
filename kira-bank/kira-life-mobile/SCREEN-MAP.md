@@ -44,6 +44,8 @@ thể mở trực tiếp trên web hoặc đi từ nút trong app.
 | 37 | password_vault                       | `/password-vault`                             | Mở khóa tạm thời và quản lý secret mã hóa                   |
 | 38 | tutor_schedule                       | `/tutoring`                                   | Lịch dạy tuần, học viên và xử lý trùng lịch                 |
 | 39 | lodging                              | `/lodging`                                    | Tin trọ, ảnh R2, địa điểm tham chiếu, khoảng cách và review |
+| 40 | (không có mockup) | `/investment-analytics` | Tab Đầu tư → chip Báo cáo: 21 báo cáo (tổng quan, nhận xét, mục tiêu, kỳ, hiệu suất, lô vốn…) |
+| 41 | (không có mockup) | `/admin-investment-summary` | Admin → Quản trị tra soát → Tổng hợp đầu tư toàn hệ thống |
 
 Hai mẫu `b_l_c_l_ch_s_giao_d_ch_n_ng_cao` và `b_l_c_l_ch_s_giao_d_ch_to_n_trang` chỉ là tham khảo. V1 dùng cùng một
 bottom sheet. Các màn kết quả dùng dữ liệu xác nhận gần nhất; nên vào qua luồng xác nhận để có số liệu có ý nghĩa.

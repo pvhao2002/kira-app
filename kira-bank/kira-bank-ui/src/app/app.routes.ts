@@ -19,6 +19,11 @@ export const routes: Routes = [
         data: {titleKey: 'visits.title'}
       },
       {
+        path: 'admin/investment-reports', canActivate: [adminGuard],
+        loadComponent: () => import('./features/investment/admin-investment-summary.page').then(m => m.AdminInvestmentSummaryPage),
+        data: {titleKey: 'investmentReports.admin.title'}
+      },
+      {
         path: 'travel',
         loadComponent: () => import('./features/travel/travel.page').then(m => m.TravelPage),
         canDeactivate: [(component: {canLeave: () => boolean}) => component.canLeave()],
@@ -69,6 +74,11 @@ export const routes: Routes = [
         path: 'investment/statistics',
         loadComponent: () => import('./features/investment/investment-statistics.page').then(m => m.InvestmentStatisticsPage),
         data: {titleKey: 'route.investmentStatistics'}
+      },
+      {
+        path: 'investment/reports',
+        loadComponent: () => import('./features/investment/investment-reports.page').then(m => m.InvestmentReportsPage),
+        data: {titleKey: 'route.investmentReports'}
       },
       {
         path: 'investment/transactions',

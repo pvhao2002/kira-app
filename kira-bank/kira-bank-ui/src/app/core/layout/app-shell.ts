@@ -110,6 +110,7 @@ export class AppShell {
         labelKey: 'shell.groupInvestment', flow: 'investment', items: [
           {labelKey: 'shell.accounts', icon: 'account', path: '/app/investment/accounts'},
           {labelKey: 'shell.investmentStatistics', icon: 'trend-up', path: '/app/investment/statistics'},
+          {labelKey: 'shell.investmentReports', icon: 'trend-up', path: '/app/investment/reports'},
           {labelKey: 'shell.investmentTransactions', icon: 'receipt', path: '/app/investment/transactions'},
           {labelKey: 'shell.investmentAiQueue', icon: 'monitor', path: '/app/investment/ai-queue'},
           {labelKey: 'shell.investmentHistory', icon: 'clock', path: '/app/investment/history'}
@@ -143,6 +144,7 @@ export class AppShell {
         labelKey: 'shell.groupAdmin', flow: 'system', items: [
           {labelKey: 'shell.adminUsers', icon: 'users', path: '/app/admin/users'},
           {labelKey: 'visits.title', icon: 'globe', path: '/app/admin/login-visits'},
+          {labelKey: 'investmentReports.admin.title', icon: 'trend-up', path: '/app/admin/investment-reports'},
           {labelKey: 'shell.adminBanks', icon: 'bank', path: '/app/admin/banks'},
           {labelKey: 'shell.adminAiProviders', icon: 'shield-check', path: '/app/admin/cloudflare-accounts'}
         ]

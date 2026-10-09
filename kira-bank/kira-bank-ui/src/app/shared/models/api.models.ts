@@ -755,3 +755,113 @@ export interface TutoringSeriesRequest {
   version: number | null;
   confirmConflict: boolean
 }
+
+export interface InvestmentReportTotals {count: number; deposits: number; withdrawals: number; bonuses: number; net: number; netWithBonus: number}
+export interface InvestmentReport<T> {
+  type: string; fromDate: string; toDate: string; timeZone: string; accountId: number | null;
+  currencies: {currency: string; data: T}[];
+}
+export interface InvestmentPeriodRow {period: string; start: string; totals: InvestmentReportTotals; cumulativeNet: number; netChange: number | null; netChangePct: number | null}
+export interface InvestmentPeriodicReport {
+  granularity: string; totals: InvestmentReportTotals; averageNet: number; best: InvestmentPeriodRow | null; worst: InvestmentPeriodRow | null;
+  profitablePeriods: number; losingPeriods: number; rows: InvestmentPeriodRow[];
+}
+export interface InvestmentAccountRow {
+  accountId: number; accountName: string; totals: InvestmentReportTotals; roiPct: number | null; averageDeposit: number;
+  averageWithdrawal: number; firstDate: string; lastDate: string; daysSinceLast: number; netSharePct: number | null;
+}
+export interface InvestmentAccountsReport {totals: InvestmentReportTotals; rows: InvestmentAccountRow[]}
+export interface InvestmentEquityPoint {date: string; net: number; cumulativeNet: number; peak: number; drawdown: number}
+export interface InvestmentDayNet {date: string; net: number}
+export interface InvestmentEquityReport {
+  points: InvestmentEquityPoint[]; finalNet: number; peakNet: number; maxDrawdown: number; maxDrawdownDate: string | null;
+  currentDrawdown: number; bestDay: InvestmentDayNet | null; worstDay: InvestmentDayNet | null; activeDays: number;
+  winDays: number; lossDays: number; longestWinStreak: number; longestLossStreak: number; currentStreak: number;
+}
+export interface InvestmentSlot {key: number; totals: InvestmentReportTotals}
+export interface InvestmentActivityReport {byWeekday: InvestmentSlot[]; byHour: InvestmentSlot[]; byDayOfMonth: InvestmentSlot[]; matrix: number[][]; busiestWeekday: number; busiestHour: number; busiestDayOfMonth: number}
+export interface InvestmentTypeStats {type: string; count: number; total: number; min: number; max: number; average: number; median: number; p90: number}
+export interface InvestmentSizeBucket {from: number; to: number; deposits: number; withdrawals: number; bonuses: number}
+export interface InvestmentTopTransaction {accountName: string; type: string; amount: number; at: string}
+export interface InvestmentDistributionReport {byType: InvestmentTypeStats[]; buckets: InvestmentSizeBucket[]; largest: InvestmentTopTransaction[]}
+export interface InvestmentMetricDelta {metric: string; current: number; previous: number; change: number; changePct: number | null}
+export interface InvestmentComparisonReport {previousFrom: string; previousTo: string; current: InvestmentReportTotals; previous: InvestmentReportTotals; deltas: InvestmentMetricDelta[]}
+export interface InvestmentDayRow {date: string; totals: InvestmentReportTotals}
+export interface InvestmentDailyReport {
+  totals: InvestmentReportTotals; days: InvestmentDayRow[]; best: InvestmentDayRow | null; worst: InvestmentDayRow | null;
+  averageNetPerActiveDay: number; averageTransactionsPerActiveDay: number;
+}
+export interface InvestmentRollingPoint {date: string; net: number; rolling7: number; rolling30: number}
+export interface InvestmentRollingReport {
+  points: InvestmentRollingPoint[]; latest7: number; latest30: number; best7: number | null; worst7: number | null;
+  averageDailyNet: number; volatility: number;
+}
+export interface InvestmentBonusRow {key: string; label: string; bonuses: number; deposits: number; bonusPctOfDeposits: number | null; bonusCount: number}
+export interface InvestmentBonusReport {
+  totalBonuses: number; totalDeposits: number; bonusPctOfDeposits: number | null; bonusPctOfPositiveNet: number | null;
+  averageBonus: number; largestBonus: number; byMonth: InvestmentBonusRow[]; byAccount: InvestmentBonusRow[];
+}
+export interface InvestmentPaybackRow {
+  accountId: number; accountName: string; deposits: number; withdrawals: number; recoveredPct: number | null; outstanding: number;
+  brokeEven: boolean; firstDate: string; breakEvenDate: string | null; daysToBreakEven: number | null;
+}
+export interface InvestmentPaybackReport {
+  deposits: number; withdrawals: number; recoveredPct: number | null; outstanding: number; accountsBrokeEven: number;
+  accountsOutstanding: number; rows: InvestmentPaybackRow[];
+}
+export interface InvestmentSeasonalMonth {month: number; occurrences: number; winningOccurrences: number; count: number; totalNet: number; averageNet: number}
+export interface InvestmentSeasonalityReport {months: InvestmentSeasonalMonth[]; best: InvestmentSeasonalMonth | null; worst: InvestmentSeasonalMonth | null}
+export interface InvestmentProjectionReport {
+  asOf: string; monthToDateNet: number; daysElapsed: number; daysRemaining: number; dailyRunRate30: number; projectedMonthEnd: number;
+  projectedNext30: number; projectedYear: number; trailing30: number; trailing90: number; observedDays: number;
+}
+export interface InvestmentLedgerRow {at: string; accountId: number; accountName: string; type: string; amount: number; signedNet: number; runningNet: number}
+export interface InvestmentLedgerReport {totals: InvestmentReportTotals; truncated: boolean; limit: number; rows: InvestmentLedgerRow[]}
+export interface InvestmentAccountBrief {accountId: number; accountName: string; net: number}
+export interface InvestmentOverviewReport {
+  totals: InvestmentReportTotals; activeAccounts: number; activeDays: number; firstDate: string | null; lastDate: string | null; lastAt: string | null;
+  averageTransaction: number; withdrawalToDepositPct: number | null; bestAccount: InvestmentAccountBrief | null; worstAccount: InvestmentAccountBrief | null;
+  currentMonth: string; currentMonthNet: number; previousMonthNet: number; monthNetChange: number;
+}
+export interface InvestmentMatrixRow {accountId: number; accountName: string; cells: number[]; cumulative: number[]; total: number}
+export interface InvestmentMatrixReport {months: string[]; rows: InvestmentMatrixRow[]; monthTotals: number[]; cumulativeTotals: number[]}
+export interface InvestmentDrawdownEpisode {
+  peakDate: string; startDate: string; troughDate: string; recoveryDate: string | null; depth: number; daysToTrough: number;
+  daysToRecover: number | null; durationDays: number;
+}
+export interface InvestmentDrawdownReport {episodes: InvestmentDrawdownEpisode[]; count: number; ongoing: boolean; longestDays: number; deepest: number}
+export interface InvestmentCadenceRow {
+  accountId: number; accountName: string; transactions: number; averageGapDays: number | null; longestGapDays: number;
+  longestGapFrom: string | null; longestGapTo: string | null; avgDaysDepositToWithdrawal: number | null;
+}
+export interface InvestmentCadenceReport {averageGapDays: number | null; avgDaysDepositToWithdrawal: number | null; rows: InvestmentCadenceRow[]}
+export interface InvestmentGoalProgress {
+  id: number; period: 'MONTH' | 'YEAR'; target: number; achieved: number; remaining: number; pct: number; elapsedPct: number;
+  onTrack: boolean; reached: boolean; requiredDaily: number; daysRemaining: number;
+}
+export interface InvestmentGoalsReport {asOf: string; goals: InvestmentGoalProgress[]}
+export interface InvestmentGoal {id: number; currency: string; period: 'MONTH' | 'YEAR'; targetAmount: number}
+export interface InvestmentInsight {code: string; severity: 'WARN' | 'INFO' | 'GOOD'; accountId: number | null; accountName: string | null; value: number | null; date: string | null}
+export interface InvestmentInsightsReport {asOf: string; insights: InvestmentInsight[]}
+export interface InvestmentPerformanceReport {
+  activeDays: number; winDays: number; lossDays: number; winRatePct: number | null; grossWin: number; grossLoss: number; averageWin: number;
+  averageLoss: number; payoffRatio: number | null; profitFactor: number | null; expectancyPerDay: number; medianDayNet: number;
+  largestWin: number; largestLoss: number; totalNet: number; maxDrawdown: number; recoveryFactor: number | null;
+}
+export interface InvestmentLot {
+  accountId: number; accountName: string; depositDate: string; amount: number; recovered: number; outstanding: number; recoveredDate: string | null;
+  daysToRecover: number | null; ageDays: number;
+}
+export interface InvestmentLotsReport {
+  lotCount: number; recoveredLots: number; averageDaysToRecover: number | null; totalDeposited: number; totalRecovered: number;
+  outstanding: number; aging: {bucket: string; lots: number; outstanding: number}[]; truncated: boolean; lots: InvestmentLot[];
+}
+export interface AdminInvestmentTotals {transactions: number; users: number; accounts: number; deposits: number; withdrawals: number; bonuses: number; net: number}
+export interface AdminInvestmentMonth {month: string; transactions: number; deposits: number; withdrawals: number; bonuses: number; net: number}
+export interface AdminInvestmentUser {userId: number; email: string; fullName: string; transactions: number; deposits: number; withdrawals: number; net: number}
+export interface AdminInvestmentSummary {
+  fromDate: string; toDate: string; timeZone: string;
+  currencies: {currency: string; totals: AdminInvestmentTotals; months: AdminInvestmentMonth[]; topUsers: AdminInvestmentUser[]}[];
+}
+export interface InvestmentAllocationRow {accountId: number; accountName: string; deposits: number; withdrawals: number; outstanding: number; outstandingSharePct: number | null; depositSharePct: number | null}
+export interface InvestmentAllocationReport {totalDeposits: number; totalOutstanding: number; hhi: number | null; concentration: 'NONE' | 'DIVERSIFIED' | 'MODERATE' | 'CONCENTRATED'; topSharePct: number | null; rows: InvestmentAllocationRow[]}

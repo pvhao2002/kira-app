@@ -2118,3 +2118,10 @@ input[type='search']:focus {
     transition-duration: .01ms !important;
   }
 }
+
+/* Printing a report page: drop the navigation chrome so only the content is printed. */
+@media print {
+  .app-layout > aside, .app-layout .topbar, .no-print { display: none !important; }
+  .app-layout { display: block !important; }
+  .page-area { margin: 0 !important; padding: 0 !important; width: auto !important; }
+}

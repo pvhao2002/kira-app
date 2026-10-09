@@ -1,4 +1,5 @@
 import {healthVietnamese} from './health.translations';
+import {investmentReportsVietnamese} from './investment-reports.translations';
 import {overviewVietnamese} from './overview.translations';
 import {travelVietnamese} from './travel.translations';
 import {visitsVietnamese} from './login-visits.translations';
@@ -11,6 +12,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ...visitsVietnamese,
   ...travelVietnamese,
   ...healthVietnamese,
+  ...investmentReportsVietnamese,
   ...overviewVietnamese,
   ...creditCardAiVietnamese,
   'language.change': 'Đổi ngôn ngữ',
