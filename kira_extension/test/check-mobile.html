@@ -20,9 +20,11 @@
   const lockedLi = li('', '<span class="flex flex-1 oddsBox firstSpan"><i class="iconfont icon-suo"></i></span> <!----> <span class="flex flex-1 oddsBox firstSpan"><i class="iconfont icon-suo"></i></span>');
   const POPUPS = [
     null,
-    li("21'", box(['+0/0.5', '2.02'], ['-0/0.5', '1.77'])) + li("15'", box(['+0/0.5', '2.00'], ['-0/0.5', '1.80'])) + lockedLi + li('', box(['+0.5', '1.88'], ['-0.5', '1.91'])) + li('', box(['+0.5', '1.82'], ['-0.5', '1.97'])),
+    li("21'", box(['+0/0.5', '2.02'], ['-0/0.5', '1.77'])) + li("15'", box(['+0/0.5', '2.00'], ['-0/0.5', '1.80'])) + lockedLi,
     li("30'", box(['3', '2.10'], ['3', '1.70'])) + li('', box(['2.5', '1.85'], ['2.5', '1.95'])),
   ];
+  // Older history rows only load once the list is scrolled (AH tab only), as the real list may do.
+  const OLDER = [null, li('', box(['+0.5', '1.88'], ['-0.5', '1.91'])) + li('', box(['+0.5', '1.82'], ['-0.5', '1.97'])), null];
   let tab = 0;
   function render() {
     const labels = ['1 X 2', 'Kèo châu Á', 'Tài/Xỉu'];
@@ -35,6 +37,9 @@
       p.className = 'van-popup';
       p.innerHTML = `<div class="wrapper"><p class="top flex"><span class="left">bet365</span><span class="right"><i class="iconfont icon-guanbi"></i></span></p><ul class="oddContent">${POPUPS[tab] || ''}</ul></div>`;
       p.querySelector('.top .right').addEventListener('click', () => p.remove());
+      const ul = p.querySelector('ul');
+      let loaded = false;
+      Object.defineProperty(ul, 'scrollTop', { set() { if (!loaded && OLDER[tab]) { loaded = true; ul.insertAdjacentHTML('beforeend', OLDER[tab]); } }, get: () => 0 });
       document.body.appendChild(p);
     });
   }
