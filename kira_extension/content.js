@@ -103,7 +103,7 @@
     return { value: preFromRows(rows), rows };
   }
 
-  async function readPopup(doc, company, fmt, trace) {
+  async function readPopup(doc, company, fmt, trace, opened) {
     // Click handlers sit on an unknown element and clicks only bubble up, so try the deepest candidates first.
     const openers = [
       ['arrow icon', company.querySelector('.oddsBoxRight i')],
@@ -117,12 +117,13 @@
     for (const [i, [label, opener]] of openers.entries()) {
       opener.click();
       // The history is fetched when the popup opens, so give a slow connection time before trying the next opener.
-      const popup = await until(() => openPopup(doc), i === 0 ? 4000 : 2000);
+      const popup = await until(() => openPopup(doc), 2500);
       if (!popup) {
         trace.push(`no popup after click on ${label}`);
         continue;
       }
       try {
+        opened.push(label);
         const { value, rows } = await preMatchFromPopup(popup, fmt);
         if (!value) trace.push(`popup rows=${rows.length}: ${rows.map((r) => `${r.minute || '-'}${r.value ? '+' : '?'}`).join(' ')}\n${popup.outerHTML.replace(/\s+/g, ' ').slice(-3000)}`);
         return value;
@@ -137,7 +138,7 @@
     return null;
   }
 
-  async function readMobile(doc, trace = []) {
+  async function readMobile(doc, trace = [], opened = []) {
     const tabAt = (i) => doc.querySelectorAll('.oddTypesBox > span')[i];
     if (!tabAt(1)) return null;
     const original = [...doc.querySelectorAll('.oddTypesBox > span')].findIndex((t) => t.classList.contains('activeTab'));
@@ -159,7 +160,7 @@
           return row ? fmt(readRow(row, ':scope > span')) : null;
         };
         const live = at(3);
-        const pre = at(2) || (await readPopup(doc, company, fmt, trace));
+        const pre = at(2) || (await readPopup(doc, company, fmt, trace, opened));
         if (!pre) trace.unshift(`pre-match missing: ${name}`);
         found.push({ name, pre, live });
       }
@@ -226,7 +227,8 @@
 
   async function copyOdds() {
     const trace = [];
-    const prompt = composePrompt(readDesktop(document) || (await readMobile(document, trace)));
+    const opened = [];
+    const prompt = composePrompt(readDesktop(document) || (await readMobile(document, trace, opened)));
     if (!prompt) {
       toast('Kira: no odds found on this page', false);
       // On a phone there is no DevTools, so hand back what the page looks like for fixing the selectors.
@@ -235,12 +237,12 @@
     }
     try {
       await navigator.clipboard.writeText(prompt);
-      toast('Kira: odds copied', true);
+      toast(`Kira: odds copied${opened.length ? ` (popup via ${[...new Set(opened)].join(', ')})` : ''}`, true);
     } catch {
       copyPanel(prompt);
     }
     // Pre-match could not be read: on a phone there is no DevTools, so hand back what the popup looked like.
-    if (trace.length && globalThis.kiraBookmarklet) copyPanel(`Kira debug: pre-match missing. Copy this and send it back.\n${trace.join('\n')}`);
+    if (trace.some((t) => t.startsWith('pre-match missing')) && globalThis.kiraBookmarklet) copyPanel(`Kira debug: pre-match missing. Copy this and send it back.\n${trace.join('\n')}`);
   }
 
   // iOS Safari often refuses clipboard writes from a bookmarklet; a tap on this button is a fresh user gesture.
