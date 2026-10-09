@@ -63,16 +63,17 @@
     };
   }
 
-  // Every non-empty text in the row, in DOM order. `skip` drops the leading minute/score cells of a popup row.
-  function tokensOf(row, skip) {
-    return [...row.children].slice(skip).flatMap((el) => [el, ...el.querySelectorAll('*')])
+  // Every non-empty text in the row, in DOM order. A popup row also has leading time cells (minute + score, or just a date),
+  // so there only the `.oddsBox` cells count.
+  function tokensOf(row, popup) {
+    return [...row.children].filter((c) => !popup || c.classList.contains('oddsBox')).flatMap((el) => [el, ...el.querySelectorAll('*')])
       .map((e) => [...e.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').trim())
       .filter(Boolean);
   }
 
-  function readRow(row, sideSelector, skip = 0) {
+  function readRow(row, sideSelector, popup = false) {
     const sides = [...row.querySelectorAll(sideSelector)].map(sideOf);
-    return { lines: sides.map((s) => s.line).filter(Boolean), odds: sides.map((s) => s.odd).filter(Boolean), tokens: tokensOf(row, skip) };
+    return { lines: sides.map((s) => s.line).filter(Boolean), odds: sides.map((s) => s.odd).filter(Boolean), tokens: tokensOf(row, popup) };
   }
 
   const fmtAh = ({ lines, odds }) =>
@@ -95,7 +96,7 @@
     return [...popup.querySelectorAll('ul.oddContent > li')].map((li) => ({
       minute: text(li.firstElementChild),
       live: MINUTE.test(text(li.firstElementChild)),
-      value: fmt(readRow(li, ':scope > .oddsBox', 2)),
+      value: fmt(readRow(li, ':scope > .oddsBox', true)),
     }));
   }
 

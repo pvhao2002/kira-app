@@ -20,12 +20,15 @@
   ];
   const li = (minute, inner) => `<li class="flex"><span class="icon firstSpan"> ${minute} </span> <span class="icon firstSpan"> 0-0 </span> ${inner}</li>`;
   const box = (a, b) => `<span class="flex flex-1 oddsBox firstSpan"><span class="flex flex-1"><span class="handicap"> ${a[0]} </span> <span class="flex-1"> ${a[1]} </span></span><i class="iconfont icon-shangsheng"></i></span> <!----> <span class="flex flex-1 oddsBox firstSpan"><span class="flex flex-1"><span class="handicap"> ${b[0]} </span> <span class="flex-1"> ${b[1]} </span></span></span>`;
+  const obox = (...t) => t.map((x) => `<span class="flex flex-1 oddsBox firstSpan"><span class="notBorderB"><span class="handicap"> ${x} </span> <!----></span></span>`).join(' <!----> ');
+  const liDate = (inner) => `<li class="flex"><span class="icon firstSpan date"> 9/10/2026:undefined Thứ Sáu </span> <!----> ${inner}</li>`;
   const lockedLi = li('', '<span class="flex flex-1 oddsBox firstSpan"><i class="iconfont icon-suo"></i></span> <!----> <span class="flex flex-1 oddsBox firstSpan"><i class="iconfont icon-suo"></i></span>');
   const POPUPS = [
     null,
     li("21'", box(['+0/0.5', '2.02'], ['-0/0.5', '1.77'])) + li("15'", box(['+0/0.5', '2.00'], ['-0/0.5', '1.80'])) + lockedLi,
     li("30'", box(['3', '2.10'], ['3', '1.70'])) + li('', box(['2.5', '1.85'], ['2.5', '1.95'])),
-    li("30'", cols('10.5', '1.90', '1.80')) + lockedLi + li('', cols('9.5', '1.85', '1.90')),
+    // Real corner popup: live rows lead with minute + score, pre-match rows with a single date cell; line/Over/Under are .oddsBox cells.
+    li("30'", obox('10.5', '1.90', '1.80')) + liDate(obox('10.5', '2.10', '1.66')) + liDate(obox('9.5', '1.85', '1.90')),
   ];
   // Older history rows only load once the list is scrolled (AH tab only), as the real list may do.
   const OLDER = [null, li('', box(['+0.5', '1.88'], ['-0.5', '1.91'])) + li('', box(['+0.5', '1.82'], ['-0.5', '1.97'])), null, null];
@@ -62,7 +65,7 @@
    + Pre-match (reference only): Line 2.5, Over @ 1.85, Under @ 1.95
    + Live: Line 3, Over @ 2.10, Under @ 1.70
 - Corners Over/Under:
-   + Pre-match (reference only): Line 9.5, Over @ 1.85, Under @ 1.90
+   + Pre-match (reference only): Line 10.5, Over @ 2.10, Under @ 1.66
    + Live: Line 10.5, Over @ 1.90, Under @ 1.80` + TAIL;
     const problems = [];
     if (got !== want) problems.push(`prompt:\n--- got\n${got}\n--- want\n${want}`);
