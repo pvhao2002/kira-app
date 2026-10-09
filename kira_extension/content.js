@@ -70,12 +70,21 @@
     document.querySelectorAll('[class*="odd" i], [class*="asia" i], [class*="handicap" i], [class*="corner" i]')
       .forEach((el) => el.classList.forEach((c) => classes.add(c)));
     const box = document.querySelector('.flex.odds') || document.querySelector('[class*="odds" i]');
+    const flat = (el, max) => (el ? el.outerHTML.replace(/\s+/g, ' ').slice(0, max) : '(none)');
+    // Mobile (m.aiscore.com): the full dump overflows, so send tabs + first bookmaker block + any open popup instead.
+    const tabs = [...document.querySelectorAll('.oddTypesBox > span')].map((t) => `${t.className.includes('activeTab') ? '*' : ''}${text(t)}`);
+    const company = document.querySelector('.oddsContent > .oddsBox');
+    const popups = [...document.querySelectorAll('.van-popup, .van-overlay, .van-dialog, [role="dialog"], [class*="popup" i], [class*="modal" i]')]
+      .filter((el) => el.offsetParent !== null || getComputedStyle(el).display !== 'none');
     return [
       'Kira debug: no odds found. Copy this and send it back.',
       `url: ${location.href}`,
       `.flex.odds: ${!!document.querySelector('.flex.odds')}`,
       `classes: ${[...classes].slice(0, 60).join(' ')}`,
-      `html: ${box ? box.outerHTML.replace(/\s+/g, ' ').slice(0, 6000) : '(no odds container)'}`,
+      `tabs: ${tabs.join(' | ')}`,
+      `first-bookmaker: ${flat(company, 4000)}`,
+      `popups(${popups.length}): ${popups.map((p) => flat(p, 6000)).join('\n---\n') || '(none open)'}`,
+      `html: ${box ? flat(box, 3000) : '(no odds container)'}`,
     ].join('\n');
   }
 
