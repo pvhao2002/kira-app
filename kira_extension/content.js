@@ -63,15 +63,29 @@
     };
   }
 
-  function readRow(row, sideSelector) {
+  // Every non-empty text in the row, in DOM order. `skip` drops the leading minute/score cells of a popup row.
+  function tokensOf(row, skip) {
+    return [...row.children].slice(skip).flatMap((el) => [el, ...el.querySelectorAll('*')])
+      .map((e) => [...e.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').trim())
+      .filter(Boolean);
+  }
+
+  function readRow(row, sideSelector, skip = 0) {
     const sides = [...row.querySelectorAll(sideSelector)].map(sideOf);
-    return { lines: sides.map((s) => s.line).filter(Boolean), odds: sides.map((s) => s.odd).filter(Boolean) };
+    return { lines: sides.map((s) => s.line).filter(Boolean), odds: sides.map((s) => s.odd).filter(Boolean), tokens: tokensOf(row, skip) };
   }
 
   const fmtAh = ({ lines, odds }) =>
     lines.length === 2 && odds.length === 2 ? `Home ${lines[0]} @ ${odds[0]}, Away ${lines[1]} @ ${odds[1]}` : null;
-  const fmtOu = ({ lines, odds }) =>
-    lines.length >= 1 && odds.length === 2 ? `Line ${lines[0]}, Over @ ${odds[0]}, Under @ ${odds[1]}` : null;
+  // Over/Under layout on mobile is not fixed (line may sit in its own cell or next to each price), so read it from the texts:
+  // prices look like 1.90 (two decimals), the line is the other number (2.5, 2/2.5, 3). A three-decimal-free line like 2.50 is told apart by count.
+  const PRICE = /^\d+\.\d{2}$/;
+  function fmtOu({ tokens }) {
+    let odds = tokens.filter((t) => PRICE.test(t));
+    let line = tokens.find((t) => !PRICE.test(t) && /\d/.test(t))?.replace(/[^\d./+-]/g, '');
+    if (!line && odds.length === 3) [line, ...odds] = odds;
+    return line && odds.length >= 2 ? `Line ${line}, Over @ ${odds[0]}, Under @ ${odds[1]}` : null;
+  }
 
   const openPopup = (doc) =>
     [...doc.querySelectorAll('.van-popup')].find((p) => getComputedStyle(p).display !== 'none' && p.querySelector('ul.oddContent > li'));
@@ -81,7 +95,7 @@
     return [...popup.querySelectorAll('ul.oddContent > li')].map((li) => ({
       minute: text(li.firstElementChild),
       live: MINUTE.test(text(li.firstElementChild)),
-      value: fmt(readRow(li, ':scope > .oddsBox')),
+      value: fmt(readRow(li, ':scope > .oddsBox', 2)),
     }));
   }
 
@@ -162,6 +176,7 @@
         const live = at(3);
         const pre = at(2) || (await readPopup(doc, company, fmt, trace, opened));
         if (!pre) trace.unshift(`pre-match missing: ${name}`);
+        if (!pre && !live) trace.push(`${name} unreadable; bookmaker html: ${company.outerHTML.replace(/\s+/g, ' ').slice(0, 2500)}`);
         found.push({ name, pre, live });
       }
     } finally {
