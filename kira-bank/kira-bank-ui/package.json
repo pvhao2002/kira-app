@@ -22,13 +22,13 @@
   },
   "devDependencies": {
     "@angular/build": "22.2.1",
-    "@angular/cli": "22.0.7",
+    "@angular/cli": "22.2.2",
     "@angular/compiler-cli": "22.0.7",
     "@tailwindcss/postcss": "^4.1.11",
     "happy-dom": "^20.0.0",
     "tailwindcss": "^4.1.11",
     "typescript": "~6.0.0",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.3"
   },
   "engines": {
     "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
