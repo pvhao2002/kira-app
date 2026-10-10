@@ -30,30 +30,184 @@
     return `Line ${line}, Over @ ${over}, Under @ ${under}`;
   }
 
-  function buildPrompt(doc) {
+  function readDesktop(doc) {
     const odds = doc.querySelector('.flex.odds');
     if (!odds) return null;
     const { pre, live } = phaseRows(odds);
-    const markets = [
+    return [
       ['Asian Handicap', ah, odds.querySelector('.table.asia')],
       ['Goals Over/Under', overUnder, odds.querySelector('.table.bs')],
       ['Corners Over/Under', overUnder, odds.querySelector('.table.corner')],
-    ];
-    const sections = markets
-      .map(([name, fmt, table]) => {
-        const lines = [['Pre-match', fmt(table, pre)], ['Live', fmt(table, live)]]
-          .filter(([, v]) => v)
-          .map(([phase, v]) => `   + ${phase}: ${v}`);
-        return lines.length ? `- ${name}:\n${lines.join('\n')}` : null;
-      })
+    ].map(([name, fmt, table]) => ({ name, pre: fmt(table, pre), live: fmt(table, live) }));
+  }
+
+  // ---- Mobile (m.aiscore.com): one tab per market, one block per bookmaker, rows border1/2/3 = open/pre-match/live.
+  // Pre-match is locked (lock icon, no numbers) once the match is live; the bookmaker's history popup still has it.
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function until(fn, ms = 2000) {
+    const end = Date.now() + ms;
+    let v;
+    while (!(v = fn()) && Date.now() < end) await wait(50);
+    return v || null;
+  }
+
+  const ODD = /^\d+(\.\d+)?$/;
+  const MINUTE = /^\d+(\+\d+)?\s*['’′]/;
+
+  // A side is one odds cell: optional `.handicap` line plus the price. The price may be a nested leaf span or the cell itself.
+  function sideOf(side) {
+    const leaves = [...side.querySelectorAll('span')].filter((s) => !s.children.length && !s.classList.contains('handicap'));
+    return {
+      line: text(side.querySelector('.handicap')),
+      odd: (leaves.length ? leaves : [side]).map(text).find((t) => ODD.test(t)),
+    };
+  }
+
+  // Every non-empty text in the row, in DOM order. A popup row also has leading time cells (minute + score, or just a date),
+  // so there only the `.oddsBox` cells count.
+  function tokensOf(row, popup) {
+    return [...row.children].filter((c) => !popup || c.classList.contains('oddsBox')).flatMap((el) => [el, ...el.querySelectorAll('*')])
+      .map((e) => [...e.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').trim())
       .filter(Boolean);
+  }
+
+  function readRow(row, sideSelector, popup = false) {
+    const sides = [...row.querySelectorAll(sideSelector)].map(sideOf);
+    return { lines: sides.map((s) => s.line).filter(Boolean), odds: sides.map((s) => s.odd).filter(Boolean), tokens: tokensOf(row, popup) };
+  }
+
+  const fmtAh = ({ lines, odds }) =>
+    lines.length === 2 && odds.length === 2 ? `Home ${lines[0]} @ ${odds[0]}, Away ${lines[1]} @ ${odds[1]}` : null;
+  // Over/Under layout on mobile is not fixed (line may sit in its own cell or next to each price), so read it from the texts:
+  // prices look like 1.90 (two decimals), the line is the other number (2.5, 2/2.5, 3). A three-decimal-free line like 2.50 is told apart by count.
+  const PRICE = /^\d+\.\d{2}$/;
+  function fmtOu({ tokens }) {
+    let odds = tokens.filter((t) => PRICE.test(t));
+    let line = tokens.find((t) => !PRICE.test(t) && /\d/.test(t))?.replace(/[^\d./+-]/g, '');
+    if (!line && odds.length === 3) [line, ...odds] = odds;
+    return line && odds.length >= 2 ? `Line ${line}, Over @ ${odds[0]}, Under @ ${odds[1]}` : null;
+  }
+
+  const openPopup = (doc) =>
+    [...doc.querySelectorAll('.van-popup')].find((p) => getComputedStyle(p).display !== 'none' && p.querySelector('ul.oddContent > li'));
+
+  // History is newest first. The earliest live row is the last one with a minute; the pre-match odd is the first valid row after it.
+  function popupRows(popup, fmt) {
+    return [...popup.querySelectorAll('ul.oddContent > li')].map((li) => ({
+      minute: text(li.firstElementChild),
+      live: MINUTE.test(text(li.firstElementChild)),
+      value: fmt(readRow(li, ':scope > .oddsBox', true)),
+    }));
+  }
+
+  const preFromRows = (rows) => rows.slice(rows.map((r) => r.live).lastIndexOf(true) + 1).find((r) => r.value)?.value ?? null;
+
+  // The history list can load older rows lazily as it scrolls, so keep scrolling until the pre-match row shows up or nothing more loads.
+  async function preMatchFromPopup(popup, fmt) {
+    let rows = popupRows(popup, fmt);
+    for (let stalled = 0; stalled < 2 && !preFromRows(rows); ) {
+      [popup, popup.querySelector('.wrapper'), popup.querySelector('ul.oddContent')].forEach((el) => {
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+      popup.querySelector('ul.oddContent > li:last-child')?.scrollIntoView?.({ block: 'end' });
+      await wait(300);
+      const next = popupRows(popup, fmt);
+      stalled = next.length === rows.length ? stalled + 1 : 0;
+      rows = next;
+    }
+    return { value: preFromRows(rows), rows };
+  }
+
+  async function readPopup(doc, company, fmt, trace, opened) {
+    // Click handlers sit on an unknown element and clicks only bubble up, so try the deepest candidates first.
+    const openers = [
+      ['arrow icon', company.querySelector('.oddsBoxRight i')],
+      ['arrow', company.querySelector('.oddsBoxRight')],
+      ['live row', company.querySelector('.oddsBoxContent > .border3')],
+      ['live row cell', company.querySelector('.oddsBoxContent > .border3 > span')],
+      ['pre-match row', company.querySelector('.oddsBoxContent > .border2')],
+      ['odds box', company.querySelector('.oddsBoxContent')],
+      ['bookmaker', company],
+    ].filter(([, el]) => el);
+    for (const [i, [label, opener]] of openers.entries()) {
+      opener.click();
+      // The history is fetched when the popup opens, so give a slow connection time before trying the next opener.
+      const popup = await until(() => openPopup(doc), 2500);
+      if (!popup) {
+        trace.push(`no popup after click on ${label}`);
+        continue;
+      }
+      try {
+        opened.push(label);
+        const { value, rows } = await preMatchFromPopup(popup, fmt);
+        if (!value) trace.push(`popup rows=${rows.length}: ${rows.map((r) => `${r.minute || '-'}${r.value ? '+' : '?'}`).join(' ')}\n${popup.outerHTML.replace(/\s+/g, ' ').slice(-3000)}`);
+        return value;
+      } finally {
+        const close = popup.querySelector('.top .right');
+        (close?.querySelector('i') || close)?.click();
+        if (!(await until(() => !openPopup(doc), 1500))) close?.click();
+      }
+    }
+    const seen = [...doc.querySelectorAll('.van-popup')].map((p) => `${getComputedStyle(p).display}/li=${p.querySelectorAll('li').length}`);
+    trace.push(`popup did not open; .van-popup in page: ${seen.join(', ') || 'none'}\nbookmaker html: ${company.outerHTML.replace(/\s+/g, ' ').slice(0, 2500)}`);
+    return null;
+  }
+
+  async function readMobile(doc, trace = [], opened = []) {
+    const tabAt = (i) => doc.querySelectorAll('.oddTypesBox > span')[i];
+    if (!tabAt(1)) return null;
+    const original = [...doc.querySelectorAll('.oddTypesBox > span')].findIndex((t) => t.classList.contains('activeTab'));
+    const found = [];
+    try {
+      // Tab 0 is 1X2 (not used); tabs are positional because their labels are localized.
+      for (const [name, fmt, i] of [['Asian Handicap', fmtAh, 1], ['Goals Over/Under', fmtOu, 2], ['Corners Over/Under', fmtOu, 3]]) {
+        const tab = tabAt(i);
+        if (!tab) continue;
+        if (!tab.classList.contains('activeTab')) {
+          tab.click();
+          await until(() => tabAt(i)?.classList.contains('activeTab'), 1500);
+          await wait(100);
+        }
+        const company = doc.querySelector('.oddsContent > .oddsBox');
+        if (!company) continue;
+        const at = (n) => {
+          const row = company.querySelector(`.oddsBoxContent > .border${n}`);
+          return row ? fmt(readRow(row, ':scope > span')) : null;
+        };
+        const live = at(3);
+        const pre = at(2) || (await readPopup(doc, company, fmt, trace, opened));
+        if (!pre) trace.unshift(`pre-match missing: ${name}`);
+        if (!pre && !live) trace.push(`${name} unreadable; bookmaker html: ${company.outerHTML.replace(/\s+/g, ' ').slice(0, 2500)}`);
+        found.push({ name, pre, live });
+      }
+    } finally {
+      if (original >= 0 && !tabAt(original)?.classList.contains('activeTab')) tabAt(original)?.click();
+    }
+    return found;
+  }
+
+  // Any live odds → recommend live only (pre-match stays as reference for line movement); otherwise pre-match.
+  function composePrompt(found) {
+    const hasLive = found?.some((m) => m.live);
+    const sections = (found || [])
+      .filter((m) => m.pre || m.live)
+      .map((m) => {
+        const lines = [m.pre && `   + Pre-match${hasLive ? ' (reference only)' : ''}: ${m.pre}`, m.live && `   + Live: ${m.live}`].filter(Boolean);
+        return `- ${m.name}:\n${lines.join('\n')}`;
+      });
     if (!sections.length) return null;
     return [
       'Run 1,000 Monte Carlo simulations of this football match and recommend the bet with the best value, based on the simulated win probability (%) versus the implied probability of the odds.',
+      hasLive
+        ? 'Live (in-play) odds are available, so recommend live bets only. Use the pre-match odds only as a reference for how the lines moved.'
+        : 'Only pre-match odds are available, so recommend pre-match bets.',
       'Use the following odds lines:',
       ...sections,
+      'Finish with a summary: the recommended bets ranked by priority (best value first), each with its market, line, odds, simulated win probability and edge.',
     ].join('\n');
   }
+
+  const buildPrompt = (doc) => composePrompt(readDesktop(doc));
 
   function toast(msg, ok) {
     const el = document.createElement('div');
@@ -69,17 +223,28 @@
     document.querySelectorAll('[class*="odd" i], [class*="asia" i], [class*="handicap" i], [class*="corner" i]')
       .forEach((el) => el.classList.forEach((c) => classes.add(c)));
     const box = document.querySelector('.flex.odds') || document.querySelector('[class*="odds" i]');
+    const flat = (el, max) => (el ? el.outerHTML.replace(/\s+/g, ' ').slice(0, max) : '(none)');
+    // Mobile (m.aiscore.com): the full dump overflows, so send tabs + first bookmaker block + any open popup instead.
+    const tabs = [...document.querySelectorAll('.oddTypesBox > span')].map((t) => `${t.className.includes('activeTab') ? '*' : ''}${text(t)}`);
+    const company = document.querySelector('.oddsContent > .oddsBox');
+    const popups = [...document.querySelectorAll('.van-popup, .van-overlay, .van-dialog, [role="dialog"], [class*="popup" i], [class*="modal" i]')]
+      .filter((el) => el.offsetParent !== null || getComputedStyle(el).display !== 'none');
     return [
       'Kira debug: no odds found. Copy this and send it back.',
       `url: ${location.href}`,
       `.flex.odds: ${!!document.querySelector('.flex.odds')}`,
       `classes: ${[...classes].slice(0, 60).join(' ')}`,
-      `html: ${box ? box.outerHTML.replace(/\s+/g, ' ').slice(0, 6000) : '(no odds container)'}`,
+      `tabs: ${tabs.join(' | ')}`,
+      `first-bookmaker: ${flat(company, 4000)}`,
+      `popups(${popups.length}): ${popups.map((p) => flat(p, 6000)).join('\n---\n') || '(none open)'}`,
+      `html: ${box ? flat(box, 3000) : '(no odds container)'}`,
     ].join('\n');
   }
 
   async function copyOdds() {
-    const prompt = buildPrompt(document);
+    const trace = [];
+    const opened = [];
+    const prompt = composePrompt(readDesktop(document) || (await readMobile(document, trace, opened)));
     if (!prompt) {
       toast('Kira: no odds found on this page', false);
       // On a phone there is no DevTools, so hand back what the page looks like for fixing the selectors.
@@ -88,10 +253,12 @@
     }
     try {
       await navigator.clipboard.writeText(prompt);
-      toast('Kira: odds copied', true);
+      toast(`Kira: odds copied${opened.length ? ` (popup via ${[...new Set(opened)].join(', ')})` : ''}`, true);
     } catch {
       copyPanel(prompt);
     }
+    // Pre-match could not be read: on a phone there is no DevTools, so hand back what the popup looked like.
+    if (trace.some((t) => t.startsWith('pre-match missing')) && globalThis.kiraBookmarklet) copyPanel(`Kira debug: pre-match missing. Copy this and send it back.\n${trace.join('\n')}`);
   }
 
   // iOS Safari often refuses clipboard writes from a bookmarklet; a tap on this button is a fresh user gesture.
@@ -128,6 +295,7 @@
 
   // Exposed for the headless self-check (test/check.html); harmless on the page.
   globalThis.kiraBuildPrompt = buildPrompt;
+  globalThis.kiraBuildPromptMobile = async (doc) => composePrompt(await readMobile(doc));
 
   if (globalThis.kiraBookmarklet) return void copyOdds();
 

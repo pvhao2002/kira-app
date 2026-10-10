@@ -29,25 +29,28 @@
 <pre id="result"></pre>
 <script src="../content.js"></script>
 <script>
-  const HEAD = 'Run 1,000 Monte Carlo simulations of this football match and recommend the bet with the best value, based on the simulated win probability (%) versus the implied probability of the odds.\nUse the following odds lines:\n';
+  const BASE = 'Run 1,000 Monte Carlo simulations of this football match and recommend the bet with the best value, based on the simulated win probability (%) versus the implied probability of the odds.\n';
+  const LIVE = BASE + 'Live (in-play) odds are available, so recommend live bets only. Use the pre-match odds only as a reference for how the lines moved.\nUse the following odds lines:\n';
+  const PRE = BASE + 'Only pre-match odds are available, so recommend pre-match bets.\nUse the following odds lines:\n';
+  const TAIL = '\nFinish with a summary: the recommended bets ranked by priority (best value first), each with its market, line, odds, simulated win probability and edge.';
   const fails = [];
   const eq = (name, got, want) => { if (got !== want) fails.push(`${name}:\n--- got\n${got}\n--- want\n${want}`); };
 
-  eq('with in-play', kiraBuildPrompt(document), HEAD +
+  eq('with in-play', kiraBuildPrompt(document), LIVE +
 `- Asian Handicap:
-   + Pre-match: Home 0 @ 1.95, Away 0 @ 1.85
+   + Pre-match (reference only): Home 0 @ 1.95, Away 0 @ 1.85
    + Live: Home 0 @ 2.02, Away 0 @ 1.77
 - Goals Over/Under:
-   + Pre-match: Line 2/2.5, Over @ 1.87, Under @ 1.92
-   + Live: Line 2.5, Over @ 3.45, Under @ 1.30`);
+   + Pre-match (reference only): Line 2/2.5, Over @ 1.87, Under @ 1.92
+   + Live: Line 2.5, Over @ 3.45, Under @ 1.30` + TAIL);
 
   // Pre-match only: drop the in-play label row and the last row of every market.
   document.querySelectorAll('.flex.odds > .table').forEach((t) => t.querySelectorAll(':scope > .row')[2].remove());
-  eq('no in-play', kiraBuildPrompt(document), HEAD +
+  eq('no in-play', kiraBuildPrompt(document), PRE +
 `- Asian Handicap:
    + Pre-match: Home 0 @ 1.95, Away 0 @ 1.85
 - Goals Over/Under:
-   + Pre-match: Line 2/2.5, Over @ 1.87, Under @ 1.92`);
+   + Pre-match: Line 2/2.5, Over @ 1.87, Under @ 1.92` + TAIL);
 
   document.getElementById('fixture').remove();
   eq('no odds', kiraBuildPrompt(document), null);
