@@ -38,12 +38,12 @@
   },
   "devDependencies": {
     "@angular/build": "^22.2.1",
-    "@angular/cli": "^21.2.11",
+    "@angular/cli": "^21.2.26",
     "@angular/compiler-cli": "^21.2.25",
     "@types/three": "^0.185.1",
     "autoprefixer": "^10.4.23",
     "jsdom": "^27.1.0",
-    "postcss": "^8.5.15",
+    "postcss": "^8.5.29",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"
