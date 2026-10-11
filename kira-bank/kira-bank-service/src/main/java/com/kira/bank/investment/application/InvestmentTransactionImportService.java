@@ -326,12 +326,13 @@ public class InvestmentTransactionImportService {
     @Transactional(readOnly = true)
     public PageResponse<TransactionResponse> transactions(Long userId, Long accountId, LocalDate fromDate,
                                                           LocalDate toDate, InvestmentTransactionType type,
-                                                          InvestmentTransactionStatus status, Pageable pageable) {
+                                                          InvestmentTransactionStatus status, boolean hideNoise,
+                                                          Pageable pageable) {
         account(accountId, userId);
         ZoneId zone = ZoneId.of(transactionImportTimeZone);
         Instant from = fromDate == null ? null : fromDate.atStartOfDay(zone).toInstant();
         Instant to = toDate == null ? null : toDate.plusDays(1).atStartOfDay(zone).toInstant();
-        Page<TransactionResponse> page = transactions.search(userId, accountId, from, to, type, status, pageable)
+        Page<TransactionResponse> page = transactions.search(userId, accountId, from, to, type, status, hideNoise, pageable)
             .map(this::transactionResponse);
         return new PageResponse<>(page.getContent(), new PageMeta(
             page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages()));

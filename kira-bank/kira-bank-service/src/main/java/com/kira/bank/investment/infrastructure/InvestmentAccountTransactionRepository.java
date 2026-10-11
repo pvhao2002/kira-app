@@ -33,12 +33,18 @@ public interface InvestmentAccountTransactionRepository extends JpaRepository<In
           and (:toDate is null or t.transactionAt < :toDate)
           and (:type is null or t.transactionType = :type)
           and (:status is null or t.transactionStatus = :status)
+          and (:hideNoise = false or not (
+               (t.transactionType = com.kira.bank.investment.domain.InvestmentTransactionType.WITHDRAWAL
+                and t.transactionStatus = com.kira.bank.investment.domain.InvestmentTransactionStatus.PENDING)
+            or (t.transactionType <> com.kira.bank.investment.domain.InvestmentTransactionType.BONUS
+                and t.transactionStatus = com.kira.bank.investment.domain.InvestmentTransactionStatus.FAILED)))
         """)
     Page<InvestmentAccountTransaction> search(
         @Param("userId") Long userId, @Param("accountId") Long accountId,
         @Param("fromDate") Instant fromDate, @Param("toDate") Instant toDate,
         @Param("type") InvestmentTransactionType type,
-        @Param("status") InvestmentTransactionStatus status, Pageable pageable);
+        @Param("status") InvestmentTransactionStatus status,
+        @Param("hideNoise") boolean hideNoise, Pageable pageable);
 
     @Query("""
         select new com.kira.bank.investment.application.InvestmentTypeSummary(

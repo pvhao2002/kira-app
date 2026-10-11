@@ -1,0 +1,13 @@
+:host { display:block; color:var(--navy); }
+.panel { margin-bottom:16px; padding:20px; border:1px solid var(--border); border-radius:15px; background:var(--surface); }
+.filters { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
+.filters label { display:flex; flex-direction:column; gap:4px; color:var(--muted); font-size:11px; }
+.filters select, .filters input { min-height:36px; padding:6px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--navy); }
+.metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:16px; }
+.metrics article { padding:14px 16px; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
+.metrics small { display:block; color:var(--muted); font-size:11px; }
+.metrics strong { display:block; margin-top:6px; font-size:20px; overflow-wrap:anywhere; }
+.pos { color:#2563eb; }.neg { color:#dc2626; }
+h2 { margin:0 0 8px; font-size:16px; }
+.cashflow-canvas { position:relative; height:300px; }
+.state, .empty { padding:24px; text-align:center; color:var(--muted); }

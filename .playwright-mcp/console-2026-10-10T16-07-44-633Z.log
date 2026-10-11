@@ -1,0 +1,16 @@
+[     330ms] [LOG] Angular is running in development mode. @ http://localhost:4201/@fs/D:/kira/kira-app/kira-bank/kira-bank-ui/.angular/cache/22.2.1/kira-bank-ui/vite/deps/core-C7GNmHrv.js?v=bcfc6f3a:9363
+[    1128ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[    2146ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[    4171ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[    8195ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[   14863ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:4201/api/v1/investment/accounts?page=0&size=20:0
+[   14876ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:4201/api/v1/investment/reports/periodic?fromDate=2015-01-01&toDate=2026-10-10&granularity=YEAR:0
+[   16221ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[   32250ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[   62264ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[   92286ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[  122308ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[  152330ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[  182348ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[  212381ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56
+[  242409ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-6YTFKHOY.js:56

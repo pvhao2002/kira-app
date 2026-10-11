@@ -238,6 +238,19 @@ export class InvestmentTransactionPage {
     });
   }
 
+  allSelected(): boolean {
+    const items = this.reviewItems();
+    return items.length > 0 && items.every(item => item.selected);
+  }
+
+  toggleAll(selected: boolean): void {
+    this.reviewItems.update(items => items.map(item => ({...item, selected})));
+  }
+
+  toggleItem(id: string, selected: boolean): void {
+    this.reviewItems.update(items => items.map(item => item.itemId === id ? {...item, selected} : item));
+  }
+
   openResolution(item: ReviewItem): void {
     this.conflictItemId.set(item.itemId);
   }
@@ -290,11 +303,11 @@ export class InvestmentTransactionPage {
       : this.i18n.t('investmentTransactions.unknownValue');
   }
 
-  private transactionTypeLabel(value: string | null): string {
+  transactionTypeLabel(value: string | null): string {
     return this.enumLabel('investmentTransactions.type', value);
   }
 
-  private transactionStatusLabel(value: string | null): string {
+  transactionStatusLabel(value: string | null): string {
     return this.enumLabel('investmentTransactions.status', value);
   }
 

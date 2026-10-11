@@ -94,8 +94,9 @@ public class InvestmentController {
                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
                         @RequestParam(required = false) InvestmentTransactionType type,
                         @RequestParam(required = false) InvestmentTransactionStatus status,
+                        @RequestParam(defaultValue = "false") boolean hideNoise,
                         @PageableDefault(size = 20, sort = "transactionAt", direction = Sort.Direction.DESC) Pageable p) {
-        return transactionImports.transactions(user, id, fromDate, toDate, type, status, p);
+        return transactionImports.transactions(user, id, fromDate, toDate, type, status, hideNoise, p);
     }
 
     @PostMapping("/accounts/{id}/manual-transactions")

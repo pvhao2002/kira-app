@@ -1,0 +1,32 @@
+<section class="page-heading">
+  <div><span class="eyebrow">{{ i18n.t('investmentReports.eyebrow') }}</span><h1>{{ i18n.t('investmentCashflow.title') }}</h1><p>{{ i18n.t('investmentCashflow.description') }}</p></div>
+</section>
+
+<section class="panel filters">
+  <label><span>{{ i18n.t('investmentReports.account') }}</span><select [value]="accountId() ?? ''" (change)="chooseAccount($any($event.target).value)"><option value="" [selected]="accountId() === null">{{ i18n.t('investmentReports.allAccounts') }}</option>@for (account of accounts(); track account.id) { <option [value]="account.id" [selected]="account.id === accountId()">{{ account.accountName }} · {{ account.currency }}</option> }</select></label>
+  <label><span>{{ i18n.t('investmentReports.periodic.granularity') }}</span><select [value]="granularity()" (change)="chooseGranularity($any($event.target).value)">@for (g of granularities; track g) { <option [value]="g" [selected]="g === granularity()">{{ i18n.t('investmentReports.periodic.' + g.toLowerCase()) }}</option> }</select></label>
+  <label><span>{{ i18n.t('investmentReports.from') }}</span><input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)"/></label>
+  <label><span>{{ i18n.t('investmentReports.to') }}</span><input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)"/></label>
+  @if (currencies().length > 1) { <label><span>{{ i18n.t('investmentReports.currency') }}</span><select [value]="currency()" (change)="currency.set($any($event.target).value)">@for (item of currencies(); track item) { <option [value]="item" [selected]="item === currency()">{{ item }}</option> }</select></label> }
+  <button class="btn primary" type="button" [disabled]="rangeInvalid() || loading()" (click)="apply()">{{ i18n.t('investmentReports.apply') }}</button>
+</section>
+
+@if (loading()) { <div class="state"><span class="spinner"></span>{{ i18n.t('investmentReports.loading') }}</div> }
+@else if (failed()) { <div class="state error">{{ i18n.t('investmentReports.error') }} <button class="btn ghost" type="button" (click)="load()">{{ i18n.t('investmentReports.retry') }}</button></div> }
+@else if (data(); as d) {
+  <section class="metrics">
+    <article><small>{{ i18n.t('investmentCashflow.totalDeposits') }}</small><strong>{{ money(d.totals.deposits) }}</strong></article>
+    <article><small>{{ i18n.t('investmentCashflow.totalWithdrawals') }}</small><strong>{{ money(d.totals.withdrawals) }}</strong></article>
+    <article><small>{{ i18n.t('investmentCashflow.diff') }}</small><strong [class.pos]="d.totals.net >= 0" [class.neg]="d.totals.net < 0">{{ money(d.totals.net) }}</strong></article>
+  </section>
+
+  <section class="panel">
+    <h2>{{ i18n.t('investmentCashflow.barChart') }}</h2>
+    <div class="cashflow-canvas"><canvas #barCanvas role="img" [attr.aria-label]="i18n.t('investmentCashflow.barChart')"></canvas></div>
+  </section>
+
+  <section class="panel">
+    <h2>{{ i18n.t('investmentCashflow.lineChart') }}</h2>
+    <div class="cashflow-canvas"><canvas #lineCanvas role="img" [attr.aria-label]="i18n.t('investmentCashflow.lineChart')"></canvas></div>
+  </section>
+} @else { <div class="empty">{{ i18n.t('investmentReports.empty') }}</div> }

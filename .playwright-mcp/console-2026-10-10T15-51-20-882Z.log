@@ -1,0 +1,7 @@
+[     573ms] [LOG] Angular is running in development mode. @ http://localhost:4201/@fs/D:/kira/kira-app/kira-bank/kira-bank-ui/.angular/cache/22.2.1/kira-bank-ui/vite/deps/core-C7GNmHrv.js?v=ebf48f45:9363
+[    1132ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-ZHHFCTFM.js:56
+[    2161ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-ZHHFCTFM.js:56
+[    4181ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-ZHHFCTFM.js:56
+[    8198ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-ZHHFCTFM.js:56
+[   16219ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-ZHHFCTFM.js:56
+[   32246ms] [ERROR] WebSocket connection to 'ws://localhost:4201/api/v1/ws/notifications' failed: Error during WebSocket handshake: Unexpected response code: 403 @ http://localhost:4201/chunk-ZHHFCTFM.js:56

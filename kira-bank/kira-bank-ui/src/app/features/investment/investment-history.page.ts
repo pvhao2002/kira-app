@@ -48,6 +48,7 @@ export class InvestmentHistoryPage {
   readonly appliedHistoryFilters = signal<HistoryFilters>({...EMPTY_HISTORY_FILTERS});
   readonly historyMeta = signal<PageMeta>({page: 0, size: HISTORY_PAGE_SIZE, totalElements: 0, totalPages: 0});
   readonly historyFiltersOpen = signal(false);
+  readonly hideNoise = signal(true);
   readonly pendingDelete = signal<InvestmentTransaction | null>(null);
   readonly deleting = signal(false);
   readonly historyDateRangeInvalid = computed(() =>
@@ -168,6 +169,7 @@ export class InvestmentHistoryPage {
     if (applied.toDate) filters['toDate'] = applied.toDate;
     if (applied.type) filters['type'] = applied.type;
     if (applied.status) filters['status'] = applied.status;
+    if (this.hideNoise()) filters['hideNoise'] = 'true';
     this.historyLoading.set(true);
     this.api.investmentTransactions(accountId, filters).subscribe({
       next: (response: PageResponse<InvestmentTransaction>) => {
@@ -198,6 +200,11 @@ export class InvestmentHistoryPage {
     return Number.isNaN(date.getTime()) ? '' : dateFormat(this.locale(), {
       timeStyle: 'short'
     }).format(date);
+  }
+
+  toggleHideNoise(value: boolean): void {
+    this.hideNoise.set(value);
+    this.loadHistory(0);
   }
 
   canDeleteTransaction(transaction: InvestmentTransaction): boolean {

@@ -76,6 +76,11 @@ export const routes: Routes = [
         data: {titleKey: 'route.investmentStatistics'}
       },
       {
+        path: 'investment/cashflow',
+        loadComponent: () => import('./features/investment/investment-cashflow.page').then(m => m.InvestmentCashflowPage),
+        data: {titleKey: 'route.investmentCashflow'}
+      },
+      {
         path: 'investment/reports',
         loadComponent: () => import('./features/investment/investment-reports.page').then(m => m.InvestmentReportsPage),
         data: {titleKey: 'route.investmentReports'}
@@ -91,6 +96,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/investment/investment-ai-queue.page').then(m => m.InvestmentAiQueuePage),
         data: {titleKey: 'route.investmentAiQueue'}
+      },
+      {
+        path: 'investment/feed',
+        loadComponent: () =>
+          import('./features/investment/investment-feed.page').then(m => m.InvestmentFeedPage),
+        data: {titleKey: 'route.investmentFeed'}
       },
       {
         path: 'investment/history',

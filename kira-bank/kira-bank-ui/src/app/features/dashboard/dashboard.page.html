@@ -62,7 +62,7 @@
   <app-dashboard-status [loading]="investments().loading" [failed]="investments().failed" [updatedAt]="investments().updatedAt" (retry)="loadInvestments()"/>
   @if (investments().data; as data) {
     <div class="investment-meta"><span>{{ i18n.t('overview.activeAccounts') }}: <b>{{ data.activeAccounts }}</b> · {{ date(data.fromDate) }} – {{ date(data.toDate) }}</span>
-      @if (data.currencies.length > 1) { <label class="select-label"><span>{{ i18n.t('overview.currency') }}</span><select [attr.aria-label]="i18n.t('overview.currency')" [value]="flow()?.currency" (change)="changeCurrency($event)">@for (item of data.currencies; track item.currency) { <option [value]="item.currency">{{ item.currency }}</option> }</select></label> }
+      @if (data.currencies.length > 1) { <label class="select-label"><span>{{ i18n.t('overview.currency') }}</span><select [attr.aria-label]="i18n.t('overview.currency')" [value]="flow().currency" (change)="changeCurrency($event)">@for (item of data.currencies; track item.currency) { <option [value]="item.currency">{{ item.currency }}</option> }</select></label> }
     </div>
     @if (data.days !== days()) { <p class="muted" role="status">{{ i18n.t('overview.previousPeriod', {days: data.days}) }}</p> }
     @if (flow(); as value) {

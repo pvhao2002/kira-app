@@ -97,21 +97,25 @@
       </div>
       <div class="table-scroll">
         <table>
-          <thead><tr><th>{{ i18n.t('investmentTransactions.review') }}</th><th>{{ i18n.t('investmentTransactions.action') }}</th><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th>{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('field.currency') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th><th>{{ i18n.t('investmentTransactions.resolution') }}</th></tr></thead>
+          <thead>
+            <tr>
+              <th class="check"><input type="checkbox" [checked]="allSelected()" (change)="toggleAll($any($event.target).checked)" [attr.aria-label]="i18n.t('investmentTransactions.confirmSelected')"></th>
+              <th>{{ i18n.t('investmentTransactions.action') }}</th><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th class="num">{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th><th>{{ i18n.t('investmentTransactions.resolution') }}</th>
+            </tr>
+          </thead>
           <tbody>
             @for (item of reviewItems(); track item.itemId) {
-              <tr [class.needs-review]="item.processingAction === 'REVIEW'" [class.duplicate-row]="item.processingAction === 'DUPLICATE'">
-                <td><input type="checkbox" [(ngModel)]="item.selected" [attr.aria-label]="i18n.t('investmentTransactions.selectItem', {id: item.itemId})"></td>
+              <tr [class.needs-review]="item.processingAction === 'REVIEW'" [class.duplicate-row]="item.processingAction === 'DUPLICATE'" [class.is-skipped]="!item.selected">
+                <td class="check"><input type="checkbox" [checked]="item.selected" (change)="toggleItem(item.itemId, $any($event.target).checked)" [attr.aria-label]="i18n.t('investmentTransactions.selectItem', {id: item.itemId})"></td>
                 <td><span class="action-badge" [attr.data-action]="item.processingAction">{{ processingActionLabel(item.processingAction) }}</span>
                   @if (item.warnings.length) { <small class="warnings" [title]="item.warnings.join(', ')">{{ i18n.t('investmentTransactions.warnings', {count: item.warnings.length}) }}</small> }
                 </td>
-                <td><input type="datetime-local" [ngModel]="toLocalDateTime(item.transactionAt)" (ngModelChange)="updateTime(item, $event)"></td>
-                <td><app-custom-select [(ngModel)]="item.transactionType" [ariaLabel]="i18n.t('investmentTransactions.type')" [options]="reviewTypeOptions()" [placeholder]="i18n.t('investmentTransactions.notSelected')"></app-custom-select></td>
-                <td><app-custom-select [(ngModel)]="item.transactionStatus" [ariaLabel]="i18n.t('field.status')" [options]="reviewStatusOptions()" [placeholder]="i18n.t('investmentTransactions.notSelected')"></app-custom-select></td>
-                <td><input class="amount" type="number" min="0.0001" step="0.0001" [(ngModel)]="item.amount"></td>
-                <td><input class="currency" maxlength="3" [(ngModel)]="item.currency"></td>
-                <td><input [(ngModel)]="item.externalTransactionId"></td>
-                <td><textarea rows="2" maxlength="1000" [(ngModel)]="item.description"></textarea></td>
+                <td class="nowrap">{{ item.transactionAt ? (item.transactionAt | date:'yyyy-MM-dd HH:mm') : '—' }}</td>
+                <td>{{ item.transactionType ? transactionTypeLabel(item.transactionType) : '—' }}</td>
+                <td>{{ item.transactionStatus ? transactionStatusLabel(item.transactionStatus) : '—' }}</td>
+                <td class="num nowrap">{{ item.amount !== null ? (item.amount | number:'1.0-4') + ' ' + (item.currency ?? '') : '—' }}</td>
+                <td class="nowrap">{{ item.externalTransactionId || '—' }}</td>
+                <td class="desc">{{ item.description || '—' }}</td>
                 <td><button class="resolution" type="button" (click)="openResolution(item)">{{ resolutionLabel(item.resolution) }}</button></td>
               </tr>
             }

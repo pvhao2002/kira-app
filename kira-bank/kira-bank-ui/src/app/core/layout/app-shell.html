@@ -1,15 +1,28 @@
-<div [class.sidebar-open]="menuOpen()" class="app-layout">
+<div [class.sidebar-open]="menuOpen()" [class.rail]="sidebarCollapsed()" class="app-layout">
   <aside>
-    <a class="brand" routerLink="/app"><span class="brand-mark">K</span>Kira Life</a>
+    <a class="brand" routerLink="/app"><span class="brand-mark">K</span><span class="brand-name">Kira Life</span></a>
     <button (click)="menuOpen.set(false)" [attr.aria-label]="i18n.t('shell.closeMenu')" class="close-menu">×</button>
+    <button (click)="toggleSidebar()"
+            [attr.aria-expanded]="!sidebarCollapsed()"
+            [attr.aria-label]="i18n.t(sidebarCollapsed() ? 'shell.expandSidebar' : 'shell.collapseSidebar')"
+            [title]="i18n.t(sidebarCollapsed() ? 'shell.expandSidebar' : 'shell.collapseSidebar')"
+            class="rail-toggle"
+            type="button"><app-icon [name]="sidebarCollapsed() ? 'chevron-right' : 'chevron-left'"/></button>
     <nav class="side-nav">
-      <a [routerLinkActiveOptions]="{exact: true}" routerLink="/app" routerLinkActive="active"><span><app-icon name="home"/></span>{{ i18n.t('shell.overview') }}</a>
+      <a [routerLinkActiveOptions]="{exact: true}" [title]="i18n.t('shell.overview')" routerLink="/app" routerLinkActive="active" ariaCurrentWhenActive="page"><span><app-icon name="home"/></span><span class="nav-label">{{ i18n.t('shell.overview') }}</span></a>
       @for (group of nav(); track group.labelKey) {
-        <div class="nav-group"><small [class]="group.flow">{{ i18n.t(group.labelKey) }}</small>
-          @for (item of group.items; track item.path) {
-            <a (click)="menuOpen.set(false)" [routerLink]="item.path"
-               routerLinkActive="active"><span><app-icon [name]="item.icon"/></span>{{ i18n.t(item.labelKey) }}</a>
-          }
+        <div [class.has-active]="group.labelKey === activeGroup()" [class.collapsed]="isGroupCollapsed(group.labelKey)" class="nav-group">
+          <button (click)="toggleGroup(group.labelKey)" [attr.aria-expanded]="!isGroupCollapsed(group.labelKey)"
+                  [attr.aria-controls]="'nav-group-' + group.flow + '-' + $index" [class]="'group-toggle ' + group.flow" type="button">
+            <small>{{ i18n.t(group.labelKey) }}</small><app-icon name="chevron-down"/>
+          </button>
+          <div [id]="'nav-group-' + group.flow + '-' + $index" class="group-items">
+            @for (item of group.items; track item.path) {
+              <a (click)="menuOpen.set(false)" [routerLink]="item.path" [title]="i18n.t(item.labelKey)"
+                 ariaCurrentWhenActive="page"
+                 routerLinkActive="active"><span><app-icon [name]="item.icon"/></span><span class="nav-label">{{ i18n.t(item.labelKey) }}</span></a>
+            }
+          </div>
         </div>
       }
     </nav>

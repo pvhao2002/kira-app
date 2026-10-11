@@ -88,7 +88,7 @@
       @if ((investment().data?.currencies ?? []).length > 1) {
         <label class="currency">
           <span>{{ i18n.t('financeReport.currency') }}</span>
-          <select [value]="flow()?.currency" (change)="chooseCurrency($any($event.target).value)">
+          <select [value]="flow().currency" (change)="chooseCurrency($any($event.target).value)">
             @for (item of investment().data?.currencies ?? []; track item.currency) { <option [value]="item.currency">{{ item.currency }}</option> }
           </select>
         </label>

@@ -1,6 +1,7 @@
 package com.kira.bank.identity.application;
 
 import com.kira.bank.shared.web.ApiException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,7 @@ public class LoginRateLimiter {
     private final Duration emailWindow;
     private final Clock clock;
 
+    @Autowired
     public LoginRateLimiter(@Value("${app.login-rate-limit.max-attempts-per-ip:20}") int maxAttemptsPerIp,
                             @Value("${app.login-rate-limit.ip-window:PT5M}") Duration ipWindow,
                             @Value("${app.login-rate-limit.max-failures-per-email:5}") int maxFailuresPerEmail,

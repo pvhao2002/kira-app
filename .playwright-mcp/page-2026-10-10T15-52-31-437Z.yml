@@ -1,0 +1,155 @@
+- generic [ref=f10e4]:
+  - complementary [ref=f10e5]:
+    - link "K Kira Life" [ref=f10e6] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f10e7]: K
+      - generic [ref=f10e8]: Kira Life
+    - button "Close menu" [ref=f10e9] [cursor=pointer]: ×
+    - navigation [ref=f10e10]:
+      - link "Overview" [ref=f10e11] [cursor=pointer]:
+        - /url: /app
+      - button "Travel" [ref=f10e19] [cursor=pointer]
+      - button "Health overview" [ref=f10e25] [cursor=pointer]
+      - button "CREDIT CARDS" [ref=f10e31] [cursor=pointer]
+      - generic [ref=f10e36]:
+        - button "INVESTMENTS" [expanded] [ref=f10e37] [cursor=pointer]
+        - generic [ref=f10e42]:
+          - link "Accounts" [ref=f10e43] [cursor=pointer]:
+            - /url: /app/investment/accounts
+          - link "Statistics" [ref=f10e50] [cursor=pointer]:
+            - /url: /app/investment/statistics
+          - link "Reports" [ref=f10e57] [cursor=pointer]:
+            - /url: /app/investment/reports
+          - link "Transaction import" [ref=f10e64] [cursor=pointer]:
+            - /url: /app/investment/transactions
+          - link "AI queue" [ref=f10e71] [cursor=pointer]:
+            - /url: /app/investment/ai-queue
+          - link "Transaction feed" [ref=f10e78] [cursor=pointer]:
+            - /url: /app/investment/feed
+          - link "History" [ref=f10e85] [cursor=pointer]:
+            - /url: /app/investment/history
+      - button "REPORTS" [ref=f10e93] [cursor=pointer]
+      - button "PERSONAL LIFE" [ref=f10e99] [cursor=pointer]
+      - button "ROOM FINDER" [ref=f10e105] [cursor=pointer]
+      - button "TUTORING" [ref=f10e111] [cursor=pointer]
+      - button "SYSTEM" [ref=f10e117] [cursor=pointer]
+    - generic [ref=f10e128]:
+      - generic [ref=f10e129]: Secure connection
+      - generic [ref=f10e130]: Your data is protected
+  - generic [ref=f10e131]:
+    - banner [ref=f10e132]:
+      - button "Open menu" [ref=f10e133] [cursor=pointer]
+      - link "Kira Life" [ref=f10e137] [cursor=pointer]:
+        - /url: /app
+        - generic [ref=f10e138]: K
+      - generic [ref=f10e140]:
+        - button "Global search" [ref=f10e141] [cursor=pointer]
+        - link "Notifications" [ref=f10e145] [cursor=pointer]:
+          - /url: /app/notifications
+        - button "Open account menu" [ref=f10e149] [cursor=pointer]: DK
+    - main [ref=f10e150]:
+      - generic [ref=f10e151]:
+        - generic [ref=f10e152]:
+          - generic [ref=f10e153]:
+            - text: INVESTMENT · HISTORY
+            - heading "Transaction history" [level=1] [ref=f10e154]
+            - paragraph [ref=f10e155]: This is an independent history and does not change balance or ledger.
+          - generic [ref=f10e156]:
+            - generic [ref=f10e157]: Account
+            - button "Account" [ref=f10e160] [cursor=pointer]:
+              - generic [ref=f10e161]: Main account · VND · Active
+        - generic [ref=f10e165]:
+          - generic [ref=f10e166]: 6 transactions
+          - button "Hide filters" [expanded] [active] [ref=f10e168] [cursor=pointer]
+          - generic [ref=f10e170]:
+            - generic [ref=f10e171]:
+              - generic [ref=f10e172]: From date
+              - textbox "From date" [ref=f10e173]
+            - generic [ref=f10e174]:
+              - generic [ref=f10e175]: To date
+              - textbox "To date" [ref=f10e176]
+            - generic [ref=f10e177]:
+              - generic [ref=f10e178]: Type
+              - button "Type" [ref=f10e181] [cursor=pointer]:
+                - generic [ref=f10e182]: All types
+            - generic [ref=f10e186]:
+              - generic [ref=f10e187]: Status
+              - button "Status" [ref=f10e190] [cursor=pointer]:
+                - generic [ref=f10e191]: All statuses
+            - generic [ref=f10e195] [cursor=pointer]:
+              - checkbox "Hide unnecessary transactions (pending withdrawals, failed deposits/withdrawals)" [checked] [ref=f10e196]
+              - generic [ref=f10e197]: Hide unnecessary transactions (pending withdrawals, failed deposits/withdrawals)
+            - generic [ref=f10e198]:
+              - button "Filter" [ref=f10e199] [cursor=pointer]
+              - button "Reset" [ref=f10e200] [cursor=pointer]
+          - generic [ref=f10e201]:
+            - article [ref=f10e202]:
+              - generic [ref=f10e203]:
+                - generic [ref=f10e204]:
+                  - generic [aria-hidden] [ref=f10e205]: ↑
+                  - text: Withdrawal
+                - generic [ref=f10e206]: Completed
+              - strong [ref=f10e207]: −9,368,000 VND
+              - time [ref=f10e208]: Sep 17, 2026 · 9:29 PM
+              - generic [ref=f10e209]:
+                - generic [ref=f10e210]:
+                  - term [ref=f10e211]: External ID
+                  - definition [ref=f10e212]: —
+                - generic [ref=f10e213]:
+                  - term [ref=f10e214]: Description
+                  - definition [ref=f10e215]: "E-transfer No. 5300286939 made using \"Bank transfer\", payment amount: 9368000.00 VND, has been completed"
+              - button "Delete" [ref=f10e216] [cursor=pointer]
+            - article [ref=f10e217]:
+              - generic [ref=f10e218]:
+                - generic [ref=f10e219]:
+                  - generic [aria-hidden] [ref=f10e220]: ✦
+                  - text: Bonus
+                - generic [ref=f10e221]: Completed
+              - strong [ref=f10e222]: +8,000,000 VND
+              - time [ref=f10e223]: Sep 16, 2026 · 8:02 PM
+              - generic [ref=f10e224]:
+                - generic [ref=f10e225]:
+                  - term [ref=f10e226]: External ID
+                  - definition [ref=f10e227]: —
+                - generic [ref=f10e228]:
+                  - term [ref=f10e229]: Description
+                  - definition [ref=f10e230]: 8000000.00 VND bonus credited to account
+              - button "Delete" [ref=f10e231] [cursor=pointer]
+            - article [ref=f10e232]:
+              - generic [ref=f10e233]:
+                - generic [ref=f10e234]:
+                  - generic [aria-hidden] [ref=f10e235]: ↓
+                  - text: Deposit
+                - generic [ref=f10e236]: Completed
+              - strong [ref=f10e237]: +8,000,000 VND
+              - time [ref=f10e238]: Sep 16, 2026 · 8:02 PM
+              - generic [ref=f10e239]:
+                - generic [ref=f10e240]:
+                  - term [ref=f10e241]: External ID
+                  - definition [ref=f10e242]: —
+                - generic [ref=f10e243]:
+                  - term [ref=f10e244]: Description
+                  - definition [ref=f10e245]: "Receipt of payment No. 23547000167 made using \"E-wallets\", payment amount: 8000000.00 VND"
+              - button "Delete" [ref=f10e246] [cursor=pointer]
+            - article [ref=f10e247]:
+              - generic [ref=f10e248]:
+                - generic [ref=f10e249]:
+                  - generic [aria-hidden] [ref=f10e250]: ✦
+                  - text: Bonus
+                - generic [ref=f10e251]: Completed
+              - strong [ref=f10e252]: +234,535.84 VND
+              - time [ref=f10e253]: Sep 15, 2026 · 10:24 AM
+              - generic [ref=f10e254]:
+                - generic [ref=f10e255]:
+                  - term [ref=f10e256]: External ID
+                  - definition [ref=f10e257]: —
+                - generic [ref=f10e258]:
+                  - term [ref=f10e259]: Description
+                  - definition [ref=f10e260]: 234535.84 VND bonus credited to account
+              - button "Delete" [ref=f10e261] [cursor=pointer]
+          - generic [ref=f10e262]:
+            - generic [ref=f10e263]: 1–6 of 6 transactions
+            - generic [ref=f10e264]:
+              - button "Previous page" [disabled] [ref=f10e265] [cursor=pointer]: ‹
+              - generic [ref=f10e266]: Page 1 of 1
+              - button "Next page" [disabled] [ref=f10e267] [cursor=pointer]: ›

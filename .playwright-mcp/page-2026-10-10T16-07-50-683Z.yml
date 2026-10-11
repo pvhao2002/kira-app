@@ -1,0 +1,78 @@
+- generic [ref=f1e4]:
+  - complementary [ref=f1e5]:
+    - link "K Kira Life" [ref=f1e6] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=f1e7]: K
+      - generic [ref=f1e8]: Kira Life
+    - button "Collapse sidebar" [expanded] [ref=f1e9] [cursor=pointer]
+    - navigation [ref=f1e13]:
+      - link "Overview" [ref=f1e14] [cursor=pointer]:
+        - /url: /app
+      - button "Travel" [ref=f1e22] [cursor=pointer]
+      - button "Health overview" [ref=f1e28] [cursor=pointer]
+      - button "CREDIT CARDS" [ref=f1e34] [cursor=pointer]
+      - generic [ref=f1e39]:
+        - button "INVESTMENTS" [expanded] [ref=f1e40] [cursor=pointer]
+        - generic [ref=f1e45]:
+          - link "Accounts" [ref=f1e46] [cursor=pointer]:
+            - /url: /app/investment/accounts
+          - link "Statistics" [ref=f1e53] [cursor=pointer]:
+            - /url: /app/investment/statistics
+          - link "Reports" [ref=f1e60] [cursor=pointer]:
+            - /url: /app/investment/reports
+          - link "Deposit vs withdrawal" [ref=f1e67] [cursor=pointer]:
+            - /url: /app/investment/cashflow
+          - link "Transaction import" [ref=f1e74] [cursor=pointer]:
+            - /url: /app/investment/transactions
+          - link "AI queue" [ref=f1e81] [cursor=pointer]:
+            - /url: /app/investment/ai-queue
+          - link "Transaction feed" [ref=f1e88] [cursor=pointer]:
+            - /url: /app/investment/feed
+          - link "History" [ref=f1e95] [cursor=pointer]:
+            - /url: /app/investment/history
+      - button "REPORTS" [ref=f1e103] [cursor=pointer]
+      - button "PERSONAL LIFE" [ref=f1e109] [cursor=pointer]
+      - button "ROOM FINDER" [ref=f1e115] [cursor=pointer]
+      - button "TUTORING" [ref=f1e121] [cursor=pointer]
+      - button "SYSTEM" [ref=f1e127] [cursor=pointer]
+    - generic [ref=f1e138]:
+      - generic [ref=f1e139]: Secure connection
+      - generic [ref=f1e140]: Your data is protected
+  - generic [ref=f1e141]:
+    - banner [ref=f1e142]:
+      - generic [ref=f1e145]:
+        - combobox "Global search" [ref=f1e149]
+        - generic [ref=f1e150]: /
+      - generic [ref=f1e151]:
+        - button "Change language" [ref=f1e154] [cursor=pointer]:
+          - generic [ref=f1e158]: EN
+        - button "Theme System" [ref=f1e161] [cursor=pointer]
+        - link "Notifications" [ref=f1e166] [cursor=pointer]:
+          - /url: /app/notifications
+        - button "Open account menu" [ref=f1e170] [cursor=pointer]: DK
+    - main [ref=f1e171]:
+      - generic [ref=f1e172]:
+        - generic [ref=f1e174]:
+          - text: INVESTMENT · REPORTS
+          - heading "Deposit & withdrawal report" [level=1] [ref=f1e175]
+          - paragraph [ref=f1e176]: Total deposits, withdrawals and their difference, by day, month or year.
+        - generic [ref=f1e177]:
+          - generic [ref=f1e178]:
+            - generic [ref=f1e179]: Account
+            - combobox "Account" [ref=f1e180] [cursor=pointer]:
+              - option "All accounts" [selected]
+              - option "tet · VND"
+          - generic [ref=f1e181]:
+            - generic [ref=f1e182]: Group by
+            - combobox "Group by" [ref=f1e183] [cursor=pointer]:
+              - option "Day"
+              - option "Month" [selected]
+              - option "Year"
+          - generic [ref=f1e184]:
+            - generic [ref=f1e185]: From
+            - textbox "From" [ref=f1e186]: 2025-11-01
+          - generic [ref=f1e187]:
+            - generic [ref=f1e188]: To
+            - textbox "To" [ref=f1e189]: 2026-10-10
+          - button "Apply" [ref=f1e190] [cursor=pointer]
+        - generic [ref=f1e191]: No completed transactions in this range.

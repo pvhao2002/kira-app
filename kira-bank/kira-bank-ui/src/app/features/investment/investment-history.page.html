@@ -71,6 +71,10 @@
         (ngModelChange)="historyStatus.set($event)">
       </app-custom-select>
     </label>
+    <label class="history-hide-noise">
+      <input type="checkbox" name="hideNoise" [ngModel]="hideNoise()" (ngModelChange)="toggleHideNoise($event)">
+      <span>{{ i18n.t('investmentTransactions.hideNoise') }}</span>
+    </label>
     <div class="history-filter-actions">
       <button class="primary" type="submit" [disabled]="historyDateRangeInvalid() || historyLoading()">
         {{ i18n.t('investmentTransactions.filter') }}
