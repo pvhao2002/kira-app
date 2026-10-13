@@ -5,6 +5,7 @@ import {travelVietnamese} from './travel.translations';
 import {visitsVietnamese} from './login-visits.translations';
 import {usersVietnamese} from './admin-users.translations';
 import {creditCardAiVietnamese} from './credit-card-ai.translations';
+import {fileStorageVietnamese} from './file-storage.translations';
 import type {TranslationKey} from './translations';
 
 export const vietnameseTranslations: Record<TranslationKey, string> = {
@@ -15,6 +16,7 @@ export const vietnameseTranslations: Record<TranslationKey, string> = {
   ...investmentReportsVietnamese,
   ...overviewVietnamese,
   ...creditCardAiVietnamese,
+  ...fileStorageVietnamese,
   'language.change': 'Đổi ngôn ngữ',
   'language.english': 'English',
   'language.vietnamese': 'Tiếng Việt',

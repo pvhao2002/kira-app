@@ -11,7 +11,9 @@ import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.time.LocalDate;
 import java.util.Locale;
@@ -64,6 +66,13 @@ public class R2StorageService {
         RuntimeR2Credential credential = accounts.r2Credential(accountId);
         client(credential).deleteObject(DeleteObjectRequest.builder().bucket(credential.bucketName()).key(key).build());
         accounts.markR2Success(credential.id());
+    }
+
+    /** Sums every object in the account's bucket; each 1,000 objects costs one R2 Class A (list) operation. */
+    public long usedBytes(Long accountId) {
+        RuntimeR2Credential credential = accounts.r2Credential(accountId);
+        return client(credential).listObjectsV2Paginator(ListObjectsV2Request.builder().bucket(credential.bucketName()).build())
+            .contents().stream().mapToLong(S3Object::size).sum();
     }
 
     public String getPublicUrl(Long accountId, String key) {

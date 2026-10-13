@@ -154,7 +154,8 @@ export class AppShell {
           {labelKey: 'visits.title', icon: 'globe', path: '/app/admin/login-visits'},
           {labelKey: 'investmentReports.admin.title', icon: 'trend-up', path: '/app/admin/investment-reports'},
           {labelKey: 'shell.adminBanks', icon: 'bank', path: '/app/admin/banks'},
-          {labelKey: 'shell.adminAiProviders', icon: 'shield-check', path: '/app/admin/cloudflare-accounts'}
+          {labelKey: 'shell.adminAiProviders', icon: 'shield-check', path: '/app/admin/cloudflare-accounts'},
+          {labelKey: 'fileStorage.title', icon: 'dashboard', path: '/app/admin/file-storage'}
         ]
       });
     }

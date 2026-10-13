@@ -163,6 +163,13 @@ export const routes: Routes = [
       },
       {path: 'admin/ai-providers', redirectTo: 'admin/cloudflare-accounts', pathMatch: 'full'},
       {
+        path: 'admin/file-storage',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/admin-file-storage/admin-file-storage.page')
+          .then(m => m.AdminFileStoragePage),
+        data: {titleKey: 'fileStorage.title'}
+      },
+      {
         path: 'profile',
         loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage),
         data: {titleKey: 'route.profile'}

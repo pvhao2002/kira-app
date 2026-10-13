@@ -5,6 +5,7 @@ import {travelEnglish} from './travel.translations';
 import {visitsEnglish} from './login-visits.translations';
 import {usersEnglish} from './admin-users.translations';
 import {creditCardAiEnglish} from './credit-card-ai.translations';
+import {fileStorageEnglish} from './file-storage.translations';
 
 export const englishTranslations = {
   ...usersEnglish,
@@ -14,6 +15,7 @@ export const englishTranslations = {
   ...investmentReportsEnglish,
   ...overviewEnglish,
   ...creditCardAiEnglish,
+  ...fileStorageEnglish,
   'language.change': 'Change language',
   'language.english': 'English',
   'language.vietnamese': 'Tiếng Việt',

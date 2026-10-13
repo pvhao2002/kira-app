@@ -865,3 +865,24 @@ export interface AdminInvestmentSummary {
 }
 export interface InvestmentAllocationRow {accountId: number; accountName: string; deposits: number; withdrawals: number; outstanding: number; outstandingSharePct: number | null; depositSharePct: number | null}
 export interface InvestmentAllocationReport {totalDeposits: number; totalOutstanding: number; hhi: number | null; concentration: 'NONE' | 'DIVERSIFIED' | 'MODERATE' | 'CONCENTRATED'; topSharePct: number | null; rows: InvestmentAllocationRow[]}
+
+export type StorageProvider = 'HUGGING_FACE' | 'R2';
+
+export interface StoredFile {
+  id: number;
+  provider: StorageProvider;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
+export interface StorageProviderUsage {
+  provider: StorageProvider;
+  label: string;
+  configured: boolean;
+  usedBytes: number | null;
+  freeLimitBytes: number;
+  exceeded: boolean;
+  errorCode: string | null;
+}

@@ -61,6 +61,14 @@ app:
     expo-access-token: ${EXPO_ACCESS_TOKEN:}
 storage:
   environment: ${R2_STORAGE_ENVIRONMENT:LOCAL}
+  # Free-plan thresholds shown on the admin storage dashboard (1 GB = 2^30 bytes).
+  r2-free-gb: ${R2_FREE_GB:10}
+  hugging-face:
+    namespace: ${HF_STORAGE_NAMESPACE:}
+    bucket: ${HF_STORAGE_BUCKET:}
+    access-key-id: ${HF_S3_ACCESS_KEY_ID:}
+    secret-access-key: ${HF_S3_SECRET_ACCESS_KEY:}
+    free-gb: ${HF_FREE_GB:100}
 ai:
   connect-timeout: 5s
   read-timeout: 120s

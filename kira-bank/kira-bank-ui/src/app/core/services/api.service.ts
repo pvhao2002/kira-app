@@ -48,7 +48,9 @@ import {
   TutoringStudentRequest,
   TutoringWeek,
   TutoringSeriesRequest,
-  TutoringExceptionAction
+  TutoringExceptionAction,
+  StorageProvider,
+  StoredFile
 } from '../../shared/models/api.models';
 
 @Injectable({providedIn: 'root'})
@@ -89,6 +91,17 @@ export class ApiService {
 
   cloudflareAccounts(): Observable<CloudflareAccount[]> {
     return this.get<CloudflareAccount[]>('admin/cloudflare-accounts');
+  }
+
+  uploadStoredFile(file: File, preferred: StorageProvider): Observable<StoredFile> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+    body.append('preferred', preferred);
+    return this.http.post<StoredFile>('/api/v1/admin/file-storage/files', body);
+  }
+
+  storedFileContent(id: number): Observable<Blob> {
+    return this.http.get(`/api/v1/admin/file-storage/files/${id}/content`, {responseType: 'blob'});
   }
 
   creditCardDashboard(): Observable<CreditCardDashboard> {
