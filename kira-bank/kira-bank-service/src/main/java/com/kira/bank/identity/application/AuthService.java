@@ -89,11 +89,28 @@ public class AuthService {
         var result = users.searchActiveRecords(search.trim(), org.springframework.data.domain.PageRequest.of(page, size,
             org.springframework.data.domain.Sort.by("createdAt").descending().and(
                 org.springframework.data.domain.Sort.by("id").descending())));
-        var data = result.getContent().stream().map(user -> new AdminUserResponse(user.getId(), user.getEmail(),
-            user.getFullName(), user.getPhone(), user.getRoles().stream().map(Role::getName)
-            .collect(java.util.stream.Collectors.toSet()), user.getStatus())).toList();
+        var data = result.getContent().stream().map(this::adminUser).toList();
         return new com.kira.bank.shared.web.ApiTypes.PageResponse<>(data,
             new com.kira.bank.shared.web.ApiTypes.PageMeta(page, size, result.getTotalElements(), result.getTotalPages()));
+    }
+
+    /**
+     * LOCKED chặn login, refresh và mọi request JWT (JwtAuthenticationFilter chỉ nhận ACTIVE).
+     */
+    @Transactional
+    public AdminUserResponse updateStatus(Long adminId, Long id, UpdateUserStatusRequest request) {
+        if (id.equals(adminId))
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_CHANGE_OWN_STATUS", "Không thể khóa tài khoản của chính mình");
+        User user = requireForUpdate(id);
+        if (user.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getName())))
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_CHANGE_ADMIN_STATUS", "Không thể khóa tài khoản Admin");
+        user.setStatus(request.status());
+        return adminUser(user);
+    }
+
+    private AdminUserResponse adminUser(User user) {
+        return new AdminUserResponse(user.getId(), user.getEmail(), user.getFullName(), user.getPhone(),
+            user.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet()), user.getStatus());
     }
 
     @Transactional

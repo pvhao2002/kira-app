@@ -33,6 +33,7 @@ export class AdminUsersPage {
   readonly error = signal('');
   readonly formError = signal('');
   readonly search = signal('');
+  readonly statusBusy = signal<number | null>(null);
   private query = '';
   readonly form = new FormGroup({
     fullName: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(150)]}),
@@ -64,6 +65,22 @@ export class AdminUsersPage {
       next: result => { this.result.set(result); this.loading.set(false); },
       error: () => { this.result.set(null); this.error.set(this.t('loadError')); this.loading.set(false); }
     });
+  }
+
+  toggleStatus(user: AdminUser): void {
+    if (!this.auth.admin() || this.statusBusy() !== null) return;
+    const lock = user.status === 'ACTIVE';
+    if (lock && !window.confirm(this.t('lockConfirm').replace('{email}', user.email))) return;
+    this.statusBusy.set(user.id);
+    this.api.patch<AdminUser>(`admin/users/${user.id}/status`, {status: lock ? 'LOCKED' : 'ACTIVE'})
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: updated => {
+          this.statusBusy.set(null);
+          this.result.update(list => list && {...list, data: list.data.map(u => u.id === updated.id ? updated : u)});
+          this.toast.show(this.t(lock ? 'locked' : 'unlocked'), 'success');
+        },
+        error: () => { this.statusBusy.set(null); this.toast.show(this.t('statusError'), 'error'); }
+      });
   }
 
   openCreate(): void {

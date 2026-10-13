@@ -22,4 +22,14 @@ Họ tên bắt buộc, tối đa 150 ký tự; email hợp lệ và duy nhất;
 
 Tài khoản mới luôn ACTIVE và chỉ có ROLE_USER. Trường roles vẫn được chấp nhận nếu null, rỗng hoặc chỉ chứa ROLE_USER; quyền khác trả 400 INVALID_USER_ROLES. Email trùng trả 409 EMAIL_EXISTS. Tạo thành công trả 201 và ProfileResponse, không tạo phiên đăng nhập mới cho Admin.
 
-Màn hình `/app/admin/users` hỗ trợ xem danh sách và tạo User. Chưa hỗ trợ sửa, khóa, xóa hoặc đặt lại mật khẩu.
+## Khóa / mở khóa User
+
+`PATCH /api/v1/admin/users/{id}/status`
+
+```json
+{"status":"LOCKED"}
+```
+
+`status` là `ACTIVE` hoặc `LOCKED`, giá trị khác trả 400. Tài khoản LOCKED không đăng nhập hay refresh được, và access token đang dùng bị từ chối ngay (bộ lọc JWT chỉ nhận ACTIVE). Không được khóa chính mình (400 CANNOT_CHANGE_OWN_STATUS) hay tài khoản Admin (400 CANNOT_CHANGE_ADMIN_STATUS). User không tồn tại trả 404 USER_NOT_FOUND. Thành công trả AdminUserResponse.
+
+Màn hình `/app/admin/users` hỗ trợ xem danh sách, tạo, khóa và mở khóa User. Chưa hỗ trợ sửa, xóa hoặc đặt lại mật khẩu.
