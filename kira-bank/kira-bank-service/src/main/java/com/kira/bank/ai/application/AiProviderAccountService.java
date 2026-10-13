@@ -295,6 +295,13 @@ public class AiProviderAccountService {
             .orElseThrow(() -> new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "R2_NOT_CONFIGURED", "Chưa có Cloudflare R2 primary đã được xác minh"));
     }
 
+    /** Decrypted account API token, or null when none was saved; used for read-only Cloudflare analytics. */
+    @Transactional(readOnly = true)
+    public String apiTokenOrNull(Long id) {
+        String encrypted = account(id).getApiTokenCiphertext();
+        return blank(encrypted) || placeholder(encrypted) ? null : cipher.decrypt(encrypted);
+    }
+
     @Transactional(readOnly = true)
     public RuntimeR2Credential r2Credential(Long id) {
         if (id == null)

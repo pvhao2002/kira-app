@@ -23,6 +23,7 @@ export class AdminFileStoragePage {
   readonly files = signal<StoredFile[]>([]);
   readonly meta = signal<PageMeta | null>(null);
   readonly loadingUsage = signal(true);
+  readonly syncedAt = signal<Date | null>(null);
   readonly loadingFiles = signal(true);
   readonly uploading = signal(false);
   readonly deletingId = signal<number | null>(null);
@@ -44,7 +45,7 @@ export class AdminFileStoragePage {
     this.loadingUsage.set(true);
     this.api.get<StorageProviderUsage[]>('admin/file-storage/usage')
       .pipe(finalize(() => this.loadingUsage.set(false)))
-      .subscribe({next: rows => this.usage.set(rows), error: () => this.error.set(this.i18n.t('fileStorage.loadFailed'))});
+      .subscribe({next: rows => { this.usage.set(rows); this.syncedAt.set(new Date()); }, error: () => this.error.set(this.i18n.t('fileStorage.loadFailed'))});
   }
 
   loadFiles(page: number): void {
@@ -116,7 +117,15 @@ export class AdminFileStoragePage {
   }
 
   percent(row: StorageProviderUsage): number {
-    return row.usedBytes == null || !row.freeLimitBytes ? 0 : Math.min(100, row.usedBytes / row.freeLimitBytes * 100);
+    return this.ratio(row.usedBytes, row.freeLimitBytes);
+  }
+
+  ratio(used: number | null, limit: number): number {
+    return used == null || !limit ? 0 : Math.min(100, used / limit * 100);
+  }
+
+  count(value: number | null): string {
+    return value == null ? '—' : numberFormat(this.i18n.locale()).format(value);
   }
 
   gb(bytes: number | null): string {
@@ -130,7 +139,7 @@ export class AdminFileStoragePage {
       : numberFormat(this.i18n.locale(), {maximumFractionDigits: 2}).format(bytes / 1024 / 1024) + ' MB';
   }
 
-  formatDate(value: string): string {
+  formatDate(value: string | Date): string {
     return dateFormat(this.i18n.locale(), {dateStyle: 'short', timeStyle: 'short'}).format(new Date(value));
   }
 }

@@ -6,12 +6,21 @@ import java.math.BigDecimal;
 
 /**
  * Free-plan thresholds are configurable because providers change them: R2 free tier is 10 GB-month per Cloudflare
- * account, Hugging Face free accounts include 100 GB of private storage.
+ * account, Hugging Face free accounts include 100 GB of private storage. R2 also includes 1M Class A and 10M Class B
+ * operations per account per month.
  */
 @ConfigurationProperties(prefix = "storage")
-public record StorageProperties(BigDecimal r2FreeGb, HuggingFace huggingFace) {
+public record StorageProperties(BigDecimal r2FreeGb, Long r2FreeClassAOps, Long r2FreeClassBOps, HuggingFace huggingFace) {
     public BigDecimal safeR2FreeGb() {
         return r2FreeGb == null ? BigDecimal.TEN : r2FreeGb;
+    }
+
+    public long safeR2FreeClassAOps() {
+        return r2FreeClassAOps == null ? 1_000_000L : r2FreeClassAOps;
+    }
+
+    public long safeR2FreeClassBOps() {
+        return r2FreeClassBOps == null ? 10_000_000L : r2FreeClassBOps;
     }
 
     public HuggingFace safeHuggingFace() {

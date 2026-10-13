@@ -63,6 +63,8 @@ storage:
   environment: ${R2_STORAGE_ENVIRONMENT:LOCAL}
   # Free-plan thresholds shown on the admin storage dashboard (1 GB = 2^30 bytes).
   r2-free-gb: ${R2_FREE_GB:10}
+  r2-free-class-a-ops: ${R2_FREE_CLASS_A_OPS:1000000}
+  r2-free-class-b-ops: ${R2_FREE_CLASS_B_OPS:10000000}
   hugging-face:
     namespace: ${HF_STORAGE_NAMESPACE:}
     bucket: ${HF_STORAGE_BUCKET:}

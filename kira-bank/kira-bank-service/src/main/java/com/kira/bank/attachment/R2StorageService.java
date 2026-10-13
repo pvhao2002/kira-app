@@ -32,6 +32,11 @@ public class R2StorageService {
     private String environment;
 
     public String userImageKey(Long userId, String username, LocalDate date, int imageNumber, String extension) {
+        return userFolder(userId, username, date) + "/image-" + imageNumber + "-" + UUID.randomUUID() + extension;
+    }
+
+    /** {@code LOCAL|PROD/{userId} - {username}/{date}}: shared folder layout for R2 and Hugging Face uploads. */
+    public String userFolder(Long userId, String username, LocalDate date) {
         String safeUsername = username == null || username.isBlank()
             ? "unknown"
             : username.trim().replaceAll("[^A-Za-z0-9._@-]", "_");
@@ -41,7 +46,7 @@ public class R2StorageService {
         if (!root.equals("LOCAL") && !root.equals("PROD")) {
             throw new IllegalStateException("R2_STORAGE_ENVIRONMENT must be LOCAL or PROD");
         }
-        return root + "/" + userId + " - " + safeUsername + "/" + date + "/image-" + imageNumber + "-" + UUID.randomUUID() + extension;
+        return root + "/" + userId + " - " + safeUsername + "/" + date;
     }
 
     public StoredObject upload(String key, byte[] data, String contentType) {

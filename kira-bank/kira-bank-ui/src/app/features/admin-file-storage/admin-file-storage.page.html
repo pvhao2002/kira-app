@@ -7,13 +7,17 @@
   @if (error()) { <div class="inline-error" role="alert">{{ error() }}</div> }
 
   <section class="panel" aria-labelledby="usage-title">
-    <h2 id="usage-title">{{ i18n.t('fileStorage.usageTitle') }}</h2>
+    <div class="usage-head">
+      <h2 id="usage-title">{{ i18n.t('fileStorage.usageTitle') }}</h2>
+      @if (syncedAt(); as at) { <small>{{ i18n.t('fileStorage.syncedAt') }} {{ formatDate(at) }}</small> }
+      <button class="btn ghost" type="button" [disabled]="loadingUsage()" [attr.aria-busy]="loadingUsage()" (click)="loadUsage()">{{ i18n.t(loadingUsage() ? 'fileStorage.syncing' : 'fileStorage.sync') }}</button>
+    </div>
     @if (loadingUsage() && !usage().length) {
       <p class="state">{{ i18n.t('fileStorage.loading') }}</p>
     } @else {
       <div class="usage-grid">
         @for (row of usage(); track row.label) {
-          <article class="usage-card" [class.over]="row.exceeded">
+          <article class="usage-card" [class.over]="row.exceeded || row.operations?.exceeded">
             <header>
               <h3>{{ row.label }}</h3>
               @if (!row.configured) {
@@ -26,12 +30,27 @@
             </header>
             <p class="figure"><strong>{{ gb(row.usedBytes) }}</strong> / {{ gb(row.freeLimitBytes) }}</p>
             <div class="meter" role="meter" [attr.aria-label]="row.label" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="percent(row)">
-              <span [style.width.%]="percent(row)"></span>
+              <span [class.bad]="row.exceeded" [style.width.%]="percent(row)"></span>
             </div>
             <dl>
               <div><dt>{{ i18n.t('fileStorage.used') }}</dt><dd>{{ gb(row.usedBytes) }}</dd></div>
               <div><dt>{{ i18n.t('fileStorage.freeLimit') }}</dt><dd>{{ gb(row.freeLimitBytes) }}</dd></div>
             </dl>
+            @if (row.operations; as ops) {
+              <div class="ops" [class.over]="ops.exceeded">
+                <h4>{{ i18n.t('fileStorage.opsTitle') }}</h4>
+                @if (ops.errorCode) {
+                  <span class="status warn">{{ i18n.t(ops.errorCode === 'OPS_TOKEN_MISSING' ? 'fileStorage.opsTokenMissing' : 'fileStorage.opsUnavailable') }}</span>
+                } @else {
+                  @for (op of [{label: 'Class A', used: ops.classA, limit: ops.classAFreeLimit}, {label: 'Class B', used: ops.classB, limit: ops.classBFreeLimit}]; track op.label) {
+                    <p class="figure"><span>{{ op.label }}</span> <strong>{{ count(op.used) }}</strong> / {{ count(op.limit) }}</p>
+                    <div class="meter" role="meter" [attr.aria-label]="row.label + ' ' + op.label" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="ratio(op.used, op.limit)">
+                      <span [class.bad]="(op.used ?? 0) > op.limit" [style.width.%]="ratio(op.used, op.limit)"></span>
+                    </div>
+                  }
+                }
+              </div>
+            }
           </article>
         }
       </div>

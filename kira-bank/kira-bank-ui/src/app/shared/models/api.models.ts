@@ -885,4 +885,15 @@ export interface StorageProviderUsage {
   freeLimitBytes: number;
   exceeded: boolean;
   errorCode: string | null;
+  operations: StorageOperationsUsage | null;
+}
+
+/** Month-to-date R2 operations for the whole Cloudflare account. */
+export interface StorageOperationsUsage {
+  classA: number | null;
+  classAFreeLimit: number;
+  classB: number | null;
+  classBFreeLimit: number;
+  exceeded: boolean;
+  errorCode: string | null;
 }

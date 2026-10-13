@@ -1,14 +1,18 @@
 package com.kira.bank.storage.application;
 
+import com.kira.bank.ai.application.AiProviderAccountService;
 import com.kira.bank.ai.domain.AiProviderAccount;
 import com.kira.bank.ai.infrastructure.AiProviderAccountRepository;
 import com.kira.bank.attachment.R2StorageService;
 import com.kira.bank.attachment.application.AttachmentService;
+import com.kira.bank.identity.domain.User;
+import com.kira.bank.identity.infrastructure.UserRepository;
 import com.kira.bank.shared.web.ApiException;
 import com.kira.bank.storage.StorageProperties;
 import com.kira.bank.storage.domain.StorageProvider;
 import com.kira.bank.storage.domain.StoredFile;
 import com.kira.bank.storage.infrastructure.HuggingFaceStorageService;
+import com.kira.bank.storage.infrastructure.R2OperationsClient;
 import com.kira.bank.storage.infrastructure.StoredFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +28,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
@@ -42,12 +46,16 @@ import java.util.regex.Pattern;
 public class FileStorageService {
     private static final BigDecimal BYTES_PER_GB = BigDecimal.valueOf(1L << 30);
     private static final Pattern MIME_TYPE = Pattern.compile("^[\\w.+-]+/[\\w.+-]+$");
+    private static final Pattern EXTENSION = Pattern.compile("\\.[A-Za-z0-9]{1,10}$");
 
     private final StoredFileRepository repository;
     private final R2StorageService r2;
     private final HuggingFaceStorageService huggingFace;
     private final AiProviderAccountRepository cloudflareAccounts;
     private final StorageProperties properties;
+    private final UserRepository users;
+    private final AiProviderAccountService cloudflareCredentials;
+    private final R2OperationsClient r2Operations;
 
     public StoredFileResponse upload(Long adminId, StorageProvider preferred, MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
@@ -55,7 +63,10 @@ public class FileStorageService {
         }
         byte[] data = file.getBytes();
         String mimeType = safeMimeType(file.getContentType());
-        String key = "files/" + LocalDate.now(ZoneOffset.UTC) + "/" + UUID.randomUUID();
+        String originalName = AttachmentService.safeOriginalName(file.getOriginalFilename(), "file");
+        String username = users.findById(adminId).map(User::getEmail).orElse("unknown");
+        String key = r2.userFolder(adminId, username, LocalDate.now(ZoneId.of("Asia/Bangkok")))
+            + "/file-" + UUID.randomUUID() + extension(originalName);
         StorageProvider target = preferred == null ? StorageProvider.R2 : preferred;
         Long r2AccountId;
         try {
@@ -75,7 +86,7 @@ public class FileStorageService {
         stored.setProvider(target);
         stored.setStorageKey(key);
         stored.setR2AccountId(r2AccountId);
-        stored.setOriginalName(AttachmentService.safeOriginalName(file.getOriginalFilename(), "file"));
+        stored.setOriginalName(originalName);
         stored.setMimeType(mimeType);
         stored.setSizeBytes(data.length);
         stored.setSha256(sha256(data));
@@ -124,7 +135,7 @@ public class FileStorageService {
         List<ProviderUsage> rows = new ArrayList<>();
         long hfLimit = gbToBytes(properties.safeHuggingFace().safeFreeGb());
         if (!huggingFace.configured()) {
-            rows.add(new ProviderUsage(StorageProvider.HUGGING_FACE, "Hugging Face", false, null, hfLimit, false, null));
+            rows.add(new ProviderUsage(StorageProvider.HUGGING_FACE, "Hugging Face", false, null, hfLimit, false, null, null));
         } else {
             rows.add(measure(StorageProvider.HUGGING_FACE, "Hugging Face", hfLimit, huggingFace::usedBytes));
         }
@@ -134,11 +145,12 @@ public class FileStorageService {
                 && account.getR2SecretKeyCiphertext() != null)
             .toList();
         if (r2Accounts.isEmpty()) {
-            rows.add(new ProviderUsage(StorageProvider.R2, "Cloudflare R2", false, null, r2Limit, false, null));
+            rows.add(new ProviderUsage(StorageProvider.R2, "Cloudflare R2", false, null, r2Limit, false, null, null));
         }
         for (AiProviderAccount account : r2Accounts) {
-            rows.add(measure(StorageProvider.R2, "R2 · " + account.getDisplayName(), r2Limit,
-                () -> r2.usedBytes(account.getId())));
+            ProviderUsage storage = measure(StorageProvider.R2, "R2 · " + account.getDisplayName(), r2Limit,
+                () -> r2.usedBytes(account.getId()));
+            rows.add(storage.withOperations(operations(account)));
         }
         return rows;
     }
@@ -146,10 +158,27 @@ public class FileStorageService {
     private ProviderUsage measure(StorageProvider provider, String label, long limit, java.util.function.LongSupplier used) {
         try {
             long bytes = used.getAsLong();
-            return new ProviderUsage(provider, label, true, bytes, limit, bytes > limit, null);
+            return new ProviderUsage(provider, label, true, bytes, limit, bytes > limit, null, null);
         } catch (RuntimeException ex) {
             log.warn("Storage usage for {} unavailable ({})", provider, ex.getClass().getSimpleName());
-            return new ProviderUsage(provider, label, true, null, limit, false, "USAGE_UNAVAILABLE");
+            return new ProviderUsage(provider, label, true, null, limit, false, "USAGE_UNAVAILABLE", null);
+        }
+    }
+
+    private OperationsUsage operations(AiProviderAccount account) {
+        long limitA = properties.safeR2FreeClassAOps();
+        long limitB = properties.safeR2FreeClassBOps();
+        try {
+            String token = cloudflareCredentials.apiTokenOrNull(account.getId());
+            if (token == null) {
+                return new OperationsUsage(null, limitA, null, limitB, false, "OPS_TOKEN_MISSING");
+            }
+            R2OperationsClient.Counts counts = r2Operations.monthToDate(account.getAccountId(), token);
+            return new OperationsUsage(counts.classA(), limitA, counts.classB(), limitB,
+                counts.classA() > limitA || counts.classB() > limitB, null);
+        } catch (RuntimeException ex) {
+            log.warn("R2 operation counts for account {} unavailable ({})", account.getId(), ex.getClass().getSimpleName());
+            return new OperationsUsage(null, limitA, null, limitB, false, "OPS_UNAVAILABLE");
         }
     }
 
@@ -174,6 +203,11 @@ public class FileStorageService {
         return raw != null && raw.length() <= 150 && MIME_TYPE.matcher(raw).matches() ? raw : "application/octet-stream";
     }
 
+    static String extension(String fileName) {
+        java.util.regex.Matcher match = EXTENSION.matcher(fileName);
+        return match.find() ? match.group().toLowerCase(java.util.Locale.ROOT) : "";
+    }
+
     private static String sha256(byte[] data) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(data));
@@ -191,8 +225,17 @@ public class FileStorageService {
                                      long sizeBytes, Instant createdAt) {
     }
 
+    /** {@code operations} is null for Hugging Face, which has no per-operation pricing. */
     public record ProviderUsage(StorageProvider provider, String label, boolean configured, Long usedBytes,
-                                long freeLimitBytes, boolean exceeded, String errorCode) {
+                                long freeLimitBytes, boolean exceeded, String errorCode, OperationsUsage operations) {
+        ProviderUsage withOperations(OperationsUsage ops) {
+            return new ProviderUsage(provider, label, configured, usedBytes, freeLimitBytes, exceeded, errorCode, ops);
+        }
+    }
+
+    /** Month-to-date (UTC) R2 operations for the whole Cloudflare account against the monthly free allowance. */
+    public record OperationsUsage(Long classA, long classAFreeLimit, Long classB, long classBFreeLimit,
+                                  boolean exceeded, String errorCode) {
     }
 
     public record FileContent(String originalName, byte[] bytes) {

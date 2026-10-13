@@ -1,7 +1,9 @@
 export const fileStorageEnglish = {
   'fileStorage.title': 'File storage', 'fileStorage.eyebrow': 'HUGGING FACE · R2',
   'fileStorage.description': 'Upload files to your preferred provider and track usage against each free plan.',
-  'fileStorage.refresh': 'Refresh', 'fileStorage.usageTitle': 'Storage usage', 'fileStorage.loading': 'Loading…',
+  'fileStorage.refresh': 'Refresh', 'fileStorage.usageTitle': 'Storage usage',
+  'fileStorage.sync': 'Sync R2 · HF', 'fileStorage.syncing': 'Syncing…', 'fileStorage.syncedAt': 'Last synced',
+  'fileStorage.opsTitle': 'Operations this month (whole Cloudflare account)', 'fileStorage.opsUnavailable': 'Operations unavailable', 'fileStorage.opsTokenMissing': 'No API token with Account Analytics: Read', 'fileStorage.loading': 'Loading…',
   'fileStorage.loadFailed': 'Unable to load storage data. Please retry.',
   'fileStorage.used': 'Used', 'fileStorage.freeLimit': 'Free plan', 'fileStorage.exceeded': 'Over free plan',
   'fileStorage.withinFree': 'Within free plan', 'fileStorage.notConfigured': 'Not configured',
@@ -21,7 +23,9 @@ export const fileStorageEnglish = {
 export const fileStorageVietnamese: Record<keyof typeof fileStorageEnglish, string> = {
   'fileStorage.title': 'Lưu trữ file', 'fileStorage.eyebrow': 'HUGGING FACE · R2',
   'fileStorage.description': 'Upload file lên provider ưu tiên và theo dõi dung lượng so với free plan của từng provider.',
-  'fileStorage.refresh': 'Làm mới', 'fileStorage.usageTitle': 'Dung lượng đã dùng', 'fileStorage.loading': 'Đang tải…',
+  'fileStorage.refresh': 'Làm mới', 'fileStorage.usageTitle': 'Dung lượng đã dùng',
+  'fileStorage.sync': 'Đồng bộ R2 · HF', 'fileStorage.syncing': 'Đang đồng bộ…', 'fileStorage.syncedAt': 'Đồng bộ lúc',
+  'fileStorage.opsTitle': 'Operations tháng này (cả Cloudflare account)', 'fileStorage.opsUnavailable': 'Không đọc được operations', 'fileStorage.opsTokenMissing': 'Thiếu API token có quyền Account Analytics: Read', 'fileStorage.loading': 'Đang tải…',
   'fileStorage.loadFailed': 'Không tải được dữ liệu lưu trữ. Vui lòng thử lại.',
   'fileStorage.used': 'Đã dùng', 'fileStorage.freeLimit': 'Free plan', 'fileStorage.exceeded': 'Vượt free plan',
   'fileStorage.withinFree': 'Trong free plan', 'fileStorage.notConfigured': 'Chưa cấu hình',
