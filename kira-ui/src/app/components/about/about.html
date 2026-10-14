@@ -1,157 +1,278 @@
 <div #root class="min-h-screen bg-[#0b1121] text-white overflow-x-hidden">
 
+  <a href="#about" class="skip-link" (click)="$event.preventDefault(); scrollToSection('about')">Skip to content</a>
+
   <!-- Sticky Nav -->
-  <nav class="sticky top-0 z-50 bg-[#0b1121]/80 backdrop-blur-md border-b border-white/5">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center">
-      <a href="#" class="flex items-center gap-2 group" (click)="$event.preventDefault(); scrollToSection('hero')">
-        <div class="size-9 rounded-lg bg-gradient-to-br from-[#f89820] via-[#5382a1] to-[#dd0031] flex items-center justify-center text-white text-sm font-black shadow-lg">
-          K
-        </div>
-        <span class="font-bold text-white tracking-tight">KIRA - 2002</span>
+  <header class="sticky top-0 z-50 bg-[#0b1121]/85 backdrop-blur-md border-b border-white/5">
+    <nav class="max-w-6xl mx-auto px-6 h-16 flex items-center gap-6" aria-label="Main">
+      <a href="#hero" class="flex items-center gap-2.5 rounded-lg focus-ring"
+         (click)="$event.preventDefault(); scrollToSection('hero')">
+        <span class="size-9 rounded-lg bg-[#22c55e] flex items-center justify-center text-[#0b1121] text-sm font-black">K</span>
+        <span class="font-bold tracking-tight">KIRA</span>
       </a>
-    </div>
-  </nav>
-
-  <!-- Hero + Skills -->
-  <section id="hero" class="hero-section relative min-h-[calc(100svh-69px)] flex items-center px-6 py-14 lg:py-16 overflow-hidden">
-    <app-three-background class="absolute inset-0 pointer-events-none"></app-three-background>
-    <div class="hero-content-shield absolute inset-0 pointer-events-none"></div>
-
-    <div class="intro-split relative z-10 w-full max-w-7xl mx-auto">
-      <div class="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-
-        <!-- Left: Hero -->
-        <div class="lg:col-span-7 text-left space-y-7">
-          <h1 class="text-5xl sm:text-6xl lg:text-[4.4rem] lg:leading-[1.02] font-black tracking-tight">
-            <span class="text-white drop-shadow-[0_2px_16px_rgba(255,255,255,0.18)]">
-              Pham Van Hao
-            </span>
-            <span class="block font-mono text-2xl sm:text-3xl font-bold mt-5 text-[#5792e6]">KIRA - 2002</span>
-          </h1>
-
-          <div class="h-11 flex items-center gap-3">
-            <span class="material-symbols-outlined text-3xl text-[#f89820]">code</span>
-            <p class="text-2xl sm:text-3xl text-white font-bold">
-              <span>{{ typingText() }}</span>
-              @if (showCursor()) {
-                <span class="typing-cursor text-[#f89820]">|</span>
-              }
-            </p>
-          </div>
-
-          <p class="max-w-2xl text-slate-400 text-base sm:text-lg leading-8">
-            I am a <span class="text-slate-200 font-medium">Java Developer</span> specializing in <span class="text-slate-200 font-medium">data crawling</span> — building reliable systems to collect, process, and deliver data at scale.
-          </p>
-
-          <div id="contact"
-               data-reveal
-               [class.revealed]="isSectionVisible('contact')"
-               class="space-y-4 pt-2">
-            <h2 class="section-label text-sm font-mono font-medium text-[#79b8ff]">
-              // Contact
-            </h2>
-            <div class="space-y-2.5">
-              <a href="mailto:hao.phamvan2308@gmail.com"
-                 class="flex items-center gap-3 text-slate-300 hover:text-white transition-colors text-sm min-w-0">
-                <span class="material-symbols-outlined text-lg text-slate-400 shrink-0">mail</span>
-                hao.phamvan2308@gmail.com
-              </a>
-              <a href="mailto:hideonbush8405@gmail.com"
-                 class="flex items-center gap-3 text-slate-300 hover:text-white transition-colors text-sm min-w-0">
-                <span class="material-symbols-outlined text-lg text-slate-400 shrink-0">alternate_email</span>
-                hideonbush8405@gmail.com
-              </a>
-            </div>
-            <div class="flex flex-wrap gap-x-5 gap-y-2 pt-3 border-t border-white/10 max-w-xl">
-              @for (link of socialLinks; track link.url) {
-                <a [href]="link.url"
-                   target="_blank"
-                   rel="noopener noreferrer"
-                   class="flex items-center gap-2 transition-colors text-sm text-[#79b8ff] hover:text-white">
-                  <span class="material-symbols-outlined text-base">{{ link.icon }}</span>
-                  {{ link.label }}
-                </a>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Skills -->
-        <div class="lg:col-span-5 lg:pl-10">
-          <div id="skills"
-               data-reveal
-               [class.revealed]="isSectionVisible('skills')"
-               class="space-y-5">
-            <h2 class="section-label text-base font-mono font-medium text-[#79b8ff]">
-              // Skills
-            </h2>
-            <div class="skills-list grid sm:grid-cols-2 lg:grid-cols-1 gap-x-8 gap-y-1">
-              @for (skill of skills; track skill.name) {
-                <div class="skill-row skill-{{ skill.accent }} flex items-center gap-3 py-1.5 transition-transform">
-                  <span class="skill-chevron text-slate-300 font-mono">›</span>
-                  <div class="skill-icon size-8 shrink-0 flex items-center justify-center">
-                    <span class="material-symbols-outlined text-xl">{{ skill.icon }}</span>
-                  </div>
-                  <span class="font-mono font-medium text-slate-100 text-sm sm:text-base">{{ skill.name }}</span>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- About Section -->
-  <section id="about"
-           data-reveal
-           [class.revealed]="isSectionVisible('about')"
-           class="max-w-5xl mx-auto px-6 py-20">
-    <div class="flex items-center gap-3 mb-8">
-      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#5382a1]/50 to-transparent"></div>
-      <h2 class="text-2xl font-bold text-white whitespace-nowrap">
-        About
-      </h2>
-      <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#5382a1]/50 to-transparent"></div>
-    </div>
-
-    <div class="rounded-2xl bg-[#0f172a]/80 border border-white/5 p-6 sm:p-8 hover:border-[#5382a1]/20 transition-colors">
-      <div class="space-y-4">
-        <div class="flex items-center gap-3">
-          <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#5382a1]">Profile</p>
-          <div class="h-px flex-1 bg-gradient-to-l from-[#5382a1]/50 to-transparent"></div>
-        </div>
-        @for (paragraph of aboutEnParagraphs; track paragraph) {
-          <p class="text-slate-400 leading-relaxed text-sm sm:text-base">{{ paragraph }}</p>
+      <div class="ml-auto hidden md:flex items-center gap-1 text-sm text-slate-300">
+        @for (link of navLinks; track link.id) {
+          <a [href]="'#' + link.id"
+             class="px-3 py-2 rounded-lg hover:text-white hover:bg-white/5 transition-colors focus-ring"
+             (click)="$event.preventDefault(); scrollToSection(link.id)">{{ link.label }}</a>
         }
       </div>
-    </div>
-  </section>
+      <a href="mailto:hao.phamvan2308@gmail.com"
+         class="ml-auto md:ml-0 inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[#22c55e] hover:bg-[#4ade80] text-[#0b1121] text-sm font-bold transition-colors focus-ring">
+        <span class="material-symbols-outlined text-lg" aria-hidden="true">mail</span>
+        Hire me
+      </a>
+    </nav>
+  </header>
 
-  <!-- Education & Footer -->
-  <section id="education" class="max-w-5xl mx-auto px-6 py-12 pb-32">
-    <div class="rounded-2xl bg-[#0f172a] border border-white/5 p-6 sm:p-8 space-y-4 max-w-2xl mx-auto">
-      <h3 class="font-semibold text-white flex items-center gap-2 text-sm">
-        <span class="material-symbols-outlined text-[#6db33f] text-lg">school</span>
-        Education
-      </h3>
-      <div class="space-y-2">
-        <p class="text-slate-300 leading-relaxed text-sm">
-          <span class="font-medium text-white">Ho Chi Minh City University of Technology and Education (HCMUTE)</span>
-          <br>
-          Bachelor of Information Technology
+  <main>
+    <!-- Hero -->
+    <section id="hero" class="hero-section relative min-h-[calc(100svh-4rem)] flex items-center px-6 py-16 overflow-hidden">
+      <app-three-background class="absolute inset-0 pointer-events-none" aria-hidden="true"></app-three-background>
+      <div class="hero-content-shield absolute inset-0 pointer-events-none"></div>
+
+      <div class="relative z-10 w-full max-w-6xl mx-auto grid lg:grid-cols-12 gap-12 items-center">
+        <div class="lg:col-span-7 space-y-7">
+          <div class="flex items-center gap-3">
+            <img [src]="avatarUrl"
+                 alt="Pham Van Hao (KIRA)"
+                 width="56" height="56"
+                 fetchpriority="high"
+                 class="size-14 rounded-full object-cover border-2 border-white/10 bg-[#0f172a]"/>
+            <span class="inline-flex items-center gap-2 rounded-full border border-[#22c55e]/30 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold text-[#86efac]">
+              <span class="size-1.5 rounded-full bg-[#22c55e]" aria-hidden="true"></span>
+              Ho Chi Minh City, Vietnam
+            </span>
+          </div>
+
+          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.02]">
+            Pham Van Hao
+            <span class="block font-mono text-xl sm:text-2xl font-semibold mt-4 text-slate-400">
+              &#64;KIRA
+            </span>
+          </h1>
+
+          <p class="font-mono text-xl sm:text-2xl font-semibold text-[#86efac] min-h-8" aria-live="off">
+            <span class="sr-only">{{ roles.join(', ') }}</span>
+            <span aria-hidden="true">&gt; {{ typingText() }}<span class="typing-cursor">_</span></span>
+          </p>
+
+          <p class="max-w-xl text-slate-300 text-base sm:text-lg leading-8">
+            Java Developer who works across front-end and back-end, with my core strength in
+            <span class="text-white font-semibold">backend engineering with Java &amp; Spring Boot</span>
+            — building reliable APIs, services, and data systems.
+          </p>
+
+          <div class="flex flex-wrap gap-3">
+            <a href="mailto:hao.phamvan2308@gmail.com"
+               class="inline-flex items-center gap-2 h-12 px-6 rounded-lg bg-[#22c55e] hover:bg-[#4ade80] text-[#0b1121] font-bold transition-colors focus-ring">
+              <span class="material-symbols-outlined text-xl" aria-hidden="true">mail</span>
+              Contact me
+            </a>
+            <a href="https://github.com/pvhao2002" target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-2 h-12 px-6 rounded-lg border border-white/15 hover:border-white/40 hover:bg-white/5 font-bold transition-colors focus-ring">
+              <span class="material-symbols-outlined text-xl" aria-hidden="true">code</span>
+              GitHub
+            </a>
+          </div>
+
+          <a href="mailto:hao.phamvan2308@gmail.com"
+             class="inline-flex items-center gap-2 font-mono text-base sm:text-lg text-slate-200 hover:text-[#86efac] transition-colors focus-ring rounded">
+            <span class="material-symbols-outlined text-xl text-[#86efac]" aria-hidden="true">alternate_email</span>
+            hao.phamvan2308&#64;gmail.com
+          </a>
+        </div>
+
+        <!-- Decorative code card -->
+        <div class="lg:col-span-5 hidden sm:block" aria-hidden="true">
+          <div class="code-card rounded-2xl border border-white/10 bg-[#0f172a]/90 shadow-2xl overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+              <span class="size-3 rounded-full bg-[#ef4444]/80"></span>
+              <span class="size-3 rounded-full bg-[#f59e0b]/80"></span>
+              <span class="size-3 rounded-full bg-[#22c55e]/80"></span>
+              <span class="ml-3 font-mono text-xs text-slate-500">DeveloperController.java</span>
+            </div>
+            <pre class="p-5 font-mono text-[13px] leading-6 text-slate-300 overflow-x-auto"><code><span class="tok-ann">&#64;RestController</span>
+<span class="tok-ann">&#64;RequestMapping</span>(<span class="tok-str">"/api/kira"</span>)
+<span class="tok-kw">public class</span> <span class="tok-type">DeveloperController</span> &#123;
+
+  <span class="tok-ann">&#64;GetMapping</span>(<span class="tok-str">"/profile"</span>)
+  <span class="tok-kw">public</span> <span class="tok-type">Developer</span> profile() &#123;
+    <span class="tok-kw">return</span> <span class="tok-type">Developer</span>.builder()
+        .name(<span class="tok-str">"Pham Van Hao"</span>)
+        .focus(<span class="tok-str">"Backend · Spring Boot"</span>)
+        .alsoBuilds(<span class="tok-str">"Angular front-ends"</span>)
+        .build();
+  &#125;
+&#125;</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About + What I do -->
+    <section id="about"
+             data-reveal
+             [class.revealed]="isSectionVisible('about')"
+             class="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
+      <p class="font-mono text-sm text-[#86efac]">01 / About</p>
+      <h2 class="text-3xl sm:text-4xl font-bold mt-2">Backend first, full-stack when needed.</h2>
+
+      <div class="grid lg:grid-cols-12 gap-10 mt-10">
+        <div class="lg:col-span-7 space-y-4">
+          @for (paragraph of aboutEnParagraphs; track paragraph) {
+            <p class="text-slate-300 leading-relaxed">{{ paragraph }}</p>
+          }
+        </div>
+
+        <aside class="lg:col-span-5 space-y-4">
+          <div class="rounded-2xl bg-[#0f172a] border border-white/10 p-6">
+            <h3 class="font-semibold flex items-center gap-2">
+              <span class="material-symbols-outlined text-[#86efac]" aria-hidden="true">school</span>
+              Education
+            </h3>
+            <p class="text-slate-300 text-sm leading-relaxed mt-3">
+              <span class="font-medium text-white">Ho Chi Minh City University of Technology and Education (HCMUTE)</span>
+              <br>
+              Bachelor of Information Technology
+            </p>
+          </div>
+        </aside>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-5 mt-12">
+        @for (area of focusAreas; track area.title) {
+          <article class="focus-card rounded-2xl border p-6 flex flex-col"
+                   [class.border-[#22c55e]/40]="area.primary"
+                   [class.bg-[#22c55e]/5]="area.primary"
+                   [class.border-white/10]="!area.primary"
+                   [class.bg-[#0f172a]]="!area.primary">
+            <div class="flex items-center justify-between gap-3">
+              <span class="size-11 rounded-xl flex items-center justify-center"
+                    [class.bg-[#22c55e]/15]="area.primary"
+                    [class.text-[#86efac]]="area.primary"
+                    [class.bg-white/5]="!area.primary"
+                    [class.text-slate-300]="!area.primary">
+                <span class="material-symbols-outlined" aria-hidden="true">{{ area.icon }}</span>
+              </span>
+              @if (area.primary) {
+                <span class="rounded-full bg-[#22c55e] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#0b1121]">Core strength</span>
+              }
+            </div>
+            <h3 class="text-lg font-bold mt-5">{{ area.title }}</h3>
+            <p class="text-sm text-slate-400 leading-relaxed mt-2">{{ area.summary }}</p>
+            <ul class="mt-4 space-y-2 text-sm text-slate-300">
+              @for (point of area.points; track point) {
+                <li class="flex items-start gap-2">
+                  <span class="material-symbols-outlined text-base text-[#86efac] mt-0.5" aria-hidden="true">check</span>
+                  {{ point }}
+                </li>
+              }
+            </ul>
+          </article>
+        }
+      </div>
+    </section>
+
+    <!-- Skills -->
+    <section id="skills"
+             data-reveal
+             [class.revealed]="isSectionVisible('skills')"
+             class="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
+      <p class="font-mono text-sm text-[#86efac]">02 / Skills</p>
+      <h2 class="text-3xl sm:text-4xl font-bold mt-2">Tools I work with</h2>
+
+      <div class="grid md:grid-cols-3 gap-5 mt-10">
+        @for (group of skillGroups; track group.label) {
+          <div class="rounded-2xl bg-[#0f172a] border border-white/10 p-6">
+            <h3 class="font-mono text-xs font-semibold uppercase tracking-wider text-slate-400">{{ group.label }}</h3>
+            <ul class="mt-4 space-y-1">
+              @for (skill of group.skills; track skill.name) {
+                <li class="skill-row skill-{{ skill.accent }} flex items-center gap-3 py-1.5">
+                  <span class="skill-icon size-8 shrink-0 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-xl" aria-hidden="true">{{ skill.icon }}</span>
+                  </span>
+                  <span class="font-medium text-slate-100">{{ skill.name }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Experience -->
+    <section id="experience"
+             data-reveal
+             [class.revealed]="isSectionVisible('experience')"
+             class="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
+      <p class="font-mono text-sm text-[#86efac]">03 / Experience</p>
+      <h2 class="text-3xl sm:text-4xl font-bold mt-2">What I've been doing</h2>
+
+      <article class="rounded-2xl bg-[#0f172a] border border-white/10 p-6 sm:p-8 mt-10">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold flex items-center gap-2">
+              <span class="material-symbols-outlined text-[#86efac]" aria-hidden="true">work</span>
+              {{ experience.role }}
+            </h3>
+            <p class="text-slate-400 mt-1">{{ experience.project }}</p>
+          </div>
+          <span class="self-start shrink-0 rounded-full border border-white/10 px-3 py-1 font-mono text-xs text-slate-300">
+            {{ experience.period }}
+          </span>
+        </div>
+
+        <p class="text-slate-300 leading-relaxed mt-5">{{ experience.summary }}</p>
+
+
+        <ol class="mt-8 space-y-4 border-l border-white/10 ml-2">
+          @for (item of experience.highlights; track item.title) {
+            <li class="relative pl-6">
+              <span class="absolute -left-[5px] top-2 size-2.5 rounded-full bg-[#22c55e]" aria-hidden="true"></span>
+              <p class="text-slate-300 leading-relaxed"><span class="font-semibold text-white">{{ item.title }}:</span> {{ item.text }}</p>
+            </li>
+          }
+        </ol>
+      </article>
+    </section>
+
+    <!-- Contact CTA -->
+    <section id="contact"
+             data-reveal
+             [class.revealed]="isSectionVisible('contact')"
+             class="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
+      <div class="contact-band rounded-3xl border border-[#22c55e]/25 p-8 sm:p-12 text-center">
+        <p class="font-mono text-sm text-[#86efac]">04 / Contact</p>
+        <h2 class="text-3xl sm:text-4xl font-bold mt-2">Need a reliable backend?</h2>
+        <p class="text-slate-300 mt-4 max-w-xl mx-auto leading-relaxed">
+          Internal tools, APIs, data pipelines, or a complete product — I can help from idea to deployment.
         </p>
+        <a href="mailto:hao.phamvan2308@gmail.com"
+           class="mt-8 inline-flex items-center gap-2 h-12 px-6 rounded-lg bg-[#22c55e] hover:bg-[#4ade80] text-[#0b1121] font-bold transition-colors focus-ring">
+          <span class="material-symbols-outlined text-xl" aria-hidden="true">mail</span>
+          hao.phamvan2308&#64;gmail.com
+        </a>
+        <div class="flex flex-wrap justify-center gap-2 mt-6">
+          @for (link of socialLinks; track link.url) {
+            <a [href]="link.url" target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-2 h-11 px-4 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors focus-ring">
+              <span class="material-symbols-outlined text-lg" aria-hidden="true">{{ link.icon }}</span>
+              {{ link.label }}
+            </a>
+          }
+        </div>
       </div>
-      <div class="flex items-center gap-2 text-xs text-slate-500">
-        <span class="material-symbols-outlined text-sm">location_on</span>
-        Ho Chi Minh City, Vietnam
-      </div>
-    </div>
+    </section>
+  </main>
 
-    <div class="mt-12 text-center text-xs text-slate-600 space-y-1">
-      <p>&copy; 2026 Pham Van Hao (KIRA - 2002). Built with Angular.</p>
-      <p>Fullstack Java Developer — Java, Spring Boot, Angular</p>
-    </div>
-  </section>
+  <footer class="max-w-6xl mx-auto px-6 pt-8 pb-12 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+    <p>&copy; {{ currentYear }} Pham Van Hao (KIRA). Built with Angular.</p>
+    <nav class="flex flex-wrap justify-center gap-x-5 gap-y-2" aria-label="Footer">
+      @for (link of navLinks; track link.id) {
+        <a [href]="'#' + link.id" class="hover:text-white transition-colors focus-ring rounded"
+           (click)="$event.preventDefault(); scrollToSection(link.id)">{{ link.label }}</a>
+      }
+    </nav>
+  </footer>
 </div>

@@ -1,23 +1,61 @@
-.intro-split {
-  align-items: start;
-}
-
 .hero-section {
   background: #0b1121;
 }
 
 .hero-content-shield {
   background:
-    radial-gradient(ellipse 55% 70% at 34% 43%, rgba(11, 17, 33, 0.9) 0%, rgba(11, 17, 33, 0.72) 50%, transparent 100%),
-    linear-gradient(90deg, rgba(11, 17, 33, 0.32), transparent 20%, transparent 80%, rgba(11, 17, 33, 0.08));
-}
-
-.section-label {
-  letter-spacing: 0.02em;
+    radial-gradient(ellipse 55% 70% at 30% 45%, rgba(11, 17, 33, 0.92) 0%, rgba(11, 17, 33, 0.74) 50%, transparent 100%),
+    linear-gradient(180deg, transparent 70%, #0b1121 100%);
 }
 
 .typing-cursor {
   animation: blink 1s step-end infinite;
+}
+
+/* Accessibility */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 60;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: #22c55e;
+  color: #0b1121;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid #86efac;
+  outline-offset: 2px;
+}
+
+/* Code card syntax colors */
+.tok-ann { color: #fbbf24; }
+.tok-kw { color: #c084fc; }
+.tok-type { color: #67e8f9; }
+.tok-str { color: #86efac; }
+
+.code-card {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(34, 197, 94, 0.05);
+}
+
+.focus-card {
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.focus-card:hover {
+  transform: translateY(-4px);
+}
+
+.contact-band {
+  background:
+    radial-gradient(ellipse 80% 120% at 50% 0%, rgba(34, 197, 94, 0.12), transparent 70%),
+    #0f172a;
 }
 
 /* Scroll reveal */
@@ -40,10 +78,12 @@
 .skill-mysql { --accent: #00758f; }
 .skill-api { --accent: #5382a1; }
 .skill-jpa { --accent: #f89820; }
-.skill-rxjs { --accent: #b7178c; }
 .skill-docker { --accent: #2496ed; }
 .skill-rabbitmq { --accent: #ff6600; }
-.skill-git { --accent: #f05032; }
+
+.skill-row {
+  transition: transform 0.2s ease;
+}
 
 .skill-row:hover {
   transform: translateX(4px);
@@ -54,17 +94,6 @@
   filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 30%, transparent));
 }
 
-/* Project card hover */
-.project-card {
-  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.project-card:hover {
-  transform: translateY(-4px);
-  border-color: color-mix(in srgb, #5382a1 50%, transparent);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-}
-
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
@@ -72,7 +101,7 @@
 
 @media (max-width: 1023px) {
   .hero-content-shield {
-    background: linear-gradient(180deg, rgba(11, 17, 33, 0.82), rgba(11, 17, 33, 0.68));
+    background: linear-gradient(180deg, rgba(11, 17, 33, 0.82), rgba(11, 17, 33, 0.7));
   }
 }
 
@@ -83,8 +112,12 @@
     transition: none;
   }
 
+  .typing-cursor {
+    animation: none;
+  }
+
   .skill-row,
-  .project-card {
+  .focus-card {
     transition: none;
   }
 }

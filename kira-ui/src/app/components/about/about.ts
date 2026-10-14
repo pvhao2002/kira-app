@@ -23,21 +23,25 @@ interface Skill {
   accent: string;
 }
 
-interface ExperienceItem {
-  en: string;
-}
-
-interface ProjectRepoLink {
+interface SkillGroup {
   label: string;
-  url: string;
+  skills: Skill[];
 }
 
-interface Project {
-  name: string;
-  descriptionEn: string;
-  tech: string[];
-  url?: string;
-  repoLinks?: ProjectRepoLink[];
+interface FocusArea {
+  title: string;
+  icon: string;
+  summary: string;
+  points: string[];
+  primary?: boolean;
+}
+
+interface Experience {
+  role: string;
+  period: string;
+  project: string;
+  summary: string;
+  highlights: {title: string; text: string}[];
 }
 
 @Component({
@@ -51,13 +55,23 @@ export class About implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly rootRef = viewChild<ElementRef<HTMLElement>>('root');
 
+  // Replace with a clear headshot (e.g. assets/images/avatar.jpg) when available.
+  readonly avatarUrl = 'assets/images/kira_logo.png';
+  readonly currentYear = new Date().getFullYear();
+  readonly navLinks = [
+    {id: 'about', label: 'About'},
+    {id: 'skills', label: 'Skills'},
+    {id: 'experience', label: 'Experience'},
+    {id: 'contact', label: 'Contact'},
+  ];
+
   readonly typingText = signal('');
-  readonly showCursor = signal(true);
   readonly visibleSections = signal<Set<string>>(new Set());
 
   readonly roles = [
     'Java Developer',
-    'Data Crawling Specialist',
+    'Spring Boot Backend Engineer',
+    'Full-stack with Angular',
   ];
 
   readonly socialLinks: SocialLink[] = [
@@ -66,61 +80,108 @@ export class About implements OnInit, AfterViewInit {
     {label: 'Email', url: 'mailto:hao.phamvan2308@gmail.com', icon: 'mail'},
   ];
 
-  readonly skills: Skill[] = [
-    {name: 'Java', icon: 'coffee', accent: 'java'},
-    {name: 'Spring Boot', icon: 'eco', accent: 'spring'},
-    {name: 'Angular', icon: 'web', accent: 'angular'},
-    {name: 'TypeScript', icon: 'javascript', accent: 'typescript'},
-    {name: 'MySQL', icon: 'database', accent: 'mysql'},
-    {name: 'REST API', icon: 'api', accent: 'api'},
-    {name: 'JPA', icon: 'storage', accent: 'jpa'},
-    {name: 'RxJS', icon: 'sync', accent: 'rxjs'},
-    {name: 'Data Crawling', icon: 'cloud_download', accent: 'api'},
-    {name: 'Docker', icon: 'deployed_code', accent: 'docker'},
-    {name: 'RabbitMQ', icon: 'queue', accent: 'rabbitmq'},
-    {name: 'Git', icon: 'account_tree', accent: 'git'},
-  ];
-
-  readonly experienceItems: ExperienceItem[] = [
+  readonly focusAreas: FocusArea[] = [
     {
-      en: 'Responsibility for mapping data and generating summarized data tables, with solutions to enhance performance and fallback plans.',
+      title: 'Backend Engineering',
+      icon: 'dns',
+      summary: 'My core strength: designing and building reliable services with Java and Spring Boot.',
+      points: ['REST API design', 'Data modeling with JPA & MySQL', 'Messaging with RabbitMQ', 'Query & index tuning'],
+      primary: true,
     },
     {
-      en: 'Developed and maintained Java and Spring Boot backend systems for data management, trading support, and financial reporting, ensuring regulatory compliance.',
+      title: 'Front-end',
+      icon: 'web',
+      summary: 'Responsive Angular interfaces that connect cleanly to the services behind them.',
+      points: ['Angular & TypeScript', 'Signals & RxJS', 'Tailwind CSS'],
     },
     {
-      en: 'Created and maintained RESTful APIs and responsive Angular front-ends, improving system integration and user experience.',
-    },
-    {
-      en: 'Optimized database indexes and queries to improve query performance.',
-    },
-    {
-      en: 'Supported migrating the entire system from legacy technology to modern stack, collaborating with cross-functional teams.',
+      title: 'Data Crawling',
+      icon: 'cloud_download',
+      summary: 'End-to-end pipelines from raw sources to clean data exposed through APIs.',
+      points: ['Source analysis', 'Crawlers & scheduling', 'Cleaning & storage'],
     },
   ];
 
-  readonly projects: Project[] = [
+  readonly skillGroups: SkillGroup[] = [
     {
-      name: 'Kira App',
-      descriptionEn: 'Full-stack platform for sports data crawling, event management, predictions, and financial tools — Java microservices with Angular UI.',
-      tech: ['Java', 'Spring Boot', 'Angular', 'RabbitMQ', 'MySQL'],
-      url: 'https://github.com/pvhao2002/kira-app',
+      label: 'Backend',
+      skills: [
+        {name: 'Java', icon: 'coffee', accent: 'java'},
+        {name: 'Spring Boot', icon: 'eco', accent: 'spring'},
+        {name: 'JPA / Hibernate', icon: 'storage', accent: 'jpa'},
+        {name: 'REST API', icon: 'api', accent: 'api'},
+        {name: 'RabbitMQ', icon: 'queue', accent: 'rabbitmq'},
+        {name: 'MySQL', icon: 'database', accent: 'mysql'},
+      ],
     },
     {
-      name: 'Toeicute BE + FE',
-      descriptionEn: 'TOEIC learning platform — Spring Boot backend and Angular front-end for practice tests and user management.',
-      tech: ['Spring Boot', 'Angular', 'MySQL'],
-      repoLinks: [
-        {label: 'BE', url: 'https://github.com/pvhao2002/toeicute-be'},
-        {label: 'FE', url: 'https://github.com/pvhao2002/toeicute-fe'},
+      label: 'Front-end',
+      skills: [
+        {name: 'Angular', icon: 'web', accent: 'angular'},
+        {name: 'TypeScript', icon: 'javascript', accent: 'typescript'},
+      ],
+    },
+    {
+      label: 'Tools & Data',
+      skills: [
+        {name: 'Docker', icon: 'deployed_code', accent: 'docker'},
+        {name: 'Data Crawling', icon: 'cloud_download', accent: 'api'},
       ],
     },
   ];
 
+  readonly experience: Experience = {
+    role: 'Java Developer (Spring Boot + Angular)',
+    period: '03/2024 – Present',
+    project: 'Real-time trading, risk-control & back-office accounting platform',
+    summary: 'I build and maintain the systems that traders, risk teams and accountants rely on every day: '
+      + 'real-time monitoring and risk reports, accounting modules, a trader portal and automation jobs. '
+      + 'I work directly with business and QC through QAT → STG → PROD release cycles.',
+    highlights: [
+      {
+        title: 'Trader portal, end to end',
+        text: 'Built the Angular app, multi-role user management, account configuration and new Spring Boot services, plus a WebSocket heartbeat that tracks online users every 30 seconds.',
+      },
+      {
+        title: 'Real-time monitoring and position reports',
+        text: 'Delivered config-driven filters (time bands, VIP groups) with server-side validation.',
+      },
+      {
+        title: 'Data collection',
+        text: 'Wrote scheduled crawlers that pull real-time data from external sources and store it for risk reports.',
+      },
+      {
+        title: 'Entity-mapping automation',
+        text: 'Built a scheduled job using Jaro-Winkler name matching with an optional AI check, real-time alerts and a confirmation flow in the UI.',
+      },
+      {
+        title: 'Accounting features',
+        text: 'Built Journal, Ledger, Fund Control and Chart of Accounts, including ERC20/TRC20 wallet linking with a rule-driven balance parser configured from the database.',
+      },
+      {
+        title: 'Performance',
+        text: 'Fixed production timeouts by rewriting heavy SQL (index hints, pre-aggregated tables) and partitioning scheduler jobs.',
+      },
+      {
+        title: 'Stability',
+        text: 'Tracked down and fixed memory leaks in long-running services, keeping memory usage stable and reducing out-of-memory restarts.',
+      },
+      {
+        title: 'Large data handling',
+        text: 'Removed browser freezes with virtual scrolling for huge lists, and fixed failing exports by caching Apache POI cell styles for large Excel/PDF files.',
+      },
+      {
+        title: 'Financial accuracy',
+        text: 'Fixed bugs in price and currency conversion, truncation rules and Debit/Credit placement in ledgers.',
+      },
+    ],
+  };
+
   readonly aboutEnParagraphs = [
-    'I am a Java Developer with a degree in Information Technology from HCMUTE, focused on backend engineering with Java, Spring Boot, Angular, and production-ready data systems.',
-    'My strongest area is building end-to-end data crawling projects: analyzing data sources, implementing crawlers, cleaning and structuring data, storing it efficiently, exposing APIs, and delivering admin dashboards or complete products.',
-    'I have worked across multiple domains including real estate, English exam content such as TOEIC and IELTS, and football and sports match data. My goal is always to build crawling systems that are reliable, scalable, and truly useful for real-world business needs.',
+    'I am a Java Developer with a degree in Information Technology from HCMUTE. I can work on both front-end and back-end, but my main strength is the backend: designing and building services with Java and Spring Boot.',
+    'On the backend I focus on clean REST APIs, solid data modeling with JPA and MySQL, message-driven processing with RabbitMQ, and performance tuning. On the front-end I build responsive Angular interfaces that connect smoothly to those services.',
+    'I especially enjoy end-to-end data projects: analyzing sources, implementing crawlers, cleaning and structuring data, storing it efficiently, and exposing it through APIs and admin dashboards.',
+    'I have worked across multiple domains including real estate and English exam content such as TOEIC and IELTS. My goal is always to build crawling systems that are reliable, scalable, and truly useful for real-world business needs.',
     'If you need a custom internal tool, website, or app related to data crawling, data processing, content operations, or a complete digital product, I am available to help from idea to deployment.',
   ];
 
@@ -130,8 +191,11 @@ export class About implements OnInit, AfterViewInit {
   private typingTimer?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
+    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      this.typingText.set(this.roles[0]);
+      return;
+    }
     this.startTypingEffect();
-    this.startCursorBlink();
   }
 
   ngAfterViewInit(): void {
@@ -180,14 +244,6 @@ export class About implements OnInit, AfterViewInit {
         clearTimeout(this.typingTimer);
       }
     });
-  }
-
-  private startCursorBlink(): void {
-    const interval = setInterval(() => {
-      this.showCursor.update((v) => !v);
-    }, 530);
-
-    this.destroyRef.onDestroy(() => clearInterval(interval));
   }
 
   private setupScrollReveal(): void {

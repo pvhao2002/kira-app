@@ -1,7 +1,7 @@
 # ===========================
 # STAGE 1: Build Angular app
 # ===========================
-FROM node:22-alpine AS build
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 
 WORKDIR /app
 
