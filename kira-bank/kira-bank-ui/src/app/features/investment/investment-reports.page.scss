@@ -1,7 +1,7 @@
 :host { display:block; min-width:0; color:var(--navy); }
 .page-heading { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; margin-bottom:20px; }.page-heading h1 { margin:5px 0 7px; font-size:clamp(23px,2.4vw,30px); }.page-heading p { margin:0; color:var(--muted); font-size:13px; }.eyebrow { color:var(--muted); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
 .panel { margin-bottom:18px; padding:20px; border:1px solid var(--border); border-radius:15px; background:var(--surface); }
-.filters { display:flex; align-items:flex-end; flex-wrap:wrap; gap:12px; }.filters label { display:grid; gap:5px; color:var(--muted); font-size:11px; }
+.filters { display:flex; align-items:flex-end; flex-wrap:wrap; gap:12px; }.filters label { display:grid; gap:5px; margin:0; color:var(--muted); font-size:11px; }
 .filters select, .filters input { box-sizing:border-box; min-height:44px; min-width:150px; padding:7px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--navy); }
 .tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; overflow-x:auto; }
 .tabs button { min-height:36px; padding:6px 14px; border:1px solid var(--border); border-radius:999px; background:transparent; color:var(--navy); font-size:12px; cursor:pointer; white-space:nowrap; }
