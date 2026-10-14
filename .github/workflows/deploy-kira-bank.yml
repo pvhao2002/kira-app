@@ -91,3 +91,33 @@ jobs:
             ${{ env.DOCKERHUB_USERNAME }}/kira-bank-ui:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # kira-bank runs on its own VPS, managed by Portainer: redeploy the existing stack with image re-pull.
+  # Stack file + env stay in Portainer; we resend them unchanged.
+  deploy:
+    needs: [build-kira-bank-service, build-kira-bank-ui]
+    if: >-
+      !cancelled()
+      && github.event_name != 'pull_request'
+      && !contains(needs.*.result, 'failure')
+      && (needs.build-kira-bank-service.result == 'success'
+          || needs.build-kira-bank-ui.result == 'success')
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      PORTAINER_URL: ${{ secrets.KIRA_BANK_PORTAINER_URL }}
+      PORTAINER_API_KEY: ${{ secrets.KIRA_BANK_PORTAINER_API_KEY }}
+      STACK_ID: ${{ secrets.KIRA_BANK_PORTAINER_STACK_ID }}
+      ENDPOINT_ID: ${{ secrets.KIRA_BANK_PORTAINER_ENDPOINT_ID }}
+    steps:
+      - name: Redeploy Portainer stack
+        run: |
+          set -euo pipefail
+          api() { curl -fsS --max-time 600 -H "X-API-Key: $PORTAINER_API_KEY" "$@"; }
+          env_json=$(api "$PORTAINER_URL/api/stacks/$STACK_ID" | jq '.Env // []')
+          file=$(api "$PORTAINER_URL/api/stacks/$STACK_ID/file" | jq -r '.StackFileContent')
+          jq -n --arg f "$file" --argjson e "$env_json" \
+            '{stackFileContent: $f, env: $e, prune: false, pullImage: true}' \
+          | api -X PUT -H "Content-Type: application/json" --data @- \
+              "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" >/dev/null
+          echo "kira-bank stack $STACK_ID redeployed"
