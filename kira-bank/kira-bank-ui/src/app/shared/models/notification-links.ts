@@ -23,7 +23,7 @@ export function notificationRoute(deepLink: unknown): NotificationRoute | null {
       return {commands: ['/app/credit-cards']};
     case 'ai-result':
     case 'queue':
-      return {commands: ['/app/investment/ai-queue']};
+      return {commands: ['/app/investment/transactions']};
     case 'credit-stats':
       return {commands: ['/app/credit-card/dashboard']};
     default:

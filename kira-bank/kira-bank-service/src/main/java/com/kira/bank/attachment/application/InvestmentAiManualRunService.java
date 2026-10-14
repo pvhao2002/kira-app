@@ -3,7 +3,6 @@ package com.kira.bank.attachment.application;
 import com.kira.bank.ai.AiDocumentService;
 import com.kira.bank.attachment.config.InvestmentAiRunConfiguration;
 import com.kira.bank.attachment.domain.Attachment;
-import com.kira.bank.investment.application.InvestmentTransactionImportService;
 import com.kira.bank.shared.web.ApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +10,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
 import java.util.concurrent.*;
@@ -26,7 +27,6 @@ public class InvestmentAiManualRunService {
     private final InvestmentAiJobService jobs;
     private final InvestmentReceiptAiScheduler processor;
     private final AttachmentService attachments;
-    private final InvestmentTransactionImportService transactionImports;
     private final AiDocumentService ai;
     private final ExecutorService executor;
     private final Semaphore capacity = new Semaphore(InvestmentAiRunConfiguration.MAX_CONCURRENT_RUNS, true);
@@ -35,16 +35,44 @@ public class InvestmentAiManualRunService {
         InvestmentAiJobService jobs,
         InvestmentReceiptAiScheduler processor,
         AttachmentService attachments,
-        InvestmentTransactionImportService transactionImports,
         AiDocumentService ai,
         @Qualifier("investmentAiRunExecutor") ExecutorService executor
     ) {
         this.jobs = jobs;
         this.processor = processor;
         this.attachments = attachments;
-        this.transactionImports = transactionImports;
         this.ai = ai;
         this.executor = executor;
+    }
+
+    /** Published inside the upload transaction; handled after commit. */
+    public record ReceiptsQueued(List<Long> attachmentIds) {
+    }
+
+    /**
+     * Starts AI processing right after receipts are queued. When AI is not configured or all run slots are busy
+     * the receipts simply stay PENDING and {@link InvestmentReceiptAiScheduler} picks them up later.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onReceiptsQueued(ReceiptsQueued event) {
+        List<Long> ids = event.attachmentIds();
+        if (ids.isEmpty() || !ai.isConfigured() || !capacity.tryAcquire()) return;
+        try {
+            executor.execute(() -> {
+                try {
+                    List<Attachment> claimed;
+                    while (!(claimed = attachments.claimPending(ids)).isEmpty()) {
+                        processor.processClaimedAttachments(claimed);
+                    }
+                } catch (RuntimeException ex) {
+                    log.warn("Immediate run of queued investment receipts failed to complete", ex);
+                } finally {
+                    capacity.release();
+                }
+            });
+        } catch (RejectedExecutionException _) {
+            capacity.release();
+        }
     }
 
     public InvestmentAiJobResponse runMine(Long userId, Long attachmentId) {
@@ -70,7 +98,7 @@ public class InvestmentAiManualRunService {
         CompletableFuture<Attachment> claimedAttachment = new CompletableFuture<>();
         try {
             executor.execute(() -> processWhenClaimed(attachmentId, claimedAttachment));
-        } catch (RejectedExecutionException ex) {
+        } catch (RejectedExecutionException _) {
             capacity.release();
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI_RUN_EXECUTOR_UNAVAILABLE",
                 "Không thể khởi chạy AI job lúc này");
@@ -103,7 +131,6 @@ public class InvestmentAiManualRunService {
     private void recoverUnexpectedFailure(Long attachmentId) {
         try {
             attachments.markRetryOrFailed(attachmentId, "AI_MANUAL_RUN_ERROR");
-            transactionImports.refreshAttachmentState(attachmentId);
         } catch (RuntimeException recoveryFailure) {
             log.error("Unable to recover manual investment AI job {} after an unexpected failure",
                 attachmentId, recoveryFailure);

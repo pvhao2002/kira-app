@@ -47,13 +47,13 @@ public class CardStatementImportRunner {
                     if (ai.isConfigured()) {
                         imports.claim(event.importId()).ifPresent(processor::process);
                     }
-                } catch (RuntimeException ex) {
+                } catch (RuntimeException _) {
                     log.warn("Immediate run of statement import {} failed to start", event.importId());
                 } finally {
                     capacity.release();
                 }
             });
-        } catch (RejectedExecutionException ex) {
+        } catch (RejectedExecutionException _) {
             capacity.release();
         }
     }

@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {ActivatedRoute, Router} from '@angular/router';
-import {Subscription, timer} from 'rxjs';
+import {Observable, Subscription, timer} from 'rxjs';
 import {switchMap} from 'rxjs/operators';
 import {ApiService} from '../../core/services/api.service';
 import {LanguageService} from '../../core/i18n/language.service';
@@ -13,7 +13,7 @@ import {
   ApiError,
   InvestmentConfirmItem,
   InvestmentConfirmResponse,
-  InvestmentImportBatch,
+  InvestmentImportState,
   InvestmentImportItem,
   InvestmentImportResolution,
   InvestmentAccountSummary
@@ -36,21 +36,13 @@ export class InvestmentTransactionPage {
   readonly accounts = signal<InvestmentAccountSummary[]>([]);
   readonly accountId = signal<number | null>(null);
   readonly selectedFiles = signal<File[]>([]);
-  readonly batch = signal<InvestmentImportBatch | null>(null);
+  readonly state = signal<InvestmentImportState | null>(null);
   readonly reviewItems = signal<ReviewItem[]>([]);
   readonly confirmResult = signal<InvestmentConfirmResponse | null>(null);
   readonly conflictItemId = signal<string | null>(null);
   readonly loading = signal(false);
+  readonly stateLoading = signal(false);
   readonly error = signal<string | null>(null);
-  readonly canConfirmBatch = computed(() => {
-    const status = this.batch()?.status;
-    return !!status && ['READY', 'READY_WITH_ERRORS', 'PARTIALLY_CONFIRMED'].includes(status);
-  });
-  readonly batchIsWaiting = computed(() => {
-    const status = this.batch()?.status;
-    return status === 'QUEUED' || status === 'PROCESSING';
-  });
-  readonly batchIsReadOnly = computed(() => this.batch()?.status === 'CONFIRMED');
 
   readonly accountOptions = computed<SelectOption[]>(() => this.accounts().map(account => ({
     value: account.id,
@@ -66,44 +58,26 @@ export class InvestmentTransactionPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private polling?: Subscription;
-  private batchRequest?: Subscription;
-  private focusReviewWhenReady = false;
+  private stateRequest?: Subscription;
 
   constructor() {
     const requestedAccountId = Number(this.route.snapshot.queryParamMap.get('accountId'));
-    const requestedBatchId = this.route.snapshot.queryParamMap.get('batchId')?.trim() || null;
     this.api.page<InvestmentAccountSummary>('investment/accounts', 0, 100)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: response => {
           this.accounts.set(response.data);
-          if (!response.data.length) {
-            if (requestedBatchId || this.route.snapshot.queryParamMap.has('accountId')) {
-              this.error.set(this.i18n.t('investmentTransactions.errorReviewTarget'));
-            }
-            return;
-          }
-          const requestedAccount = Number.isFinite(requestedAccountId)
+          if (!response.data.length) return;
+          const requested = Number.isFinite(requestedAccountId)
             ? response.data.find(account => account.id === requestedAccountId)
             : undefined;
-          if (requestedAccount) {
-            this.selectAccount(requestedAccount.id, false);
-            if (requestedBatchId) {
-              this.focusReviewWhenReady = true;
-              this.loadBatch(requestedAccount.id, requestedBatchId, true);
-            }
-          } else {
-            this.selectAccount(response.data[0].id, false);
-            if (requestedBatchId || this.route.snapshot.queryParamMap.has('accountId')) {
-              this.error.set(this.i18n.t('investmentTransactions.errorReviewTarget'));
-            }
-          }
+          this.selectAccount((requested ?? response.data[0]).id, false);
         },
         error: () => this.error.set(this.i18n.t('investmentTransactions.errorAccountLoad'))
       });
     this.destroyRef.onDestroy(() => {
       this.polling?.unsubscribe();
-      this.batchRequest?.unsubscribe();
+      this.stateRequest?.unsubscribe();
     });
   }
 
@@ -115,22 +89,21 @@ export class InvestmentTransactionPage {
 
   private selectAccount(id: number, updateUrl: boolean): void {
     this.accountId.set(id);
-    this.batch.set(null);
+    this.state.set(null);
     this.reviewItems.set([]);
     this.confirmResult.set(null);
     this.selectedFiles.set([]);
     this.polling?.unsubscribe();
-    this.batchRequest?.unsubscribe();
-    this.focusReviewWhenReady = false;
+    this.error.set(null);
     if (updateUrl) {
-      this.error.set(null);
       void this.router.navigate([], {
         relativeTo: this.route,
-        queryParams: {accountId: id, batchId: null},
+        queryParams: {accountId: id},
         queryParamsHandling: 'merge',
         replaceUrl: true
       });
     }
+    this.loadState(id, true);
   }
 
   chooseFiles(event: Event): void {
@@ -176,37 +149,30 @@ export class InvestmentTransactionPage {
     this.error.set(null);
     this.confirmResult.set(null);
     this.api.createInvestmentTransactionImport(accountId, this.selectedFiles()).subscribe({
-      next: batch => {
-        this.applyBatch(batch);
-        this.updateBatchUrl(accountId, batch.batchId);
+      next: state => {
+        this.applyState(state);
         this.selectedFiles.set([]);
         this.loading.set(false);
-        this.startPolling(accountId, batch.batchId);
+        this.startPolling(accountId);
       },
       error: error => {
         this.loading.set(false);
-        this.error.set(this.errorMessage(error, 'investmentTransactions.errorCreateBatch'));
+        this.error.set(this.errorMessage(error, 'investmentTransactions.errorUpload'));
       }
     });
   }
 
   retryFile(attachmentId: number): void {
-    const accountId = this.accountId();
-    const batch = this.batch();
-    if (!accountId || !batch) return;
-    this.api.retryInvestmentImportFile(accountId, batch.batchId, attachmentId).subscribe({
-      next: response => {
-        this.applyBatch(response);
-        this.startPolling(accountId, batch.batchId);
-      },
-      error: error => this.error.set(this.errorMessage(error, 'investmentTransactions.errorRetryFile'))
-    });
+    this.runJob(this.api.runInvestmentAiJob(attachmentId, false), 'investmentTransactions.errorRetryFile');
+  }
+
+  cancelFile(attachmentId: number): void {
+    this.runJob(this.api.cancelInvestmentAiJob(attachmentId, false), 'investmentTransactions.errorCancelFile');
   }
 
   confirm(): void {
     const accountId = this.accountId();
-    const batch = this.batch();
-    if (!accountId || !batch || !this.canConfirmBatch() || !this.reviewItems().length) return;
+    if (!accountId || !this.reviewItems().length) return;
     const transactions: InvestmentConfirmItem[] = this.reviewItems().map(item => ({
       itemId: item.itemId,
       version: item.version,
@@ -222,14 +188,14 @@ export class InvestmentTransactionPage {
     }));
     this.loading.set(true);
     this.error.set(null);
-    this.api.confirmInvestmentTransactions(accountId, batch.batchId, transactions).subscribe({
+    this.api.confirmInvestmentTransactions(accountId, transactions).subscribe({
       next: result => {
         this.confirmResult.set(result);
         this.loading.set(false);
         this.toast.show(this.i18n.t('investmentTransactions.processedToast', {
           count: result.inserted + result.updated + result.skipped
         }), 'success');
-        this.loadBatch(accountId, batch.batchId);
+        this.loadState(accountId);
       },
       error: error => {
         this.loading.set(false);
@@ -278,11 +244,7 @@ export class InvestmentTransactionPage {
   }
 
   importStatusLabel(value: string): string {
-    const keys: Record<string, string> = {
-      QUEUED: 'queued', PROCESSING: 'processing', READY: 'ready', READY_WITH_ERRORS: 'readyWithErrors',
-      PARTIALLY_CONFIRMED: 'partiallyConfirmed', CONFIRMED: 'confirmed', FAILED: 'failed', CANCELLED: 'cancelled'
-    };
-    return this.enumLabel('investmentTransactions.importStatus', value, keys);
+    return this.enumLabel('investmentTransactions.importStatus', value);
   }
 
   processingActionLabel(value: string): string {
@@ -345,16 +307,35 @@ export class InvestmentTransactionPage {
     return mimeType === 'image/jpeg' ? 'jpg' : mimeType === 'image/webp' ? 'webp' : 'png';
   }
 
-  private startPolling(accountId: number, batchId: string): void {
+  private runJob(request: Observable<unknown>, errorKey: string): void {
+    const accountId = this.accountId();
+    if (!accountId) return;
+    request.subscribe({
+      next: () => this.loadState(accountId),
+      error: error => this.error.set(this.errorMessage(error, errorKey))
+    });
+  }
+
+  private hasActiveFiles(state: InvestmentImportState | null): boolean {
+    return !!state?.files.some(file => file.aiStatus === 'PENDING' || file.aiStatus === 'PROCESSING');
+  }
+
+  private startPolling(accountId: number): void {
     this.polling?.unsubscribe();
-    if (this.pollingComplete(this.batch()?.status)) return;
+    if (!this.hasActiveFiles(this.state())) return;
     this.polling = timer(3000, 5000).pipe(
-      switchMap(() => this.api.investmentTransactionImport(accountId, batchId)),
+      switchMap(() => this.api.investmentImportState(accountId)),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
-      next: batch => {
-        this.applyBatch(batch);
-        if (this.pollingComplete(batch.status)) this.polling?.unsubscribe();
+      next: state => {
+        this.applyState(state);
+        if (this.hasActiveFiles(state)) return;
+        this.polling?.unsubscribe();
+        // READY is set just before auto-commit runs; reload once more to pick up committed/review items.
+        this.polling = timer(3000).pipe(
+          switchMap(() => this.api.investmentImportState(accountId)),
+          takeUntilDestroyed(this.destroyRef)
+        ).subscribe({next: latest => this.applyState(latest)});
       },
       error: () => {
         this.polling?.unsubscribe();
@@ -363,58 +344,34 @@ export class InvestmentTransactionPage {
     });
   }
 
-  private loadBatch(accountId: number, batchId: string, fromDeepLink = false): void {
-    this.batchRequest?.unsubscribe();
-    this.batchRequest = this.api.investmentTransactionImport(accountId, batchId)
+  private loadState(accountId: number, showLoading = false): void {
+    this.stateRequest?.unsubscribe();
+    this.polling?.unsubscribe();
+    this.stateLoading.set(showLoading);
+    this.stateRequest = this.api.investmentImportState(accountId)
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: batch => {
-        this.error.set(null);
-        this.applyBatch(batch);
-        if (!this.pollingComplete(batch.status)) this.startPolling(accountId, batchId);
+      next: state => {
+        this.stateLoading.set(false);
+        this.applyState(state);
+        this.startPolling(accountId);
       },
       error: error => {
-        this.batch.set(null);
+        this.stateLoading.set(false);
+        this.state.set(null);
         this.reviewItems.set([]);
-        this.focusReviewWhenReady = false;
-        this.error.set(this.errorMessage(error, fromDeepLink
-          ? 'investmentTransactions.errorReviewTarget'
-          : 'investmentTransactions.errorBatchLoad'));
+        this.error.set(this.errorMessage(error, 'investmentTransactions.errorStateLoad'));
       }
     });
   }
 
-  private applyBatch(batch: InvestmentImportBatch): void {
+  private applyState(state: InvestmentImportState): void {
     const previous = new Map(this.reviewItems().map(item => [item.itemId, item]));
-    this.batch.set(batch);
-    this.reviewItems.set(batch.transactions.map(item => ({
+    this.state.set(state);
+    this.reviewItems.set(state.transactions.map(item => ({
       ...item,
       selected: previous.get(item.itemId)?.selected ?? item.processingAction !== 'IGNORE',
       resolution: previous.get(item.itemId)?.resolution ?? 'ACCEPT'
     })));
-    if (this.focusReviewWhenReady && this.pollingComplete(batch.status)) {
-      this.focusReviewWhenReady = false;
-      setTimeout(() => {
-        const targetId = this.canConfirmBatch() ? 'review' : 'batch-review-summary';
-        const target = document.getElementById(targetId);
-        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        target?.scrollIntoView({behavior: reducedMotion ? 'auto' : 'smooth', block: 'start'});
-        target?.focus({preventScroll: true});
-      });
-    }
-  }
-
-  private pollingComplete(status: InvestmentImportBatch['status'] | undefined): boolean {
-    return !!status && status !== 'QUEUED' && status !== 'PROCESSING';
-  }
-
-  private updateBatchUrl(accountId: number, batchId: string): void {
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {accountId, batchId},
-      queryParamsHandling: 'merge',
-      fragment: 'review',
-      replaceUrl: true
-    });
   }
 
   private enumLabel(prefix: string, value: string | null, aliases: Record<string, string> = {}): string {

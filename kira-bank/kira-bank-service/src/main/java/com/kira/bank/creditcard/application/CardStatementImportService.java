@@ -230,7 +230,7 @@ public class CardStatementImportService {
         }
         try {
             statements.saveAndFlush(statement);
-        } catch (ObjectOptimisticLockingFailureException ex) {
+        } catch (ObjectOptimisticLockingFailureException _) {
             throw conflict("STATEMENT_VERSION_CONFLICT", "Dữ liệu sao kê đã được cập nhật ở phiên khác");
         }
 
@@ -598,7 +598,7 @@ public class CardStatementImportService {
     private CardStatementImport save(CardStatementImport statementImport) {
         try {
             return imports.saveAndFlush(statementImport);
-        } catch (ObjectOptimisticLockingFailureException ex) {
+        } catch (ObjectOptimisticLockingFailureException _) {
             throw conflict("STATEMENT_IMPORT_VERSION_CONFLICT", "Sao kê đã được cập nhật, vui lòng tải lại");
         }
     }
@@ -620,7 +620,7 @@ public class CardStatementImportService {
         for (DateTimeFormatter format : DATE_FORMATS) {
             try {
                 return LocalDate.parse(value, format);
-            } catch (DateTimeParseException ignored) {
+            } catch (DateTimeParseException _) {
                 // try the next printed format
             }
         }
@@ -643,7 +643,7 @@ public class CardStatementImportService {
         if (value == null) return null;
         try {
             return CardTransactionType.valueOf(value.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException _) {
             return null;
         }
     }

@@ -110,13 +110,13 @@ public class AttachmentService {
         }
         try {
             return Instant.parse(raw);
-        } catch (DateTimeParseException ignored) {
+        } catch (DateTimeParseException _) {
             try {
                 return OffsetDateTime.parse(raw).toInstant();
-            } catch (DateTimeParseException ignoredAgain) {
+            } catch (DateTimeParseException _) {
                 try {
                     return LocalDateTime.parse(raw).atZone(ZoneId.of(importTimeZone)).toInstant();
-                } catch (DateTimeParseException ignoredThird) {
+                } catch (DateTimeParseException _) {
                     return null;
                 }
             }
@@ -351,13 +351,25 @@ public class AttachmentService {
     @Transactional
     public List<Attachment> claimNextBatch() {
         Instant now = Instant.now();
-        List<Attachment> claimed = repository.findClaimableForUpdate(
+        return claim(repository.findClaimableForUpdate(
             INVESTMENT_MODULE,
             RECEIPT_DOCUMENT_TYPE,
             AttachmentAiStatus.PENDING,
             now,
             PageRequest.of(0, jobProperties.safeBatchSize())
-        );
+        ), now);
+    }
+
+    /** Claims up to one batch of the given PENDING receipts (used right after an upload). */
+    @Transactional
+    public List<Attachment> claimPending(Collection<Long> ids) {
+        if (ids.isEmpty()) return List.of();
+        Instant now = Instant.now();
+        return claim(repository.findPendingByIdsForUpdate(ids, INVESTMENT_MODULE, RECEIPT_DOCUMENT_TYPE,
+            AttachmentAiStatus.PENDING, now, PageRequest.of(0, jobProperties.safeBatchSize())), now);
+    }
+
+    private List<Attachment> claim(List<Attachment> claimed, Instant now) {
         for (Attachment attachment : claimed) {
             attachment.setAiStatus(AttachmentAiStatus.PROCESSING);
             attachment.setAiAttemptCount(attachment.getAiAttemptCount() + 1);
@@ -468,8 +480,8 @@ public class AttachmentService {
     private void notifyAiReady(Attachment attachment) {
         notifications.createIfAbsent(
             attachment.getUserId(), AI_READY_NOTIFICATION, "INVESTMENT",
-            "AI đã nhận diện xong chứng từ",
-            "Chứng từ " + displayName(attachment) + " đã có kết quả để bạn kiểm tra và xác nhận.",
+            "AI đã xử lý xong chứng từ",
+            "Giao dịch hợp lệ từ " + displayName(attachment) + " đã được ghi tự động. Mở trang nhập giao dịch để xem các mục cần xem lại.",
             "SUCCESS", "/ai-result?id=" + attachment.getId());
     }
 
@@ -569,7 +581,7 @@ public class AttachmentService {
         }
         try {
             return objectMapper.readValue(value, AiDraftResponse.class);
-        } catch (JsonProcessingException ex) {
+        } catch (JsonProcessingException _) {
             return null;
         }
     }

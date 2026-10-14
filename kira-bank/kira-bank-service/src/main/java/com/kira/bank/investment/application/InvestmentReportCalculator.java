@@ -103,7 +103,7 @@ final class InvestmentReportCalculator {
             Totals tot = totals(list);
             LocalDate first = list.stream().map(Tx::date).min(Comparator.naturalOrder()).orElse(asOf);
             LocalDate last = list.stream().map(Tx::date).max(Comparator.naturalOrder()).orElse(asOf);
-            rows.add(new AccountRow(id, list.get(0).accountName(), tot, pct(tot.net(), tot.deposits()),
+            rows.add(new AccountRow(id, list.getFirst().accountName(), tot, pct(tot.net(), tot.deposits()),
                 average(list, Kind.DEPOSIT), average(list, Kind.WITHDRAWAL), first, last,
                 java.time.temporal.ChronoUnit.DAYS.between(last, asOf), pct(tot.net(), all.net())));
         });
@@ -134,7 +134,7 @@ final class InvestmentReportCalculator {
             else if (sign < 0) { losses++; streak = streak < 0 ? streak - 1 : -1; longestLoss = Math.max(longestLoss, -streak); }
             else streak = 0;
         }
-        BigDecimal last = points.isEmpty() ? BigDecimal.ZERO : points.get(points.size() - 1).drawdown();
+        BigDecimal last = points.isEmpty() ? BigDecimal.ZERO : points.getLast().drawdown();
         return new EquityReport(points, cumulative, peak, maxDd, maxDdDate, last, best, worst, daily.size(), wins,
             losses, longestWin, longestLoss, streak);
     }
@@ -178,7 +178,7 @@ final class InvestmentReportCalculator {
             List<BigDecimal> v = txs.stream().filter(t -> t.kind() == k).map(Tx::amount).sorted().toList();
             if (v.isEmpty()) continue;
             BigDecimal sum = v.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-            stats.add(new TypeStats(k.name(), v.size(), sum, v.get(0), v.get(v.size() - 1),
+            stats.add(new TypeStats(k.name(), v.size(), sum, v.getFirst(), v.getLast(),
                 sum.divide(BigDecimal.valueOf(v.size()), 4, RoundingMode.HALF_UP), median(v), percentile(v, 90)));
         }
         List<SizeBucket> buckets = new ArrayList<>();
@@ -275,7 +275,7 @@ final class InvestmentReportCalculator {
         for (BigDecimal v : series) variance = variance.add(v.subtract(mean).pow(2));
         BigDecimal vol = n < 2 ? BigDecimal.ZERO
             : variance.divide(BigDecimal.valueOf(n - 1L), 8, RoundingMode.HALF_UP).sqrt(new java.math.MathContext(12)).setScale(4, RoundingMode.HALF_UP);
-        RollingPoint last = points.isEmpty() ? null : points.get(points.size() - 1);
+        RollingPoint last = points.isEmpty() ? null : points.getLast();
         return new RollingReport(points, last == null ? BigDecimal.ZERO : last.rolling7(), last == null ? BigDecimal.ZERO : last.rolling30(),
             best7, worst7, mean.setScale(4, RoundingMode.HALF_UP), vol);
     }
@@ -316,7 +316,7 @@ final class InvestmentReportCalculator {
         List<PaybackRow> rows = new ArrayList<>();
         byAccount.forEach((id, list) -> {
             BigDecimal d = BigDecimal.ZERO, w = BigDecimal.ZERO;
-            LocalDate first = list.get(0).date(), breakEven = null;
+            LocalDate first = list.getFirst().date(), breakEven = null;
             for (Tx t : list) {
                 if (t.kind() == Kind.BONUS) continue; // bonuses are not recovered cash
                 if (t.kind() == Kind.DEPOSIT) d = d.add(t.amount()); else w = w.add(t.amount());
@@ -325,7 +325,7 @@ final class InvestmentReportCalculator {
                 if (covered && breakEven == null) breakEven = t.date();
                 else if (!covered) breakEven = null;
             }
-            rows.add(new PaybackRow(id, list.get(0).accountName(), d, w, ratio(w, d), d.subtract(w), breakEven != null,
+            rows.add(new PaybackRow(id, list.getFirst().accountName(), d, w, ratio(w, d), d.subtract(w), breakEven != null,
                 first, breakEven, breakEven == null ? null : java.time.temporal.ChronoUnit.DAYS.between(first, breakEven)));
         });
         rows.sort(Comparator.comparing(PaybackRow::outstanding).reversed());
@@ -378,7 +378,7 @@ final class InvestmentReportCalculator {
             if (d.isAfter(asOf.minusDays(30))) t30 = t30.add(n);
             if (d.isAfter(asOf.minusDays(90))) t90 = t90.add(n);
         }
-        long observed = firstEver == null ? 1 : Math.max(1, Math.min(30, java.time.temporal.ChronoUnit.DAYS.between(firstEver, asOf) + 1));
+        long observed = firstEver == null ? 1 : Math.clamp(java.time.temporal.ChronoUnit.DAYS.between(firstEver, asOf) + 1, 1, 30);
         BigDecimal rate = t30.divide(BigDecimal.valueOf(observed), 4, RoundingMode.HALF_UP);
         int remaining = asOf.lengthOfMonth() - asOf.getDayOfMonth();
         return new ProjectionReport(asOf, mtd, asOf.getDayOfMonth(), remaining, rate,
@@ -437,7 +437,7 @@ final class InvestmentReportCalculator {
             if (best == null || b.net().compareTo(best.net()) > 0) best = b;
             if (worst == null || b.net().compareTo(worst.net()) < 0) worst = b;
         }
-        Tx first = txs.isEmpty() ? null : txs.get(0), last = txs.isEmpty() ? null : txs.get(txs.size() - 1);
+        Tx first = txs.isEmpty() ? null : txs.getFirst(), last = txs.isEmpty() ? null : txs.getLast();
         BigDecimal avg = txs.isEmpty() ? BigDecimal.ZERO
             : txs.stream().map(Tx::amount).reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(txs.size()), 4, RoundingMode.HALF_UP);
         return new OverviewReport(all, net.size(), days.size(), first == null ? null : first.date(), last == null ? null : last.date(),
@@ -531,7 +531,7 @@ final class InvestmentReportCalculator {
             }
             long gaps = list.size() - 1L;
             gapSum += sum; gapCount += gaps; turnSum += tSum; turnCount += tCount;
-            rows.add(new CadenceRow(e.getKey(), list.get(0).accountName(), list.size(), avg(sum, gaps), longest, gapFrom, gapTo, avg(tSum, tCount)));
+            rows.add(new CadenceRow(e.getKey(), list.getFirst().accountName(), list.size(), avg(sum, gaps), longest, gapFrom, gapTo, avg(tSum, tCount)));
         }
         rows.sort(Comparator.comparing(CadenceRow::transactions).reversed());
         return new CadenceReport(avg(gapSum, gapCount), avg(turnSum, turnCount), rows);
@@ -575,7 +575,7 @@ final class InvestmentReportCalculator {
             if (row.daysSinceLast() >= DORMANT_DAYS)
                 out.add(new Insight("DORMANT_ACCOUNT", "INFO", row.accountId(), row.accountName(), BigDecimal.valueOf(row.daysSinceLast()), row.lastDate()));
         if (!txs.isEmpty()) {
-            LocalDate last = txs.get(txs.size() - 1).date();
+            LocalDate last = txs.getLast().date();
             long idle = java.time.temporal.ChronoUnit.DAYS.between(last, asOf);
             if (idle >= IDLE_DAYS) out.add(new Insight("NO_RECENT_ACTIVITY", "INFO", null, null, BigDecimal.valueOf(idle), last));
             List<Tx> window = txs.stream().filter(t -> !t.date().isBefore(from)).toList();
@@ -711,7 +711,7 @@ final class InvestmentReportCalculator {
         for (List<Tx> list : byAccount.values()) {
             Totals t = totals(list);
             BigDecimal open = t.deposits().subtract(t.withdrawals()).max(BigDecimal.ZERO);
-            accs.add(new Acc(list.get(0).accountId(), list.get(0).accountName(), t.deposits(), t.withdrawals(), open));
+            accs.add(new Acc(list.getFirst().accountId(), list.getFirst().accountName(), t.deposits(), t.withdrawals(), open));
             totalDeposits = totalDeposits.add(t.deposits());
             totalOpen = totalOpen.add(open);
         }

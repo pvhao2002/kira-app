@@ -116,3 +116,14 @@ input, textarea { min-height: 40px; padding: 8px 10px; border: 1px solid var(--b
   .history-pagination button { width: 44px; height: 44px; }
   .history-pagination b { min-width: 112px; }
 }
+
+.history-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.history-edit { min-height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--blue); font-size: 11px; font-weight: 800; cursor: pointer; }
+.history-edit:hover { border-color: var(--blue); }
+.edit-dialog { display: grid; width: min(480px, 100%); max-height: 90vh; gap: 12px; overflow: auto; padding: 24px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); box-shadow: 0 24px 70px rgba(0,0,0,.35); }
+.edit-dialog h2 { margin: 0; color: var(--navy); font-size: 19px; }
+.edit-dialog label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.edit-dialog input { min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--navy); font: inherit; }
+.edit-dialog-actions { display: flex; gap: 10px; }
+.edit-dialog-actions button { flex: 1; min-height: 44px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+.edit-dialog-actions .ghost { border: 1px solid var(--border-strong); background: transparent; color: var(--navy); }

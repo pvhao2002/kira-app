@@ -1,7 +1,3 @@
-<section class="page-heading">
-  <div><span class="eyebrow">{{ i18n.t('investmentReports.eyebrow') }}</span><h1>{{ i18n.t('investmentCashflow.title') }}</h1><p>{{ i18n.t('investmentCashflow.description') }}</p></div>
-</section>
-
 <section class="panel filters">
   <label><span>{{ i18n.t('investmentReports.account') }}</span><select [value]="accountId() ?? ''" (change)="chooseAccount($any($event.target).value)"><option value="" [selected]="accountId() === null">{{ i18n.t('investmentReports.allAccounts') }}</option>@for (account of accounts(); track account.id) { <option [value]="account.id" [selected]="account.id === accountId()">{{ account.accountName }} · {{ account.currency }}</option> }</select></label>
   <label><span>{{ i18n.t('investmentReports.periodic.granularity') }}</span><select [value]="granularity()" (change)="chooseGranularity($any($event.target).value)">@for (g of granularities; track g) { <option [value]="g" [selected]="g === granularity()">{{ i18n.t('investmentReports.periodic.' + g.toLowerCase()) }}</option> }</select></label>

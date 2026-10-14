@@ -59,6 +59,11 @@ app:
   push:
     expo-url: https://exp.host/--/api/v2/push/send
     expo-access-token: ${EXPO_ACCESS_TOKEN:}
+  telegram:
+    bot-token: ${TELEGRAM_BOT_TOKEN:}
+    webhook-secret: ${TELEGRAM_WEBHOOK_SECRET:}
+    # Public https URL ending in /api/v1/telegram/webhook; blank = do not register (local/dev).
+    webhook-url: ${TELEGRAM_WEBHOOK_URL:}
 storage:
   environment: ${R2_STORAGE_ENVIRONMENT:LOCAL}
   # Free-plan thresholds shown on the admin storage dashboard (1 GB = 2^30 bytes).
@@ -81,7 +86,7 @@ ai:
     max-attempts: ${AI_MAX_ATTEMPTS:3}
     retry-delay: ${AI_RETRY_DELAY:PT3H}
     processing-timeout: ${AI_PROCESSING_TIMEOUT:PT30M}
-    cron: "${AI_JOB_CRON:0 0 */3 * * *}"
+    cron: "${AI_JOB_CRON:0 */15 * * * *}"
     time-zone: "${AI_JOB_TIME_ZONE:Asia/Bangkok}"
 credit-card:
   statement-import:

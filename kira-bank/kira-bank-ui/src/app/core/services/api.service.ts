@@ -21,7 +21,8 @@ import {
   CashbackProgress,
   CardRecommendationResponse,
   PageResponse,
-  InvestmentImportBatch,
+  InvestmentImportState,
+  InvestmentTransactionUpdate,
   InvestmentConfirmItem,
   InvestmentConfirmResponse,
   InvestmentTransaction,
@@ -31,7 +32,6 @@ import {
   InvestmentGoal,
   InvestmentReport,
   InvestmentStatisticsOperations,
-  InvestmentReconciliationReport,
   LodgingListing,
   LodgingListingRequest,
   LodgingReferenceLocation,
@@ -233,27 +233,27 @@ export class ApiService {
     return this.http.get<CardRecommendationResponse>('/api/v1/credit-card-recommendations', {params});
   }
 
-  createInvestmentTransactionImport(accountId: number, files: File[]): Observable<InvestmentImportBatch> {
+  createInvestmentTransactionImport(accountId: number, files: File[]): Observable<InvestmentImportState> {
     const body = new FormData();
     files.forEach(file => body.append('files', file, file.name));
-    return this.http.post<InvestmentImportBatch>(
+    return this.http.post<InvestmentImportState>(
       `/api/v1/investment/accounts/${accountId}/transaction-imports`, body);
   }
 
-  investmentTransactionImport(accountId: number, batchId: string): Observable<InvestmentImportBatch> {
-    return this.http.get<InvestmentImportBatch>(
-      `/api/v1/investment/accounts/${accountId}/transaction-imports/${batchId}`);
+  investmentImportState(accountId: number): Observable<InvestmentImportState> {
+    return this.http.get<InvestmentImportState>(`/api/v1/investment/accounts/${accountId}/transaction-imports`);
   }
 
-  retryInvestmentImportFile(accountId: number, batchId: string, attachmentId: number): Observable<InvestmentImportBatch> {
-    return this.http.post<InvestmentImportBatch>(
-      `/api/v1/investment/accounts/${accountId}/transaction-imports/${batchId}/files/${attachmentId}/retry`, {});
-  }
-
-  confirmInvestmentTransactions(accountId: number, batchId: string,
+  confirmInvestmentTransactions(accountId: number,
                                 transactions: InvestmentConfirmItem[]): Observable<InvestmentConfirmResponse> {
     return this.http.post<InvestmentConfirmResponse>(
-      `/api/v1/investment/accounts/${accountId}/transaction-imports/${batchId}/confirm`, {transactions});
+      `/api/v1/investment/accounts/${accountId}/transaction-imports/confirm`, {transactions});
+  }
+
+  updateInvestmentTransaction(accountId: number, transactionId: number,
+                              body: InvestmentTransactionUpdate): Observable<InvestmentTransaction> {
+    return this.http.put<InvestmentTransaction>(
+      `/api/v1/investment/accounts/${accountId}/transactions/${transactionId}`, body);
   }
 
   investmentTransactions(accountId: number, filters: Record<string, string | number> = {}):
@@ -289,10 +289,6 @@ export class ApiService {
   investmentStatisticsOperations(accountId?: number): Observable<InvestmentStatisticsOperations> {
     const params: Record<string, string | number> = accountId == null ? {} : {accountId};
     return this.http.get<InvestmentStatisticsOperations>('/api/v1/investment/statistics/operations', {params});
-  }
-
-  investmentReconciliationReport(id: number): Observable<InvestmentReconciliationReport> {
-    return this.http.get<InvestmentReconciliationReport>(`/api/v1/investment/reconciliation-reports/${id}`);
   }
 
   investmentAiJobs(adminScope: boolean, status = '', page = 0, size = 20):

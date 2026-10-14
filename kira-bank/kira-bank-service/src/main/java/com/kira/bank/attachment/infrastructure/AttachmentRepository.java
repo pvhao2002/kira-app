@@ -79,6 +79,27 @@ public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
         @Param("now") Instant now,
         Pageable pageable);
 
+    // Same claim as findClaimableForUpdate, limited to the given attachments (SKIP LOCKED).
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
+    @Query("""
+        select a from Attachment a
+        where a.deletedAt is null
+          and a.id in :ids
+          and a.module = :module
+          and a.documentType = :documentType
+          and a.aiStatus = :status
+          and (a.aiNextAttemptAt is null or a.aiNextAttemptAt <= :now)
+        order by a.createdAt asc
+        """)
+    List<Attachment> findPendingByIdsForUpdate(
+        @Param("ids") Collection<Long> ids,
+        @Param("module") String module,
+        @Param("documentType") String documentType,
+        @Param("status") AttachmentAiStatus status,
+        @Param("now") Instant now,
+        Pageable pageable);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         select a from Attachment a

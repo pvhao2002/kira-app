@@ -58,25 +58,8 @@ export function errorMessageForCode(code: string | null | undefined) {
 
 export type InvestmentTransactionType = 'DEPOSIT' | 'WITHDRAWAL' | 'BONUS';
 export type InvestmentTransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
-export type InvestmentReconciliationReportReason =
-  'AMOUNT_MISMATCH'
-  | 'DUPLICATE_TRANSACTION'
-  | 'AI_EXTRACTION_ERROR'
-  | 'COUNTERPARTY_INFO_MISMATCH'
-  | 'OTHER';
-export type InvestmentReconciliationReportStatus = 'OPEN' | 'IN_REVIEW' | 'NEEDS_INFO' | 'RESOLVED' | 'REJECTED';
 export type InvestmentProcessingAction = 'INSERT' | 'UPDATE' | 'DUPLICATE' | 'REVIEW' | 'IGNORE';
 export type InvestmentImportResolution = 'ACCEPT' | 'MERGE_EXISTING' | 'SAVE_AS_NEW' | 'SKIP';
-export type InvestmentImportFileStatus = 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | 'CANCELLED' | 'CONFIRMED';
-export type InvestmentImportBatchStatus =
-  'QUEUED'
-  | 'PROCESSING'
-  | 'READY'
-  | 'READY_WITH_ERRORS'
-  | 'PARTIALLY_CONFIRMED'
-  | 'CONFIRMED'
-  | 'FAILED'
-  | 'CANCELLED';
 export type AttachmentAiStatus =
   'NOT_REQUESTED'
   | 'PENDING'
@@ -102,20 +85,14 @@ export type UpdateAccountRequest = {
   status: AccountStatus; version: number;
 };
 
-export type BatchSummary = {
-  detected: number;
-  inserted: number;
-  updated: number;
-  skipped: number;
-  failed: number;
-  review: number
-};
 export type ImportFileResponse = {
   attachmentId: number;
   originalName: string;
   contentUrl: string;
-  status: InvestmentImportFileStatus;
-  errorCode: string | null
+  aiStatus: AttachmentAiStatus;
+  aiError: string | null;
+  createdAt: string;
+  committedCount: number
 };
 export type ImportItemResponse = {
   itemId: string;
@@ -133,14 +110,7 @@ export type ImportItemResponse = {
   matchedTransactionId: number | null;
   warnings: string[];
 };
-export type ImportBatchResponse = {
-  batchId: string;
-  accountId: number;
-  status: InvestmentImportBatchStatus;
-  summary: BatchSummary;
-  files: ImportFileResponse[];
-  transactions: ImportItemResponse[]
-};
+export type ImportState = { accountId: number; files: ImportFileResponse[]; transactions: ImportItemResponse[] };
 
 export type ConfirmItemRequest = {
   itemId: string; version: number; selected: boolean; resolution?: InvestmentImportResolution | null;
@@ -180,21 +150,6 @@ export type TransactionResponse = {
   sourceFileHash: string | null;
   sourceAttachmentId: number | null;
   version: number;
-};
-export type InvestmentReconciliationReportResponse = {
-  id: number; accountId: number; accountName: string | null; transactionId: number;
-  transactionType: InvestmentTransactionType | null; transactionStatus: InvestmentTransactionStatus | null;
-  amount: number | null; currency: string | null; transactionAt: string | null;
-  externalTransactionId: string | null; sourceAttachmentId: number | null;
-  reason: InvestmentReconciliationReportReason; detail: string;
-  status: InvestmentReconciliationReportStatus; resolutionNote: string | null;
-  createdAt: string; resolvedAt: string | null; version: number;
-  history: {
-    fromStatus: InvestmentReconciliationReportStatus | null;
-    toStatus: InvestmentReconciliationReportStatus;
-    note: string | null;
-    createdAt: string
-  }[];
 };
 export type InvestmentTypeSummary = { transactionType: InvestmentTransactionType; count: number; amount: number };
 export type InvestmentStatisticsResponse = {
@@ -340,16 +295,10 @@ export type InvestmentStatisticsOperations = {
   ai: { pending: number; processing: number; ready: number; failed: number };
   imports: {
     total: number;
-    items: { batchId: string; accountId: number; accountName: string; status: string; createdAt: string; reviewCount: number }[]
-  };
-  reconciliation: {
-    total: number; open: number; inReview: number; needsInfo: number; items: {
-      id: number; accountId: number; accountName: string; transactionId: number; amount: number; currency: string;
-      reason: string; status: string; createdAt: string;
-    }[]
+    items: { accountId: number; accountName: string; createdAt: string; reviewCount: number }[]
   };
 };
-export type InvestmentImportTask = { batchId: string; accountId: number; accountName: string; status: string };
+export type InvestmentImportTask = { accountId: number; accountName: string; status: string };
 export type InvestmentTaskGroup = { total: number; items: InvestmentImportTask[] };
 export type InvestmentOverview = {
   updatedAt: string;
@@ -363,14 +312,6 @@ export type InvestmentOverview = {
 };
 
 export type AiJobOwnerResponse = { userId: number; fullName: string | null; email: string | null };
-export type InvestmentAiJobReviewTarget = {
-  accountId: number;
-  accountName: string;
-  batchId: string;
-  batchStatus: InvestmentImportBatchStatus;
-  createdAt: string;
-  pendingItemCount: number
-};
 export type InvestmentAiJobEventActor = 'USER' | 'ADMIN' | 'SYSTEM';
 export type InvestmentAiJobEventResponse = {
   fromStatus: AttachmentAiStatus | null; toStatus: AttachmentAiStatus; attemptCount: number;
@@ -409,7 +350,6 @@ export type InvestmentAiJobResponse = {
   contentAvailable: boolean;
   canCancel: boolean;
   canRun: boolean;
-  reviewTargets: InvestmentAiJobReviewTarget[];
   detectedJson: AiDraftResponse | null;
   history: InvestmentAiJobEventResponse[];
 };
@@ -465,19 +405,17 @@ export function useInvestmentApi() {
       body: JSON.stringify(body)
     }),
 
-    createImportBatch: (accountId: number, files: { uri: string; name: string; type: string }[]) => {
+    uploadImport: (accountId: number, files: { uri: string; name: string; type: string }[]) => {
       const form = new FormData();
       files.forEach(f => form.append('files', {uri: f.uri, name: f.name, type: f.type} as unknown as Blob));
-      return requestJson<ImportBatchResponse>(`/api/v1/investment/accounts/${accountId}/transaction-imports`, {
+      return requestJson<ImportState>(`/api/v1/investment/accounts/${accountId}/transaction-imports`, {
         method: 'POST',
         body: form
       });
     },
-    getImportBatch: (accountId: number, batchId: string) => requestJson<ImportBatchResponse>(`/api/v1/investment/accounts/${accountId}/transaction-imports/${batchId}`),
-    retryImportFile: (accountId: number, batchId: string, attachmentId: number) =>
-      requestJson<ImportBatchResponse>(`/api/v1/investment/accounts/${accountId}/transaction-imports/${batchId}/files/${attachmentId}/retry`, {method: 'POST'}),
-    confirmImportBatch: (accountId: number, batchId: string, items: ConfirmItemRequest[]) =>
-      requestJson<ConfirmBatchResponse>(`/api/v1/investment/accounts/${accountId}/transaction-imports/${batchId}/confirm`, {
+    getImportState: (accountId: number) => requestJson<ImportState>(`/api/v1/investment/accounts/${accountId}/transaction-imports`),
+    confirmImport: (accountId: number, items: ConfirmItemRequest[]) =>
+      requestJson<ConfirmBatchResponse>(`/api/v1/investment/accounts/${accountId}/transaction-imports/confirm`, {
         method: 'POST',
         body: JSON.stringify({transactions: items})
       }),
@@ -496,51 +434,6 @@ export function useInvestmentApi() {
     createManualTransaction: (accountId: number, body: ManualTransactionRequest) =>
       requestJson<TransactionResponse>(`/api/v1/investment/accounts/${accountId}/manual-transactions`, {
         method: 'POST',
-        body: JSON.stringify(body)
-      }),
-    createReconciliationReport: (accountId: number, transactionId: number, body: {
-      reason: InvestmentReconciliationReportReason;
-      detail: string
-    }) =>
-      requestJson<InvestmentReconciliationReportResponse>(`/api/v1/investment/accounts/${accountId}/transactions/${transactionId}/reconciliation-reports`, {
-        method: 'POST',
-        body: JSON.stringify(body)
-      }),
-    listReconciliationReports: (page = 0, size = 20) =>
-      requestJson<PageResponse<InvestmentReconciliationReportResponse>>(`/api/v1/investment/reconciliation-reports${q({
-        page,
-        size
-      })}`),
-    listAllReconciliationReports: async () => {
-      const all: InvestmentReconciliationReportResponse[] = [];
-      let page = 0;
-      let totalPages = 1;
-      do {
-        const result = await requestJson<PageResponse<InvestmentReconciliationReportResponse>>(`/api/v1/investment/reconciliation-reports${q({
-          page,
-          size: 100
-        })}`);
-        all.push(...result.data);
-        totalPages = Math.max(result.meta.totalPages, page + 1);
-        page += 1;
-      } while (page < totalPages);
-      return all;
-    },
-    getReconciliationReport: (reportId: number) =>
-      requestJson<InvestmentReconciliationReportResponse>(`/api/v1/investment/reconciliation-reports/${reportId}`),
-    listAdminReconciliationReports: (status?: InvestmentReconciliationReportStatus, page = 0, size = 20) =>
-      requestJson<PageResponse<InvestmentReconciliationReportResponse>>(`/api/v1/admin/investment/reconciliation-reports${q({
-        status,
-        page,
-        size
-      })}`),
-    updateAdminReconciliationReport: (reportId: number, body: {
-      status: InvestmentReconciliationReportStatus;
-      resolutionNote?: string | null;
-      version: number
-    }) =>
-      requestJson<InvestmentReconciliationReportResponse>(`/api/v1/admin/investment/reconciliation-reports/${reportId}/status`, {
-        method: 'PATCH',
         body: JSON.stringify(body)
       }),
     getStatistics: (accountId: number, params: {

@@ -11,6 +11,7 @@ import {IconComponent} from '../../shared/icon/icon';
 import {
   ApiError,
   InvestmentTransaction,
+  InvestmentTransactionUpdate,
   InvestmentAccountSummary,
   PageMeta,
   PageResponse
@@ -23,6 +24,18 @@ interface HistoryFilters {
   toDate: string;
   type: string;
   status: string
+}
+
+interface EditDraft {
+  id: number;
+  version: number;
+  transactionType: string;
+  transactionStatus: string;
+  amount: number | null;
+  currency: string;
+  transactionAt: string;
+  externalTransactionId: string;
+  description: string
 }
 
 const EMPTY_HISTORY_FILTERS: HistoryFilters = {fromDate: '', toDate: '', type: '', status: ''};
@@ -51,6 +64,14 @@ export class InvestmentHistoryPage {
   readonly hideNoise = signal(true);
   readonly pendingDelete = signal<InvestmentTransaction | null>(null);
   readonly deleting = signal(false);
+  readonly editDraft = signal<EditDraft | null>(null);
+  readonly saving = signal(false);
+  readonly editError = signal<string | null>(null);
+  readonly editValid = computed(() => {
+    const draft = this.editDraft();
+    return !!draft && draft.amount !== null && draft.amount >= 0 && !!draft.transactionAt
+      && /^[A-Za-z]{3}$/.test(draft.currency.trim());
+  });
   readonly historyDateRangeInvalid = computed(() =>
     !!this.fromDate() && !!this.toDate() && this.fromDate() > this.toDate());
   readonly historyFilterCount = computed(() =>
@@ -97,12 +118,7 @@ export class InvestmentHistoryPage {
       .subscribe({
         next: response => {
           this.accounts.set(response.data);
-          if (!response.data.length) {
-            if (this.route.snapshot.queryParamMap.has('accountId')) {
-              this.error.set(this.i18n.t('investmentTransactions.errorReviewTarget'));
-            }
-            return;
-          }
+          if (!response.data.length) return;
           const requestedAccount = Number.isFinite(requestedAccountId)
             ? response.data.find(account => account.id === requestedAccountId)
             : undefined;
@@ -240,6 +256,65 @@ export class InvestmentHistoryPage {
     });
   }
 
+  requestEdit(transaction: InvestmentTransaction): void {
+    const local = new Date(new Date(transaction.transactionAt).getTime() - new Date(transaction.transactionAt).getTimezoneOffset() * 60_000);
+    this.editError.set(null);
+    this.editDraft.set({
+      id: transaction.id,
+      version: transaction.version,
+      transactionType: transaction.transactionType,
+      transactionStatus: transaction.transactionStatus,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      transactionAt: local.toISOString().slice(0, 16),
+      externalTransactionId: transaction.externalTransactionId ?? '',
+      description: transaction.description ?? ''
+    });
+  }
+
+  patchEdit(patch: Partial<EditDraft>): void {
+    this.editDraft.update(draft => draft ? {...draft, ...patch} : draft);
+  }
+
+  closeEdit(): void {
+    if (!this.saving()) this.editDraft.set(null);
+  }
+
+  saveEdit(): void {
+    const accountId = this.accountId();
+    const draft = this.editDraft();
+    if (!accountId || !draft || !this.editValid() || this.saving()) return;
+    const body: InvestmentTransactionUpdate = {
+      transactionType: draft.transactionType as InvestmentTransactionUpdate['transactionType'],
+      transactionStatus: draft.transactionStatus as InvestmentTransactionUpdate['transactionStatus'],
+      amount: draft.amount as number,
+      currency: draft.currency.trim().toUpperCase(),
+      transactionAt: new Date(draft.transactionAt).toISOString(),
+      externalTransactionId: draft.externalTransactionId.trim() || null,
+      description: draft.description.trim() || null,
+      version: draft.version
+    };
+    this.saving.set(true);
+    this.editError.set(null);
+    this.api.updateInvestmentTransaction(accountId, draft.id, body).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.editDraft.set(null);
+        this.toast.show(this.i18n.t('investmentHistory.savedToast'), 'success');
+        this.loadHistory(this.historyMeta().page);
+      },
+      error: error => {
+        this.saving.set(false);
+        const code = apiError(error)?.code;
+        const key = code === 'INVESTMENT_TRANSACTION_VERSION_CONFLICT' ? 'investmentHistory.versionConflict'
+          : code === 'INVESTMENT_TRANSACTION_DUPLICATE' ? 'investmentHistory.duplicate'
+          : 'investmentHistory.errorSave';
+        this.editError.set(code === 'INVESTMENT_TRANSACTION_VERSION_CONFLICT' || code === 'INVESTMENT_TRANSACTION_DUPLICATE'
+          ? this.i18n.t(key) : this.errorMessage(error, key));
+      }
+    });
+  }
+
   transactionTypeIcon(value: string | null): string {
     return ({DEPOSIT: '↓', WITHDRAWAL: '↑', BONUS: '✦'} as Record<string, string>)[value ?? ''] ?? '•';
   }
@@ -266,6 +341,9 @@ export class InvestmentHistoryPage {
       ? this.i18n.t(keys[value])
       : this.i18n.t('investmentTransactions.unknownValue');
   }
+
+  readonly editTypeOptions = computed<SelectOption[]>(() => this.transactionTypeOptions());
+  readonly editStatusOptions = computed<SelectOption[]>(() => this.transactionStatusOptions());
 
   private transactionTypeOptions(): SelectOption[] {
     return ['DEPOSIT', 'WITHDRAWAL', 'BONUS'].map(value => ({value, label: this.transactionTypeLabel(value)}));

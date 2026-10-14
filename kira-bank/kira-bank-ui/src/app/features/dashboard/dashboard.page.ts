@@ -59,9 +59,9 @@ export class DashboardPage {
     if (investment) {
       for (const key of ['failed', 'review'] as const) {
         const group = investment[key];
-        if (group.total) groups.push({key, total: group.total, link: '/app/investment/ai-queue',
-          items: group.items.map(batch => ({id: batch.batchId, title: batch.accountName, detail: this.i18n.t(`overview.${key}`),
-            link: '/app/investment/transactions', params: {accountId: batch.accountId, batchId: batch.batchId}}))});
+        if (group.total) groups.push({key, total: group.total, link: '/app/investment/transactions',
+          items: group.items.map(batch => ({id: `${key}-${batch.accountId}`, title: batch.accountName, detail: this.i18n.t(`overview.${key}`),
+            link: '/app/investment/transactions', params: {accountId: batch.accountId}}))});
       }
     }
     const tutoring = this.tutoring().data;
@@ -76,7 +76,7 @@ export class DashboardPage {
     {key: 'cards', icon: 'card', link: '/app/credit-cards'},
     {key: 'benefits', icon: 'diamond', link: '/app/credit-card/benefits'},
     {key: 'investments', icon: 'trend-up', link: '/app/investment/accounts'},
-    {key: 'queue', icon: 'loader', link: '/app/investment/ai-queue'},
+    {key: 'queue', icon: 'loader', link: '/app/investment/transactions'},
     {key: 'tutoring', icon: 'calendar', link: '/app/tutor-schedule'},
     {key: 'travel', icon: 'globe', link: '/app/travel'},
     {key: 'lodgings', icon: 'home', link: '/app/lodgings'},

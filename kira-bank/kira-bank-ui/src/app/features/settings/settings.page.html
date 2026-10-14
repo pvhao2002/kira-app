@@ -62,6 +62,25 @@
     </footer>
   </form>
 
+  <section class="panel settings-card">
+    <header>
+      <div>
+        <h2>{{ i18n.t('settings.telegramTitle') }}</h2>
+        <p>{{ i18n.t('settings.telegramDescription') }}</p>
+      </div>
+    </header>
+    @if (telegramCode(); as c) {
+      <p>{{ i18n.t('settings.telegramInstruction') }}</p>
+      <p><code>/login {{ c.code }}</code></p>
+      <small>{{ i18n.t('settings.telegramExpires') }} {{ c.expiresAt | date:'shortTime' }}</small>
+    }
+    <footer>
+      <button (click)="linkTelegram()" [disabled]="linkingTelegram()" class="btn primary" type="button">
+        {{ linkingTelegram() ? i18n.t('settings.telegramLinking') : i18n.t('settings.telegramLink') }}
+      </button>
+    </footer>
+  </section>
+
   <section class="panel settings-card appearance-card">
     <header>
       <div>

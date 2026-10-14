@@ -135,7 +135,7 @@ public class AuthService {
         try {
             String agent = userAgent == null ? null : userAgent.substring(0, Math.min(userAgent.length(), 255));
             loginHistory.insert(user.getId(), ClientIpResolver.normalize(clientIp), serverIp, agent);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException _) {
             // History is best-effort: never fail a valid login (and never log IPs) because of it.
             log.warn("login history not recorded for userId={}", user.getId());
         }

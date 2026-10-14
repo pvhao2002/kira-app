@@ -100,7 +100,7 @@ public class CardTransactionService {
         transaction.setUpdatedBy(userId);
         try {
             return response(transactions.saveAndFlush(transaction), cardRules, card);
-        } catch (DataIntegrityViolationException ex) {
+        } catch (DataIntegrityViolationException _) {
             throw new ApiException(HttpStatus.CONFLICT, "CARD_TRANSACTION_DUPLICATE", "Giao dịch đã được ghi nhận");
         }
     }
@@ -198,7 +198,7 @@ public class CardTransactionService {
     private CardTransaction save(CardTransaction transaction) {
         try {
             return transactions.saveAndFlush(transaction);
-        } catch (ObjectOptimisticLockingFailureException ex) {
+        } catch (ObjectOptimisticLockingFailureException _) {
             throw new ApiException(HttpStatus.CONFLICT, "CARD_TRANSACTION_VERSION_CONFLICT",
                 "Giao dịch đã được cập nhật, vui lòng tải lại");
         }

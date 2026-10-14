@@ -1,3 +1,4 @@
+import {DatePipe} from '@angular/common';
 import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {finalize} from 'rxjs';
@@ -5,11 +6,11 @@ import {LanguageService} from '../../core/i18n/language.service';
 import {ApiService} from '../../core/services/api.service';
 import {ToastService} from '../../core/services/toast.service';
 import {LanguageSwitcherComponent} from '../../shared/language-switcher/language-switcher';
-import {Profile} from '../../shared/models/api.models';
+import {Profile, TelegramLinkCode} from '../../shared/models/api.models';
 
 @Component({
   selector: 'app-settings',
-  imports: [ReactiveFormsModule, LanguageSwitcherComponent],
+  imports: [DatePipe, ReactiveFormsModule, LanguageSwitcherComponent],
   templateUrl: './settings.page.html',
   styleUrl: './settings.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -19,6 +20,8 @@ export class SettingsPage {
   readonly loading = signal(true);
   readonly savingProfile = signal(false);
   readonly savingPassword = signal(false);
+  readonly linkingTelegram = signal(false);
+  readonly telegramCode = signal<TelegramLinkCode | null>(null);
   readonly email = signal('');
   readonly profileVersion = signal<number | null>(null);
   readonly profileForm = new FormGroup({
@@ -83,5 +86,12 @@ export class SettingsPage {
         this.toast.show(this.i18n.t('settings.passwordChanged'), 'success');
       }
     });
+  }
+
+  linkTelegram(): void {
+    this.linkingTelegram.set(true);
+    this.api.post<TelegramLinkCode>('telegram/link-code', {})
+      .pipe(finalize(() => this.linkingTelegram.set(false)))
+      .subscribe({next: code => this.telegramCode.set(code)});
   }
 }

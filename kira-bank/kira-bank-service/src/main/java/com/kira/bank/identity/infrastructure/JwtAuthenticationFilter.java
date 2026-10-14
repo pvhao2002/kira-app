@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(id, null, authorities));
                 });
             } catch (
-                RuntimeException ignored) { /* invalid tokens are handled as unauthenticated; token value is never logged */ }
+                RuntimeException _) { /* invalid tokens are handled as unauthenticated; token value is never logged */ }
         }
         chain.doFilter(req, res);
     }

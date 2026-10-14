@@ -52,7 +52,7 @@ public class CreditCardDashboardService {
         Map<Long, UserBankCreditLimit> limitByBank = creditLimits.findByUserIdAndDeletedAtIsNull(userId)
             .stream().collect(java.util.stream.Collectors.toMap(limit -> limit.getBank().getId(), limit -> limit));
         Map<Long, List<UserCreditCard>> cardsByBank = new LinkedHashMap<>();
-        userCards.forEach(card -> cardsByBank.computeIfAbsent(card.getBank().getId(), ignored -> new ArrayList<>())
+        userCards.forEach(card -> cardsByBank.computeIfAbsent(card.getBank().getId(), _ -> new ArrayList<>())
             .add(card));
         Map<Long, BigDecimal> balanceByBank = bankBalances.currentBalances(userId, cardsByBank.keySet());
 

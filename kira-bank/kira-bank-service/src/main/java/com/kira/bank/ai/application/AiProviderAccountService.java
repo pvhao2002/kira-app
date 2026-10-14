@@ -74,7 +74,7 @@ public class AiProviderAccountService {
         account.setUpdatedBy(adminId);
         try {
             return response(repository.saveAndFlush(account));
-        } catch (DataIntegrityViolationException ex) {
+        } catch (DataIntegrityViolationException _) {
             throw duplicate();
         }
     }
@@ -162,7 +162,7 @@ public class AiProviderAccountService {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "AI_ACCOUNT_TEST_FAILED", "Cloudflare từ chối AI credential hoặc model");
         } catch (ApiException ex) {
             throw ex;
-        } catch (RuntimeException ex) {
+        } catch (RuntimeException _) {
             markAiTestFailure(account, adminId, now, "AI_TEST_FAILED");
             persist(account);
             throw new ApiException(HttpStatus.BAD_GATEWAY, "AI_ACCOUNT_TEST_FAILED", "Không thể kiểm tra Workers AI");
@@ -201,7 +201,7 @@ public class AiProviderAccountService {
             account.setR2LastTestedAt(now);
             account.setUpdatedBy(adminId);
             return response(persist(account));
-        } catch (RuntimeException ex) {
+        } catch (RuntimeException _) {
             account.setR2Primary(false);
             account.setR2HealthStatus(AiProviderAccountStatus.BLOCKED);
             account.setR2LastErrorCode("R2_TEST_FAILED");
@@ -214,7 +214,7 @@ public class AiProviderAccountService {
             if (uploaded && client != null) {
                 try {
                     client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
-                } catch (RuntimeException ignored) { /* Keep the safe test failure above; never log credentials. */ }
+                } catch (RuntimeException _) { /* Keep the safe test failure above; never log credentials. */ }
             }
             if (client != null) client.close();
         }
@@ -400,7 +400,7 @@ public class AiProviderAccountService {
     private AiProviderAccount persist(AiProviderAccount a) {
         try {
             return repository.saveAndFlush(a);
-        } catch (ObjectOptimisticLockingFailureException ex) {
+        } catch (ObjectOptimisticLockingFailureException _) {
             throw conflict("CLOUDFLARE_ACCOUNT_VERSION_CONFLICT", "Cloudflare account đã được cập nhật, vui lòng tải lại");
         }
     }
@@ -472,7 +472,7 @@ public class AiProviderAccountService {
         try {
             java.net.URI uri = java.net.URI.create(value);
             return uri.getScheme() + "://" + uri.getHost();
-        } catch (RuntimeException ex) {
+        } catch (RuntimeException _) {
             return "••••";
         }
     }

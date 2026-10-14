@@ -1,5 +1,6 @@
 package com.kira.bank.investment.application;
 
+import com.kira.bank.attachment.domain.AttachmentAiStatus;
 import com.kira.bank.investment.domain.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -12,11 +13,9 @@ public final class InvestmentTransactionImportDtos {
     private InvestmentTransactionImportDtos() {
     }
 
-    public record BatchSummary(int detected, int inserted, int updated, int skipped, int failed, int review) {
-    }
-
     public record ImportFileResponse(Long attachmentId, String originalName, String contentUrl,
-                                     InvestmentImportFileStatus status, String errorCode) {
+                                     AttachmentAiStatus aiStatus, String aiError, Instant createdAt,
+                                     long committedCount) {
     }
 
     public record ImportItemResponse(
@@ -28,10 +27,8 @@ public final class InvestmentTransactionImportDtos {
     ) {
     }
 
-    public record ImportBatchResponse(
-        String batchId, Long accountId, InvestmentImportBatchStatus status,
-        BatchSummary summary, List<ImportFileResponse> files, List<ImportItemResponse> transactions
-    ) {
+    public record ImportStateResponse(Long accountId, List<ImportFileResponse> files,
+                                      List<ImportItemResponse> transactions) {
     }
 
     public record ConfirmItemRequest(
@@ -67,6 +64,18 @@ public final class InvestmentTransactionImportDtos {
         @NotNull Instant transactionAt,
         @Size(max = 150) String externalTransactionId,
         @Size(max = 1000) String description
+    ) {
+    }
+
+    public record UpdateTransactionRequest(
+        @NotNull InvestmentTransactionType transactionType,
+        @NotNull InvestmentTransactionStatus transactionStatus,
+        @NotNull @Positive @Digits(integer = 15, fraction = 4) BigDecimal amount,
+        @NotBlank @Pattern(regexp = "(?i)[A-Z]{3}") String currency,
+        @NotNull Instant transactionAt,
+        @Size(max = 150) String externalTransactionId,
+        @Size(max = 1000) String description,
+        @NotNull @PositiveOrZero Long version
     ) {
     }
 

@@ -11,7 +11,7 @@ export interface OverviewCredit {
   overdue: OverviewGroup<OverviewDue>; dueToday: OverviewGroup<OverviewDue>;
   dueSoon: OverviewGroup<OverviewDue>; needsInput: OverviewGroup<OverviewDue>;
 }
-export interface OverviewImport { batchId: string; accountId: number; accountName: string; status: string }
+export interface OverviewImport { accountId: number; accountName: string; status: string }
 export interface OverviewDailyFlow { date: string; deposits: number; withdrawals: number }
 export interface OverviewCurrencyFlow {
   currency: string; deposits: number; withdrawals: number; bonuses: number; netDeposits: number;

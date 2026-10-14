@@ -103,7 +103,7 @@ public class JobTrackerService {
             if (!List.of("http", "https").contains(uri.getScheme()) || uri.getHost() == null || uri.getUserInfo() != null)
                 throw new IllegalArgumentException();
             return normalized;
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException _) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "JOB_URL_INVALID", "Link công việc phải dùng HTTP hoặc HTTPS");
         }
     }

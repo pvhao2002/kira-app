@@ -1,7 +1,5 @@
 package com.kira.bank.investment.web;
 
-import com.kira.bank.investment.application.InvestmentReconciliationReportDtos.CreateReportRequest;
-import com.kira.bank.investment.application.InvestmentReconciliationReportService;
 import com.kira.bank.investment.application.InvestmentService;
 import com.kira.bank.investment.application.InvestmentReportDtos;
 import com.kira.bank.investment.application.InvestmentReportService;
@@ -9,6 +7,7 @@ import com.kira.bank.investment.application.InvestmentStatisticsService;
 import com.kira.bank.investment.application.InvestmentStatisticsDtos.StatisticsResponse;
 import com.kira.bank.investment.application.InvestmentTransactionImportDtos.ConfirmBatchRequest;
 import com.kira.bank.investment.application.InvestmentTransactionImportDtos.ManualTransactionRequest;
+import com.kira.bank.investment.application.InvestmentTransactionImportDtos.UpdateTransactionRequest;
 import com.kira.bank.investment.application.InvestmentTransactionImportService;
 import com.kira.bank.investment.domain.InvestmentTransactionStatus;
 import com.kira.bank.investment.domain.InvestmentTransactionType;
@@ -37,7 +36,6 @@ import static com.kira.bank.investment.application.InvestmentDtos.UpdateAccountR
 public class InvestmentController {
     private final InvestmentService service;
     private final InvestmentTransactionImportService transactionImports;
-    private final InvestmentReconciliationReportService reconciliationReports;
     private final InvestmentStatisticsService statistics;
     private final InvestmentReportService reports;
 
@@ -67,25 +65,18 @@ public class InvestmentController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Object importTransactions(@AuthenticationPrincipal Long user, @PathVariable Long id,
                               @RequestPart("files") List<MultipartFile> files) throws IOException {
-        return transactionImports.createBatch(user, id, files);
+        return transactionImports.upload(user, id, files);
     }
 
-    @GetMapping("/accounts/{id}/transaction-imports/{batchId}")
-    Object transactionImport(@AuthenticationPrincipal Long user, @PathVariable Long id,
-                             @PathVariable String batchId) {
-        return transactionImports.batch(user, id, batchId);
+    @GetMapping("/accounts/{id}/transaction-imports")
+    Object transactionImports(@AuthenticationPrincipal Long user, @PathVariable Long id) {
+        return transactionImports.state(user, id);
     }
 
-    @PostMapping("/accounts/{id}/transaction-imports/{batchId}/files/{attachmentId}/retry")
-    Object retryImportFile(@AuthenticationPrincipal Long user, @PathVariable Long id,
-                           @PathVariable String batchId, @PathVariable Long attachmentId) {
-        return transactionImports.retryFile(user, id, batchId, attachmentId);
-    }
-
-    @PostMapping("/accounts/{id}/transaction-imports/{batchId}/confirm")
+    @PostMapping("/accounts/{id}/transaction-imports/confirm")
     Object confirmTransactions(@AuthenticationPrincipal Long user, @PathVariable Long id,
-                               @PathVariable String batchId, @Valid @RequestBody ConfirmBatchRequest request) {
-        return transactionImports.confirm(user, id, batchId, request);
+                               @Valid @RequestBody ConfirmBatchRequest request) {
+        return transactionImports.confirm(user, id, request);
     }
 
     @GetMapping("/accounts/{id}/transactions")
@@ -110,6 +101,12 @@ public class InvestmentController {
     Object transaction(@AuthenticationPrincipal Long user, @PathVariable Long id,
                        @PathVariable Long transactionId) {
         return transactionImports.transaction(user, id, transactionId);
+    }
+
+    @PutMapping("/accounts/{id}/transactions/{transactionId}")
+    Object updateTransaction(@AuthenticationPrincipal Long user, @PathVariable Long id,
+                             @PathVariable Long transactionId, @Valid @RequestBody UpdateTransactionRequest request) {
+        return transactionImports.updateTransaction(user, id, transactionId, request);
     }
 
     @DeleteMapping("/accounts/{id}/transactions/{transactionId}")
@@ -166,23 +163,4 @@ public class InvestmentController {
                   @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate compareToDate) {
         return reports.report(type, user, accountId, fromDate, toDate, granularity, compareFromDate, compareToDate);
     }
-
-    @PostMapping("/accounts/{id}/transactions/{transactionId}/reconciliation-reports")
-    @ResponseStatus(HttpStatus.CREATED)
-    Object createReconciliationReport(@AuthenticationPrincipal Long user, @PathVariable Long id,
-                                      @PathVariable Long transactionId, @Valid @RequestBody CreateReportRequest request) {
-        return reconciliationReports.create(user, id, transactionId, request);
-    }
-
-    @GetMapping("/reconciliation-reports")
-    Object reconciliationReports(@AuthenticationPrincipal Long user,
-                                 @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return reconciliationReports.mine(user, pageable);
-    }
-
-    @GetMapping("/reconciliation-reports/{reportId}")
-    Object reconciliationReport(@AuthenticationPrincipal Long user, @PathVariable Long reportId) {
-        return reconciliationReports.mineOne(user, reportId);
-    }
-
 }

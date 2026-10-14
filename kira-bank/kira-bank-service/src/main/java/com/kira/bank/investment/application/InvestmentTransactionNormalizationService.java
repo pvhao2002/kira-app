@@ -75,7 +75,7 @@ public class InvestmentTransactionNormalizationService {
         }) {
             try {
                 return parser.parse(value.trim());
-            } catch (DateTimeParseException ignored) {
+            } catch (DateTimeParseException _) {
                 // Try the next supported format.
             }
         }

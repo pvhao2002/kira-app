@@ -74,7 +74,7 @@ public class CreditCardBenefitService {
         config.setUpdatedBy(userId);
         try {
             configs.saveAndFlush(config);
-        } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException ex) {
+        } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException _) {
             throw configConflict();
         }
         return responseForCard(card, config);
@@ -105,7 +105,7 @@ public class CreditCardBenefitService {
         applyProgram(program, request, userId);
         try {
             programs.saveAndFlush(program);
-        } catch (ObjectOptimisticLockingFailureException ex) {
+        } catch (ObjectOptimisticLockingFailureException _) {
             throw programConflict();
         }
         syncRules(program, request.groups(), userId, true);
@@ -135,7 +135,7 @@ public class CreditCardBenefitService {
             mccs.saveAll(programMccs);
             rules.saveAll(programRules);
             programs.saveAndFlush(program);
-        } catch (ObjectOptimisticLockingFailureException ex) {
+        } catch (ObjectOptimisticLockingFailureException _) {
             throw programConflict();
         }
     }
@@ -170,7 +170,7 @@ public class CreditCardBenefitService {
             rule.setUpdatedBy(userId);
             try {
                 rules.saveAndFlush(rule);
-            } catch (ObjectOptimisticLockingFailureException ex) {
+            } catch (ObjectOptimisticLockingFailureException _) {
                 throw ruleConflict();
             }
             retained.add(rule.getId());
@@ -245,7 +245,7 @@ public class CreditCardBenefitService {
             URI uri = URI.create(value.trim());
             return ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
                 && uri.getHost() != null;
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException _) {
             return false;
         }
     }

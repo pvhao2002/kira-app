@@ -29,21 +29,34 @@ public class InvestmentReceiptAiScheduler {
 
     @Scheduled(cron = "${ai.job.cron:0 0 */3 * * *}", zone = "${ai.job.time-zone:Asia/Bangkok}")
     public void processPendingReceipts() {
+        if (!running.compareAndSet(false, true)) {
+            return; // A previous run is still active.
+        }
+        try {
+            sweepUnfinishedImports();
+            processPendingReceiptsLocked();
+        } finally {
+            running.set(false);
+        }
+    }
+
+    private void sweepUnfinishedImports() {
+        try {
+            transactionImports.processUnfinished(); // DB-only; needs no AI provider
+        } catch (RuntimeException ex) {
+            log.warn("Investment import sweep failed error={}", ex.getClass().getSimpleName());
+        }
+    }
+
+    private void processPendingReceiptsLocked() {
         if (!ai.isConfigured()) {
             log.warn("Investment receipt AI scheduler skipped because the provider configuration is incomplete: {}",
                 ai.safeConfigurationSummary());
             return;
         }
-        if (!running.compareAndSet(false, true)) {
-            return; // A previous run is still active.
-        }
-        try {
-            attachments.recoverStaleProcessing();
-            while (processOneBatch()) {
-                // Keep draining the backlog in groups of at most three images.
-            }
-        } finally {
-            running.set(false);
+        attachments.recoverStaleProcessing();
+        while (processOneBatch()) {
+            // Keep draining the backlog in groups of at most three images.
         }
     }
 
@@ -58,17 +71,14 @@ public class InvestmentReceiptAiScheduler {
 
     public void processClaimedAttachments(List<Attachment> claimed) {
         long startedAt = System.nanoTime();
-        claimed.forEach(attachment -> transactionImports.refreshAttachmentState(attachment.getId()));
-
         List<AiDocumentService.AiInputDocument> documents = new ArrayList<>();
         for (Attachment attachment : claimed) {
             try {
                 documents.add(new AiDocumentService.AiInputDocument(
                     attachment.getId(), attachment.getMimeType(),
                     storage.download(attachment.getR2AccountId(), attachment.getStorageKey())));
-            } catch (RuntimeException ex) {
+            } catch (RuntimeException _) {
                 attachments.markRetryOrFailed(attachment.getId(), "ATTACHMENT_STORAGE_UNAVAILABLE");
-                transactionImports.refreshAttachmentState(attachment.getId());
                 metrics.counter("investment.import.ai.failure", "reason", "storage").increment();
                 log.warn("Unable to read attachment {} for AI processing", attachment.getId());
             }
@@ -111,21 +121,30 @@ public class InvestmentReceiptAiScheduler {
                     attachments.markReady(document.attachmentId(),
                         new AiDocumentService.AiExtraction(document.attachmentId(), transactions),
                         response.rawResponse(), response.model());
+                    processExtracted(document.attachmentId());
                 }
-                transactionImports.refreshAttachmentState(document.attachmentId());
             }
             log.info("Cloudflare AI batch completed for {} investment receipt(s), attachmentIds={}",
                 documents.size(), attachmentIds);
         } catch (AiDocumentService.AiProviderException ex) {
             for (AiDocumentService.AiInputDocument document : documents) {
                 attachments.markRetryOrFailed(document.attachmentId(), "AI_PROVIDER_ERROR");
-                transactionImports.refreshAttachmentState(document.attachmentId());
             }
             metrics.counter("investment.import.ai.failure", "reason", "provider").increment(documents.size());
             log.warn("Cloudflare AI batch failed for {} attachment(s), attachmentIds={}: {}",
                 documents.size(), attachmentIds, ex.getMessage());
         }
         recordProcessingTime(startedAt);
+    }
+
+    private void processExtracted(Long attachmentId) {
+        try {
+            transactionImports.processExtracted(attachmentId);
+        } catch (RuntimeException ex) {
+            // The sweep in processPendingReceipts retries.
+            log.warn("Investment import auto-record deferred attachmentId={} error={}",
+                attachmentId, ex.getClass().getSimpleName());
+        }
     }
 
     private void recordProcessingTime(long startedAt) {

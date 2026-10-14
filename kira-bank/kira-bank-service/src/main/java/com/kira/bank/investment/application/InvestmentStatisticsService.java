@@ -78,8 +78,8 @@ public class InvestmentStatisticsService {
             userId, Timestamp.from(start), Timestamp.from(end), accountFilter, accountFilter);
 
         Map<String, Map<LocalDate, FlowRow>> byCurrency = new TreeMap<>();
-        accounts.forEach(account -> byCurrency.computeIfAbsent(account.currency(), ignored -> new HashMap<>()));
-        rows.forEach(row -> byCurrency.computeIfAbsent(row.currency(), ignored -> new HashMap<>()).put(row.date(), row));
+        accounts.forEach(account -> byCurrency.computeIfAbsent(account.currency(), _ -> new HashMap<>()));
+        rows.forEach(row -> byCurrency.computeIfAbsent(row.currency(), _ -> new HashMap<>()).put(row.date(), row));
         List<CurrencySummary> currencies = new ArrayList<>();
         for (Map.Entry<String, Map<LocalDate, FlowRow>> entry : byCurrency.entrySet()) {
             BigDecimal deposits = BigDecimal.ZERO, withdrawals = BigDecimal.ZERO, bonuses = BigDecimal.ZERO;
@@ -107,40 +107,25 @@ public class InvestmentStatisticsService {
         String aiSql = """
             select a.ai_status, count(distinct a.id) as total
             from attachments a join investment_transaction_import_files f on f.attachment_id = a.id
-            join investment_transaction_import_batches b on b.id = f.batch_id
-            where a.user_id = ? and a.module = 'investment' and a.document_type = 'RECEIPT'
-              and a.deleted_at is null and f.deleted_at is null and b.deleted_at is null
-              and (b.retention_until is null or b.retention_until > current_timestamp)
-              and (? is null or b.investment_account_id = ?)
+            join investment_accounts acc on acc.id = f.investment_account_id
+            where acc.user_id = ? and a.module = 'investment' and a.document_type = 'RECEIPT'
+              and a.deleted_at is null and f.deleted_at is null and acc.deleted_at is null
+              and a.storage_purged_at is null
+              and (? is null or f.investment_account_id = ?)
             group by a.ai_status
             """;
         Map<String, Long> ai = new HashMap<>();
         jdbc.query(aiSql, (org.springframework.jdbc.core.RowCallbackHandler) rs -> ai.put(rs.getString("ai_status"), rs.getLong("total")), userId, accountFilter, accountFilter);
-        String reviewWhere = " from investment_transaction_import_batches b join investment_accounts a on a.id = b.investment_account_id and a.user_id = b.user_id "
-            + "where b.user_id = ? and b.deleted_at is null and a.deleted_at is null and b.status in ('READY','READY_WITH_ERRORS','PARTIALLY_CONFIRMED') "
-            + "and (b.retention_until is null or b.retention_until > current_timestamp) "
-            + "and (? is null or b.investment_account_id = ?)";
-        long reviewTotal = jdbc.queryForObject("select count(*)" + reviewWhere, Long.class, userId, accountFilter, accountFilter);
-        List<ImportItem> reviewItems = jdbc.query("select b.batch_id, b.investment_account_id, a.account_name, b.status, b.created_at, b.review_count" + reviewWhere
-            + " order by b.created_at asc, b.id asc limit 5", (rs, row) -> new ImportItem(rs.getString("batch_id"), rs.getLong("investment_account_id"),
-            rs.getString("account_name"), rs.getString("status"), rs.getTimestamp("created_at").toInstant(), rs.getInt("review_count")), userId, accountFilter, accountFilter);
-
-        String reportFrom = " from investment_reconciliation_reports r join investment_accounts a on a.id = r.investment_account_id and a.user_id = r.user_id ";
-        String reportWhere = reportFrom + "where r.user_id = ? and r.deleted_at is null and a.deleted_at is null and r.status in ('OPEN','IN_REVIEW','NEEDS_INFO') "
-            + "and (? is null or r.investment_account_id = ?)";
-        Map<String, Long> reportCounts = new HashMap<>();
-        jdbc.query("select r.status, count(*) as total" + reportWhere + " group by r.status", (org.springframework.jdbc.core.RowCallbackHandler) rs -> reportCounts.put(rs.getString("status"), rs.getLong("total")), userId, accountFilter, accountFilter);
-        long reportTotal = reportCounts.values().stream().mapToLong(Long::longValue).sum();
-        List<ReconciliationItem> reportItems = jdbc.query("select r.id, r.investment_account_id, a.account_name, r.transaction_id, t.amount, t.currency, r.reason, r.status, r.created_at"
-            + reportFrom + " join investment_account_transactions t on t.id = r.transaction_id and t.deleted_at is null "
-            + "where r.user_id = ? and r.deleted_at is null and a.deleted_at is null and r.status in ('OPEN','IN_REVIEW','NEEDS_INFO') "
-            + "and (? is null or r.investment_account_id = ?) order by r.created_at asc, r.id asc limit 5", (rs, row) -> new ReconciliationItem(
-                rs.getLong("id"), rs.getLong("investment_account_id"), rs.getString("account_name"), rs.getLong("transaction_id"), rs.getBigDecimal("amount"),
-                rs.getString("currency"), rs.getString("reason"), rs.getString("status"), rs.getTimestamp("created_at").toInstant()), userId, accountFilter, accountFilter);
+        String reviewFrom = " from investment_transaction_import_items i join investment_accounts acc on acc.id = i.investment_account_id "
+            + "where acc.user_id = ? and acc.deleted_at is null and i.deleted_at is null and i.confirmed_transaction_id is null "
+            + "and (i.resolution is null or i.resolution <> 'SKIP') and (? is null or i.investment_account_id = ?)";
+        long reviewTotal = jdbc.queryForObject("select count(distinct acc.id)" + reviewFrom, Long.class, userId, accountFilter, accountFilter);
+        List<ImportItem> reviewItems = jdbc.query("select acc.id, acc.account_name, min(i.created_at) as created_at, count(*) as review_count" + reviewFrom
+            + " group by acc.id, acc.account_name order by 3 asc, acc.id asc limit 5", (rs, row) -> new ImportItem(rs.getLong("id"),
+            rs.getString("account_name"), rs.getTimestamp("created_at").toInstant(), rs.getLong("review_count")), userId, accountFilter, accountFilter);
         return new OperationsResponse(Instant.now(), accountId,
             new AiSummary(ai.getOrDefault("PENDING", 0L), ai.getOrDefault("PROCESSING", 0L), ai.getOrDefault("READY", 0L), ai.getOrDefault("FAILED", 0L)),
-            new ImportSummary(reviewTotal, reviewItems), new ReconciliationSummary(reportTotal, reportCounts.getOrDefault("OPEN", 0L),
-                reportCounts.getOrDefault("IN_REVIEW", 0L), reportCounts.getOrDefault("NEEDS_INFO", 0L), reportItems));
+            new ImportSummary(reviewTotal, reviewItems));
     }
 
     private static BigDecimal decimal(BigDecimal value) { return value == null ? BigDecimal.ZERO : value; }

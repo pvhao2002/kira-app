@@ -96,7 +96,7 @@ public class R2StorageService {
             }
             return false;
         });
-        return cache.computeIfAbsent(key, ignored -> clients.create(
+        return cache.computeIfAbsent(key, _ -> clients.create(
             credential.accountId(), credential.accessKeyId(), credential.secretAccessKey()));
     }
 

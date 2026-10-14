@@ -10,6 +10,11 @@ export interface PageResponse<T> {
   meta: PageMeta
 }
 
+export interface TelegramLinkCode {
+  code: string;
+  expiresAt: string;
+}
+
 export interface Profile {
   id: number;
   email: string;
@@ -425,32 +430,21 @@ export interface InvestmentStatisticsResponse {
 export interface InvestmentStatisticsOperations {
   updatedAt: string; accountId: number | null;
   ai: {pending: number; processing: number; ready: number; failed: number};
-  imports: {total: number; items: {batchId: string; accountId: number; accountName: string; status: string; createdAt: string; reviewCount: number}[]};
-  reconciliation: {total: number; open: number; inReview: number; needsInfo: number; items: {
-    id: number; accountId: number; accountName: string; transactionId: number; amount: number; currency: string;
-    reason: string; status: string; createdAt: string;
-  }[]};
-}
-export interface InvestmentReconciliationReport {
-  id: number; accountId: number; accountName: string; transactionId: number; transactionType: string;
-  transactionStatus: string; amount: number; currency: string; transactionAt: string; externalTransactionId: string | null;
-  sourceAttachmentId: number | null; reason: string; detail: string; status: string; resolutionNote: string | null;
-  createdAt: string; resolvedAt: string | null; version: number; history: {fromStatus: string; toStatus: string; note: string | null; createdAt: string}[];
+  imports: {total: number; items: {accountId: number; accountName: string; createdAt: string; reviewCount: number}[]};
 }
 
 export type InvestmentTransactionType = 'DEPOSIT' | 'WITHDRAWAL' | 'BONUS';
 export type InvestmentTransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type InvestmentImportAction = 'INSERT' | 'UPDATE' | 'DUPLICATE' | 'REVIEW' | 'IGNORE';
 export type InvestmentImportResolution = 'ACCEPT' | 'MERGE_EXISTING' | 'SAVE_AS_NEW' | 'SKIP';
-export type InvestmentImportBatchStatus = 'QUEUED' | 'PROCESSING' | 'READY' | 'READY_WITH_ERRORS'
-  | 'PARTIALLY_CONFIRMED' | 'CONFIRMED' | 'FAILED' | 'CANCELLED';
-
 export interface InvestmentImportFile {
   attachmentId: number;
   originalName: string;
   contentUrl: string;
-  status: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | 'CANCELLED' | 'CONFIRMED';
-  errorCode: string | null
+  aiStatus: InvestmentAiJobStatus;
+  aiError: string | null;
+  createdAt: string;
+  committedCount: number
 }
 
 export interface InvestmentImportItem {
@@ -470,11 +464,8 @@ export interface InvestmentImportItem {
   warnings: string[]
 }
 
-export interface InvestmentImportBatch {
-  batchId: string;
+export interface InvestmentImportState {
   accountId: number;
-  status: InvestmentImportBatchStatus;
-  summary: {detected: number; inserted: number; updated: number; skipped: number; failed: number; review: number};
   files: InvestmentImportFile[];
   transactions: InvestmentImportItem[]
 }
@@ -516,6 +507,17 @@ export interface InvestmentTransaction {
   version: number
 }
 
+export interface InvestmentTransactionUpdate {
+  transactionType: InvestmentTransactionType;
+  transactionStatus: InvestmentTransactionStatus;
+  amount: number;
+  currency: string;
+  transactionAt: string;
+  externalTransactionId: string | null;
+  description: string | null;
+  version: number
+}
+
 export type InvestmentAiJobStatus = 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | 'CANCELLED' | 'CONFIRMED';
 
 export interface InvestmentAiDetectedTransaction {
@@ -537,15 +539,6 @@ export interface InvestmentAiDetectedJson {
   transactions: InvestmentAiDetectedTransaction[]
 }
 
-export interface InvestmentAiReviewTarget {
-  accountId: number;
-  accountName: string;
-  batchId: string;
-  batchStatus: InvestmentImportBatchStatus;
-  createdAt: string;
-  pendingItemCount: number
-}
-
 export interface InvestmentAiJob {
   attachmentId: number;
   owner: {userId: number; fullName: string | null; email: string | null} | null;
@@ -565,7 +558,6 @@ export interface InvestmentAiJob {
   contentAvailable: boolean;
   canCancel: boolean;
   canRun: boolean;
-  reviewTargets: InvestmentAiReviewTarget[];
   detectedJson: InvestmentAiDetectedJson | null
 }
 

@@ -1,5 +1,4 @@
 export const investmentReportsEnglish = {
-  'route.investmentCashflow': 'Deposit vs withdrawal', 'shell.investmentCashflow': 'Deposit vs withdrawal',
   'investmentCashflow.title': 'Deposit & withdrawal report', 'investmentCashflow.description': 'Total deposits, withdrawals and their difference, by day, month or year.',
   'investmentCashflow.totalDeposits': 'Total deposits', 'investmentCashflow.totalWithdrawals': 'Total withdrawals', 'investmentCashflow.diff': 'Difference (withdrawals - deposits)',
   'investmentCashflow.barChart': 'Deposits vs withdrawals', 'investmentCashflow.lineChart': 'Difference over time',
@@ -256,7 +255,6 @@ export const investmentReportsEnglish = {
 } as const;
 
 export const investmentReportsVietnamese: Record<keyof typeof investmentReportsEnglish, string> = {
-  'route.investmentCashflow': 'Nạp & rút', 'shell.investmentCashflow': 'Nạp & rút',
   'investmentCashflow.title': 'Báo cáo nạp & rút', 'investmentCashflow.description': 'Tổng nạp, tổng rút và chênh lệch theo ngày, tháng hoặc năm.',
   'investmentCashflow.totalDeposits': 'Tổng nạp', 'investmentCashflow.totalWithdrawals': 'Tổng rút', 'investmentCashflow.diff': 'Chênh lệch (rút - nạp)',
   'investmentCashflow.barChart': 'Nạp và rút', 'investmentCashflow.lineChart': 'Chênh lệch nạp/rút theo thời gian',

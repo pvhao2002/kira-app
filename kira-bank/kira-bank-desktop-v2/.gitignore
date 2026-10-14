@@ -1,0 +1,5 @@
+*.exe
+*.exe~
+/kira-bank-desktop-v2
+/dist/
+.env

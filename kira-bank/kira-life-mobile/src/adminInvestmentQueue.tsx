@@ -61,11 +61,6 @@ function AdminJobCard({
         size={10}>{job.nextAttemptAt ? dateLabel(job.nextAttemptAt) : '—'}</T></View><View
         style={{flex: 1, alignItems: 'flex-end'}}><T size={10} color={c.muted}>{t('Hoàn tất lúc')}</T><T
         size={10}>{job.completedAt ? dateLabel(job.completedAt) : '—'}</T></View></Row> : null}
-    {job.reviewTargets.length ? <View style={{gap: 4}}><T size={10}
-                                                          color={c.muted}>{t('Tài khoản / lô duyệt')}</T>{job.reviewTargets.map(target =>
-        <T key={target.batchId} size={10}>{target.accountName} · {t('{{n}} bản ghi chờ', {n: target.pendingItemCount})} ·
-          #{target.batchId.slice(0, 8).toUpperCase()}</T>)}</View> :
-      <T size={10} color={c.muted}>{t('Chưa có lô transaction để duyệt.')}</T>}
     {job.detectedJson ? <Info
       tone="success">{t('Đã trích xuất {{n}} transaction trong JSON chuẩn hóa.', {n: job.detectedJson.transactions.length})}</Info> : null}
     {job.status === 'FAILED' ? <Info
