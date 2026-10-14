@@ -15,7 +15,17 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "08:00"
-      
+    # Angular packages must move together; a partial bump breaks `npm ci` peer resolution.
+    groups:
+      angular:
+        patterns: ["@angular/*"]
+      angular-security:
+        applies-to: security-updates
+        patterns: ["@angular/*"]
+    ignore:
+      - dependency-name: "@angular/*"
+        update-types: ["version-update:semver-major"]
+
   # Enable version updates for maven
   - package-ecosystem: "maven"
     directory:
