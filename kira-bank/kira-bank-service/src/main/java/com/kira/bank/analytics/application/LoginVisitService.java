@@ -55,7 +55,7 @@ public class LoginVisitService {
             // Only keep the referring origin: paths, query strings and fragments may contain secrets.
             if (Set.of("http", "https").contains(Objects.toString(uri.getScheme(), "")) && uri.getHost() != null)
                 referrer = new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), null, null, null).toString();
-        } catch (Exception ignored) {
+        } catch (Exception _) {
         }
         repo.insert(visit, ip, agent, referrer.substring(0, Math.min(500, referrer.length())));
     }

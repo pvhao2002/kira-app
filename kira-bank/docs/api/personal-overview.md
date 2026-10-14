@@ -22,7 +22,7 @@ Days accepts only 7, 30, 90 (default 30), otherwise HTTP 400 `INVALID_OVERVIEW_P
 
 Only COMPLETED transactions contribute. Amounts group by transaction currency with daily zero filling. `netDeposits = deposits - withdrawals`, excluding bonuses; it is not profit or portfolio valuation. Active account currencies appear even without activity. Account count includes ACTIVE accounts; transaction history includes non-deleted accounts regardless of activity status.
 
-Review includes READY, READY_WITH_ERRORS, PARTIALLY_CONFIRMED; failed includes FAILED. Import tasks are not restricted by the transaction date filter. Only normalized identifiers, account names and status are returned; no credentials, attachment content or raw AI data. Links use existing accountId/batchId query parameters.
+Review (`NEEDS_REVIEW`) lists accounts that have open import items awaiting review; failed (`FAILED`) lists accounts with an import image whose AI job failed. Each task is `{ accountId, accountName, status }`. Import tasks are not restricted by the transaction date filter. Only normalized identifiers, account names and status are returned; no credentials, attachment content or raw AI data. Links use the existing accountId query parameter (`/app/investment/transactions?accountId={accountId}`).
 
 ## Tutoring and notifications
 

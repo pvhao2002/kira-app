@@ -22,9 +22,11 @@ public class PasswordVaultAuditRepository {
 
     public void record(Long userId, String action, String entityType, Object entityId,
                        Map<String, ?> metadata, AuditContext context) {
-        jdbc.update("insert into audit_logs " +
-                "(user_id, action, entity_type, entity_id, after_data, ip_address, user_agent, trace_id) " +
-                "values (?, ?, ?, ?, ?, ?, ?, ?)",
+        jdbc.update("""
+                insert into audit_logs
+                (user_id, action, entity_type, entity_id, after_data, ip_address, user_agent, trace_id)
+                values (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
             userId, action, entityType, entityId == null ? null : entityId.toString(), json(metadata),
             truncate(context.ipAddress(), 45), truncate(context.userAgent(), 500), truncate(MDC.get("traceId"), 64));
     }
@@ -43,7 +45,7 @@ public class PasswordVaultAuditRepository {
     private String json(Map<String, ?> metadata) {
         try {
             return objectMapper.writeValueAsString(metadata == null ? Map.of() : metadata);
-        } catch (JsonProcessingException ex) {
+        } catch (JsonProcessingException _) {
             return "{}";
         }
     }

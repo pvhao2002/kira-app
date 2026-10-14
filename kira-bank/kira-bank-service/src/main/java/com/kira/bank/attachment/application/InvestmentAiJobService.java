@@ -8,9 +8,6 @@ import com.kira.bank.attachment.infrastructure.InvestmentAiJobEventRepository;
 import com.kira.bank.identity.domain.User;
 import com.kira.bank.identity.infrastructure.UserRepository;
 import com.kira.bank.investment.application.InvestmentTransactionImportService;
-import com.kira.bank.investment.domain.InvestmentImportBatchStatus;
-import com.kira.bank.investment.domain.InvestmentImportResolution;
-import com.kira.bank.investment.infrastructure.InvestmentTransactionImportFileRepository;
 import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -38,19 +35,11 @@ public class InvestmentAiJobService {
         AttachmentAiStatus.CANCELLED,
         AttachmentAiStatus.CONFIRMED
     );
-    private static final EnumSet<InvestmentImportBatchStatus> REVIEWABLE_BATCH_STATUSES = EnumSet.of(
-        InvestmentImportBatchStatus.QUEUED,
-        InvestmentImportBatchStatus.PROCESSING,
-        InvestmentImportBatchStatus.READY,
-        InvestmentImportBatchStatus.READY_WITH_ERRORS,
-        InvestmentImportBatchStatus.PARTIALLY_CONFIRMED
-    );
 
     private final AttachmentRepository attachments;
     private final InvestmentAiJobEventRepository events;
     private final AttachmentService attachmentService;
     private final InvestmentTransactionImportService transactionImports;
-    private final InvestmentTransactionImportFileRepository importFiles;
     private final UserRepository users;
     private final AiJobProperties jobProperties;
 
@@ -99,64 +88,56 @@ public class InvestmentAiJobService {
     @Transactional(readOnly = true)
     public InvestmentAiJobResponse mineOne(Long userId, Long attachmentId) {
         Attachment attachment = investmentJob(owned(attachmentId, userId));
-        return response(attachment, null, reviewTargets(List.of(attachment)), history(attachmentId));
+        return response(attachment, null, history(attachmentId));
     }
 
     @Transactional(readOnly = true)
     public InvestmentAiJobResponse allOne(Long attachmentId) {
         Attachment attachment = investmentJob(existing(attachmentId));
-        return response(attachment, owner(attachment.getUserId()), reviewTargets(List.of(attachment)), history(attachmentId));
+        return response(attachment, owner(attachment.getUserId()), history(attachmentId));
     }
 
     @Transactional
     public InvestmentAiJobResponse cancelMine(Long userId, Long attachmentId) {
         attachmentService.cancel(userId, attachmentId);
-        transactionImports.refreshAttachmentState(attachmentId);
-        return response(owned(attachmentId, userId), null, Map.of());
+        return response(owned(attachmentId, userId), null);
     }
 
     @Transactional
     public InvestmentAiJobResponse cancelAsAdmin(Long adminId, Long attachmentId) {
         attachmentService.cancelAsAdmin(adminId, attachmentId);
-        transactionImports.refreshAttachmentState(attachmentId);
         Attachment attachment = existing(attachmentId);
-        return response(attachment, owner(attachment.getUserId()), Map.of());
+        return response(attachment, owner(attachment.getUserId()));
     }
 
     @Transactional
     public ImmediateRunClaim claimRunMine(Long userId, Long attachmentId) {
         Attachment attachment = attachmentService.claimImmediateRun(userId, attachmentId);
         transactionImports.resetForRerun(attachmentId);
-        transactionImports.refreshAttachmentState(attachmentId);
-        return new ImmediateRunClaim(attachment, response(attachment, null, Map.of()));
+        return new ImmediateRunClaim(attachment, response(attachment, null));
     }
 
     @Transactional
     public ImmediateRunClaim claimRunAsAdmin(Long adminId, Long attachmentId) {
         Attachment attachment = attachmentService.claimImmediateRunAsAdmin(adminId, attachmentId);
         transactionImports.resetForRerun(attachmentId);
-        transactionImports.refreshAttachmentState(attachmentId);
-        return new ImmediateRunClaim(attachment, response(attachment, owner(attachment.getUserId()), Map.of()));
+        return new ImmediateRunClaim(attachment, response(attachment, owner(attachment.getUserId())));
     }
 
     private PageResponse<InvestmentAiJobResponse> response(Page<Attachment> page, Map<Long, User> owners, boolean includeOwner) {
-        Map<Long, List<InvestmentAiJobReviewTarget>> reviewTargets = reviewTargets(page.getContent());
         List<InvestmentAiJobResponse> data = page.getContent().stream()
             .map(attachment -> response(attachment, includeOwner
-                    ? owner(attachment.getUserId(), owners.get(attachment.getUserId())) : null,
-                reviewTargets, List.of()))
+                    ? owner(attachment.getUserId(), owners.get(attachment.getUserId())) : null))
             .toList();
         return new PageResponse<>(data, new PageMeta(
             page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages()));
     }
 
-    private InvestmentAiJobResponse response(Attachment attachment, AiJobOwnerResponse owner,
-                                             Map<Long, List<InvestmentAiJobReviewTarget>> reviewTargets) {
-        return response(attachment, owner, reviewTargets, List.of());
+    private InvestmentAiJobResponse response(Attachment attachment, AiJobOwnerResponse owner) {
+        return response(attachment, owner, List.of());
     }
 
     private InvestmentAiJobResponse response(Attachment attachment, AiJobOwnerResponse owner,
-                                             Map<Long, List<InvestmentAiJobReviewTarget>> reviewTargets,
                                              List<InvestmentAiJobEventResponse> history) {
         AttachmentAiStatus status = attachment.getAiStatus();
         return new InvestmentAiJobResponse(
@@ -179,33 +160,9 @@ public class InvestmentAiJobService {
             status == AttachmentAiStatus.PENDING,
             status == AttachmentAiStatus.PENDING || status == AttachmentAiStatus.FAILED
                 || status == AttachmentAiStatus.CANCELLED || status == AttachmentAiStatus.READY,
-            reviewTargets.getOrDefault(attachment.getId(), List.of()),
             attachmentService.parseDraft(attachment.getAiResult()),
             history
         );
-    }
-
-    private Map<Long, List<InvestmentAiJobReviewTarget>> reviewTargets(List<Attachment> page) {
-        List<Long> readyAttachmentIds = page.stream()
-            .filter(attachment -> attachment.getAiStatus() == AttachmentAiStatus.READY)
-            .map(Attachment::getId)
-            .toList();
-        if (readyAttachmentIds.isEmpty()) return Map.of();
-
-        Map<Long, List<InvestmentAiJobReviewTarget>> targets = new LinkedHashMap<>();
-        for (var target : importFiles.findAiJobReviewTargets(
-            readyAttachmentIds, REVIEWABLE_BATCH_STATUSES, InvestmentImportResolution.SKIP)) {
-            targets.computeIfAbsent(target.getAttachmentId(), ignored -> new java.util.ArrayList<>())
-                .add(new InvestmentAiJobReviewTarget(
-                    target.getAccountId(),
-                    target.getAccountName(),
-                    target.getBatchId(),
-                    target.getBatchStatus(),
-                    target.getCreatedAt(),
-                    target.getPendingItemCount()
-                ));
-        }
-        return targets;
     }
 
     private List<InvestmentAiJobEventResponse> history(Long attachmentId) {

@@ -53,8 +53,7 @@ public class CardCashbackCalculator {
 
         /** Explicit rule assignment wins; otherwise the MCC decides. */
         public Optional<ActiveRule> ruleFor(CardTransaction transaction) {
-            Optional<ActiveRule> explicit = byId(transaction.getCashbackRuleId());
-            return explicit.isPresent() ? explicit : bestForMcc(transaction.getMccCode());
+            return byId(transaction.getCashbackRuleId()).or(() -> bestForMcc(transaction.getMccCode()));
         }
 
         public Optional<ActiveRule> byCategoryName(String name) {

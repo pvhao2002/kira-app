@@ -45,7 +45,7 @@ public class HealthService {
     public ZoneId zone(String name) {
         try {
             return ZoneId.of(name);
-        } catch (DateTimeException e) {
+        } catch (DateTimeException _) {
             throw invalid("HEALTH_TIMEZONE_INVALID");
         }
     }

@@ -11,7 +11,9 @@ import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.time.LocalDate;
 import java.util.Locale;
@@ -30,6 +32,11 @@ public class R2StorageService {
     private String environment;
 
     public String userImageKey(Long userId, String username, LocalDate date, int imageNumber, String extension) {
+        return userFolder(userId, username, date) + "/image-" + imageNumber + "-" + UUID.randomUUID() + extension;
+    }
+
+    /** {@code LOCAL|PROD/{userId} - {username}/{date}}: shared folder layout for R2 and Hugging Face uploads. */
+    public String userFolder(Long userId, String username, LocalDate date) {
         String safeUsername = username == null || username.isBlank()
             ? "unknown"
             : username.trim().replaceAll("[^A-Za-z0-9._@-]", "_");
@@ -39,7 +46,7 @@ public class R2StorageService {
         if (!root.equals("LOCAL") && !root.equals("PROD")) {
             throw new IllegalStateException("R2_STORAGE_ENVIRONMENT must be LOCAL or PROD");
         }
-        return root + "/" + userId + " - " + safeUsername + "/" + date + "/image-" + imageNumber + "-" + UUID.randomUUID() + extension;
+        return root + "/" + userId + " - " + safeUsername + "/" + date;
     }
 
     public StoredObject upload(String key, byte[] data, String contentType) {
@@ -66,6 +73,13 @@ public class R2StorageService {
         accounts.markR2Success(credential.id());
     }
 
+    /** Sums every object in the account's bucket; each 1,000 objects costs one R2 Class A (list) operation. */
+    public long usedBytes(Long accountId) {
+        RuntimeR2Credential credential = accounts.r2Credential(accountId);
+        return client(credential).listObjectsV2Paginator(ListObjectsV2Request.builder().bucket(credential.bucketName()).build())
+            .contents().stream().mapToLong(S3Object::size).sum();
+    }
+
     public String getPublicUrl(Long accountId, String key) {
         String base = accounts.r2Credential(accountId).publicUrl();
         if (base == null || base.isBlank()) return null;
@@ -82,7 +96,7 @@ public class R2StorageService {
             }
             return false;
         });
-        return cache.computeIfAbsent(key, ignored -> clients.create(
+        return cache.computeIfAbsent(key, _ -> clients.create(
             credential.accountId(), credential.accessKeyId(), credential.secretAccessKey()));
     }
 

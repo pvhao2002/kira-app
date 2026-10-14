@@ -71,6 +71,10 @@
         (ngModelChange)="historyStatus.set($event)">
       </app-custom-select>
     </label>
+    <label class="history-hide-noise">
+      <input type="checkbox" name="hideNoise" [ngModel]="hideNoise()" (ngModelChange)="toggleHideNoise($event)">
+      <span>{{ i18n.t('investmentTransactions.hideNoise') }}</span>
+    </label>
     <div class="history-filter-actions">
       <button class="primary" type="submit" [disabled]="historyDateRangeInvalid() || historyLoading()">
         {{ i18n.t('investmentTransactions.filter') }}
@@ -114,7 +118,8 @@
               <td class="history-money" [class.credit]="transactionAmountClass(transaction.transactionType) === 'credit'" [class.debit]="transactionAmountClass(transaction.transactionType) === 'debit'">{{ transactionAmountPrefix(transaction.transactionType) }}{{ formatAmount(transaction.amount) }} <small>{{ transaction.currency }}</small></td>
               <td><span class="history-truncate" [title]="transaction.externalTransactionId || ''">{{ transaction.externalTransactionId || '—' }}</span></td>
               <td><span class="history-truncate description" [title]="transaction.description || ''">{{ transaction.description || '—' }}</span></td>
-              <td>
+              <td class="history-actions">
+                <button class="history-edit" type="button" (click)="requestEdit(transaction)">{{ i18n.t('investmentHistory.edit') }}</button>
                 @if (canDeleteTransaction(transaction)) {
                   <button class="history-delete" type="button" [attr.aria-label]="i18n.t('investmentTransactions.deleteDirty')" (click)="requestDelete(transaction)">
                     {{ i18n.t('investmentTransactions.deleteDirty') }}
@@ -140,11 +145,14 @@
             <div><dt>{{ i18n.t('investmentTransactions.externalId') }}</dt><dd>{{ transaction.externalTransactionId || '—' }}</dd></div>
             <div><dt>{{ i18n.t('field.description') }}</dt><dd>{{ transaction.description || '—' }}</dd></div>
           </dl>
-          @if (canDeleteTransaction(transaction)) {
-            <button class="history-delete" type="button" (click)="requestDelete(transaction)">
-              {{ i18n.t('investmentTransactions.deleteDirty') }}
-            </button>
-          }
+          <div class="history-actions">
+            <button class="history-edit" type="button" (click)="requestEdit(transaction)">{{ i18n.t('investmentHistory.edit') }}</button>
+            @if (canDeleteTransaction(transaction)) {
+              <button class="history-delete" type="button" (click)="requestDelete(transaction)">
+                {{ i18n.t('investmentTransactions.deleteDirty') }}
+              </button>
+            }
+          </div>
         </article>
       }
     </div>
@@ -177,5 +185,37 @@
         </button>
       </div>
     </section>
+  </div>
+}
+
+@if (editDraft(); as draft) {
+  <div class="modal-backdrop" (click)="closeEdit()">
+    <form class="edit-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-transaction-title"
+          (click)="$event.stopPropagation()" (ngSubmit)="saveEdit()">
+      <h2 id="edit-transaction-title">{{ i18n.t('investmentHistory.editTitle') }}</h2>
+      @if (editError()) { <p class="history-filter-error" role="alert">{{ editError() }}</p> }
+      <label><span>{{ i18n.t('investmentTransactions.type') }}</span>
+        <app-custom-select name="editType" [ngModel]="draft.transactionType" [ariaLabel]="i18n.t('investmentTransactions.type')"
+          [options]="editTypeOptions()" (ngModelChange)="patchEdit({transactionType: $event})"></app-custom-select></label>
+      <label><span>{{ i18n.t('field.status') }}</span>
+        <app-custom-select name="editStatus" [ngModel]="draft.transactionStatus" [ariaLabel]="i18n.t('field.status')"
+          [options]="editStatusOptions()" (ngModelChange)="patchEdit({transactionStatus: $event})"></app-custom-select></label>
+      <label><span>{{ i18n.t('field.amount') }}</span>
+        <input type="number" name="editAmount" min="0" step="any" [ngModel]="draft.amount" (ngModelChange)="patchEdit({amount: $event})"></label>
+      <label><span>{{ i18n.t('investmentHistory.currency') }}</span>
+        <input type="text" name="editCurrency" maxlength="3" [ngModel]="draft.currency" (ngModelChange)="patchEdit({currency: $event})"></label>
+      <label><span>{{ i18n.t('investmentTransactions.dateTime') }}</span>
+        <input type="datetime-local" name="editAt" [ngModel]="draft.transactionAt" (ngModelChange)="patchEdit({transactionAt: $event})"></label>
+      <label><span>{{ i18n.t('investmentTransactions.externalId') }}</span>
+        <input type="text" name="editExternal" [ngModel]="draft.externalTransactionId" (ngModelChange)="patchEdit({externalTransactionId: $event})"></label>
+      <label><span>{{ i18n.t('field.description') }}</span>
+        <input type="text" name="editDescription" [ngModel]="draft.description" (ngModelChange)="patchEdit({description: $event})"></label>
+      <div class="edit-dialog-actions">
+        <button class="ghost" type="button" [disabled]="saving()" (click)="closeEdit()">{{ i18n.t('common.close') }}</button>
+        <button class="primary" type="submit" [disabled]="saving() || !editValid()">
+          {{ saving() ? i18n.t('investmentHistory.saving') : i18n.t('investmentHistory.save') }}
+        </button>
+      </div>
+    </form>
   </div>
 }

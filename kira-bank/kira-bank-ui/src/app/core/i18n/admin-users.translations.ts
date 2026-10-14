@@ -22,7 +22,14 @@ export const usersEnglish = {
   "users.emailExists": "This email is already in use.",
   "users.forbidden": "Only administrators can create users.",
   "users.saveError": "Unable to create user. Please try again.",
-  "users.loadError": "Unable to load users. Please try again."
+  "users.loadError": "Unable to load users. Please try again.",
+  "users.actions": "Actions",
+  "users.lock": "Lock",
+  "users.unlock": "Unlock",
+  "users.lockConfirm": "Lock {email}? This user will no longer be able to sign in.",
+  "users.locked": "User locked.",
+  "users.unlocked": "User unlocked.",
+  "users.statusError": "Unable to update user status. Please try again."
 };
 
 export const usersVietnamese = {
@@ -49,6 +56,13 @@ export const usersVietnamese = {
   "users.emailExists": "Email này đã được sử dụng.",
   "users.forbidden": "Chỉ Admin mới được tạo User.",
   "users.saveError": "Không thể tạo User. Vui lòng thử lại.",
-  "users.loadError": "Không thể tải danh sách. Vui lòng thử lại."
+  "users.loadError": "Không thể tải danh sách. Vui lòng thử lại.",
+  "users.actions": "Thao tác",
+  "users.lock": "Khóa",
+  "users.unlock": "Mở khóa",
+  "users.lockConfirm": "Khóa {email}? User này sẽ không thể đăng nhập.",
+  "users.locked": "Đã khóa User.",
+  "users.unlocked": "Đã mở khóa User.",
+  "users.statusError": "Không thể cập nhật trạng thái. Vui lòng thử lại."
 };
 

@@ -80,13 +80,6 @@ export function AiJobDetail({id, admin = false}: { id: string; admin?: boolean }
         size={10}>{job.contentAvailable ? t('Khả dụng') : t('Đã hết hạn lưu trữ')}</T></View></Row>
       {job.error ? <Info tone="error">{t('Lỗi gần nhất')}: {job.error}</Info> : null}
     </Card>
-    {job.reviewTargets.length ?
-      <Card><T size={12} bold>{t('Lô transaction chờ duyệt')}</T>{job.reviewTargets.map(target => <Row
-        key={target.batchId} style={{alignItems: 'flex-start'}}><Icon name="business-outline" size={18}
-                                                                      color={c.primary}/><View style={{flex: 1}}><T
-        size={11} bold>{target.accountName}</T><T size={10}
-                                                  color={c.muted}>#{target.batchId.slice(0, 8).toUpperCase()} · {t(statusLabels[target.batchStatus as AttachmentAiStatus] || target.batchStatus)}</T></View><Badge>{t('{{n}} bản ghi chờ', {n: target.pendingItemCount})}</Badge></Row>)}
-      </Card> : null}
     <Section title={t('Lịch sử chuyển trạng thái')}/>
     {job.history.length ? job.history.map((event, index) => <Card key={`${event.createdAt}-${index}`} style={{
       gap: 8,

@@ -19,6 +19,12 @@ export const routes: Routes = [
         data: {titleKey: 'visits.title'}
       },
       {
+        path: 'admin/investment-ai-queue', canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/investment/investment-ai-queue.page').then(m => m.InvestmentAiQueuePage),
+        data: {titleKey: 'route.investmentAiQueue'}
+      },
+      {
         path: 'admin/investment-reports', canActivate: [adminGuard],
         loadComponent: () => import('./features/investment/admin-investment-summary.page').then(m => m.AdminInvestmentSummaryPage),
         data: {titleKey: 'investmentReports.admin.title'}
@@ -75,6 +81,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/investment/investment-statistics.page').then(m => m.InvestmentStatisticsPage),
         data: {titleKey: 'route.investmentStatistics'}
       },
+      {path: 'investment/cashflow', redirectTo: 'investment/statistics', pathMatch: 'full'},
       {
         path: 'investment/reports',
         loadComponent: () => import('./features/investment/investment-reports.page').then(m => m.InvestmentReportsPage),
@@ -86,12 +93,8 @@ export const routes: Routes = [
           import('./features/investment/investment-transaction.page').then(m => m.InvestmentTransactionPage),
         data: {titleKey: 'route.investmentTransactions'}
       },
-      {
-        path: 'investment/ai-queue',
-        loadComponent: () =>
-          import('./features/investment/investment-ai-queue.page').then(m => m.InvestmentAiQueuePage),
-        data: {titleKey: 'route.investmentAiQueue'}
-      },
+      {path: 'investment/ai-queue', redirectTo: 'investment/transactions', pathMatch: 'full'},
+      {path: 'investment/feed', redirectTo: 'investment/history', pathMatch: 'full'},
       {
         path: 'investment/history',
         loadComponent: () =>
@@ -151,6 +154,13 @@ export const routes: Routes = [
         data: {titleKey: 'route.adminAiProviders'}
       },
       {path: 'admin/ai-providers', redirectTo: 'admin/cloudflare-accounts', pathMatch: 'full'},
+      {
+        path: 'admin/file-storage',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/admin-file-storage/admin-file-storage.page')
+          .then(m => m.AdminFileStoragePage),
+        data: {titleKey: 'fileStorage.title'}
+      },
       {
         path: 'profile',
         loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage),

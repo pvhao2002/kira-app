@@ -29,12 +29,12 @@ erDiagram
  users ||--o{ password_vault_unlock_sessions : unlocks
  password_vault_modules ||--o{ password_vault_accounts : contains
  cloudflare_accounts ||--o{ attachments : stores
- investment_accounts ||--o{ investment_transaction_import_batches : imports
- investment_transaction_import_batches ||--o{ investment_transaction_import_files : contains
- investment_transaction_import_batches ||--o{ investment_transaction_import_items : stages
+ investment_accounts ||--o{ investment_transaction_import_files : links
+ investment_accounts ||--o{ investment_transaction_import_items : stages
  investment_accounts ||--o{ investment_account_transactions : records
  attachments ||--o{ investment_transaction_import_files : supplies
  investment_account_transactions }o--o{ attachments : sourced_from
+ investment_account_transactions ||--o{ investment_account_transaction_edits : edited_by
 ```
 
 `user_bank_credit_limits` có unique `(user_id, bank_id)`; các thẻ của cùng user và bank dùng chung bản ghi hạn mức này.
@@ -47,7 +47,9 @@ V20 thêm cấu hình cashback riêng theo `user_credit_cards`: `user_card_cashb
 
 `investment_accounts` là bảng hồ sơ độc lập theo user. Bảng không còn `platform_id` hoặc các cột balance/capital/profit/reward.
 
-V14 tạo `investment_account_transactions` làm lịch sử chính thức cùng các bảng batch/file/item staging và source links. Unique `(investment_account_id, deduplication_key)` và `(investment_account_id, external_transaction_id)` là lớp bảo vệ concurrent confirm cuối cùng. `attachments.ai_schema_version` giới hạn tái sử dụng AI result theo schema; `storage_purged_at` giữ audit/hash sau khi object R2 bị xóa.
+V14 tạo `investment_account_transactions` làm lịch sử chính thức cùng các bảng file/item staging và source links. Unique `(investment_account_id, deduplication_key)` và `(investment_account_id, external_transaction_id)` là lớp bảo vệ concurrent confirm cuối cùng. `attachments.ai_schema_version` giới hạn tái sử dụng AI result theo schema; `storage_purged_at` giữ audit/hash sau khi object R2 bị xóa.
+
+V41 đơn giản hóa nhập ảnh đầu tư: bỏ `investment_transaction_import_batches` và hai bảng báo cáo đối soát `investment_reconciliation_reports`/`investment_reconciliation_report_events`. `investment_transaction_import_files` thành bảng nối account↔attachment (`investment_account_id`, `attachment_id`, `processed_at` đánh dấu đã tạo item; unique `(investment_account_id, attachment_id)`; không còn `batch_id`/`status`/`error_code`); trạng thái upload lấy từ `attachments.ai_status`. `investment_transaction_import_items` thuộc account qua `investment_account_id` thay cho `batch_id`; hàng đợi review là item chưa có `confirmed_transaction_id` và chưa `SKIP`. Bảng mới `investment_account_transaction_edits` là lịch sử sửa append-only (`transaction_id`, `edited_by`, `edited_at`, `old_values`/`new_values` JSON), không update hoặc delete.
 
 V17 thêm capability tìm trọ: `lodging_listings` thuộc owner nhưng được đọc chung; `lodging_reference_locations` là danh mục điểm đến dùng chung; `lodging_listing_locations` giữ snapshot km/trạng thái Mapbox; `lodging_listing_images` liên kết attachment ảnh; `lodging_reviews` unique theo `(listing_id, user_id)` để mỗi user có đúng một review.
 

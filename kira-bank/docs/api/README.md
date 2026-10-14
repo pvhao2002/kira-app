@@ -92,10 +92,10 @@ CRUD `/api/v1/investment/accounts` chỉ quản lý hồ sơ. Request create/upd
 
 ### Investment Transaction Import
 
-- `POST /api/v1/investment/accounts/{accountId}/transaction-imports`: multipart field `files`, 1–10 ảnh JPEG/PNG/WebP, tối đa 10 MB/ảnh và 50 MB/batch; trả `202`. AI chưa cấu hình trả `503 AI_NOT_CONFIGURED`. Quá 5 batch/phút/user trả `429 IMPORT_RATE_LIMITED` và `Retry-After: 60`.
-- `GET /api/v1/investment/accounts/{accountId}/transaction-imports/{batchId}`: polling trạng thái batch, file errors và preview items.
-- `POST .../files/{attachmentId}/retry`: retry file AI lỗi khi batch chưa hoàn tất.
-- `POST .../{batchId}/confirm`: chỉ nhận batch `READY`, `READY_WITH_ERRORS` hoặc `PARTIALLY_CONFIRMED`; trạng thái khác trả `409 IMPORT_BATCH_NOT_REVIEWABLE`. Request nhận từng `itemId`, `version`, `selected`, dữ liệu đã sửa và `resolution` (`ACCEPT`, `MERGE_EXISTING`, `SAVE_AS_NEW`, `SKIP`). Backend không tin action/dedup key từ client và xử lý từng item bằng transaction độc lập.
+- `POST /api/v1/investment/accounts/{accountId}/transaction-imports`: multipart field `files`, 1–10 ảnh JPEG/PNG/WebP, tối đa 10 MB/ảnh và 50 MB/lần tải; trả `202` với `ImportState`. Không còn batch: mỗi ảnh được nối trực tiếp với account và AI chạy ngay sau khi upload (cron `AI_JOB_CRON`, mặc định `0 */15 * * * *`, chỉ là fallback/retry). AI chưa cấu hình trả `503 AI_NOT_CONFIGURED`. Quá 30 ảnh/phút/user trả `429 IMPORT_RATE_LIMITED` và `Retry-After: 60`; số file sai trả `400 INVALID_IMPORT_FILE_COUNT`, quá dung lượng trả `400 IMPORT_BATCH_TOO_LARGE`.
+- `GET /api/v1/investment/accounts/{accountId}/transaction-imports`: polling trạng thái, trả `ImportState` = `{ accountId, files, transactions }`. `files` là 20 ảnh gần nhất, mới nhất trước: `{ attachmentId, originalName, contentUrl, aiStatus, aiError, createdAt, committedCount }`, `aiStatus` là `PENDING|PROCESSING|READY|FAILED|CANCELLED|CONFIRMED` và `committedCount` là số giao dịch đã ghi từ ảnh. `transactions` là hàng đợi review: chỉ item chưa ghi và chưa `SKIP` (thường là `REVIEW`), gồm `itemId`, `version`, `transactionType`, `transactionStatus`, `amount`, `currency`, `transactionAt`, `externalTransactionId`, `description`, `rawText`, `confidence`, `processingAction`, `matchedTransactionId`, `warnings`.
+- Quy tắc auto-commit: sau khi AI xong, item có `processingAction` `INSERT`, `UPDATE` hoặc `DUPLICATE` được ghi tự động vào lịch sử giao dịch; chỉ item `REVIEW` (độ tin cậy thấp, trùng fingerprint, xung đột cần chọn) chờ user xử lý. Retry lỗi chạy lại bằng `POST /api/v1/investment/ai-jobs/{attachmentId}/run`, hủy bằng `.../cancel` (xem AI Queue).
+- `POST .../transaction-imports/confirm`: body `{ transactions: [...] }`, mỗi phần tử gồm `itemId`, `version`, `selected`, dữ liệu đã sửa và `resolution` (`ACCEPT`, `MERGE_EXISTING`, `SAVE_AS_NEW`, `SKIP`). Trả `{ inserted, updated, skipped, failed, results: [{ itemId, result, transactionId, errorCode }] }`; item không tồn tại hoặc thuộc account khác trả `FAILED` với `IMPORT_ITEM_NOT_FOUND`. Backend không tin action/dedup key từ client, xử lý từng item bằng transaction độc lập; confirm lặp không tạo transaction trùng.
 - Báo cáo đầu tư (`GET /api/v1/investment/reports/{type}`): xem [investment-reports.md](investment-reports.md).
 - `GET /api/v1/investment/accounts/{accountId}/transactions`: lọc `fromDate`, `toDate`, `type`, `status`, hỗ trợ page/size/sort.
 
@@ -105,10 +105,16 @@ CRUD `/api/v1/investment/accounts` chỉ quản lý hồ sơ. Request create/upd
 - `POST .../ai-jobs/{attachmentId}/cancel`: chỉ hủy job `PENDING`; nếu scheduler đã claim hoặc job đã terminal thì trả `409 AI_JOB_NOT_CANCELLABLE`.
 - `POST .../ai-jobs/{attachmentId}/run`: chạy nền ngay đúng một job `PENDING`/`FAILED`/`CANCELLED` và trả `202` với trạng thái `PROCESSING`; không drain toàn queue. Trạng thái không hợp lệ trả `409 AI_JOB_NOT_RUNNABLE`, provider chưa cấu hình trả `503 AI_NOT_CONFIGURED`, đủ 3 manual run đồng thời trả `429 AI_RUN_CAPACITY_EXCEEDED` và `Retry-After: 5`.
 - `GET .../ai-jobs/{attachmentId}/content`: trả ảnh nguồn có kiểm tra ownership; endpoint `/api/v1/admin/...` cho phép admin xem ảnh của job toàn hệ thống.
-- Response job có owner trong admin scope, trạng thái, attempt/model/error/timestamps, `canCancel`, `canRun`, `detectedJson` đã chuẩn hóa riêng theo attachment và `reviewTargets`. Mỗi review target gồm `accountId`, `accountName`, `batchId`, `batchStatus`, `createdAt`, `pendingItemCount`; chỉ liệt kê batch chưa kết thúc, cùng owner và còn draft item chưa hoàn tất, mới nhất trước. API không trả `aiRawResponse` vì raw response thuộc cả batch AI và có thể chứa kết quả của job khác.
-- Deep link review dùng `/app/investment/transactions?accountId={accountId}&batchId={batchId}#review`. Trang Transactions kiểm tra ownership bằng API user hiện có, polling batch đang `QUEUED`/`PROCESSING` và chỉ bật Confirm khi batch reviewable; không có API confirm dành cho admin.
+- Response job có owner trong admin scope, trạng thái, attempt/model/error/timestamps, `canCancel`, `canRun` và `detectedJson` đã chuẩn hóa riêng theo attachment. Không còn `reviewTargets`; review nằm ở `GET .../accounts/{accountId}/transaction-imports`. API không trả `aiRawResponse`.
+- Web: trang Transactions (`/app/investment/transactions?accountId={accountId}`) hiển thị danh sách ảnh đã tải kèm trạng thái, retry (FAILED/CANCELLED) và hủy (PENDING), cùng bảng review; hàng đợi AI toàn hệ thống chỉ dành cho admin tại `/app/admin/investment-ai-queue`. Các route cũ `/app/investment/ai-queue`, `/feed`, `/cashflow` redirect sang transactions/history/statistics.
 
-Batch đi qua `QUEUED`, `PROCESSING`, `READY`/`READY_WITH_ERRORS`, rồi `PARTIALLY_CONFIRMED` hoặc `CONFIRMED`; file lỗi toàn bộ có thể thành `FAILED`, còn batch có toàn bộ file bị hủy thành `CANCELLED`. Confirm trả counters và kết quả từng item; confirm lặp không tạo transaction trùng.
+Trạng thái upload là `attachments.ai_status` (`PENDING` → `PROCESSING` → `READY` → `CONFIRMED`, hoặc `FAILED`/`CANCELLED`); không còn trạng thái batch/file (`QUEUED`, `READY_WITH_ERRORS`, `PARTIALLY_CONFIRMED`...). `READY` chuyển `CONFIRMED` khi mọi item của ảnh đã ghi hoặc `SKIP`.
+
+Các endpoint đã gỡ (trả 404): `GET .../transaction-imports/{batchId}`, `POST .../{batchId}/files/{attachmentId}/retry`, `POST .../{batchId}/confirm` và toàn bộ báo cáo đối soát `/api/v1/investment/reconciliation-reports` + `/api/v1/admin/investment/reconciliation-reports/**`.
+
+`PUT /api/v1/investment/accounts/{accountId}/transactions/{transactionId}` sửa giao dịch đã ghi: body `{ transactionType, transactionStatus, amount, currency, transactionAt, externalTransactionId?, description?, version }`, trả `200` `TransactionResponse`. Lỗi: `404 INVESTMENT_TRANSACTION_NOT_FOUND`, `409 INVESTMENT_TRANSACTION_VERSION_CONFLICT`, `409 INVESTMENT_TRANSACTION_DUPLICATE`, `400 INVESTMENT_CURRENCY_MISMATCH`/`INVALID_IMPORT_TRANSACTION`. Mỗi lần sửa có thay đổi ghi một dòng append-only vào `investment_account_transaction_edits` (giá trị cũ/mới, người sửa, thời điểm); chưa có endpoint đọc lịch sử.
+
+`GET /api/v1/investment/statistics/operations` trả `{ updatedAt, accountId, ai: { pending, processing, ready, failed }, imports: { total, items: [{ accountId, accountName, createdAt, reviewCount }] } }` (không còn reconciliation).
 
 Amount được chuẩn hóa dương scale 4, currency phải khớp account, thời gian local mặc định theo `Asia/Ho_Chi_Minh` rồi lưu UTC. External ID tạo unique theo account; item không có external ID dùng fingerprint theo account/type/amount/currency/phút và collision luôn yêu cầu review. Transaction chỉ là lịch sử, không cập nhật account balance.
 
@@ -170,3 +176,14 @@ See [Travel API](travel.md) for the web trip planner, itinerary, packing, group 
 ## Login visitor tracking
 
 See [Login visits](login-visits.md) for the Admin visitor report, reload counting, proxy/IP attribution and retention.
+
+## Telegram bot
+
+- `POST /api/v1/telegram/link-code` (JWT): returns `{code, expiresAt}`; the code is valid for 10 minutes, single use.
+- `POST /api/v1/telegram/webhook` (public): Telegram updates, authenticated by the `X-Telegram-Bot-Api-Secret-Token` header.
+- Commands (private chat only): `/login <code>`, `/logout`, `/transaction [accountId]` (attach a receipt image),
+  `/upload [r2|hf]` (admin only, attach a file), `/statistic [yyyy-MM-dd yyyy-MM-dd]`.
+- Updates are stored in `telegram_updates` (durable dedupe by `update_id`); transient failures are retried up to 3 times
+  by a 30s scheduler, and finished rows are purged after 7 days.
+- Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_WEBHOOK_URL`; the webhook is registered on startup
+  when all three are set.

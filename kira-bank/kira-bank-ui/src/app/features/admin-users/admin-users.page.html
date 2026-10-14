@@ -12,10 +12,14 @@
   @else if (result(); as list) {
     @if (list.data.length) {
       <div class="table-wrap"><table>
-        <thead><tr><th>{{ t('fullName') }}</th><th>{{ t('email') }}</th><th>{{ t('phone') }}</th><th>{{ t('roles') }}</th><th>{{ t('status') }}</th></tr></thead>
+        <thead><tr><th>{{ t('fullName') }}</th><th>{{ t('email') }}</th><th>{{ t('phone') }}</th><th>{{ t('roles') }}</th><th>{{ t('status') }}</th><th>{{ t('actions') }}</th></tr></thead>
         <tbody>@for (user of list.data; track user.id) {
           <tr><td>{{ user.fullName }}</td><td>{{ user.email }}</td><td>{{ user.phone || '—' }}</td>
-            <td>{{ user.roles.join(', ') }}</td><td>{{ user.status }}</td></tr>
+            <td>{{ user.roles.join(', ') }}</td><td>{{ user.status }}</td>
+            <td>@if (!user.roles.includes('ROLE_ADMIN')) {
+              <button class="btn" type="button" [disabled]="statusBusy() === user.id" (click)="toggleStatus(user)">
+                {{ t(user.status === 'ACTIVE' ? 'lock' : 'unlock') }}</button>
+            }</td></tr>
         }</tbody>
       </table></div>
     } @else { <p>{{ t('empty') }}</p> }

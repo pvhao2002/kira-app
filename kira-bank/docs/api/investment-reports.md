@@ -47,7 +47,7 @@ Net-profit targets per currency and period (`MONTH` or `YEAR`), one per `(user, 
 
 ## Admin summary
 
-`GET /api/v1/admin/investment/reports/summary?fromDate&toDate` (ROLE_ADMIN via `/api/v1/admin/**`; default last 365 days, max 5 years). Pure SQL aggregation over completed transactions of all users, per currency (busiest first; the top-10 ranking is a MySQL window function, and zones with daylight saving are bucketed per calendar month): `totals` (transactions, distinct users/accounts, deposits, withdrawals, bonuses, net), `months` (`YYYY-MM` in the server time zone) and `topUsers` (10 by deposits + withdrawals, with email and full name). Web: `/app/admin/investment-reports`; mobile: `admin-investment-summary` (button on the admin reconciliation screen).
+`GET /api/v1/admin/investment/reports/summary?fromDate&toDate` (ROLE_ADMIN via `/api/v1/admin/**`; default last 365 days, max 5 years). Pure SQL aggregation over completed transactions of all users, per currency (busiest first; the top-10 ranking is a MySQL window function, and zones with daylight saving are bucketed per calendar month): `totals` (transactions, distinct users/accounts, deposits, withdrawals, bonuses, net), `months` (`YYYY-MM` in the server time zone) and `topUsers` (10 by deposits + withdrawals, with email and full name). Web: `/app/admin/investment-reports`; mobile: `admin-investment-summary` (button on the admin screen).
 
 ## Performance note
 

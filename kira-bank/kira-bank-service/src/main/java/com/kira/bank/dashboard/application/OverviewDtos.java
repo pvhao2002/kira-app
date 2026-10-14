@@ -25,7 +25,7 @@ public final class OverviewDtos {
                          Group<Due> overdue, Group<Due> dueToday, Group<Due> dueSoon, Group<Due> needsInput) {
     }
 
-    public record ImportTask(String batchId, Long accountId, String accountName, String status) {
+    public record ImportTask(Long accountId, String accountName, String status) {
     }
 
     public record DailyFlow(LocalDate date, BigDecimal deposits, BigDecimal withdrawals, BigDecimal bonuses) {

@@ -47,7 +47,7 @@ public final class InvestmentStatisticsDtos {
     }
 
     public record OperationsResponse(
-        Instant updatedAt, Long accountId, AiSummary ai, ImportSummary imports, ReconciliationSummary reconciliation
+        Instant updatedAt, Long accountId, AiSummary ai, ImportSummary imports
     ) {
     }
 
@@ -57,16 +57,6 @@ public final class InvestmentStatisticsDtos {
     public record ImportSummary(long total, List<ImportItem> items) {
     }
 
-    public record ImportItem(String batchId, Long accountId, String accountName, String status,
-                             Instant createdAt, int reviewCount) {
-    }
-
-    public record ReconciliationSummary(long total, long open, long inReview, long needsInfo,
-                                        List<ReconciliationItem> items) {
-    }
-
-    public record ReconciliationItem(Long id, Long accountId, String accountName, Long transactionId,
-                                     BigDecimal amount, String currency, String reason, String status,
-                                     Instant createdAt) {
+    public record ImportItem(Long accountId, String accountName, Instant createdAt, long reviewCount) {
     }
 }

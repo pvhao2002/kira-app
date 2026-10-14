@@ -21,7 +21,7 @@ public class HealthRepository {
     public String json(Object value) {
         try {
             return mapper.writeValueAsString(value);
-        } catch (Exception e) {
+        } catch (Exception _) {
             throw new IllegalStateException("Invalid health document");
         }
     }
@@ -29,7 +29,7 @@ public class HealthRepository {
     public <T> T read(String value, Class<T> type) {
         try {
             return mapper.readValue(value, type);
-        } catch (Exception e) {
+        } catch (Exception _) {
             throw new IllegalStateException("Invalid stored health document");
         }
     }

@@ -34,11 +34,11 @@ public class InvestmentTransactionItemConfirmationService {
     private final JdbcTemplate jdbc;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public ConfirmItemResult confirmOne(Long userId, Long accountId, Long batchDatabaseId,
+    public ConfirmItemResult confirmOne(Long userId, Long accountId,
                                         ConfirmItemRequest request) {
         InvestmentAccount account = accounts.findByIdAndUserIdAndDeletedAtIsNull(accountId, userId)
             .orElseThrow(() -> missing("INVESTMENT_ACCOUNT_NOT_FOUND"));
-        InvestmentTransactionImportItem item = items.findForUpdate(request.itemId(), batchDatabaseId)
+        InvestmentTransactionImportItem item = items.findForUpdate(request.itemId(), accountId)
             .orElseThrow(() -> missing("IMPORT_ITEM_NOT_FOUND"));
         if (item.getConfirmedTransactionId() != null) {
             return new ConfirmItemResult(item.getItemId(), "SKIPPED", item.getConfirmedTransactionId(), null);
@@ -47,7 +47,7 @@ public class InvestmentTransactionItemConfirmationService {
             return new ConfirmItemResult(item.getItemId(), "SKIPPED", null, null);
         }
         if (request.version() != item.getVersion()) {
-            throw bad("IMPORT_ITEM_VERSION_CONFLICT", "Kết quả đã thay đổi, vui lòng tải lại batch");
+            throw bad("IMPORT_ITEM_VERSION_CONFLICT", "Kết quả đã thay đổi, vui lòng tải lại");
         }
         if (!request.selected() || request.resolution() == InvestmentImportResolution.SKIP) {
             item.setProcessingAction(InvestmentProcessingAction.IGNORE);

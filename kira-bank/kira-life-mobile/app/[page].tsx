@@ -17,8 +17,6 @@ import {
 } from '../src/investment';
 import {ReportForm, Reports, TransactionDetail} from '../src/history';
 import {InvestmentAccountStats, InvestmentHistory, InvestmentTransactionDetail} from '../src/investmentHistory';
-import {InvestmentReportDetail, InvestmentReportForm, InvestmentReports} from '../src/investmentReports';
-import {AdminInvestmentReports} from '../src/adminInvestmentReports';
 import {AdminCloudflare} from '../src/adminCloudflare';
 import {AdminInvestmentQueue} from '../src/adminInvestmentQueue';
 import {AiJobDetail} from '../src/aiJobDetail';
@@ -40,7 +38,7 @@ import {AdminInvestmentSummaryScreen} from '../src/adminInvestmentSummary';
 import {Empty, Screen} from '../src/ui';
 import {useT} from '../src/i18n';
 
-const lateralPages = ['import', 'queue', 'investment-reports', 'investment-analytics'];
+const lateralPages = ['import', 'queue', 'investment-analytics'];
 export default function DetailRoute() {
   const params = useLocalSearchParams<{ page: string; id?: string; accountId?: string; attachmentId?: string }>();
   const id = params.id || '';
@@ -141,14 +139,6 @@ export default function DetailRoute() {
         return <InvestmentHistory initialFilter/>;
       case 'transaction-detail':
         return <InvestmentTransactionDetail id={id} accountId={accountId}/>;
-      case 'investment-report-create':
-        return <InvestmentReportForm accountId={accountId || ''} transactionId={id}/>;
-      case 'investment-reports':
-        return <InvestmentReports/>;
-      case 'investment-report-detail':
-        return <InvestmentReportDetail id={id}/>;
-      case 'admin-investment-reports':
-        return <AdminInvestmentReports/>;
       case 'admin-cloudflare':
         return <AdminCloudflare/>;
       case 'admin-ai-queue':

@@ -22,7 +22,7 @@ public class ClientIpResolver {
         if (!value.contains(":") && !value.matches("[0-9]{1,3}(\\.[0-9]{1,3}){3}")) return null;
         try {
             return InetAddress.getByName(value).getHostAddress();
-        } catch (Exception e) {
+        } catch (Exception _) {
             return null;
         }
     }

@@ -528,3 +528,147 @@
     display: none;
   }
 }
+
+/* Collapsible sidebar groups + desktop icon rail */
+.side-nav a span.nav-label {
+  width: auto;
+  text-align: left;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.side-nav a.active span:first-child {
+  color: #7dd3fc;
+}
+
+.group-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 8px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: #7891ac;
+  border-radius: 8px;
+}
+
+.group-toggle small {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: inherit;
+}
+
+.group-toggle.credit { color: #62aafd; }
+.group-toggle.investment { color: #38c9ac; }
+
+.group-toggle app-icon {
+  font-size: 14px;
+  transition: transform .18s ease;
+}
+
+.group-toggle:hover {
+  filter: brightness(1.25);
+}
+
+.nav-group.has-active > .group-toggle small {
+  color: #fff;
+}
+
+.nav-group.collapsed > .group-toggle app-icon {
+  transform: rotate(-90deg);
+}
+
+.nav-group.collapsed > .group-items {
+  display: none;
+}
+
+.rail-toggle {
+  display: none;
+}
+
+@media (min-width: 1051px) {
+  .rail-toggle {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: 26px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .06);
+    color: #cad6e6;
+    cursor: pointer;
+  }
+
+  .rail-toggle:hover {
+    background: rgba(255, 255, 255, .14);
+    color: #fff;
+  }
+
+  .app-layout > aside,
+  .page-area {
+    transition: width .2s ease, margin-left .2s ease, padding .2s ease;
+  }
+
+  .rail > aside {
+    width: 76px;
+    padding-inline: 10px;
+    overflow-x: hidden;
+  }
+
+  .rail .page-area {
+    margin-left: 76px;
+  }
+
+  .rail .brand {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .rail .brand-name,
+  .rail .nav-label,
+  .rail .group-toggle small,
+  .rail .group-toggle app-icon,
+  .rail .secure-note > div {
+    display: none;
+  }
+
+  .rail .rail-toggle {
+    position: static;
+    margin: 0 auto 8px;
+  }
+
+  .rail .nav-group {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+  }
+
+  .rail .group-toggle {
+    display: none;
+  }
+
+  .rail .nav-group.collapsed > .group-items {
+    display: block;
+  }
+
+  .rail .side-nav > a,
+  .rail .side-nav .group-items > a {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .rail .secure-note {
+    justify-content: center;
+    margin-inline: 0;
+    padding: 10px 0;
+  }
+}

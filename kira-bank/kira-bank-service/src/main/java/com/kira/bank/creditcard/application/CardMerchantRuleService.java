@@ -149,7 +149,7 @@ public class CardMerchantRuleService {
     private CardMerchantRule save(CardMerchantRule rule) {
         try {
             return rules.saveAndFlush(rule);
-        } catch (ObjectOptimisticLockingFailureException ex) {
+        } catch (ObjectOptimisticLockingFailureException _) {
             throw new ApiException(HttpStatus.CONFLICT, "MERCHANT_RULE_VERSION_CONFLICT",
                 "Quy tắc đã được cập nhật, vui lòng tải lại");
         }

@@ -44,7 +44,7 @@ public class AiHealthClient {
                 if (!failure.failover()) throw new IllegalStateException("HEALTH_AI_UNAVAILABLE");
                 if (failure.blocked()) accounts.markBlocked(credential.id(), failure.code());
                 else accounts.markCooldown(credential.id(), failure.cooldownUntil(), failure.code());
-            } catch (Exception e) {
+            } catch (Exception _) {
                 // Do not retain provider exceptions: they can contain URLs, credentials or health prompts.
                 throw new IllegalStateException("HEALTH_AI_INVALID_RESPONSE");
             }

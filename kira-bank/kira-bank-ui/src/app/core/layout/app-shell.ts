@@ -1,7 +1,7 @@
-import {ChangeDetectionStrategy, Component, computed, DestroyRef, ElementRef, HostListener, inject, signal, viewChild} from '@angular/core';
-import {Router, RouterLink, RouterLinkActive, RouterOutlet} from '@angular/router';
-import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {catchError, debounceTime, distinctUntilChanged, finalize, forkJoin, map, Observable, of, Subject, switchMap} from 'rxjs';
+import {ChangeDetectionStrategy, Component, computed, DestroyRef, effect, ElementRef, HostListener, inject, signal, untracked, viewChild} from '@angular/core';
+import {NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet} from '@angular/router';
+import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
+import {catchError, debounceTime, distinctUntilChanged, filter, finalize, forkJoin, map, Observable, of, Subject, switchMap} from 'rxjs';
 import {AuthStore} from '../auth/auth.store';
 import {LanguageService} from '../i18n/language.service';
 import {TranslationKey} from '../i18n/translations';
@@ -83,6 +83,12 @@ export class AppShell {
   readonly remoteSearchResults = signal<GlobalSearchResult[]>([]);
   readonly initials = computed(() => this.auth.user()?.fullName.split(' ').slice(-2).map(part => part[0]).join('').toUpperCase() ?? 'KL');
   readonly themeLabel = computed(() => this.i18n.t(`theme.${this.theme()}`));
+  readonly sidebarCollapsed = signal(AppShell.read('kira-nav-rail') === '1');
+  readonly expandedGroups = signal<ReadonlySet<string>>(new Set(JSON.parse(AppShell.read('kira-nav-expanded') ?? '[]')));
+  private readonly currentUrl = (() => {
+    const router = inject(Router);
+    return toSignal(router.events.pipe(filter(e => e instanceof NavigationEnd), map(() => router.url)), {initialValue: router.url});
+  })();
   readonly nav = computed<NavGroup[]>(() => {
     const groups: NavGroup[] = [
       {labelKey: 'travel.title', flow: 'travel', items: [
@@ -112,7 +118,6 @@ export class AppShell {
           {labelKey: 'shell.investmentStatistics', icon: 'trend-up', path: '/app/investment/statistics'},
           {labelKey: 'shell.investmentReports', icon: 'trend-up', path: '/app/investment/reports'},
           {labelKey: 'shell.investmentTransactions', icon: 'receipt', path: '/app/investment/transactions'},
-          {labelKey: 'shell.investmentAiQueue', icon: 'monitor', path: '/app/investment/ai-queue'},
           {labelKey: 'shell.investmentHistory', icon: 'clock', path: '/app/investment/history'}
         ]
       },
@@ -145,8 +150,10 @@ export class AppShell {
           {labelKey: 'shell.adminUsers', icon: 'users', path: '/app/admin/users'},
           {labelKey: 'visits.title', icon: 'globe', path: '/app/admin/login-visits'},
           {labelKey: 'investmentReports.admin.title', icon: 'trend-up', path: '/app/admin/investment-reports'},
+          {labelKey: 'shell.investmentAiQueue', icon: 'monitor', path: '/app/admin/investment-ai-queue'},
           {labelKey: 'shell.adminBanks', icon: 'bank', path: '/app/admin/banks'},
-          {labelKey: 'shell.adminAiProviders', icon: 'shield-check', path: '/app/admin/cloudflare-accounts'}
+          {labelKey: 'shell.adminAiProviders', icon: 'shield-check', path: '/app/admin/cloudflare-accounts'},
+          {labelKey: 'fileStorage.title', icon: 'dashboard', path: '/app/admin/file-storage'}
         ]
       });
     }
@@ -160,6 +167,10 @@ export class AppShell {
     });
 
     return groups;
+  });
+  readonly activeGroup = computed(() => {
+    const url = this.currentUrl().split(/[?#]/)[0];
+    return this.nav().find(group => group.items.some(item => url === item.path || url.startsWith(item.path + '/')))?.labelKey;
   });
   readonly pageSearchResults = computed<GlobalSearchResult[]>(() => {
     const pages = [
@@ -215,6 +226,10 @@ export class AppShell {
   };
 
   constructor() {
+    effect(() => {
+      const active = this.activeGroup();
+      if (active && !untracked(this.expandedGroups).has(active)) this.setGroupCollapsed(active, false);
+    });
     this.systemTheme.addEventListener('change', this.systemThemeListener);
     this.applyTheme();
     this.searchChanges.pipe(
@@ -243,6 +258,34 @@ export class AppShell {
 
   ngOnDestroy(): void {
     this.systemTheme.removeEventListener('change', this.systemThemeListener);
+  }
+
+  private static read(key: string): string | null {
+    try { return localStorage.getItem(key); } catch { return null; }
+  }
+
+  private static write(key: string, value: string): void {
+    try { localStorage.setItem(key, value); } catch { /* storage unavailable */ }
+  }
+
+  isGroupCollapsed(key: string): boolean {
+    return !this.expandedGroups().has(key);
+  }
+
+  toggleGroup(key: string): void {
+    this.setGroupCollapsed(key, !this.isGroupCollapsed(key));
+  }
+
+  toggleSidebar(): void {
+    this.sidebarCollapsed.update(v => !v);
+    AppShell.write('kira-nav-rail', this.sidebarCollapsed() ? '1' : '0');
+  }
+
+  private setGroupCollapsed(key: string, collapsed: boolean): void {
+    const next = new Set(this.expandedGroups());
+    if (collapsed) next.delete(key); else next.add(key);
+    this.expandedGroups.set(next);
+    AppShell.write('kira-nav-expanded', JSON.stringify([...next]));
   }
 
   cycleTheme(): void {

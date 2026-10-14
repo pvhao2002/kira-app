@@ -41,84 +41,76 @@
       }
     </div>
     <button class="primary" type="button" [disabled]="loading() || !accountId()" (click)="upload()">
-      {{ loading() ? i18n.t('investmentTransactions.uploading') : i18n.t('investmentTransactions.createBatch') }}
+      {{ loading() ? i18n.t('investmentTransactions.uploading') : i18n.t('investmentTransactions.uploadSubmit') }}
     </button>
   }
 </section>
 
-@if (batch(); as currentBatch) {
-  <section id="batch-review-summary" class="panel batch-panel" tabindex="-1">
+@if (stateLoading()) {
+  <section class="panel" role="status">{{ i18n.t('investmentTransactions.loadingState') }}</section>
+} @else if (state(); as current) {
+  <section class="panel batch-panel" aria-labelledby="investment-files-title">
     <div class="batch-heading">
-      <div><h2>{{ i18n.t('investmentTransactions.batchTitle') }}</h2><code>{{ currentBatch.batchId }}</code></div>
-      <span class="batch-status" [attr.data-status]="currentBatch.status">{{ importStatusLabel(currentBatch.status) }}</span>
+      <div><h2 id="investment-files-title">{{ i18n.t('investmentTransactions.filesTitle') }}</h2><p>{{ i18n.t('investmentTransactions.autoCommitHint') }}</p></div>
     </div>
-    <div class="summary-grid">
-      <div><strong>{{ currentBatch.summary.detected }}</strong><span>{{ i18n.t('investmentTransactions.detected') }}</span></div>
-      <div><strong>{{ currentBatch.summary.review }}</strong><span>{{ i18n.t('investmentTransactions.review') }}</span></div>
-      <div><strong>{{ currentBatch.summary.inserted }}</strong><span>{{ i18n.t('investmentTransactions.inserted') }}</span></div>
-      <div><strong>{{ currentBatch.summary.updated }}</strong><span>{{ i18n.t('investmentTransactions.updated') }}</span></div>
-      <div><strong>{{ currentBatch.summary.failed }}</strong><span>{{ i18n.t('investmentTransactions.failed') }}</span></div>
-    </div>
-    <div class="processing-files">
-      @for (file of currentBatch.files; track file.attachmentId) {
-        <article>
-          <div><strong>{{ file.originalName }}</strong><small>#{{ file.attachmentId }}</small></div>
-          <span [attr.data-file-status]="file.status">{{ importStatusLabel(file.status) }}</span>
-          @if (file.errorCode) { <code>{{ file.errorCode }}</code> }
-          @if (file.status === 'FAILED' || file.status === 'CANCELLED') {
-            <button type="button" (click)="retryFile(file.attachmentId)">{{ i18n.t('investmentTransactions.retryFile') }}</button>
-          }
-        </article>
-      }
-    </div>
-    @if (batchIsWaiting()) {
-      <div class="batch-state-note waiting" role="status">
-        <strong>{{ i18n.t('investmentTransactions.reviewWaitingTitle') }}</strong>
-        <span>{{ i18n.t('investmentTransactions.reviewWaitingDescription') }}</span>
+    @if (current.files.length) {
+      <div class="processing-files">
+        @for (file of current.files; track file.attachmentId) {
+          <article>
+            <div><strong>{{ file.originalName }}</strong><small>{{ file.createdAt | date:'yyyy-MM-dd HH:mm' }}</small></div>
+            <span [attr.data-file-status]="file.aiStatus">{{ importStatusLabel(file.aiStatus) }}</span>
+            @if (file.committedCount) { <small>{{ i18n.t('investmentTransactions.committedCount', {count: file.committedCount}) }}</small> }
+            @if (file.aiError) { <code>{{ file.aiError }}</code> }
+            @if (file.aiStatus === 'FAILED' || file.aiStatus === 'CANCELLED') {
+              <button type="button" (click)="retryFile(file.attachmentId)">{{ i18n.t('investmentTransactions.retryFile') }}</button>
+            }
+            @if (file.aiStatus === 'PENDING') {
+              <button type="button" (click)="cancelFile(file.attachmentId)">{{ i18n.t('investmentTransactions.cancelFile') }}</button>
+            }
+          </article>
+        }
       </div>
-    } @else if (batchIsReadOnly()) {
-      <div class="batch-state-note confirmed" role="status">
-        <strong>{{ i18n.t('investmentTransactions.reviewConfirmedTitle') }}</strong>
-        <span>{{ i18n.t('investmentTransactions.reviewConfirmedDescription') }}</span>
-      </div>
-    } @else if (currentBatch.status === 'FAILED' || currentBatch.status === 'CANCELLED') {
-      <div class="batch-state-note unavailable" role="status">
-        <strong>{{ i18n.t('investmentTransactions.reviewUnavailableTitle') }}</strong>
-        <span>{{ i18n.t('investmentTransactions.reviewUnavailableDescription') }}</span>
-      </div>
+    } @else {
+      <div class="batch-state-note" role="status"><strong>{{ i18n.t('investmentTransactions.filesEmpty') }}</strong></div>
     }
   </section>
 
-  @if (canConfirmBatch() && reviewItems().length) {
-    <section id="review" class="panel preview-panel" tabindex="-1" aria-labelledby="investment-review-title">
-      <div class="batch-heading">
-        <div><h2 id="investment-review-title">{{ i18n.t('investmentTransactions.reviewTitle') }}</h2><p>{{ i18n.t('investmentTransactions.reviewDescription') }}</p></div>
-        <button class="primary" type="button" [disabled]="loading() || !canConfirmBatch()" (click)="confirm()">{{ i18n.t('investmentTransactions.confirmSelected') }}</button>
-      </div>
-      <div class="table-scroll">
-        <table>
-          <thead><tr><th>{{ i18n.t('investmentTransactions.review') }}</th><th>{{ i18n.t('investmentTransactions.action') }}</th><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th>{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('field.currency') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th><th>{{ i18n.t('investmentTransactions.resolution') }}</th></tr></thead>
-          <tbody>
-            @for (item of reviewItems(); track item.itemId) {
-              <tr [class.needs-review]="item.processingAction === 'REVIEW'" [class.duplicate-row]="item.processingAction === 'DUPLICATE'">
-                <td><input type="checkbox" [(ngModel)]="item.selected" [attr.aria-label]="i18n.t('investmentTransactions.selectItem', {id: item.itemId})"></td>
-                <td><span class="action-badge" [attr.data-action]="item.processingAction">{{ processingActionLabel(item.processingAction) }}</span>
-                  @if (item.warnings.length) { <small class="warnings" [title]="item.warnings.join(', ')">{{ i18n.t('investmentTransactions.warnings', {count: item.warnings.length}) }}</small> }
-                </td>
-                <td><input type="datetime-local" [ngModel]="toLocalDateTime(item.transactionAt)" (ngModelChange)="updateTime(item, $event)"></td>
-                <td><app-custom-select [(ngModel)]="item.transactionType" [ariaLabel]="i18n.t('investmentTransactions.type')" [options]="reviewTypeOptions()" [placeholder]="i18n.t('investmentTransactions.notSelected')"></app-custom-select></td>
-                <td><app-custom-select [(ngModel)]="item.transactionStatus" [ariaLabel]="i18n.t('field.status')" [options]="reviewStatusOptions()" [placeholder]="i18n.t('investmentTransactions.notSelected')"></app-custom-select></td>
-                <td><input class="amount" type="number" min="0.0001" step="0.0001" [(ngModel)]="item.amount"></td>
-                <td><input class="currency" maxlength="3" [(ngModel)]="item.currency"></td>
-                <td><input [(ngModel)]="item.externalTransactionId"></td>
-                <td><textarea rows="2" maxlength="1000" [(ngModel)]="item.description"></textarea></td>
-                <td><button class="resolution" type="button" (click)="openResolution(item)">{{ resolutionLabel(item.resolution) }}</button></td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </section>
+  @if (reviewItems().length) {
+  <section id="review" class="panel preview-panel" tabindex="-1" aria-labelledby="investment-review-title">
+    <div class="batch-heading">
+      <div><h2 id="investment-review-title">{{ i18n.t('investmentTransactions.reviewTitle') }}</h2><p>{{ i18n.t('investmentTransactions.reviewDescription') }}</p></div>
+      <button class="primary" type="button" [disabled]="loading()" (click)="confirm()">{{ i18n.t('investmentTransactions.confirmSelected') }}</button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="check"><input type="checkbox" [checked]="allSelected()" (change)="toggleAll($any($event.target).checked)" [attr.aria-label]="i18n.t('investmentTransactions.confirmSelected')"></th>
+            <th>{{ i18n.t('investmentTransactions.action') }}</th><th>{{ i18n.t('investmentTransactions.dateTime') }}</th><th>{{ i18n.t('investmentTransactions.type') }}</th><th>{{ i18n.t('field.status') }}</th><th class="num">{{ i18n.t('field.amount') }}</th><th>{{ i18n.t('investmentTransactions.externalId') }}</th><th>{{ i18n.t('field.description') }}</th><th>{{ i18n.t('investmentTransactions.resolution') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of reviewItems(); track item.itemId) {
+            <tr [class.needs-review]="item.processingAction === 'REVIEW'" [class.duplicate-row]="item.processingAction === 'DUPLICATE'" [class.is-skipped]="!item.selected">
+              <td class="check"><input type="checkbox" [checked]="item.selected" (change)="toggleItem(item.itemId, $any($event.target).checked)" [attr.aria-label]="i18n.t('investmentTransactions.selectItem', {id: item.itemId})"></td>
+              <td><span class="action-badge" [attr.data-action]="item.processingAction">{{ processingActionLabel(item.processingAction) }}</span>
+                @if (item.warnings.length) { <small class="warnings" [title]="item.warnings.join(', ')">{{ i18n.t('investmentTransactions.warnings', {count: item.warnings.length}) }}</small> }
+              </td>
+              <td class="nowrap">{{ item.transactionAt ? (item.transactionAt | date:'yyyy-MM-dd HH:mm') : '—' }}</td>
+              <td>{{ item.transactionType ? transactionTypeLabel(item.transactionType) : '—' }}</td>
+              <td>{{ item.transactionStatus ? transactionStatusLabel(item.transactionStatus) : '—' }}</td>
+              <td class="num nowrap">{{ item.amount !== null ? (item.amount | number:'1.0-4') + ' ' + (item.currency ?? '') : '—' }}</td>
+              <td class="nowrap">{{ item.externalTransactionId || '—' }}</td>
+              <td class="desc">{{ item.description || '—' }}</td>
+              <td><button class="resolution" type="button" (click)="openResolution(item)">{{ resolutionLabel(item.resolution) }}</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  } @else {
+    <section class="panel"><p role="status">{{ i18n.t('investmentTransactions.reviewEmpty') }}</p></section>
   }
 }
 

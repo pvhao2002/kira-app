@@ -26,7 +26,7 @@ public class TravelRepository {
                 if (!object.has("checklist") || !object.get("checklist").isArray()) object.putArray("checklist");
             }
             return mapper.treeToValue(node, TripData.class);
-        } catch (Exception e) {
+        } catch (Exception _) {
             throw new IllegalStateException("Invalid stored travel document");
         }
     }
@@ -34,7 +34,7 @@ public class TravelRepository {
     private String json(TripData data) {
         try {
             return mapper.writeValueAsString(data);
-        } catch (Exception e) {
+        } catch (Exception _) {
             throw new IllegalStateException("Invalid travel document");
         }
     }

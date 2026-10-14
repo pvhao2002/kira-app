@@ -165,7 +165,7 @@ public class AiDocumentService {
         try {
             JsonNode code = objectMapper.readTree(body).path("errors").path(0).path("code");
             return code.isMissingNode() || code.isNull() ? null : code.asText();
-        } catch (JsonProcessingException ex) {
+        } catch (JsonProcessingException _) {
             return null;
         }
     }
@@ -175,10 +175,10 @@ public class AiDocumentService {
         if (value != null) {
             try {
                 return Instant.now().plusSeconds(Math.max(1, Long.parseLong(value.trim())));
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException _) {
                 try {
                     return ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
-                } catch (DateTimeException ignoredDate) {
+                } catch (DateTimeException _) {
                     // Fall through to the configured account cooldown.
                 }
             }

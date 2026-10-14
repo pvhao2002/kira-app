@@ -1,6 +1,7 @@
 package com.kira.bank.identity.application;
 
 import com.kira.bank.shared.web.ApiException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,7 @@ public class LoginRateLimiter {
     private final Duration emailWindow;
     private final Clock clock;
 
+    @Autowired
     public LoginRateLimiter(@Value("${app.login-rate-limit.max-attempts-per-ip:20}") int maxAttemptsPerIp,
                             @Value("${app.login-rate-limit.ip-window:PT5M}") Duration ipWindow,
                             @Value("${app.login-rate-limit.max-failures-per-email:5}") int maxFailuresPerEmail,
@@ -91,7 +93,7 @@ public class LoginRateLimiter {
             // Still full of live windows: refuse to track (and so refuse) the new key rather than grow unbounded.
             if (windows.size() >= MAX_TRACKED_KEYS) return new Window(now.plus(length), Integer.MAX_VALUE);
         }
-        return windows.compute(key, (ignored, current) -> current == null || !current.active(now)
+        return windows.compute(key, (_, current) -> current == null || !current.active(now)
             ? new Window(now.plus(length), 1)
             : new Window(current.resetAt(), current.count() + 1));
     }

@@ -52,13 +52,26 @@ public class OverviewRepository {
     }
 
     private enum ImportFilter {
-        NEEDS_REVIEW("b.status in ('READY','READY_WITH_ERRORS','PARTIALLY_CONFIRMED')"),
-        FAILED("b.status = 'FAILED'");
+        NEEDS_REVIEW("""
+            from investment_transaction_import_items i
+            join investment_accounts a on a.id = i.investment_account_id
+            where a.user_id = ? and a.deleted_at is null and i.deleted_at is null
+              and i.confirmed_transaction_id is null and (i.resolution is null or i.resolution <> 'SKIP')
+            """, "i.created_at"),
+        FAILED("""
+            from investment_transaction_import_files f
+            join attachments t on t.id = f.attachment_id
+            join investment_accounts a on a.id = f.investment_account_id
+            where a.user_id = ? and a.deleted_at is null and f.deleted_at is null and t.deleted_at is null
+              and t.ai_status = 'FAILED' and t.storage_purged_at is null
+            """, "f.created_at");
 
-        private final String condition;
+        private final String from;
+        private final String createdAt;
 
-        ImportFilter(String condition) {
-            this.condition = condition;
+        ImportFilter(String from, String createdAt) {
+            this.from = from;
+            this.createdAt = createdAt;
         }
     }
 
@@ -148,16 +161,11 @@ public class OverviewRepository {
     }
 
     private Group<ImportTask> imports(Long userId, ImportFilter filter) {
-        String from = """
-            from investment_transaction_import_batches b
-            join investment_accounts a on a.id = b.investment_account_id and a.user_id = b.user_id
-            where b.user_id = ? and b.deleted_at is null and a.deleted_at is null and
-            """ + filter.condition;
-        long count = Objects.requireNonNull(jdbc.queryForObject("select count(*) " + from, Long.class, userId));
-        var rows = jdbc.query("select b.batch_id, b.investment_account_id, a.account_name, b.status " + from
-                + " order by b.created_at asc, b.id asc limit 5",
-            (rs, row) -> new ImportTask(rs.getString("batch_id"), rs.getLong("investment_account_id"),
-                rs.getString("account_name"), rs.getString("status")), userId);
+        long count = Objects.requireNonNull(jdbc.queryForObject(
+            "select count(distinct a.id) " + filter.from, Long.class, userId));
+        var rows = jdbc.query("select a.id, a.account_name, '" + filter.name() + "' as status " + filter.from
+                + " group by a.id, a.account_name order by min(" + filter.createdAt + ") asc, a.id asc limit 5",
+            (rs, row) -> new ImportTask(rs.getLong("id"), rs.getString("account_name"), rs.getString("status")), userId);
         return new Group<>(count, rows);
     }
 

@@ -38,7 +38,7 @@ public class CardStatementAiProcessor {
                 try {
                     pages.add(new AiDocumentService.AiInputDocument(page.attachmentId(), page.mimeType(),
                         storage.download(page.r2AccountId(), page.storageKey())));
-                } catch (RuntimeException ex) {
+                } catch (RuntimeException _) {
                     metrics.counter("credit_card.statement_import.ai.failure", "reason", "storage").increment();
                     log.warn("Unable to read statement import {} page {} for AI processing",
                         claimed.importId(), page.attachmentId());

@@ -129,6 +129,6 @@ public class NotificationSocketHandler extends TextWebSocketHandler implements W
     private static void close(WebSocketSession session) {
         try {
             session.close(UNAUTHORIZED);
-        } catch (IOException ignored) { /* already gone */ }
+        } catch (IOException _) { /* already gone */ }
     }
 }

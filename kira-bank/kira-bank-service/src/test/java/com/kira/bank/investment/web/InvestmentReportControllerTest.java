@@ -29,7 +29,6 @@ class InvestmentReportControllerTest {
     @MockitoBean InvestmentReportService reports;
     @MockitoBean InvestmentService service;
     @MockitoBean InvestmentTransactionImportService imports;
-    @MockitoBean InvestmentReconciliationReportService reconciliation;
     @MockitoBean InvestmentStatisticsService statistics;
 
     @Test

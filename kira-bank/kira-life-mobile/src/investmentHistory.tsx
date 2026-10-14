@@ -2,7 +2,6 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {ActivityIndicator, Pressable, Share, View} from 'react-native';
 import {
   AccountResponse,
-  InvestmentReconciliationReportResponse,
   InvestmentStatisticsResponse,
   InvestmentTransactionStatus,
   InvestmentTransactionType,
@@ -388,7 +387,6 @@ export function InvestmentTransactionDetail({id, accountId}: { id: string; accou
   const [transaction, setTransaction] = useState<TransactionResponse | null>(null);
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [reports, setReports] = useState<InvestmentReconciliationReportResponse[]>([]);
   useEffect(() => {
     const parsedAccount = Number(accountId);
     const parsedTransaction = Number(id);
@@ -399,7 +397,6 @@ export function InvestmentTransactionDetail({id, accountId}: { id: string; accou
     Promise.all([api.getTransaction(parsedAccount, parsedTransaction), api.getAccount(parsedAccount)]).then(([loadedTransaction, loadedAccount]) => {
       setTransaction(loadedTransaction);
       setAccount(loadedAccount);
-      api.listAllReconciliationReports().then(all => setReports(all.filter(report => report.accountId === parsedAccount && report.transactionId === parsedTransaction))).catch(() => setReports([]));
     }).catch(() => setTransaction(null)).finally(() => setLoading(false));
   }, [id, accountId]);
   if (loading) return <Screen title={t('Chi tiết giao dịch')} back><ActivityIndicator color={c.primary}/></Screen>;
@@ -411,7 +408,6 @@ export function InvestmentTransactionDetail({id, accountId}: { id: string; accou
                                                                                                            color={c.muted}
                                                                                                            style={{flex: 1}}>{label}</T><T
     size={11} style={{flex: 1, textAlign: 'right'}}>{value}</T></Row>;
-  const openReports = reports.filter(report => report.status === 'OPEN' || report.status === 'IN_REVIEW' || report.status === 'NEEDS_INFO');
   return <Screen title={t('Chi tiết giao dịch')} subtitle={t('Sổ đối soát Đầu tư')} back><Card tint style={{
     alignItems: 'center',
     paddingVertical: 28,
@@ -434,16 +430,7 @@ export function InvestmentTransactionDetail({id, accountId}: { id: string; accou
     color={c.primary}>{t('THÔNG TIN TÀI KHOẢN & ĐỐI SOÁT')}</T></Row>{[[t('Tài khoản đối soát'), `${account.accountName} (${account.currency})`], [t('Mã tài khoản'), account.accountCode], [t('Mã giao dịch Kira'), String(transaction.id)], [t('Mã đối tác / Ngân hàng'), transaction.externalTransactionId || t('— (Không có)')], [t('Độ tin cậy AI'), transaction.confidence == null ? '—' : `${(transaction.confidence * 100).toFixed(0)}%`]].map(([label, value]) => infoRow(label, value))}
   </Card><Card><Row><Icon name="shield-checkmark-outline" color={c.lavender} size={16}/><T size={12} bold
                                                                                            color={c.lavender}>{t('CHI TIẾT NGUỒN DỮ LIỆU')}</T></Row>{[[t('Nguồn nhập bản ghi'), transaction.sourceAttachmentId ? t('Trích xuất ảnh (AI OCR)') : t('Nhập thủ công')], [t('Mã file SHA-256'), transaction.sourceFileHash || '—'], [t('Mô tả ghi chú'), transaction.description || '—'], [t('Nội dung nhận diện'), transaction.rawText || '—']].map(([label, value]) => infoRow(label, value))}
-  </Card><Card><Row><Icon name="search-outline" color={c.warning} size={16}/><T size={12} bold
-                                                                                color={c.warning}>{t('TRA SOÁT GIAO DỊCH')}</T></Row>{openReports.length ? <>
-      <Info tone="warning">{t('Giao dịch này đang có hồ sơ tra soát mở.')}</Info>{openReports.map(report => <Button
-      key={report.id} label={t('Mở hồ sơ tra soát')} kind="secondary"
-      onPress={() => go('investment-report-detail', {id: String(report.id)})}/>)}</> :
-    <Button label={t('Báo cáo sai lệch')} icon="document-text-outline" onPress={() => go('investment-report-create', {
-      id: String(transaction.id),
-      accountId: String(account.id)
-    })}/>}{reports.length > openReports.length ?
-    <Button label={t('Xem lịch sử tra soát')} kind="secondary" onPress={() => go('investment-reports')}/> : null}</Card><Info>{t('Dữ liệu được ghi nhận trong sổ đối soát đầu tư độc lập, không thay đổi số dư thực tế tại tài khoản đối tác.')}</Info><Button
+  </Card><Info>{t('Dữ liệu được ghi nhận trong sổ đối soát đầu tư độc lập, không thay đổi số dư thực tế tại tài khoản đối tác.')}</Info><Button
     label={t('Xem ảnh chứng từ gốc')} icon="image-outline" kind="secondary" disabled={!transaction.sourceAttachmentId}
     onPress={() => transaction.sourceAttachmentId ? go('source', {id: String(transaction.sourceAttachmentId)}) : notify(t('Giao dịch này chưa có ảnh chứng từ liên kết.'))}/>{transaction.sourceAttachmentId ?
     <Button label={t('Theo dõi xử lý AI')} icon="pulse-outline" kind="secondary"

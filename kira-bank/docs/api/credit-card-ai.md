@@ -82,7 +82,7 @@ theo thẻ; nhóm cashback của từng thẻ được suy ra từ MCC).
 ## Deep link thông báo
 
 `deepLink` lưu theo slug mobile. Web ánh xạ `/statement-import?id=X` → `/app/credit-card/statement-import?importId=X`,
-`/billing-cycle`, `/statement-pay` → `/app/credit-cards`, `/ai-result`, `/queue` → `/app/investment/ai-queue`; action "Mở"
+`/billing-cycle`, `/statement-pay` → `/app/credit-cards`, `/ai-result`, `/queue` → `/app/investment/transactions`; action "Mở"
 đánh dấu đã đọc rồi điều hướng. Mobile mở màn hình trạng thái chỉ-xem (thử lại/huỷ; xác nhận thực hiện trên web).
 
 ## Gợi ý thẻ

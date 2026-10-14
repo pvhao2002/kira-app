@@ -16,7 +16,7 @@ public class InvestmentTransactionImportItem extends AuditedEntity {
     @Column(nullable = false, unique = true, length = 36, columnDefinition = "CHAR(36)")
     private String itemId;
     @Column(nullable = false)
-    private Long batchId;
+    private Long investmentAccountId;
     @Column(nullable = false)
     private Long primaryAttachmentId;
     private Long matchedTransactionId;

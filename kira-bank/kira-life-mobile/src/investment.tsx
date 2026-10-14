@@ -15,8 +15,6 @@ import {
   errorMessage,
   errorMessageForCode,
   InvestmentAiJobResponse,
-  InvestmentImportBatchStatus,
-  InvestmentImportFileStatus,
   InvestmentImportResolution,
   InvestmentOverview,
   InvestmentStatisticsOverview,
@@ -73,11 +71,6 @@ const jobStatusLabels: Record<AttachmentAiStatus, string> = {
   CANCELLED: 'Đã hủy',
   CONFIRMED: 'Đã xác nhận'
 };
-const fileStatusLabels: Record<InvestmentImportFileStatus, string> = jobStatusLabels as Record<InvestmentImportFileStatus, string>;
-const batchStatusLabels: Record<InvestmentImportBatchStatus, string> = {
-  QUEUED: 'Đang chờ xử lý', PROCESSING: 'Đang xử lý', READY: 'Sẵn sàng duyệt', READY_WITH_ERRORS: 'Sẵn sàng (có lỗi)',
-  PARTIALLY_CONFIRMED: 'Đã xác nhận một phần', CONFIRMED: 'Đã xác nhận', FAILED: 'Thất bại', CANCELLED: 'Đã hủy',
-};
 
 export function InvestmentNav({active}: { active: string }) {
   const t = useT();
@@ -85,10 +78,7 @@ export function InvestmentNav({active}: { active: string }) {
   return <View style={{borderBottomWidth: 1, borderColor: c.border, paddingBottom: 8}}><Chips value={active} values={[{
     label: t('Tài khoản'),
     value: 'accounts'
-  }, {label: t('Nhập giao dịch'), value: 'import'}, {label: t('Hàng đợi AI'), value: 'queue'}, {
-    label: t('Tra soát'),
-    value: 'investment-reports'
-  }, {label: t('Báo cáo'), value: 'investment-analytics'}]} onChange={v => v === 'accounts' ? router.replace('/investment') : router.replace({
+  }, {label: t('Nhập giao dịch'), value: 'import'}, {label: t('Hàng đợi AI'), value: 'queue'}, {label: t('Báo cáo'), value: 'investment-analytics'}]} onChange={v => v === 'accounts' ? router.replace('/investment') : router.replace({
     pathname: '/[page]',
     params: {page: v}
   })}/></View>;
@@ -666,16 +656,20 @@ export function ImportScreen() {
   }, []);
 
   useEffect(() => {
-    const batch = review.batch;
-    if (!batch) return;
-    const active = batch.status === 'QUEUED' || batch.status === 'PROCESSING' || batch.files.some(f => f.status === 'PENDING' || f.status === 'PROCESSING');
-    if (!active) return;
+    if (accountId != null) review.load(accountId).catch(() => {
+    });
+  }, [accountId]);
+
+  const state = review.state?.accountId === accountId ? review.state : null;
+  const polling = !!state?.files.some(f => f.aiStatus === 'PENDING' || f.aiStatus === 'PROCESSING');
+  useEffect(() => {
+    if (!polling) return;
     const timer = setInterval(() => {
       review.refresh().catch(() => {
       });
     }, 4000);
     return () => clearInterval(timer);
-  }, [review.batch?.batchId, review.batch?.status]);
+  }, [polling, accountId]);
 
   async function pickImages() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -755,20 +749,17 @@ export function ImportScreen() {
     }
   }
 
-  const batch = review.batch;
-  const items = batch?.transactions ?? [];
+  const items = state?.transactions ?? [];
   const selectedCount = items.filter(it => review.effective(it.itemId)?.selected).length;
-  const reviewable = !!batch && ['READY', 'READY_WITH_ERRORS', 'PARTIALLY_CONFIRMED'].includes(batch.status);
 
-  return <Screen title={t('Nhập giao dịch')} back footer={batch ?
+  return <Screen title={t('Nhập giao dịch')} back footer={items.length ?
     <Row><View style={{flex: 1}}><T size={11} bold>{t('Đã chọn: {{n}} bản ghi', {n: selectedCount})}</T><T size={9}
                                                                                                            color={c.muted}>{t('Sẵn sàng lưu vào sổ GD')}</T></View><View
-      style={{flex: 2}}><Button label={t('Xác nhận các mục đã chọn')} disabled={!reviewable || !selectedCount}
+      style={{flex: 2}}><Button label={t('Xác nhận các mục đã chọn')} disabled={!selectedCount}
                                 onPress={() => setConfirmOpen(true)}/></View></Row> : undefined}>
     <InvestmentNav active="import"/><Row style={{justifyContent: 'space-between'}}><View><Badge>{t('Nhập ảnh')}</Badge></View><Pressable
       onPress={() => go('history')} accessibilityRole="button" style={{padding: 10, alignItems: 'center', justifyContent: 'center'}}><T
       size={11} color={c.muted}>◷ {t('Lịch sử')}</T></Pressable></Row>
-    {!batch ? <>
       <Card><T size={9} color={c.primary}>{t('TÀI KHOẢN NGUỒN *')}</T><Chips
         value={accountId != null ? String(accountId) : ''} onChange={v => setAccountId(Number(v))}
         values={accounts.map(a => ({
@@ -777,7 +768,7 @@ export function ImportScreen() {
         }))}/>{!accounts.length ? <T size={10} color={c.muted}>{t('Chưa có tài khoản đang hoạt động.')}</T> :
         <T size={10} color={c.success}>{t('Hoạt động')}</T>}</Card>
       <Section
-        title={t('1. Chọn ảnh giao dịch')}/><Info>{t('JPEG, PNG hoặc WebP • Tối đa 10 ảnh mỗi lô • Tổng tối đa 50 MB')}</Info>
+        title={t('1. Chọn ảnh giao dịch')}/><Info>{t('JPEG, PNG hoặc WebP • Tối đa 10 ảnh mỗi lần • Tổng tối đa 50 MB')}</Info><Info>{t('Giao dịch hợp lệ được AI ghi tự động. Chỉ các mục cần xem lại hiện ở bên dưới.')}</Info>
       <Card>{picked.length ? <View style={{flexDirection: 'row', flexWrap: 'wrap', gap: 10}}>{picked.map((f, i) => <View
         key={f.uri} style={{width: 96, gap: 4}}><Pressable accessibilityRole="button" accessibilityLabel={t('Xem ảnh')}
         onPress={() => setPreview(f)} style={{height: 96, borderRadius: 14, overflow: 'hidden', backgroundColor: c.elevated,
@@ -788,46 +779,30 @@ export function ImportScreen() {
         <Row><View style={{flex: 1}}><Button label={t('Chụp ảnh')} kind="secondary" icon="camera-outline"
                                              onPress={captureImage}/></View><View style={{flex: 1}}><Button
           label={t('Thư viện ảnh')} kind="secondary" icon="images-outline" onPress={pickImages}/></View></Row><Button
-          label={t('Tạo lô nhập')} icon="cloud-upload-outline" onPress={upload} loading={uploading}
+          label={t('Tải ảnh lên để xử lý')} icon="cloud-upload-outline" onPress={upload} loading={uploading}
           disabled={!picked.length}/><Button label={t('Nhập giao dịch thủ công')} kind="secondary" icon="create-outline"
                                              onPress={() => go('manual-transaction')}/></Card>
-    </> : <>
-      <Section title={t('2. Trạng thái lô nhập')}/><Card><Row><T size={11}
-                                                                 style={{flex: 1}}>{t('Trạng thái lô:')}</T><Badge>{t(batchStatusLabels[batch.status])}</Badge></Row><Info>{t('Ảnh đã được AI trích xuất xong. Bạn có thể kiểm tra và xác nhận bên dưới.')}</Info>
-      <Row style={{gap: 5}}>{[{label: t('Phát hiện'), value: batch.summary.detected}, {
-        label: t('Cần duyệt'),
-        value: batch.summary.review
-      }, {label: t('Thêm mới'), value: batch.summary.inserted}, {
-        label: t('Cập nhật'),
-        value: batch.summary.updated
-      }, {label: t('Lỗi'), value: batch.summary.failed}].map(item => <View key={item.label} style={{
-        flex: 1,
-        padding: 7,
-        backgroundColor: c.elevated,
-        borderRadius: 20,
-        alignItems: 'center'
-      }}><T size={8} color={c.muted}>{item.label}</T><T size={15} bold color={c.primary}>{item.value}</T></View>)}</Row>
-      {batch.files.map(f => <Row key={f.attachmentId}><Icon name="image-outline"/><T size={12}
-                                                                                     style={{flex: 1}}>{f.originalName}</T><Badge
-        tone={f.status === 'FAILED' ? 'error' : f.status === 'READY' || f.status === 'CONFIRMED' ? 'success' : 'primary'}>{t(fileStatusLabels[f.status])}</Badge>{f.status === 'FAILED' ? <>
-        <Pressable accessibilityRole="button" onPress={() => review.retryFile(f.attachmentId)} style={{padding: 8}}><T
+    {state?.files.length ? <><Section title={t('2. Ảnh đã tải lên')}/><Card>
+      {state.files.map(f => <Row key={f.attachmentId}><Icon name="image-outline"/><View style={{flex: 1}}><T size={12}>{f.originalName}</T>{f.committedCount ?
+        <T size={10} color={c.success}>{t('Đã ghi {{n}} giao dịch', {n: f.committedCount})}</T> : null}</View><Badge
+        tone={f.aiStatus === 'FAILED' ? 'error' : f.aiStatus === 'READY' || f.aiStatus === 'CONFIRMED' ? 'success' : 'primary'}>{t(jobStatusLabels[f.aiStatus])}</Badge>{f.aiStatus === 'FAILED' || f.aiStatus === 'CANCELLED' ? <>
+        <Pressable accessibilityRole="button" onPress={() => review.retryFile(f.attachmentId).catch(e => notify(t(errorMessage(e))))} style={{padding: 8}}><T
           size={11} color={c.primary}>{t('Thử lại')}</T></Pressable><Pressable accessibilityRole="button"
-                                                                               onPress={() => go('manual-transaction', {accountId: String(batch.accountId)})}
+                                                                               onPress={() => go('manual-transaction', {accountId: String(state.accountId)})}
                                                                                style={{padding: 8}}><T size={11}
                                                                                                        color={c.primary}>{t('Nhập thủ công')}</T></Pressable></> : null}
       </Row>)}
       <Button label={t('Mở hàng đợi AI')} kind="secondary" icon="hourglass-outline" onPress={() => go('queue')}/>
-    </Card>
+    </Card></> : null}
       <Section title={t('3. Duyệt và chỉnh sửa')}/><T size={11}
                                                       color={c.muted}>{t('Kiểm tra thông tin trước khi xác nhận. Hệ thống sẽ kiểm tra trùng lặp lần nữa khi lưu.')}</T>
       {items.length ? items.map(it => <ImportItemCard key={it.itemId} item={review.effective(it.itemId)!}/>) :
-        <Empty title={t('Đã xử lý hết bản ghi')} description={t('Tạo lô mẫu mới hoặc mở lịch sử để xem kết quả.')}
+        <Empty title={t('Không có mục cần xem lại')} description={t('Giao dịch hợp lệ đã được ghi tự động. Mở lịch sử để xem kết quả.')}
                action={t('Xem lịch sử')} onPress={() => go('history')}/>}
-      <Button label={t('Bắt đầu lô nhập mới')} kind="secondary" onPress={() => review.clear()}/>
       <Dialog visible={confirmOpen} title={t('Ghi nhận giao dịch mẫu?')}
               message={t('Các mục hợp lệ sẽ được lưu vào lịch sử. Mục xung đột tiếp tục được giữ để xử lý.')}
               onClose={() => setConfirmOpen(false)} onConfirm={doConfirm}/>
-    </>}{preview ? <Modal visible transparent animationType="fade" onRequestClose={() => setPreview(null)}><View style={{flex: 1,
+    {preview ? <Modal visible transparent animationType="fade" onRequestClose={() => setPreview(null)}><View style={{flex: 1,
       backgroundColor: 'rgba(0,0,0,0.9)', padding: 20, justifyContent: 'center', alignItems: 'center'}}><Pressable
       accessibilityRole="button" accessibilityLabel={t('Đóng')} onPress={() => setPreview(null)} style={{position: 'absolute',
         top: 45, right: 18, padding: 10, zIndex: 1}}><Icon name="close" size={28} color={c.text}/></Pressable><Image
@@ -840,10 +815,8 @@ export function Queue({attachmentId}: { attachmentId?: string }) {
   const api = useInvestmentApi();
   const t = useT();
   const {colors: c} = useTheme();
-  const review = useImportReview();
   const {notify, dialog} = useNotice();
   const [filter, setFilter] = useState<'all' | AttachmentAiStatus>('all');
-  const [accountFilter, setAccountFilter] = useState('all');
   const [jobs, setJobs] = useState<InvestmentAiJobResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelId, setCancelId] = useState<number | null>(null);
@@ -863,9 +836,7 @@ export function Queue({attachmentId}: { attachmentId?: string }) {
   }, [jobs, load]);
 
   const focusedAttachmentId = Number(attachmentId);
-  const accountOptions = [...new Map(jobs.flatMap(job => job.reviewTargets.map(target => [String(target.accountId), target.accountName] as const))).entries()];
-  const shownJobs = jobs
-    .filter(job => accountFilter === 'all' || job.reviewTargets.some(target => String(target.accountId) === accountFilter))
+  const shownJobs = [...jobs]
     .sort((left, right) => (left.attachmentId === focusedAttachmentId ? -1 : right.attachmentId === focusedAttachmentId ? 1 : 0));
 
   async function run(id: number) {
@@ -890,20 +861,6 @@ export function Queue({attachmentId}: { attachmentId?: string }) {
       notify(t(errorMessage(e)));
     } finally {
       setCancelId(null);
-    }
-  }
-
-  async function openReview(job: InvestmentAiJobResponse) {
-    const target = job.reviewTargets[0];
-    if (!target) {
-      notify(t('Chưa có lô nhập để duyệt.'));
-      return;
-    }
-    try {
-      await review.loadBatch(target.accountId, target.batchId);
-      go('import');
-    } catch (e) {
-      notify(t(errorMessage(e)));
     }
   }
 
@@ -939,12 +896,6 @@ export function Queue({attachmentId}: { attachmentId?: string }) {
                n: shownJobs.filter(j => j.status === value).length
              })
            }))]}/>
-    {accountOptions.length > 1 ? <><T size={10} color={c.muted}>{t('Lọc theo tài khoản')}</T><Chips
-      value={accountFilter} onChange={setAccountFilter}
-      values={[{value: 'all', label: t('Tất cả tài khoản')}, ...accountOptions.map(([value, label]) => ({
-        value,
-        label
-      }))]}/></> : null}
     {loading ? <ActivityIndicator color={c.primary}/> : shownJobs.length ? shownJobs.map(j => <Card key={j.attachmentId}
                                                                                                     style={{
                                                                                                       borderWidth: 1,
@@ -954,17 +905,13 @@ export function Queue({attachmentId}: { attachmentId?: string }) {
       <Row><Icon name={j.status === 'PENDING' ? 'hourglass-outline' : 'document-text-outline'}
                  color={j.status === 'READY' ? c.success : c.primary}/><View style={{flex: 1}}><T size={12}
                                                                                                   bold>{j.originalName}</T><T
-        size={10} color={c.muted}>#{j.attachmentId} • {(j.size / 1024).toFixed(0)} KB</T>{j.reviewTargets.length ?
-        <T size={9}
-           color={c.muted}>{t('Account')}: {j.reviewTargets.map(target => target.accountName).filter((name, index, names) => names.indexOf(name) === index).join(', ')}</T> : null}
+        size={10} color={c.muted}>#{j.attachmentId} • {(j.size / 1024).toFixed(0)} KB</T>
       </View><View style={{maxWidth: '36%'}}><Badge
         tone={j.status === 'FAILED' ? 'error' : j.status === 'READY' || j.status === 'CONFIRMED' ? 'success' : 'primary'}>{t(jobStatusLabels[j.status]).toUpperCase()}</Badge></View></Row>
       <Row><View style={{flex: 1}}><T size={10} color={c.muted}>{t('Số lần chạy')}</T><T
         size={12}>{j.attemptCount} / {j.maxAttempts}</T></View><View style={{alignItems: 'flex-end'}}><T size={10}
                                                                                                          color={c.muted}>{t('Thời gian tạo')}</T><T
-        size={11}>{dateLabel(j.createdAt)}</T></View></Row>{j.reviewTargets.length ?
-      <Row><T size={10} color={c.muted} style={{flex: 1}}>{t('Bản ghi cần duyệt')}</T><T size={11} color={c.primary}
-                                                                                         bold>{j.reviewTargets.reduce((sum, target) => sum + target.pendingItemCount, 0)}</T></Row> : null}{j.model ?
+        size={11}>{dateLabel(j.createdAt)}</T></View></Row>{j.model ?
       <T size={9} color={c.muted}>{t('Model AI')}: {j.model}</T> : null}
       {j.status === 'PROCESSING' ? <><Progress value={60}/><T size={11}
                                                               color={c.primary}>⟳ {t('Đang trích xuất dữ liệu và chuẩn hóa…')}</T></> : null}{j.status === 'READY' && j.completedAt ?
@@ -975,7 +922,7 @@ export function Queue({attachmentId}: { attachmentId?: string }) {
       <Row style={{
         gap: 6,
         flexWrap: 'wrap'
-      }}>{action(t('Chi tiết'), () => go('ai-job-detail', {id: String(j.attachmentId)}))}{action(t('Xem ảnh'), () => go('source', {id: String(j.attachmentId)}))}{j.status === 'READY' ? <>{action(t('Kết quả AI'), () => go('ai-result', {id: String(j.attachmentId)}))}{action(t('Duyệt & Xác nhận →'), () => openReview(j), true)}</> : j.status === 'CONFIRMED' ? action(t('Xem lịch sử'), () => go('history')) : j.status === 'CANCELLED' ? null : j.status === 'FAILED' ? <>{action(t('Thử lại'), () => run(j.attachmentId), false, runningIds.includes(j.attachmentId) || !j.canRun)}{action(t('Nhập thủ công'), () => go('manual-transaction', j.reviewTargets[0]?.accountId ? {accountId: String(j.reviewTargets[0].accountId)} : {}), true)}</> : action(j.status === 'PROCESSING' ? t('Đang xử lý…') : t('Chạy công việc'), () => run(j.attachmentId), false, runningIds.includes(j.attachmentId) || j.status === 'PROCESSING' || !j.canRun)}</Row>
+      }}>{action(t('Chi tiết'), () => go('ai-job-detail', {id: String(j.attachmentId)}))}{action(t('Xem ảnh'), () => go('source', {id: String(j.attachmentId)}))}{j.status === 'READY' ? <>{action(t('Kết quả AI'), () => go('ai-result', {id: String(j.attachmentId)}))}{action(t('Xem giao dịch cần duyệt →'), () => go('import'), true)}</> : j.status === 'CONFIRMED' ? action(t('Xem lịch sử'), () => go('history')) : j.status === 'CANCELLED' ? null : j.status === 'FAILED' ? <>{action(t('Thử lại'), () => run(j.attachmentId), false, runningIds.includes(j.attachmentId) || !j.canRun)}{action(t('Nhập thủ công'), () => go('manual-transaction'), true)}</> : action(j.status === 'PROCESSING' ? t('Đang xử lý…') : t('Chạy công việc'), () => run(j.attachmentId), false, runningIds.includes(j.attachmentId) || j.status === 'PROCESSING' || !j.canRun)}</Row>
       {j.canCancel ? <Pressable accessibilityRole="button" accessibilityLabel={t('Hủy công việc')}
                                 onPress={() => setCancelId(j.attachmentId)} style={{alignSelf: 'flex-end', padding: 8}}><T
         size={11} color={c.error}>⊗ {t('Hủy công việc')}</T></Pressable> : null}
@@ -1034,7 +981,6 @@ export function AiResult({id, admin = false}: { id: string; admin?: boolean }) {
   const t = useT();
   const {lang} = useLanguage();
   const {colors: c} = useTheme();
-  const review = useImportReview();
   const {notify, dialog} = useNotice();
   const [job, setJob] = useState<InvestmentAiJobResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1045,20 +991,6 @@ export function AiResult({id, admin = false}: { id: string; admin?: boolean }) {
   if (loading) return <Screen title={t('Kết quả AI chuẩn hóa')} back><ActivityIndicator color={c.primary}/></Screen>;
   const drafts: AiTransactionDraftResponse[] = job?.detectedJson?.transactions || [];
   const ready = job && (job.status === 'READY' || job.status === 'CONFIRMED');
-
-  async function toReview() {
-    const target = job?.reviewTargets[0];
-    if (!target) {
-      notify(t('Chưa có lô nhập để duyệt.'));
-      return;
-    }
-    try {
-      await review.loadBatch(target.accountId, target.batchId);
-      go('import');
-    } catch (e) {
-      notify(t(errorMessage(e)));
-    }
-  }
 
   return <Screen title={t('Kết quả AI chuẩn hóa')} back><T size={12}
                                                            color={c.muted}>{job?.originalName || t('Không tìm thấy công việc')}</T>{ready ? <>
@@ -1089,7 +1021,7 @@ export function AiResult({id, admin = false}: { id: string; admin?: boolean }) {
       <Card><T size={12}>{JSON.stringify(drafts, null, 2)}</T></Card>}
     <Button label={t('Xem ảnh gốc')} kind="secondary"
             onPress={() => go(admin ? 'admin-source' : 'source', {id})}/>{!admin ?
-    <Button label={t('Chuyển đến duyệt & xác nhận')} onPress={toReview}/> : null}
+    <Button label={t('Chuyển đến duyệt & xác nhận')} onPress={() => go('import')}/> : null}
   </> : <Empty title={t('Kết quả chưa sẵn sàng')} action={t('Mở hàng đợi')} onPress={() => go('queue')}/>}{dialog}
   </Screen>;
 }
@@ -1191,18 +1123,18 @@ export function DecisionScreen({id}: { id: string }) {
 }
 
 export function ConfirmationResult({partial}: { partial: boolean }) {
-  const {batch, lastResult, clear} = useImportReview();
+  const {state, lastResult, clear} = useImportReview();
   const t = useT();
   const {lang} = useLanguage();
   const {colors: c} = useTheme();
   const r = lastResult ?? {inserted: 0, updated: 0, skipped: 0, failed: 0, results: []};
 
   function itemFor(itemId: string) {
-    return batch?.transactions.find(tx => tx.itemId === itemId);
+    return state?.transactions.find(tx => tx.itemId === itemId);
   }
 
   return <Screen title={t('Kết quả xác nhận')}
-                 subtitle={batch ? `#${batch.batchId.slice(0, 8).toUpperCase()}` : undefined} back>
+                 back>
     <Card tint style={{alignItems: partial ? 'flex-start' : 'center', paddingVertical: 24}}><Icon
       name={partial ? 'warning-outline' : 'checkmark-circle'} size={partial ? 32 : 58}
       color={partial ? c.error : c.primary}/><Badge

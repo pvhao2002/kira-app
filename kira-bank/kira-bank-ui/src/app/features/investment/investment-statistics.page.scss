@@ -23,3 +23,4 @@
 @media (max-width:900px) { .metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 0; }.metric-grid article:nth-child(2),.metric-grid article:nth-child(4) { border-right:0; }.metric-grid article:nth-child(3) { padding-left:0; }.operation-grid { grid-template-columns:1fr; } }
 @media (max-width:600px) { .page-heading { flex-direction:column; }.filters { align-items:stretch; }.filters label,.filters select,.filters input,.quick,.apply { width:100%; }.quick button { flex:1; }.panel { padding:15px; }.metric-grid strong { font-size:16px; }.metric-grid article { padding-inline:9px; }.metric-grid article:first-child,.metric-grid article:nth-child(3) { padding-left:0; }.metric-grid article:nth-child(2),.metric-grid article:nth-child(4) { padding-right:0; } }
 .heading-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.cashflow-title { margin:24px 0 12px; font-size:18px; }

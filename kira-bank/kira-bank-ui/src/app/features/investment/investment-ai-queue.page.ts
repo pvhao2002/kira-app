@@ -2,24 +2,18 @@ import {ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, 
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {Router} from '@angular/router';
 import {catchError, of, Subscription, switchMap, timer} from 'rxjs';
 import {ApiService} from '../../core/services/api.service';
-import {AuthStore} from '../../core/auth/auth.store';
 import {LanguageService} from '../../core/i18n/language.service';
 import {ToastService} from '../../core/services/toast.service';
 import {
   InvestmentAiJob,
   InvestmentAiJobStatus,
-  InvestmentAiReviewTarget,
-  InvestmentImportBatchStatus,
   PageMeta,
   PageResponse
 } from '../../shared/models/api.models';
 import {IconComponent, type IconName} from '../../shared/icon/icon';
 import {dateFormat} from '../../core/i18n/formatters';
-
-type QueueScope = 'all' | 'mine';
 
 @Component({
   selector: 'app-investment-ai-queue',
@@ -32,11 +26,9 @@ export class InvestmentAiQueuePage {
   private static readonly PAGE_SIZE = 20;
   private static readonly ACTIVE_STATUSES = new Set<InvestmentAiJobStatus>(['PENDING', 'PROCESSING']);
 
-  readonly auth = inject(AuthStore);
   readonly i18n = inject(LanguageService);
   readonly jobs = signal<InvestmentAiJob[]>([]);
   readonly meta = signal<PageMeta>({page: 0, size: InvestmentAiQueuePage.PAGE_SIZE, totalElements: 0, totalPages: 0});
-  readonly scope = signal<QueueScope>(this.auth.admin() ? 'all' : 'mine');
   readonly status = signal('');
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -44,11 +36,9 @@ export class InvestmentAiQueuePage {
   readonly pendingCancel = signal<InvestmentAiJob | null>(null);
   readonly jsonJob = signal<InvestmentAiJob | null>(null);
   readonly imageJob = signal<InvestmentAiJob | null>(null);
-  readonly reviewJob = signal<InvestmentAiJob | null>(null);
   readonly imageUrl = signal<string | null>(null);
   readonly imageLoading = signal(false);
   readonly imageError = signal<string | null>(null);
-  readonly isAdminScope = computed(() => this.auth.admin() && this.scope() === 'all');
   readonly jsonText = computed(() => JSON.stringify(this.jsonJob()?.detectedJson ?? {}, null, 2));
   readonly rangeStart = computed(() => this.meta().totalElements ? this.meta().page * this.meta().size + 1 : 0);
   readonly rangeEnd = computed(() => Math.min((this.meta().page + 1) * this.meta().size, this.meta().totalElements));
@@ -64,12 +54,10 @@ export class InvestmentAiQueuePage {
 
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly previousStatuses = new Map<number, InvestmentAiJobStatus>();
   private polling?: Subscription;
   private imageRequest?: Subscription;
-  private reviewTrigger?: HTMLElement;
   private hasSnapshot = false;
 
   constructor() {
@@ -88,43 +76,6 @@ export class InvestmentAiQueuePage {
     } else {
       this.startPolling(false);
     }
-  }
-
-  @HostListener('document:keydown', ['$event'])
-  modalKeydown(event: KeyboardEvent): void {
-    if (!this.reviewJob()) return;
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.closeReviewTargets();
-      return;
-    }
-    if (event.key !== 'Tab') return;
-
-    const dialog = document.querySelector<HTMLElement>('.review-target-dialog');
-    const controls = Array.from(dialog?.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    ) ?? []);
-    if (!controls.length) return;
-    const first = controls[0];
-    const last = controls[controls.length - 1];
-    if (!dialog?.contains(document.activeElement)) {
-      event.preventDefault();
-      (event.shiftKey ? last : first).focus();
-    } else if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
-
-  changeScope(scope: QueueScope): void {
-    if (!this.auth.admin() || this.scope() === scope) return;
-    this.scope.set(scope);
-    this.closeDialogs();
-    this.meta.update(meta => ({...meta, page: 0}));
-    this.startPolling(true);
   }
 
   changeStatus(status: string): void {
@@ -155,7 +106,7 @@ export class InvestmentAiQueuePage {
     if (!job) return;
     const id = job.attachmentId;
     this.setActing(id, true);
-    this.api.cancelInvestmentAiJob(id, this.isAdminScope())
+    this.api.cancelInvestmentAiJob(id, true)
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: job => {
         this.updateJob(job);
@@ -176,7 +127,7 @@ export class InvestmentAiQueuePage {
     const id = job.attachmentId;
     if (!job.canRun || this.isActing(id)) return;
     this.setActing(id, true);
-    this.api.runInvestmentAiJob(id, this.isAdminScope())
+    this.api.runInvestmentAiJob(id, true)
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: runningJob => {
         this.updateJob(runningJob);
@@ -189,47 +140,6 @@ export class InvestmentAiQueuePage {
         this.setActing(id, false);
         this.error.set(this.i18n.t('investmentAiQueue.actionError'));
       }
-    });
-  }
-
-  review(job: InvestmentAiJob, event: Event): void {
-    if (job.status !== 'READY' || this.reviewDisabledReason(job) || this.isActing(job.attachmentId)) return;
-    if (job.reviewTargets.length === 1) {
-      void this.openReviewTarget(job.reviewTargets[0]);
-      return;
-    }
-    this.reviewTrigger = event.currentTarget as HTMLElement;
-    this.reviewJob.set(job);
-    setTimeout(() => document.querySelector<HTMLElement>('.review-target-card')?.focus());
-  }
-
-  reviewDisabledReason(job: InvestmentAiJob): string | null {
-    if (this.isAdminScope() && job.owner?.userId !== this.auth.user()?.id) {
-      return this.i18n.t('investmentAiQueue.reviewOwnerOnly');
-    }
-    if (!job.reviewTargets.length) return this.i18n.t('investmentAiQueue.reviewUnavailable');
-    return null;
-  }
-
-  reviewAriaLabel(job: InvestmentAiJob): string {
-    const reason = this.reviewDisabledReason(job);
-    return reason
-      ? `${this.i18n.t('investmentAiQueue.reviewAndConfirm')}. ${reason}`
-      : this.i18n.t('investmentAiQueue.reviewAndConfirm');
-  }
-
-  closeReviewTargets(restoreFocus = true): void {
-    this.reviewJob.set(null);
-    const trigger = this.reviewTrigger;
-    this.reviewTrigger = undefined;
-    if (restoreFocus && trigger?.isConnected) setTimeout(() => trigger.focus());
-  }
-
-  openReviewTarget(target: InvestmentAiReviewTarget): Promise<boolean> {
-    this.closeReviewTargets(false);
-    return this.router.navigate(['/app/investment/transactions'], {
-      queryParams: {accountId: target.accountId, batchId: target.batchId},
-      fragment: 'review'
     });
   }
 
@@ -248,7 +158,7 @@ export class InvestmentAiQueuePage {
     this.imageLoading.set(true);
     this.imageError.set(null);
     this.imageRequest?.unsubscribe();
-    this.imageRequest = this.api.investmentAiJobContent(job.attachmentId, this.isAdminScope())
+    this.imageRequest = this.api.investmentAiJobContent(job.attachmentId, true)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: blob => {
@@ -290,14 +200,6 @@ export class InvestmentAiQueuePage {
     }
   }
 
-  batchStatusLabel(status: InvestmentImportBatchStatus): string {
-    const aliases: Record<InvestmentImportBatchStatus, string> = {
-      QUEUED: 'queued', PROCESSING: 'processing', READY: 'ready', READY_WITH_ERRORS: 'readyWithErrors',
-      PARTIALLY_CONFIRMED: 'partiallyConfirmed', CONFIRMED: 'confirmed', FAILED: 'failed', CANCELLED: 'cancelled'
-    };
-    return this.i18n.t(`investmentTransactions.importStatus.${aliases[status]}`);
-  }
-
   formatDateTime(value: string | null): string {
     if (!value) return '—';
     const date = new Date(value);
@@ -323,7 +225,7 @@ export class InvestmentAiQueuePage {
     if (resetStatuses || !this.jobs().length) this.loading.set(true);
     this.polling = timer(0, 5000).pipe(
       switchMap(() => this.api.investmentAiJobs(
-        this.isAdminScope(), this.status(), this.meta().page, InvestmentAiQueuePage.PAGE_SIZE
+        true, this.status(), this.meta().page, InvestmentAiQueuePage.PAGE_SIZE
       ).pipe(catchError(() => {
         this.loading.set(false);
         this.error.set(this.i18n.t('investmentAiQueue.loadError'));
@@ -362,15 +264,6 @@ export class InvestmentAiQueuePage {
     if (json) this.jsonJob.set(jobs.find(job => job.attachmentId === json.attachmentId) ?? json);
     const image = this.imageJob();
     if (image) this.imageJob.set(jobs.find(job => job.attachmentId === image.attachmentId) ?? image);
-    const review = this.reviewJob();
-    if (review) {
-      const latest = jobs.find(job => job.attachmentId === review.attachmentId);
-      if (!latest || latest.status !== 'READY' || !latest.reviewTargets.length) {
-        this.closeReviewTargets();
-      } else {
-        this.reviewJob.set(latest);
-      }
-    }
   }
 
   private updateJob(updated: InvestmentAiJob): void {
@@ -390,7 +283,6 @@ export class InvestmentAiQueuePage {
     this.pendingCancel.set(null);
     this.closeJson();
     this.closeImage();
-    this.closeReviewTargets(false);
   }
 
   private revokeImageUrl(): void {

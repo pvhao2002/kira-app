@@ -1,4 +1,7 @@
 export const investmentReportsEnglish = {
+  'investmentCashflow.title': 'Deposit & withdrawal report', 'investmentCashflow.description': 'Total deposits, withdrawals and their difference, by day, month or year.',
+  'investmentCashflow.totalDeposits': 'Total deposits', 'investmentCashflow.totalWithdrawals': 'Total withdrawals', 'investmentCashflow.diff': 'Difference (withdrawals - deposits)',
+  'investmentCashflow.barChart': 'Deposits vs withdrawals', 'investmentCashflow.lineChart': 'Difference over time',
   'route.investmentReports': 'Investment reports', 'shell.investmentReports': 'Reports',
   'investmentReports.eyebrow': 'INVESTMENT · REPORTS', 'investmentReports.title': 'Investment reports',
   'investmentReports.description': 'Detailed analysis of completed deposits, withdrawals and bonuses.',
@@ -252,6 +255,9 @@ export const investmentReportsEnglish = {
 } as const;
 
 export const investmentReportsVietnamese: Record<keyof typeof investmentReportsEnglish, string> = {
+  'investmentCashflow.title': 'Báo cáo nạp & rút', 'investmentCashflow.description': 'Tổng nạp, tổng rút và chênh lệch theo ngày, tháng hoặc năm.',
+  'investmentCashflow.totalDeposits': 'Tổng nạp', 'investmentCashflow.totalWithdrawals': 'Tổng rút', 'investmentCashflow.diff': 'Chênh lệch (rút - nạp)',
+  'investmentCashflow.barChart': 'Nạp và rút', 'investmentCashflow.lineChart': 'Chênh lệch nạp/rút theo thời gian',
   'route.investmentReports': 'Báo cáo đầu tư', 'shell.investmentReports': 'Báo cáo',
   'investmentReports.eyebrow': 'ĐẦU TƯ · BÁO CÁO', 'investmentReports.title': 'Báo cáo đầu tư',
   'investmentReports.description': 'Phân tích chi tiết các giao dịch nạp, rút và thưởng đã hoàn tất.',

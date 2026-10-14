@@ -82,7 +82,7 @@ public class TravelService {
     private long minor(BigDecimal value, int scale) {
         try {
             return value.movePointRight(scale).longValueExact();
-        } catch (ArithmeticException e) {
+        } catch (ArithmeticException _) {
             throw invalid("Amount has invalid currency precision");
         }
     }
@@ -92,7 +92,7 @@ public class TravelService {
             throw invalid("Trip dates must be ordered and within two years");
         try {
             ZoneId.of(data.timezone());
-        } catch (DateTimeException e) {
+        } catch (DateTimeException _) {
             throw invalid("Invalid timezone");
         }
         int scale = Currency.getInstance(data.currency()).getDefaultFractionDigits();
@@ -130,7 +130,7 @@ public class TravelService {
                     var uri = URI.create(booking.url());
                     if (!Set.of("http", "https").contains(uri.getScheme()) || uri.getHost() == null || uri.getUserInfo() != null)
                         throw invalid("Booking links must use HTTP or HTTPS");
-                } catch (IllegalArgumentException e) {
+                } catch (IllegalArgumentException _) {
                     throw invalid("Invalid booking link");
                 }
             }
@@ -189,7 +189,7 @@ public class TravelService {
         byte[] bytes;
         try {
             bytes = file.getBytes();
-        } catch (java.io.IOException e) {
+        } catch (java.io.IOException _) {
             throw invalid("Could not read file");
         }
         String type;

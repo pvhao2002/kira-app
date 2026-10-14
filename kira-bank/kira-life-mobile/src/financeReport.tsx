@@ -123,16 +123,10 @@ export function FinanceReport() {
         label={t('AI SẴN SÀNG')} value={String(operations.ai.ready)} color={c.success}/><Metric label={t('AI LỖI')}
                                                                                                 value={String(operations.ai.failed)}
                                                                                                 color={c.error}/></Row><Row><Metric
-        label={t('LÔ CHỜ DUYỆT')} value={String(operations.imports.total)}/><Metric label={t('TRA SOÁT MỞ')}
-                                                                                    value={String(operations.reconciliation.open + operations.reconciliation.inReview + operations.reconciliation.needsInfo)}/></Row>
-        {operations.imports.items.map(item => <Row key={item.batchId}><T size={11} style={{flex: 1}}>{item.accountName} · {dateLabel(item.createdAt)}</T><Badge
+        label={t('TÀI KHOẢN CẦN DUYỆT')} value={String(operations.imports.total)}/></Row>
+        {operations.imports.items.map(item => <Row key={item.accountId}><T size={11} style={{flex: 1}}>{item.accountName} · {dateLabel(item.createdAt)}</T><Badge
           tone="warning">{t('{{n}} cần duyệt', {n: item.reviewCount})}</Badge></Row>)}
-        {operations.reconciliation.items.map(item => <Row key={item.id}><T size={11}
-                                                                           style={{flex: 1}}>{item.accountName} · {money(item.amount, item.currency, lang)}</T><Badge
-          tone="muted">{item.status}</Badge></Row>)}
-        <Row><View style={{flex: 1}}><Button label={t('Hàng đợi AI')} kind="secondary" onPress={() => go('queue')}/></View><View
-          style={{flex: 1}}><Button label={t('Hồ sơ tra soát')} kind="secondary"
-                                    onPress={() => go('investment-reports')}/></View></Row>
+        <Button label={t('Hàng đợi AI')} kind="secondary" onPress={() => go('queue')}/>
       </Card>
     </> : null}
   </Screen>;

@@ -6,7 +6,8 @@ import {Subscription} from 'rxjs';
 import {ApiService} from '../../core/services/api.service';
 import {LanguageService} from '../../core/i18n/language.service';
 import {IconComponent} from '../../shared/icon/icon';
-import {InvestmentAccountSummary, InvestmentReconciliationReport, InvestmentStatisticsOperations, InvestmentStatisticsResponse, PageResponse} from '../../shared/models/api.models';
+import {InvestmentCashflowPage} from './investment-cashflow.page';
+import {InvestmentAccountSummary, InvestmentStatisticsOperations, InvestmentStatisticsResponse, PageResponse} from '../../shared/models/api.models';
 import {numberFormat, dateFormat} from '../../core/i18n/formatters';
 
 interface LoadState<T> {data: T | null; loading: boolean; failed: boolean}
@@ -17,7 +18,7 @@ interface NetFlowInputs {deposits: number; withdrawals: number; bonuses: number}
 
 @Component({
   selector: 'app-investment-statistics',
-  imports: [FormsModule, RouterLink, IconComponent],
+  imports: [FormsModule, RouterLink, IconComponent, InvestmentCashflowPage],
   templateUrl: './investment-statistics.page.html',
   styleUrl: './investment-statistics.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -35,8 +36,6 @@ export class InvestmentStatisticsPage {
   readonly stats = signal(initial<InvestmentStatisticsResponse>());
   readonly operations = signal(initial<InvestmentStatisticsOperations>());
   readonly month = signal(initial<InvestmentStatisticsResponse>());
-  readonly report = signal<InvestmentReconciliationReport | null>(null);
-  readonly reportLoading = signal(false);
   readonly accountOptions = signal<InvestmentAccountSummary[]>([]);
   readonly accountSearch = signal('');
   readonly accountPage = signal(0);
@@ -153,19 +152,7 @@ export class InvestmentStatisticsPage {
   dateTime(value: string): string { return dateFormat(this.locale(), {dateStyle: 'medium', timeStyle: 'short'}).format(new Date(value)); }
   money(amount: number, currency: string): string { return numberFormat(this.locale(), {style: 'currency', currency, maximumFractionDigits: currency === 'VND' ? 0 : 2}).format(amount); }
   label(type: string): string { return this.i18n.t(`investmentStatistics.type.${type.toLowerCase()}`); }
-  importStatus(value: string): string {
-    const key = value.toLowerCase().replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
-    return this.i18n.t(`investmentTransactions.importStatus.${key}`);
-  }
   status(value: string): string { return this.i18n.t(`investmentStatistics.status.${value.toLowerCase()}`); }
-  openReport(id: number): void {
-    this.reportLoading.set(true);
-    this.api.investmentReconciliationReport(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: value => { this.report.set(value); this.reportLoading.set(false); },
-      error: () => this.reportLoading.set(false)
-    });
-  }
-  closeReport(): void { this.report.set(null); }
   private loadAll(): void { this.loadStats(); this.loadMonth(); this.loadOperations(); }
   private loadAccounts(page = this.accountPage()): void {
     this.accountRequest?.unsubscribe();

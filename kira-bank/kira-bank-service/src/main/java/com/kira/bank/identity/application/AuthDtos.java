@@ -46,6 +46,12 @@ public final class AuthDtos {
                                     Set<String> roles, String status) {
     }
 
+    /**
+     * Admin khóa/mở khóa User — PATCH /api/v1/admin/users/{id}/status.
+     */
+    public record UpdateUserStatusRequest(@NotNull @Pattern(regexp = "ACTIVE|LOCKED") String status) {
+    }
+
     public record AuthResponse(String accessToken, long expiresInSeconds, ProfileResponse user) {
     }
 

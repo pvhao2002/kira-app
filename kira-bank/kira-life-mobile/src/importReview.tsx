@@ -2,8 +2,8 @@ import React, {createContext, useContext, useRef, useState} from 'react';
 import {
   ConfirmBatchResponse,
   ConfirmItemRequest,
-  ImportBatchResponse,
   ImportItemResponse,
+  ImportState,
   InvestmentImportResolution,
   InvestmentTransactionStatus,
   InvestmentTransactionType,
@@ -19,11 +19,11 @@ export type EffectiveItem = ImportItemResponse & { selected: boolean; resolution
 
 type ReviewCtx = {
   accountId: number | null;
-  batch: ImportBatchResponse | null;
+  state: ImportState | null;
   loading: boolean;
   error: string;
   startUpload: (accountId: number, files: { uri: string; name: string; type: string }[]) => Promise<void>;
-  loadBatch: (accountId: number, batchId: string) => Promise<void>;
+  load: (accountId: number) => Promise<void>;
   refresh: () => Promise<void>;
   retryFile: (attachmentId: number) => Promise<void>;
   clear: () => void;
@@ -49,65 +49,58 @@ function defaultSelected(item: ImportItemResponse): boolean {
 export function ImportReviewProvider({children}: { children: React.ReactNode }) {
   const api = useInvestmentApi();
   const [accountId, setAccountId] = useState<number | null>(null);
-  const [batch, setBatch] = useState<ImportBatchResponse | null>(null);
+  const [state, setState] = useState<ImportState | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [, bump] = useState(0);
   const [lastResult, setLastResult] = useState<ConfirmBatchResponse | null>(null);
   const overrides = useRef<Record<string, Override>>({});
 
-  function reset(nextAccountId: number, next: ImportBatchResponse) {
-    overrides.current = {};
+  function apply(nextAccountId: number, next: ImportState) {
+    if (accountId !== nextAccountId) overrides.current = {};
     setAccountId(nextAccountId);
-    setBatch(next);
+    setState(next);
   }
 
   async function startUpload(accId: number, files: { uri: string; name: string; type: string }[]) {
     setLoading(true);
     setError('');
     try {
-      const result = await api.createImportBatch(accId, files);
-      reset(accId, result);
+      apply(accId, await api.uploadImport(accId, files));
     } finally {
       setLoading(false);
     }
   }
 
-  async function loadBatch(accId: number, batchId: string) {
+  async function load(accId: number) {
     setLoading(true);
     setError('');
     try {
-      const result = await api.getImportBatch(accId, batchId);
-      if (!batch || batch.batchId !== batchId) overrides.current = {};
-      setAccountId(accId);
-      setBatch(result);
+      apply(accId, await api.getImportState(accId));
     } finally {
       setLoading(false);
     }
   }
 
   async function refresh() {
-    if (!accountId || !batch) return;
-    const result = await api.getImportBatch(accountId, batch.batchId);
-    setBatch(result);
+    if (accountId) apply(accountId, await api.getImportState(accountId));
   }
 
   async function retryFile(attachmentId: number) {
-    if (!accountId || !batch) return;
-    const result = await api.retryImportFile(accountId, batch.batchId, attachmentId);
-    setBatch(result);
+    await api.runAiJob(attachmentId);
+    await refresh();
   }
 
   function clear() {
     setAccountId(null);
-    setBatch(null);
+    setState(null);
     overrides.current = {};
     setError('');
     setLastResult(null);
   }
 
   function effective(itemId: string): EffectiveItem | undefined {
-    const item = batch?.transactions.find(t => t.itemId === itemId);
+    const item = state?.transactions.find(t => t.itemId === itemId);
     if (!item) return undefined;
     const o = overrides.current[itemId] || {};
     return {
@@ -135,8 +128,8 @@ export function ImportReviewProvider({children}: { children: React.ReactNode }) 
   }
 
   async function confirm() {
-    if (!accountId || !batch) throw new Error('No batch loaded');
-    const items: ConfirmItemRequest[] = batch.transactions.map(item => {
+    if (!accountId || !state) throw new Error('No import loaded');
+    const items: ConfirmItemRequest[] = state.transactions.map(item => {
       const eff = effective(item.itemId)!;
       return {
         itemId: item.itemId, version: item.version, selected: eff.selected, resolution: eff.resolution,
@@ -145,18 +138,18 @@ export function ImportReviewProvider({children}: { children: React.ReactNode }) 
         description: eff.description,
       };
     });
-    const result = await api.confirmImportBatch(accountId, batch.batchId, items);
+    const result = await api.confirmImport(accountId, items);
     setLastResult(result);
     return result;
   }
 
   return <Context.Provider value={{
     accountId,
-    batch,
+    state,
     loading,
     error,
     startUpload,
-    loadBatch,
+    load,
     refresh,
     retryFile,
     clear,

@@ -3,7 +3,7 @@ import {provideRouter} from '@angular/router';
 import {of} from 'rxjs';
 import {ApiService} from '../../core/services/api.service';
 import {ToastService} from '../../core/services/toast.service';
-import {InvestmentImportBatch} from '../../shared/models/api.models';
+import {InvestmentImportState} from '../../shared/models/api.models';
 import {InvestmentTransactionPage} from './investment-transaction.page';
 
 describe('InvestmentTransactionPage', () => {
@@ -11,17 +11,20 @@ describe('InvestmentTransactionPage', () => {
   let component: InvestmentTransactionPage;
   let api: {
     page: ReturnType<typeof vi.fn>;
-    investmentTransactions: ReturnType<typeof vi.fn>;
     createInvestmentTransactionImport: ReturnType<typeof vi.fn>;
-    investmentTransactionImport: ReturnType<typeof vi.fn>;
+    investmentImportState: ReturnType<typeof vi.fn>;
     confirmInvestmentTransactions: ReturnType<typeof vi.fn>;
-    retryInvestmentImportFile: ReturnType<typeof vi.fn>
+    runInvestmentAiJob: ReturnType<typeof vi.fn>;
+    cancelInvestmentAiJob: ReturnType<typeof vi.fn>
   };
 
-  const readyBatch: InvestmentImportBatch = {
-    batchId: 'batch-1', accountId: 7, status: 'READY',
-    summary: {detected: 1, inserted: 0, updated: 0, skipped: 0, failed: 0, review: 1},
-    files: [{attachmentId: 10, originalName: 'receipt.png', contentUrl: '/content', status: 'READY', errorCode: null}],
+  const file = (aiStatus: InvestmentImportState['files'][number]['aiStatus']) => ({
+    attachmentId: 10, originalName: 'receipt.png', contentUrl: '/content', aiStatus, aiError: null,
+    createdAt: '2026-08-18T02:30:00Z', committedCount: 2
+  });
+  const readyState: InvestmentImportState = {
+    accountId: 7,
+    files: [file('READY')],
     transactions: [{
       itemId: 'item-1', version: 0, transactionType: 'DEPOSIT', transactionStatus: 'COMPLETED',
       amount: 100000, currency: 'VND', transactionAt: '2026-08-18T02:30:00Z',
@@ -33,11 +36,11 @@ describe('InvestmentTransactionPage', () => {
   beforeEach(async () => {
     api = {
       page: vi.fn().mockReturnValue(of({data: [{id: 7, accountCode: 'A1', accountName: 'Demo', currency: 'VND', status: 'ACTIVE'}], meta: {page: 0, size: 100, totalElements: 1, totalPages: 1}})),
-      investmentTransactions: vi.fn().mockReturnValue(of({data: [], meta: {page: 0, size: 50, totalElements: 0, totalPages: 0}})),
-      createInvestmentTransactionImport: vi.fn().mockReturnValue(of(readyBatch)),
-      investmentTransactionImport: vi.fn().mockReturnValue(of(readyBatch)),
+      createInvestmentTransactionImport: vi.fn().mockReturnValue(of(readyState)),
+      investmentImportState: vi.fn().mockReturnValue(of(readyState)),
       confirmInvestmentTransactions: vi.fn().mockReturnValue(of({inserted: 1, updated: 0, skipped: 0, failed: 0, results: []})),
-      retryInvestmentImportFile: vi.fn().mockReturnValue(of(readyBatch))
+      runInvestmentAiJob: vi.fn().mockReturnValue(of({})),
+      cancelInvestmentAiJob: vi.fn().mockReturnValue(of({}))
     };
     await TestBed.configureTestingModule({
       imports: [InvestmentTransactionPage],
@@ -52,6 +55,12 @@ describe('InvestmentTransactionPage', () => {
     fixture.detectChanges();
   });
 
+  it('loads import state when the account is selected', () => {
+    expect(api.investmentImportState).toHaveBeenCalledWith(7);
+    expect(component.state()?.files[0].committedCount).toBe(2);
+    expect(component.reviewItems()[0].resolution).toBe('ACCEPT');
+  });
+
   it('validates client file limits and accepts supported images', () => {
     const png = new File([new Uint8Array([1, 2, 3])], 'receipt.png', {type: 'image/png'});
     component.chooseFiles({target: {files: [png], value: ''}} as unknown as Event);
@@ -63,32 +72,34 @@ describe('InvestmentTransactionPage', () => {
     expect(component.error()).toContain('up to 10 files');
   });
 
-  it('shows editable preview and applies conflict resolution', () => {
-    const png = new File(['x'], 'receipt.png', {type: 'image/png'});
-    component.chooseFiles({target: {files: [png], value: ''}} as unknown as Event);
-    component.upload();
-    expect(component.reviewItems()[0].description).toBe('Nạp tiền');
-    expect(component.reviewItems()[0].resolution).toBe('ACCEPT');
-
+  it('applies conflict resolution to a review item', () => {
     component.openResolution(component.reviewItems()[0]);
     component.resolveConflict('SAVE_AS_NEW');
     expect(component.reviewItems()[0].resolution).toBe('SAVE_AS_NEW');
   });
 
-  it('polls queued batches and exposes confirm summary', async () => {
+  it('polls while a file is processing, then confirms and reloads', async () => {
     vi.useFakeTimers();
-    const queued = {...readyBatch, status: 'QUEUED' as const, transactions: []};
-    api.createInvestmentTransactionImport.mockReturnValue(of(queued));
-    api.investmentTransactionImport.mockReturnValue(of(readyBatch));
+    api.createInvestmentTransactionImport.mockReturnValue(of({...readyState, files: [file('PENDING')], transactions: []}));
     const png = new File(['x'], 'receipt.png', {type: 'image/png'});
     component.chooseFiles({target: {files: [png], value: ''}} as unknown as Event);
     component.upload();
+    expect(component.state()?.files[0].aiStatus).toBe('PENDING');
+    api.investmentImportState.mockClear();
     await vi.advanceTimersByTimeAsync(3000);
-    expect(api.investmentTransactionImport).toHaveBeenCalledWith(7, 'batch-1');
-    expect(component.batch()?.status).toBe('READY');
+    expect(api.investmentImportState).toHaveBeenCalledWith(7);
+    expect(component.state()?.files[0].aiStatus).toBe('READY');
 
     component.confirm();
+    expect(api.confirmInvestmentTransactions.mock.calls[0][0]).toBe(7);
     expect(component.confirmResult()?.inserted).toBe(1);
     vi.useRealTimers();
+  });
+
+  it('retries and cancels files through the AI job endpoints', () => {
+    component.retryFile(10);
+    expect(api.runInvestmentAiJob).toHaveBeenCalledWith(10, false);
+    component.cancelFile(10);
+    expect(api.cancelInvestmentAiJob).toHaveBeenCalledWith(10, false);
   });
 });

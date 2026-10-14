@@ -43,6 +43,12 @@ public class AuthController {
         return auth.listUsers(search, page, size);
     }
 
+    @PatchMapping("/api/v1/admin/users/{id}/status")
+    public AdminUserResponse updateUserStatus(@AuthenticationPrincipal Long adminId, @PathVariable Long id,
+                                              @Valid @RequestBody UpdateUserStatusRequest r) {
+        return auth.updateStatus(adminId, id, r);
+    }
+
     @PostMapping("/api/v1/auth/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest r, HttpServletRequest request) {
         return session(auth.login(r, clientIps.resolve(request), request.getHeader(HttpHeaders.USER_AGENT)));

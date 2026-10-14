@@ -1,0 +1,115 @@
+<section class="storage-page">
+  <header class="page-heading">
+    <div><span class="eyebrow">{{ i18n.t('fileStorage.eyebrow') }}</span><h1>{{ i18n.t('fileStorage.title') }}</h1><p>{{ i18n.t('fileStorage.description') }}</p></div>
+    <button class="btn ghost" type="button" [disabled]="loadingUsage() || loadingFiles()" (click)="refresh()">{{ i18n.t('fileStorage.refresh') }}</button>
+  </header>
+
+  @if (error()) { <div class="inline-error" role="alert">{{ error() }}</div> }
+
+  <section class="panel" aria-labelledby="usage-title">
+    <div class="usage-head">
+      <h2 id="usage-title">{{ i18n.t('fileStorage.usageTitle') }}</h2>
+      @if (syncedAt(); as at) { <small>{{ i18n.t('fileStorage.syncedAt') }} {{ formatDate(at) }}</small> }
+      <button class="btn ghost" type="button" [disabled]="loadingUsage()" [attr.aria-busy]="loadingUsage()" (click)="loadUsage()">{{ i18n.t(loadingUsage() ? 'fileStorage.syncing' : 'fileStorage.sync') }}</button>
+    </div>
+    @if (loadingUsage() && !usage().length) {
+      <p class="state">{{ i18n.t('fileStorage.loading') }}</p>
+    } @else {
+      <div class="usage-grid">
+        @for (row of usage(); track row.label) {
+          <article class="usage-card" [class.over]="row.exceeded || row.operations?.exceeded">
+            <header>
+              <h3>{{ row.label }}</h3>
+              @if (!row.configured) {
+                <span class="status muted">{{ i18n.t('fileStorage.notConfigured') }}</span>
+              } @else if (row.errorCode) {
+                <span class="status warn">{{ i18n.t('fileStorage.usageUnavailable') }}</span>
+              } @else {
+                <span class="status" [class.bad]="row.exceeded">{{ i18n.t(row.exceeded ? 'fileStorage.exceeded' : 'fileStorage.withinFree') }}</span>
+              }
+            </header>
+            <p class="figure"><strong>{{ gb(row.usedBytes) }}</strong> / {{ gb(row.freeLimitBytes) }}</p>
+            <div class="meter" role="meter" [attr.aria-label]="row.label" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="percent(row)">
+              <span [class.bad]="row.exceeded" [style.width.%]="percent(row)"></span>
+            </div>
+            <dl>
+              <div><dt>{{ i18n.t('fileStorage.used') }}</dt><dd>{{ gb(row.usedBytes) }}</dd></div>
+              <div><dt>{{ i18n.t('fileStorage.freeLimit') }}</dt><dd>{{ gb(row.freeLimitBytes) }}</dd></div>
+            </dl>
+            @if (row.operations; as ops) {
+              <div class="ops" [class.over]="ops.exceeded">
+                <h4>{{ i18n.t('fileStorage.opsTitle') }}</h4>
+                @if (ops.errorCode) {
+                  <span class="status warn">{{ i18n.t(ops.errorCode === 'OPS_TOKEN_MISSING' ? 'fileStorage.opsTokenMissing' : 'fileStorage.opsUnavailable') }}</span>
+                } @else {
+                  @for (op of [{label: 'Class A', used: ops.classA, limit: ops.classAFreeLimit}, {label: 'Class B', used: ops.classB, limit: ops.classBFreeLimit}]; track op.label) {
+                    <p class="figure"><span>{{ op.label }}</span> <strong>{{ count(op.used) }}</strong> / {{ count(op.limit) }}</p>
+                    <div class="meter" role="meter" [attr.aria-label]="row.label + ' ' + op.label" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="ratio(op.used, op.limit)">
+                      <span [class.bad]="(op.used ?? 0) > op.limit" [style.width.%]="ratio(op.used, op.limit)"></span>
+                    </div>
+                  }
+                }
+              </div>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <section class="panel upload" aria-labelledby="upload-title">
+    <h2 id="upload-title">{{ i18n.t('fileStorage.uploadTitle') }}</h2>
+    <fieldset>
+      <legend>{{ i18n.t('fileStorage.preferred') }}</legend>
+      <div class="choices">
+        @for (provider of providers; track provider) {
+          <label class="choice" [class.active]="preferred() === provider">
+            <input type="radio" name="preferred" [value]="provider" [checked]="preferred() === provider" (change)="choosePreferred(provider)">
+            {{ providerName(provider) }}
+          </label>
+        }
+      </div>
+      <small>{{ i18n.t('fileStorage.fallbackHint') }}</small>
+    </fieldset>
+    <label class="file-field"><span>{{ i18n.t('fileStorage.file') }}</span><input #fileInput type="file" (change)="pick($event)"><small>{{ i18n.t('fileStorage.maxSize') }}</small></label>
+    <div><button class="btn primary" type="button" [disabled]="!selected() || uploading()" [attr.aria-busy]="uploading()" (click)="upload(fileInput)">{{ i18n.t(uploading() ? 'fileStorage.uploading' : 'fileStorage.upload') }}</button></div>
+  </section>
+
+  <section class="panel" aria-labelledby="files-title">
+    <h2 id="files-title">{{ i18n.t('fileStorage.filesTitle') }}</h2>
+    @if (loadingFiles() && !files().length) {
+      <p class="state">{{ i18n.t('fileStorage.loading') }}</p>
+    } @else if (!files().length) {
+      <p class="state">{{ i18n.t('fileStorage.empty') }}</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>{{ i18n.t('fileStorage.name') }}</th><th>{{ i18n.t('fileStorage.provider') }}</th><th>{{ i18n.t('fileStorage.size') }}</th><th>{{ i18n.t('fileStorage.uploadedAt') }}</th><th></th></tr></thead>
+          <tbody>
+            @for (file of files(); track file.id) {
+              <tr>
+                <td class="name">{{ file.originalName }}</td>
+                <td><span class="provider" [attr.data-provider]="file.provider">{{ providerName(file.provider) }}</span></td>
+                <td>{{ size(file.sizeBytes) }}</td>
+                <td>{{ formatDate(file.createdAt) }}</td>
+                <td class="actions">
+                  <button class="link" type="button" (click)="download(file)">{{ i18n.t('fileStorage.download') }}</button>
+                  <button class="link danger" type="button" [disabled]="deletingId() === file.id" [attr.aria-busy]="deletingId() === file.id" (click)="remove(file)">{{ i18n.t('fileStorage.delete') }}</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (meta(); as page) {
+        @if (page.totalPages > 1) {
+          <footer class="pager">
+            <button class="btn ghost" type="button" [disabled]="page.page === 0 || loadingFiles()" (click)="loadFiles(page.page - 1)">{{ i18n.t('fileStorage.previous') }}</button>
+            <span>{{ page.page + 1 }} / {{ page.totalPages }}</span>
+            <button class="btn ghost" type="button" [disabled]="page.page + 1 >= page.totalPages || loadingFiles()" (click)="loadFiles(page.page + 1)">{{ i18n.t('fileStorage.next') }}</button>
+          </footer>
+        }
+      }
+    }
+  </section>
+</section>

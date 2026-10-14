@@ -18,7 +18,7 @@ import {formatMoney, REPORT_STYLES} from './reports/report-format';
       <label><span>{{ i18n.t('investmentReports.to') }}</span><input type="date" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)"/></label>
       @if ((data()?.currencies?.length ?? 0) > 1) {
         <label><span>{{ i18n.t('investmentReports.currency') }}</span><select (change)="currency.set($any($event.target).value)">
-          @for (item of data()!.currencies; track item.currency) { <option [value]="item.currency" [selected]="item.currency === selected()?.currency">{{ item.currency }}</option> }</select></label>
+          @for (item of data()!.currencies; track item.currency) { <option [value]="item.currency" [selected]="item.currency === selected().currency">{{ item.currency }}</option> }</select></label>
       }
       <button class="btn primary" type="button" [disabled]="invalid() || loading()" (click)="load()">{{ i18n.t('investmentReports.apply') }}</button>
     </section>
