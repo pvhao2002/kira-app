@@ -1,0 +1,98 @@
+services:
+
+  microsoft-rewards-script:
+    image: ghcr.io/thenetsky/microsoft-rewards-script:4
+    container_name: microsoft-rewards-script
+    restart: unless-stopped
+
+    environment:
+      TZ: "Asia/Ho_Chi_Minh"
+      NODE_ENV: "production"
+
+      # Không tự chạy ngay khi deploy.
+      # Test thủ công bằng Dashboard trước.
+      RUN_ON_START: "false"
+
+      # Giữ random delay
+      SKIP_RANDOM_SLEEP: "false"
+
+      # Control API
+      API_MODE: "true"
+      API_TOKEN: "${API_TOKEN}"
+
+      # Cho phép Dashboard chỉnh schedule/config
+      API_ALLOW_SCHEDULE_WRITE: "true"
+      API_ALLOW_CONFIG_WRITE: "true"
+
+      # Account 1
+      ACCOUNT_1_EMAIL: "${ACCOUNT_1_EMAIL}"
+      ACCOUNT_1_PASSWORD: "${ACCOUNT_1_PASSWORD}"
+      ACCOUNT_1_GEO_LOCALE: "auto"
+      ACCOUNT_1_LANG_CODE: "en"
+
+      # Account 2
+      ACCOUNT_2_EMAIL: "${ACCOUNT_2_EMAIL}"
+      ACCOUNT_2_PASSWORD: "${ACCOUNT_2_PASSWORD}"
+      ACCOUNT_2_GEO_LOCALE: "auto"
+      ACCOUNT_2_LANG_CODE: "en"
+
+      # Account 2
+      ACCOUNT_3_EMAIL: "${ACCOUNT_3_EMAIL}"
+      ACCOUNT_3_PASSWORD: "${ACCOUNT_3_PASSWORD}"
+      ACCOUNT_3_GEO_LOCALE: "auto"
+      ACCOUNT_3_LANG_CODE: "en"
+
+      # Account 2
+      ACCOUNT_4_EMAIL: "${ACCOUNT_4_EMAIL}"
+      ACCOUNT_4_PASSWORD: "${ACCOUNT_4_PASSWORD}"
+      ACCOUNT_4_GEO_LOCALE: "auto"
+      ACCOUNT_4_LANG_CODE: "en"
+
+    volumes:
+      - rewards_config:/usr/src/microsoft-rewards-script/config
+      - rewards_sessions:/usr/src/microsoft-rewards-script/sessions
+
+    healthcheck:
+      test: ["CMD-SHELL", "scripts/docker/healthcheck.sh"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+    security_opt:
+      - no-new-privileges:true
+
+
+  rewards-dashboard:
+    image: ghcr.io/mgrimace/rewards-dashboard:latest
+    container_name: rewards-dashboard
+    restart: unless-stopped
+
+    ports:
+      - "8890:8890"
+
+    environment:
+      CONTROL_API_URL: "http://microsoft-rewards-script:3010"
+      CONTROL_API_TOKEN: "${API_TOKEN}"
+
+      TZ: "Asia/Ho_Chi_Minh"
+
+      DASHBOARD_USERNAME: "${DASHBOARD_USERNAME}"
+      DASHBOARD_PASSWORD: "${DASHBOARD_PASSWORD}"
+
+      DASHBOARD_TITLE: "Microsoft Rewards"
+
+    volumes:
+      - rewards_dashboard_data:/data
+
+    depends_on:
+      - microsoft-rewards-script
+
+    security_opt:
+      - no-new-privileges:true
+
+
+volumes:
+  rewards_config:
+  rewards_sessions:
+  rewards_dashboard_data:
