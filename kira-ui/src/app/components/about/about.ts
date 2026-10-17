@@ -69,9 +69,7 @@ export class About implements OnInit, AfterViewInit {
   readonly visibleSections = signal<Set<string>>(new Set());
 
   readonly roles = [
-    'Java Developer',
-    'Spring Boot Backend Engineer',
-    'Full-stack with Angular',
+    'Full-Stack Java Developer',
   ];
 
   readonly socialLinks: SocialLink[] = [
@@ -109,23 +107,37 @@ export class About implements OnInit, AfterViewInit {
         {name: 'Java', icon: 'coffee', accent: 'java'},
         {name: 'Spring Boot', icon: 'eco', accent: 'spring'},
         {name: 'JPA / Hibernate', icon: 'storage', accent: 'jpa'},
-        {name: 'REST API', icon: 'api', accent: 'api'},
+        {name: 'REST APIs', icon: 'api', accent: 'api'},
         {name: 'RabbitMQ', icon: 'queue', accent: 'rabbitmq'},
-        {name: 'MySQL', icon: 'database', accent: 'mysql'},
       ],
     },
     {
-      label: 'Front-end',
+      label: 'Frontend',
       skills: [
         {name: 'Angular', icon: 'web', accent: 'angular'},
         {name: 'TypeScript', icon: 'javascript', accent: 'typescript'},
+        {name: 'RxJS', icon: 'stream', accent: 'angular'},
+        {name: 'Signals', icon: 'sensors', accent: 'angular'},
+        {name: 'Tailwind CSS', icon: 'palette', accent: 'typescript'},
       ],
     },
     {
-      label: 'Tools & Data',
+      label: 'Database & Data',
+      skills: [
+        {name: 'MySQL', icon: 'database', accent: 'mysql'},
+        {name: 'SQL optimization', icon: 'speed', accent: 'mysql'},
+        {name: 'Web crawling', icon: 'cloud_download', accent: 'api'},
+        {name: 'Data processing', icon: 'dataset', accent: 'api'},
+      ],
+    },
+    {
+      label: 'Deployment & Tools',
       skills: [
         {name: 'Docker', icon: 'deployed_code', accent: 'docker'},
-        {name: 'Data Crawling', icon: 'cloud_download', accent: 'api'},
+        {name: 'NGINX', icon: 'router', accent: 'spring'},
+        {name: 'Cloudflare', icon: 'cloud', accent: 'rabbitmq'},
+        {name: 'Oracle Cloud', icon: 'cloud', accent: 'angular'},
+        {name: 'AWS', icon: 'cloud', accent: 'java'},
       ],
     },
   ];
@@ -135,54 +147,40 @@ export class About implements OnInit, AfterViewInit {
     period: '03/2024 – Present',
     project: 'Real-time trading, risk-control & back-office accounting platform',
     summary: 'I build and maintain the systems that traders, risk teams and accountants rely on every day: '
-      + 'real-time monitoring and risk reports, accounting modules, a trader portal and automation jobs. '
-      + 'I work directly with business and QC through QAT → STG → PROD release cycles.',
+      + 'monitoring and risk reports, accounting modules, a trader portal and automation jobs. '
+      + 'I collaborate with business and QA teams to deliver features through testing, staging and production.',
     highlights: [
       {
-        title: 'Trader portal, end to end',
-        text: 'Built the Angular app, multi-role user management, account configuration and new Spring Boot services, plus a WebSocket heartbeat that tracks online users every 30 seconds.',
+        title: 'Trader portal',
+        text: 'Built the Angular app and Spring Boot services, including role-based user management and account configuration.',
       },
       {
-        title: 'Real-time monitoring and position reports',
-        text: 'Delivered config-driven filters (time bands, VIP groups) with server-side validation.',
+        title: 'Risk monitoring and reporting',
+        text: 'Delivered monitoring and risk report features, backed by scheduled jobs that collect data from external sources.',
       },
       {
-        title: 'Data collection',
-        text: 'Wrote scheduled crawlers that pull real-time data from external sources and store it for risk reports.',
+        title: 'Accounting modules',
+        text: 'Built Journal, Ledger, Fund Control and Chart of Accounts.',
       },
       {
-        title: 'Entity-mapping automation',
-        text: 'Built a scheduled job using Jaro-Winkler name matching with an optional AI check, real-time alerts and a confirmation flow in the UI.',
-      },
-      {
-        title: 'Accounting features',
-        text: 'Built Journal, Ledger, Fund Control and Chart of Accounts, including ERC20/TRC20 wallet linking with a rule-driven balance parser configured from the database.',
-      },
-      {
-        title: 'Performance',
-        text: 'Fixed production timeouts by rewriting heavy SQL (index hints, pre-aggregated tables) and partitioning scheduler jobs.',
+        title: 'Production performance',
+        text: 'Fixed production timeouts by optimizing heavy SQL, adding pre-aggregated tables and splitting scheduled jobs.',
       },
       {
         title: 'Stability',
-        text: 'Tracked down and fixed memory leaks in long-running services, keeping memory usage stable and reducing out-of-memory restarts.',
+        text: 'Investigated and fixed memory leaks in long-running services.',
       },
       {
         title: 'Large data handling',
-        text: 'Removed browser freezes with virtual scrolling for huge lists, and fixed failing exports by caching Apache POI cell styles for large Excel/PDF files.',
-      },
-      {
-        title: 'Financial accuracy',
-        text: 'Fixed bugs in price and currency conversion, truncation rules and Debit/Credit placement in ledgers.',
+        text: 'Added virtual scrolling for large lists and fixed failing Excel exports by reusing Apache POI cell styles.',
       },
     ],
   };
 
   readonly aboutEnParagraphs = [
-    'I am a Java Developer with a degree in Information Technology from HCMUTE. I can work on both front-end and back-end, but my main strength is the backend: designing and building services with Java and Spring Boot.',
-    'On the backend I focus on clean REST APIs, solid data modeling with JPA and MySQL, message-driven processing with RabbitMQ, and performance tuning. On the front-end I build responsive Angular interfaces that connect smoothly to those services.',
-    'I especially enjoy end-to-end data projects: analyzing sources, implementing crawlers, cleaning and structuring data, storing it efficiently, and exposing it through APIs and admin dashboards.',
-    'I have worked across multiple domains including real estate and English exam content such as TOEIC and IELTS. My goal is always to build crawling systems that are reliable, scalable, and truly useful for real-world business needs.',
-    'If you need a custom internal tool, website, or app related to data crawling, data processing, content operations, or a complete digital product, I am available to help from idea to deployment.',
+    'I am a Java developer based in Ho Chi Minh City and an Information Technology graduate of HCMUTE. Since March 2024, I have worked on a trading, risk monitoring, and back-office accounting platform, developing Spring Boot services and Angular interfaces.',
+    'My strengths include API development, data modeling, SQL optimization, and troubleshooting production issues. I also build scheduled data collection and processing workflows, and have hands-on experience deploying web applications using NGINX, Cloudflare, Oracle Cloud, and AWS.',
+    'I am seeking a Java Backend or Full-Stack Developer role where I can contribute to reliable business applications and deepen my backend engineering expertise.',
   ];
 
   private roleIndex = 0;

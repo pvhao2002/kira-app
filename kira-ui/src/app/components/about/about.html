@@ -20,14 +20,14 @@
       <a href="mailto:hao.phamvan2308@gmail.com"
          class="ml-auto md:ml-0 inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[#22c55e] hover:bg-[#4ade80] text-[#0b1121] text-sm font-bold transition-colors focus-ring">
         <span class="material-symbols-outlined text-lg" aria-hidden="true">mail</span>
-        Hire me
+        Contact me
       </a>
     </nav>
   </header>
 
   <main>
     <!-- Hero -->
-    <section id="hero" class="hero-section relative min-h-[calc(100svh-4rem)] flex items-center px-6 py-16 overflow-hidden">
+    <section id="hero" class="hero-section relative min-h-[calc(100svh-4rem)] flex items-center px-6 pt-4 pb-32 overflow-hidden">
       <app-three-background class="absolute inset-0 pointer-events-none" aria-hidden="true"></app-three-background>
       <div class="hero-content-shield absolute inset-0 pointer-events-none"></div>
 
@@ -56,18 +56,20 @@
             <span class="sr-only">{{ roles.join(', ') }}</span>
             <span aria-hidden="true">&gt; {{ typingText() }}<span class="typing-cursor">_</span></span>
           </p>
+          <p class="font-mono text-lg sm:text-xl font-semibold text-slate-400 -mt-4">Spring Boot &amp; Angular</p>
 
           <p class="max-w-xl text-slate-300 text-base sm:text-lg leading-8">
-            Java Developer who works across front-end and back-end, with my core strength in
-            <span class="text-white font-semibold">backend engineering with Java &amp; Spring Boot</span>
-            — building reliable APIs, services, and data systems.
+            Full-stack Java Developer specializing in Spring Boot and Angular, with experience building web
+            applications, RESTful APIs, backend services, and data processing systems. Particularly interested in
+            web crawling, report aggregation, and designing systems for high-volume workloads. Comfortable deploying
+            and self-hosting applications using NGINX, Cloudflare, and cloud infrastructure on Oracle Cloud and AWS.
           </p>
 
           <div class="flex flex-wrap gap-3">
             <a href="mailto:hao.phamvan2308@gmail.com"
                class="inline-flex items-center gap-2 h-12 px-6 rounded-lg bg-[#22c55e] hover:bg-[#4ade80] text-[#0b1121] font-bold transition-colors focus-ring">
               <span class="material-symbols-outlined text-xl" aria-hidden="true">mail</span>
-              Contact me
+              hao.phamvan2308&#64;gmail.com
             </a>
             <a href="https://github.com/pvhao2002" target="_blank" rel="noopener noreferrer"
                class="inline-flex items-center gap-2 h-12 px-6 rounded-lg border border-white/15 hover:border-white/40 hover:bg-white/5 font-bold transition-colors focus-ring">
@@ -75,12 +77,6 @@
               GitHub
             </a>
           </div>
-
-          <a href="mailto:hao.phamvan2308@gmail.com"
-             class="inline-flex items-center gap-2 font-mono text-base sm:text-lg text-slate-200 hover:text-[#86efac] transition-colors focus-ring rounded">
-            <span class="material-symbols-outlined text-xl text-[#86efac]" aria-hidden="true">alternate_email</span>
-            hao.phamvan2308&#64;gmail.com
-          </a>
         </div>
 
         <!-- Decorative code card -->
@@ -100,8 +96,11 @@
   <span class="tok-kw">public</span> <span class="tok-type">Developer</span> profile() &#123;
     <span class="tok-kw">return</span> <span class="tok-type">Developer</span>.builder()
         .name(<span class="tok-str">"Pham Van Hao"</span>)
-        .focus(<span class="tok-str">"Backend · Spring Boot"</span>)
-        .alsoBuilds(<span class="tok-str">"Angular front-ends"</span>)
+        .title(<span class="tok-str">"Full-Stack Java Developer"</span>)
+        .stack(<span class="tok-str">"Spring Boot · Angular"</span>)
+        .domain(<span class="tok-str">"Trading · Risk · Accounting"</span>)
+        .focus(<span class="tok-str">"SQL · Stability"</span>)
+        .deploys(<span class="tok-str">"NGINX · Cloudflare · AWS"</span>)
         .build();
   &#125;
 &#125;</code></pre>
@@ -116,7 +115,7 @@
              [class.revealed]="isSectionVisible('about')"
              class="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
       <p class="font-mono text-sm text-[#86efac]">01 / About</p>
-      <h2 class="text-3xl sm:text-4xl font-bold mt-2">Backend first, full-stack when needed.</h2>
+      <h2 class="text-3xl sm:text-4xl font-bold mt-2">Backend expertise. Full-stack delivery.</h2>
 
       <div class="grid lg:grid-cols-12 gap-10 mt-10">
         <div class="lg:col-span-7 space-y-4">
@@ -207,7 +206,7 @@
              [class.revealed]="isSectionVisible('experience')"
              class="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
       <p class="font-mono text-sm text-[#86efac]">03 / Experience</p>
-      <h2 class="text-3xl sm:text-4xl font-bold mt-2">What I've been doing</h2>
+      <h2 class="text-3xl sm:text-4xl font-bold mt-2">Professional Experience</h2>
 
       <article class="rounded-2xl bg-[#0f172a] border border-white/10 p-6 sm:p-8 mt-10">
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -244,9 +243,10 @@
              class="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
       <div class="contact-band rounded-3xl border border-[#22c55e]/25 p-8 sm:p-12 text-center">
         <p class="font-mono text-sm text-[#86efac]">04 / Contact</p>
-        <h2 class="text-3xl sm:text-4xl font-bold mt-2">Need a reliable backend?</h2>
+        <h2 class="text-3xl sm:text-4xl font-bold mt-2">Let’s connect</h2>
         <p class="text-slate-300 mt-4 max-w-xl mx-auto leading-relaxed">
-          Internal tools, APIs, data pipelines, or a complete product — I can help from idea to deployment.
+          I am open to Java Backend and Full-Stack Developer opportunities. If my experience matches your
+          team’s needs, I would be happy to discuss the role.
         </p>
         <a href="mailto:hao.phamvan2308@gmail.com"
            class="mt-8 inline-flex items-center gap-2 h-12 px-6 rounded-lg bg-[#22c55e] hover:bg-[#4ade80] text-[#0b1121] font-bold transition-colors focus-ring">
