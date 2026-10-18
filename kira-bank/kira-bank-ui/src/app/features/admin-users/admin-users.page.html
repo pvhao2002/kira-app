@@ -16,7 +16,7 @@
         <tbody>@for (user of list.data; track user.id) {
           <tr><td>{{ user.fullName }}</td><td>{{ user.email }}</td><td>{{ user.phone || '—' }}</td>
             <td>{{ user.roles.join(', ') }}</td><td>{{ user.status }}</td>
-            <td>@if (!user.roles.includes('ROLE_ADMIN')) {
+            <td>@if (user.id !== auth.user()?.id) {
               <button class="btn" type="button" [disabled]="statusBusy() === user.id" (click)="toggleStatus(user)">
                 {{ t(user.status === 'ACTIVE' ? 'lock' : 'unlock') }}</button>
             }</td></tr>

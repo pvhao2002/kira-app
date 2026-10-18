@@ -3,7 +3,6 @@ package admin
 import (
 	"context"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -42,7 +41,7 @@ func buildUsers(env *kit.Env) fyne.CanvasObject {
 			t.Reload()
 		})
 	}
-	notAdmin := func(u adminUser) bool { return !slices.Contains(u.Roles, "ROLE_ADMIN") }
+	notSelf := func(u adminUser) bool { me := env.User(); return me == nil || u.ID != me.ID }
 	add := widget.NewButtonWithIcon(i18n.T("users.add"), theme.ContentAddIcon(), func() { createUser(env, func() { t.SetSearch("") }) })
 	t = kit.NewPagedTable(env, kit.PathSource[adminUser](env, "admin/users", nil),
 		kit.PagedOptions{Toolbar: []fyne.CanvasObject{add}},
@@ -59,12 +58,12 @@ func buildUsers(env *kit.Env) fyne.CanvasObject {
 			{Title: i18n.T("users.status"), Text: func(u adminUser) string { return u.Status }},
 		},
 		kit.RowAction[adminUser]{Label: i18n.T("users.lock"), Icon: theme.VisibilityOffIcon(),
-			Visible: func(u adminUser) bool { return notAdmin(u) && u.Status == "ACTIVE" },
+			Visible: func(u adminUser) bool { return notSelf(u) && u.Status == "ACTIVE" },
 			Do: func(u adminUser) {
 				env.Confirm(i18n.T("users.lockConfirm", i18n.P{"email": u.Email}), func() { setStatus(u, "LOCKED", "users.locked") })
 			}},
 		kit.RowAction[adminUser]{Label: i18n.T("users.unlock"), Icon: theme.VisibilityIcon(),
-			Visible: func(u adminUser) bool { return notAdmin(u) && u.Status == "LOCKED" },
+			Visible: func(u adminUser) bool { return notSelf(u) && u.Status == "LOCKED" },
 			Do:      func(u adminUser) { setStatus(u, "ACTIVE", "users.unlocked") }})
 	t.Table.SetEmpty(i18n.T("users.empty"))
 	return container.NewBorder(kit.PageHeader("ADMIN · KIRA LIFE", i18n.T("route.adminUsers"), i18n.T("users.description")), nil, nil, nil, t)

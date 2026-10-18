@@ -102,8 +102,6 @@ public class AuthService {
         if (id.equals(adminId))
             throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_CHANGE_OWN_STATUS", "Không thể khóa tài khoản của chính mình");
         User user = requireForUpdate(id);
-        if (user.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getName())))
-            throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_CHANGE_ADMIN_STATUS", "Không thể khóa tài khoản Admin");
         user.setStatus(request.status());
         return adminUser(user);
     }
