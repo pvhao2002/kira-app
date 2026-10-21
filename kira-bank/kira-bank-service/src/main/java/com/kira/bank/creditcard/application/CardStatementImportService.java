@@ -15,6 +15,7 @@ import com.kira.bank.creditcard.application.CardCashbackCalculator.ActiveRule;
 import com.kira.bank.creditcard.application.CardCashbackCalculator.CardRules;
 import com.kira.bank.creditcard.domain.*;
 import com.kira.bank.creditcard.infrastructure.*;
+import com.kira.bank.identity.application.UsageQuotaService;
 import com.kira.bank.notification.application.NotificationService;
 import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -71,6 +72,7 @@ public class CardStatementImportService {
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher events;
     private final TransactionTemplate transactionTemplate;
+    private final UsageQuotaService quota;
 
     /** Published after an import becomes QUEUED so the runner can start it once the transaction commits. */
     public record ImportQueuedEvent(Long importId) {
@@ -98,12 +100,16 @@ public class CardStatementImportService {
             if (!isSupportedImage(upload.getBytes()))
                 throw bad("INVALID_FILE_TYPE", "Sao kê chỉ hỗ trợ ảnh JPEG, PNG hoặc WebP");
         }
+        // ponytail: read-only pre-check; concurrent batches can still fail mid-way at reserveUpload. Lock the user row if that matters.
+        quota.checkAi(userId, 1);
+        quota.checkUpload(userId, uploads.stream().mapToLong(MultipartFile::getSize).sum());
         List<PreparedUpload> stored = new ArrayList<>();
         for (MultipartFile upload : uploads) {
             stored.add(attachmentService.store(userId, MODULE, DOCUMENT_TYPE, upload, null));
         }
 
         return transactionTemplate.execute(status -> {
+            quota.consumeAi(userId, 1);
             CardStatementImport statementImport = new CardStatementImport();
             statementImport.setUserId(userId);
             statementImport.setUserCardId(card.getId());

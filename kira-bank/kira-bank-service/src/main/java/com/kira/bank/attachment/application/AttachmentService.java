@@ -11,6 +11,7 @@ import com.kira.bank.attachment.domain.InvestmentAiJobEvent;
 import com.kira.bank.attachment.domain.InvestmentAiJobEventActor;
 import com.kira.bank.attachment.infrastructure.AttachmentRepository;
 import com.kira.bank.attachment.infrastructure.InvestmentAiJobEventRepository;
+import com.kira.bank.identity.application.UsageQuotaService;
 import com.kira.bank.identity.infrastructure.UserRepository;
 import com.kira.bank.notification.application.NotificationService;
 import com.kira.bank.shared.web.ApiException;
@@ -60,6 +61,7 @@ public class AttachmentService {
     private final ObjectMapper objectMapper;
     private final NotificationService notifications;
     private final TransactionTemplate transactions;
+    private final UsageQuotaService quota;
     @Value("${investment.transaction-import.time-zone:Asia/Ho_Chi_Minh}")
     private String importTimeZone;
 
@@ -168,7 +170,14 @@ public class AttachmentService {
         String key = isInvestmentReceipt(normalizedFlow, normalizedDocumentType) && imageNumber != null
             ? investmentReceiptKey(userId, imageNumber, mimeType)
             : userId + "/" + UUID.randomUUID() + extensionFor(mimeType);
-        R2StorageService.StoredObject stored = storage.upload(key, data, mimeType);
+        quota.reserveUpload(userId, data.length);
+        R2StorageService.StoredObject stored;
+        try {
+            stored = storage.upload(key, data, mimeType);
+        } catch (RuntimeException ex) {
+            quota.refundUpload(userId, data.length);
+            throw ex;
+        }
         return new PreparedUpload(normalizedFlow, normalizedDocumentType, key, stored.accountId(),
             safeOriginalName(file.getOriginalFilename(), "document"), mimeType, file.getSize(), hash, null);
     }

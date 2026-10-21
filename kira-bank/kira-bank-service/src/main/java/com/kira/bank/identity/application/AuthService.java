@@ -106,6 +106,16 @@ public class AuthService {
         return adminUser(user);
     }
 
+    @Transactional
+    public void deleteUser(Long adminId, Long id) {
+        if (id.equals(adminId))
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CANNOT_DELETE_SELF", "Không thể xóa tài khoản của chính mình");
+        User user = requireForUpdate(id);
+        Instant now = Instant.now();
+        user.setDeletedAt(now);
+        tokens.revokeAllByUserId(id, now);
+    }
+
     private AdminUserResponse adminUser(User user) {
         return new AdminUserResponse(user.getId(), user.getEmail(), user.getFullName(), user.getPhone(),
             user.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet()), user.getStatus());

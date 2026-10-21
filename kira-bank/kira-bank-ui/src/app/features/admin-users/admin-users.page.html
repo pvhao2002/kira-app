@@ -19,6 +19,7 @@
             <td>@if (user.id !== auth.user()?.id) {
               <button class="btn" type="button" [disabled]="statusBusy() === user.id" (click)="toggleStatus(user)">
                 {{ t(user.status === 'ACTIVE' ? 'lock' : 'unlock') }}</button>
+              <button class="btn" type="button" [disabled]="statusBusy() === user.id" (click)="deleteUser(user)">{{ t('delete') }}</button>
             }</td></tr>
         }</tbody>
       </table></div>
