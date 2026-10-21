@@ -6,7 +6,7 @@ This monorepo contains independent backend services and frontend apps. Java 21 S
 
 ## Build, Test, and Development Commands
 
-For backend changes, compile only the affected Maven project and treat compile success as the required verification. Run commands inside the changed service directory, for example `cd kira-gateway` then `.\mvnw compile`. Do not run tests, package builds, Angular compilation, mobile linting, or unrelated module checks unless the user explicitly asks. Use `docker compose up -d` only when local infrastructure is needed for manual runtime checks.
+For backend changes, compile only the affected Maven project and treat compile success as the required verification. Run commands inside the changed service directory, for example `cd kira-gateway` then `.\mvnw compile`. Do not run full test suites, package builds, Angular compilation, mobile linting, or unrelated module checks unless the user explicitly asks. Exception: under the dev-workflow skill (or the `plan-to-verify` workflow), write and run the focused tests for the code you change (TDD) and include them in verification. Use `docker compose up -d` only when local infrastructure is needed for manual runtime checks.
 
 ## Coding Style & Naming Conventions
 
@@ -77,6 +77,14 @@ or feature development requests:
 - Respect mandatory design and safety approvals.
 - Continue through implementation and verification
   when all required gates are satisfied.
+- Do not commit, push, or merge without user authorization.
+
+When the user asks to run the task as a workflow, use
+`.claude/workflows/plan-to-verify.js` (dev-workflow as a
+multi-agent pipeline): run `{task, planOnly: true}`, get the
+plan approved, then rerun with `{task, plan}`. It stops for
+approval on open questions or HIGH/CRITICAL impact risk and
+never commits.
 
 For simple questions or explanations:
 - Answer normally without invoking the full workflow.

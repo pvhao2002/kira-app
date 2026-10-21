@@ -33,7 +33,7 @@ they duplicate this pipeline.
 
 ## Step 0: Index Check
 
-Read `gitnexus://repo/silent/context`, or run
+Read `gitnexus://repo/kira-app/context`, or run
 `node .gitnexus/run.cjs status`. If the index is stale,
 refresh it with `gitnexus-cli` before relying on the graph.
 

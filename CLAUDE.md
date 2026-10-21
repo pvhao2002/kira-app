@@ -48,13 +48,14 @@ its own children's overrides for the individual apps.
 ## Build / verify commands
 
 There is no root-level build. Default rule across the whole repo: **verify only the module you changed, and only by
-the method its override specifies** — do not run tests, packaging, other modules, Docker, or full-stack builds unless
-explicitly asked.
+the method its override specifies** — do not run full test suites, packaging, other modules, Docker, or full-stack
+builds unless explicitly asked. Exception: under the dev-workflow skill (or the `plan-to-verify` workflow), write and
+run the focused tests for the code you change (TDD) and include them in verification.
 
 - Any Java module: `cd <module>` then `./mvnw.cmd compile` (Windows) — `kira-crawl-java` has no wrapper, use
   `mvn compile` instead.
-- `kira-ui`, `mobile-app`, `kira-bank/kira-bank-ui`: do not run `npm run build`, lint, tests, or a dev server unless
-  explicitly requested; a compile/build is not proof of correct UI behavior — inspect the rendered page/screen when
+- `kira-ui`, `mobile-app`, `kira-bank/kira-bank-ui`: do not run `npm run build`, lint, the full test suite, or a dev
+  server unless explicitly requested (focused tests under dev-workflow are allowed); a compile/build is not proof of correct UI behavior — inspect the rendered page/screen when
   runtime QA is authorized.
 - `docker compose up -d` only when local infrastructure is actually needed for a manual runtime check.
 - For any change to a message contract (queue name, DTO, routing key) between `kira-producer` and `kira-queue`, or an
@@ -133,6 +134,14 @@ or feature development requests:
 - Respect mandatory design and safety approvals.
 - Continue through implementation and verification
   when all required gates are satisfied.
+- Do not commit, push, or merge without user authorization.
+
+When the user asks to run the task as a workflow, use
+`.claude/workflows/plan-to-verify.js` (dev-workflow as a
+multi-agent pipeline): run `{task, planOnly: true}`, get the
+plan approved, then rerun with `{task, plan}`. It stops for
+approval on open questions or HIGH/CRITICAL impact risk and
+never commits.
 
 For simple questions or explanations:
 - Answer normally without invoking the full workflow.
