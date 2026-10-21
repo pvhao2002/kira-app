@@ -79,8 +79,22 @@ export class AdminUsersPage {
           this.result.update(list => list && {...list, data: list.data.map(u => u.id === updated.id ? updated : u)});
           this.toast.show(this.t(lock ? 'locked' : 'unlocked'), 'success');
         },
-        error: () => { this.statusBusy.set(null); this.toast.show(this.t('statusError'), 'error'); }
+        error: () => this.statusBusy.set(null)
       });
+  }
+
+  deleteUser(user: AdminUser): void {
+    if (!this.auth.admin() || this.statusBusy() !== null) return;
+    if (!window.confirm(this.t('deleteConfirm').replace('{email}', user.email))) return;
+    this.statusBusy.set(user.id);
+    this.api.delete<void>(`admin/users/${user.id}`).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.statusBusy.set(null);
+        this.toast.show(this.t('deleted'), 'success');
+        this.load(this.result()?.meta.page ?? 0);
+      },
+      error: () => this.statusBusy.set(null)
+    });
   }
 
   openCreate(): void {

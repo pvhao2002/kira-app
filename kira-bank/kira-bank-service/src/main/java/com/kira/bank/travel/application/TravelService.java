@@ -1,5 +1,6 @@
 package com.kira.bank.travel.application;
 
+import com.kira.bank.identity.application.UsageQuotaService;
 import com.kira.bank.shared.web.ApiException;
 import com.kira.bank.travel.infrastructure.TravelRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import static com.kira.bank.travel.application.TravelDtos.*;
 @RequiredArgsConstructor
 public class TravelService {
     private final TravelRepository repo;
+    private final UsageQuotaService quota;
 
     private static ApiException invalid(String message) {
         return new ApiException(HttpStatus.BAD_REQUEST, "TRAVEL_INVALID", message);
@@ -205,6 +207,7 @@ public class TravelService {
         // Use the detected type's extension, never an executable extension supplied by the client.
         name = name.replaceFirst("\\.[^.]*$", "") + (type.equals("application/pdf") ? ".pdf" : type.equals("image/png") ? ".png" : ".jpg");
         var metadata = new FileView(UUID.randomUUID().toString(), name, type, bytes.length);
+        quota.reserveUpload(user, bytes.length);
         repo.insertFile(trip, metadata, bytes);
         return metadata;
     }

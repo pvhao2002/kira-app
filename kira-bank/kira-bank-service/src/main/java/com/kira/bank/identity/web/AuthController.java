@@ -49,6 +49,12 @@ public class AuthController {
         return auth.updateStatus(adminId, id, r);
     }
 
+    @DeleteMapping("/api/v1/admin/users/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@AuthenticationPrincipal Long adminId, @PathVariable Long id) {
+        auth.deleteUser(adminId, id);
+    }
+
     @PostMapping("/api/v1/auth/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest r, HttpServletRequest request) {
         return session(auth.login(r, clientIps.resolve(request), request.getHeader(HttpHeaders.USER_AGENT)));

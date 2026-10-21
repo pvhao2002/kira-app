@@ -1,0 +1,141 @@
+<section class="page-heading english-heading">
+  <div><span class="eyebrow">{{ i18n.t('english.eyebrow') }}</span><h1>{{ i18n.t('english.title') }}</h1><p>{{ i18n.t('english.description') }}</p></div>
+  <div class="progress-summary" role="status">
+    <span>{{ i18n.t('english.roadmapProgress') }}</span>
+    <strong>{{ roadmapProgress() }}%</strong>
+    <span class="progress-bar" aria-hidden="true"><span [style.width.%]="roadmapProgress()"></span></span>
+  </div>
+</section>
+
+<nav class="track-tabs" role="tablist" [attr.aria-label]="i18n.t('english.sections')">
+  @for (item of tabs; track item) {
+    <button type="button" role="tab" [attr.aria-selected]="tab() === item" (click)="tab.set(item)">
+      {{ i18n.t('english.tab.' + item) }}
+      @if (item !== 'roadmap' && item !== 'rewrite') { <small>{{ trackProgress(item) }}%</small> }
+    </button>
+  }
+</nav>
+
+@if (tab() === 'roadmap') {
+  <section class="panel routine" [attr.aria-label]="i18n.t('english.dailyRoutine')">
+    <h2><app-icon name="clock"/> {{ i18n.t('english.dailyRoutine') }}</h2>
+    <ul>@for (step of routine; track $index) { <li>{{ text(step) }}</li> }</ul>
+  </section>
+
+  <ol class="weeks">
+    @for (week of roadmap; track week.week) {
+      <li class="panel week" [class.current]="currentWeek() === week.week">
+        <header>
+          <span class="week-number">{{ i18n.t('english.week', {week: week.week}) }}</span>
+          <span class="phase">{{ text(week.phase) }}</span>
+          @if (currentWeek() === week.week) { <span class="now">{{ i18n.t('english.currentWeek') }}</span> }
+        </header>
+        <h3>{{ text(week.focus) }}</h3>
+        <ul class="tasks">
+          @for (task of week.tasks; track $index) {
+            <li><label>
+              <input type="checkbox" [checked]="done().has(taskId(week.week, $index))" (change)="toggle(taskId(week.week, $index))">
+              <span>{{ text(task) }}</span>
+            </label></li>
+          }
+        </ul>
+        <div class="week-links">
+          @for (id of week.tracks; track id) {
+            <button type="button" class="link-chip" (click)="tab.set(id)">{{ i18n.t('english.tab.' + id) }}</button>
+          }
+        </div>
+      </li>
+    }
+  </ol>
+} @else if (tab() === 'rewrite') {
+  <section class="practice-toolbar">
+    <label><input type="checkbox" [checked]="showMeaning()" (change)="showMeaning.set(!showMeaning())"> {{ i18n.t('english.showMeaning') }}</label>
+    @if (canSpeak) {
+      <label><input type="checkbox" [checked]="slow()" (change)="slow.set(!slow())"> {{ i18n.t('english.slowSpeech') }}</label>
+    } @else {
+      <span class="hint">{{ i18n.t('english.noSpeech') }}</span>
+    }
+  </section>
+  <app-ai-rewrite [speak]="speakFn" [speaking]="speaking()" [showMeaning]="showMeaning()" [(kind)]="rewriteKind" [(question)]="rewriteQuestion" [(category)]="rewriteCategory" [(notes)]="rewriteNotes" [(result)]="rewriteResult"/>
+} @else if (track(); as current) {
+  <section class="practice-toolbar">
+    <label><input type="checkbox" [checked]="showMeaning()" (change)="showMeaning.set(!showMeaning())"> {{ i18n.t('english.showMeaning') }}</label>
+    @if (canSpeak) {
+      <label><input type="checkbox" [checked]="slow()" (change)="slow.set(!slow())"> {{ i18n.t('english.slowSpeech') }}</label>
+    } @else {
+      <span class="hint">{{ i18n.t('english.noSpeech') }}</span>
+    }
+    <span class="hint">{{ i18n.t('english.shadowHint') }}</span>
+  </section>
+
+  @if (current.id === 'interview') {
+    <app-interview-drill [speak]="speakFn" [speaking]="speaking()" [showMeaning]="showMeaning()"
+                         [(category)]="drillCategory" [(index)]="drillIndex"
+                         (answerWithAi)="openRewrite({kind: 'INTERVIEW', question: $event.question, category: $event.category})"/>
+  } @else if (current.id === 'standup') {
+    <div class="rewrite-shortcuts">
+      <button type="button" class="btn primary" (click)="openRewrite({kind: 'STANDUP'})">{{ i18n.t('english.writeWithAi') }}</button>
+    </div>
+  } @else if (current.id === 'reports') {
+    <div class="rewrite-shortcuts">
+      <button type="button" class="btn primary" (click)="openRewrite({kind: 'WEEKLY'})">{{ i18n.t('english.kind.WEEKLY') }} · {{ i18n.t('english.writeWithAi') }}</button>
+      <button type="button" class="btn primary" (click)="openRewrite({kind: 'BIWEEKLY'})">{{ i18n.t('english.kind.BIWEEKLY') }} · {{ i18n.t('english.writeWithAi') }}</button>
+    </div>
+  }
+
+  @for (group of current.groups; track $index; let g = $index) {
+    <section class="panel phrase-group">
+      <h2>{{ text(group.title) }}</h2>
+      @if (group.tip) { <p class="tip"><app-icon name="info"/> {{ text(group.tip) }}</p> }
+      <ul class="phrases">
+        @for (phrase of group.phrases; track $index; let p = $index) {
+          @let id = phraseId(current.id, g, p);
+          <li [class.practised]="done().has(id)">
+            <div class="phrase-text">
+              <strong lang="en">{{ phrase.en }}</strong>
+              @if (showMeaning()) { <span lang="vi">{{ phrase.vi }}</span> }
+            </div>
+            <div class="phrase-actions">
+              @if (canSpeak) {
+                <button type="button" class="icon-button" [attr.aria-pressed]="speaking() === id"
+                        [attr.aria-label]="i18n.t('english.listen')" [title]="i18n.t('english.listen')" (click)="speak(phrase.en, id)">
+                  <app-icon name="volume"/>
+                </button>
+              }
+              <button type="button" class="icon-button" [attr.aria-pressed]="done().has(id)"
+                      [attr.aria-label]="i18n.t('english.markPractised')" [title]="i18n.t('english.markPractised')" (click)="toggle(id)">
+                <app-icon [name]="done().has(id) ? 'check-circle' : 'check'"/>
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (current.templates.length) {
+    <h2 class="templates-title">{{ i18n.t('english.templates') }}</h2>
+    <div class="templates">
+      @for (template of current.templates; track $index; let t = $index) {
+        <section class="panel template">
+          <header>
+            <h3>{{ text(template.title) }}</h3>
+            <div class="phrase-actions">
+              @if (canSpeak) {
+                <button type="button" class="icon-button" [attr.aria-pressed]="speaking() === current.id + '.template.' + t"
+                        [attr.aria-label]="i18n.t('english.listen')" [title]="i18n.t('english.listen')"
+                        (click)="speak(template.body, current.id + '.template.' + t)">
+                  <app-icon name="volume"/>
+                </button>
+              }
+              <button type="button" class="icon-button" [attr.aria-label]="i18n.t('english.copy')" [title]="i18n.t('english.copy')" (click)="copy(template.body)">
+                <app-icon name="copy"/>
+              </button>
+            </div>
+          </header>
+          <pre lang="en">{{ template.body }}</pre>
+        </section>
+      }
+    </div>
+  }
+}

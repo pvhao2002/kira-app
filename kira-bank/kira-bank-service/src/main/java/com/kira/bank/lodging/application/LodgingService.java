@@ -6,6 +6,7 @@ import com.kira.bank.attachment.domain.Attachment;
 import com.kira.bank.attachment.domain.AttachmentAiStatus;
 import com.kira.bank.attachment.infrastructure.AttachmentRepository;
 import com.kira.bank.identity.domain.User;
+import com.kira.bank.identity.application.UsageQuotaService;
 import com.kira.bank.identity.infrastructure.UserRepository;
 import com.kira.bank.lodging.domain.*;
 import com.kira.bank.lodging.infrastructure.*;
@@ -49,6 +50,7 @@ public class LodgingService {
     private final AttachmentRepository attachments;
     private final UserRepository users;
     private final R2StorageService storage;
+    private final UsageQuotaService quota;
     private final MapboxClient mapbox;
 
     /** Returns the new listing id; callers build the response via {@link #detail} after distance calculation. */
@@ -234,6 +236,7 @@ public class LodgingService {
         String username = users.findById(userId).map(User::getEmail).orElse("unknown");
         String key = storage.userImageKey(userId, username, LocalDate.now(ZoneId.of("Asia/Bangkok")),
             imageNumber, extension(mime));
+        quota.reserveUpload(userId, data.length);
         R2StorageService.StoredObject stored = storage.upload(key, data, mime);
         Attachment attachment = new Attachment();
         attachment.setUserId(userId);

@@ -29,6 +29,9 @@ export const usersEnglish = {
   "users.lockConfirm": "Lock {email}? This user will no longer be able to sign in.",
   "users.locked": "User locked.",
   "users.unlocked": "User unlocked.",
+  "users.delete": "Delete",
+  "users.deleteConfirm": "Delete {email}? This user will no longer be able to sign in.",
+  "users.deleted": "User deleted.",
   "users.statusError": "Unable to update user status. Please try again."
 };
 
@@ -63,6 +66,9 @@ export const usersVietnamese = {
   "users.lockConfirm": "Khóa {email}? User này sẽ không thể đăng nhập.",
   "users.locked": "Đã khóa User.",
   "users.unlocked": "Đã mở khóa User.",
+  "users.delete": "Xóa",
+  "users.deleteConfirm": "Xóa {email}? Người dùng này sẽ không thể đăng nhập nữa.",
+  "users.deleted": "Đã xóa người dùng.",
   "users.statusError": "Không thể cập nhật trạng thái. Vui lòng thử lại."
 };
 

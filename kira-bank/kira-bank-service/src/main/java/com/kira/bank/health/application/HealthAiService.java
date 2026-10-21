@@ -3,6 +3,7 @@ package com.kira.bank.health.application;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kira.bank.ai.AiHealthClient;
 import com.kira.bank.health.infrastructure.HealthRepository;
+import com.kira.bank.identity.application.UsageQuotaService;
 import com.kira.bank.shared.web.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,7 @@ public class HealthAiService {
     private final AiHealthClient client;
     private final ObjectMapper mapper;
     private final TransactionTemplate transactions;
+    private final UsageQuotaService quota;
 
     public List<AiJob> jobs(long user) {
         return repo.jobs(user);
@@ -56,6 +58,7 @@ public class HealthAiService {
             repo.expireJobs(user);
             if (repo.jobs(user).stream().anyMatch(j -> j.status().equals("RUNNING")))
                 throw new ApiException(HttpStatus.CONFLICT, "HEALTH_AI_ALREADY_RUNNING", "A health plan is already being generated");
+            quota.consumeAi(user, 1);
             repo.startJob(user, id);
         });
         try {

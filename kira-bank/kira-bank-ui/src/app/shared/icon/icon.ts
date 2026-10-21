@@ -39,6 +39,7 @@ export type IconName =
   | 'trend-up'
   | 'trash'
   | 'users'
+  | 'volume'
   | 'wallet'
   | 'x-circle';
 
@@ -193,6 +194,10 @@ export type IconName =
         @case ('wallet') {
           <path d="M4 5h14a2 2 0 0 1 2 2v12H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/>
           <path d="M16 11h6v4h-6a2 2 0 0 1 0-4Z"/>
+        }
+        @case ('volume') {
+          <path d="M11 5 6 9H3v6h3l5 4V5Z"/>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>
         }
         @case ('x-circle') {
           <circle cx="12" cy="12" r="9"/>

@@ -1,0 +1,105 @@
+<div class="layout">
+  <section class="panel form" [attr.aria-label]="i18n.t('english.rewriteTitle')">
+    <h2>{{ i18n.t('english.rewriteTitle') }}</h2>
+    <p class="hint">{{ i18n.t('english.rewriteHint') }}</p>
+
+    <div class="segments" role="group" [attr.aria-label]="i18n.t('english.kind')">
+      @for (item of kinds; track item) {
+        <button type="button" class="segment" [attr.aria-pressed]="kind() === item" (click)="setKind(item)">{{ i18n.t('english.kind.' + item) }}</button>
+      }
+    </div>
+
+    @if (kind() === 'INTERVIEW') {
+      <label class="field">
+        <span>{{ i18n.t('english.question') }}</span>
+        <input type="text" required [attr.maxlength]="questionMax" [value]="question()" (input)="question.set($any($event.target).value)">
+      </label>
+    }
+
+    <label class="field">
+      <span>{{ i18n.t('english.notes') }}</span>
+      <textarea rows="7" aria-describedby="rewrite-notes-count" required [attr.maxlength]="notesMax" [placeholder]="i18n.t('english.notesPlaceholder')" [value]="notes()" (input)="notes.set($any($event.target).value)"></textarea>
+      <small id="rewrite-notes-count" class="counter" [class.over]="notes().length >= notesMax">{{ notes().length }} / {{ notesMax }}</small>
+    </label>
+
+    <button type="button" class="btn primary" [disabled]="!valid() || loading()" [attr.aria-busy]="loading()" (click)="generate()">
+      {{ i18n.t(loading() ? 'english.generating' : 'english.generate') }}
+    </button>
+
+    @if (error(); as message) { <p class="error" role="alert">{{ message }}</p> }
+  </section>
+
+  <section class="panel result" [attr.aria-label]="i18n.t('english.savedResult')" aria-live="polite">
+    @if (result(); as current) {
+      <header>
+        <h2>{{ current.title }}</h2>
+        <div class="actions">
+          @if (canSpeak) {
+            <button type="button" class="btn" [attr.aria-pressed]="speaking() === 'rewrite.' + current.id + '.all'" (click)="listenAll()"><app-icon name="volume"/> {{ i18n.t('english.listenAll') }}</button>
+          }
+          <button type="button" class="btn ghost" (click)="copyEnglish()"><app-icon name="copy"/> {{ i18n.t('english.copyEnglish') }}</button>
+        </div>
+      </header>
+
+      @if (current.question) { <p class="question" lang="en">{{ current.question }}</p> }
+
+      @for (group of groups(); track $index) {
+        <div class="group">
+          @if (group.section) { <h3>{{ group.section }}</h3> }
+          <ul>
+            @for (item of group.items; track item.index) {
+              <li>
+                <div class="text">
+                  <strong lang="en">{{ item.en }}</strong>
+                  @if (showMeaning() && item.vi) { <span lang="vi">{{ item.vi }}</span> }
+                </div>
+                @if (canSpeak) {
+                  <button type="button" class="icon-button" [attr.aria-pressed]="speaking() === 'rewrite.' + current.id + '.' + item.index"
+                          [attr.aria-label]="i18n.t('english.listen')" [title]="i18n.t('english.listen')" (click)="speak()(item.en, 'rewrite.' + current.id + '.' + item.index)">
+                    <app-icon name="volume"/>
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (current.keyPhrases.length) {
+        <h3>{{ i18n.t('english.keyPhrases') }}</h3>
+        <ul class="key-phrases">
+          @for (phrase of current.keyPhrases; track $index) {
+            <li><span lang="en">{{ phrase.en }}</span>@if (showMeaning() && phrase.vi) { <small lang="vi"> {{ phrase.vi }}</small> }</li>
+          }
+        </ul>
+      }
+    } @else {
+      <p class="hint">{{ i18n.t('english.resultEmpty') }}</p>
+    }
+  </section>
+</div>
+
+<section class="panel history" [attr.aria-label]="i18n.t('english.history')">
+  <h2>{{ i18n.t('english.history') }}</h2>
+  @if (historyError(); as message) { <p class="error" role="alert">{{ message }}</p> }
+  @if (historyActionError(); as message) { <p class="error" role="alert">{{ message }}</p> }
+  @if (historyLoading() && !history().length) {
+    <p class="hint">{{ i18n.t('english.loading') }}</p>
+  } @else if (!history().length && !historyError()) {
+    <p class="hint">{{ i18n.t('english.historyEmpty') }}</p>
+  } @else {
+    <ul>
+      @for (item of history(); track item.id) {
+        <li [class.active]="result()?.id === item.id">
+          <button type="button" class="open" [attr.aria-current]="result()?.id === item.id" (click)="open(item.id)">
+            <strong>{{ item.title }}</strong>
+            <small>{{ i18n.t('english.kind.' + item.kind) }} · {{ date(item.createdAt) }}</small>
+          </button>
+          <button type="button" class="icon-button" [attr.aria-label]="i18n.t('english.delete')" [title]="i18n.t('english.delete')" (click)="remove(item.id)">
+            <app-icon name="trash"/>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>

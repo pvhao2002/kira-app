@@ -1,0 +1,59 @@
+<section class="panel drill" [attr.aria-label]="i18n.t('english.drillTitle')">
+  <h2>{{ i18n.t('english.drillTitle') }}</h2>
+  <div class="chips" role="group" [attr.aria-label]="i18n.t('english.drillCategories')">
+    <button type="button" class="chip" [attr.aria-pressed]="category() === null" (click)="select(null)">{{ i18n.t('english.cat.ALL') }}</button>
+    @for (item of categories; track item) {
+      <button type="button" class="chip" [attr.aria-pressed]="category() === item" (click)="select(item)">{{ i18n.t('english.cat.' + item) }}</button>
+    }
+  </div>
+
+  @if (current(); as q) {
+    <div class="nav">
+      <button type="button" class="icon-button" [attr.aria-label]="i18n.t('english.drillPrev')" [title]="i18n.t('english.drillPrev')" (click)="step(-1)"><app-icon name="chevron-left"/></button>
+      <span class="count" role="status">{{ index() + 1 }} / {{ questions().length }}</span>
+      <button type="button" class="icon-button" [attr.aria-label]="i18n.t('english.drillNext')" [title]="i18n.t('english.drillNext')" (click)="step(1)"><app-icon name="chevron-right"/></button>
+    </div>
+
+    <div class="question">
+      @if (canSpeak) {
+        <button type="button" class="btn" [attr.aria-pressed]="speaking() === 'drill.q.' + index()" (click)="speak()(q.question, 'drill.q.' + index())">
+          <app-icon name="volume"/> {{ i18n.t('english.playQuestion') }}
+        </button>
+      }
+      <button type="button" class="btn ghost" [attr.aria-expanded]="revealed()" (click)="revealed.set(!revealed())">
+        <app-icon name="eye"/> {{ i18n.t(revealed() ? 'english.hideQuestion' : 'english.showQuestion') }}
+      </button>
+    </div>
+
+    @if (revealed()) {
+      <p class="q-text" lang="en">{{ q.question }}</p>
+      @if (showMeaning()) { <p class="q-vi" lang="vi">{{ q.questionVi }}</p> }
+
+      <h3>{{ i18n.t('english.outline') }}</h3>
+      <ul class="outline">
+        @for (point of q.outline; track $index) {
+          <li><span lang="en">{{ point.en }}</span>@if (showMeaning()) { <small lang="vi">{{ point.vi }}</small> }</li>
+        }
+      </ul>
+
+      <h3>{{ i18n.t('english.modelAnswer') }}</h3>
+      <p class="answer" lang="en">{{ q.answer }}</p>
+      @if (canSpeak) {
+        <button type="button" class="btn" [attr.aria-pressed]="speaking() === 'drill.a.' + index()" (click)="speak()(q.answer, 'drill.a.' + index())">
+          <app-icon name="volume"/> {{ i18n.t('english.listen') }}
+        </button>
+      }
+
+      <h3>{{ i18n.t('english.keyPhrases') }}</h3>
+      <ul class="phrases">@for (phrase of q.keyPhrases; track $index) { <li lang="en">{{ phrase }}</li> }</ul>
+
+      <button type="button" class="btn primary" (click)="answerWithAi.emit({question: q.question, category: q.category})">
+        <app-icon name="star"/> {{ i18n.t('english.answerWithAi') }}
+      </button>
+    } @else {
+      <p class="hint">{{ i18n.t('english.questionHidden') }}</p>
+    }
+  } @else {
+    <p class="hint">{{ i18n.t('english.noQuestions') }}</p>
+  }
+</section>

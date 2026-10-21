@@ -124,6 +124,12 @@ export const routes: Routes = [
         data: {titleKey: 'route.tutorSchedule'}
       },
       {
+        path: 'english-speaking',
+        loadComponent: () => import('./features/english-speaking/english-speaking.page')
+          .then(m => m.EnglishSpeakingPage),
+        data: {titleKey: 'route.englishSpeaking'}
+      },
+      {
         path: 'karaoke',
         loadComponent: () => import('./features/shared/resource.page').then(m => m.ResourcePage),
         data: {resourceKey: 'favoriteSongs', titleKey: 'route.favoriteSongs'}

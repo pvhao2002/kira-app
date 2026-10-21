@@ -889,3 +889,44 @@ export interface StorageOperationsUsage {
   exceeded: boolean;
   errorCode: string | null;
 }
+
+export type EnglishKind = 'STANDUP' | 'WEEKLY' | 'BIWEEKLY' | 'INTERVIEW';
+export type EnglishCategory = 'JAVA_CORE' | 'SPRING' | 'DATABASE' | 'ANGULAR' | 'SYSTEM_DESIGN' | 'PROJECT';
+
+export interface EnglishSentence {
+  section: string;
+  en: string;
+  vi: string;
+}
+
+export interface EnglishKeyPhrase {
+  en: string;
+  vi: string;
+}
+
+/** AI-rewritten spoken English report or interview answer. */
+export interface EnglishRewrite {
+  id: string;
+  kind: EnglishKind;
+  category: EnglishCategory | null;
+  question: string | null;
+  notes: string;
+  title: string;
+  sentences: EnglishSentence[];
+  keyPhrases: EnglishKeyPhrase[];
+  createdAt: string;
+}
+
+export interface EnglishRewriteSummary {
+  id: string;
+  kind: EnglishKind;
+  title: string;
+  createdAt: string;
+}
+
+export interface EnglishRewriteRequest {
+  kind: EnglishKind;
+  notes: string;
+  question?: string;
+  category?: EnglishCategory;
+}

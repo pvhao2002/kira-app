@@ -30,6 +30,17 @@ Tài khoản mới luôn ACTIVE và chỉ có ROLE_USER. Trường roles vẫn �
 {"status":"LOCKED"}
 ```
 
-`status` là `ACTIVE` hoặc `LOCKED`, giá trị khác trả 400. Tài khoản LOCKED không đăng nhập hay refresh được, và access token đang dùng bị từ chối ngay (bộ lọc JWT chỉ nhận ACTIVE). Admin được khóa/mở khóa mọi tài khoản, kể cả Admin khác, nhưng không được khóa chính mình (400 CANNOT_CHANGE_OWN_STATUS). User không tồn tại trả 404 USER_NOT_FOUND. Thành công trả AdminUserResponse.
+`status` là `ACTIVE` hoặc `LOCKED`, giá trị khác trả 400. Tài khoản LOCKED không đăng nhập hay refresh được, và access token đang dùng bị từ chối ngay (bộ lọc JWT chỉ nhận ACTIVE). Không được khóa chính mình (400 CANNOT_CHANGE_OWN_STATUS); có thể khóa Admin khác. User không tồn tại trả 404 USER_NOT_FOUND. Thành công trả AdminUserResponse.
 
-Màn hình `/app/admin/users` hỗ trợ xem danh sách, tạo, khóa và mở khóa User. Chưa hỗ trợ sửa, xóa hoặc đặt lại mật khẩu.
+## Xóa User
+
+`DELETE /api/v1/admin/users/{id}`
+
+Xóa mềm (đặt deletedAt) và thu hồi mọi refresh token của User; trả 204. Không được xóa chính mình (400 CANNOT_DELETE_SELF). User không tồn tại hoặc đã xóa trả 404 USER_NOT_FOUND.
+
+Màn hình `/app/admin/users` hỗ trợ xem danh sách, tạo, khóa, mở khóa và xóa User. Chưa hỗ trợ sửa hoặc đặt lại mật khẩu.
+
+## Hạn mức sử dụng (User thường; Admin được miễn)
+
+- Upload: tối đa 500 MB tích lũy mỗi User (`users.uploaded_bytes`); vượt trả 413 UPLOAD_QUOTA_EXCEEDED.
+- AI: tối đa 100 lượt mỗi ngày (múi giờ Asia/Ho_Chi_Minh, bảng `user_ai_usage`); vượt trả 429 AI_DAILY_LIMIT_EXCEEDED kèm header `Retry-After` (giây đến 00:00).

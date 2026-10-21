@@ -10,6 +10,7 @@ import com.kira.bank.attachment.application.InvestmentAiManualRunService;
 import com.kira.bank.attachment.domain.Attachment;
 import com.kira.bank.attachment.domain.AttachmentAiStatus;
 import com.kira.bank.attachment.infrastructure.AttachmentRepository;
+import com.kira.bank.identity.application.UsageQuotaService;
 import com.kira.bank.identity.infrastructure.UserRepository;
 import com.kira.bank.investment.domain.*;
 import com.kira.bank.investment.infrastructure.*;
@@ -73,6 +74,7 @@ public class InvestmentTransactionImportService {
     private final MeterRegistry metrics;
     private final ApplicationEventPublisher events;
     private final TransactionTemplate transactionTemplate;
+    private final UsageQuotaService quota;
     @Value("${investment.transaction-import.time-zone:Asia/Ho_Chi_Minh}")
     private String transactionImportTimeZone;
 
@@ -90,6 +92,9 @@ public class InvestmentTransactionImportService {
         validateUploads(uploads);
         // Non-locking pre-check so a rate-limited request does not upload anything; re-checked under the lock below.
         checkRateLimit(userId, uploads.size());
+        // ponytail: read-only pre-check; concurrent batches can still fail mid-way at reserveUpload. Lock the user row if that matters.
+        quota.checkAi(userId, uploads.size());
+        quota.checkUpload(userId, uploads.stream().mapToLong(MultipartFile::getSize).sum());
         List<AttachmentService.PreparedUpload> prepared = new ArrayList<>(uploads.size());
         for (int index = 0; index < uploads.size(); index++) {
             prepared.add(attachmentService.store(userId, AttachmentService.INVESTMENT_MODULE,
@@ -136,6 +141,7 @@ public class InvestmentTransactionImportService {
             if (attachment.aiStatus() == AttachmentAiStatus.PENDING) pending.add(attachment.attachmentId());
             else if (isReady(attachment.aiStatus())) alreadyExtracted.add(attachment.attachmentId());
         }
+        quota.consumeAi(userId, pending.size());
         if (!pending.isEmpty()) events.publishEvent(new InvestmentAiManualRunService.ReceiptsQueued(pending));
         log.info("Investment import queued userId={} accountId={} numberOfImages={}", userId, accountId, numberOfImages);
     }

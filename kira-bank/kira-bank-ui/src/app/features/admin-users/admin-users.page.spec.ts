@@ -22,7 +22,7 @@ describe('AdminUsersPage', () => {
       imports: [AdminUsersPage],
       providers: [
         {provide: ApiService, useValue: api},
-        {provide: AuthStore, useValue: {admin: () => true}},
+        {provide: AuthStore, useValue: {admin: () => true, user: () => ({id: 1})}},
         {provide: LanguageService, useValue: {t: (key: string) => key}}
       ]
     }).compileComponents();

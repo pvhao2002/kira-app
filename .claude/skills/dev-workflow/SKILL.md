@@ -1,149 +1,150 @@
-
 ---
 name: dev-workflow
-description: End-to-end development workflow that clarifies user requirements, explores the codebase, plans, implements, tests, and reviews changes using installed coding skills and GitNexus.
+description: Entry point for implementation, bug fixing, refactoring, or feature/improvement work. Classifies the task, then routes through Superpowers process skills, GitNexus graph analysis, and Ponytail minimalism (debug or brainstorm, plan, TDD execution, correctness + over-engineering review, graph-verified completion, branch finishing).
 ---
 
 # Automated Development Workflow
 
 You are the workflow orchestrator.
 
-The user provides a task or requirement. You are responsible
-for coordinating the appropriate installed skills and tools.
+The user provides a task or requirement. You coordinate the
+installed skills and tools below. Invoke each skill with the
+Skill tool. Do not pretend to run a skill.
+
+Each toolset has one role:
+- **Superpowers**: process (debug, design, plan, execute, review, finish).
+- **GitNexus**: code understanding and blast radius (graph before grep).
+- **Ponytail**: minimal solution and over-engineering check.
+
+Use `superpowers:writing-plans` / `executing-plans` for plans.
+Do not also run `gitnexus-plan` / `gitnexus-work` / `gitnexus-lfg`:
+they duplicate this pipeline.
 
 ## General Rules
 
-- Classify task complexity before starting.
 - Do not ask questions whose answers are available in the repository.
 - Ask one focused clarification question at a time.
 - Continue automatically when requirements are sufficiently clear.
-- Use installed skills, rather than pretending to execute them.
 - Never skip critical security or verification steps.
 - Preserve user changes and existing project conventions.
 - Respect mandatory approval gates of installed skills.
 - Stop for destructive or production-sensitive actions.
+- Keep all user-facing clarification and approvals in the main conversation.
 
+## Step 0: Index Check
 
-## Model Routing & Delegation
+Read `gitnexus://repo/silent/context`, or run
+`node .gitnexus/run.cjs status`. If the index is stale,
+refresh it with `gitnexus-cli` before relying on the graph.
 
-Use phase-specific Claude Code subagents.
+## Step 1: Classify the Task
 
-| Phase | Subagent | Model |
-|---|---|---|
-| 01 | requirements | claude-opus-5-5 |
-| 02 | exploration | claude-sonnet-5-5 |
-| 03 | planning | claude-opus-5-5 |
-| 04 | implementation | claude-sonnet-5-5 |
-| 05 | verification | claude-sonnet-5-5 |
-| 06 | delivery | claude-sonnet-5-5 |
+Classify the task as **bug**, **feature**, **improvement**, or **refactor**.
+If the request makes the type clear, do not ask.
+Otherwise ask the user one question.
 
-Execution rules:
+Gate: Task type is known.
 
-1. Delegate each phase to its designated subagent.
-2. Do not run phase work in the orchestrator
-   when the corresponding subagent is available.
-3. Wait for the current phase result before continuing.
-4. Check the phase gate before starting the next phase.
-5. Pass the previous phase's relevant findings
-   to the next subagent.
-6. Preserve requirements, decisions, and test evidence.
-7. Do not run dependent phases concurrently.
-8. If delegation fails, report the failure rather
-   than silently executing on a different model.
-9. Keep all user-facing clarification and mandatory
-   approval interactions in the main conversation.
+## Step 2: Understand
 
-Subagent model selection is controlled by each
-subagent's model frontmatter, not by this table alone.
+Read before deciding. Ponytail shortens the solution, never the reading.
 
+- **Bug**: `superpowers:systematic-debugging` for the process;
+  `gitnexus-debugging` to trace the failing flow. For intermittent
+  failures or performance regressions, add `investigate-first`.
+- **Feature / Improvement**: `gitnexus-exploring` to map the
+  related modules, flows, and existing helpers to reuse.
+- **Refactor**: `gitnexus-refactoring`. Renames go through the
+  GitNexus `rename` tool, never find-and-replace.
 
-## Phase 1: Requirement Discovery
+For every symbol you plan to edit, run `gitnexus-impact-analysis`
+(`impact` upstream). Report callers, processes, and risk.
+- Warn the user on HIGH/CRITICAL risk.
+- Treat UNKNOWN as unresolved: confirm with a text search.
 
-Use Superpowers brainstorming when appropriate.
+Gate: Root cause known (bug), or affected code paths and
+impact known (feature/improvement/refactor).
 
-1. Understand user intent and expected outcome.
-2. Identify unknown requirements and assumptions.
-3. Inspect existing code when that can resolve uncertainty.
-4. Ask the user only for important missing decisions.
-5. Define acceptance criteria.
-6. Classify the task: trivial, bounded, or architectural.
+## Step 3: Design and Plan
 
-Gate: Requirements are sufficiently clear.
+Apply `ponytail:ponytail` while designing. Climb the ladder:
+need it at all → already in codebase → stdlib → native platform
+→ installed dependency → one line → minimum code.
 
-## Phase 2: Repository Exploration
+- **Bug, small fix** (root cause clear, 1-2 files): skip planning.
+  Fix at the shared function where all callers route through.
+- **Bug, otherwise**: `superpowers:writing-plans`.
+- **Feature / Improvement**: `superpowers:brainstorming` (design
+  approval), then `superpowers:writing-plans`.
+- **Refactor**: `superpowers:writing-plans` with the GitNexus impact
+  results; keep behavior identical.
 
-Use GitNexus MCP and installed GitNexus skills.
+Each plan task lists the symbols it edits and their impact risk.
 
-1. Verify repository index availability and freshness.
-2. Search relevant symbols and modules.
-3. Trace callers, dependencies, and execution flows.
-4. Perform impact analysis.
-5. Inspect real source files.
-6. Record relevant findings.
+Gate: Plan approved (or small fix confirmed).
 
-Gate: Relevant code paths and affected modules are known.
+## Step 4: Execute
 
-## Phase 3: Design and Planning
+Choose one execution skill:
+- `superpowers:subagent-driven-development`: the plan has
+  independent tasks and a subagent tool is available.
+- `superpowers:executing-plans`: tasks are sequential, share state,
+  the user chose inline execution, or no subagent tool is available.
 
-Use Superpowers planning skills for non-trivial tasks.
+Every task follows `superpowers:test-driven-development`:
+1. Run `impact` on the symbol if not already done.
+2. Write a failing test.
+3. Verify it fails for the expected reason.
+4. Implement the simplest correct solution (Ponytail).
+5. Run focused tests.
+6. Refactor without changing behavior.
 
-Apply Ponytail principles:
-- Reuse existing implementations first.
-- Prefer standard library and existing dependencies.
-- Avoid unnecessary layers, files, and abstractions.
-- Preserve correctness, security and required behavior.
+Mark deliberate shortcuts with a `ponytail:` comment naming the
+ceiling and the upgrade path.
 
-For architectural changes:
-- Follow Superpowers design approval requirements.
-- Write and review the implementation plan.
+Do not silently ignore failures. Failing test with unclear cause:
+back to `superpowers:systematic-debugging`.
 
-For small changes:
-- Use a lightweight plan.
+## Step 5: Code Review
 
-Gate: Plan matches requirements and mandatory
-approvals have been obtained.
+1. `superpowers:requesting-code-review`: correctness against requirements.
+2. `ponytail:ponytail-review`: over-engineering in the diff.
+3. `gitnexus-review` on the local changes: merge risk, regressions,
+   missing tests.
+4. `superpowers:receiving-code-review`: verify each finding against
+   the code before changing anything. Push back with evidence when
+   a finding is wrong.
 
-## Phase 4: Implementation
+## Step 6: Verification
 
-Use Superpowers TDD and execution skills.
+`superpowers:verification-before-completion`.
 
-For each task:
-1. Write or update tests when applicable.
-2. Verify the test fails for the expected reason.
-3. Implement the simplest correct solution.
-4. Run focused tests.
-5. Refactor without changing behavior.
-6. Review changes against requirements.
-
-Do not silently ignore failures.
-
-## Phase 5: Verification
-
-Use Superpowers verification and code review.
-
-Use GitNexus change impact analysis.
+Run GitNexus `detect_changes({scope: "all"})`.
+`partial: true` or `truncated: true` is not a clean check: re-run.
+Changed symbols and processes must match the plan.
 
 Check:
 - Acceptance criteria
 - Relevant unit and integration tests
 - Regression risks
-- Compatibility
 - Security boundaries
-- Unexpected dependencies
 - Unrelated changes
-
-Fix identified issues and rerun relevant checks.
 
 Gate: Required checks pass or blockers are reported.
 
-## Phase 6: Delivery
+## Step 7: Finish
 
-Apply Caveman communication principles.
+1. `ponytail:ponytail-debt`: list the `ponytail:` shortcuts this
+   change added, so they are tracked.
+2. `superpowers:finishing-a-development-branch`.
 
-Provide a concise report:
+Before any commit, `detect_changes` must be clean (Step 6).
+
+Report concisely:
 - Implemented changes
 - Changed files
 - Tests and results
+- Impact risk and new `ponytail:` debt
 - Remaining risks or blockers
 
 Do not claim tests passed unless actually executed.
@@ -153,15 +154,10 @@ the authorization required by project policy.
 ## Failure Handling
 
 - Missing GitNexus: report limitation; inspect source directly.
-- Stale graph: refresh the index before relying on it.
-- Missing skill: report limitation; use safe equivalent steps.
-- Failed tests: diagnose, fix, and rerun.
+- Stale graph: refresh with `gitnexus-cli` before relying on it.
+- Missing skill or GitNexus: suggest the `setup-dev-workflow` skill;
+  meanwhile use safe equivalent steps.
+- Failed tests: use systematic-debugging, fix, and rerun.
 - Ambiguous requirement: ask the user.
 - Destructive action: request explicit approval.
-- Repeated blocker: stop and report evidence.
-
-## Efficiency
-
-Use Caveman for concise communication, not as an excuse
-to omit evidence, diagnostics, plans or important details.
-Avoid redundant tool calls and unrelated context loading.
+- Repeated blocker (3 failed fixes): stop and report evidence.
