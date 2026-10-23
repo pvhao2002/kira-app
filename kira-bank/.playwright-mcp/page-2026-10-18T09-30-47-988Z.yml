@@ -1,0 +1,142 @@
+- generic [ref=e73]:
+  - complementary [ref=e74]:
+    - link "K Kira Life" [ref=e75] [cursor=pointer]:
+      - /url: /app
+      - generic [ref=e76]: K
+      - generic [ref=e77]: Kira Life
+    - button "Collapse sidebar" [expanded] [ref=e78] [cursor=pointer]
+    - navigation [ref=e82]:
+      - link "Overview" [ref=e83] [cursor=pointer]:
+        - /url: /app
+      - button "Travel" [ref=e91] [cursor=pointer]
+      - button "Health overview" [ref=e97] [cursor=pointer]
+      - button "CREDIT CARDS" [ref=e103] [cursor=pointer]
+      - button "INVESTMENTS" [ref=e109] [cursor=pointer]
+      - button "REPORTS" [ref=e115] [cursor=pointer]
+      - button "PERSONAL LIFE" [ref=e121] [cursor=pointer]
+      - button "ROOM FINDER" [ref=e127] [cursor=pointer]
+      - button "TUTORING" [ref=e133] [cursor=pointer]
+      - button "SYSTEM" [ref=e139] [cursor=pointer]
+    - generic [ref=e150]:
+      - generic [ref=e151]: Secure connection
+      - generic [ref=e152]: Your data is protected
+  - generic [ref=e153]:
+    - banner [ref=e154]:
+      - generic [ref=e157]:
+        - combobox "Global search" [ref=e161]
+        - generic [ref=e162]: /
+      - generic [ref=e163]:
+        - button "Change language" [ref=e166] [cursor=pointer]:
+          - generic [ref=e170]: EN
+        - button "Theme System" [ref=e173] [cursor=pointer]
+        - link "Notifications" [ref=e178] [cursor=pointer]:
+          - /url: /app/notifications
+        - button "Open account menu" [ref=e182] [cursor=pointer]: AT
+    - main [ref=e183]:
+      - generic [ref=e184]:
+        - generic [ref=e185]:
+          - generic [ref=e186]:
+            - text: Sunday, October 18, 2026
+            - heading "Hello, Account Test" [level=1] [ref=e187]
+            - paragraph [ref=e188]: Your priorities, finances and teaching schedule in one place.
+          - generic [ref=e189]:
+            - button [ref=e190] [cursor=pointer]
+            - button [ref=e195] [cursor=pointer]
+        - generic [ref=e199]:
+          - generic [ref=e200]:
+            - generic [ref=e202]:
+              - generic [ref=e203]: Start here
+              - heading "Needs your attention" [level=2] [ref=e204]
+            - generic [ref=e349]:
+              - heading "You’re all caught up" [level=3] [ref=e354]
+              - paragraph [ref=e355]: No outstanding tasks in the monitored groups.
+          - generic [ref=e210]:
+            - generic [ref=e211]:
+              - generic [ref=e212]:
+                - generic [ref=e213]: Next 7 days
+                - heading "Upcoming lessons" [level=2] [ref=e214]
+              - link "View all" [ref=e215] [cursor=pointer]:
+                - /url: /app/tutor-schedule
+            - generic [ref=e216]: Updated 10/18, 04:30 PM
+            - paragraph [ref=e357]: No upcoming lessons. Open your schedule to plan the next one.
+        - generic [ref=e219]:
+          - generic [ref=e220]:
+            - generic [ref=e221]:
+              - generic [ref=e222]: Current snapshot
+              - heading [level=2] [ref=e223]
+            - link "View details" [ref=e228] [cursor=pointer]:
+              - /url: /app/credit-card/dashboard
+          - generic [ref=e229]: Updated 10/18, 04:30 PM
+          - generic [ref=e359]:
+            - text: No credit cards yet.
+            - link "Manage cards" [ref=e360] [cursor=pointer]:
+              - /url: /app/credit-cards
+        - generic [ref=e232]:
+          - generic [ref=e233]:
+            - generic [ref=e234]:
+              - generic [ref=e235]: Completed transactions only
+              - heading [level=2] [ref=e236]
+            - generic [ref=e241]:
+              - generic [ref=e242]:
+                - generic [ref=e243]: Period
+                - combobox "Period" [ref=e244] [cursor=pointer]:
+                  - option "Last 7 days"
+                  - option "Last 30 days" [selected]
+                  - option "Last 90 days"
+              - link "View details" [ref=e245] [cursor=pointer]:
+                - /url: /app/investment/accounts
+              - link "Reports" [ref=e246] [cursor=pointer]:
+                - /url: /app/investment/reports
+          - generic [ref=e247]: Updated 10/18, 04:30 PM
+          - generic [ref=e362]: "Active accounts: 0 · 09/19 – 10/18"
+          - paragraph [ref=e364]:
+            - text: No active accounts or completed transactions in this period.
+            - link "Manage accounts" [ref=e365] [cursor=pointer]:
+              - /url: /app/investment/accounts
+        - generic [ref=e250]:
+          - generic [ref=e251]:
+            - generic [ref=e252]:
+              - generic [ref=e253]: This week
+              - heading [level=2] [ref=e254]
+            - link "Open schedule" [ref=e259] [cursor=pointer]:
+              - /url: /app/tutor-schedule
+          - paragraph [ref=e366]: 10/12 – 10/18 · Vietnam time · UTC+7
+          - generic [ref=e367]:
+            - article [ref=e368]:
+              - generic [ref=e369]: Lessons
+              - strong [ref=e370]: "0"
+            - article [ref=e371]:
+              - generic [ref=e372]: Teaching hours
+              - strong [ref=e373]: "0"
+            - article [ref=e374]:
+              - generic [ref=e375]: Expected fees
+              - strong [ref=e376]: ₫0
+          - generic [ref=e260]: Updated 10/18, 04:30 PM
+        - generic [ref=e263]:
+          - generic [ref=e264]:
+            - generic [ref=e265]:
+              - heading [level=2] [ref=e266]
+              - link "View all" [ref=e270] [cursor=pointer]:
+                - /url: /app/notifications
+            - generic [ref=e271]: Updated 10/18, 04:30 PM
+            - paragraph [ref=e379]: 0 unread notifications
+            - paragraph [ref=e380]: No notifications yet.
+          - generic [ref=e274]:
+            - heading "Quick access" [level=2] [ref=e276]
+            - navigation "Quick access" [ref=e277]:
+              - link "Credit cards" [ref=e278] [cursor=pointer]:
+                - /url: /app/credit-cards
+              - link "Benefits & cashback" [ref=e287] [cursor=pointer]:
+                - /url: /app/credit-card/benefits
+              - link "Investments" [ref=e296] [cursor=pointer]:
+                - /url: /app/investment/accounts
+              - link "AI queue" [ref=e305] [cursor=pointer]:
+                - /url: /app/investment/transactions
+              - link "Teaching schedule" [ref=e313] [cursor=pointer]:
+                - /url: /app/tutor-schedule
+              - link "Travel" [ref=e322] [cursor=pointer]:
+                - /url: /app/travel
+              - link "Find lodging" [ref=e331] [cursor=pointer]:
+                - /url: /app/lodgings
+              - link "Password manager" [ref=e340] [cursor=pointer]:
+                - /url: /app/password-manager

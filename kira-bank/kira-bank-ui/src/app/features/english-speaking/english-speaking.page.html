@@ -4,22 +4,87 @@
     <span>{{ i18n.t('english.roadmapProgress') }}</span>
     <strong>{{ roadmapProgress() }}%</strong>
     <span class="progress-bar" aria-hidden="true"><span [style.width.%]="roadmapProgress()"></span></span>
+    <span class="stats">{{ i18n.t('english.statsLine', {phrases: phrasesDone(), total: phraseIds.length, questions: questionsDone()}) }}</span>
   </div>
 </section>
 
-<nav class="track-tabs" role="tablist" [attr.aria-label]="i18n.t('english.sections')">
-  @for (item of tabs; track item) {
-    <button type="button" role="tab" [attr.aria-selected]="tab() === item" (click)="tab.set(item)">
-      {{ i18n.t('english.tab.' + item) }}
-      @if (item !== 'roadmap' && item !== 'rewrite') { <small>{{ trackProgress(item) }}%</small> }
-    </button>
-  }
+<label class="phrase-search">
+  <input type="search" [attr.aria-label]="i18n.t('english.searchPhrases')" [placeholder]="i18n.t('english.searchPhrasesPlaceholder')"
+         [value]="phraseQuery()" (input)="phraseQuery.set($any($event.target).value)">
+</label>
+
+@if (phraseQuery().trim().length >= 2) {
+  <section class="panel today search-results" [attr.aria-label]="i18n.t('english.searchPhrases')">
+    <h2>{{ i18n.t('english.searchResults', {count: phraseResults().length}) }}</h2>
+    @if (phraseResults().length) {
+      <ul class="phrases">
+        @for (item of phraseResults(); track item.id) {
+          <ng-container *ngTemplateOutlet="phraseRow; context: {$implicit: item}"/>
+        }
+      </ul>
+    } @else {
+      <p class="hint">{{ i18n.t('english.searchEmpty') }}</p>
+    }
+  </section>
+}
+
+<ng-template #phraseRow let-item>
+  <li [class.practised]="done().has(item.id)">
+    <div class="phrase-text">
+      <strong lang="en">{{ item.phrase.en }}</strong>
+      @if (showMeaning()) { <span lang="vi">{{ item.phrase.vi }}</span> }
+    </div>
+    <div class="phrase-actions">
+      <button type="button" class="link-chip" (click)="tab.set(item.track)">{{ i18n.t('english.tab.' + item.track) }}</button>
+      @if (canSpeak) {
+        <button type="button" class="icon-button" [attr.aria-pressed]="speaking() === item.id"
+                [attr.aria-label]="i18n.t('english.listen')" [title]="i18n.t('english.listen')" (click)="speak(item.phrase.en, item.id)">
+          <app-icon name="volume"/>
+        </button>
+      }
+      <button type="button" class="icon-button" [attr.aria-pressed]="done().has(item.id)"
+              [attr.aria-label]="i18n.t('english.markPractised')" [title]="i18n.t('english.markPractised')" (click)="toggle(item.id)">
+        <app-icon [name]="done().has(item.id) ? 'check-circle' : 'check'"/>
+      </button>
+    </div>
+  </li>
+</ng-template>
+
+<nav class="track-nav" [attr.aria-label]="i18n.t('english.sections')">
+  <div class="group-tabs" role="tablist" [attr.aria-label]="i18n.t('english.sections')">
+    @for (group of tabGroups; track group.key) {
+      <button type="button" role="tab" [attr.aria-selected]="activeGroup().key === group.key" (click)="openGroup(group.key)">
+        {{ i18n.t('english.tabGroup.' + group.key) }} <small>{{ group.tabs.length }}</small>
+      </button>
+    }
+  </div>
+  <div class="track-tabs" role="tablist" [attr.aria-label]="i18n.t('english.tabGroup.' + activeGroup().key)">
+    @for (item of activeGroup().tabs; track item) {
+      <button type="button" role="tab" [attr.aria-selected]="tab() === item" (click)="tab.set(item)">
+        {{ i18n.t('english.tab.' + item) }}
+        @if (item !== 'roadmap' && item !== 'rewrite') { <small>{{ trackProgress(item) }}%</small> }
+      </button>
+    }
+  </div>
 </nav>
 
 @if (tab() === 'roadmap') {
   <section class="panel routine" [attr.aria-label]="i18n.t('english.dailyRoutine')">
     <h2><app-icon name="clock"/> {{ i18n.t('english.dailyRoutine') }}</h2>
     <ul>@for (step of routine; track $index) { <li>{{ text(step) }}</li> }</ul>
+  </section>
+
+  <section class="panel today" [attr.aria-label]="i18n.t('english.todayPhrases')">
+    <h2><app-icon name="star"/> {{ i18n.t('english.todayPhrases') }}</h2>
+    @if (todayPhrases().length) {
+      <ul class="phrases">
+        @for (item of todayPhrases(); track item.id) {
+          <ng-container *ngTemplateOutlet="phraseRow; context: {$implicit: item}"/>
+        }
+      </ul>
+    } @else {
+      <p class="hint">{{ i18n.t('english.todayDone') }}</p>
+    }
   </section>
 
   <ol class="weeks">
@@ -65,13 +130,21 @@
     } @else {
       <span class="hint">{{ i18n.t('english.noSpeech') }}</span>
     }
+    <label><input type="checkbox" [checked]="recall()" (change)="toggleRecall()"> {{ i18n.t('english.recallMode') }}</label>
     <span class="hint">{{ i18n.t('english.shadowHint') }}</span>
   </section>
 
   @if (current.id === 'interview') {
-    <app-interview-drill [speak]="speakFn" [speaking]="speaking()" [showMeaning]="showMeaning()"
-                         [(category)]="drillCategory" [(index)]="drillIndex"
-                         (answerWithAi)="openRewrite({kind: 'INTERVIEW', question: $event.question, category: $event.category})"/>
+    <!-- The question bank is large, so the drill and its data load in their own chunk. -->
+    @defer (on immediate) {
+      <app-interview-drill [speak]="speakFn" [speaking]="speaking()" [showMeaning]="showMeaning()"
+                           [(category)]="drillCategory" [(round)]="drillRound" [(index)]="drillIndex" [done]="done()" (toggleDone)="toggle($event)"
+                           (answerWithAi)="openRewrite({kind: 'INTERVIEW', question: $event.question, category: $event.category})"/>
+    } @placeholder {
+      <p class="hint" role="status">{{ i18n.t('english.loading') }}</p>
+    } @error {
+      <p class="hint" role="alert">{{ i18n.t('english.drillLoadFailed') }}</p>
+    }
   } @else if (current.id === 'standup') {
     <div class="rewrite-shortcuts">
       <button type="button" class="btn primary" (click)="openRewrite({kind: 'STANDUP'})">{{ i18n.t('english.writeWithAi') }}</button>
@@ -92,8 +165,13 @@
           @let id = phraseId(current.id, g, p);
           <li [class.practised]="done().has(id)">
             <div class="phrase-text">
-              <strong lang="en">{{ phrase.en }}</strong>
-              @if (showMeaning()) { <span lang="vi">{{ phrase.vi }}</span> }
+              @if (recall() && !revealed().has(id)) {
+                <span lang="vi">{{ phrase.vi }}</span>
+                <button type="button" class="link-chip reveal" (click)="reveal(id)">{{ i18n.t('english.revealEnglish') }}</button>
+              } @else {
+                <strong lang="en">{{ phrase.en }}</strong>
+                @if (showMeaning() || recall()) { <span lang="vi">{{ phrase.vi }}</span> }
+              }
             </div>
             <div class="phrase-actions">
               @if (canSpeak) {

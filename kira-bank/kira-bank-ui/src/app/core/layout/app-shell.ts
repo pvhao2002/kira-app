@@ -141,6 +141,11 @@ export class AppShell {
         labelKey: 'shell.groupTutor', flow: 'tutor', items: [
           {labelKey: 'shell.tutorSchedule', icon: 'calendar', path: '/app/tutor-schedule'}
         ]
+      },
+      {
+        labelKey: 'shell.groupLearning', flow: 'tutor', items: [
+          {labelKey: 'shell.englishSpeaking', icon: 'volume', path: '/app/english-speaking'}
+        ]
       }
     ];
 
