@@ -42,7 +42,8 @@ npx wrangler secret put AGENT_TOKEN
 npm run deploy
 ```
 
-Set `ADMIN_EMAILS` under `vars` in `wrangler.jsonc` (or as a secret).
+Set admins with `npx wrangler secret put ADMIN_EMAILS` (comma-separated). It's a secret rather than a `vars`
+entry so the emails stay out of this public repo; locally it comes from `.dev.vars`.
 
 ## Visitor analytics
 
