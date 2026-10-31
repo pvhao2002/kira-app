@@ -8,6 +8,5 @@
   "d1_databases": [
     { "binding": "DB", "database_name": "knowstack", "database_id": "b512e67a-3330-484e-8c25-0217f7bad8d7", "migrations_dir": "migrations" }
   ],
-  "ai": { "binding": "AI" },
-  "vars": { "ADMIN_EMAILS": "" }
+  "ai": { "binding": "AI" }
 }
