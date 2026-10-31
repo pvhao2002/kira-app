@@ -1,0 +1,194 @@
+- generic [ref=f1e2]:
+  - banner [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - generic [ref=f1e5]:
+        - link "KnowStack home" [ref=f1e6] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f1e7]: KnowStack
+        - generic [ref=f1e8]:
+          - generic [ref=f1e9]: search
+          - textbox "Search" [ref=f1e10]:
+            - /placeholder: Search concepts, algorithms, questions...
+          - generic [ref=f1e11]: ⌘K
+      - navigation [ref=f1e12]:
+        - link "Knowledge Library" [ref=f1e13] [cursor=pointer]:
+          - /url: /
+        - link "Interview Tracks" [ref=f1e14] [cursor=pointer]:
+          - /url: /tracks
+        - link "Ask Question" [ref=f1e15] [cursor=pointer]:
+          - /url: /ask
+      - generic [ref=f1e16]:
+        - button "Bookmarks" [ref=f1e17] [cursor=pointer]:
+          - generic [ref=f1e18]: bookmark
+        - button "Sign In" [ref=f1e19] [cursor=pointer]
+  - complementary [ref=f1e20]:
+    - generic [ref=f1e22]:
+      - text: Categorized Paths
+      - navigation [ref=f1e23]:
+        - link "terminal Core CS & Systems 1" [ref=f1e24] [cursor=pointer]:
+          - /url: /tracks/core-cs-and-systems
+          - generic [ref=f1e25]: terminal
+          - generic [ref=f1e26]: Core CS & Systems
+          - generic [ref=f1e27]: "1"
+        - link "code Java & Spring Boot 4" [ref=f1e28] [cursor=pointer]:
+          - /url: /tracks/java-and-spring-boot
+          - generic [ref=f1e29]: code
+          - generic [ref=f1e30]: Java & Spring Boot
+          - generic [ref=f1e31]: "4"
+        - link "database Databases & Caching 1" [ref=f1e32] [cursor=pointer]:
+          - /url: /tracks/databases-and-caching
+          - generic [ref=f1e33]: database
+          - generic [ref=f1e34]: Databases & Caching
+          - generic [ref=f1e35]: "1"
+        - link "cloud Cloud & DevOps 0" [ref=f1e36] [cursor=pointer]:
+          - /url: /tracks/cloud-and-devops
+          - generic [ref=f1e37]: cloud
+          - generic [ref=f1e38]: Cloud & DevOps
+          - generic [ref=f1e39]: "0"
+        - link "hub Microservices Architecture 2" [ref=f1e40] [cursor=pointer]:
+          - /url: /tracks/microservices-architecture
+          - generic [ref=f1e41]: hub
+          - generic [ref=f1e42]: Microservices Architecture
+          - generic [ref=f1e43]: "2"
+        - link "account_tree System Design 1" [ref=f1e44] [cursor=pointer]:
+          - /url: /tracks/system-design
+          - generic [ref=f1e45]: account_tree
+          - generic [ref=f1e46]: System Design
+          - generic [ref=f1e47]: "1"
+    - generic [ref=f1e49]:
+      - generic [ref=f1e50]: Engine v2.4
+      - generic [ref=f1e51]: Syncd
+  - main [ref=f1e54]:
+    - generic [ref=f1e56]:
+      - article [ref=f1e57]:
+        - navigation "Breadcrumb" [ref=f1e58]:
+          - generic [ref=f1e59]: home
+          - link "Library" [ref=f1e60] [cursor=pointer]:
+            - /url: /
+          - generic [ref=f1e61]: chevron_right
+          - link "Microservices Architecture" [ref=f1e62] [cursor=pointer]:
+            - /url: /tracks/microservices-architecture
+        - generic [ref=f1e63]:
+          - generic [ref=f1e64]: Staff / Principal
+          - generic [ref=f1e65]:
+            - generic [ref=f1e66]: verified
+            - text: AI drafted · staff reviewed
+          - generic [ref=f1e67]: Microservices
+          - generic [ref=f1e68]: Kafka
+          - generic [ref=f1e69]: Distributed Systems
+        - 'heading "Deep Dive: Distributed Transaction Management with Saga Pattern & Eventual Consistency" [level=1] [ref=f1e70]'
+        - paragraph [ref=f1e71]: Choreographing vs orchestrating microservice transactions, compensation mechanics, and zero-data-loss strategies.
+        - generic [ref=f1e72]:
+          - generic [ref=f1e73]:
+            - generic [ref=f1e74]:
+              - generic [ref=f1e75]: visibility
+              - text: 76,343 views
+            - generic [ref=f1e76]:
+              - generic [ref=f1e77]: bookmark_added
+              - text: 0 saves
+            - generic [ref=f1e78]: Oct 26, 2026 · 2 min read
+          - generic [ref=f1e79]:
+            - button "play_circle Listen" [ref=f1e80] [cursor=pointer]:
+              - generic [ref=f1e81]: play_circle
+              - text: Listen
+            - button "Bookmark" [ref=f1e82] [cursor=pointer]:
+              - generic [ref=f1e83]: bookmark
+            - button "Copy link" [ref=f1e84] [cursor=pointer]:
+              - generic [ref=f1e85]: content_copy
+            - button "Save as PDF" [ref=f1e86] [cursor=pointer]:
+              - generic [ref=f1e87]: picture_as_pdf
+        - generic [ref=f1e88]:
+          - heading "Architectural executive summary" [level=2] [ref=f1e89]
+          - paragraph [ref=f1e90]:
+            - text: Two-Phase Commit guarantees ACID across stores at the cost of synchronous locking, cascading latency and a single coordinator.
+            - strong [ref=f1e91]: Sagas replace one atomic transaction with a sequence of local transactions
+            - text: ", each with a compensating action, and accept eventual consistency to stay available."
+          - heading "01 The dual-write problem and the death of 2PC" [level=2] [ref=f1e92]
+          - paragraph [ref=f1e93]: Updating Postgres and publishing to Kafka "together" is not atomic. If the commit succeeds and the publish fails, downstream services never hear about it; publish first and a crash leaves an event for state that never existed.
+          - blockquote [ref=f1e94]:
+            - generic [ref=f1e95]:
+              - generic [ref=f1e96]: report_problem
+              - text: Anti-pattern
+            - paragraph [ref=f1e97]: XA / 2PC across cloud microservices. Every participant holds row locks through the prepare phase; one slow node starves connection pools across the fleet.
+          - paragraph [ref=f1e98]:
+            - text: The fix is the
+            - strong [ref=f1e99]: transactional outbox
+            - text: ": write the event to an"
+            - code [ref=f1e100]: outbox
+            - text: table in the same local transaction, and let a relay (polling or CDC like Debezium) publish it.
+          - heading "02 Forward path vs compensation path" [level=2] [ref=f1e101]
+          - document [ref=f1e154]:
+            - generic [ref=f1e156]:
+              - paragraph [ref=f1e166]: fails
+              - generic [ref=f1e167]:
+                - paragraph [ref=f1e174]: "Order: PENDING"
+                - paragraph [ref=f1e181]: "Payment: charge"
+                - paragraph [ref=f1e188]: "Inventory: reserve"
+                - paragraph [ref=f1e195]: "Shipping: schedule"
+                - paragraph [ref=f1e202]: "Order: CONFIRMED"
+                - paragraph [ref=f1e209]: "Payment: refund"
+                - paragraph [ref=f1e216]: "Order: CANCELLED"
+          - list [ref=f1e105]:
+            - listitem [ref=f1e106]:
+              - strong [ref=f1e107]: Orchestration
+              - text: ": a coordinator (Temporal, Conductor, or a state machine) calls each step and, on failure, runs compensations in reverse order. Easy to reason about and observe."
+            - listitem [ref=f1e108]:
+              - strong [ref=f1e109]: Choreography
+              - text: ": each service reacts to events and emits the next. No central brain, but the flow is spread across services."
+          - heading "03 Compensations must be idempotent" [level=2] [ref=f1e110]
+          - paragraph [ref=f1e111]: Messages are delivered at least once, so every step and compensation must tolerate repeats.
+          - code [ref=f1e113]: "@Transactional public void refund(UUID paymentId, UUID sagaId) { if (refunds.existsBySagaId(sagaId)) return; // already compensated refunds.save(new Refund(paymentId, sagaId)); outbox.save(new PaymentRefunded(paymentId, sagaId)); }"
+          - blockquote [ref=f1e114]:
+            - generic [ref=f1e115]:
+              - generic [ref=f1e116]: info
+              - text: Note
+            - paragraph [ref=f1e117]:
+              - text: "Sagas give up isolation: other transactions can see intermediate states. Use semantic locks (a"
+              - code [ref=f1e118]: PENDING
+              - text: status) and design reads to tolerate them.
+          - heading "Interview Q&A" [level=2] [ref=f1e119]
+          - paragraph [ref=f1e120]:
+            - strong [ref=f1e121]: "Q: Orchestration or choreography for 6+ steps?"
+            - text: "Orchestration: the flow stays in one place and timeouts are explicit."
+          - paragraph [ref=f1e122]:
+            - strong [ref=f1e123]: "Q: What if a compensation fails?"
+            - text: Retry with backoff; it must be idempotent. After a limit, park it for manual repair.
+          - paragraph [ref=f1e124]:
+            - strong [ref=f1e125]: "Q: How do you avoid lost events?"
+            - text: Transactional outbox plus at-least-once relay and idempotent consumers.
+        - generic [ref=f1e126]:
+          - generic [ref=f1e127]:
+            - paragraph [ref=f1e128]: Still have a follow-up question?
+            - paragraph [ref=f1e129]: Send it to the knowledge pipeline for a staff-reviewed breakdown.
+          - link "Ask a Question" [ref=f1e130] [cursor=pointer]:
+            - /url: /ask
+      - complementary [ref=f1e131]:
+        - generic [ref=f1e132]:
+          - navigation "On this page" [ref=f1e133]:
+            - text: On this page
+            - list [ref=f1e134]:
+              - listitem [ref=f1e135]:
+                - link "Architectural executive summary" [ref=f1e136] [cursor=pointer]:
+                  - /url: "#architectural-executive-summary"
+              - listitem [ref=f1e137]:
+                - link "01 The dual-write problem and the death of 2PC" [ref=f1e138] [cursor=pointer]:
+                  - /url: "#01-the-dual-write-problem-and-the-death-of-2pc"
+              - listitem [ref=f1e139]:
+                - link "02 Forward path vs compensation path" [ref=f1e140] [cursor=pointer]:
+                  - /url: "#02-forward-path-vs-compensation-path"
+              - listitem [ref=f1e141]:
+                - link "03 Compensations must be idempotent" [ref=f1e142] [cursor=pointer]:
+                  - /url: "#03-compensations-must-be-idempotent"
+              - listitem [ref=f1e143]:
+                - link "Interview Q&A" [ref=f1e144] [cursor=pointer]:
+                  - /url: "#interview-q-a"
+          - generic [ref=f1e145]:
+            - generic [ref=f1e146]:
+              - generic [ref=f1e147]: Difficulty
+              - generic [ref=f1e148]: Staff / Principal
+            - generic [ref=f1e149]:
+              - generic [ref=f1e150]: Reading time
+              - generic [ref=f1e151]: 2 min
+            - button "download Export Markdown" [ref=f1e152] [cursor=pointer]:
+              - generic [ref=f1e153]: download
+              - text: Export Markdown

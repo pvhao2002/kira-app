@@ -1,0 +1,123 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "KnowStack home" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e7]: KnowStack
+        - generic [ref=e8]:
+          - generic [ref=e9]: search
+          - textbox "Search" [ref=e10]:
+            - /placeholder: Search concepts, algorithms, questions...
+          - generic [ref=e11]: ⌘K
+      - navigation [ref=e12]:
+        - link "Knowledge Library" [ref=e13] [cursor=pointer]:
+          - /url: /
+        - link "Interview Tracks" [ref=e14] [cursor=pointer]:
+          - /url: /tracks
+        - link "Ask Question" [ref=e15] [cursor=pointer]:
+          - /url: /ask
+      - generic [ref=e16]:
+        - button "Bookmarks" [ref=e17] [cursor=pointer]:
+          - generic [ref=e18]: bookmark
+        - button "Sign In" [ref=e19] [cursor=pointer]
+  - complementary [ref=e20]:
+    - generic [ref=e22]:
+      - text: Categorized Paths
+      - navigation
+    - generic [ref=e24]:
+      - generic [ref=e25]: Engine v2.4
+      - generic [ref=e26]: Syncd
+  - main [ref=e29]:
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - link "LIBRARY" [ref=e35] [cursor=pointer]:
+              - /url: /
+            - generic [ref=e36]: /
+            - generic [ref=e37]: ALL TRACKS
+            - generic [ref=e38]: Live Catalog
+          - heading "KnowStack Knowledge & Interview Prep Vault" [level=1] [ref=e40]
+          - paragraph [ref=e41]: Curated, in-depth architectural guides, low-level runtime breakdowns, and production-tested interview blueprints.
+        - link "add_task Ask a Question" [ref=e43] [cursor=pointer]:
+          - /url: /ask
+          - generic [ref=e44]: add_task
+          - text: Ask a Question
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]: verified_user
+          - generic [ref=e49]:
+            - generic [ref=e50]:
+              - generic [ref=e51]: "0"
+              - generic [ref=e52]: +0 this week
+            - generic [ref=e53]: Published Deep-Dives
+        - generic [ref=e54]:
+          - generic [ref=e55]: forum
+          - generic [ref=e57]:
+            - generic [ref=e58]:
+              - generic [ref=e59]: "0"
+              - generic [ref=e60]: community
+            - generic [ref=e61]: Questions Submitted
+        - generic [ref=e62]:
+          - generic [ref=e63]: auto_awesome
+          - generic [ref=e65]:
+            - generic [ref=e66]:
+              - generic [ref=e67]: "0"
+              - generic [ref=e68]: tracks
+            - generic [ref=e69]: Categorized Learning Paths
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - generic [ref=e72]:
+            - generic [ref=e73]: search
+            - textbox "Search the library" [ref=e74]:
+              - /placeholder: Search patterns, algorithms, concurrency bugs, data stores...
+          - generic [ref=e75]:
+            - generic [ref=e76]:
+              - combobox "Tag" [ref=e77] [cursor=pointer]:
+                - 'option "Tags: All" [selected]'
+              - generic: expand_more
+            - generic [ref=e78]:
+              - combobox "Sort" [ref=e79] [cursor=pointer]:
+                - 'option "Sort: Most Popular" [selected]'
+                - 'option "Sort: Recently Published"'
+              - generic: swap_vert
+        - generic [ref=e80]:
+          - generic [ref=e81]: "Categories:"
+          - button "All (0)" [ref=e82] [cursor=pointer]
+        - generic [ref=e83]:
+          - generic [ref=e84]: "Seniority:"
+          - generic [ref=e85]:
+            - button "All Levels" [ref=e86] [cursor=pointer]
+            - button "Junior" [ref=e87] [cursor=pointer]
+            - button "Mid-Level" [ref=e88] [cursor=pointer]
+            - button "Senior" [ref=e89] [cursor=pointer]
+            - button "Staff / Principal" [ref=e90] [cursor=pointer]
+      - generic [ref=e91]:
+        - status [ref=e93]:
+          - generic [ref=e94]: progress_activity
+          - text: Loading…
+        - complementary [ref=e95]:
+          - generic [ref=e96]:
+            - generic [ref=e97]: Seniority Mix
+            - generic [ref=e99]:
+              - generic [ref=e100]: Junior
+              - generic [ref=e101]: "0"
+            - generic [ref=e104]:
+              - generic [ref=e105]: Mid-Level
+              - generic [ref=e106]: "0"
+            - generic [ref=e109]:
+              - generic [ref=e110]: Senior
+              - generic [ref=e111]: "0"
+            - generic [ref=e114]:
+              - generic [ref=e115]: Staff / Principal
+              - generic [ref=e116]: "0"
+          - generic [ref=e118]: Popular Tags
+          - generic [ref=e120]:
+            - generic [ref=e121]: psychology
+            - paragraph [ref=e122]: Stuck on a tricky interview question?
+            - paragraph [ref=e123]: Submit it and get a curated deep-dive reviewed by staff engineers.
+            - link "Ask Question arrow_forward" [ref=e124] [cursor=pointer]:
+              - /url: /ask
+              - text: Ask Question
+              - generic [ref=e125]: arrow_forward

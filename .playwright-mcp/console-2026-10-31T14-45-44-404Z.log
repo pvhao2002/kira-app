@@ -1,0 +1,102 @@
+[      94ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=733e7611:15802
+[   43187ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=733e7611:15802
+[   55329ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=733e7611:15802
+[   55430ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5317/api/admin/articles/1:0
+[   55447ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5317/api/admin/articles/1:0
+[   96009ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=733e7611:15802
+[   97550ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=733e7611:15802
+[   99084ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=733e7611:15802
+[  100445ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=733e7611:15802
+[  124747ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=733e7611:15802
+[  155538ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=733e7611:15802
+[  157153ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=733e7611:15802
+[  413649ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5317/@vite/client:1089
+[  414042ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[  414152ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[  458786ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5317/@vite/client:1089
+[  459005ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[  522071ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[  547004ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[  591756ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[  659979ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 2071581ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5317/@vite/client:1089
+[ 2072433ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 2130451ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/admin/analytics:0
+[ 2131277ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5317/@vite/client:1089
+[ 2351278ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 2351566ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/track:0
+[ 2351567ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 2351568ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 2351600ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 2351604ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 2395818ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 2396247ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/track:0
+[ 2396248ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 2396249ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 2396255ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5317/@vite/client:1089
+[ 2396263ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5317/api/auth/me:0
+[ 2396264ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5317/api/categories:0
+[ 2706709ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5317/@vite/client:1089
+[ 2706739ms] [ERROR] Failed to load resource: net::ERR_EMPTY_RESPONSE @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=cc6c3b9f:0
+[ 2706739ms] [ERROR] Failed to load resource: net::ERR_EMPTY_RESPONSE @ http://localhost:5317/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=7275c4b1:0
+[ 2706741ms] [ERROR] Failed to load resource: the server responded with a status of 504 (Outdated Optimize Dep) @ http://localhost:5317/node_modules/.vite/deps/marked.js?v=6beab0dc:0
+[ 2706741ms] [ERROR] Failed to load resource: the server responded with a status of 504 (Outdated Optimize Dep) @ http://localhost:5317/node_modules/.vite/deps/react.js?v=54ce0588:0
+[ 2706741ms] [ERROR] Failed to load resource: the server responded with a status of 504 (Outdated Optimize Dep) @ http://localhost:5317/node_modules/.vite/deps/dompurify.js?v=542a2447:0
+[ 2706741ms] [ERROR] Failed to load resource: the server responded with a status of 504 (Outdated Optimize Dep) @ http://localhost:5317/node_modules/.vite/deps/react-router.js?v=c3449cb4:0
+[ 2707273ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 2707445ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/track:0
+[ 2707446ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 2707446ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 2707463ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 2707465ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 2727733ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5317/@vite/client:1089
+[ 2727989ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 2728040ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/track:0
+[ 2728041ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 2728042ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 2728066ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 2728068ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 2779138ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5317/@vite/client:1089
+[ 2779405ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 2779469ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/track:0
+[ 2779470ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 2779472ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 2779492ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 2779495ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 3338990ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 3339135ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/track:0
+[ 3339135ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 3339136ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 3339154ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 3339156ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 3387577ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 3387685ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/track:0
+[ 3387686ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 3387686ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 3387710ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 3387712ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 3406511ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/admin/analytics:0
+[ 3413604ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 3413787ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/track:0
+[ 3413788ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 3413788ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 3413805ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 3413808ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 3545376ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 3545424ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/track:0
+[ 3545425ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 3545427ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 3545446ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/categories:0
+[ 3545448ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5317/api/auth/me:0
+[ 3593523ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 3611767ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:5317/api/articles/kafka-exactly-once-semantics/bookmark:0
+[ 4039577ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5317/@vite/client:1089
+[ 4040391ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 4040838ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5317/@vite/client:1089
+[ 4040840ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5317/favicon.ico:0
+[ 4040840ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5317/api/auth/me:0
+[ 4040843ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5317/api/articles/kafka-exactly-once-semantics:0
+[ 4040844ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5317/api/categories:0
+[ 4201538ms] [ERROR] Failed to load resource: net::ERR_EMPTY_RESPONSE @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=2d549003:0
+[ 4298104ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5317/node_modules/.vite/deps/react-dom_client.js?v=297502bf:15802
+[ 4298269ms] [ERROR] Failed to load resource: the server responded with a status of 429 (Too Many Requests) @ http://localhost:5317/api/track:0

@@ -1,0 +1,200 @@
+- generic [ref=f17e2]:
+  - banner [ref=f17e3]:
+    - generic [ref=f17e4]:
+      - generic [ref=f17e5]:
+        - link "KnowStack home" [ref=f17e6] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f17e7]: KnowStack
+        - generic [ref=f17e8]:
+          - generic [ref=f17e9]: search
+          - textbox "Search" [ref=f17e10]:
+            - /placeholder: Search concepts, algorithms, questions...
+          - generic [ref=f17e11]: ⌘K
+      - navigation [ref=f17e12]:
+        - link "Knowledge Library" [ref=f17e13] [cursor=pointer]:
+          - /url: /
+        - link "Interview Tracks" [ref=f17e14] [cursor=pointer]:
+          - /url: /tracks
+        - link "Ask Question" [ref=f17e15] [cursor=pointer]:
+          - /url: /ask
+        - link "Admin Studio" [ref=f17e16] [cursor=pointer]:
+          - /url: /admin/analytics
+      - generic [ref=f17e17]:
+        - button "Bookmarks" [ref=f17e18] [cursor=pointer]:
+          - generic [ref=f17e19]: bookmark
+        - button "Account menu" [ref=f17e21] [cursor=pointer]: KA
+  - complementary [ref=f17e22]:
+    - generic [ref=f17e23]:
+      - generic [ref=f17e24]:
+        - text: Categorized Paths
+        - navigation [ref=f17e25]:
+          - link "terminal Core CS & Systems 1" [ref=f17e26] [cursor=pointer]:
+            - /url: /tracks/core-cs-and-systems
+            - generic [ref=f17e27]: terminal
+            - generic [ref=f17e28]: Core CS & Systems
+            - generic [ref=f17e29]: "1"
+          - link "code Java & Spring Boot 4" [ref=f17e30] [cursor=pointer]:
+            - /url: /tracks/java-and-spring-boot
+            - generic [ref=f17e31]: code
+            - generic [ref=f17e32]: Java & Spring Boot
+            - generic [ref=f17e33]: "4"
+          - link "database Databases & Caching 1" [ref=f17e34] [cursor=pointer]:
+            - /url: /tracks/databases-and-caching
+            - generic [ref=f17e35]: database
+            - generic [ref=f17e36]: Databases & Caching
+            - generic [ref=f17e37]: "1"
+          - link "cloud Cloud & DevOps 0" [ref=f17e38] [cursor=pointer]:
+            - /url: /tracks/cloud-and-devops
+            - generic [ref=f17e39]: cloud
+            - generic [ref=f17e40]: Cloud & DevOps
+            - generic [ref=f17e41]: "0"
+          - link "hub Microservices Architecture 2" [ref=f17e42] [cursor=pointer]:
+            - /url: /tracks/microservices-architecture
+            - generic [ref=f17e43]: hub
+            - generic [ref=f17e44]: Microservices Architecture
+            - generic [ref=f17e45]: "2"
+          - link "account_tree System Design 1" [ref=f17e46] [cursor=pointer]:
+            - /url: /tracks/system-design
+            - generic [ref=f17e47]: account_tree
+            - generic [ref=f17e48]: System Design
+            - generic [ref=f17e49]: "1"
+      - generic [ref=f17e50]:
+        - text: Admin Studio
+        - navigation [ref=f17e51]:
+          - link "smart_toy Agent Studio & CU" [ref=f17e52] [cursor=pointer]:
+            - /url: /admin/agents
+            - generic [ref=f17e53]: smart_toy
+            - generic [ref=f17e54]: Agent Studio & CU
+          - link "inbox Question Queue" [ref=f17e55] [cursor=pointer]:
+            - /url: /admin/questions
+            - generic [ref=f17e56]: inbox
+            - generic [ref=f17e57]: Question Queue
+          - link "edit_note AI Article Editor" [ref=f17e58] [cursor=pointer]:
+            - /url: /admin/editor
+            - generic [ref=f17e59]: edit_note
+            - generic [ref=f17e60]: AI Article Editor
+          - link "insights Analytics" [ref=f17e61] [cursor=pointer]:
+            - /url: /admin/analytics
+            - generic [ref=f17e62]: insights
+            - generic [ref=f17e63]: Analytics
+    - generic [ref=f17e65]:
+      - generic [ref=f17e66]: Engine v2.4
+      - generic [ref=f17e67]: Syncd
+  - main [ref=f17e70]:
+    - generic [ref=f17e72]:
+      - navigation [ref=f17e73]:
+        - generic [ref=f17e74]: Admin Studio
+        - generic [ref=f17e75]: chevron_right
+        - link "AI Article Editor" [ref=f17e76] [cursor=pointer]:
+          - /url: /admin/editor
+        - generic [ref=f17e77]: chevron_right
+        - generic [ref=f17e78]: "Article #18"
+      - generic [ref=f17e79]:
+        - generic [ref=f17e80]:
+          - heading "How does REQUIRES_NEW interact with an outer rollback in Spring?" [level=1] [ref=f17e81]
+          - generic [ref=f17e82]:
+            - generic [ref=f17e83]: Published
+            - generic [ref=f17e84]:
+              - generic [ref=f17e85]: description
+              - text: 8 words
+            - generic [ref=f17e86]:
+              - generic [ref=f17e87]: schedule
+              - text: 1 min read
+        - generic [ref=f17e89]:
+          - tablist [ref=f17e90]:
+            - tab "write" [ref=f17e91] [cursor=pointer]
+            - tab "split" [selected] [ref=f17e92] [cursor=pointer]
+            - tab "preview" [ref=f17e93] [cursor=pointer]
+          - link "open_in_new View" [ref=f17e94] [cursor=pointer]:
+            - /url: /articles/how-does-requires-new-interact-with-an-outer-rollback-in-spring
+            - generic [ref=f17e95]: open_in_new
+            - text: View
+          - button "save Save" [ref=f17e96] [cursor=pointer]:
+            - generic [ref=f17e97]: save
+            - text: Save
+          - button "unpublished Unpublish" [ref=f17e98] [cursor=pointer]:
+            - generic [ref=f17e99]: unpublished
+            - text: Unpublish
+      - status [ref=f17e167]: Published to the library
+      - generic [ref=f17e100]:
+        - complementary [ref=f17e101]:
+          - generic [ref=f17e102]:
+            - generic [ref=f17e103]:
+              - generic [ref=f17e104]:
+                - generic [ref=f17e105]: smart_toy
+                - text: AI Synthesis Engine
+              - generic [ref=f17e106]: READY
+            - paragraph [ref=f17e107]: From a question by Alex Dev
+            - generic [ref=f17e108]: Prompt question
+            - textbox "Prompt question" [ref=f17e109]: How does REQUIRES_NEW interact with an outer rollback in Spring? Outer method catches an exception from inner REQUIRED call and commit fails with UnexpectedRollbackException.
+            - button "auto_fix_high Re-prompt AI" [ref=f17e110] [cursor=pointer]:
+              - generic [ref=f17e111]: auto_fix_high
+              - text: Re-prompt AI
+            - generic [ref=f17e112]: Instant copilot tasks
+            - button "warning Add edge cases and common traps" [ref=f17e113] [cursor=pointer]:
+              - generic [ref=f17e114]: warning
+              - text: Add edge cases and common traps
+            - button "quiz Generate 3 more mock interview Q&As" [ref=f17e115] [cursor=pointer]:
+              - generic [ref=f17e116]: quiz
+              - text: Generate 3 more mock interview Q&As
+            - button "account_tree Add or improve a Mermaid architecture diagram" [ref=f17e117] [cursor=pointer]:
+              - generic [ref=f17e118]: account_tree
+              - text: Add or improve a Mermaid architecture diagram
+            - button "spellcheck Fact-check and fix technical inaccuracies" [ref=f17e119] [cursor=pointer]:
+              - generic [ref=f17e120]: spellcheck
+              - text: Fact-check and fix technical inaccuracies
+          - generic [ref=f17e121]:
+            - generic [ref=f17e122]: Article details
+            - generic [ref=f17e123]: Title
+            - textbox "Title" [ref=f17e124]: How does REQUIRES_NEW interact with an outer rollback in Spring?
+            - generic [ref=f17e125]: Summary
+            - textbox "Summary" [ref=f17e126]: Rollback-only marking, explained with a real trace.
+            - generic [ref=f17e127]:
+              - generic [ref=f17e128]:
+                - generic [ref=f17e129]: Category
+                - combobox "Category" [ref=f17e130]:
+                  - option "Core CS & Systems"
+                  - option "Java & Spring Boot" [selected]
+                  - option "Databases & Caching"
+                  - option "Cloud & DevOps"
+                  - option "Microservices Architecture"
+                  - option "System Design"
+              - generic [ref=f17e131]:
+                - generic [ref=f17e132]: Interview level
+                - combobox "Interview level" [ref=f17e133]:
+                  - option "Junior"
+                  - option "Mid-Level"
+                  - option "Senior" [selected]
+                  - option "Staff / Principal"
+            - generic [ref=f17e134]: Tags (comma separated)
+            - textbox "Tags (comma separated)" [ref=f17e135]: Spring Boot, Transactions
+            - generic [ref=f17e136]:
+              - text: Outline
+              - list [ref=f17e137]:
+                - listitem [ref=f17e138]: 01 Answer
+            - button "Delete article" [ref=f17e139] [cursor=pointer]
+        - generic [ref=f17e140]:
+          - generic [ref=f17e141]:
+            - button "H2" [ref=f17e142] [cursor=pointer]
+            - button "H3" [ref=f17e144] [cursor=pointer]
+            - button "Bold" [ref=f17e146] [cursor=pointer]:
+              - generic [ref=f17e147]: format_bold
+            - button "Italic" [ref=f17e148] [cursor=pointer]:
+              - generic [ref=f17e149]: format_italic
+            - button "Inline code" [ref=f17e150] [cursor=pointer]:
+              - generic [ref=f17e151]: code
+            - button "Code block" [ref=f17e152] [cursor=pointer]:
+              - generic [ref=f17e153]: integration_instructions
+            - button "Mermaid" [ref=f17e154] [cursor=pointer]:
+              - generic [ref=f17e155]: account_tree
+            - button "Callout" [ref=f17e156] [cursor=pointer]:
+              - generic [ref=f17e157]: lightbulb
+            - button "Table" [ref=f17e158] [cursor=pointer]:
+              - generic [ref=f17e159]: table_chart
+          - generic [ref=f17e160]:
+            - textbox "Article markdown" [ref=f17e161]:
+              - /placeholder: Write markdown, or generate a draft with AI…
+              - text: "## 01 Answer It suspends. <img src=x onerror=alert(1)><script>alert(2)</script>"
+            - generic [ref=f17e163]:
+              - heading "01 Answer" [level=2] [ref=f17e164]
+              - paragraph [ref=f17e165]: It suspends.
