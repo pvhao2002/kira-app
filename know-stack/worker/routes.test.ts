@@ -85,6 +85,21 @@ describe('tracking', () => {
     expect((await t.sql('select count(*) n from visits'))[0].n).toBe(3);
   });
 
+  it('moves articles the reader has already opened to the end of the list', async () => {
+    await article('published', 'read');
+    await article('published', 'unread');
+    await t.sql(`update articles set views = 10 where slug = 'read'`);
+    await t.call('/track', { body: { path: '/articles/read', articleSlug: 'read' } });
+    const slugs = async (opts = {}) => (await t.call('/articles', opts)).json.map((a: { slug: string }) => a.slug);
+    expect(await slugs()).toEqual(['unread', 'read']);
+    expect(await slugs({ ip: '10.0.0.2' })).toEqual(['read', 'unread']);
+
+    const cookie = await user();
+    expect(await slugs({ cookie })).toEqual(['read', 'unread']); // signed in: only this account's reads count
+    await t.call('/track', { body: { path: '/articles/read', articleSlug: 'read' }, cookie, ip: '10.0.0.3' });
+    expect(await slugs({ cookie, ip: '10.0.0.4' })).toEqual(['unread', 'read']);
+  });
+
   it('rate-limits one IP flooding the endpoint', async () => {
     const statuses = new Set<number>();
     for (let i = 0; i < 61; i++) statuses.add((await t.call('/track', { body: { path: '/' } })).status);

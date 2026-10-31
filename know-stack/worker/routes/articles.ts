@@ -75,7 +75,10 @@ export const articleRoutes = new Hono<AppEnv>()
       where.push(sql`${articles.id} in (select article_id from bookmarks where user_id = ${c.var.user.id})`);
     }
     const order = sort === 'recent' ? desc(articles.publishedAt) : desc(articles.views);
-    const rows = await c.var.db.select(listColumns).from(articles).where(and(...where)).orderBy(order).limit(100);
+    // Already-opened articles sink to the end: by account when signed in, else by IP (anonymous visits only know the IP).
+    const reader = c.var.user ? sql`v.user_id = ${c.var.user.id}` : sql`v.ip = ${c.req.header('CF-Connecting-IP') ?? 'unknown'}`;
+    const seen = sql`exists (select 1 from visits v where v.article_id = ${articles.id} and ${reader})`;
+    const rows = await c.var.db.select(listColumns).from(articles).where(and(...where)).orderBy(seen, order).limit(100);
     const marked = await bookmarkedIds(c, rows.map((r) => r.id));
     return c.json(rows.map((r) => ({ ...r, bookmarked: marked.has(r.id) })));
   })
