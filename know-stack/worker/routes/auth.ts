@@ -6,6 +6,7 @@ import { sessions, users } from '../db/schema';
 import type { AppEnv } from '../env';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+let dummyHash: Promise<string> | undefined; // created on first use: Workers forbid crypto at module load
 
 export const authRoutes = new Hono<AppEnv>()
   .get('/me', (c) => c.json({ user: c.var.user }))
@@ -19,16 +20,23 @@ export const authRoutes = new Hono<AppEnv>()
     if (password.length < 8 || password.length > 200) return c.json({ error: 'Password must be at least 8 characters' }, 400);
     // Admin rights follow the email, which isn't verified: admins are created with scripts/create-admin.ts.
     if (isAdminEmail(email, c.env.ADMIN_EMAILS)) return c.json({ error: 'This email cannot be registered here' }, 403);
-    const [existing] = await c.var.db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-    if (existing) return c.json({ error: 'An account with this email already exists' }, 409);
-    const [user] = await c.var.db.insert(users).values({ email, name, passwordHash: await hashPassword(password) }).returning();
+    // One statement, so two simultaneous sign-ups can't both pass an "email free?" check.
+    const [user] = await c.var.db.insert(users).values({ email, name, passwordHash: await hashPassword(password) }).onConflictDoNothing().returning();
+    if (!user) return c.json({ error: 'An account with this email already exists' }, 409);
     return startSession(c, user);
   })
   .post('/login', async (c) => {
     const body = await c.req.json<{ email?: string; password?: string }>().catch(() => ({}) as never);
     const email = String(body.email ?? '').trim().toLowerCase();
+    const ip = c.req.header('CF-Connecting-IP') ?? 'unknown';
+    if (!(await c.env.LOGIN_LIMITER.limit({ key: `${ip}:${email}` })).success) {
+      return c.json({ error: 'Too many sign-in attempts. Try again in a minute.' }, 429);
+    }
     const [user] = await c.var.db.select().from(users).where(eq(users.email, email)).limit(1);
-    if (!user || !(await verifyPassword(String(body.password ?? ''), user.passwordHash))) {
+    // Hash even for unknown emails, so response time doesn't reveal which accounts exist.
+    const stored = user?.passwordHash ?? (await (dummyHash ??= hashPassword('dummy-password')));
+    const ok = await verifyPassword(String(body.password ?? ''), stored);
+    if (!user || !ok) {
       return c.json({ error: 'Invalid email or password' }, 401);
     }
     return startSession(c, user);

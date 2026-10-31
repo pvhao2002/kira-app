@@ -21,16 +21,16 @@ export const questionRoutes = new Hono<AppEnv>()
       .limit(3);
     return c.json(rows.map((r) => ({ ...r, match: Math.round((r.score / words.length) * 100) })));
   })
-  .get('/mine', requireUser, async (c) =>
-    c.json(
-      await c.var.db
+  .get('/mine', requireUser, async (c) => {
+    const rows = await c.var.db
         .select({ id: questions.id, title: questions.title, status: questions.status, createdAt: questions.createdAt, articleSlug: articles.slug, articleStatus: articles.status })
         .from(questions)
         .leftJoin(articles, eq(articles.id, questions.articleId))
         .where(eq(questions.userId, c.var.user!.id))
-        .orderBy(desc(questions.createdAt)),
-    ),
-  )
+        .orderBy(desc(questions.createdAt));
+    // A draft's slug stays private until it is published.
+    return c.json(rows.map((r) => ({ ...r, articleSlug: r.articleStatus === 'published' ? r.articleSlug : null })));
+  })
   .post('/', requireUser, async (c) => {
     const b = await c.req.json<Record<string, unknown>>().catch(() => ({}) as never);
     const title = String(b.title ?? '').trim();

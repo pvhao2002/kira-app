@@ -1,13 +1,12 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
 import { analytics } from '../analytics';
 import { requireAdmin } from '../auth';
-import { parseTags, readMinutes, uniqueSlug } from '../content';
+import { nowSec, parseTags, readMinutes, uniqueSlug } from '../content';
 import { agentTasks, articles, categories, DIFFICULTIES, questions, users, type Difficulty } from '../db/schema';
 import type { AppEnv } from '../env';
 
 const AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
-const nowSec = () => Math.floor(Date.now() / 1000);
 const idParam = (c: Context) => Number(c.req.param('id')) || 0;
 
 type ArticleInput = { title: string; summary: string; bodyMd: string; categorySlug: string; difficulty: Difficulty; tags: string[] };
@@ -53,16 +52,30 @@ export const adminRoutes = new Hono<AppEnv>()
     return c.json({ ok: true });
   })
   .post('/questions/:id/draft', async (c) => {
-    const [qn] = await c.var.db.select().from(questions).where(eq(questions.id, idParam(c))).limit(1);
-    if (!qn) return c.json({ error: 'Question not found' }, 404);
-    if (qn.articleId) return c.json({ articleId: qn.articleId });
+    // Claim the question in one statement, so a double click can't create two articles.
+    const [qn] = await c.var.db
+      .update(questions)
+      .set({ status: 'drafted' })
+      .where(and(eq(questions.id, idParam(c)), isNull(questions.articleId), ne(questions.status, 'drafted')))
+      .returning();
+    if (!qn) {
+      const [existing] = await c.var.db.select().from(questions).where(eq(questions.id, idParam(c))).limit(1);
+      if (!existing) return c.json({ error: 'Question not found' }, 404);
+      if (existing.articleId) return c.json({ articleId: existing.articleId });
+      return c.json({ error: 'A draft is already being created' }, 409);
+    }
     const bodyMd = `> [!NOTE]\n> Submitted question: ${qn.context.replace(/\n/g, '\n> ')}\n` + (qn.code ? `\n\`\`\`${qn.codeLang.toLowerCase()}\n${qn.code}\n\`\`\`\n` : '');
-    const [a] = await c.var.db
-      .insert(articles)
-      .values({ slug: await uniqueSlug(c.var.db, qn.title), title: qn.title, bodyMd, categorySlug: qn.domain, difficulty: qn.difficulty, readMinutes: readMinutes(bodyMd) })
-      .returning({ id: articles.id });
-    await c.var.db.update(questions).set({ status: 'drafted', articleId: a.id }).where(eq(questions.id, qn.id));
-    return c.json({ articleId: a.id }, 201);
+    try {
+      const [a] = await c.var.db
+        .insert(articles)
+        .values({ slug: await uniqueSlug(c.var.db, qn.title), title: qn.title, bodyMd, categorySlug: qn.domain, difficulty: qn.difficulty, readMinutes: readMinutes(bodyMd) })
+        .returning({ id: articles.id });
+      await c.var.db.update(questions).set({ articleId: a.id }).where(eq(questions.id, qn.id));
+      return c.json({ articleId: a.id }, 201);
+    } catch (e) {
+      await c.var.db.update(questions).set({ status: 'pending' }).where(eq(questions.id, qn.id)); // let the admin retry
+      throw e;
+    }
   })
   // Articles
   .get('/articles', async (c) =>
@@ -105,6 +118,8 @@ export const adminRoutes = new Hono<AppEnv>()
     return c.json(a);
   })
   .delete('/articles/:id', async (c) => {
+    // Send its question back to the queue, or it would stay "drafted" with no article.
+    await c.var.db.update(questions).set({ status: 'pending' }).where(eq(questions.articleId, idParam(c)));
     await c.var.db.delete(articles).where(eq(articles.id, idParam(c)));
     return c.json({ ok: true });
   })

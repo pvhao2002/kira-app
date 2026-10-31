@@ -18,10 +18,13 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [scheme, iter, salt, hash] = stored.split('$');
   if (scheme !== 'pbkdf2' || !iter || !salt || !hash) return false;
-  const actual = new Uint8Array(await pbkdf2(password, fromB64(salt), Number(iter)));
-  const expected = fromB64(hash);
-  if (actual.length !== expected.length) return false;
+  return safeEqual(new Uint8Array(await pbkdf2(password, fromB64(salt), Number(iter))), fromB64(hash));
+}
+
+/** Constant-time compare (crypto.subtle.timingSafeEqual only exists on Workers, not in Node tests). */
+export function safeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
   let diff = 0;
-  for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
   return diff === 0;
 }

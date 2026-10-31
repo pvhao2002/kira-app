@@ -5,6 +5,7 @@ import { DifficultyBadge, ErrorBox, Spinner } from '../../components/Badge';
 import { Markdown, useMarkdown } from '../../components/Markdown';
 import { ago, num } from '../../format';
 import { DIFFICULTY_LABEL, type Category, type Difficulty } from '../../types';
+import { readMinutes } from '../../../worker/text';
 
 type Row = { id: number; slug: string; title: string; status: 'draft' | 'published'; source: 'human' | 'ai'; difficulty: Difficulty; categorySlug: string; views: number; updatedAt: number };
 type Full = Row & { summary: string; bodyMd: string; tags: string[]; question: { title: string; context: string; author: string } | null };
@@ -216,7 +217,7 @@ function EditArticle({ id }: { id: number }) {
             <StatusPill status={status} />
             {article?.source === 'ai' && <span className="text-secondary">AI generated</span>}
             <span><span className="material-symbols-outlined text-title-md align-middle">description</span> {num(words)} words</span>
-            <span><span className="material-symbols-outlined text-title-md align-middle">schedule</span> {Math.max(1, Math.ceil(words / 220))} min read</span>
+            <span><span className="material-symbols-outlined text-title-md align-middle">schedule</span> {readMinutes(d.bodyMd)} min read</span>
             {dirty && <span className="text-[#fbbf24]">Unsaved changes</span>}
           </div>
         </div>

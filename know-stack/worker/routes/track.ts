@@ -1,5 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
+import { nowSec } from '../content';
 import { articles, visits } from '../db/schema';
 import type { AppEnv } from '../env';
 import { ensureGeo } from '../geo';
@@ -11,14 +12,22 @@ export const trackRoutes = new Hono<AppEnv>()
     const body = await c.req.json<{ path?: string; articleSlug?: string; referrer?: string }>().catch(() => ({}) as never);
     // Only Cloudflare's header: X-Forwarded-For is client-controlled.
     const ip = c.req.header('CF-Connecting-IP') ?? 'unknown';
+    if (!(await c.env.TRACK_LIMITER.limit({ key: ip })).success) return c.json({ error: 'Too many requests' }, 429);
     let articleId: number | null = null;
     if (body.articleSlug) {
       const [a] = await c.var.db
+        .select({ id: articles.id })
+        .from(articles)
+        .where(and(eq(articles.slug, String(body.articleSlug)), eq(articles.status, 'published')))
+        .limit(1);
+      articleId = a?.id ?? null;
+    }
+    if (articleId) {
+      // One view per reader: skip the count if this IP already read the article in the last 30 minutes.
+      await c.var.db
         .update(articles)
         .set({ views: sql`${articles.views} + 1` })
-        .where(and(eq(articles.slug, String(body.articleSlug)), eq(articles.status, 'published')))
-        .returning({ id: articles.id });
-      articleId = a?.id ?? null;
+        .where(and(eq(articles.id, articleId), sql`not exists (select 1 from visits v where v.article_id = ${articleId} and v.ip = ${ip} and v.created_at >= ${nowSec() - 1800})`));
     }
     let referrer = '';
     try {

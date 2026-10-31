@@ -1,13 +1,10 @@
-DELETE FROM bookmarks;
-DELETE FROM articles;
-DELETE FROM categories;
-INSERT INTO categories (slug, name, icon, sort) VALUES ('core-cs-and-systems', 'Core CS & Systems', 'terminal', 1);
-INSERT INTO categories (slug, name, icon, sort) VALUES ('java-and-spring-boot', 'Java & Spring Boot', 'code', 2);
-INSERT INTO categories (slug, name, icon, sort) VALUES ('databases-and-caching', 'Databases & Caching', 'database', 3);
-INSERT INTO categories (slug, name, icon, sort) VALUES ('cloud-and-devops', 'Cloud & DevOps', 'cloud', 4);
-INSERT INTO categories (slug, name, icon, sort) VALUES ('microservices-architecture', 'Microservices Architecture', 'hub', 5);
-INSERT INTO categories (slug, name, icon, sort) VALUES ('system-design', 'System Design', 'account_tree', 6);
-INSERT INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('g1-vs-zgc-garbage-collection', 'Garbage Collection Under Load: G1 vs Generational ZGC', 'Region-based evacuation, concurrent relocation with load barriers, and choosing a collector by latency budget.', '## 01 G1 in one paragraph
+INSERT OR IGNORE INTO categories (slug, name, icon, sort) VALUES ('core-cs-and-systems', 'Core CS & Systems', 'terminal', 1);
+INSERT OR IGNORE INTO categories (slug, name, icon, sort) VALUES ('java-and-spring-boot', 'Java & Spring Boot', 'code', 2);
+INSERT OR IGNORE INTO categories (slug, name, icon, sort) VALUES ('databases-and-caching', 'Databases & Caching', 'database', 3);
+INSERT OR IGNORE INTO categories (slug, name, icon, sort) VALUES ('cloud-and-devops', 'Cloud & DevOps', 'cloud', 4);
+INSERT OR IGNORE INTO categories (slug, name, icon, sort) VALUES ('microservices-architecture', 'Microservices Architecture', 'hub', 5);
+INSERT OR IGNORE INTO categories (slug, name, icon, sort) VALUES ('system-design', 'System Design', 'account_tree', 6);
+INSERT OR IGNORE INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('g1-vs-zgc-garbage-collection', 'Garbage Collection Under Load: G1 vs Generational ZGC', 'Region-based evacuation, concurrent relocation with load barriers, and choosing a collector by latency budget.', '## 01 G1 in one paragraph
 
 G1 splits the heap into equal regions and collects the ones with the most garbage first. Young collections are stop-the-world evacuations; old regions are reclaimed by mixed collections after a concurrent marking cycle. `-XX:MaxGCPauseMillis` (default 200 ms) is a goal, not a guarantee.
 
@@ -36,8 +33,8 @@ java -XX:+UseZGC -XX:+ZGenerational -Xmx16g -Xlog:gc*:file=gc.log -jar app.jar
 
 **Q: What does a load barrier cost?** A small check on every reference load, a few percent of throughput.
 
-**Q: What is an evacuation failure in G1?** No free regions to copy survivors into, triggering an expensive full GC.', 'core-cs-and-systems', 'senior', '["Garbage Collection","JVM Internals"]', 2, 'published', 'human', 28700, 1791210810, 1791210810, 1791210810);
-INSERT INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('idempotent-apis-redis-redlock', 'Designing Idempotent APIs with Distributed Locks & Redis Redlock', 'Clock drift vulnerabilities, Kleppmann''s critique, fencing tokens with monotonic sequence IDs, and Stripe-style idempotency keys.', '## 01 The problem: retries create duplicates
+**Q: What is an evacuation failure in G1?** No free regions to copy survivors into, triggering an expensive full GC.', 'core-cs-and-systems', 'senior', '["Garbage Collection","JVM Internals"]', 2, 'published', 'human', 28700, 1791214931, 1791214931, 1791214931);
+INSERT OR IGNORE INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('idempotent-apis-redis-redlock', 'Designing Idempotent APIs with Distributed Locks & Redis Redlock', 'Clock drift vulnerabilities, Kleppmann''s critique, fencing tokens with monotonic sequence IDs, and Stripe-style idempotency keys.', '## 01 The problem: retries create duplicates
 
 Clients retry on timeouts, load balancers retry on resets, and queues redeliver. Any non-idempotent `POST /payments` will eventually charge someone twice.
 
@@ -87,8 +84,8 @@ Every lock grant carries a monotonically increasing token. The storage layer rej
 
 **Q: How long do you keep them?** At least as long as the longest client retry window, commonly 24 hours.
 
-**Q: What if two requests with the same key arrive at once?** The unique insert lets one proceed; the other waits or gets `409 Conflict`.', 'system-design', 'senior', '["Redis","Concurrency","API Design"]', 2, 'published', 'human', 84210, 1792679610, 1792679610, 1792679610);
-INSERT INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('java-21-virtual-threads-loom', 'Deep Dive into Java 21 Virtual Threads & Loom Concurrency', 'Carrier thread scheduling, continuations in HotSpot, stack segment resizing, and how pinning occurs under synchronized blocks.', '## 01 Why platform threads stop scaling
+**Q: What if two requests with the same key arrive at once?** The unique insert lets one proceed; the other waits or gets `409 Conflict`.', 'system-design', 'senior', '["Redis","Concurrency","API Design"]', 2, 'published', 'human', 84210, 1792683731, 1792683731, 1792683731);
+INSERT OR IGNORE INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('java-21-virtual-threads-loom', 'Deep Dive into Java 21 Virtual Threads & Loom Concurrency', 'Carrier thread scheduling, continuations in HotSpot, stack segment resizing, and how pinning occurs under synchronized blocks.', '## 01 Why platform threads stop scaling
 
 Before JDK 21 and Project Loom (JEP 444), every `java.lang.Thread` mapped 1:1 to an OS kernel thread. Each one reserves roughly **1 MB** of stack and costs a kernel context switch to schedule. Somewhere around a few thousand concurrent blocking requests, the machine runs out of memory or spends its time switching instead of working.
 
@@ -135,8 +132,8 @@ A virtual thread is **pinned** to its carrier when it blocks inside a `synchroni
 
 **Q: Should you replace a `ThreadLocal` cache?** Yes, with care: a million virtual threads means a million copies. Prefer scoped values (JEP 446) or explicit caches.
 
-**Q: What limits throughput once threads are cheap?** The downstream: connection pools, rate limits and database capacity. Bound them explicitly.', 'java-and-spring-boot', 'staff', '["Concurrency","Java 21","JVM Internals"]', 2, 'published', 'ai', 128420, 1793198010, 1793198010, 1793198010);
-INSERT INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('kafka-exactly-once-semantics', 'Kafka Exactly-Once Semantics (EOS): Producer Idempotence to Transactions', 'How idempotent producers, transactional writes and read_committed consumers combine into exactly-once processing.', '## 01 Three delivery guarantees
+**Q: What limits throughput once threads are cheap?** The downstream: connection pools, rate limits and database capacity. Bound them explicitly.', 'java-and-spring-boot', 'staff', '["Concurrency","Java 21","JVM Internals"]', 2, 'published', 'ai', 128420, 1793202131, 1793202131, 1793202131);
+INSERT OR IGNORE INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('kafka-exactly-once-semantics', 'Kafka Exactly-Once Semantics (EOS): Producer Idempotence to Transactions', 'How idempotent producers, transactional writes and read_committed consumers combine into exactly-once processing.', '## 01 Three delivery guarantees
 
 At-most-once loses messages, at-least-once duplicates them, and exactly-once makes the *effect* happen once. Kafka EOS covers read-process-write loops that stay inside Kafka.
 
@@ -165,8 +162,8 @@ Output records and consumed offsets commit atomically. Consumers with `isolation
 
 **Q: Cost of EOS?** Extra round trips for commit markers; latency rises with smaller transactions.
 
-**Q: Is the consumer side exactly-once by default?** No, it needs `read_committed` and offsets committed in the transaction.', 'microservices-architecture', 'senior', '["Kafka","Distributed Systems"]', 1, 'published', 'human', 73500, 1792506810, 1792506810, 1792506810);
-INSERT INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('postgresql-mvcc-isolation', 'PostgreSQL MVCC & Isolation Levels Under High Write Contention', 'Tuple headers (xmin, xmax, t_ctid), phantom read prevention, vacuum freeze wraparound risks, and lock conflicts.', '## 01 Every row is a version
+**Q: Is the consumer side exactly-once by default?** No, it needs `read_committed` and offsets committed in the transaction.', 'microservices-architecture', 'senior', '["Kafka","Distributed Systems"]', 1, 'published', 'human', 73500, 1792510931, 1792510931, 1792510931);
+INSERT OR IGNORE INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('postgresql-mvcc-isolation', 'PostgreSQL MVCC & Isolation Levels Under High Write Contention', 'Tuple headers (xmin, xmax, t_ctid), phantom read prevention, vacuum freeze wraparound risks, and lock conflicts.', '## 01 Every row is a version
 
 PostgreSQL never updates a row in place. An `UPDATE` writes a new tuple version and marks the old one dead. Each tuple header stores:
 
@@ -207,8 +204,8 @@ Transaction IDs are 32-bit. `VACUUM FREEZE` marks old tuples as frozen so their 
 
 **Q: What causes table bloat?** Dead tuples that vacuum cannot reclaim yet, often due to long transactions.
 
-**Q: When pick Serializable over Repeatable Read?** When correctness depends on reads of rows you don''t write (write skew).', 'databases-and-caching', 'mid', '["PostgreSQL","Concurrency","Databases"]', 2, 'published', 'human', 62900, 1792247610, 1792247610, 1792247610);
-INSERT INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('saga-pattern-distributed-transactions', 'Deep Dive: Distributed Transaction Management with Saga Pattern & Eventual Consistency', 'Choreographing vs orchestrating microservice transactions, compensation mechanics, and zero-data-loss strategies.', '## Architectural executive summary
+**Q: When pick Serializable over Repeatable Read?** When correctness depends on reads of rows you don''t write (write skew).', 'databases-and-caching', 'mid', '["PostgreSQL","Concurrency","Databases"]', 2, 'published', 'human', 62900, 1792251731, 1792251731, 1792251731);
+INSERT OR IGNORE INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('saga-pattern-distributed-transactions', 'Deep Dive: Distributed Transaction Management with Saga Pattern & Eventual Consistency', 'Choreographing vs orchestrating microservice transactions, compensation mechanics, and zero-data-loss strategies.', '## Architectural executive summary
 
 Two-Phase Commit guarantees ACID across stores at the cost of synchronous locking, cascading latency and a single coordinator. **Sagas replace one atomic transaction with a sequence of local transactions**, each with a compensating action, and accept eventual consistency to stay available.
 
@@ -258,8 +255,8 @@ public void refund(UUID paymentId, UUID sagaId) {
 
 **Q: What if a compensation fails?** Retry with backoff; it must be idempotent. After a limit, park it for manual repair.
 
-**Q: How do you avoid lost events?** Transactional outbox plus at-least-once relay and idempotent consumers.', 'microservices-architecture', 'staff', '["Microservices","Kafka","Distributed Systems"]', 2, 'published', 'ai', 76340, 1793025210, 1793025210, 1793025210);
-INSERT INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('spring-boot-aot-graalvm-native', 'Spring Boot 3.2 AOT Native Images & GraalVM Compilation Architecture', 'Reachability metadata, the closed-world assumption, dynamic proxy constraints, and trimming startup to milliseconds.', '## 01 What AOT changes
+**Q: How do you avoid lost events?** Transactional outbox plus at-least-once relay and idempotent consumers.', 'microservices-architecture', 'staff', '["Microservices","Kafka","Distributed Systems"]', 2, 'published', 'ai', 76340, 1793029331, 1793029331, 1793029331);
+INSERT OR IGNORE INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('spring-boot-aot-graalvm-native', 'Spring Boot 3.2 AOT Native Images & GraalVM Compilation Architecture', 'Reachability metadata, the closed-world assumption, dynamic proxy constraints, and trimming startup to milliseconds.', '## 01 What AOT changes
 
 A native image is compiled ahead of time under a **closed-world assumption**: every class, method and resource reachable at runtime must be known at build time. Spring Boot''s AOT engine runs your application context during the build and generates plain Java code for bean definitions, so no classpath scanning happens at startup.
 
@@ -294,8 +291,8 @@ Native images win for scale-to-zero, CLIs and serverless: fast startup and low R
 
 **Q: What is the trade-off vs JIT?** Startup and memory vs peak throughput and build time.
 
-**Q: How do you find missing hints?** Run tests with the tracing agent (`-agentlib:native-image-agent`).', 'java-and-spring-boot', 'mid', '["Spring Boot","GraalVM","JVM Internals"]', 2, 'published', 'human', 41200, 1791642810, 1791642810, 1791642810);
-INSERT INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('spring-transactional-propagation-traps', 'Spring @Transactional Propagation: REQUIRES_NEW Rollback Traps', 'Thread-bound transaction resources, physical vs logical commits, self-invocation, and UnexpectedRollbackException.', '## 01 Logical vs physical transactions
+**Q: How do you find missing hints?** Run tests with the tracing agent (`-agentlib:native-image-agent`).', 'java-and-spring-boot', 'mid', '["Spring Boot","GraalVM","JVM Internals"]', 2, 'published', 'human', 41200, 1791646931, 1791646931, 1791646931);
+INSERT OR IGNORE INTO articles (slug, title, summary, body_md, category_slug, difficulty, tags, read_minutes, status, source, views, created_at, updated_at, published_at) VALUES ('spring-transactional-propagation-traps', 'Spring @Transactional Propagation: REQUIRES_NEW Rollback Traps', 'Thread-bound transaction resources, physical vs logical commits, self-invocation, and UnexpectedRollbackException.', '## 01 Logical vs physical transactions
 
 With `REQUIRED`, nested calls join one physical transaction. If an inner method throws and the exception is caught by the outer method, the transaction is already marked rollback-only, and the outer commit fails with `UnexpectedRollbackException`.
 
@@ -330,4 +327,4 @@ Calling a `@Transactional` method from the same class bypasses the Spring proxy,
 
 **Q: Which exceptions roll back by default?** Unchecked ones (`RuntimeException`, `Error`), not checked exceptions.
 
-**Q: When is REQUIRES_NEW right?** For work that must persist regardless of the caller: audit trails, outbox retries.', 'java-and-spring-boot', 'senior', '["Spring Boot","Databases","Concurrency"]', 2, 'published', 'human', 39800, 1791902010, 1791902010, 1791902010);
+**Q: When is REQUIRES_NEW right?** For work that must persist regardless of the caller: audit trails, outbox retries.', 'java-and-spring-boot', 'senior', '["Spring Boot","Databases","Concurrency"]', 2, 'published', 'human', 39800, 1791906131, 1791906131, 1791906131);

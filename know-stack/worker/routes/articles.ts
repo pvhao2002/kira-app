@@ -63,6 +63,7 @@ export const articleRoutes = new Hono<AppEnv>()
     const where: SQL[] = [eq(articles.status, 'published')];
     if (q?.trim()) {
       // instr, not LIKE: D1 rejects LIKE patterns over 50 bytes.
+      // shortcut: SQLite lower() only folds A-Z, so 'GIẢI' won't match 'giải'; add a lowercased search column (filled in JS) once articles are Vietnamese.
       const needle = q.trim().toLowerCase().slice(0, 200);
       where.push(or(sql`instr(lower(${articles.title}), ${needle}) > 0`, sql`instr(lower(${articles.summary}), ${needle}) > 0`)!);
     }
@@ -90,7 +91,11 @@ export const articleRoutes = new Hono<AppEnv>()
     return c.json({ ...row, bookmarked: marked.has(row.id) });
   })
   .post('/articles/:slug/bookmark', requireUser, async (c) => {
-    const [a] = await c.var.db.select({ id: articles.id }).from(articles).where(eq(articles.slug, c.req.param('slug'))).limit(1);
+    const [a] = await c.var.db
+      .select({ id: articles.id })
+      .from(articles)
+      .where(and(eq(articles.slug, c.req.param('slug')), eq(articles.status, 'published')))
+      .limit(1);
     if (!a) return c.json({ error: 'Article not found' }, 404);
     await c.var.db.insert(bookmarks).values({ userId: c.var.user!.id, articleId: a.id }).onConflictDoNothing();
     return c.json({ bookmarked: true });

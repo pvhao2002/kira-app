@@ -1,20 +1,17 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
-import { readMinutes, uniqueSlug } from '../content';
+import { nowSec, readMinutes, uniqueSlug } from '../content';
 import { agentTasks, articles } from '../db/schema';
 import type { AppEnv } from '../env';
+import { safeEqual } from '../password';
 import { parseArticle } from './admin';
-
-const nowSec = () => Math.floor(Date.now() / 1000);
 
 const requireAgent = createMiddleware<AppEnv>(async (c, next) => {
   const token = c.env.AGENT_TOKEN;
   if (!token) return c.json({ error: 'Agent API is disabled' }, 503);
   const given = c.req.header('Authorization')?.replace(/^Bearer /, '') ?? '';
-  const a = new TextEncoder().encode(given);
-  const b = new TextEncoder().encode(token);
-  if (a.length !== b.length || !crypto.subtle.timingSafeEqual(a, b)) return c.json({ error: 'Invalid agent token' }, 401);
+  if (!safeEqual(new TextEncoder().encode(given), new TextEncoder().encode(token))) return c.json({ error: 'Invalid agent token' }, 401);
   await next();
 });
 

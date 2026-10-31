@@ -11,5 +11,7 @@
     "types": ["@cloudflare/workers-types"],
     "tsBuildInfoFile": "./node_modules/.tmp/worker.tsbuildinfo"
   },
-  "include": ["worker", "vite.config.ts", "vitest.config.ts", "drizzle.config.ts"]
+  "include": ["worker", "vite.config.ts", "vitest.config.ts", "drizzle.config.ts"],
+  // Test files use Node APIs (fs, Miniflare); Vitest compiles and runs them.
+  "exclude": ["worker/**/*.test.ts", "worker/test-app.ts"]
 }

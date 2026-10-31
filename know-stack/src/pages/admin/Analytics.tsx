@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useApi } from '../../api';
+import { csvCell } from '../../csv';
 import { DifficultyBadge, ErrorBox, Spinner } from '../../components/Badge';
 import { ago, compact, duration, num } from '../../format';
 import type { Difficulty } from '../../types';
@@ -38,9 +39,8 @@ export default function Analytics() {
 
   function exportCsv() {
     if (!data) return;
-    const esc = (v: unknown) => `"${String(v).replace(/"/g, '""')}"`;
     const rows = [['title', 'category', 'difficulty', 'views', 'unique_visitors', 'avg_read_seconds', 'completion_pct', 'views_7d'], ...data.topArticles.map((a) => [a.title, a.category, a.difficulty, a.views, a.uniques, Math.round(a.avg_seconds), Math.round(a.completion), a.views_7d])];
-    const url = URL.createObjectURL(new Blob([rows.map((r) => r.map(esc).join(',')).join('\n')], { type: 'text/csv' }));
+    const url = URL.createObjectURL(new Blob([rows.map((r) => r.map(csvCell).join(',')).join('\n')], { type: 'text/csv' }));
     Object.assign(document.createElement('a'), { href: url, download: `knowstack-analytics-${days}d.csv` }).click();
     URL.revokeObjectURL(url);
   }

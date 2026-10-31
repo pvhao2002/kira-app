@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { api, useApi } from '../api';
+import { api, ApiError, useApi } from '../api';
 import { useAuth } from '../auth';
 import { DifficultyBadge, ErrorBox, Spinner, TechBadge } from '../components/Badge';
 import { Markdown, useMarkdown } from '../components/Markdown';
@@ -41,7 +41,12 @@ export function Article() {
 
   async function toggleBookmark() {
     if (!user) return openAuth();
-    await api(`/articles/${a!.slug}/bookmark`, { method: a!.bookmarked ? 'DELETE' : 'POST' });
+    try {
+      await api(`/articles/${a!.slug}/bookmark`, { method: a!.bookmarked ? 'DELETE' : 'POST' });
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) openAuth(); // session expired
+      return;
+    }
     setData({ ...a!, bookmarked: !a!.bookmarked, saves: a!.saves + (a!.bookmarked ? -1 : 1) });
   }
 

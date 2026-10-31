@@ -92,7 +92,7 @@ export default function Questions() {
                       <button type="button" onClick={() => draft(q)} className="flex items-center gap-1 px-space-md h-9 rounded-lg bg-[#6366f1] hover:bg-[#4f46e5] text-white font-badge-label text-badge-label"><span className="material-symbols-outlined text-title-md">edit_note</span>Draft Article</button>
                     )}
                     {q.status === 'pending' && <button type="button" onClick={() => run(() => api(`/admin/questions/${q.id}`, { method: 'PATCH', body: { status: 'rejected' } }))} className="px-space-md h-9 rounded-lg border border-[#334155] hover:bg-[#1e293b] text-on-surface font-badge-label text-badge-label">Reject</button>}
-                    {q.status === 'rejected' && <button type="button" onClick={() => run(() => api(`/admin/questions/${q.id}`, { method: 'PATCH', body: { status: 'pending' } }))} className="px-space-md h-9 rounded-lg border border-[#334155] hover:bg-[#1e293b] text-on-surface font-badge-label text-badge-label">Reopen</button>}
+                    {(q.status === 'rejected' || (q.status === 'drafted' && !q.articleId)) && <button type="button" onClick={() => run(() => api(`/admin/questions/${q.id}`, { method: 'PATCH', body: { status: 'pending' } }))} className="px-space-md h-9 rounded-lg border border-[#334155] hover:bg-[#1e293b] text-on-surface font-badge-label text-badge-label">Reopen</button>}
                   </div>
                 </div>
               )}

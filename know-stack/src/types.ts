@@ -1,4 +1,6 @@
-export type Difficulty = 'junior' | 'mid' | 'senior' | 'staff';
+import type { Difficulty } from '../worker/db/schema';
+
+export type { Difficulty };
 
 export type User = { id: number; email: string; name: string; isAdmin: boolean };
 

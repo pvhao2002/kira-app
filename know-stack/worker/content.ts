@@ -1,11 +1,9 @@
 import { eq, or, sql } from 'drizzle-orm';
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
 import * as schema from './db/schema';
+import { slugify } from './text';
 
-export const slugify = (title: string) =>
-  title.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'untitled';
-
-export const readMinutes = (md: string) => Math.max(1, Math.ceil(md.split(/\s+/).filter(Boolean).length / 220));
+export { nowSec, readMinutes, slugify } from './text';
 
 export async function uniqueSlug(db: DrizzleD1Database<typeof schema>, title: string, exceptId?: number): Promise<string> {
   const base = slugify(title);
