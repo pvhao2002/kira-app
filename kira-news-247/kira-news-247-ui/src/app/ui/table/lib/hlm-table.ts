@@ -1,0 +1,132 @@
+import { Directive } from '@angular/core';
+import { classes } from '@spartan-ng/helm/utils';
+
+@Directive({
+	selector: 'div[hlmTableContainer]',
+	exportAs: 'hlmTableContainer',
+	host: { 'data-slot': 'table-container' },
+})
+export class HlmTableContainer {
+	constructor() {
+		classes(() => 'spartan-table-container');
+	}
+}
+
+/**
+ * Directive to apply Shadcn-like styling to a <table> element.
+ */
+@Directive({
+	selector: 'table[hlmTable]',
+	exportAs: 'hlmTable',
+	host: { 'data-slot': 'table' },
+})
+export class HlmTable {
+	constructor() {
+		classes(() => 'spartan-table');
+	}
+}
+
+/**
+ * Directive to apply Shadcn-like styling to a <thead> element
+ * within an HlmTable context.
+ */
+@Directive({
+	selector: 'thead[hlmTHead],thead[hlmTableHeader]',
+	exportAs: 'hlmTHead',
+	host: { 'data-slot': 'table-header' },
+})
+export class HlmTHead {
+	constructor() {
+		classes(() => 'spartan-table-header');
+	}
+}
+
+/**
+ * Directive to apply Shadcn-like styling to a <tbody> element
+ * within an HlmTable context.
+ */
+@Directive({
+	selector: 'tbody[hlmTBody],tbody[hlmTableBody]',
+	exportAs: 'hlmTBody',
+	host: { 'data-slot': 'table-body' },
+})
+export class HlmTBody {
+	constructor() {
+		classes(() => 'spartan-table-body');
+	}
+}
+
+/**
+ * Directive to apply Shadcn-like styling to a <tfoot> element
+ * within an HlmTable context.
+ */
+@Directive({
+	selector: 'tfoot[hlmTFoot],tfoot[hlmTableFooter]',
+	exportAs: 'hlmTFoot',
+	host: { 'data-slot': 'table-footer' },
+})
+export class HlmTFoot {
+	constructor() {
+		classes(() => 'spartan-table-footer');
+	}
+}
+
+/**
+ * Directive to apply Shadcn-like styling to a <tr> element
+ * within an HlmTable context.
+ */
+@Directive({
+	selector: 'tr[hlmTr],tr[hlmTableRow]',
+	exportAs: 'hlmTr',
+	host: { 'data-slot': 'table-row' },
+})
+export class HlmTr {
+	constructor() {
+		classes(() => 'spartan-table-row has-aria-expanded:bg-muted/50');
+	}
+}
+
+/**
+ * Directive to apply Shadcn-like styling to a <th> element
+ * within an HlmTable context.
+ */
+@Directive({
+	selector: 'th[hlmTh],th[hlmTableHead]',
+	exportAs: 'hlmTh',
+	host: { 'data-slot': 'table-head' },
+})
+export class HlmTh {
+	constructor() {
+		classes(() => 'spartan-table-head');
+	}
+}
+
+/**
+ * Directive to apply Shadcn-like styling to a <td> element
+ * within an HlmTable context.
+ */
+@Directive({
+	selector: 'td[hlmTd],td[hlmTableCell]',
+	exportAs: 'hlmTd',
+	host: { 'data-slot': 'table-cell' },
+})
+export class HlmTd {
+	constructor() {
+		classes(() => 'spartan-table-cell');
+	}
+}
+
+/**
+ * Directive to apply Shadcn-like styling to a <caption> element
+ * within an HlmTable context.
+ */
+@Directive({
+	selector: 'caption[hlmCaption],caption[hlmTableCaption]',
+	exportAs: 'hlmCaption',
+	host: { 'data-slot': 'table-caption' },
+})
+export class HlmCaption {
+	constructor() {
+		classes(() => 'spartan-table-caption');
+	}
+}

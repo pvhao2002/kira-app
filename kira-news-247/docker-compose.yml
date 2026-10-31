@@ -1,0 +1,20 @@
+# Local development stack. Production uses Oracle Autonomous Database (see README.md), not this container.
+services:
+  oracle:
+    image: gvenzl/oracle-free:23-slim-faststart
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_SYS_PASSWORD:-change-me-sys}
+      APP_USER: ${NEWS_DB_USERNAME:-news}
+      APP_USER_PASSWORD: ${NEWS_DB_PASSWORD:-news}
+    ports:
+      - "${ORACLE_HOST_PORT:-1523}:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  oracle-data:

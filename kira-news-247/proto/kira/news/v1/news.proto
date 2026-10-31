@@ -1,0 +1,285 @@
+syntax = "proto3";
+
+// Wire contract between kira-news-247-service and kira-news-247-ui.
+// Transport: HTTP with Content-Type/Accept "application/x-protobuf". Timestamps are epoch milliseconds.
+package kira.news.v1;
+
+option java_multiple_files = true;
+option java_package = "com.kira.news.proto.v1";
+
+// ---------- shared ----------
+
+message ApiError {
+  string code = 1;
+  string message = 2;
+  string trace_id = 3;
+}
+
+message Empty {}
+
+message Category {
+  int64 id = 1;
+  string slug = 2;
+  string name = 3;
+  string description = 4;
+  int32 sort_order = 5;
+}
+
+message CategoryList {
+  repeated Category items = 1;
+}
+
+// ---------- public site ----------
+
+message ArticleCard {
+  int64 id = 1;
+  string slug = 2;
+  string title = 3;
+  string summary = 4;
+  string cover_image_url = 5;
+  Category category = 6;
+  int64 published_at = 7;
+  int32 reading_minutes = 8;
+}
+
+message ArticlePage {
+  repeated ArticleCard items = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 size = 4;
+}
+
+message CategorySection {
+  Category category = 1;
+  repeated ArticleCard items = 2;
+}
+
+message HomePage {
+  ArticleCard lead = 1;
+  repeated ArticleCard top = 2;
+  repeated ArticleCard latest = 3;
+  repeated ArticleCard most_read = 4;
+  repeated CategorySection sections = 5;
+}
+
+message ArticleDetail {
+  ArticleCard card = 1;
+  string body_html = 2;
+  repeated string tags = 3;
+  repeated string source_urls = 4;
+  string author_name = 5;
+  int64 updated_at = 6;
+  int64 view_count = 7;
+  repeated ArticleCard related = 8;
+}
+
+// Sent by the browser after it resolved the reader via ipinfo.io.
+message ReadEvent {
+  int64 article_id = 1;
+  string visitor_id = 2;
+  string session_id = 3;
+  IpInfo ip_info = 4;
+  string referrer = 5;
+  string language = 6;
+  int32 screen_width = 7;
+  int32 screen_height = 8;
+}
+
+message IpInfo {
+  string ip = 1;
+  string hostname = 2;
+  string city = 3;
+  string region = 4;
+  string country = 5;
+  string loc = 6;
+  string org = 7;
+  string postal = 8;
+  string timezone = 9;
+}
+
+// ---------- auth ----------
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_ADMIN = 1;
+  ROLE_EDITOR = 2;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message Me {
+  string username = 1;
+  string display_name = 2;
+  Role role = 3;
+}
+
+// ---------- admin ----------
+
+enum ArticleStatus {
+  ARTICLE_STATUS_UNSPECIFIED = 0;
+  DRAFT = 1;
+  IN_REVIEW = 2;
+  CHANGES_REQUESTED = 3;
+  PUBLISHED = 4;
+  REJECTED = 5;
+  ARCHIVED = 6;
+}
+
+enum WorkflowAction {
+  WORKFLOW_ACTION_UNSPECIFIED = 0;
+  SUBMIT = 1;
+  REQUEST_CHANGES = 2;
+  PUBLISH = 3;
+  REJECT = 4;
+  UNPUBLISH = 5;
+}
+
+// Create/update payload. `version` is required on update (optimistic locking).
+message ArticleDraft {
+  string title = 1;
+  string slug = 2; // optional: derived from title when empty
+  string summary = 3;
+  string body_markdown = 4;
+  int64 category_id = 5;
+  repeated string tags = 6;
+  string cover_image_url = 7;
+  repeated string source_urls = 8;
+  int64 version = 9;
+}
+
+message AdminArticleRow {
+  int64 id = 1;
+  string slug = 2;
+  string title = 3;
+  ArticleStatus status = 4;
+  string category_name = 5;
+  string created_by = 6;
+  int32 revision = 7;
+  int32 open_comments = 8;
+  int64 updated_at = 9;
+  int64 published_at = 10;
+  int64 view_count = 11;
+}
+
+message AdminArticlePage {
+  repeated AdminArticleRow items = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 size = 4;
+  repeated StatusCount counts = 5;
+}
+
+message StatusCount {
+  ArticleStatus status = 1;
+  int64 count = 2;
+}
+
+message ReviewComment {
+  int64 id = 1;
+  string author = 2;
+  Role author_role = 3;
+  string body = 4;
+  string quote = 5; // optional excerpt of the article the comment is about
+  int32 revision = 6;
+  int64 created_at = 7;
+  int64 resolved_at = 8;
+  string resolved_by = 9;
+  string resolution_note = 10;
+}
+
+message RevisionSummary {
+  int32 revision = 1;
+  string edited_by = 2;
+  int64 created_at = 3;
+}
+
+message AdminArticle {
+  int64 id = 1;
+  ArticleStatus status = 2;
+  ArticleDraft draft = 3; // current content, includes version
+  string body_html = 4;
+  int32 revision = 5;
+  string created_by = 6;
+  int64 created_at = 7;
+  int64 updated_at = 8;
+  int64 published_at = 9;
+  int64 view_count = 10;
+  repeated ReviewComment comments = 11;
+  repeated RevisionSummary revisions = 12;
+  repeated WorkflowAction allowed_actions = 13; // what the current user may do now
+  bool editable = 14;                           // whether the current user may edit content now
+}
+
+message TransitionRequest {
+  WorkflowAction action = 1;
+  int64 version = 2;
+  string note = 3; // optional; with REQUEST_CHANGES/REJECT it is stored as a comment
+}
+
+message CommentRequest {
+  string body = 1;
+  string quote = 2;
+}
+
+message ResolveCommentRequest {
+  string note = 1;
+}
+
+message Revision {
+  int32 revision = 1;
+  string edited_by = 2;
+  int64 created_at = 3;
+  string title = 4;
+  string summary = 5;
+  string body_markdown = 6;
+}
+
+message CategoryDraft {
+  string slug = 1;
+  string name = 2;
+  string description = 3;
+  int32 sort_order = 4;
+}
+
+message ReadRow {
+  int64 id = 1;
+  int64 read_at = 2;
+  string article_title = 3;
+  string article_slug = 4;
+  IpInfo ip_info = 5;
+  string remote_ip = 6;
+  string user_agent = 7;
+  string referrer = 8;
+  string visitor_id = 9;
+}
+
+message ReadPage {
+  repeated ReadRow items = 1;
+  int64 total = 2;
+  int32 page = 3;
+  int32 size = 4;
+}
+
+message DayCount {
+  string day = 1; // yyyy-MM-dd
+  int64 count = 2;
+}
+
+message CountryCount {
+  string country = 1;
+  int64 count = 2;
+}
+
+message Dashboard {
+  repeated StatusCount status_counts = 1;
+  int64 reads_today = 2;
+  int64 reads_7d = 3;
+  int64 visitors_7d = 4;
+  repeated DayCount reads_by_day = 5;
+  repeated CountryCount top_countries = 6;
+  repeated AdminArticleRow top_articles = 7;
+  repeated AdminArticleRow waiting_review = 8;
+}

@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: kira-news-247-service
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    # Autonomous Database: jdbc:oracle:thin:@<service>_high?TNS_ADMIN=/path/to/wallet
+    url: ${NEWS_DB_URL:jdbc:oracle:thin:@localhost:1521/FREEPDB1}
+    username: ${NEWS_DB_USERNAME:news}
+    password: ${NEWS_DB_PASSWORD:news}
+    hikari:
+      maximum-pool-size: ${NEWS_DB_POOL_SIZE:10}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+server:
+  port: ${PORT:8090}
+  forward-headers-strategy: ${NEWS_FORWARD_HEADERS:framework}
+  servlet:
+    session:
+      timeout: 12h
+      cookie:
+        name: NEWS_SESSION
+        http-only: true
+        same-site: lax
+        secure: ${NEWS_COOKIE_SECURE:false}
+
+news:
+  site-url: ${NEWS_SITE_URL:http://localhost:4300}
+  site-name: Kira News 247
+  bootstrap:
+    admin:
+      username: ${NEWS_ADMIN_USERNAME:}
+      password: ${NEWS_ADMIN_PASSWORD:}
+      display-name: ${NEWS_ADMIN_DISPLAY_NAME:Tổng biên tập}
+    editor:
+      username: ${NEWS_EDITOR_USERNAME:}
+      password: ${NEWS_EDITOR_PASSWORD:}
+      display-name: ${NEWS_EDITOR_DISPLAY_NAME:AI Editor}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

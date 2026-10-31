@@ -1,0 +1,83 @@
+@import "tailwindcss";
+@import "@spartan-ng/brain/hlm-tailwind-preset.css";
+@import "./spartan-vega.css";
+
+/* Kira News 247 tokens — design-system/kira-news-247/MASTER.md (off-white page instead of the suggested pink). */
+:root {
+  color-scheme: light;
+  --font-sans: "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --radius: 0.5rem;
+  --background: oklch(0.985 0.002 75);   /* #FAFAF9 */
+  --foreground: oklch(0.216 0.006 56);   /* #1C1917 */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.216 0.006 56);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.216 0.006 56);
+  --primary: oklch(0.577 0.215 27.3);    /* breaking red #DC2626 */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.97 0.001 106);
+  --secondary-foreground: oklch(0.216 0.006 56);
+  --muted: oklch(0.97 0.001 106);
+  --muted-foreground: oklch(0.444 0.011 73);  /* #57534E, 7:1 on white */
+  --accent: oklch(0.97 0.001 106);
+  --accent-foreground: oklch(0.216 0.006 56);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.923 0.003 48.7);
+  --input: oklch(0.869 0.005 56);
+  --ring: oklch(0.577 0.215 27.3);
+  --link: oklch(0.424 0.181 265.6);     /* #1E40AF */
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --color-link: var(--link);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-serif;
+    text-wrap: balance;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Long-form article body (HTML rendered server-side from Markdown). */
+.news-prose {
+  @apply font-serif text-[1.1875rem] leading-[1.75] text-foreground;
+  max-width: 68ch;
+}
+.news-prose > * + * { margin-top: 1.1em; }
+.news-prose h2 { @apply mt-10 text-2xl font-semibold leading-snug; }
+.news-prose h3 { @apply mt-8 text-xl font-semibold; }
+.news-prose a { @apply text-link underline underline-offset-2 hover:no-underline; }
+.news-prose ul { @apply list-disc pl-6; }
+.news-prose ol { @apply list-decimal pl-6; }
+.news-prose li + li { margin-top: 0.4em; }
+.news-prose blockquote { @apply border-l-4 border-primary pl-4 italic text-muted-foreground; }
+.news-prose img { @apply my-6 h-auto w-full rounded-md; }
+.news-prose code { @apply rounded bg-muted px-1 py-0.5 font-mono text-[0.9em]; }
+.news-prose pre { @apply overflow-x-auto rounded-md bg-muted p-4 text-sm; }
+.news-prose table { @apply w-full border-collapse text-base; }
+.news-prose th, .news-prose td { @apply border border-border px-3 py-2 text-left; }
+.news-prose hr { @apply my-8 border-border; }
+
+/* Native <select> styled like hlmInput. */
+.field-select {
+  @apply h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50;
+}

@@ -1,0 +1,9 @@
+# Generates TypeScript (protobuf-es v2) from ../proto. Run: npm run gen:proto
+version: v2
+inputs:
+  - directory: ../proto
+plugins:
+  - local: protoc-gen-es
+    out: src/app/gen
+    opt: target=ts
+clean: true
