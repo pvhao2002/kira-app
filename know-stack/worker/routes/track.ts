@@ -1,10 +1,11 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, count, eq, gte, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { nowSec } from '../content';
 import { articles, visits } from '../db/schema';
 import type { AppEnv } from '../env';
 import { ensureGeo } from '../geo';
 
+const MAX_VIEWS_PER_MINUTE = 60; // per IP
 const clamp = (n: unknown, max: number) => Math.min(max, Math.max(0, Math.round(Number(n) || 0)));
 
 export const trackRoutes = new Hono<AppEnv>()
@@ -12,7 +13,8 @@ export const trackRoutes = new Hono<AppEnv>()
     const body = await c.req.json<{ path?: string; articleSlug?: string; referrer?: string }>().catch(() => ({}) as never);
     // Only Cloudflare's header: X-Forwarded-For is client-controlled.
     const ip = c.req.header('CF-Connecting-IP') ?? 'unknown';
-    if (!(await c.env.TRACK_LIMITER.limit({ key: ip })).success) return c.json({ error: 'Too many requests' }, 429);
+    const [recent] = await c.var.db.select({ n: count() }).from(visits).where(and(eq(visits.ip, ip), gte(visits.createdAt, nowSec() - 60)));
+    if (recent.n >= MAX_VIEWS_PER_MINUTE) return c.json({ error: 'Too many requests' }, 429);
     let articleId: number | null = null;
     if (body.articleSlug) {
       const [a] = await c.var.db

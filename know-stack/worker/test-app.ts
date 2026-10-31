@@ -13,10 +13,6 @@ export async function createTestApp() {
     modules: true,
     script: 'export default {}',
     d1Databases: ['DB'],
-    ratelimits: {
-      LOGIN_LIMITER: { namespace_id: '1001', simple: { limit: 5, period: 60 } },
-      TRACK_LIMITER: { namespace_id: '1002', simple: { limit: 60, period: 60 } },
-    },
     bindings: { ADMIN_EMAILS: ADMIN.email, AGENT_TOKEN },
   }));
   const env = (await mf.getBindings()) as Record<string, unknown> & { DB: D1Database };

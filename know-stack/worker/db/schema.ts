@@ -88,7 +88,12 @@ export const visits = sqliteTable(
     scrollPct: integer('scroll_pct').notNull().default(0),
     createdAt: integer('created_at').notNull().default(now),
   },
-  (t) => [index('visits_created').on(t.createdAt), index('visits_article').on(t.articleId)],
+  (t) => [
+    index('visits_created').on(t.createdAt),
+    index('visits_article').on(t.articleId),
+    // Per-IP rate limit and once-per-reader view counting both look up recent visits by IP.
+    index('visits_ip_created').on(t.ip, t.createdAt),
+  ],
 );
 
 // One row per IP from ip-api.com; field names mirror its response.
@@ -108,6 +113,13 @@ export const ipGeo = sqliteTable('ip_geo', {
   org: text('org'),
   asName: text('as_name'),
   fetchedAt: integer('fetched_at').notNull().default(now),
+});
+
+// Failed sign-ins per "ip:email" in the current one-minute window (exact and global, unlike Workers rate limiting).
+export const loginFailures = sqliteTable('login_failures', {
+  key: text('key').primaryKey(),
+  windowStart: integer('window_start').notNull(),
+  count: integer('count').notNull(),
 });
 
 export const agentTasks = sqliteTable('agent_tasks', {

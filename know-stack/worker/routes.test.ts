@@ -30,6 +30,15 @@ describe('auth', () => {
     expect(tries).toEqual([401, 401, 401, 401, 401, 429]);
   });
 
+  it('does not count failed tries from before a successful login', async () => {
+    const wrong = () => t.call('/auth/login', { body: { email: ADMIN.email, password: 'wrong' } }).then((r) => r.status);
+    for (let i = 0; i < 4; i++) await wrong();
+    await t.login(ADMIN.email, ADMIN.password);
+    const after = [];
+    for (let i = 0; i < 5; i++) after.push(await wrong());
+    expect(after).toEqual([401, 401, 401, 401, 401]);
+  });
+
   it('answers two simultaneous sign-ups for one email with 200 and 409', async () => {
     const body = { email: 'twin@test.dev', name: 'Twin', password: 'twin-password' };
     const statuses = (await Promise.all([t.call('/auth/register', { body }), t.call('/auth/register', { body })])).map((r) => r.status);

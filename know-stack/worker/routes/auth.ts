@@ -1,11 +1,13 @@
-import { eq } from 'drizzle-orm';
+import { eq, lt, sql } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { hashPassword, isAdminEmail, newToken, SESSION_COOKIE, SESSION_TTL_SEC, verifyPassword } from '../auth';
-import { sessions, users } from '../db/schema';
+import { nowSec } from '../content';
+import { loginFailures, sessions, users } from '../db/schema';
 import type { AppEnv } from '../env';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_FAILURES_PER_MINUTE = 5; // per IP + email
 let dummyHash: Promise<string> | undefined; // created on first use: Workers forbid crypto at module load
 
 export const authRoutes = new Hono<AppEnv>()
@@ -28,8 +30,10 @@ export const authRoutes = new Hono<AppEnv>()
   .post('/login', async (c) => {
     const body = await c.req.json<{ email?: string; password?: string }>().catch(() => ({}) as never);
     const email = String(body.email ?? '').trim().toLowerCase();
-    const ip = c.req.header('CF-Connecting-IP') ?? 'unknown';
-    if (!(await c.env.LOGIN_LIMITER.limit({ key: `${ip}:${email}` })).success) {
+    const key = `${c.req.header('CF-Connecting-IP') ?? 'unknown'}:${email}`;
+    const window = Math.floor(nowSec() / 60) * 60;
+    const [failures] = await c.var.db.select().from(loginFailures).where(eq(loginFailures.key, key)).limit(1);
+    if (failures && failures.windowStart === window && failures.count >= MAX_FAILURES_PER_MINUTE) {
       return c.json({ error: 'Too many sign-in attempts. Try again in a minute.' }, 429);
     }
     const [user] = await c.var.db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -37,8 +41,19 @@ export const authRoutes = new Hono<AppEnv>()
     const stored = user?.passwordHash ?? (await (dummyHash ??= hashPassword('dummy-password')));
     const ok = await verifyPassword(String(body.password ?? ''), stored);
     if (!user || !ok) {
+      await c.var.db.batch([
+        c.var.db
+          .insert(loginFailures)
+          .values({ key, windowStart: window, count: 1 })
+          .onConflictDoUpdate({
+            target: loginFailures.key,
+            set: { count: sql`case when ${loginFailures.windowStart} = ${window} then ${loginFailures.count} + 1 else 1 end`, windowStart: window },
+          }),
+        c.var.db.delete(loginFailures).where(lt(loginFailures.windowStart, window - 86400)), // drop day-old rows
+      ]);
       return c.json({ error: 'Invalid email or password' }, 401);
     }
+    await c.var.db.delete(loginFailures).where(eq(loginFailures.key, key));
     return startSession(c, user);
   })
   .post('/logout', async (c) => {

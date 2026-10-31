@@ -6,8 +6,6 @@ export type Bindings = {
   AI?: Ai;
   ADMIN_EMAILS: string;
   AGENT_TOKEN?: string;
-  LOGIN_LIMITER: RateLimit; // 5 tries / minute per IP + email
-  TRACK_LIMITER: RateLimit; // 60 page views / minute per IP
 };
 
 export type SessionUser = { id: number; email: string; name: string; isAdmin: boolean };
