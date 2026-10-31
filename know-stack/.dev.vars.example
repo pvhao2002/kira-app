@@ -1,0 +1,4 @@
+# Comma-separated emails that get admin access
+ADMIN_EMAILS=admin@example.com
+# Bearer token the external AI agent uses for /api/agent/*
+AGENT_TOKEN=change-me

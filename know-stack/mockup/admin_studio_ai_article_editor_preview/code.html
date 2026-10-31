@@ -1,0 +1,587 @@
+<!DOCTYPE html><html class="dark" lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"primary-fixed-dim":"#c0c1ff","primary":"#c0c1ff","surface":"#0b1326","outline-variant":"#464554","tertiary-fixed-dim":"#d0bcff","secondary-fixed":"#6ffbbe","on-secondary-fixed-variant":"#005236","surface-tint":"#c0c1ff","inverse-on-surface":"#283044","inverse-primary":"#494bd6","on-tertiary-fixed-variant":"#5516be","on-background":"#dae2fd","on-secondary-container":"#00311f","background":"#0b1326","on-surface":"#dae2fd","surface-variant":"#2d3449","on-surface-variant":"#c7c4d7","tertiary-container":"#a078ff","inverse-surface":"#dae2fd","secondary-container":"#00a572","on-tertiary-fixed":"#23005c","surface-container-high":"#222a3d","on-secondary":"#003824","error-container":"#93000a","on-primary-fixed":"#07006c","on-primary-fixed-variant":"#2f2ebe","surface-container-low":"#131b2e","on-tertiary-container":"#340080","on-error":"#690005","error":"#ffb4ab","on-tertiary":"#3c0091","surface-container-lowest":"#060e20","on-secondary-fixed":"#002113","tertiary-fixed":"#e9ddff","secondary":"#4edea3","outline":"#908fa0","surface-container-highest":"#2d3449","surface-container":"#171f33","surface-bright":"#31394d","on-primary-container":"#0d0096","primary-fixed":"#e1e0ff","primary-container":"#8083ff","on-primary":"#1000a9","on-error-container":"#ffdad6","surface-dim":"#0b1326","tertiary":"#d0bcff","secondary-fixed-dim":"#4edea3"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"space-xl":"2.5rem","space-xs":"0.25rem","gutter":"1.5rem","gutter-mobile":"1rem","space-sm":"0.5rem","margin-mobile":"1rem","margin":"2rem","space-lg":"1.5rem","space-md":"1rem"},"fontFamily":{"headline-lg":["Geist"],"badge-label":["Inter"],"title-md":["Inter"],"display-xl":["Geist"],"body-lg":["Inter"],"headline-md":["Geist"],"body-sm":["Inter"],"headline-lg-mobile":["Geist"],"body-md":["Inter"],"headline-sm":["Geist"],"code-inline":["JetBrains Mono"],"label-caps":["JetBrains Mono"],"code-block":["JetBrains Mono"],"display-xl-mobile":["Geist"]},"fontSize":{"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"600"}],"badge-label":["12px",{"lineHeight":"16px","fontWeight":"500"}],"title-md":["16px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"600"}],"display-xl":["48px",{"lineHeight":"56px","letterSpacing":"-0.03em","fontWeight":"700"}],"body-lg":["17px",{"lineHeight":"28px","letterSpacing":"-0.005em","fontWeight":"400"}],"headline-md":["24px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"600"}],"body-sm":["13px",{"lineHeight":"20px","letterSpacing":"0.005em","fontWeight":"400"}],"headline-lg-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.015em","fontWeight":"600"}],"body-md":["15px",{"lineHeight":"24px","letterSpacing":"0em","fontWeight":"400"}],"headline-sm":["20px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}],"code-inline":["13px",{"lineHeight":"20px","fontWeight":"500"}],"label-caps":["11px",{"lineHeight":"16px","letterSpacing":"0.06em","fontWeight":"600"}],"code-block":["13.5px",{"lineHeight":"22px","fontWeight":"400"}],"display-xl-mobile":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"700"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface"><header class="fixed top-0 left-0 right-0 z-50 h-16 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full h-16 px-space-lg flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg min-w-max"><div class="flex items-center gap-space-sm"><span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">Know<span class="text-primary">Stack</span></span></div><div class="hidden xl:flex items-center bg-surface-container-low px-space-md py-space-xs rounded-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] w-80 text-on-surface-variant"><span class="material-symbols-outlined text-outline text-title-md mr-space-sm">search</span><span class="font-body-sm text-body-sm text-outline flex-1 truncate">Search concepts, algorithms, questions...</span><kbd class="font-label-caps text-label-caps bg-surface-container-high text-on-surface-variant px-1.5 py-0.5 rounded shadow-[0_1px_8px_rgba(0,0,0,0.04)]">⌘K</kbd></div></div><nav class="hidden lg:flex items-center gap-space-xs" data-active-classes="bg-primary-container text-on-primary-container font-title-md text-title-md rounded-xl"><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-md py-space-xs transition-colors rounded-xl" data-path="knowledge-library" href="#">Knowledge Library</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-md py-space-xs transition-colors rounded-xl" data-path="interview-tracks" href="#">Interview Tracks</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-md py-space-xs transition-colors rounded-xl" data-path="ask-question" href="#">Ask Question</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-md py-space-xs transition-colors rounded-xl" data-path="admin-studio" href="#">Admin Studio</a></nav><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs"><button class="w-9 h-9 rounded-xl flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-title-md">notifications</span></button><button class="w-9 h-9 rounded-xl flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" type="button"><span class="material-symbols-outlined text-title-md">bookmark</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary"></span></button></div><div class="flex items-center gap-space-sm pl-space-xs"><span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">Know<span class="text-primary">Stack</span></span></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-72 bg-surface-container-lowest z-40 flex flex-col justify-between overflow-y-auto shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="p-space-md"><div class="mb-space-lg"><span class="font-label-caps text-label-caps uppercase text-outline px-space-sm tracking-wider">Categorized Paths</span><nav class="mt-space-sm flex flex-col gap-1" data-active-classes="bg-primary-container text-on-primary-container rounded-xl"><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="core-cs-and-systems" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">terminal</span><span class="font-body-sm text-body-sm truncate">Core CS &amp; Systems</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="java-and-spring-boot" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">code</span><span class="font-body-sm text-body-sm truncate">Java &amp; Spring Boot</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="databases-and-caching" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">database</span><span class="font-body-sm text-body-sm truncate">Databases &amp; Caching</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="cloud-and-devops" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">cloud</span><span class="font-body-sm text-body-sm truncate">Cloud &amp; DevOps</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="microservices-architecture" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">hub</span><span class="font-body-sm text-body-sm truncate">Microservices Architecture</span></a></nav></div><div class="pt-space-md"><span class="font-label-caps text-label-caps uppercase text-outline px-space-sm tracking-wider">Admin Studio</span><nav class="mt-space-sm flex flex-col gap-1" data-active-classes="bg-primary-container text-on-primary-container rounded-xl"><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="question-queue" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">inbox</span><span class="font-body-sm text-body-sm truncate">Question Queue</span></a><a aria-current="page" class="flex items-center px-space-sm py-2 transition-colors bg-primary-container text-on-primary-container rounded-xl" data-path="ai-article-editor" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">edit_note</span><span class="font-body-sm text-body-sm truncate">AI Article Editor</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="platform-analytics" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">bar_chart</span><span class="font-body-sm text-body-sm truncate">Analytics</span></a></nav></div></div><div class="p-space-md bg-surface-container-low/40"><div class="flex items-center justify-between text-outline"><span class="font-label-caps text-label-caps">Engine v2.4</span><span class="flex items-center gap-1 font-label-caps text-label-caps text-secondary"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Syncd</span></div></div></aside><div class="pl-72"><main class="w-full min-h-[calc(100vh-4rem)] pt-16 px-space-lg pb-space-xl bg-surface"><div class="flex flex-col w-full">
+<!-- Subtle ambient top gradient layer -->
+<div class="relative w-full overflow-hidden">
+<div class="absolute -top-32 left-1/4 w-96 h-96 bg-primary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute top-20 right-10 w-80 h-80 bg-secondary/5 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Editorial Studio Top Header Deck -->
+<div class="relative z-10 w-full pb-space-lg">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<!-- Breadcrumbs & Meta Titles -->
+<div class="flex flex-col gap-1 min-w-0">
+<nav class="flex items-center gap-2 text-on-surface-variant font-label-caps text-label-caps uppercase tracking-wider">
+<span class="">Admin Studio</span>
+<span class="material-symbols-outlined text-outline text-[14px]">chevron_right</span>
+<span class="">AI Article Editor</span>
+<span class="material-symbols-outlined text-outline text-[14px]">chevron_right</span>
+<span class="text-primary font-bold">Draft #1042</span>
+</nav>
+<div class="flex flex-wrap items-center gap-space-sm pt-1">
+<h1 class="font-headline-md text-headline-md text-on-surface tracking-tight">AI Article Studio &amp; Markdown/MDX Editor</h1>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-secondary/15 text-secondary font-badge-label text-badge-label font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+              AI Generated Draft · Needs Review
+            </span>
+</div>
+<!-- Quick Metric Strip -->
+<div class="flex items-center gap-space-md pt-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-outline">description</span>
+<strong class="text-on-surface font-medium">2,410</strong> words
+            </span>
+<span class="w-1 h-1 rounded-full bg-outline"></span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+<strong class="text-on-surface font-medium">14 min</strong> read
+            </span>
+<span class="w-1 h-1 rounded-full bg-outline"></span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary">verified_user</span>
+<span class="text-secondary font-medium">Senior Staff Review Required</span>
+</span>
+</div>
+</div>
+<!-- Action Command Buttons -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<button class="group flex items-center gap-2 px-space-md py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-body-sm text-body-sm transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px] text-tertiary group-hover:rotate-180 transition-transform duration-500">auto_fix_high</span>
+<span class="">Re-prompt AI</span>
+</button>
+<button class="flex items-center gap-2 px-space-md py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">difference</span>
+<span class="">Diff (v1.0)</span>
+</button>
+<div class="flex items-center p-0.5 rounded-xl bg-surface-container-high shadow-sm">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-highest text-on-surface font-body-sm text-body-sm font-medium transition-all shadow-sm flex items-center gap-1.5" id="viewSplitBtn" type="button">
+<span class="material-symbols-outlined text-[16px]">splitscreen</span>
+<span class="">Split View</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-all flex items-center gap-1.5" id="viewPreviewBtn" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+<span class="">Preview</span>
+</button>
+</div>
+<button class="flex items-center gap-2 px-space-lg py-2 rounded-xl bg-primary text-on-primary-container font-title-md text-title-md font-semibold hover:bg-primary-fixed-dim transition-all shadow-md" type="button">
+<span class="material-symbols-outlined text-[18px]">publish</span>
+<span class="">Publish to Library</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Workspace Split Panels -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- LEFT PANEL: AI Synthesis & Configuration (Span 4 on XL) -->
+<aside class="xl:col-span-4 w-full flex flex-col gap-space-md">
+<!-- Context Card: Submitter Info -->
+<div class="rounded-xl p-space-md bg-surface-container-low shadow-sm">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Close-up software architect avatar, cinematic moody rim lighting with violet reflections, high tech dark aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJqqeLghVByzrdZoxGsyoR3MHNR3RNkpM0h6KFesv31ReYx_vH7zdgG9KVzMpFrrc674wTS1bAU-VnYgwlS1z4UAREcjvVLo3AnnLFqI2N1TxtLptxQcNa2royiilCUIQ8HFCtHD1mdQrYl7LrZTJaJOckiToWorURlamU32X9QgtlV78_5ae2oZaD68GDQ67BOX_L8dZn44xmyZuhKyiHjR7z8SN0FTDItgxarOI">
+<span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-secondary rounded-full ring-2 ring-surface-container-low"></span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-title-md text-title-md text-on-surface">@alex_dev</span>
+<span class="font-label-caps text-[10px] uppercase px-1.5 py-0.5 rounded bg-surface-container-highest text-secondary">Verified</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Senior Staff Track candidate</span>
+</div>
+</div>
+<span class="font-label-caps text-label-caps text-outline bg-surface-container-high px-2 py-0.5 rounded">UBER L7 TARGET</span>
+</div>
+<p class="mt-space-sm font-body-sm text-body-sm text-on-surface-variant">
+            Prompt Question: <span class="text-on-surface italic">"Explain why Project Loom virtual threads block on JNI calls and how carrier thread pinning breaks high-throughput IO web services."</span>
+</p>
+</div>
+<!-- AI Engine Configuration Console -->
+<div class="rounded-xl p-space-md bg-surface-container-low flex flex-col gap-space-md shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">smart_toy</span>
+<span class="font-title-md text-title-md text-on-surface">AI Synthesis Engine</span>
+</div>
+<span class="font-label-caps text-label-caps text-secondary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Ready
+            </span>
+</div>
+<!-- Model Selector -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-caps text-label-caps text-outline uppercase">LLM Core Model</label>
+<div class="grid grid-cols-2 gap-2">
+<button class="flex flex-col items-start p-2.5 rounded-lg bg-surface-container-high text-on-surface text-left" type="button">
+<span class="font-title-md text-[13px] text-primary flex items-center gap-1">
+                  Claude 3.5 Sonnet
+                  <span class="material-symbols-outlined text-[14px]">check_circle</span>
+</span>
+<span class="font-body-sm text-[11px] text-on-surface-variant">Deep reasoning &amp; code</span>
+</button>
+<button class="flex flex-col items-start p-2.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface text-left transition-colors" type="button">
+<span class="font-title-md text-[13px]">GPT-4o / Codex</span>
+<span class="font-body-sm text-[11px] text-outline">Rapid generation</span>
+</button>
+</div>
+</div>
+<!-- Controls List -->
+<div class="flex flex-col gap-space-sm pt-1">
+<!-- Progression Slider -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center text-body-sm font-body-sm">
+<span class="text-outline">Concept Progression</span>
+<span class="text-primary font-medium">Deep Architectural</span>
+</div>
+<div class="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden flex">
+<div class="bg-primary h-full w-4/5 rounded-full"></div>
+</div>
+<div class="flex justify-between text-[10px] text-outline font-label-caps uppercase mt-0.5">
+<span class="">Primer</span>
+<span class="">Production Deep Dive</span>
+</div>
+</div>
+<!-- Parameters Grid -->
+<div class="grid grid-cols-2 gap-space-sm pt-2">
+<div class="p-2.5 rounded-lg bg-surface-container">
+<span class="font-label-caps text-[10px] uppercase text-outline block mb-1">Code Target</span>
+<span class="font-code-inline text-code-inline text-on-surface font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">code_blocks</span>
+                  Java 21 / Spring 3
+                </span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container">
+<span class="font-label-caps text-[10px] uppercase text-outline block mb-1">Interview Level</span>
+<span class="font-body-sm text-body-sm text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">military_tech</span>
+                  Staff / L6+ FAANG
+                </span>
+</div>
+</div>
+<!-- Toggle feature: Diagrams -->
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container mt-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]">account_tree</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Mermaid Flowcharts</span>
+<span class="font-body-sm text-[11px] text-outline">Carrier scheduler topology</span>
+</div>
+</div>
+<span class="font-label-caps text-label-caps text-secondary bg-surface-container-high px-2 py-0.5 rounded">Enabled</span>
+</div>
+</div>
+<!-- Quick AI Assist Generators -->
+<div class="flex flex-col gap-2 pt-2">
+<span class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Instant AI Copilot Tasks</span>
+<div class="flex flex-col gap-1.5">
+<button class="w-full flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all text-left text-body-sm font-body-sm" type="button">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-secondary">alt_route</span>
+<span class="">Regenerate Architecture Flow</span>
+</span>
+<span class="material-symbols-outlined text-[16px] text-outline">refresh</span>
+</button>
+<button class="w-full flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all text-left text-body-sm font-body-sm" type="button">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-error">warning</span>
+<span class="">Add Edge Cases &amp; Pinning Traps</span>
+</span>
+<span class="material-symbols-outlined text-[16px] text-outline">add_circle</span>
+</button>
+<button class="w-full flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all text-left text-body-sm font-body-sm" type="button">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">quiz</span>
+<span class="">Generate 3 Mock Interview Q&amp;As</span>
+</span>
+<span class="material-symbols-outlined text-[16px] text-outline">neurology</span>
+</button>
+<button class="w-full flex items-center justify-between p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all text-left text-body-sm font-body-sm" type="button">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">spellcheck</span>
+<span class="">Verify JEP 444 Conformance</span>
+</span>
+<span class="material-symbols-outlined text-[16px] text-secondary">check</span>
+</button>
+</div>
+</div>
+</div>
+<!-- AI Semantic Verification Radar -->
+<div class="rounded-xl p-space-md bg-surface-container-low shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-title-md text-title-md text-on-surface">Article Quality Signals</span>
+<span class="font-label-caps text-label-caps text-secondary">98 / 100</span>
+</div>
+<!-- Mini Progress Rings / bars -->
+<div class="space-y-2">
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="text-on-surface-variant">Technical Accuracy (JVM JLS)</span>
+<span class="text-on-surface font-medium">99%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[99%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="text-on-surface-variant">FAANG Interview Relevance</span>
+<span class="text-on-surface font-medium">96%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[96%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="text-on-surface-variant">Mermaid Syntax Parsing</span>
+<span class="text-on-surface font-medium">Valid</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- RIGHT PANEL: Rich Markdown/MDX Workspace (Span 8 on XL) -->
+<section class="xl:col-span-8 w-full flex flex-col gap-space-md">
+<!-- Document Meta Top Strip -->
+<div class="p-space-md rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex flex-wrap items-center gap-1.5">
+<span class="px-2 py-0.5 rounded font-label-caps text-label-caps uppercase bg-primary-container text-on-primary-container font-semibold">Java 21</span>
+<span class="px-2 py-0.5 rounded font-label-caps text-label-caps uppercase bg-surface-container-highest text-on-surface-variant">Concurrency</span>
+<span class="px-2 py-0.5 rounded font-label-caps text-label-caps uppercase bg-surface-container-highest text-on-surface-variant">JVM Internals</span>
+<span class="px-2 py-0.5 rounded font-label-caps text-label-caps uppercase bg-surface-container-highest text-secondary font-semibold">Senior Staff</span>
+<button class="w-6 h-6 rounded flex items-center justify-center bg-surface-container-high text-outline hover:text-on-surface text-[14px]" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+<div class="flex items-center gap-2 text-outline font-label-caps text-label-caps">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">history</span> Revision 3
+              </span>
+<span class="">·</span>
+<span class="">Last push 14:02 UTC</span>
+</div>
+</div>
+<!-- Document H1 Input Canvas -->
+<div class="flex items-center gap-2">
+<span class="font-code-block text-code-block text-primary select-none font-bold text-headline-sm">#</span>
+<input class="w-full bg-transparent font-headline-md text-headline-md text-on-surface font-bold outline-none placeholder:text-outline" placeholder="Document Title..." type="text" value="Deep Dive into Java 21 Virtual Threads &amp; Loom Concurrency">
+</div>
+</div>
+<!-- Formatting & MDX Action Bar -->
+<div class="p-2 rounded-xl bg-surface-container-low shadow-sm flex flex-wrap items-center justify-between gap-2 sticky top-16 z-30 backdrop-blur-md bg-surface-container-low/95">
+<div class="flex flex-wrap items-center gap-1">
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-caps text-[13px] font-bold" title="Heading 1" type="button">H1</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-caps text-[13px] font-bold" title="Heading 2" type="button">H2</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-caps text-[13px] font-bold" title="Heading 3" type="button">H3</button>
+<span class="w-px h-5 bg-surface-container-highest mx-1"></span>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Bold" type="button">
+<span class="material-symbols-outlined text-[18px]">format_bold</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Italic" type="button">
+<span class="material-symbols-outlined text-[18px]">format_italic</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Code Inline" type="button">
+<span class="material-symbols-outlined text-[18px]">code</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Code Block" type="button">
+<span class="material-symbols-outlined text-[18px]">integration_instructions</span>
+</button>
+<span class="w-px h-5 bg-surface-container-highest mx-1"></span>
+<!-- Custom MDX Blocks -->
+<button class="px-2.5 h-8 rounded flex items-center gap-1 text-primary hover:bg-surface-container-high transition-colors font-label-caps text-[12px] font-semibold" title="Mermaid Diagram" type="button">
+<span class="material-symbols-outlined text-[16px]">account_tree</span>
+<span class="">Mermaid</span>
+</button>
+<button class="px-2.5 h-8 rounded flex items-center gap-1 text-secondary hover:bg-surface-container-high transition-colors font-label-caps text-[12px] font-semibold" title="Interview Callout" type="button">
+<span class="material-symbols-outlined text-[16px]">lightbulb</span>
+<span class="">Callout</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Comparison Table" type="button">
+<span class="material-symbols-outlined text-[18px]">table_chart</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="LaTeX Equation" type="button">
+<span class="material-symbols-outlined text-[18px]">functions</span>
+</button>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-[11px] text-outline hidden md:inline">Syncing live cursor</span>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">fullscreen</span>
+</button>
+</div>
+</div>
+<!-- The Interactive Dual Canvas: Editor + Real-time Rendered MDX -->
+<div class="flex flex-col gap-space-md">
+<!-- SECTION 1: Architectural Primer & Golden Rule Callout -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-md flex flex-col gap-space-md">
+<!-- Lead Editorial Text -->
+<div class="prose max-w-none text-on-surface font-body-lg text-body-lg leading-relaxed">
+<p class="">
+                Prior to JDK 21 and the stabilization of <strong>Project Loom (JEP 444)</strong>, the Java threading model bound each <code class="font-code-inline text-code-inline text-primary bg-surface-container-high px-1.5 py-0.5 rounded">java.lang.Thread</code> instance 1:1 to an underlying Operating System kernel thread. This architecture placed severe physical limits on concurrency: a single OS thread incurs a static heap footprint of approximately <strong>1MB</strong>, creating immense kernel context switching latency once concurrency reaches hundreds of thousands of concurrent connections.
+              </p>
+</div>
+<!-- Technical Callout: Tip Variant (Golden Rule) -->
+<div class="relative overflow-hidden rounded-xl p-space-md bg-secondary/10 shadow-sm">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-secondary"></div>
+<div class="flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[24px] shrink-0">tips_and_updates</span>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-title-md text-title-md text-secondary font-bold uppercase tracking-wider text-[12px]">Interview Golden Rule</span>
+<span class="px-2 py-0.5 rounded font-label-caps text-[10px] bg-secondary/20 text-secondary">High-Frequency Question</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface font-medium">
+                    Virtual threads do <strong class="underline decoration-secondary decoration-2 underline-offset-4">NOT</strong> make CPU-bound computations faster; they maximize <em>I/O-bound throughput</em>. For heavy computational parallelization (e.g., matrix hashing, video rendering), use platform worker threads paired with <code class="font-code-inline text-code-inline text-primary">ForkJoinPool.commonPool()</code>.
+                  </p>
+</div>
+</div>
+</div>
+<!-- SECTION 2: Interactive Mermaid Architecture Visualizer -->
+<div class="rounded-xl bg-surface-container-low p-space-md flex flex-col gap-space-sm shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-code-block text-[12px] font-bold uppercase text-primary tracking-widest">MDX Block · Mermaid.js Diagram</span>
+<span class="font-label-caps text-[10px] px-2 py-0.5 rounded bg-surface-container-high text-secondary">Renderer Active</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="font-label-caps text-[11px] text-outline hover:text-on-surface flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">code</span> View Code
+                  </button>
+<button class="w-7 h-7 rounded flex items-center justify-center bg-surface-container text-outline hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+</button>
+</div>
+</div>
+<!-- High-Fidelity SVG Diagram Replica -->
+<div class="w-full bg-surface-container-lowest p-space-md rounded-lg overflow-x-auto">
+<div class="min-w-[620px] flex flex-col gap-4">
+<!-- Header Comparison Labels -->
+<div class="grid grid-cols-2 gap-4 text-center">
+<div class="p-2 rounded bg-surface-container text-on-surface-variant font-label-caps text-[12px] font-bold">
+                      TRADITIONAL: 1:1 KERNEL THREAD MODEL
+                    </div>
+<div class="p-2 rounded bg-primary-container/20 text-primary font-label-caps text-[12px] font-bold">
+                      JAVA 21 LOOM: M:N SCHEDULER CARRIER MAPPING
+                    </div>
+</div>
+<!-- Visual Flow Mockup via inline elements & SVG -->
+<div class="grid grid-cols-2 gap-6 items-center pt-2 pb-2">
+<!-- Left Model -->
+<div class="flex flex-col gap-3 p-3 rounded-lg bg-surface-container-high">
+<div class="flex justify-between items-center bg-surface-container p-2 rounded text-body-sm font-body-sm">
+<span class="text-on-surface">Web Request #1</span>
+<span class="text-outline">→ 1:1 →</span>
+<span class="text-error font-code-inline text-code-inline">OS Kernel Thread (1MB)</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container p-2 rounded text-body-sm font-body-sm">
+<span class="text-on-surface">Web Request #2</span>
+<span class="text-outline">→ 1:1 →</span>
+<span class="text-error font-code-inline text-code-inline">OS Kernel Thread (1MB)</span>
+</div>
+<div class="text-center font-body-sm text-[12px] text-error font-medium">
+                        Bottleneck: ~5,000 OS Threads exhaust system RAM &amp; thrash CPU caches
+                      </div>
+</div>
+<!-- Right Loom Model -->
+<div class="flex flex-col gap-3 p-3 rounded-lg bg-primary-container/10">
+<div class="flex items-center justify-between bg-surface-container p-2 rounded text-body-sm font-body-sm">
+<span class="text-primary font-medium">1,000,000 Virtual Threads (~1KB each)</span>
+<span class="material-symbols-outlined text-secondary text-[16px]">bolt</span>
+</div>
+<!-- Funnel Connector -->
+<div class="flex justify-center items-center py-1">
+<span class="text-secondary font-label-caps text-[11px] bg-secondary/10 px-2 py-0.5 rounded">
+                          Unmount on I/O ↓ ForkJoinPool Carrier Scheduling
+                        </span>
+</div>
+<div class="flex justify-between items-center bg-surface-container p-2 rounded text-body-sm font-body-sm">
+<span class="text-on-surface">Carrier OS Thread Pool</span>
+<span class="text-secondary font-code-inline text-code-inline">Number of CPU Cores (e.g. 16 Cores)</span>
+</div>
+</div>
+</div>
+<div class="text-center text-[12px] text-outline font-label-caps uppercase">
+                    Diagram rendered via Mermaid SVG engine · Graph TD
+                  </div>
+</div>
+</div>
+</div>
+<!-- SECTION 3: Code Block Implementation -->
+<div class="rounded-xl overflow-hidden bg-surface-container-low shadow-sm flex flex-col">
+<!-- Code block header -->
+<div class="h-9 px-space-md bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-code-block text-[11px] uppercase tracking-wider text-secondary font-bold">VirtualThreadDemo.java</span>
+<span class="text-[11px] font-label-caps text-outline bg-surface-container-high px-1.5 py-0.5 rounded">JDK 21 GA</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1 font-body-sm text-[12px] text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span class="">Copy</span>
+</button>
+<button class="w-6 h-6 rounded flex items-center justify-center text-outline hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+</button>
+</div>
+</div>
+<!-- Code listing with line gutters -->
+<div class="p-space-md bg-surface-container-lowest font-code-block text-code-block overflow-x-auto leading-relaxed">
+<div class="flex items-start gap-4">
+<!-- Line numbers -->
+<div class="select-none text-outline text-right space-y-1 font-mono text-[13px] opacity-60">
+<div class="">1</div>
+<div class="">2</div>
+<div class="">3</div>
+<div class="">4</div>
+<div class="">5</div>
+<div class="">6</div>
+<div class="">7</div>
+<div class="">8</div>
+</div>
+<!-- Java Code Content -->
+<div class="space-y-1 text-on-surface font-mono text-[13.5px]">
+<div class=""><span class="text-tertiary">try</span> (<span class="text-primary font-semibold">var</span> executor = <span class="text-secondary">Executors</span>.newVirtualThreadPerTaskExecutor()) {</div>
+<div class="pl-4">IntStream.range(<span class="text-tertiary-fixed-dim">0</span>, <span class="text-tertiary-fixed-dim">10_000</span>).forEach(i -&gt; executor.submit(() -&gt; {</div>
+<div class="pl-8"><span class="text-secondary">Thread</span>.sleep(<span class="text-secondary">Duration</span>.ofMillis(<span class="text-tertiary-fixed-dim">100</span>)); <span class="text-outline italic">// Carrier thread unmounts here!</span></div>
+<div class="pl-8"><span class="text-tertiary">return</span> i;</div>
+<div class="pl-4">}));</div>
+<div class="">} <span class="text-outline italic">// Automatic join &amp; close via AutoCloseable structured concurrency</span></div>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION 4: Architecture Comparison Matrix -->
+<div class="rounded-xl overflow-hidden bg-surface-container-low shadow-sm">
+<div class="p-space-md flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Concurrency Model Matrix</h3>
+<span class="font-label-caps text-label-caps text-outline uppercase">JEP 444 Benchmark Data</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead class="bg-surface-container text-on-surface font-title-md text-[13px] uppercase tracking-wider">
+<tr>
+<th class="py-3 px-space-md">Metric / Attribute</th>
+<th class="py-3 px-space-md">Platform Thread (OS)</th>
+<th class="py-3 px-space-md">Virtual Thread (Loom)</th>
+<th class="py-3 px-space-md">FAANG Interview Implication</th>
+</tr>
+</thead>
+<tbody class="divide-y-0">
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="py-3 px-space-md font-semibold text-on-surface">Memory Footprint</td>
+<td class="py-3 px-space-md text-error font-code-inline">~1 MB stack (reserved)</td>
+<td class="py-3 px-space-md text-secondary font-code-inline font-bold">~1 KB heap allocated</td>
+<td class="py-3 px-space-md text-on-surface-variant">Allows 1M+ live threads without out-of-memory crashes</td>
+</tr>
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="py-3 px-space-md font-semibold text-on-surface">Context Switch Cost</td>
+<td class="py-3 px-space-md text-error">1–10 microseconds (Kernel)</td>
+<td class="py-3 px-space-md text-secondary font-bold">~10–50 nanoseconds (JVM)</td>
+<td class="py-3 px-space-md text-on-surface-variant">Eliminates high-cost kernel boundary crossings</td>
+</tr>
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="py-3 px-space-md font-semibold text-on-surface">Carrier Pinning Pitfall</td>
+<td class="py-3 px-space-md text-outline">N/A (Direct OS execution)</td>
+<td class="py-3 px-space-md text-tertiary font-bold">Synchronized blocks / JNI</td>
+<td class="py-3 px-space-md text-on-surface-variant">Must replace <code class="font-code-inline text-primary">synchronized</code> with <code class="font-code-inline text-primary">ReentrantLock</code></td>
+</tr>
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="py-3 px-space-md font-semibold text-on-surface">Reactive vs Virtual</td>
+<td class="py-3 px-space-md text-outline">Thread-per-request blocking</td>
+<td class="py-3 px-space-md text-on-surface">Standard imperative code</td>
+<td class="py-3 px-space-md text-on-surface-variant">Renders complex WebFlux/Mono pipelines largely redundant</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- SECTION 5: Key Interview Questions & Answers Drawer -->
+<div class="rounded-xl p-space-md bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">psychology_alt</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Staff Interview Follow-Up Questions</h3>
+</div>
+<span class="px-2 py-0.5 rounded font-label-caps text-label-caps uppercase bg-primary-container text-on-primary-container font-semibold">Auto-Generated</span>
+</div>
+<!-- Question items accordions -->
+<div class="flex flex-col gap-space-sm">
+<!-- Q1 -->
+<div class="p-space-md rounded-lg bg-surface-container flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-title-md text-title-md text-on-surface font-semibold">
+                      1. "What is thread pinning, and how do you diagnose it in production?"
+                    </span>
+<span class="material-symbols-outlined text-outline">expand_less</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+<strong class="text-secondary font-medium">Answer Key:</strong> Pinning occurs when a virtual thread cannot unmount from its carrier thread during a blocking I/O operation because either a native frame is on the stack (via JNI) or the thread is inside a <code class="font-code-inline text-code-inline text-primary">synchronized</code> block. Diagnose via the JVM flag <code class="font-code-inline text-code-inline text-primary">-Djdk.tracePinnedThreads=full</code> or JDK Flight Recorder (JFR) event <code class="font-code-inline text-code-inline text-primary">jdk.VirtualThreadPinned</code>.
+                  </p>
+</div>
+<!-- Q2 -->
+<div class="p-space-md rounded-lg bg-surface-container flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-title-md text-title-md text-on-surface font-semibold">
+                      2. "Should you pool Virtual Threads like standard platform threads?"
+                    </span>
+<span class="material-symbols-outlined text-outline">expand_more</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+<strong class="text-secondary font-medium">Answer Key:</strong> Absolutely not. Pooling virtual threads is an anti-pattern. Virtual threads are cheap and disposable. Instead of pooling, instantiate a new virtual thread per task and manage concurrency boundaries with semaphores (<code class="font-code-inline text-code-inline text-primary">java.util.concurrent.Semaphore</code>).
+                  </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Editor Audit & Status Bar -->
+<div class="rounded-xl p-3 bg-surface-container-low shadow-sm flex flex-col sm:flex-row items-center justify-between gap-space-sm font-label-caps text-label-caps text-outline">
+<div class="flex items-center gap-space-md">
+<span class="flex items-center gap-1.5 text-secondary">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                Autosaved 12s ago
+              </span>
+<span class="hidden md:inline">·</span>
+<span class="flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-secondary">check_circle</span>
+                Markdown &amp; MDX valid
+              </span>
+<span class="hidden md:inline">·</span>
+<span class="flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-secondary">check_circle</span>
+                Mermaid topology verified
+              </span>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="text-on-surface">SEO Visibility: <strong class="text-secondary">98/100</strong></span>
+<span class="">·</span>
+<button class="text-primary hover:underline uppercase" type="button">Discard Draft</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Inline Interaction Logic (Tabs / Mode switching) -->
+<script>
+    (function() {
+      const splitBtn = document.getElementById('viewSplitBtn');
+      const previewBtn = document.getElementById('viewPreviewBtn');
+
+      if (splitBtn && previewBtn) {
+        splitBtn.addEventListener('click', () => {
+          splitBtn.className = "px-3 py-1.5 rounded-lg bg-surface-container-highest text-on-surface font-body-sm text-body-sm font-medium transition-all shadow-sm flex items-center gap-1.5";
+          previewBtn.className = "px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-all flex items-center gap-1.5";
+        });
+
+        previewBtn.addEventListener('click', () => {
+          previewBtn.className = "px-3 py-1.5 rounded-lg bg-surface-container-highest text-on-surface font-body-sm text-body-sm font-medium transition-all shadow-sm flex items-center gap-1.5";
+          splitBtn.className = "px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm transition-all flex items-center gap-1.5";
+        });
+      }
+    })();
+  </script>
+</div></main><footer class="w-full bg-surface-container-lowest py-space-lg px-space-lg shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full flex flex-col md:flex-row items-center justify-between gap-space-md text-on-surface-variant"><div class="flex items-center gap-space-md font-body-sm text-body-sm"><span class="">Know<span class="text-primary font-bold">Stack</span> Core Docs · Status: <span class="text-secondary font-medium">Operational</span></span><span class="hidden sm:inline font-label-caps text-label-caps text-outline bg-surface-container-low px-2 py-0.5 rounded">Press ? for shortcuts</span></div><div class="flex items-center gap-space-lg font-body-sm text-body-sm"><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">GitHub</a><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">Discord Community</a><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">API Spec</a></div></div></footer></div>
+
+</body></html>

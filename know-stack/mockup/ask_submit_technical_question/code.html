@@ -1,0 +1,518 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"primary-fixed-dim":"#c0c1ff","primary":"#c0c1ff","surface":"#0b1326","outline-variant":"#464554","tertiary-fixed-dim":"#d0bcff","secondary-fixed":"#6ffbbe","on-secondary-fixed-variant":"#005236","surface-tint":"#c0c1ff","inverse-on-surface":"#283044","inverse-primary":"#494bd6","on-tertiary-fixed-variant":"#5516be","on-background":"#dae2fd","on-secondary-container":"#00311f","background":"#0b1326","on-surface":"#dae2fd","surface-variant":"#2d3449","on-surface-variant":"#c7c4d7","tertiary-container":"#a078ff","inverse-surface":"#dae2fd","secondary-container":"#00a572","on-tertiary-fixed":"#23005c","surface-container-high":"#222a3d","on-secondary":"#003824","error-container":"#93000a","on-primary-fixed":"#07006c","on-primary-fixed-variant":"#2f2ebe","surface-container-low":"#131b2e","on-tertiary-container":"#340080","on-error":"#690005","error":"#ffb4ab","on-tertiary":"#3c0091","surface-container-lowest":"#060e20","on-secondary-fixed":"#002113","tertiary-fixed":"#e9ddff","secondary":"#4edea3","outline":"#908fa0","surface-container-highest":"#2d3449","surface-container":"#171f33","surface-bright":"#31394d","on-primary-container":"#0d0096","primary-fixed":"#e1e0ff","primary-container":"#8083ff","on-primary":"#1000a9","on-error-container":"#ffdad6","surface-dim":"#0b1326","tertiary":"#d0bcff","secondary-fixed-dim":"#4edea3"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"space-xl":"2.5rem","space-xs":"0.25rem","gutter":"1.5rem","gutter-mobile":"1rem","space-sm":"0.5rem","margin-mobile":"1rem","margin":"2rem","space-lg":"1.5rem","space-md":"1rem"},"fontFamily":{"headline-lg":["Geist"],"badge-label":["Inter"],"title-md":["Inter"],"display-xl":["Geist"],"body-lg":["Inter"],"headline-md":["Geist"],"body-sm":["Inter"],"headline-lg-mobile":["Geist"],"body-md":["Inter"],"headline-sm":["Geist"],"code-inline":["JetBrains Mono"],"label-caps":["JetBrains Mono"],"code-block":["JetBrains Mono"],"display-xl-mobile":["Geist"]},"fontSize":{"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"600"}],"badge-label":["12px",{"lineHeight":"16px","fontWeight":"500"}],"title-md":["16px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"600"}],"display-xl":["48px",{"lineHeight":"56px","letterSpacing":"-0.03em","fontWeight":"700"}],"body-lg":["17px",{"lineHeight":"28px","letterSpacing":"-0.005em","fontWeight":"400"}],"headline-md":["24px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"600"}],"body-sm":["13px",{"lineHeight":"20px","letterSpacing":"0.005em","fontWeight":"400"}],"headline-lg-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.015em","fontWeight":"600"}],"body-md":["15px",{"lineHeight":"24px","letterSpacing":"0em","fontWeight":"400"}],"headline-sm":["20px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}],"code-inline":["13px",{"lineHeight":"20px","fontWeight":"500"}],"label-caps":["11px",{"lineHeight":"16px","letterSpacing":"0.06em","fontWeight":"600"}],"code-block":["13.5px",{"lineHeight":"22px","fontWeight":"400"}],"display-xl-mobile":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"700"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface"><header class="fixed top-0 left-0 right-0 z-50 h-16 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full h-16 px-space-lg flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg min-w-max"><div class="flex items-center gap-space-sm"><span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">Know<span class="text-primary">Stack</span></span></div><div class="hidden xl:flex items-center bg-surface-container-low px-space-md py-space-xs rounded-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] w-80 text-on-surface-variant"><span class="material-symbols-outlined text-outline text-title-md mr-space-sm">search</span><span class="font-body-sm text-body-sm text-outline flex-1 truncate">Search concepts, algorithms, questions...</span><kbd class="font-label-caps text-label-caps bg-surface-container-high text-on-surface-variant px-1.5 py-0.5 rounded shadow-[0_1px_8px_rgba(0,0,0,0.04)]">⌘K</kbd></div></div><nav class="hidden lg:flex items-center gap-space-xs" data-active-classes="bg-primary-container text-on-primary-container font-title-md text-title-md rounded-xl"><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-md py-space-xs transition-colors rounded-xl" data-path="knowledge-library" href="#">Knowledge Library</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-md py-space-xs transition-colors rounded-xl" data-path="interview-tracks" href="#">Interview Tracks</a><a aria-current="page" class="px-space-md py-space-xs transition-colors bg-primary-container text-on-primary-container font-title-md text-title-md rounded-xl" data-path="ask-question" href="#">Ask Question</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-md py-space-xs transition-colors rounded-xl" data-path="admin-studio" href="#">Admin Studio</a></nav><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs"><button class="w-9 h-9 rounded-xl flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-title-md">notifications</span></button><button class="w-9 h-9 rounded-xl flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" type="button"><span class="material-symbols-outlined text-title-md">bookmark</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary"></span></button></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="hidden sm:flex flex-col items-end"><span class="font-badge-label text-badge-label text-secondary font-medium px-2 py-0.5 rounded bg-surface-container-high">Senior Engineer</span></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLKSPzveQb9xw9S2vU1GQXoQbfKi7_Y4NFPgv-D_mr5gbSoHyF5K1RRhhaRXnMKjW3UU0Uht5giynKqpOVvxBB6B9tzXyRCwjYaow4nEdmJhU-mpOy-4cdIrmlw2vdHvVkW6QolxD4FnRMC7MtsyQiarFP4kCGrjKZ81B67ojfnRBp6DuyZ1BYMhfvVonymPaQDdvhPifl2u6-8UqMU1wmt6F-vjX39KmY5icRV3w"></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-72 bg-surface-container-lowest z-40 flex flex-col justify-between overflow-y-auto shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="p-space-md"><div class="mb-space-lg"><span class="font-label-caps text-label-caps uppercase text-outline px-space-sm tracking-wider">Categorized Paths</span><nav class="mt-space-sm flex flex-col gap-1" data-active-classes="bg-primary-container text-on-primary-container rounded-xl"><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="core-cs-and-systems" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">terminal</span><span class="font-body-sm text-body-sm truncate">Core CS &amp; Systems</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="java-and-spring-boot" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">code</span><span class="font-body-sm text-body-sm truncate">Java &amp; Spring Boot</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="databases-and-caching" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">database</span><span class="font-body-sm text-body-sm truncate">Databases &amp; Caching</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="cloud-and-devops" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">cloud</span><span class="font-body-sm text-body-sm truncate">Cloud &amp; DevOps</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="microservices-architecture" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">hub</span><span class="font-body-sm text-body-sm truncate">Microservices Architecture</span></a></nav></div><div class="pt-space-md"><span class="font-label-caps text-label-caps uppercase text-outline px-space-sm tracking-wider">Admin Studio</span><nav class="mt-space-sm flex flex-col gap-1" data-active-classes="bg-primary-container text-on-primary-container rounded-xl"><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="question-queue" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">inbox</span><span class="font-body-sm text-body-sm truncate">Question Queue</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="ai-article-editor" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">edit_note</span><span class="font-body-sm text-body-sm truncate">AI Article Editor</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="platform-analytics" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">bar_chart</span><span class="font-body-sm text-body-sm truncate">Analytics</span></a></nav></div></div><div class="p-space-md bg-surface-container-low/40"><div class="flex items-center justify-between text-outline"><span class="font-label-caps text-label-caps">Engine v2.4</span><span class="flex items-center gap-1 font-label-caps text-label-caps text-secondary"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Syncd</span></div></div></aside><div class="pl-72"><main class="w-full min-h-[calc(100vh-4rem)] pt-16 px-space-lg pb-space-xl bg-surface"><div class="flex flex-col w-full">
+<!-- Subtle Ambient Glow -->
+<div class="relative w-full max-w-7xl mx-auto">
+<div class="absolute -top-12 -left-20 w-96 h-96 bg-primary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute top-48 right-10 w-80 h-80 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Header Section with Breadcrumbs and Editorial Subtitle -->
+<div class="mb-space-lg">
+<div class="flex items-center gap-space-xs font-label-caps text-label-caps text-outline uppercase tracking-wider mb-space-xs">
+<span class="hover:text-primary transition-colors cursor-pointer">Community</span>
+<span class="material-symbols-outlined text-body-sm text-outline-variant">chevron_right</span>
+<span class="text-primary-fixed-dim font-medium">Submit Question</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight text-balance">
+        Submit a Technical Concept or Interview Question
+      </h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1.5 max-w-3xl leading-relaxed">
+        Stuck on a tricky system design problem, concurrency race condition, or framework quirk? Submit your question for curated AI breakdown and staff engineer verification.
+      </p>
+</div>
+<!-- Main Workspace (2-Column Asymmetric Layout) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Primary Form Canvas (7 Cols Desktop) -->
+<section class="lg:col-span-8 flex flex-col gap-space-md">
+<!-- Form Container -->
+<form class="flex flex-col gap-space-lg" id="techQuestionForm" onsubmit="event.preventDefault();">
+<!-- 1. Question Title & Domain Row -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-md flex flex-col gap-space-md">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<label class="font-title-md text-title-md text-on-surface flex items-center gap-2" for="q-title">
+<span class="">Question Title</span>
+<span class="text-error font-body-sm">*</span>
+</label>
+<span class="font-label-caps text-label-caps text-outline" id="titleCharCount">0 / 120</span>
+</div>
+<input class="w-full bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-md text-body-md px-space-md py-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary shadow-sm" id="q-title" maxlength="120" oninput="updateTitle(this.value)" placeholder="e.g., How does Spring @Transactional handle nested transactions with PROPAGATION_REQUIRES_NEW?" type="text">
+</div>
+<!-- Domain & Difficulty Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md pt-space-xs">
+<div>
+<label class="block font-title-md text-title-md text-on-surface mb-2">Primary Domain</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-lowest text-on-surface font-body-md text-body-md px-space-md py-2.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary shadow-sm pr-10 cursor-pointer" id="domainSelect">
+<option value="concurrency">Concurrency &amp; Parallelism</option>
+<option value="backend">Backend Systems (Java, Go, Spring)</option>
+<option value="database">Database Internals &amp; Caching</option>
+<option selected="" value="sysdesign">System Design &amp; Scalability</option>
+<option value="cloud">Cloud Infra &amp; Distributed K8s</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-outline pointer-events-none text-title-md">expand_more</span>
+</div>
+</div>
+<!-- Difficulty Pills -->
+<div>
+<label class="block font-title-md text-title-md text-on-surface mb-2">Target Difficulty</label>
+<div class="grid grid-cols-4 gap-1.5 p-1 bg-surface-container-lowest rounded-lg shadow-sm">
+<button class="difficulty-btn py-1.5 px-1 text-center font-badge-label text-badge-label rounded text-outline hover:text-on-surface transition-all" onclick="selectDifficulty(this, 'junior')" type="button">Junior</button>
+<button class="difficulty-btn py-1.5 px-1 text-center font-badge-label text-badge-label rounded text-outline hover:text-on-surface transition-all" onclick="selectDifficulty(this, 'mid')" type="button">Mid</button>
+<button class="difficulty-btn py-1.5 px-1 text-center font-badge-label text-badge-label rounded bg-surface-container-high text-secondary font-medium transition-all" onclick="selectDifficulty(this, 'senior')" type="button">Senior</button>
+<button class="difficulty-btn py-1.5 px-1 text-center font-badge-label text-badge-label rounded text-outline hover:text-on-surface transition-all" onclick="selectDifficulty(this, 'staff')" type="button">Staff</button>
+</div>
+</div>
+</div>
+</div>
+<!-- 2. Markdown Rich Context Area -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div>
+<label class="font-title-md text-title-md text-on-surface block">Context &amp; Architectural Details</label>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Describe the expected vs actual behavior, race condition, or interview scenario.</p>
+</div>
+<div class="hidden sm:flex items-center gap-1 font-label-caps text-label-caps text-outline bg-surface-container-lowest px-2.5 py-1 rounded">
+<span class="material-symbols-outlined text-body-sm text-secondary">check</span> Markdown Supported
+              </div>
+</div>
+<!-- Editor Toolbar -->
+<div class="flex flex-wrap items-center gap-1 bg-surface-container-low p-1.5 rounded-lg text-on-surface-variant shadow-sm">
+<button class="w-8 h-8 rounded hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors" onclick="insertSyntax('**', '**')" title="Bold" type="button">
+<span class="font-title-md font-bold">B</span>
+</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container hover:text-on-surface flex items-center justify-center italic transition-colors" onclick="insertSyntax('*', '*')" title="Italic" type="button">
+<span class="font-title-md italic font-serif">I</span>
+</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors" onclick="insertSyntax('`', '`')" title="Inline Code" type="button">
+<span class="material-symbols-outlined text-title-md">code</span>
+</button>
+<div class="w-px h-5 bg-surface-container-highest mx-1"></div>
+<button class="w-8 h-8 rounded hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors" onclick="insertSyntax('[', '](https://)')" title="Insert Link" type="button">
+<span class="material-symbols-outlined text-title-md">link</span>
+</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors" onclick="insertSyntax('\n- ', '')" title="Unordered List" type="button">
+<span class="material-symbols-outlined text-title-md">format_list_bulleted</span>
+</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors" onclick="insertSyntax('\n&gt; ', '')" title="Blockquote" type="button">
+<span class="material-symbols-outlined text-title-md">format_quote</span>
+</button>
+<div class="w-px h-5 bg-surface-container-highest mx-1"></div>
+<button class="px-2.5 h-8 rounded hover:bg-surface-container hover:text-on-surface flex items-center gap-1.5 transition-colors font-label-caps text-label-caps text-secondary" onclick="insertSyntax('mermaid\nsequenceDiagram\n  Client-&gt;&gt;API: Request\n', '')" title="Mermaid Flow/Diagram" type="button">
+<span class="material-symbols-outlined text-body-sm">account_tree</span>
+<span class="">Mermaid</span>
+</button>
+</div>
+<!-- Textarea -->
+<textarea class="w-full bg-surface-container-lowest text-on-surface font-body-md text-body-md placeholder:text-outline p-space-md rounded-lg focus:outline-none focus:ring-1 focus:ring-primary shadow-sm leading-relaxed" id="contextEditor" placeholder="1. Scenario context: In a distributed system during failover...
+2. Specific question: Why does the secondary lease renewal throw OptimisticLockException?
+3. What I've verified so far..." rows="6"></textarea>
+</div>
+<!-- 3. Code Snippet & Minimal Reproducible Example -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-headline-sm">terminal</span>
+<div>
+<label class="font-title-md text-title-md text-on-surface block">Minimal Code Sample / Stack Trace</label>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Include minimal reproduction or pseudo-architecture snippet.</p>
+</div>
+</div>
+<!-- Language Selector -->
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-label-caps text-outline uppercase hidden sm:inline">Syntax:</span>
+<select class="bg-surface-container-lowest text-secondary font-code-inline text-code-inline px-space-sm py-1.5 rounded focus:outline-none focus:ring-1 focus:ring-secondary shadow-sm cursor-pointer" id="codeLang" onchange="updateCodePlaceholder(this.value)">
+<option selected="" value="java">Java 21</option>
+<option value="sql">PostgreSQL</option>
+<option value="go">Go 1.22</option>
+<option value="python">Python 3.12</option>
+<option value="ts">TypeScript</option>
+</select>
+</div>
+</div>
+<!-- Code Editor Surface -->
+<div class="rounded-lg overflow-hidden bg-surface-container-lowest shadow-sm">
+<div class="flex items-center justify-between px-space-md py-2 bg-surface-container-low text-on-surface-variant font-label-caps text-label-caps">
+<span class="flex items-center gap-1.5 text-outline">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                  REPRO_SNIPPET.java
+                </span>
+<button class="hover:text-on-surface transition-colors flex items-center gap-1" onclick="formatSnippet()" type="button">
+<span class="material-symbols-outlined text-body-sm">auto_fix</span> Format Code
+                </button>
+</div>
+<div class="flex">
+<!-- Line numbers -->
+<div class="select-none py-3 px-3 text-right bg-surface-container-low/50 text-outline font-code-block text-code-block space-y-1">
+<div class="">01</div><div class="">02</div><div class="">03</div><div class="">04</div><div class="">05</div><div class="">06</div><div class="">07</div>
+</div>
+<textarea class="w-full bg-transparent text-primary-fixed font-code-block text-code-block p-3 focus:outline-none resize-none leading-[22px]" id="codeSnippetArea" rows="7" spellcheck="false">@Transactional(propagation = Propagation.REQUIRED)
+public void checkoutOrder(Long orderId) {
+    paymentService.deductBalance(orderId); // Nested REQUIRES_NEW
+    inventoryService.reserveUnits(orderId);
+    // If runtime exception triggers here, how does it cascade?
+}</textarea>
+</div>
+</div>
+</div>
+<!-- 4. Target Companies & Timeline Context -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Target Companies Tags -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-md flex flex-col justify-between">
+<div>
+<label class="font-title-md text-title-md text-on-surface block mb-1">Company / Domain Archetypes</label>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-sm">Helps our models optimize for target interview standards.</p>
+<div class="flex flex-wrap gap-1.5 p-2 bg-surface-container-lowest rounded-lg mb-space-xs min-h-[44px]" id="tagsContainer">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-badge-label text-badge-label">
+                    Google
+                    <button class="text-outline hover:text-on-surface" onclick="this.parentElement.remove()" type="button">×</button>
+</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-badge-label text-badge-label">
+                    Fintech / HFT
+                    <button class="text-outline hover:text-on-surface" onclick="this.parentElement.remove()" type="button">×</button>
+</span>
+<input class="bg-transparent text-on-surface font-body-sm text-body-sm placeholder:text-outline focus:outline-none flex-1 min-w-[120px]" id="tagInput" onkeydown="handleTagKeydown(event)" placeholder="Add company + Enter..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-1.5 text-outline font-label-caps text-label-caps mt-2">
+<span class="">Suggested:</span>
+<button class="text-primary-fixed-dim hover:underline" onclick="addSuggestedTag('Amazon')" type="button">Amazon</button>
+<button class="text-primary-fixed-dim hover:underline" onclick="addSuggestedTag('Meta')" type="button">Meta</button>
+<button class="text-primary-fixed-dim hover:underline" onclick="addSuggestedTag('Stripe')" type="button">Stripe</button>
+</div>
+</div>
+<!-- Urgency Timeline -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-md flex flex-col justify-between">
+<div>
+<label class="font-title-md text-title-md text-on-surface block mb-1">Verification Urgency</label>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-sm">Allocates reviewer compute and human verification queues.</p>
+<div class="flex flex-col gap-2">
+<label class="flex items-center gap-space-sm p-2 rounded-lg bg-surface-container-lowest cursor-pointer hover:bg-surface-container-low transition-colors">
+<input class="text-primary focus:ring-0" name="urgency" type="radio" value="interview">
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Upcoming Interview (&lt; 48 hours)</span>
+<span class="font-badge-label text-badge-label text-secondary bg-surface-container px-1.5 py-0.5 rounded">High Priority</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline block text-xs">Fast-tracks pipeline for rapid synthesis</span>
+</div>
+</label>
+<label class="flex items-center gap-space-sm p-2 rounded-lg bg-surface-container-lowest cursor-pointer hover:bg-surface-container-low transition-colors">
+<input checked="" class="text-primary focus:ring-0" name="urgency" type="radio" value="prep">
+<div class="flex-1">
+<span class="font-body-sm text-body-sm text-on-surface font-medium block">Standard Track Prep &amp; Review</span>
+<span class="font-body-sm text-body-sm text-outline block text-xs">Standard review cycle (usually 4–12 hours)</span>
+</div>
+</label>
+<label class="flex items-center gap-space-sm p-2 rounded-lg bg-surface-container-lowest cursor-pointer hover:bg-surface-container-low transition-colors">
+<input class="text-primary focus:ring-0" name="urgency" type="radio" value="research">
+<div class="flex-1">
+<span class="font-body-sm text-body-sm text-on-surface font-medium block">Deep Architecture Research</span>
+<span class="font-body-sm text-body-sm text-outline block text-xs">Thorough benchmark analysis &amp; source code references</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- 5. Submit Action Bar -->
+<div class="bg-surface-container p-space-md rounded-xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm w-full sm:w-auto">
+<button class="flex-1 sm:flex-initial px-space-md py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-title-md text-title-md transition-colors text-center shadow-sm flex items-center justify-center gap-2" onclick="saveDraft()" type="button">
+<span class="material-symbols-outlined text-body-md text-outline">save</span>
+<span class="">Save Draft</span>
+</button>
+<button class="flex-1 sm:flex-initial px-space-md py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface font-title-md text-title-md transition-colors text-center shadow-sm flex items-center justify-center gap-2" onclick="togglePreview()" type="button">
+<span class="material-symbols-outlined text-body-md text-outline">visibility</span>
+<span class="">Preview</span>
+</button>
+</div>
+<div class="flex items-center gap-space-md w-full sm:w-auto justify-end">
+<div class="hidden md:flex flex-col text-right">
+<span class="font-label-caps text-label-caps text-secondary font-medium">Pipeline Ready</span>
+<span class="font-label-caps text-label-caps text-outline">Estimated response: ~12m</span>
+</div>
+<button class="w-full sm:w-auto px-space-xl py-2.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-title-md text-title-md font-semibold transition-all duration-200 shadow-md flex items-center justify-center gap-2 active:scale-95" id="submitBtn" onclick="submitQuestion()" type="button">
+<span class="">Submit to Knowledge Pipeline</span>
+<span class="material-symbols-outlined text-title-md">arrow_forward</span>
+</button>
+</div>
+</div>
+</form>
+<!-- Preview Modal / Scrim View (Hidden by default) -->
+<div class="hidden bg-surface-container p-space-lg rounded-xl shadow-xl flex flex-col gap-space-md" id="previewCard">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-label-caps bg-primary-container text-on-primary-container px-2 py-0.5 rounded font-semibold">PREVIEW MODE</span>
+<span class="font-body-sm text-body-sm text-outline">How readers and reviewers will see your inquiry</span>
+</div>
+<button class="text-outline hover:text-on-surface" onclick="togglePreview()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface" id="previewTitle">Sample Title</h2>
+<div class="font-body-md text-body-md text-on-surface-variant whitespace-pre-wrap bg-surface-container-lowest p-space-md rounded-lg" id="previewBody">No content provided yet.</div>
+</div>
+</section>
+<!-- Right Column - Guidance, Smart Search & Pipeline Stages (4 Cols Desktop) -->
+<aside class="lg:col-span-4 flex flex-col gap-space-md sticky top-20">
+<!-- Card 1: Question Quality Index & Tips -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-md flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<h3 class="font-title-md text-title-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">tips_and_updates</span>
+              Crafting High-Yield Questions
+            </h3>
+<span class="font-label-caps text-label-caps text-secondary bg-surface-container-low px-2 py-0.5 rounded font-semibold" id="qualityScore">Quality: 85%</span>
+</div>
+<!-- Quality Metric Bar -->
+<div class="w-full bg-surface-container-lowest h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full transition-all duration-300" id="qualityProgress" style="width: 85%"></div>
+</div>
+<ul class="flex flex-col gap-space-sm font-body-sm text-body-sm text-on-surface-variant">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-title-md shrink-0 mt-0.5">check_circle</span>
+<span class=""><strong>State explicit constraints:</strong> Include thread counts, database versions, network latency, or memory ceilings.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-title-md shrink-0 mt-0.5">check_circle</span>
+<span class=""><strong>Minimal runnable snippets:</strong> Strip proprietary boilerplate; focus only on the critical concurrency or architectural path.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-title-md shrink-0 mt-0.5">check_circle</span>
+<span class=""><strong>Detail observed behavior:</strong> Mention thrown exceptions, deadlocks, or why the current solution fails at scale.</span>
+</li>
+</ul>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-title-md">psychology</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              High-detail submissions receive priority verification from Staff-level reviewer bots.
+            </p>
+</div>
+</div>
+<!-- Card 2: Live Deduplication / Similar Existing Questions -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-title-md text-title-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">find_in_page</span>
+              Similar Answered Topics
+            </h3>
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse" title="Live Auto-Search active"></span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">We checked the KnowStack knowledge base. These curated deep-dives might answer your question immediately:</p>
+<!-- List of Similar Articles -->
+<div class="flex flex-col gap-2 pt-1" id="similarQuestionsContainer">
+<a class="group p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high transition-colors flex flex-col gap-1" href="#">
+<div class="flex items-center justify-between">
+<span class="font-badge-label text-badge-label text-secondary bg-surface-container px-1.5 py-0.2 rounded font-medium">Java Concurrency</span>
+<span class="font-label-caps text-label-caps text-outline">98% Match</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors font-medium">
+                Spring @Transactional Propagation: REQUIRES_NEW Rollback Traps
+              </span>
+<span class="font-body-sm text-body-sm text-outline line-clamp-1">
+                Explains thread local transaction tokens, physical vs logical commits, and rollback exceptions.
+              </span>
+</a>
+<a class="group p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high transition-colors flex flex-col gap-1" href="#">
+<div class="flex items-center justify-between">
+<span class="font-badge-label text-badge-label text-primary-fixed-dim bg-surface-container px-1.5 py-0.2 rounded font-medium">Database Internals</span>
+<span class="font-label-caps text-label-caps text-outline">84% Match</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors font-medium">
+                PostgreSQL Isolation Levels: Phantom Reads vs Repeatable Read
+              </span>
+<span class="font-body-sm text-body-sm text-outline line-clamp-1">
+                Deep dive into Snapshot Isolation anomalies and row lock upgrade behaviors.
+              </span>
+</a>
+<a class="group p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high transition-colors flex flex-col gap-1" href="#">
+<div class="flex items-center justify-between">
+<span class="font-badge-label text-badge-label text-tertiary-fixed-dim bg-surface-container px-1.5 py-0.2 rounded font-medium">System Design</span>
+<span class="font-label-caps text-label-caps text-outline">76% Match</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface group-hover:text-primary transition-colors font-medium">
+                Designing Distributed Locks via Redis Redlock and Fencing Tokens
+              </span>
+<span class="font-body-sm text-body-sm text-outline line-clamp-1">
+                Martin Kleppmann’s critique addressed with monotonic clock verification.
+              </span>
+</a>
+</div>
+<div class="pt-2 text-right">
+<a class="font-label-caps text-label-caps text-primary hover:underline inline-flex items-center gap-1" href="#">
+              Browse all 1,420+ library guides <span class="material-symbols-outlined text-body-sm">north_east</span>
+</a>
+</div>
+</div>
+<!-- Card 3: What Happens Next? Timeline Lifecycle -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-md flex flex-col gap-space-md">
+<h3 class="font-title-md text-title-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">alt_route</span>
+            What Happens Next?
+          </h3>
+<div class="relative pl-6 flex flex-col gap-space-md">
+<!-- Timeline vertical connector -->
+<div class="absolute left-2.5 top-2 bottom-3 w-0.5 bg-surface-container-highest"></div>
+<!-- Step 1 -->
+<div class="relative flex flex-col gap-0.5">
+<div class="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-on-primary"></span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold">1. Instant Synthesis Engine</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">We checked the KnowStack knowledge base. These curated deep-dives might answer your question immediately:</p>
+</div>
+<!-- Step 2 -->
+<div class="relative flex flex-col gap-0.5">
+<div class="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-surface-container-high border-2 border-secondary flex items-center justify-center">
+<span class="w-1 h-1 rounded-full bg-secondary"></span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold">2. Staff Review &amp; Validation</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Human Staff Engineers verify correctness, benchmark veracity, and annotate subtle enterprise corner-cases.
+              </p>
+</div>
+<!-- Step 3 -->
+<div class="relative flex flex-col gap-0.5">
+<div class="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-surface-container-high border-2 border-outline-variant"></div>
+<span class="font-title-md text-title-md text-on-surface font-semibold">3. Indexed &amp; Dispatched</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Published to KnowStack Knowledge Library with author attribution and instant notification sent to your dashboard.</p>
+</div>
+</div>
+<!-- Live System Telemetry / SLA Indicator -->
+<div class="p-space-sm bg-surface-container-lowest rounded-lg flex items-center justify-between font-label-caps text-label-caps text-outline">
+<span class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+              Queue Load: Light (4 pending)
+            </span>
+<span class="text-on-surface font-medium">99.8% SLA</span>
+</div>
+</div>
+<!-- Community Contributor Honor Badge -->
+<div class="bg-gradient-to-r from-surface-container to-surface-container-low p-space-md rounded-xl shadow-sm flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container-highest flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-headline-sm">military_tech</span>
+</div>
+<div>
+<div class="font-title-md text-title-md text-on-surface font-semibold">Earn Community Karma</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">We checked the KnowStack knowledge base. These curated deep-dives might answer your question immediately:</p>
+</div>
+</div>
+</aside>
+</div>
+</div>
+<!-- Micro-Interactions & Form Validation Script -->
+<script>
+    function selectDifficulty(button, level) {
+      document.querySelectorAll('.difficulty-btn').forEach(btn => {
+        btn.classList.remove('bg-surface-container-high', 'text-secondary', 'font-medium');
+        btn.classList.add('text-outline');
+      });
+      button.classList.add('bg-surface-container-high', 'text-secondary', 'font-medium');
+      button.classList.remove('text-outline');
+    }
+
+    function insertSyntax(before, after) {
+      const textarea = document.getElementById('contextEditor');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value;
+      const selection = text.substring(start, end);
+      textarea.value = text.substring(0, start) + before + selection + after + text.substring(end);
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, end + before.length);
+    }
+
+    function handleTagKeydown(e) {
+      if (e.key === 'Enter' && e.target.value.trim() !== '') {
+        e.preventDefault();
+        addTag(e.target.value.trim());
+        e.target.value = '';
+      }
+    }
+
+    function addSuggestedTag(tagText) {
+      addTag(tagText);
+    }
+
+    function addTag(text) {
+      const container = document.getElementById('tagsContainer');
+      const input = document.getElementById('tagInput');
+      const pill = document.createElement('span');
+      pill.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-badge-label text-badge-label';
+      pill.innerHTML = `${text} <button type="button" onclick="this.parentElement.remove()" class="text-outline hover:text-on-surface">×</button>`;
+      container.insertBefore(pill, input);
+    }
+
+    function updateTitle(val) {
+      document.getElementById('titleCharCount').innerText = `${val.length} / 120`;
+      // Dynamically filter or highlight quality
+      const qualityScore = document.getElementById('qualityScore');
+      const qualityProgress = document.getElementById('qualityProgress');
+      if (val.length > 30) {
+        qualityScore.innerText = "Quality: 92%";
+        qualityProgress.style.width = "92%";
+      } else {
+        qualityScore.innerText = "Quality: 70%";
+        qualityProgress.style.width = "70%";
+      }
+    }
+
+    function updateCodePlaceholder(lang) {
+      const area = document.getElementById('codeSnippetArea');
+      if (lang === 'sql') {
+        area.value = `-- Nested isolation scenario\nBEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;\nSELECT * FROM accounts WHERE id = 1001 FOR UPDATE;\n-- How does deadlocking manifest under concurrent writes?`;
+      } else if (lang === 'go') {
+        area.value = `// Concurrency Goroutine sync leak\nfunc processStream(ctx context.Context, ch <-chan Event) {\n    go func() {\n        for e := range ch {\n            // Context cancellation leak check\n        }\n    }()\n}`;
+      } else {
+        area.value = `@Transactional(propagation = Propagation.REQUIRED)\npublic void checkoutOrder(Long orderId) {\n    paymentService.deductBalance(orderId); // Nested REQUIRES_NEW\n    inventoryService.reserveUnits(orderId);\n}`;
+      }
+    }
+
+    function formatSnippet() {
+      const area = document.getElementById('codeSnippetArea');
+      area.value = area.value.trim();
+    }
+
+    function togglePreview() {
+      const card = document.getElementById('previewCard');
+      const titleInput = document.getElementById('q-title').value;
+      const contextInput = document.getElementById('contextEditor').value;
+      
+      document.getElementById('previewTitle').innerText = titleInput || "Untitled Technical Question";
+      document.getElementById('previewBody').innerText = contextInput || "No details or context provided.";
+      
+      card.classList.toggle('hidden');
+      if (!card.classList.contains('hidden')) {
+        card.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function saveDraft() {
+      const title = document.getElementById('q-title').value;
+      alert(title ? `Draft "${title.substring(0, 25)}..." saved locally!` : "Empty draft saved!");
+    }
+
+    function submitQuestion() {
+      const submitBtn = document.getElementById('submitBtn');
+      const originalHtml = submitBtn.innerHTML;
+      submitBtn.innerHTML = `<span class="material-symbols-outlined animate-spin text-title-md">progress_activity</span> Processing...`;
+      submitBtn.disabled = true;
+
+      setTimeout(() => {
+        submitBtn.innerHTML = `<span class="material-symbols-outlined text-title-md">check_circle</span> Submitted!`;
+        submitBtn.classList.remove('bg-primary');
+        submitBtn.classList.add('bg-secondary', 'text-on-secondary');
+        
+        setTimeout(() => {
+          submitBtn.innerHTML = originalHtml;
+          submitBtn.disabled = false;
+          submitBtn.classList.add('bg-primary');
+          submitBtn.classList.remove('bg-secondary', 'text-on-secondary');
+          alert("Success! Your question has been fed into the DevVault AI Synthesis Pipeline. Track progress in your Admin Studio / Activity log.");
+        }, 1500);
+      }, 1000);
+    }
+  </script>
+</div></main><footer class="w-full bg-surface-container-lowest py-space-lg px-space-lg shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full flex flex-col md:flex-row items-center justify-between gap-space-md text-on-surface-variant"><div class="flex items-center gap-space-md font-body-sm text-body-sm"><span class="">KnowStack Core Docs · Status: <span class="text-secondary font-medium">Operational</span></span><span class="hidden sm:inline font-label-caps text-label-caps text-outline bg-surface-container-low px-2 py-0.5 rounded">Press ? for shortcuts</span></div><div class="flex items-center gap-space-lg font-body-sm text-body-sm"><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">GitHub</a><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">Discord Community</a><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">API Spec</a></div></div></footer></div>
+
+</body></html>

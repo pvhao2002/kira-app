@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* DevVault tokens, copied from the mockup Tailwind config. */
+@theme {
+  --color-primary-fixed-dim: #c0c1ff;
+  --color-primary: #c0c1ff;
+  --color-surface: #0b1326;
+  --color-outline-variant: #464554;
+  --color-tertiary-fixed-dim: #d0bcff;
+  --color-secondary-fixed: #6ffbbe;
+  --color-on-secondary-fixed-variant: #005236;
+  --color-surface-tint: #c0c1ff;
+  --color-inverse-on-surface: #283044;
+  --color-inverse-primary: #494bd6;
+  --color-on-tertiary-fixed-variant: #5516be;
+  --color-on-background: #dae2fd;
+  --color-on-secondary-container: #00311f;
+  --color-background: #0b1326;
+  --color-on-surface: #dae2fd;
+  --color-surface-variant: #2d3449;
+  --color-on-surface-variant: #c7c4d7;
+  --color-tertiary-container: #a078ff;
+  --color-inverse-surface: #dae2fd;
+  --color-secondary-container: #00a572;
+  --color-on-tertiary-fixed: #23005c;
+  --color-surface-container-high: #222a3d;
+  --color-on-secondary: #003824;
+  --color-error-container: #93000a;
+  --color-on-primary-fixed: #07006c;
+  --color-on-primary-fixed-variant: #2f2ebe;
+  --color-surface-container-low: #131b2e;
+  --color-on-tertiary-container: #340080;
+  --color-on-error: #690005;
+  --color-error: #ffb4ab;
+  --color-on-tertiary: #3c0091;
+  --color-surface-container-lowest: #060e20;
+  --color-on-secondary-fixed: #002113;
+  --color-tertiary-fixed: #e9ddff;
+  --color-secondary: #4edea3;
+  --color-outline: #908fa0;
+  --color-surface-container-highest: #2d3449;
+  --color-surface-container: #171f33;
+  --color-surface-bright: #31394d;
+  --color-on-primary-container: #0d0096;
+  --color-primary-fixed: #e1e0ff;
+  --color-primary-container: #8083ff;
+  --color-on-primary: #1000a9;
+  --color-on-error-container: #ffdad6;
+  --color-surface-dim: #0b1326;
+  --color-tertiary: #d0bcff;
+  --color-secondary-fixed-dim: #4edea3;
+  --spacing-space-xl: 2.5rem;
+  --spacing-space-xs: 0.25rem;
+  --spacing-gutter: 1.5rem;
+  --spacing-gutter-mobile: 1rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-margin-mobile: 1rem;
+  --spacing-margin: 2rem;
+  --spacing-space-lg: 1.5rem;
+  --spacing-space-md: 1rem;
+  --radius: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-full: 0.75rem;
+  --font-headline-lg: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-badge-label: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-title-md: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display-xl: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-body-lg: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-headline-md: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-body-sm: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-headline-lg-mobile: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-body-md: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-headline-sm: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-code-inline: "JetBrains Mono", ui-monospace, monospace;
+  --font-label-caps: "JetBrains Mono", ui-monospace, monospace;
+  --font-code-block: "JetBrains Mono", ui-monospace, monospace;
+  --font-display-xl-mobile: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--letter-spacing: -0.02em;
+  --text-headline-lg--font-weight: 600;
+  --text-badge-label: 12px;
+  --text-badge-label--line-height: 16px;
+  --text-badge-label--font-weight: 500;
+  --text-title-md: 16px;
+  --text-title-md--line-height: 24px;
+  --text-title-md--letter-spacing: -0.005em;
+  --text-title-md--font-weight: 600;
+  --text-display-xl: 48px;
+  --text-display-xl--line-height: 56px;
+  --text-display-xl--letter-spacing: -0.03em;
+  --text-display-xl--font-weight: 700;
+  --text-body-lg: 17px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--letter-spacing: -0.005em;
+  --text-body-lg--font-weight: 400;
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--letter-spacing: -0.015em;
+  --text-headline-md--font-weight: 600;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 20px;
+  --text-body-sm--letter-spacing: 0.005em;
+  --text-body-sm--font-weight: 400;
+  --text-headline-lg-mobile: 26px;
+  --text-headline-lg-mobile--line-height: 34px;
+  --text-headline-lg-mobile--letter-spacing: -0.015em;
+  --text-headline-lg-mobile--font-weight: 600;
+  --text-body-md: 15px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--letter-spacing: 0em;
+  --text-body-md--font-weight: 400;
+  --text-headline-sm: 20px;
+  --text-headline-sm--line-height: 28px;
+  --text-headline-sm--letter-spacing: -0.01em;
+  --text-headline-sm--font-weight: 600;
+  --text-code-inline: 13px;
+  --text-code-inline--line-height: 20px;
+  --text-code-inline--font-weight: 500;
+  --text-label-caps: 11px;
+  --text-label-caps--line-height: 16px;
+  --text-label-caps--letter-spacing: 0.06em;
+  --text-label-caps--font-weight: 600;
+  --text-code-block: 13.5px;
+  --text-code-block--line-height: 22px;
+  --text-code-block--font-weight: 400;
+  --text-display-xl-mobile: 36px;
+  --text-display-xl-mobile--line-height: 44px;
+  --text-display-xl-mobile--letter-spacing: -0.02em;
+  --text-display-xl-mobile--font-weight: 700;
+}
+
+@layer base {
+  html, body { margin: 0; padding: 0; }
+  body { overscroll-behavior: none; }
+  :focus-visible { outline: 1px solid var(--color-primary); outline-offset: 2px; }
+  button, [role='button'] { cursor: pointer; }
+}
+
+.material-symbols-outlined { font-size: 1.25em; line-height: 1; vertical-align: middle; user-select: none; }
+
+/* Rendered article markdown (DESIGN.md: 68ch body, JetBrains Mono code, 4 callout variants). */
+.prose-ks { color: var(--color-on-surface-variant); font-family: var(--font-body-lg); font-size: 17px; line-height: 28px; max-width: 68ch; }
+.prose-ks > * + * { margin-top: 1.1em; }
+.prose-ks h2 { color: var(--color-on-surface); font-family: var(--font-headline-md); font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.015em; margin-top: 2.2em; scroll-margin-top: 5rem; }
+.prose-ks h3 { color: var(--color-on-surface); font-family: var(--font-headline-sm); font-size: 20px; line-height: 28px; font-weight: 600; margin-top: 1.6em; scroll-margin-top: 5rem; }
+.prose-ks strong { color: var(--color-on-surface); }
+.prose-ks a { color: var(--color-primary); text-decoration: underline; text-underline-offset: 3px; }
+.prose-ks ul { list-style: disc; padding-left: 1.4em; }
+.prose-ks ol { list-style: decimal; padding-left: 1.4em; }
+.prose-ks li + li { margin-top: 0.3em; }
+.prose-ks :not(pre) > code { font-family: var(--font-code-inline); font-size: 13px; background: var(--color-surface-container-high); color: var(--color-primary-fixed-dim); padding: 0.1em 0.4em; border-radius: 0.25rem; }
+.prose-ks pre { background: #0d1117; border: 1px solid #1e293b; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; font-family: var(--font-code-block); font-size: 13.5px; line-height: 22px; color: #dae2fd; }
+.prose-ks table { width: 100%; border-collapse: collapse; font-size: 14px; display: block; overflow-x: auto; }
+.prose-ks th, .prose-ks td { border: 1px solid var(--color-outline-variant); padding: 0.4rem 0.7rem; text-align: left; }
+.prose-ks th { color: var(--color-on-surface); background: var(--color-surface-container); }
+.prose-ks blockquote { border-left: 3px solid var(--color-outline); padding: 0.75rem 1rem; background: rgb(255 255 255 / 0.03); border-radius: 0 0.5rem 0.5rem 0; }
+.prose-ks .callout { --accent: #6366f1; border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.prose-ks .callout-title { display: flex; align-items: center; gap: 0.4rem; color: var(--accent); font-family: var(--font-label-caps); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem; }
+.prose-ks .callout-note { --accent: #6366f1; }
+.prose-ks .callout-tip { --accent: #10b981; }
+.prose-ks .callout-caution { --accent: #f59e0b; }
+.prose-ks .callout-antipattern { --accent: #f43f5e; }
+.prose-ks .mermaid { background: var(--color-surface-container-lowest); border: 1px solid #1e293b; border-radius: 0.5rem; padding: 1rem; display: flex; justify-content: center; overflow-x: auto; }

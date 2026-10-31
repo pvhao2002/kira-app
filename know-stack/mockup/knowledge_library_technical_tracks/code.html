@@ -1,0 +1,485 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"primary-fixed-dim":"#c0c1ff","primary":"#c0c1ff","surface":"#0b1326","outline-variant":"#464554","tertiary-fixed-dim":"#d0bcff","secondary-fixed":"#6ffbbe","on-secondary-fixed-variant":"#005236","surface-tint":"#c0c1ff","inverse-on-surface":"#283044","inverse-primary":"#494bd6","on-tertiary-fixed-variant":"#5516be","on-background":"#dae2fd","on-secondary-container":"#00311f","background":"#0b1326","on-surface":"#dae2fd","surface-variant":"#2d3449","on-surface-variant":"#c7c4d7","tertiary-container":"#a078ff","inverse-surface":"#dae2fd","secondary-container":"#00a572","on-tertiary-fixed":"#23005c","surface-container-high":"#222a3d","on-secondary":"#003824","error-container":"#93000a","on-primary-fixed":"#07006c","on-primary-fixed-variant":"#2f2ebe","surface-container-low":"#131b2e","on-tertiary-container":"#340080","on-error":"#690005","error":"#ffb4ab","on-tertiary":"#3c0091","surface-container-lowest":"#060e20","on-secondary-fixed":"#002113","tertiary-fixed":"#e9ddff","secondary":"#4edea3","outline":"#908fa0","surface-container-highest":"#2d3449","surface-container":"#171f33","surface-bright":"#31394d","on-primary-container":"#0d0096","primary-fixed":"#e1e0ff","primary-container":"#8083ff","on-primary":"#1000a9","on-error-container":"#ffdad6","surface-dim":"#0b1326","tertiary":"#d0bcff","secondary-fixed-dim":"#4edea3"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"space-xl":"2.5rem","space-xs":"0.25rem","gutter":"1.5rem","gutter-mobile":"1rem","space-sm":"0.5rem","margin-mobile":"1rem","margin":"2rem","space-lg":"1.5rem","space-md":"1rem"},"fontFamily":{"headline-lg":["Geist"],"badge-label":["Inter"],"title-md":["Inter"],"display-xl":["Geist"],"body-lg":["Inter"],"headline-md":["Geist"],"body-sm":["Inter"],"headline-lg-mobile":["Geist"],"body-md":["Inter"],"headline-sm":["Geist"],"code-inline":["JetBrains Mono"],"label-caps":["JetBrains Mono"],"code-block":["JetBrains Mono"],"display-xl-mobile":["Geist"]},"fontSize":{"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"600"}],"badge-label":["12px",{"lineHeight":"16px","fontWeight":"500"}],"title-md":["16px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"600"}],"display-xl":["48px",{"lineHeight":"56px","letterSpacing":"-0.03em","fontWeight":"700"}],"body-lg":["17px",{"lineHeight":"28px","letterSpacing":"-0.005em","fontWeight":"400"}],"headline-md":["24px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"600"}],"body-sm":["13px",{"lineHeight":"20px","letterSpacing":"0.005em","fontWeight":"400"}],"headline-lg-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.015em","fontWeight":"600"}],"body-md":["15px",{"lineHeight":"24px","letterSpacing":"0em","fontWeight":"400"}],"headline-sm":["20px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}],"code-inline":["13px",{"lineHeight":"20px","fontWeight":"500"}],"label-caps":["11px",{"lineHeight":"16px","letterSpacing":"0.06em","fontWeight":"600"}],"code-block":["13.5px",{"lineHeight":"22px","fontWeight":"400"}],"display-xl-mobile":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"700"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface"><header class="fixed top-0 left-0 right-0 z-50 h-16 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full h-16 px-space-lg flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg min-w-max"><div class="flex items-center gap-space-sm"><span class="font-headline-sm text-headline-sm font-bold tracking-tight text-white">Know<span class="text-[#818cf8]">Stack</span></span></div><div class="hidden xl:flex items-center bg-surface-container-low px-space-md py-space-xs rounded-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] w-80 text-on-surface-variant"><span class="material-symbols-outlined text-outline text-title-md mr-space-sm">search</span><span class="font-body-sm text-body-sm text-outline flex-1 truncate">Search concepts, algorithms, questions...</span><kbd class="font-label-caps text-label-caps bg-surface-container-high text-on-surface-variant px-1.5 py-0.5 rounded shadow-[0_1px_8px_rgba(0,0,0,0.04)]">⌘K</kbd></div></div><nav class="hidden lg:flex items-center gap-space-xs" data-active-classes="bg-primary-container text-on-primary-container font-title-md text-title-md rounded-xl"><a aria-current="page" class="px-space-md py-space-xs transition-colors bg-primary-container text-on-primary-container font-title-md text-title-md rounded-xl" data-path="knowledge-library" href="#">Knowledge Library</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-md py-space-xs transition-colors rounded-xl" data-path="interview-tracks" href="#">Interview Tracks</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-md py-space-xs transition-colors rounded-xl" data-path="ask-question" href="#">Ask Question</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface px-space-md py-space-xs transition-colors rounded-xl" data-path="admin-studio" href="#">Admin Studio</a></nav><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs"><button class="w-9 h-9 rounded-xl flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-title-md">notifications</span></button><button class="w-9 h-9 rounded-xl flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors relative" type="button"><span class="material-symbols-outlined text-title-md">bookmark</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary"></span></button></div><div class="flex items-center gap-space-sm pl-space-xs"><span class="font-headline-sm text-headline-sm font-bold tracking-tight text-white">Know<span class="text-[#818cf8]">Stack</span></span></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-72 bg-surface-container-lowest z-40 flex flex-col justify-between overflow-y-auto shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="p-space-md"><div class="mb-space-lg"><span class="font-label-caps text-label-caps uppercase text-outline px-space-sm tracking-wider">Categorized Paths</span><nav class="mt-space-sm flex flex-col gap-1" data-active-classes="bg-primary-container text-on-primary-container rounded-xl"><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="core-cs-and-systems" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">terminal</span><span class="font-body-sm text-body-sm truncate">Core CS &amp; Systems</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="java-and-spring-boot" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">code</span><span class="font-body-sm text-body-sm truncate">Java &amp; Spring Boot</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="databases-and-caching" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">database</span><span class="font-body-sm text-body-sm truncate">Databases &amp; Caching</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="cloud-and-devops" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">cloud</span><span class="font-body-sm text-body-sm truncate">Cloud &amp; DevOps</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="microservices-architecture" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">hub</span><span class="font-body-sm text-body-sm truncate">Microservices Architecture</span></a></nav></div><div class="pt-space-md"><span class="font-label-caps text-label-caps uppercase text-outline px-space-sm tracking-wider">Admin Studio</span><nav class="mt-space-sm flex flex-col gap-1" data-active-classes="bg-primary-container text-on-primary-container rounded-xl"><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="question-queue" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">inbox</span><span class="font-body-sm text-body-sm truncate">Question Queue</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="ai-article-editor" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">edit_note</span><span class="font-body-sm text-body-sm truncate">AI Article Editor</span></a><a class="flex items-center px-space-sm py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="platform-analytics" href="#"><span class="material-symbols-outlined mr-space-sm text-title-md text-outline">bar_chart</span><span class="font-body-sm text-body-sm truncate">Analytics</span></a></nav></div></div><div class="p-space-md bg-surface-container-low/40"><div class="flex items-center justify-between text-outline"><span class="font-label-caps text-label-caps">Engine v2.4</span><span class="flex items-center gap-1 font-label-caps text-label-caps text-secondary"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Syncd</span></div></div></aside><div class="pl-72"><main class="w-full min-h-[calc(100vh-4rem)] pt-16 px-space-lg pb-space-xl bg-surface"><div class="flex flex-col w-full">
+<div class="flex flex-col gap-space-lg w-full">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-2 text-on-surface-variant font-label-caps text-label-caps">
+<span class="hover:text-primary transition-colors cursor-pointer">LIBRARY</span>
+<span class="">/</span>
+<span class="text-primary font-semibold">ALL TRACKS</span>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container text-secondary font-badge-label text-badge-label ml-2">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Live Catalog
+          </span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">KnowStack Knowledge &amp; Interview Prep Vault</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+          Curated, in-depth architectural guides, low-level runtime breakdowns, and production-tested interview blueprints verified by principal engineers.
+        </p>
+</div>
+<div class="flex items-center gap-3 self-start md:self-auto">
+<button class="flex items-center gap-2 px-space-md py-2 bg-surface-container text-on-surface hover:bg-surface-container-high rounded-xl font-badge-label text-badge-label transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-title-md text-primary">download</span>
+<span class="">Offline Pack (.md)</span>
+</button>
+<button class="flex items-center gap-2 px-space-md py-2 bg-primary text-on-primary rounded-xl font-badge-label text-badge-label transition-opacity hover:opacity-95 shadow-md" type="button">
+<span class="material-symbols-outlined text-title-md">add_task</span>
+<span class="">Custom Study Track</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md p-space-md bg-surface-container-low rounded-xl shadow-sm">
+<div class="flex items-center gap-4 p-space-sm rounded-lg bg-surface-container-lowest/60">
+<div class="w-11 h-11 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-headline-md">verified_user</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">1,420</span>
+<span class="font-label-caps text-label-caps text-secondary font-medium">+38 this week</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Verified Technical Questions</span>
+</div>
+</div>
+<div class="flex items-center gap-4 p-space-sm rounded-lg bg-surface-container-lowest/60">
+<div class="w-11 h-11 rounded-lg bg-secondary-container/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-headline-md">query_stats</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">94%</span>
+<span class="font-label-caps text-label-caps text-outline font-medium">Meta · Stripe · AWS</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">FAANG &amp; Tier-1 Direct Alignment</span>
+</div>
+</div>
+<div class="flex items-center gap-4 p-space-sm rounded-lg bg-surface-container-lowest/60">
+<div class="w-11 h-11 rounded-lg bg-tertiary-container/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-headline-md">auto_awesome</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">Active Sync</span>
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Daily LLM Synthesis &amp; Benchmarks</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-space-sm p-space-md bg-surface-container-lowest rounded-xl shadow-sm">
+<div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-title-md">search</span>
+<input class="w-full pl-11 pr-24 py-2.5 bg-surface-container text-on-surface placeholder:text-outline font-body-sm text-body-sm rounded-xl focus:outline-none focus:bg-surface-container-high transition-colors shadow-inner" placeholder="Search patterns, algorithms, concurrency bugs, data stores..." type="text">
+<div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 text-label-caps font-label-caps bg-surface-container-high text-on-surface-variant rounded">⌘K</kbd>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm">
+<div class="relative">
+<select class="appearance-none bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm pl-3 pr-8 py-2 rounded-xl focus:outline-none cursor-pointer transition-colors shadow-sm">
+<option>Tags: All Selected (6)</option>
+<option>Concurrency (34)</option>
+<option>PostgreSQL (28)</option>
+<option>Redis (19)</option>
+<option>Kafka (22)</option>
+<option>Kubernetes (16)</option>
+<option>Garbage Collection (12)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-title-md pointer-events-none">expand_more</span>
+</div>
+<div class="relative">
+<select class="appearance-none bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm pl-3 pr-8 py-2 rounded-xl focus:outline-none cursor-pointer transition-colors shadow-sm">
+<option>Sort: Most Popular</option>
+<option>Sort: Recently Updated</option>
+<option>Sort: Highest Interview Frequency</option>
+<option>Sort: Staff Depth Index</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-title-md pointer-events-none">swap_vert</span>
+</div>
+<button class="w-9 h-9 flex items-center justify-center bg-surface-container hover:bg-surface-container-high rounded-xl text-on-surface-variant transition-colors" title="Filter Presets" type="button">
+<span class="material-symbols-outlined text-title-md">tune</span>
+</button>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-2 pt-2">
+<span class="font-label-caps text-label-caps text-outline uppercase mr-1">Categories:</span>
+<button class="px-3 py-1 rounded-xl bg-primary text-on-primary font-badge-label text-badge-label shadow-sm">All (248)</button>
+<button class="px-3 py-1 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-badge-label text-badge-label transition-colors">Java &amp; Spring (64)</button>
+<button class="px-3 py-1 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-badge-label text-badge-label transition-colors">Databases &amp; Storage (42)</button>
+<button class="px-3 py-1 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-badge-label text-badge-label transition-colors">Distributed Systems (58)</button>
+<button class="px-3 py-1 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-badge-label text-badge-label transition-colors">DevOps &amp; Cloud (38)</button>
+<button class="px-3 py-1 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-badge-label text-badge-label transition-colors">System Design (46)</button>
+</div>
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<span class="font-label-caps text-label-caps text-outline uppercase mr-1">Seniority:</span>
+<div class="flex items-center gap-1.5 bg-surface-container p-1 rounded-xl">
+<button class="px-2.5 py-0.5 rounded-lg bg-surface-container-high text-on-surface font-badge-label text-badge-label">All Levels</button>
+<button class="px-2.5 py-0.5 rounded-lg hover:bg-surface-container-high text-secondary font-badge-label text-badge-label transition-colors">Junior</button>
+<button class="px-2.5 py-0.5 rounded-lg hover:bg-surface-container-high text-primary-fixed-dim font-badge-label text-badge-label transition-colors">Mid-Level</button>
+<button class="px-2.5 py-0.5 rounded-lg hover:bg-surface-container-high text-tertiary font-badge-label text-badge-label transition-colors">Senior</button>
+<button class="px-2.5 py-0.5 rounded-lg hover:bg-surface-container-high text-error font-badge-label text-badge-label transition-colors">Staff / Principal</button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-4 gap-space-lg">
+<div class="xl:col-span-3 flex flex-col gap-space-lg">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<article class="md:col-span-2 group flex flex-col lg:flex-row bg-surface-container-low hover:bg-surface-container rounded-xl overflow-hidden shadow-sm transition-all duration-200">
+<div class="lg:w-7/12 p-space-lg flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-0.5 rounded bg-primary-container/25 text-primary-fixed-dim font-badge-label text-badge-label font-medium">FEATURED MASTERCLASS</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary font-badge-label text-badge-label">Senior Track</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-secondary font-badge-label text-badge-label flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">local_fire_department</span> 98% Match
+                    </span>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-title-md">bookmark</span>
+</button>
+</div>
+<a class="block group-hover:text-primary transition-colors" href="#">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface leading-tight mb-2">
+                    Deep Dive into Java 21 Virtual Threads &amp; Loom Concurrency
+                  </h2>
+</a>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-3 mb-4">
+                  Examine carrier thread scheduling algorithms, continuations in HotSpot, stack segment resizing, and how pinning occurs under `synchronized` blocks. Includes empirical latency histograms under 500k concurrent client streams.
+                </p>
+<div class="flex flex-wrap items-center gap-2 mb-4">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-code-inline text-code-inline">java.lang.Thread</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-code-inline text-code-inline">Fiber Continuation</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-code-inline text-code-inline">WorkStealingPool</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-4 bg-surface-container-low/40">
+<div class="flex items-center gap-3 text-on-surface-variant font-body-sm text-body-sm"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">schedule</span> 18 min read</span><span class="">·</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">visibility</span> 128.4k views</span><span class="">·</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">bookmark_added</span> 4.2k saves</span></div>
+<a class="inline-flex items-center gap-1 font-title-md text-title-md text-primary group-hover:translate-x-1 transition-transform" href="#">
+                  Read Guide <span class="material-symbols-outlined text-title-md">arrow_forward</span>
+</a>
+</div>
+</div>
+<div class="lg:w-5/12 bg-surface-container-lowest p-space-md flex flex-col justify-between">
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-1.5 text-outline font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-title-md text-primary">terminal</span>
+<span class="">CARRIER_THREAD_PINNING.JAVA</span>
+</div>
+<span class="font-label-caps text-label-caps px-1.5 py-0.5 rounded bg-surface-container text-secondary">PROD TESTED</span>
+</div>
+<pre class="bg-surface-container-low p-3 rounded-lg overflow-x-auto text-on-surface font-code-block text-code-block"><code class="block text-primary-fixed-dim">// Loom avoids native thread allocation:
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+  IntStream.range(0, 50_000).forEach(i -&gt; {
+    executor.submit(() -&gt; {
+      // Parked onto Carrier ForkJoinWorkerThread
+      Thread.sleep(Duration.ofMillis(100));
+      return HttpResponse.ok();
+    });
+  });
+} // Auto-joins after non-blocking flush</code></pre>
+<div class="flex items-center justify-between pt-3 text-outline font-body-sm text-body-sm">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-secondary">memory</span> 1.2 GB vs 49.8 GB RSS</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">JDK 21.0.2</span>
+</div>
+</div>
+</article>
+<article class="group flex flex-col justify-between p-space-lg bg-surface-container-low hover:bg-surface-container rounded-xl shadow-sm transition-all duration-200">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-error-container/40 text-error font-badge-label text-badge-label">Staff / Principal</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary font-badge-label text-badge-label flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">account_tree</span> System Design
+                  </span>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-title-md">bookmark</span>
+</button>
+</div>
+<a class="block group-hover:text-primary transition-colors" href="#">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug mb-2">
+                  Designing Idempotent APIs with Distributed Locks &amp; Redis Redlock
+                </h3>
+</a>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-3 mb-4">
+                Handling clock drift vulnerabilities, Martin Kleppmann's consensus critiques, fencing tokens generation with monotonic sequence IDs, and Stripe-style double-entry guarantees.
+              </p>
+<div class="flex items-center gap-2 p-2.5 rounded-lg bg-surface-container-lowest mb-4">
+<span class="material-symbols-outlined text-primary text-title-md">schema</span>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface font-semibold">DIAGRAM ATTACHED: 2PC vs Redlock Fencing</span>
+<span class="font-body-sm text-body-sm text-outline">Frequently tested at Stripe, Uber, DoorDash</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-3">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">schedule</span> 22 min</span><span class="">·</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">visibility</span> 84.2k views</span><span class="">·</span><span class="text-secondary font-medium">96% Frequency</span></div>
+<span class="material-symbols-outlined text-title-md text-outline group-hover:text-primary group-hover:translate-x-1 transition-all">arrow_forward</span>
+</div>
+</article>
+<article class="group flex flex-col justify-between p-space-lg bg-surface-container-low hover:bg-surface-container rounded-xl shadow-sm transition-all duration-200">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary font-badge-label text-badge-label">Senior</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-secondary font-badge-label text-badge-label">Databases</span>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-title-md">bookmark</span>
+</button>
+</div>
+<a class="block group-hover:text-primary transition-colors" href="#">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug mb-2">
+                  PostgreSQL MVCC &amp; Isolation Levels Under High Write Contention
+                </h3>
+</a>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-3 mb-4">
+                Tuple headers internals (`xmin`, `xmax`, `t_ctid`), phantom reads prevention, vacuum freeze wraparound risks, and lock conflict matrix between AccessExclusive and RowShare modes.
+              </p>
+<div class="flex flex-wrap gap-1.5 mb-4">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-code-inline text-code-inline">REPEATABLE READ</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-code-inline text-code-inline">SSI</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-code-inline text-code-inline">pg_stat_activity</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-3">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">schedule</span> 15 min</span><span class="">·</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">visibility</span> 62.9k views</span><span class="">·</span><span class="text-on-surface-variant">Visualized Locks</span></div>
+<span class="material-symbols-outlined text-title-md text-outline group-hover:text-primary group-hover:translate-x-1 transition-all">arrow_forward</span>
+</div>
+</article>
+<article class="group flex flex-col justify-between p-space-lg bg-surface-container-low hover:bg-surface-container rounded-xl shadow-sm transition-all duration-200">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-primary-fixed-dim font-badge-label text-badge-label">Mid-Level</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-outline font-badge-label text-badge-label">Spring Boot</span>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-title-md">bookmark</span>
+</button>
+</div>
+<a class="block group-hover:text-primary transition-colors" href="#">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug mb-2">
+                  Spring Boot 3.2 AOT Native Images &amp; GraalVM Compilation Architecture
+                </h3>
+</a>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-3 mb-4">
+                Reachability metadata repositories, closed-world assumption constraints, dynamic proxies bypass, and trimming container boot latency from 2,400ms down to 38ms.
+              </p>
+<div class="flex items-center gap-2 text-outline font-body-sm text-body-sm mb-4">
+<span class="material-symbols-outlined text-title-md text-secondary">bolt</span>
+<span class="">Sub-50ms Cold Starts on AWS Lambda</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-3">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">schedule</span> 12 min</span><span class="">·</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">visibility</span> 47.1k views</span><span class="">·</span><span class="text-on-surface-variant">Cloud Run Benchmarks</span></div>
+<span class="material-symbols-outlined text-title-md text-outline group-hover:text-primary group-hover:translate-x-1 transition-all">arrow_forward</span>
+</div>
+</article>
+<article class="group flex flex-col justify-between p-space-lg bg-surface-container-low hover:bg-surface-container rounded-xl shadow-sm transition-all duration-200">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary font-badge-label text-badge-label">Senior</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-secondary font-badge-label text-badge-label">Event-Driven</span>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-title-md">bookmark</span>
+</button>
+</div>
+<a class="block group-hover:text-primary transition-colors" href="#">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug mb-2">
+                  Kafka Exactly-Once Semantics (EOS): Producer Idempotence to 2PC Transactions
+                </h3>
+</a>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-3 mb-4">
+                Transactional Coordinator handshakes, `__transaction_state` log compaction, zombie fencing via transactional epoch tokens, and consume-transform-produce pipelines.
+              </p>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest font-code-inline text-code-inline text-primary-fixed-dim mb-4">
+                isolation.level = read_committed
+              </div>
+</div>
+<div class="flex items-center justify-between pt-3">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">schedule</span> 25 min</span><span class="">·</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">visibility</span> 73.5k views</span><span class="">·</span><span class="text-secondary font-medium">Flowchart Verified</span></div>
+<span class="material-symbols-outlined text-title-md text-outline group-hover:text-primary group-hover:translate-x-1 transition-all">arrow_forward</span>
+</div>
+</article>
+<article class="group flex flex-col justify-between p-space-lg bg-surface-container-low hover:bg-surface-container rounded-xl shadow-sm transition-all duration-200">
+<div>
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-tertiary font-badge-label text-badge-label">Senior</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-outline font-badge-label text-badge-label">Cloud Native</span>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-title-md">bookmark</span>
+</button>
+</div>
+<a class="block group-hover:text-primary transition-colors" href="#">
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface leading-snug mb-2">
+                  Kubernetes Custom Controllers &amp; Operator Pattern from Scratch
+                </h3>
+</a>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-3 mb-4">
+                Informers, Lister caches, workqueue rate-limiters, level-triggered reconciliation loops, and building stateful failover operators using `controller-runtime` in Go.
+              </p>
+<div class="flex flex-wrap gap-1.5 mb-4">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-code-inline text-code-inline">Reconcile()</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-code-inline text-code-inline">CRD v1</span>
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-code-inline text-code-inline">SharedIndexInformer</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-3">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">schedule</span> 20 min</span><span class="">·</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-title-md text-outline">visibility</span> 51.8k views</span><span class="">·</span><span class="text-on-surface-variant">Go 1.22 Snippets</span></div>
+<span class="material-symbols-outlined text-title-md text-outline group-hover:text-primary group-hover:translate-x-1 transition-all">arrow_forward</span>
+</div>
+</article>
+</div>
+<div class="flex flex-col sm:flex-row items-center justify-between gap-space-md p-space-md bg-surface-container-lowest rounded-xl shadow-sm">
+<div class="flex items-center gap-3">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Showing <span class="font-semibold text-on-surface">1 - 6</span> of 248 articles</span>
+<div class="relative">
+<select class="appearance-none bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm pl-2.5 pr-7 py-1 rounded-lg focus:outline-none cursor-pointer transition-colors shadow-sm">
+<option>6 / page</option>
+<option>12 / page</option>
+<option>24 / page</option>
+<option>48 / page</option>
+</select>
+<span class="material-symbols-outlined absolute right-1.5 top-1/2 -translate-y-1/2 text-outline text-title-md pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container disabled:opacity-40" disabled="">
+<span class="material-symbols-outlined text-title-md">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center bg-primary text-on-primary font-badge-label text-badge-label font-bold shadow-sm">1</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-badge-label text-badge-label transition-colors">2</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-badge-label text-badge-label transition-colors">3</button>
+<span class="px-1 text-outline font-body-sm text-body-sm">...</span>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-badge-label text-badge-label transition-colors">12</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-title-md">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<aside class="flex flex-col gap-space-md">
+<div class="p-space-md bg-surface-container-low rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+<h4 class="font-title-md text-title-md font-semibold text-on-surface">Trending Topics</h4>
+</div>
+<span class="font-label-caps text-label-caps text-outline uppercase">THIS WEEK</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Top algorithmic &amp; system designs reported across current FAANG loops:</p>
+<div class="flex flex-col gap-3">
+<a class="p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-all group flex flex-col gap-1.5" href="#">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps text-primary-fixed-dim">META · E5 / E6</span>
+<span class="px-1.5 py-0.5 rounded bg-error-container/30 text-error font-badge-label text-badge-label">Principal</span>
+</div>
+<span class="font-body-sm text-body-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
+                Design a Low-Latency Feed with Fan-Out-On-Write &amp; Hybrid Aggregation
+              </span>
+<div class="flex items-center gap-2 text-outline font-label-caps text-label-caps">
+<span class="">142 reports</span>
+<span class="">·</span>
+<span class="text-secondary font-medium">92% Acceptance</span>
+</div>
+</a>
+<a class="p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-all group flex flex-col gap-1.5" href="#">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps text-primary-fixed-dim">GOOGLE · L5</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-tertiary font-badge-label text-badge-label">Senior</span>
+</div>
+<span class="font-body-sm text-body-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
+                Consistent Hashing with Virtual Nodes &amp; Ring Rebalancing Under Churn
+              </span>
+<div class="flex items-center gap-2 text-outline font-label-caps text-label-caps">
+<span class="">98 reports</span>
+<span class="">·</span>
+<span class="text-secondary font-medium">88% Acceptance</span>
+</div>
+</a>
+<a class="p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-all group flex flex-col gap-1.5" href="#">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps text-primary-fixed-dim">AMAZON · SDE III</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-tertiary font-badge-label text-badge-label">Senior</span>
+</div>
+<span class="font-body-sm text-body-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
+                DynamoDB Single-Table Design: Modeling 1:N Hierarchies with Sparse Indexes
+              </span>
+<div class="flex items-center gap-2 text-outline font-label-caps text-label-caps">
+<span class="">84 reports</span>
+<span class="">·</span>
+<span class="text-secondary font-medium">95% Acceptance</span>
+</div>
+</a>
+<a class="p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-all group flex flex-col gap-1.5" href="#">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps text-primary-fixed-dim">STRIPE · L4</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-high text-primary-fixed-dim font-badge-label text-badge-label">Mid-Level</span>
+</div>
+<span class="font-body-sm text-body-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
+                Handling Dual-Writes across MySQL &amp; Elasticsearch via CDC Debezium
+              </span>
+<div class="flex items-center gap-2 text-outline font-label-caps text-label-caps">
+<span class="">71 reports</span>
+<span class="">·</span>
+<span class="text-secondary font-medium">84% Acceptance</span>
+</div>
+</a>
+<a class="p-3 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-all group flex flex-col gap-1.5" href="#">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps text-primary-fixed-dim">UBER · 5A</span>
+<span class="px-1.5 py-0.5 rounded bg-error-container/30 text-error font-badge-label text-badge-label">Principal</span>
+</div>
+<span class="font-body-sm text-body-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
+                Geo-Distributed Geospatial Sharding with H3 Hexagonal Indexes
+              </span>
+<div class="flex items-center gap-2 text-outline font-label-caps text-label-caps">
+<span class="">65 reports</span>
+<span class="">·</span>
+<span class="text-secondary font-medium">79% Acceptance</span>
+</div>
+</a>
+</div>
+</div>
+<div class="relative overflow-hidden p-space-md bg-surface-container-high rounded-xl shadow-sm flex flex-col gap-3">
+<div class="absolute -right-6 -bottom-6 w-28 h-28 bg-primary/10 rounded-full blur-xl pointer-events-none"></div>
+<div class="flex items-center gap-2 text-primary font-label-caps text-label-caps font-bold">
+<span class="material-symbols-outlined text-title-md">psychology</span>
+<span class="">AI SYNTHESIS AGENT</span>
+</div>
+<h5 class="font-title-md text-title-md font-semibold text-on-surface">Need a targeted breakdown?</h5>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Input an upcoming job description or custom system constraints to synthesize a personalized mock track in 30 seconds.
+          </p>
+<button class="w-full mt-1 py-2 px-space-md bg-surface-container-lowest hover:bg-surface-container text-on-surface font-badge-label text-badge-label rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm" type="button">
+<span class="material-symbols-outlined text-title-md text-secondary">auto_fix_high</span>
+<span class="">Synthesize Custom Track</span>
+</button>
+</div>
+<div class="p-space-md bg-surface-container-low rounded-xl shadow-sm flex flex-col gap-3">
+<span class="font-label-caps text-label-caps text-outline uppercase">RECENT CONTRIBUTIONS</span>
+<div class="flex items-center gap-3">
+<img alt="Contributor" class="w-9 h-9 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLKSPzveQb9xw9S2vU1GQXoQbfKi7_Y4NFPgv-D_mr5gbSoHyF5K1RRhhaRXnMKjW3UU0Uht5giynKqpOVvxBB6B9tzXyRCwjYaow4nEdmJhU-mpOy-4cdIrmlw2vdHvVkW6QolxD4FnRMC7MtsyQiarFP4kCGrjKZ81B67ojfnRBp6DuyZ1BYMhfvVonymPaQDdvhPifl2u6-8UqMU1wmt6F-vjX39KmY5icRV3w">
+<div class="flex flex-col min-w-0">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface truncate">Alexei Voronov</span>
+<span class="font-label-caps text-label-caps text-secondary truncate">Staff Architect @ Netflix</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Merged PR #412: "ZGC Generational Heuristics Tuning under 200GB Heap Load".
+          </p>
+<span class="font-label-caps text-label-caps text-outline">Verified 2 hours ago</span>
+</div>
+</aside>
+</div>
+</div>
+</div></main><footer class="w-full bg-surface-container-lowest py-space-lg px-space-lg shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full flex flex-col md:flex-row items-center justify-between gap-space-md text-on-surface-variant"><div class="flex items-center gap-space-md font-body-sm text-body-sm"><span class="">Know<span class="text-primary font-semibold">Stack</span> Core Docs · Status: <span class="text-secondary font-medium">Operational</span></span><span class="hidden sm:inline font-label-caps text-label-caps text-outline bg-surface-container-low px-2 py-0.5 rounded">Press ? for shortcuts</span></div><div class="flex items-center gap-space-lg font-body-sm text-body-sm"><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">GitHub</a><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">Discord Community</a><a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">API Spec</a></div></div></footer></div>
+
+</body></html>
