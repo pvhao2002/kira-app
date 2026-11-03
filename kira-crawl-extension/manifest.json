@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Kira Crawl Extension",
+  "version": "0.1.0",
+  "description": "Fetches AiScore data in the user's own browser session and forwards raw bytes to kira-queue.",
+  "permissions": ["alarms", "storage", "scripting", "tabs", "notifications"],
+  "host_permissions": [
+    "https://www.aiscore.com/*",
+    "https://api.aiscore.com/*"
+  ],
+  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "action": { "default_title": "Kira Crawl" },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "options_ui": { "page": "options.html", "open_in_tab": true }
+}

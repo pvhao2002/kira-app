@@ -23,6 +23,10 @@ public class DateCrawlService {
         var lane = playwrightManager.getLaneByDate();
         var finalUrl = DATE_URL_TEMPLATE.formatted(date);
         var body = lane.withPage(page -> aiscorePageFetchClient.fetchOptional(page, finalUrl));
+        return mapMatches(date, body);
+    }
+
+    public MatchesResponseDto mapMatches(String date, byte[] body) {
         var decoded = aiscoreProtobufService.decodeMatches(body);
         var matches = asArray(decoded.get("matches"));
         var events = matches.stream()

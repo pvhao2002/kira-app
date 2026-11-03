@@ -7,6 +7,7 @@ import lombok.extern.java.Log;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -162,6 +163,20 @@ public class CrawDateServiceV2 {
         }
     }
 
+    /**
+     * Persist already-mapped matches (e.g. from the browser extension). Upsert by external_id, idempotent.
+     * One transaction: the crawl_date upsert takes the row's X lock first, so concurrent requests for the
+     * same date (any instance) run one after another instead of interleaving.
+     */
+    @Transactional
+    public void persistDate(String date, List<CrawledMatchBundleDto> events) {
+        var list = events == null ? List.<CrawledMatchBundleDto>of() : events;
+        // ensure the crawl_date row exists; the final status write is a plain UPDATE
+        jdbcTemplate.update(SQL_START_CRAWL_DATE, new MapSqlParameterSource("date", date));
+        persistEvents(list);
+        updateCrawlDateStatus(date, DONE, list.size(), null);
+    }
+
     private void updateCrawlDateStatus(String date, String status, int totalEvents, String errorMessage) {
         jdbcTemplate.update(
                 SQL_CRAWL_DATE,
@@ -177,7 +192,8 @@ public class CrawDateServiceV2 {
             return;
         }
 
-        Map<String, MapSqlParameterSource> leagueParamsByName = new LinkedHashMap<>();
+        // Sorted maps/lists: every transaction locks rows in the same key order, so concurrent writers cannot deadlock on each other.
+        Map<String, MapSqlParameterSource> leagueParamsByName = new TreeMap<>();
         for (CrawledMatchBundleDto bundle : events) {
             CrawlLeagueDto league = bundle.league();
             if (league == null || !StringUtils.hasText(league.leagueName())) {
@@ -187,7 +203,7 @@ public class CrawDateServiceV2 {
         }
         JdbcBatchUtils.batchInsertSafe(jdbcTemplate, SQL_UPSERT_LEAGUE, new ArrayList<>(leagueParamsByName.values()));
 
-        Map<String, MapSqlParameterSource> teamParamsByName = new LinkedHashMap<>();
+        Map<String, MapSqlParameterSource> teamParamsByName = new TreeMap<>();
         for (CrawledMatchBundleDto bundle : events) {
             addTeamParams(teamParamsByName, bundle.homeTeam());
             addTeamParams(teamParamsByName, bundle.awayTeam());
@@ -232,6 +248,7 @@ public class CrawDateServiceV2 {
             Integer awayId = resolveTeamId(awayTeam, teamIdByExternalId, teamIdByName);
             eventParams.add(toEventParams(event, leagueId, homeId, awayId, statusLabelCache));
         }
+        eventParams.sort(Comparator.comparing(p -> String.valueOf(p.getValue("exid"))));
         JdbcBatchUtils.batchInsertSafe(jdbcTemplate, SQL_UPSERT_EVENT, eventParams);
 
         List<String> exIds = eventParams.stream()

@@ -52,6 +52,9 @@ server:
     min-response-size: 512
 
 kira:
+  extension:
+    # SHA-256 hex of the browser-extension bearer token. Empty = /ext/* always 401.
+    token-sha256: ${KIRA_EXTENSION_TOKEN_SHA256:}
   queue:
     consumer:
       date-enabled: ${KIRA_QUEUE_CONSUMER_DATE_ENABLED:${KIRA_QUEUE_CONSUMER_ENABLED:false}}

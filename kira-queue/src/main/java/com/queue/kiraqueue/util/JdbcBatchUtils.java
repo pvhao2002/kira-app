@@ -2,8 +2,10 @@ package com.queue.kiraqueue.util;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.java.Log;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
@@ -27,9 +29,22 @@ public class JdbcBatchUtils {
                 jdbcTemplate.batchUpdate(sql, subList.toArray(MapSqlParameterSource[]::new));
                 log.fine("JdbcBatchUtils >> batchInsertSafe >> Batch insert successful for range " + i + "-" + (end - 1));
             } catch (Exception e) {
+                rethrowIfTransactionLost(e);
                 log.warning("JdbcBatchUtils >> batch insert failed for range " + i + "-" + (end - 1) + ": " + e.getMessage());
                 insertRangeOneByOne(jdbcTemplate, sql, subList, i, end);
             }
+        }
+    }
+
+    /**
+     * Inside a transaction a MySQL deadlock rolls back the whole transaction; continuing row by row
+     * would commit a half-applied write. Propagate so the caller can retry the transaction.
+     * Outside a transaction (autocommit) the old fallback behaviour is kept.
+     */
+    private static void rethrowIfTransactionLost(Exception e) {
+        if (e instanceof PessimisticLockingFailureException lockFailure
+                && TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw lockFailure;
         }
     }
 
@@ -41,6 +56,7 @@ public class JdbcBatchUtils {
             try {
                 jdbcTemplate.update(sql, param);
             } catch (Exception e) {
+                rethrowIfTransactionLost(e);
                 log.warning("JdbcBatchUtils >> insert row " + (startIdx + j) + " failed: " + e.getMessage() + ", param=" + param);
             }
         }

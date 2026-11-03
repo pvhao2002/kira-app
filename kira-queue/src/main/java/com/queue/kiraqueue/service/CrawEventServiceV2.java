@@ -11,6 +11,7 @@ import lombok.extern.java.Log;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -41,7 +42,7 @@ public class CrawEventServiceV2 {
             "AISCORE_ODDS_DETAIL_FETCH_FAILED"
     );
 
-    private static final String SQL_SELECT_EVENT = """
+    private static final String SQL_SELECT_EVENT_BASE = """
             select e.event_id,
                    e.external_id                 match_id,
                    e.link,
@@ -55,8 +56,14 @@ public class CrawEventServiceV2 {
               on r.status_type = 'status_id'
              and r.code = e.status_id
              and r.sport_id = 1
-            where e.event_id = :eventId
             """;
+
+    private static final String SQL_SELECT_EVENT = SQL_SELECT_EVENT_BASE + "where e.event_id = :eventId\n";
+
+    private static final String SQL_SELECT_EVENT_BY_EXTERNAL_ID =
+            SQL_SELECT_EVENT_BASE + "where e.external_id = :externalId\n";
+
+    private static final String SQL_LOCK_EVENT = "select event_id from events where event_id = :event_id for update";
 
     private static final String SQL_CLEAR_EVENT_ODDS_FLAGS = """
             update events
@@ -207,9 +214,17 @@ public class CrawEventServiceV2 {
     }
 
     private EventRow loadEventRow(long eventId) {
+        return queryEventRow(SQL_SELECT_EVENT, Map.of("eventId", eventId));
+    }
+
+    public EventRow loadEventRowByExternalId(String externalId) {
+        return queryEventRow(SQL_SELECT_EVENT_BY_EXTERNAL_ID, Map.of("externalId", externalId));
+    }
+
+    private EventRow queryEventRow(String sql, Map<String, Object> params) {
         return jdbcTemplate.query(
-                SQL_SELECT_EVENT,
-                Map.of("eventId", eventId),
+                sql,
+                params,
                 (rs, rn) -> new EventRow(
                         rs.getLong("event_id"),
                         rs.getString("link"),
@@ -243,7 +258,13 @@ public class CrawEventServiceV2 {
         updateEventClaim(eventId, "completed", des);
     }
 
-    private void persistCrawlResult(long eventId, MatchOddsResponseDto response) {
+    // Transactional only via the Spring proxy (extension controller); internal self-calls stay as before.
+    // Lock order: the events row first (FOR UPDATE), then its child tables. Writers for the same event are
+    // serialized across instances; without it, two "delete where event_id" on an empty range share gap locks
+    // and their following inserts deadlock.
+    @Transactional
+    public void persistCrawlResult(long eventId, MatchOddsResponseDto response) {
+        jdbcTemplate.queryForList(SQL_LOCK_EVENT, Map.of("event_id", eventId), Long.class);
         if (CollectionUtils.isEmpty(response.odds())) {
             clearEventOddsFlags(eventId);
         }

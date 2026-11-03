@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Kira Crawl Options</title>
+  <style>body{font:14px system-ui;max-width:480px;margin:24px auto}label{display:block;margin:12px 0}input{width:100%;box-sizing:border-box}</style>
+</head>
+<body>
+  <h3>Kira Crawl Extension</h3>
+  <label>Backend base URL (include /queue), e.g. https://host/queue
+    <input id="baseUrl" type="url" placeholder="http://localhost:2323/queue"></label>
+  <label>Extension token (plain; backend stores only its SHA-256)
+    <input id="token" type="password" autocomplete="off"></label>
+  <label>AiScore requests per second (1-10)
+    <input id="rps" type="number" min="1" max="10" step="1" value="1"></label>
+  <button id="save">Save</button> <span id="msg"></span>
+  <script type="module" src="options.js"></script>
+</body>
+</html>
