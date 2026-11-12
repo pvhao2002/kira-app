@@ -48,11 +48,6 @@ server {
     proxy_next_upstream_tries 2;
   }
 
-  # tool-service (Spring context-path: /tool-service)
-  location /tool-service/ {
-    proxy_pass http://kira_tool_service_upstream;
-  }
-
   # kira-ui (ng serve on host; must be last so /api, /gateway, etc. stay on backends)
   location / {
     proxy_pass http://kira_ui_upstream;
@@ -87,11 +82,6 @@ upstream kira_data_manager_upstream {
   # entries point to the same port (single-instance dev via nginx/.env).
   server ${KIRA_DATA_MANAGER_HOST_1}:${KIRA_DATA_MANAGER_PORT_1} max_fails=0;
   server ${KIRA_DATA_MANAGER_HOST_2}:${KIRA_DATA_MANAGER_PORT_2} max_fails=0;
-  keepalive 32;
-}
-
-upstream kira_tool_service_upstream {
-  server ${KIRA_TOOL_SERVICE_HOST}:${KIRA_TOOL_SERVICE_PORT};
   keepalive 32;
 }
 

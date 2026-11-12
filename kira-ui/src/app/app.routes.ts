@@ -17,7 +17,6 @@ import {Profile} from './components/profile/profile';
 import {Transactions} from './components/transactions/transactions';
 import {Results} from './components/results/results';
 import {MatchDetail} from './components/match-detail/match-detail';
-import {Tools} from './components/tools/tools';
 import {AddTransaction} from './components/add-transaction/add-transaction';
 import {Leagues} from './components/leagues/leagues';
 import {Notifications} from './components/notifications/notifications';
@@ -73,7 +72,6 @@ export const routes: Routes = [
       {path: 'cards/:creditCardId/payments', redirectTo: 'bank-card/cards/:creditCardId/payments', pathMatch: 'full'},
       {path: 'profile', component: Profile},
       {path: 'transactions', component: Transactions, ...adminOnly},
-      {path: 'tool', component: Tools, ...adminOnly},
       {path: 'transactions/add', component: AddTransaction, ...adminOnly},
       {path: 'leagues', component: Leagues, ...adminOnly},
       {path: 'notifications', component: Notifications, ...adminOnly},

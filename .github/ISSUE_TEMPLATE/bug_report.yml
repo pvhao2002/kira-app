@@ -19,7 +19,6 @@ body:
         - kira-queue
         - kira-data-manager
         - kira-crawl-java
-        - kira-tool-service
         - kira-websocket
         - kira-schema
         - kira-ui

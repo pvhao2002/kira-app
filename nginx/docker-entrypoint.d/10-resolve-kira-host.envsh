@@ -24,5 +24,4 @@ replace_kira_host KIRA_GATEWAY_HOST_1
 replace_kira_host KIRA_GATEWAY_HOST_2
 replace_kira_host KIRA_DATA_MANAGER_HOST_1
 replace_kira_host KIRA_DATA_MANAGER_HOST_2
-replace_kira_host KIRA_TOOL_SERVICE_HOST
 replace_kira_host KIRA_UI_HOST

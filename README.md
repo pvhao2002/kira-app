@@ -79,7 +79,6 @@ kira-app/
 ├── kira-queue/           RabbitMQ consumer, Playwright crawling, prediction engines
 ├── kira-data-manager/    DB-backed operational APIs
 ├── kira-crawl-java/      AiScore match & odds crawler (no Maven wrapper)
-├── kira-tool-service/    Drive / Scribd / Studocu / PDF utilities
 ├── kira-websocket/       Thin Spring WebSocket transport
 ├── kira-schema/          Shared JPA entities, enums, DTOs + manual SQL migrations
 ├── kira-ui/              Angular 21 web client
@@ -106,7 +105,6 @@ kira-app/
 | `kira-queue` | Consumes those jobs: Playwright crawling, gateway claim/callback calls, prediction engines |
 | `kira-data-manager` | Operational APIs over the database — crawl dates, claims, failures, leagues, teams, stats; can ask the producer to requeue work |
 | `kira-crawl-java` | Fetches and maps AiScore match & odds data via Playwright, on its own schedule |
-| `kira-tool-service` | Google Drive / Scribd / Studocu / PDF utilities, Playwright-assisted extraction |
 | `kira-websocket` | WebSocket transport only — no database, no business logic |
 | `kira-schema` | The data contract: shared JPA entities/enums/DTOs and hand-managed SQL migration scripts |
 
@@ -127,7 +125,7 @@ kira-app/
 - **Framework**: Spring Boot (Web, Security, Data JPA, AMQP, Actuator)
 - **Messaging**: RabbitMQ 3 (management image)
 - **Database**: MySQL 8
-- **Browser automation**: Playwright (`kira-queue`, `kira-crawl-java`, `kira-tool-service`)
+- **Browser automation**: Playwright (`kira-queue`, `kira-crawl-java`)
 - **Web**: Angular 21 + Tailwind CSS 4 + TypeScript
 - **Mobile**: Expo 54 / React Native 0.81 (Expo Router)
 - **Reverse proxy**: nginx 1.27-alpine
@@ -275,7 +273,6 @@ machine's LAN address rather than `localhost`.
                        └──────┬───────┘        └─────────────────┘  │
                               │                                     │ JPA
                               ├──────────────▶ kira-data-manager ───┤
-                              ├──────────────▶ kira-tool-service    │
                               └──────────────▶ kira-ui (static)     ▼
                                                                ┌─────────┐
   kira-producer ──publish──▶ RabbitMQ ──consume──▶ kira-queue ─│  MySQL  │
@@ -298,7 +295,6 @@ machine's LAN address rather than `localhost`.
 | `/queue/` | kira-queue | `host.docker.internal:2323` |
 | `/gateway/` | kira-gateway (round-robin over two instances) | `:6868`, `:6869` |
 | `/data/` | kira-data-manager (round-robin over two instances) | `:7777`, `:7778` |
-| `/tool-service/` | kira-tool-service | `:1406` |
 | `/` | kira-ui | `:4200` |
 | `/health` | nginx itself | static `200` |
 
@@ -447,7 +443,6 @@ placeholders, never hard-coded in source.
 | kira-data-manager (1 / 2) | `7777` / `7778` | `/data` |
 | kira-producer | `2311` | `/producer` |
 | kira-queue | `2323` | `/queue` |
-| kira-tool-service | `1406` | `/tool-service` |
 | kira-crawl-java | `4000` | — |
 | kira-websocket | `8080` (Spring default) | — |
 | MySQL | `3310` → `3306` | — |
@@ -784,7 +779,7 @@ issues go through [SECURITY.md](SECURITY.md), never a public issue.
 
 ### Good first contributions
 
-- Test coverage — most modules have none; `kira-producer`, `kira-data-manager`, `kira-tool-service`
+- Test coverage — most modules have none; `kira-producer`, `kira-data-manager`
   and `kira-schema` are entirely untested.
 - Documentation for individual modules and their APIs.
 - Replacing the hand-run SQL scripts in `kira-schema` with a proper migration tool.

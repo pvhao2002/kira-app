@@ -1,0 +1,6 @@
+# Build context is the parent directory; send only the service source.
+*
+!app/package.json
+!app/package-lock.json
+!app/src/**
+!deploy/patch-chrome-installer.mjs

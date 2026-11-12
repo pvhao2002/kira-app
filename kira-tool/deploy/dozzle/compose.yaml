@@ -1,0 +1,23 @@
+name: kira-tool-logs
+services:
+  dozzle:
+    image: amir20/dozzle@sha256:08cd5230e21e364241f3dcf26191f293166f7835654eb7e41168b9c685f0947b
+    restart: unless-stopped
+    mem_limit: 256m
+    memswap_limit: 256m
+    ports:
+      - '127.0.0.1:8088:8080'
+    environment:
+      DOZZLE_AUTH_PROVIDER: simple
+      DOZZLE_NO_ANALYTICS: 'true'
+      DOZZLE_ENABLE_ACTIONS: 'false'
+      DOZZLE_ENABLE_SHELL: 'false'
+      DOZZLE_FILTER: label=com.docker.compose.project=kira-tool
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'

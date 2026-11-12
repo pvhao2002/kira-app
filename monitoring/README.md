@@ -6,7 +6,7 @@ Theo dõi log: Promtail đọc từ **một folder chung** (service/UI chạy In
 
 Các service chạy trên IntelliJ ghi log vào **`logs/`** ở root project. Promtail đọc từ folder đó → không cần Docker cho app, đơn giản và nhanh.
 
-- **kira-service**, **kira-queue**, **tool-service**: đã cấu hình `logging.file.name` → `../logs/<tên>.log` (mặc định khi run từ thư mục module).
+- **kira-service**, **kira-queue**: đã cấu hình `logging.file.name` → `../logs/<tên>.log` (mặc định khi run từ thư mục module).
 - Nếu IntelliJ chạy với working directory khác (ví dụ root project): set env **`LOG_DIR`** = `logs` hoặc đường dẫn tuyệt đối tới `logs/`.
 - Trong Grafana (Loki): filter theo label **`service`**, ví dụ `{job="kira", service="kira-service"}`.
 

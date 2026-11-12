@@ -1,0 +1,92 @@
+/* Paper, ink and a highlighter. Every text/background pair meets WCAG AA (4.5:1);
+   the highlighter is only ever a background behind ink text. */
+:root {
+  --bg: #f1f2ec;
+  --surface: #ffffff;
+  --text: #1d2647;
+  --muted: #555b6b;
+  --border: #d7d9cf;
+  --accent: #2f44b0;
+  --accent-soft: #e7eaf8;
+  --marker: #f5d547;
+  --marker-hover: #ebc72a;
+  --marker-text: #1d2647;
+  --sheet-2: #e3e5dc;
+  --sheet-3: #d4d7cb;
+  --fold: #dfe1d7;
+  --code-bg: #1d2647;
+  --code-text: #e7eaf8;
+  --danger: #b3261e;
+  --danger-text: #ffffff;
+  --danger-soft: #fdeceb;
+  --ok: #15703a;
+  --ok-soft: #e3f6e9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121626;
+    --surface: #1b2034;
+    --text: #e9ebf2;
+    --muted: #a3a9ba;
+    --border: #2e3550;
+    --accent: #9daeff;
+    --accent-soft: #263058;
+    --sheet-2: #262c45;
+    --sheet-3: #303755;
+    --fold: #2b3250;
+    --code-bg: #0c0f1c;
+    --code-text: #e7eaf8;
+    --danger: #ff8a80;
+    --danger-text: #2a0705;
+    --danger-soft: #3a1714;
+    --ok: #6fd18f;
+    --ok-soft: #12291a;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.55 'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+button, input { font: inherit; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.btn:hover:not(:disabled) { border-color: var(--text); }
+.btn.primary { background: var(--marker); border-color: var(--marker); color: var(--marker-text); font-weight: 800; }
+.btn.primary:hover:not(:disabled) { background: var(--marker-hover); border-color: var(--marker-hover); }
+.btn.ghost-danger { color: var(--danger); }
+.btn.ghost-danger:hover:not(:disabled) { background: var(--danger-soft); border-color: var(--danger); }
+.btn.danger-solid { background: var(--danger); border-color: var(--danger); color: var(--danger-text); font-weight: 700; }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

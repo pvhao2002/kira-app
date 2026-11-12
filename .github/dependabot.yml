@@ -36,7 +36,6 @@ updates:
       - "/kira-queue"
       - "/kira-schema"
       - "/kira-service"
-      - "/kira-tool-service"
       - "/kira-websocket"
     schedule:
       interval: "weekly"

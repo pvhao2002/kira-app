@@ -2,7 +2,6 @@ const PROXY_CONFIG = [
   {
     context: [
       '/gateway',
-      '/tool-service',
       '/data'
     ],
     target: "http://localhost",

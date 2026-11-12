@@ -16,7 +16,6 @@ MacOS se route toi cac service local qua `host.docker.internal`.
 - `http://localhost/queue/...` -> `kira-queue` (`:2323`)
 - `http://localhost/gateway/...` -> load balance 2 instance `kira-gateway` (mac dinh `6868` / `6869`)
 - `http://localhost/data/...` -> load balance 2 instance `kira-data-manager` (context-path `/data`, mac dinh `7777` / `7778`)
-- `http://localhost/tool-service/...` -> `kira-tool-service` (`:1406`)
 - `http://localhost/healthz` -> health check Nginx
 
 ### Domain local (kira.local)
@@ -43,8 +42,6 @@ KIRA_DATA_MANAGER_HOST_1=host.docker.internal
 KIRA_DATA_MANAGER_PORT_1=7777
 KIRA_DATA_MANAGER_HOST_2=host.docker.internal
 KIRA_DATA_MANAGER_PORT_2=7778
-KIRA_TOOL_SERVICE_HOST=host.docker.internal
-KIRA_TOOL_SERVICE_PORT=1406
 KIRA_UI_HOST=host.docker.internal
 KIRA_UI_PORT=4200
 NGINX_SERVER_NAME=localhost kira.local

@@ -1,0 +1,43 @@
+name: kira-tool
+services:
+  service:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: kira-tool-service:local
+    restart: unless-stopped
+    init: true
+    mem_limit: 1g
+    memswap_limit: 1g
+    shm_size: 256m
+    environment:
+      TOOL_WORKERS: '1'
+      TOOL_DATA_DIR: /data
+      TOOL_STORAGE_DIR: /storage
+      TOOL_HEADLESS: 'false'
+      TOOL_COOKIE_SECURE: 'true'
+      TOOL_FORWARD_HEADERS: native
+    ports:
+      - '127.0.0.1:1407:1407'
+    volumes:
+      - ../data:/data
+      - ../storage:/storage
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  ui:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    mem_limit: 512m
+    memswap_limit: 512m
+    ports:
+      - '127.0.0.1:4202:80'
+    volumes:
+      - ../ui:/usr/share/nginx/html:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'

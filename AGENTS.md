@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This monorepo contains independent backend services and frontend apps. Java 21 Spring Boot services live in `kira-gateway`, `kira-queue`, `kira-producer`, `kira-data-manager`, `kira-crawl-java`, `kira-tool-service`, `kira-websocket`, and shared entities/schema code in `kira-schema`. Each Java service owns its own `pom.xml`, `src/main`, and `src/test` tree. The Angular web app is in `kira-ui`, with source under `kira-ui/src` and assets under `kira-ui/src/assets`. The Expo/React Native app is in `mobile-app`, with routes in `mobile-app/app`, shared UI in `mobile-app/components`, and assets in `mobile-app/assets`. Infrastructure and operations files live in `docker-compose*.yml`, `nginx`, `monitoring`, `mysql`, `scripts`, and `docs`.
+This monorepo contains independent backend services and frontend apps. Java 21 Spring Boot services live in `kira-gateway`, `kira-queue`, `kira-producer`, `kira-data-manager`, `kira-crawl-java`, `kira-websocket`, and shared entities/schema code in `kira-schema`. Each Java service owns its own `pom.xml`, `src/main`, and `src/test` tree. The Angular web app is in `kira-ui`, with source under `kira-ui/src` and assets under `kira-ui/src/assets`. The Expo/React Native app is in `mobile-app`, with routes in `mobile-app/app`, shared UI in `mobile-app/components`, and assets in `mobile-app/assets`. Infrastructure and operations files live in `docker-compose*.yml`, `nginx`, `monitoring`, `mysql`, `scripts`, and `docs`.
 
 ## Build, Test, and Development Commands
 

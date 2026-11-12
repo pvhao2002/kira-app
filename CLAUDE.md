@@ -15,7 +15,6 @@ Backend (Java 21, Spring Boot, own `pom.xml` + Maven wrapper each):
 - `kira-data-manager` — DB-backed operational APIs (crawl dates, claims, failures, leagues, teams, stats); can ask
   `kira-producer` to requeue work
 - `kira-crawl-java` — fetches/maps AiScore match & odds data via Playwright; scheduled crawling + gateway callbacks
-- `kira-tool-service` — Google Drive / Scribd / Studocu / PDF utilities, Playwright-assisted extraction
 - `kira-websocket` — thin Spring WebSocket transport (no DB/business logic)
 - `kira-schema` — shared JPA entities/enums/DTOs and manually managed SQL migration scripts (the data contract other
   Java services depend on)
@@ -72,7 +71,7 @@ run the focused tests for the code you change (TDD) and include them in verifica
   `src/main/resources/database/migrate`; `kira-bank-service`: Flyway under `src/main/resources/db/migration`).
 - Queue/consumer code must be redelivery-safe (ack only after success, no duplicate side effects) and must not put
   slow browser/DB work on the RabbitMQ listener thread.
-- Playwright-using services (`kira-queue`, `kira-crawl-java`, `kira-tool-service`) must release pages/contexts/streams
+- Playwright-using services (`kira-queue`, `kira-crawl-java`) must release pages/contexts/streams
   on every path and respect configured pool/timeout limits.
 - Secrets/config live in environment variables and `application.yml`/`.env`, never hard-coded; use the `.env*.example`
   files as the shape reference, never commit real secrets.

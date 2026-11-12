@@ -14,5 +14,4 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
   {label: 'Bank card', path: '/bank-card', icon: 'credit_card', roles: ['admin', 'user']},
   {label: 'Profile', path: '/profile', icon: 'person', roles: ['admin', 'user']},
   {label: 'Users', path: '/users', icon: 'people', roles: ['admin']},
-  {label: 'Tool', path: '/tool', icon: 'build', roles: ['admin']},
 ];
