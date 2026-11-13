@@ -22,14 +22,14 @@
     "zone.js": "~0.15.1"
   },
   "devDependencies": {
-    "@angular/build": "22.2.1",
-    "@angular/cli": "22.2.1",
+    "@angular/build": "22.2.7",
+    "@angular/cli": "22.2.7",
     "@angular/compiler-cli": "22.2.1",
     "@tailwindcss/postcss": "^4.1.11",
-    "happy-dom": "^20.0.0",
+    "happy-dom": "^21.0.4",
     "tailwindcss": "^4.1.11",
     "typescript": "~6.0.0",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "engines": {
     "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
