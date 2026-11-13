@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@angular/build": "^21.2.28",
-    "@angular/cli": "^21.2.28",
+    "@angular/cli": "^22.2.7",
     "@angular/compiler-cli": "^21.2.0",
     "@bufbuild/buf": "^1.75.0",
     "@bufbuild/protoc-gen-es": "^2.16.0",
