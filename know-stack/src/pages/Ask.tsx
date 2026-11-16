@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { api, ApiError, useApi } from '../api';
@@ -11,9 +12,9 @@ const DRAFT_KEY = 'ks-question-draft';
 const LANGS = ['Java 21', 'PostgreSQL', 'Go 1.22', 'Python 3.12', 'TypeScript'];
 const COMPANIES = ['Google', 'Amazon', 'Meta', 'Stripe', 'Fintech / HFT'];
 const URGENCY = [
-  { value: 'interview', title: 'Upcoming Interview (< 48 hours)', note: 'Fast-tracks the question to the top of the review queue', badge: 'High Priority' },
-  { value: 'standard', title: 'Standard Track Prep & Review', note: 'Standard review cycle (usually 4–12 hours)' },
-  { value: 'research', title: 'Deep Architecture Research', note: 'Thorough benchmark analysis & source references' },
+  { value: 'interview', title: 'Upcoming Interview (< 48 hours)', note: 'Let us know about your upcoming interview', badge: 'High Priority' },
+  { value: 'standard', title: 'Standard Track Prep & Review', note: 'Share a question for future coverage' },
+  { value: 'research', title: 'Deep Architecture Research', note: 'Explore a detailed architecture question' },
 ] as const;
 
 type Form = { title: string; domain: string; difficulty: Difficulty; context: string; code: string; codeLang: string; companies: string[]; urgency: string };
@@ -91,17 +92,17 @@ export function Ask() {
       <form onSubmit={submit} className="xl:col-span-2 flex flex-col gap-space-lg">
         <div>
           <div className="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm mb-2">
-            Community <span className="material-symbols-outlined text-title-md">chevron_right</span> <span className="text-primary">Submit Question</span>
+            Community <Icon name="chevron_right" className="text-title-md" /> <span className="text-primary">Submit Question</span>
           </div>
-          <h1 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface">Submit a Technical Concept or Interview Question</h1>
+          <h1 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface">What would you like to understand?</h1>
           <p className="font-body-md text-body-md text-on-surface-variant mt-2 max-w-[68ch]">
-            Stuck on a tricky system design problem, concurrency race condition, or framework quirk? Submit it for a curated breakdown and staff engineer verification.
+            Stuck on a tricky system design problem, concurrency race condition, or framework quirk? Share it as a question for future coverage.
           </p>
         </div>
 
         {done && (
           <div role="status" className="flex items-center gap-3 p-space-md rounded-xl bg-secondary-container/15 border border-secondary/30 text-secondary font-body-sm text-body-sm">
-            <span className="material-symbols-outlined">task_alt</span> Question submitted to the knowledge pipeline. Track it under “Your questions”.
+            <Icon name="task_alt"  /> Question submitted to the knowledge pipeline. Track it under “Your questions”.
           </div>
         )}
 
@@ -136,7 +137,7 @@ export function Ask() {
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-baseline flex-wrap gap-2">
               <label htmlFor="q-context" className={label}>Context & Architectural Details</label>
-              <span className="flex items-center gap-1 font-label-caps text-label-caps text-secondary"><span className="material-symbols-outlined text-title-md">check</span>Markdown supported</span>
+              <span className="flex items-center gap-1 font-label-caps text-label-caps text-secondary"><Icon name="check" className="text-title-md" />Markdown supported</span>
             </div>
             <p className="font-body-sm text-body-sm text-outline -mt-1">Describe the expected vs actual behavior, race condition, or interview scenario.</p>
             <textarea id="q-context" className={`${field} min-h-40 font-body-sm`} required minLength={20} value={form.context} onChange={(e) => set('context', e.target.value)} />
@@ -181,12 +182,12 @@ export function Ask() {
         {error && <ErrorBox message={error} />}
         <div className="flex flex-wrap items-center justify-between gap-space-md">
           <div className="flex items-center gap-2">
-            <button type="button" onClick={saveDraft} className="flex items-center gap-1.5 px-space-md h-9 rounded-lg border border-[#334155] hover:bg-[#1e293b] text-on-surface font-badge-label text-badge-label"><span className="material-symbols-outlined text-title-md">save</span>Save Draft</button>
-            <button type="button" aria-pressed={preview} onClick={() => setPreview((p) => !p)} className="flex items-center gap-1.5 px-space-md h-9 rounded-lg border border-[#334155] hover:bg-[#1e293b] text-on-surface font-badge-label text-badge-label"><span className="material-symbols-outlined text-title-md">visibility</span>{preview ? 'Hide Preview' : 'Preview'}</button>
+            <button type="button" onClick={saveDraft} className="flex items-center gap-1.5 px-space-md h-9 rounded-lg border border-[#334155] hover:bg-[#1e293b] text-on-surface font-badge-label text-badge-label"><Icon name="save" className="text-title-md" />Save Draft</button>
+            <button type="button" aria-pressed={preview} onClick={() => setPreview((p) => !p)} className="flex items-center gap-1.5 px-space-md h-9 rounded-lg border border-[#334155] hover:bg-[#1e293b] text-on-surface font-badge-label text-badge-label"><Icon name="visibility" className="text-title-md" />{preview ? 'Hide Preview' : 'Preview'}</button>
             {saved && <span role="status" className="font-body-sm text-body-sm text-outline">{saved}</span>}
           </div>
           <button type="submit" disabled={busy} className="flex items-center gap-2 px-space-lg h-10 rounded-lg bg-[#6366f1] hover:bg-[#4f46e5] text-white font-badge-label text-badge-label font-semibold disabled:opacity-60">
-            {user ? (busy ? 'Submitting…' : 'Submit to Knowledge Pipeline') : 'Sign in to Submit'}<span className="material-symbols-outlined text-title-md">arrow_forward</span>
+            {user ? (busy ? 'Submitting…' : 'Submit to Knowledge Pipeline') : 'Sign in to Submit'}<Icon name="arrow_forward" className="text-title-md" />
           </button>
         </div>
 
@@ -201,18 +202,18 @@ export function Ask() {
 
       <aside className="flex flex-col gap-space-md">
         <div className="p-space-md rounded-xl bg-surface-container-low flex flex-col gap-3">
-          <span className="flex items-center gap-2 font-title-md text-title-md text-on-surface"><span className="material-symbols-outlined text-[#fbbf24]">tips_and_updates</span>Crafting High-Yield Questions</span>
+          <span className="flex items-center gap-2 font-title-md text-title-md text-on-surface"><Icon name="tips_and_updates" className="text-[#fbbf24]" />Crafting High-Yield Questions</span>
           {[
             ['State explicit constraints:', 'thread counts, database versions, network latency, or memory ceilings.'],
             ['Minimal runnable snippets:', 'strip proprietary boilerplate; keep only the critical path.'],
             ['Detail observed behavior:', 'exceptions thrown, deadlocks, or why the current solution fails at scale.'],
           ].map(([b, t]) => (
-            <p key={b} className="flex gap-2 font-body-sm text-body-sm text-on-surface-variant"><span className="material-symbols-outlined text-secondary text-title-md">check_circle</span><span><strong className="text-on-surface">{b}</strong> {t}</span></p>
+            <p key={b} className="flex gap-2 font-body-sm text-body-sm text-on-surface-variant"><Icon name="check_circle" className="text-secondary text-title-md" /><span><strong className="text-on-surface">{b}</strong> {t}</span></p>
           ))}
         </div>
 
         <div className="p-space-md rounded-xl bg-surface-container-low flex flex-col gap-3">
-          <span className="flex items-center gap-2 font-title-md text-title-md text-on-surface"><span className="material-symbols-outlined text-primary">find_in_page</span>Similar Answered Topics</span>
+          <span className="flex items-center gap-2 font-title-md text-title-md text-on-surface"><Icon name="find_in_page" className="text-primary" />Similar Answered Topics</span>
           <p className="font-body-sm text-body-sm text-on-surface-variant">These deep-dives might answer your question immediately:</p>
           {similarQ.length < 8 ? (
             <p className="font-body-sm text-body-sm text-outline">Start typing a title to search the library.</p>

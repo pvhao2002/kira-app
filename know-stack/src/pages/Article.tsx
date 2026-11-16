@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api, ApiError, useApi } from '../api';
@@ -74,11 +75,11 @@ export function Article() {
 
   return (
     <div className="flex gap-space-xl w-full max-w-[1200px] mx-auto">
-      <article className="flex-1 min-w-0 max-w-[860px]">
+      <article className="flex-1 min-w-0 max-w-[760px]">
         <nav className="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm mb-space-md flex-wrap" aria-label="Breadcrumb">
-          <span className="material-symbols-outlined text-title-md">home</span>
-          <Link to="/" className="hover:text-primary">Library</Link>
-          <span className="material-symbols-outlined text-title-md">chevron_right</span>
+          <Icon name="home" className="text-title-md" />
+          <Link to="/" className="hover:text-primary">Study workspace</Link>
+          <Icon name="chevron_right" className="text-title-md" />
           <Link to={`/tracks/${a.categorySlug}`} className="hover:text-primary">{a.categoryName}</Link>
         </nav>
         {a.status === 'draft' && <div className="mb-space-md"><ErrorBox message="Draft preview — only admins can see this page." /></div>}
@@ -86,7 +87,7 @@ export function Article() {
           <DifficultyBadge level={a.difficulty} />
           {a.source === 'ai' && (
             <span className="px-2 py-0.5 rounded bg-secondary-container/15 text-secondary font-badge-label text-badge-label flex items-center gap-1">
-              <span className="material-symbols-outlined text-xs">verified</span> AI drafted · staff reviewed
+              <Icon name="verified" className="text-xs" /> AI drafted
             </span>
           )}
           {a.tags.map((t) => <TechBadge key={t}>{t}</TechBadge>)}
@@ -96,22 +97,22 @@ export function Article() {
 
         <div className="flex flex-wrap items-center justify-between gap-space-md py-space-md my-space-lg border-y border-outline-variant/30">
           <div className="flex flex-wrap items-center gap-space-md text-on-surface-variant font-body-sm text-body-sm">
-            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-title-md text-outline">visibility</span>{num(a.views)} views</span>
-            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-title-md text-outline">bookmark_added</span>{num(a.saves)} saves</span>
+            <span className="flex items-center gap-1"><Icon name="visibility" className="text-title-md text-outline" />{num(a.views)} views</span>
+            <span className="flex items-center gap-1"><Icon name="bookmark_added" className="text-title-md text-outline" />{num(a.saves)} saves</span>
             <span>{date(a.publishedAt)} · {a.readMinutes} min read</span>
           </div>
           <div className="flex items-center gap-1 print:hidden">
             <button type="button" onClick={listen} className="flex items-center gap-1.5 px-3 h-9 rounded-lg bg-surface-container text-on-surface font-badge-label text-badge-label hover:bg-surface-container-high">
-              <span className="material-symbols-outlined text-title-md text-primary">{speaking ? 'stop_circle' : 'play_circle'}</span>{speaking ? 'Stop' : 'Listen'}
+              <Icon name={speaking ? 'stop_circle' : 'play_circle'} />{speaking ? 'Stop' : 'Listen'}
             </button>
             <button type="button" aria-label={a.bookmarked ? 'Remove bookmark' : 'Bookmark'} aria-pressed={a.bookmarked} onClick={toggleBookmark} className={`${action} ${a.bookmarked ? 'text-primary' : ''}`}>
-              <span className="material-symbols-outlined text-title-md" style={a.bookmarked ? { fontVariationSettings: "'FILL' 1" } : undefined}>bookmark</span>
+              <Icon name="bookmark" />
             </button>
             <button type="button" aria-label="Copy link" onClick={copyLink} className={action}>
-              <span className="material-symbols-outlined text-title-md">{copied ? 'check' : 'content_copy'}</span>
+              <Icon name={copied ? 'check' : 'content_copy'} />
             </button>
             <button type="button" aria-label="Save as PDF" onClick={() => window.print()} className={action}>
-              <span className="material-symbols-outlined text-title-md">picture_as_pdf</span>
+              <Icon name="picture_as_pdf" className="text-title-md" />
             </button>
           </div>
         </div>
@@ -121,7 +122,7 @@ export function Article() {
         <div className="mt-space-xl p-space-lg rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-space-md print:hidden">
           <div>
             <p className="font-title-md text-title-md text-on-surface">Still have a follow-up question?</p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">Send it to the knowledge pipeline for a staff-reviewed breakdown.</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">Share the concept you’d like to understand better.</p>
           </div>
           <Link to="/ask" className="px-space-md py-2 bg-primary text-on-primary rounded-xl font-badge-label text-badge-label whitespace-nowrap">Ask a Question</Link>
         </div>
@@ -147,7 +148,7 @@ export function Article() {
             <div className="flex justify-between"><span>Difficulty</span><DifficultyBadge level={a.difficulty} /></div>
             <div className="flex justify-between"><span>Reading time</span><span className="text-on-surface">{a.readMinutes} min</span></div>
             <button type="button" onClick={exportMd} className="mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-[#334155] hover:bg-[#1e293b] text-on-surface font-badge-label text-badge-label">
-              <span className="material-symbols-outlined text-title-md">download</span> Export Markdown
+              <Icon name="download" className="text-title-md" /> Export Markdown
             </button>
           </div>
         </div>

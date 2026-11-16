@@ -1,3 +1,4 @@
+import { Icon } from './Icon';
 import { DIFFICULTY_LABEL, type Difficulty } from '../types';
 
 // DESIGN.md difficulty badge colors.
@@ -18,14 +19,14 @@ export const TechBadge = ({ children }: { children: string }) => (
 
 export const Spinner = ({ label = 'Loading…' }: { label?: string }) => (
   <div role="status" className="flex items-center gap-2 py-space-xl justify-center text-outline font-body-sm text-body-sm">
-    <span className="material-symbols-outlined animate-spin">progress_activity</span>
+    <Icon name="progress_activity" className="animate-spin" />
     {label}
   </div>
 );
 
 export const ErrorBox = ({ message, onRetry }: { message: string; onRetry?: () => void }) => (
   <div role="alert" className="flex items-center gap-3 p-space-md rounded-xl bg-error-container/20 border border-error/30 text-error font-body-sm text-body-sm">
-    <span className="material-symbols-outlined">error</span>
+    <Icon name="error" />
     <span className="flex-1">{message}</span>
     {onRetry && <button onClick={onRetry} className="underline" type="button">Retry</button>}
   </div>

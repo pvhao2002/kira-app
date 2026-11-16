@@ -1,0 +1,32 @@
+const paths: Record<string, string> = {
+  progress_activity: 'M22 12a10 10 0 1 1-10-10',
+  error: 'M12 7v6m0 4h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+  visibility: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+  task_alt: 'm7 12 3 3 7-7M22 12a10 10 0 1 1-10-10',
+  download: 'M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4',
+  save: 'M3 3h15l3 3v15H3ZM7 3v6h10V3M7 21v-7h10v7',
+  bookmark_added: 'M6 3h12v18l-6-4-6 4Zm3 6 2 2 4-4',
+  verified: 'm7 12 3 3 7-7M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+  check_circle: 'm7 12 3 3 7-7M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+  tips_and_updates: 'M9 18h6m-5 3h4M8 15a7 7 0 1 1 8 0l-1 3H9Z',
+  find_in_page: 'M5 2h10l4 4v16H5ZM14 2v5h5M16 18l-3-3M14 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+  home: 'M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z',
+  search: 'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',
+  bookmark: 'M6 3h12v18l-6-4-6 4Z', bookmarks: 'M6 3h12v18l-6-4-6 4Z',
+  arrow_forward: 'M4 12h16m-6-6 6 6-6 6', chevron_right: 'm9 5 7 7-7 7',
+  close: 'm6 6 12 12M6 18 18 6', menu: 'M4 6h16M4 12h16M4 18h16',
+  code: 'm8 5-7 7 7 7m8-14 7 7-7 7m-3-16-2 18',
+  terminal: 'm4 6 6 6-6 6m9 0h7', database: 'M3 5c0-4 18-4 18 0s-18 4-18 0v14c0 4 18 4 18 0V5M3 12c0 4 18 4 18 0',
+  cloud: 'M6 18a5 5 0 1 1 0-10 7 7 0 0 1 13 2 4 4 0 0 1 0 8Z',
+  account_tree: 'M3 3h6v6H3Zm12 12h6v6h-6Zm0-12h6v6h-6ZM9 6h6M12 6v12h3',
+  hub: 'M9 9h6v6H9ZM3 3l6 6m6 6 6 6M3 21l6-6m6-6 6-6',
+  schedule: 'M12 7v5l3 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+  help: 'M9 8a3 3 0 1 1 5 3c-2 1-2 2-2 3m0 3h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+  check: 'm4 12 5 5L20 6', logout: 'M9 3H4v18h5m6-15 6 6-6 6m-6-6h12',
+  content_copy: 'M9 9h12v12H9ZM5 15H3V3h12v2', picture_as_pdf: 'M6 2h8l4 4v16H6Zm8 0v5h5M9 13h6m-6 4h6',
+  play_circle: 'm10 7 7 5-7 5ZM22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+  stop_circle: 'M8 8h8v8H8ZM22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+};
+export function Icon({ name, className = '' }: { name: string; className?: string }) {
+  return <svg aria-hidden="true" className={`ks-icon ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"><path d={paths[name] ?? paths.code} /></svg>;
+}
