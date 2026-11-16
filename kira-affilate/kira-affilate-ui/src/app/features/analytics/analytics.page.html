@@ -1,0 +1,66 @@
+<div class="page">
+  <header>
+    <h1 data-testid="page-heading">Thống kê</h1>
+    <p class="muted mt-0.5">Số lượt nhấp không có trong Shopee Open API; hiệu quả từng liên kết chỉ theo dõi được qua Sub ID và chiến dịch.</p>
+  </header>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <app-date-range [(value)]="range"/>
+    <div class="seg" role="group" aria-label="Độ chi tiết biểu đồ">
+      @for (g of granularities; track g.id) {
+        <button type="button" [attr.aria-pressed]="granularity() === g.id" (click)="granularity.set(g.id)" [attr.data-testid]="'granularity-' + g.id">{{ g.label }}</button>
+      }
+    </div>
+  </div>
+
+  <section class="card card-pad" aria-labelledby="an-trend">
+    <h2 id="an-trend">Xu hướng doanh số và hoa hồng</h2>
+    <app-state-box class="mt-2 block" [loading]="series.isLoading()" [error]="series.error()" [empty]="!points().length" (retry)="series.reload()"
+                   emptyTitle="Chưa có đơn hàng trong khoảng thời gian này" [rows]="6">
+      <app-trend-chart [points]="points()"/>
+    </app-state-box>
+  </section>
+
+  <section class="card min-w-0" aria-labelledby="an-breakdown">
+    <div class="flex flex-wrap items-end justify-between gap-3 px-4 pt-4">
+      <div>
+        <h2 id="an-breakdown">Phân tích chi tiết</h2>
+        <label class="label mt-2" for="an-by">Phân tích theo</label>
+        <select id="an-by" class="input w-56 max-w-full" [(ngModel)]="by" data-testid="analytics-by">
+          @for (d of dimensions; track d.id) {
+            <option [value]="d.id">{{ d.label }}</option>
+          }
+        </select>
+      </div>
+      <button type="button" class="btn" [disabled]="!rows().length" (click)="exportCsv()" data-testid="analytics-export">Xuất CSV</button>
+    </div>
+    <app-state-box class="mt-3 block" [loading]="top.isLoading()" [error]="top.error()" [empty]="!rows().length" (retry)="top.reload()" [rows]="6"
+                   emptyTitle="Chưa có dữ liệu cho khoảng thời gian này">
+      <div class="table-wrap">
+        <table class="tbl" data-testid="analytics-table">
+          <caption class="sr-only">Phân tích theo {{ dimensionLabel() }}, tối đa 100 dòng</caption>
+          <thead>
+            <tr>
+              <th appSortHeader field="label" [sort]="sort()" (sortChange)="sort.set($event)">{{ dimensionLabel() }}</th>
+              <th appSortHeader class="num" field="orders" [sort]="sort()" (sortChange)="sort.set($event)">Đơn hàng</th>
+              <th appSortHeader class="num" field="items" [sort]="sort()" (sortChange)="sort.set($event)">Sản phẩm bán ra</th>
+              <th appSortHeader class="num" field="gmv" [sort]="sort()" (sortChange)="sort.set($event)">Doanh số (GMV)</th>
+              <th appSortHeader class="num" field="commission" [sort]="sort()" (sortChange)="sort.set($event)">Hoa hồng</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rows(); track r.key) {
+              <tr>
+                <td class="max-w-[360px] truncate" [title]="r.label">{{ r.label }}</td>
+                <td class="num">{{ formatNumber(r.orders) }}</td>
+                <td class="num">{{ formatNumber(r.items) }}</td>
+                <td class="num">{{ formatVnd(r.gmv) }}</td>
+                <td class="num">{{ formatVnd(r.commission) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </app-state-box>
+  </section>
+</div>

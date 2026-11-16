@@ -1,0 +1,8 @@
+<router-outlet/>
+<div class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4" aria-live="polite" role="status">
+  @if (toast.current(); as t) {
+    <div class="pointer-events-auto max-w-md rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-lg"
+         [class.bg-ink]="t.kind === 'info'" [class.bg-ok]="t.kind === 'success'" [class.bg-danger]="t.kind === 'error'"
+         data-testid="toast">{{ t.message }}</div>
+  }
+</div>

@@ -1,0 +1,100 @@
+<div class="page">
+  <header class="flex flex-wrap items-center justify-between gap-3">
+    <h1 data-testid="page-heading">Tổng quan</h1>
+    @if (connected()) {
+      <app-sync-chip (synced)="reload()"/>
+    }
+  </header>
+
+  @if (!connected()) {
+    <section class="card" aria-label="Trạng thái kết nối Shopee">
+      <app-state-box [loading]="credentials.isLoading()" [error]="credentials.error()" [empty]="true" (retry)="credentials.reload()"
+                     emptyTitle="Chưa kết nối Shopee Affiliate"
+                     emptyText="Nhập App ID và Secret của Shopee Affiliate Open API để đồng bộ đơn hàng, hoa hồng và tạo liên kết.">
+        <a empty-action class="btn btn-primary mt-2" routerLink="/app/settings" data-testid="dashboard-not-connected">Đi tới Cài đặt</a>
+      </app-state-box>
+    </section>
+  } @else {
+    <div class="flex flex-wrap items-center gap-2">
+      <app-date-range [(value)]="range"/>
+      <div class="seg" role="group" aria-label="Độ chi tiết biểu đồ">
+        @for (g of granularities; track g.id) {
+          <button type="button" [attr.aria-pressed]="granularity() === g.id" (click)="granularity.set(g.id)" [attr.data-testid]="'granularity-' + g.id">{{ g.label }}</button>
+        }
+      </div>
+    </div>
+
+    <section aria-label="Chỉ số chính">
+      <app-state-box class="block" [class.card]="!cards().length" [loading]="summary.isLoading()" [error]="summary.error()" (retry)="summary.reload()">
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4" data-testid="dashboard-stats">
+          @for (c of cards(); track c.id) {
+            <app-stat-card [label]="c.label" [value]="c.value" [hint]="c.hint" [accent]="c.id === 'confirmed'" [attr.data-testid]="'stat-' + c.id"/>
+          }
+          <app-stat-card label="Lượt nhấp" data-testid="stat-clicks">
+            <p class="mt-1 text-[13px] text-muted">Shopee Open API không cung cấp số lượt nhấp.
+              <a class="link" href="https://affiliate.shopee.vn" target="_blank" rel="noopener noreferrer">Xem trên Shopee Affiliate<span class="sr-only"> (mở trong tab mới)</span></a></p>
+          </app-stat-card>
+          <app-stat-card label="Tỷ lệ chuyển đổi" data-testid="stat-conversion">
+            <p class="mt-1 text-[13px] text-muted">Shopee Open API không cung cấp số lượt nhấp.
+              <a class="link" href="https://affiliate.shopee.vn" target="_blank" rel="noopener noreferrer">Xem trên Shopee Affiliate<span class="sr-only"> (mở trong tab mới)</span></a></p>
+          </app-stat-card>
+        </div>
+      </app-state-box>
+    </section>
+
+    <section class="card card-pad" aria-labelledby="dash-trend">
+      <h2 id="dash-trend">Xu hướng doanh số và hoa hồng</h2>
+      <app-state-box class="mt-2 block" [loading]="series.isLoading()" [error]="series.error()" [empty]="!points().length" (retry)="series.reload()"
+                     emptyTitle="Chưa có đơn hàng trong khoảng thời gian này" [rows]="6">
+        <app-trend-chart [points]="points()"/>
+      </app-state-box>
+    </section>
+
+    <div class="grid gap-4 lg:grid-cols-3">
+      @for (t of tops; track t.title) {
+        <section class="card min-w-0" [attr.aria-label]="t.title">
+          <h2 class="px-4 pt-4">{{ t.title }}</h2>
+          <app-state-box class="mt-2 block" [loading]="t.res.isLoading()" [error]="t.res.error()" [empty]="!rows(t.res).length" (retry)="t.res.reload()"
+                         emptyTitle="Chưa có dữ liệu">
+            <div class="table-wrap">
+              <table class="tbl">
+                <thead><tr><th scope="col">{{ t.column }}</th><th scope="col" class="num">Đơn</th><th scope="col" class="num">Hoa hồng</th></tr></thead>
+                <tbody>
+                  @for (r of rows(t.res); track r.key) {
+                    <tr><td class="max-w-[220px] truncate" [title]="r.label">{{ r.label }}</td><td class="num">{{ formatNumber(r.orders) }}</td><td class="num">{{ formatVnd(r.commission) }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </app-state-box>
+        </section>
+      }
+    </div>
+
+    <section class="card min-w-0" aria-labelledby="dash-recent">
+      <div class="flex items-center justify-between gap-3 px-4 pt-4">
+        <h2 id="dash-recent">Đơn hàng gần đây</h2>
+        <a class="link text-[13px]" routerLink="/app/orders">Xem tất cả</a>
+      </div>
+      <app-state-box class="mt-2 block" [loading]="recent.isLoading()" [error]="recent.error()" [empty]="!recentRows().length" (retry)="recent.reload()"
+                     emptyTitle="Chưa có đơn hàng" emptyText="Đơn hàng sẽ xuất hiện sau lần đồng bộ đầu tiên với Shopee.">
+        <div class="table-wrap">
+          <table class="tbl" data-testid="dashboard-recent-orders">
+            <thead><tr><th scope="col">Thời gian mua</th><th scope="col">Sản phẩm</th><th scope="col" class="num">Giá trị đơn</th><th scope="col" class="num">Hoa hồng</th><th scope="col">Trạng thái hoa hồng</th></tr></thead>
+            <tbody>
+              @for (o of recentRows(); track o.id) {
+                <tr>
+                  <td class="whitespace-nowrap">{{ formatDateTime(o.purchaseTime) }}</td>
+                  <td class="max-w-[320px] truncate" [title]="o.itemName">{{ o.itemName }}</td>
+                  <td class="num">{{ formatVnd(o.actualAmount) }}</td>
+                  <td class="num">{{ formatVnd(o.commission) }}</td>
+                  <td><app-status-badge [status]="o.bucket"/></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </app-state-box>
+    </section>
+  }
+</div>

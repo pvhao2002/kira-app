@@ -1,0 +1,217 @@
+<div class="page">
+  <header class="flex flex-wrap items-center justify-between gap-3">
+    <h1 data-testid="page-heading">Đơn hàng & Hoa hồng</h1>
+    <app-sync-chip (synced)="afterSync()"/>
+  </header>
+
+  <section class="card card-pad" aria-labelledby="ord-buckets">
+    <h2 id="ord-buckets">Cách đọc trạng thái hoa hồng</h2>
+    <dl class="mt-2 grid gap-x-6 gap-y-2 md:grid-cols-2">
+      @for (b of buckets; track b.id) {
+        <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <dt><app-status-badge [status]="b.id"/></dt>
+          <dd class="text-[13px] text-muted">{{ b.meaning }}</dd>
+        </div>
+      }
+    </dl>
+    <p class="mt-3 text-[13px] font-medium">API của Shopee không có trạng thái “đã thanh toán”: khoản thực nhận chỉ xác định được qua báo cáo đối soát.</p>
+  </section>
+
+  <div class="card card-pad flex flex-col gap-3">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_180px_220px]">
+      <form (ngSubmit)="applySearch()" role="search">
+        <label class="label" for="ord-search">Tìm kiếm</label>
+        <div class="flex gap-2">
+          <input id="ord-search" name="search" class="input" type="search" placeholder="Mã đơn, tên sản phẩm, shop hoặc Sub ID" [(ngModel)]="searchDraft" data-testid="orders-search">
+          <button type="submit" class="btn" data-testid="orders-search-submit">Tìm</button>
+        </div>
+      </form>
+      <div>
+        <label class="label" for="ord-status">Trạng thái đơn (Shopee)</label>
+        <select id="ord-status" class="input" [(ngModel)]="orderStatus" data-testid="orders-status">
+          <option value="">Tất cả</option>
+          @for (s of orderStatuses; track s) {
+            <option [value]="s">{{ statusLabel(s) }} ({{ s }})</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="label" for="ord-bucket">Trạng thái hoa hồng</label>
+        <select id="ord-bucket" class="input" [(ngModel)]="bucket" data-testid="orders-bucket">
+          <option value="">Tất cả</option>
+          <option value="ESTIMATED">Ước tính</option>
+          <option value="CONFIRMED">Đã xác nhận</option>
+          <option value="REJECTED">Bị hủy</option>
+          <option value="VALIDATED">Đã đối soát thanh toán</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <app-date-range [(value)]="range"/>
+      <button type="button" class="btn" [disabled]="exporting()" (click)="exportCsv()" data-testid="orders-export">{{ exporting() ? 'Đang xuất…' : 'Xuất CSV' }}</button>
+    </div>
+  </div>
+
+  <section class="card min-w-0" aria-label="Danh sách đơn hàng">
+    <app-state-box [loading]="orders.isLoading()" [error]="orders.error()" [empty]="!rows().length" (retry)="orders.reload()" [rows]="8"
+                   emptyTitle="Không có đơn hàng nào" emptyText="Chưa có đơn khớp với bộ lọc. Hãy đổi khoảng thời gian hoặc đồng bộ dữ liệu từ Shopee.">
+      <div class="table-wrap">
+        <table class="tbl" data-testid="orders-table">
+          <thead>
+            <tr>
+              <th appSortHeader field="purchaseTime" [sort]="sort()" (sortChange)="sort.set($event)">Thời gian mua</th>
+              <th scope="col">Sản phẩm</th>
+              <th scope="col">Shop</th>
+              <th scope="col" class="num">SL</th>
+              <th appSortHeader class="num" field="actualAmount" [sort]="sort()" (sortChange)="sort.set($event)">Giá trị đơn</th>
+              <th appSortHeader class="num" field="commission" [sort]="sort()" (sortChange)="sort.set($event)">Hoa hồng</th>
+              <th scope="col">Đơn</th>
+              <th scope="col">Hoa hồng</th>
+              <th scope="col">Sub ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (o of rows(); track o.id) {
+              <tr class="cursor-pointer transition-colors duration-150 hover:bg-canvas" (click)="open(o.id)">
+                <td class="whitespace-nowrap">{{ formatDateTime(o.purchaseTime) }}</td>
+                <td class="max-w-[280px]">
+                  <button type="button" class="link block max-w-full truncate text-left" [title]="o.itemName" (click)="$event.stopPropagation(); open(o.id)" data-testid="order-open">{{ o.itemName }}</button>
+                  <span class="text-xs text-muted">Mã đơn {{ o.orderId }}</span>
+                </td>
+                <td class="max-w-[160px] truncate">{{ o.shopName || '—' }}</td>
+                <td class="num">{{ formatNumber(o.qty) }}</td>
+                <td class="num">{{ formatVnd(o.actualAmount) }}</td>
+                <td class="num font-medium">{{ formatVnd(o.commission) }}</td>
+                <td><app-status-badge [status]="o.orderStatus"/></td>
+                <td><app-status-badge [status]="o.bucket"/></td>
+                <td class="whitespace-nowrap font-mono text-xs">{{ o.utmContent || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (meta(); as m) {
+        <div class="border-t border-line"><app-pager [page]="m.page" [totalPages]="m.totalPages" [total]="m.totalElements" (pageChange)="page.set($event)"/></div>
+      }
+    </app-state-box>
+  </section>
+
+  <div class="grid gap-4 lg:grid-cols-2">
+    <section class="card min-w-0" aria-labelledby="ord-runs">
+      <h2 id="ord-runs" class="px-4 pt-4">Lịch sử đồng bộ</h2>
+      <app-state-box class="mt-2 block" [loading]="runs.isLoading()" [error]="runs.error()" [empty]="!runRows().length" (retry)="runs.reload()"
+                     emptyTitle="Chưa có lần đồng bộ nào" emptyText="Bấm “Đồng bộ ngay” để lấy đơn hàng từ Shopee.">
+        <div class="table-wrap">
+          <table class="tbl" data-testid="sync-runs">
+            <thead><tr><th scope="col">Bắt đầu</th><th scope="col">Loại</th><th scope="col">Trạng thái</th><th scope="col" class="num">Số dòng</th></tr></thead>
+            <tbody>
+              @for (r of runRows(); track r.id) {
+                <tr>
+                  <td class="whitespace-nowrap">{{ formatDateTime(r.startedAt) }}</td>
+                  <td class="whitespace-nowrap">{{ r.kind === 'VALIDATION' ? 'Đối soát' : 'Đơn hàng' }} · {{ r.trigger === 'MANUAL' ? 'Thủ công' : 'Tự động' }}</td>
+                  <td>
+                    <app-status-badge [status]="r.status"/>
+                    @if (r.errorMessage) {
+                      <p class="mt-1 max-w-[260px] text-xs text-danger">{{ r.errorMessage }}</p>
+                    }
+                  </td>
+                  <td class="num">{{ formatNumber(r.rowsUpserted) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (runMeta(); as m) {
+          <div class="border-t border-line"><app-pager [page]="m.page" [totalPages]="m.totalPages" [total]="m.totalElements" (pageChange)="runsPage.set($event)"/></div>
+        }
+      </app-state-box>
+    </section>
+
+    <section class="card min-w-0" aria-labelledby="ord-validations">
+      <div class="px-4 pt-4">
+        <h2 id="ord-validations">Đối soát thanh toán</h2>
+        <p class="muted mt-1">Nhập mã đối soát (validationId) trong báo cáo thanh toán của Shopee Affiliate để đánh dấu các đơn đã được Shopee đối soát.</p>
+        <form class="mt-3" (ngSubmit)="importValidation()" novalidate>
+          <label class="label" for="ord-validation-id">Mã đối soát</label>
+          <div class="flex gap-2">
+            <input id="ord-validation-id" name="validationId" class="input" type="text" inputmode="numeric" autocomplete="off" maxlength="40" [(ngModel)]="validationId"
+                   [attr.aria-invalid]="!!validationError()" aria-describedby="ord-validation-error" data-testid="validation-id">
+            <button type="submit" class="btn btn-primary" [disabled]="importing()" data-testid="validation-submit">{{ importing() ? 'Đang gửi…' : 'Nhập báo cáo' }}</button>
+          </div>
+          @if (validationError()) {
+            <p id="ord-validation-error" class="field-error" role="alert" data-testid="validation-error">{{ validationError() }}</p>
+          }
+        </form>
+      </div>
+      <app-state-box class="mt-3 block border-t border-line" [loading]="validationsRes.isLoading()" [error]="validationsRes.error()" [empty]="!validations().length"
+                     (retry)="validationsRes.reload()" emptyTitle="Chưa nhập báo cáo đối soát nào">
+        <div class="table-wrap">
+          <table class="tbl" data-testid="validations-table">
+            <thead><tr><th scope="col">Mã đối soát</th><th scope="col">Thời điểm nhập</th><th scope="col" class="num">Số đơn</th><th scope="col" class="num">Tổng hoa hồng</th></tr></thead>
+            <tbody>
+              @for (v of validations(); track v.validationId) {
+                <tr>
+                  <td class="font-mono">{{ v.validationId }}</td>
+                  <td class="whitespace-nowrap">{{ formatDateTime(v.importedAt) }}</td>
+                  <td class="num">{{ formatNumber(v.conversions) }}</td>
+                  <td class="num">{{ formatVnd(v.totalCommission) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </app-state-box>
+    </section>
+  </div>
+</div>
+
+<dialog #drawer class="m-0 ml-auto h-dvh max-h-none w-full max-w-md border-l border-line bg-white p-0 text-ink backdrop:bg-ink/40"
+        aria-labelledby="ord-detail-title" (click)="backdropClose($event)" (close)="selectedId.set(undefined)" data-testid="order-drawer">
+  <div class="flex h-full flex-col">
+    <div class="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
+      <h2 id="ord-detail-title">Chi tiết đơn hàng</h2>
+      <button type="button" class="btn btn-sm" (click)="close()" data-testid="order-drawer-close">Đóng</button>
+    </div>
+    <div class="min-h-0 flex-1 overflow-y-auto">
+      <app-state-box [loading]="detail.isLoading()" [error]="detail.error()" [empty]="!order()" (retry)="detail.reload()" [rows]="8" emptyTitle="Chưa chọn đơn hàng">
+        @if (order(); as o) {
+          <div class="flex flex-col gap-4 p-4">
+            <div>
+              <p class="font-medium">{{ o.itemName }}</p>
+              <p class="muted">{{ o.shopName || '—' }}</p>
+              <div class="mt-2 flex flex-wrap gap-2"><app-status-badge [status]="o.orderStatus"/><app-status-badge [status]="o.bucket"/></div>
+            </div>
+            <dl class="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-4 gap-y-2 text-[13px] [&_dd]:text-right [&_dd]:break-words [&_dt]:text-muted">
+              <dt>Mã đơn</dt><dd class="font-mono">{{ o.orderId }}</dd>
+              <dt>Mã chuyển đổi</dt><dd class="font-mono">{{ o.conversionId }}</dd>
+              <dt>Mã sản phẩm</dt><dd class="font-mono">{{ o.itemId }}</dd>
+              <dt>Ngành hàng</dt><dd>{{ o.categoryLv1 || '—' }}</dd>
+              <dt>Số lượng</dt><dd>{{ formatNumber(o.qty) }}</dd>
+              <dt>Đơn giá</dt><dd>{{ formatVnd(o.itemPrice) }}</dd>
+              <dt>Giá trị đơn</dt><dd>{{ formatVnd(o.actualAmount) }}</dd>
+              <dt>Hoàn tiền</dt><dd>{{ formatVnd(o.refundAmount) }}</dd>
+              <dt class="font-medium !text-ink">Hoa hồng</dt><dd class="font-semibold">{{ formatVnd(o.commission) }}</dd>
+              <dt>Hoa hồng từ người bán</dt><dd>{{ formatVnd(o.itemSellerCommission) }}</dd>
+              <dt>Hoa hồng từ Shopee</dt><dd>{{ formatVnd(o.itemShopeeCommission) }}</dd>
+              <dt>Tổng hoa hồng chuyển đổi</dt><dd>{{ formatVnd(o.conversionTotalCommission) }}</dd>
+              <dt>Hoa hồng ròng chuyển đổi</dt><dd>{{ formatVnd(o.conversionNetCommission) }}</dd>
+              <dt>Thời gian nhấp</dt><dd>{{ formatDateTime(o.clickTime) }}</dd>
+              <dt>Thời gian mua</dt><dd>{{ formatDateTime(o.purchaseTime) }}</dd>
+              <dt>Thời gian hoàn thành</dt><dd>{{ formatDateTime(o.completeTime) }}</dd>
+              <dt>Sub ID</dt><dd class="font-mono">{{ o.utmContent || '—' }}</dd>
+              <dt>Loại người mua</dt><dd>{{ o.buyerType || '—' }}</dd>
+              <dt>Thiết bị</dt><dd>{{ o.device || '—' }}</dd>
+              <dt>Nguồn giới thiệu</dt><dd>{{ o.referrer || '—' }}</dd>
+              <dt>Kiểm tra gian lận</dt><dd>{{ o.fraudStatus || '—' }}</dd>
+              <dt>Mã đối soát</dt><dd class="font-mono">{{ o.validationId ?? '—' }}</dd>
+              <dt>Thời điểm đối soát</dt><dd>{{ formatDateTime(o.validatedAt) }}</dd>
+            </dl>
+            @if (o.itemNotes) {
+              <div><h3 class="text-xs font-semibold text-muted">Ghi chú từ Shopee</h3><p class="mt-1 text-[13px]">{{ o.itemNotes }}</p></div>
+            }
+          </div>
+        }
+      </app-state-box>
+    </div>
+  </div>
+</dialog>

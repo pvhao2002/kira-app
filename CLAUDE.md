@@ -33,6 +33,11 @@ Frontend / mobile:
   shared CRUD UI
 - `kira-bank/kira-life-mobile` — companion Expo app
 
+`kira-affilate` is a self-contained Shopee Affiliate platform for Vietnamese users (tracked in this repo):
+- `kira-affilate/kira-affilate-service` — Java 25 / Spring Boot 3.5 / MySQL / Flyway API (Shopee Affiliate Open API
+  client, link conversion, order sync, reports); `kira-affilate/kira-affilate-ui` — Angular 22 client (Vietnamese).
+  Rules and verify commands: `kira-affilate/AGENTS.override.md`; API contract: `kira-affilate/docs/api.md`.
+
 Infra/ops (not application code): `docker-compose*.yml`, `nginx/`, `monitoring/` (Grafana/Loki/Promtail), `mysql/`
 (primary+replica conf), `scripts/` (deploy, EC2 bootstrap, stack files), `docs/`.
 

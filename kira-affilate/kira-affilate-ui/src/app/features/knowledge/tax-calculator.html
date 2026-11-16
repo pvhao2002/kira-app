@@ -1,0 +1,60 @@
+<section class="card card-pad" aria-labelledby="tax-calc-title" data-testid="tax-calculator">
+  <h2 id="tax-calc-title">Ước tính thuế</h2>
+  <p class="muted mt-1">Kết quả chỉ để tham khảo, không thay thế tư vấn thuế hay quyết toán với cơ quan thuế.</p>
+
+  <form class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" (ngSubmit)="calculate()" novalidate>
+    <div>
+      <label class="label" for="tax-year">Năm tính thuế</label>
+      <select id="tax-year" name="year" class="input" [(ngModel)]="year" data-testid="tax-year">
+        @for (y of years; track y) {
+          <option [ngValue]="y">{{ y }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label class="label" for="tax-class">Đối tượng nộp thuế</label>
+      <select id="tax-class" name="taxpayerClass" class="input" [(ngModel)]="taxpayerClass" data-testid="tax-class">
+        <option value="">Chọn đối tượng</option>
+        @for (c of classes; track c.value) {
+          <option [value]="c.value">{{ c.label }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label class="label" for="tax-income">Thu nhập cả năm (VND)</label>
+      <input id="tax-income" name="annualIncome" class="input" type="number" inputmode="numeric" min="0" step="1000" [(ngModel)]="annualIncome" data-testid="tax-income">
+    </div>
+    <div>
+      <label class="label" for="tax-dependents">Số người phụ thuộc</label>
+      <input id="tax-dependents" name="dependents" class="input" type="number" inputmode="numeric" min="0" step="1" [(ngModel)]="dependents" data-testid="tax-dependents">
+    </div>
+    <div class="sm:col-span-2 lg:col-span-4">
+      <button type="submit" class="btn btn-primary" data-testid="tax-submit">Ước tính</button>
+      @if (inputError()) {
+        <p class="field-error" role="alert">{{ inputError() }}</p>
+      }
+    </div>
+  </form>
+
+  <div class="mt-4 rounded-lg border border-line" aria-live="polite" data-testid="tax-result">
+    <app-state-box [error]="error()" errorText="Chưa nạp được quy tắc tính thuế nên chưa thể ước tính." [empty]="!result()" emptyTitle="Chưa có kết quả"
+                   emptyText="Nhập thông tin rồi bấm Ước tính." (retry)="calculate()">
+      @if (result(); as r) {
+        <dl class="divide-y divide-line text-[13px]">
+          @for (line of r.lines; track $index) {
+            <div class="flex justify-between gap-4 px-4 py-2"><dt class="text-muted">{{ line.label }}</dt><dd class="tabular-nums">{{ formatVnd(line.amount) }}</dd></div>
+          }
+          <div class="flex justify-between gap-4 px-4 py-2"><dt class="text-muted">Thu nhập tính thuế</dt><dd class="tabular-nums">{{ formatVnd(r.taxableIncome) }}</dd></div>
+          <div class="flex justify-between gap-4 px-4 py-2.5 font-semibold"><dt>Thuế ước tính phải nộp</dt><dd class="tabular-nums" data-testid="tax-due">{{ formatVnd(r.taxDue) }}</dd></div>
+        </dl>
+        @if (r.notes.length) {
+          <ul class="list-disc space-y-1 border-t border-line px-4 py-3 pl-9 text-[13px] text-muted">
+            @for (n of r.notes; track $index) {
+              <li>{{ n }}</li>
+            }
+          </ul>
+        }
+      }
+    </app-state-box>
+  </div>
+</section>

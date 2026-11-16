@@ -1,0 +1,20 @@
+# Local development: MySQL only. Run the service with Maven and the UI with `npm start`.
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: kira-affilate-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MYSQL_DATABASE: kira_affiliate
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "127.0.0.1:3309:3306"
+    volumes:
+      - kira-affilate-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  kira-affilate-mysql:

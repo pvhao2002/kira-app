@@ -1,0 +1,59 @@
+<main class="grid min-h-dvh place-items-center p-4">
+  <div class="w-full max-w-sm">
+    <div class="mb-5 flex items-center justify-center gap-2.5">
+      <span aria-hidden="true" class="grid h-8 w-8 place-items-center rounded-lg bg-brand font-bold text-white">K</span>
+      <span class="text-base font-semibold">Kira Affiliate</span>
+    </div>
+    <div class="card p-6">
+      <h1 data-testid="auth-heading">{{ isRegister() ? 'Đăng ký' : 'Đăng nhập' }}</h1>
+      <p class="muted mt-1">{{ isRegister() ? 'Tạo tài khoản để quản lý liên kết và hoa hồng Shopee Affiliate.' : 'Đăng nhập để tiếp tục quản lý liên kết và hoa hồng.' }}</p>
+
+      <form class="mt-5 flex flex-col gap-4" (ngSubmit)="submit()" novalidate>
+        @if (isRegister()) {
+          <div>
+            <label class="label" for="auth-name">Họ tên</label>
+            <input id="auth-name" name="fullName" class="input" type="text" autocomplete="name" maxlength="120" [(ngModel)]="fullName"
+                   [attr.aria-invalid]="submitted() && !!errors().fullName" aria-describedby="auth-name-error" data-testid="auth-name">
+            @if (submitted() && errors().fullName) {
+              <p id="auth-name-error" class="field-error">{{ errors().fullName }}</p>
+            }
+          </div>
+        }
+        <div>
+          <label class="label" for="auth-email">Email</label>
+          <input id="auth-email" name="email" class="input" type="email" autocomplete="email" inputmode="email" [(ngModel)]="email"
+                 [attr.aria-invalid]="submitted() && !!errors().email" aria-describedby="auth-email-error" data-testid="auth-email">
+          @if (submitted() && errors().email) {
+            <p id="auth-email-error" class="field-error" data-testid="auth-email-error">{{ errors().email }}</p>
+          }
+        </div>
+        <div>
+          <label class="label" for="auth-password">Mật khẩu</label>
+          <input id="auth-password" name="password" class="input" type="password" maxlength="72"
+                 [autocomplete]="isRegister() ? 'new-password' : 'current-password'" [(ngModel)]="password"
+                 [attr.aria-invalid]="submitted() && !!errors().password" aria-describedby="auth-password-error" data-testid="auth-password">
+          @if (submitted() && errors().password) {
+            <p id="auth-password-error" class="field-error" data-testid="auth-password-error">{{ errors().password }}</p>
+          } @else if (isRegister()) {
+            <p id="auth-password-error" class="muted mt-1">Từ 8 đến 72 ký tự.</p>
+          }
+        </div>
+
+        @if (serverError()) {
+          <p class="rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger" role="alert" data-testid="auth-server-error">{{ serverError() }}</p>
+        }
+
+        <button type="submit" class="btn btn-primary w-full" [disabled]="busy()" data-testid="auth-submit">
+          {{ busy() ? 'Đang xử lý…' : isRegister() ? 'Tạo tài khoản' : 'Đăng nhập' }}
+        </button>
+      </form>
+    </div>
+    <p class="muted mt-4 text-center">
+      @if (isRegister()) {
+        Đã có tài khoản? <a class="link" routerLink="/login" data-testid="auth-to-login">Đăng nhập</a>
+      } @else {
+        Chưa có tài khoản? <a class="link" routerLink="/register" data-testid="auth-to-register">Đăng ký</a>
+      }
+    </p>
+  </div>
+</main>

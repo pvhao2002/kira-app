@@ -1,0 +1,39 @@
+package com.kira.affiliate.identity.infrastructure;
+
+import com.kira.affiliate.identity.application.JwtService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+@Component
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private final JwtService jwt;
+    private final UserRepository users;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws ServletException, IOException {
+        String header = req.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ") && SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                Long id = jwt.subject(header.substring(7));
+                users.findById(id).filter(u -> "ACTIVE".equals(u.getStatus()) && u.getDeletedAt() == null).ifPresent(u -> {
+                    var authorities = java.util.List.of(new SimpleGrantedAuthority("ROLE_USER"));
+                    SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(id, null, authorities));
+                });
+            } catch (
+                RuntimeException _) { /* invalid tokens are handled as unauthenticated; token value is never logged */ }
+        }
+        chain.doFilter(req, res);
+    }
+}
+

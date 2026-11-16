@@ -1,0 +1,104 @@
+<div class="page">
+  <header>
+    <h1 data-testid="page-heading">Chuyển đổi liên kết</h1>
+    <p class="muted mt-0.5">Dán liên kết Shopee để tạo liên kết tiếp thị rút gọn, có thể gắn Sub ID để theo dõi nguồn đơn.</p>
+  </header>
+
+  <form class="card card-pad flex flex-col gap-4" (ngSubmit)="convert()" novalidate>
+    <div>
+      <div class="flex items-baseline justify-between gap-3">
+        <label class="label" for="conv-urls">Liên kết Shopee</label>
+        <span class="muted tabular-nums" [class.text-danger]="urlCount() > maxUrls">{{ urlCount() }}/{{ maxUrls }}</span>
+      </div>
+      <textarea id="conv-urls" name="urls" class="input font-mono text-[13px]" rows="6" spellcheck="false" autocapitalize="off"
+                placeholder="https://shopee.vn/…" [(ngModel)]="text" [attr.aria-invalid]="errors().length > 0"
+                aria-describedby="conv-urls-help conv-errors" data-testid="convert-urls"></textarea>
+      <p id="conv-urls-help" class="muted mt-1">Mỗi dòng một liên kết, tối đa {{ maxUrls }} liên kết. Hỗ trợ shopee.vn, s.shopee.vn và shope.ee (https).</p>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
+      <div>
+        <label class="label" for="conv-campaign">Chiến dịch (không bắt buộc)</label>
+        <select id="conv-campaign" name="campaign" class="input" [(ngModel)]="campaignId" data-testid="convert-campaign">
+          <option value="">Không dùng chiến dịch</option>
+          @for (c of campaigns(); track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
+        </select>
+        @if (campaignsRes.error()) {
+          <p class="field-error">Không tải được danh sách chiến dịch. <button type="button" class="link" (click)="campaignsRes.reload()">Thử lại</button></p>
+        } @else {
+          <p class="muted mt-1">Chọn chiến dịch để dùng bộ Sub ID đã lưu.</p>
+        }
+      </div>
+      <fieldset [disabled]="!!campaignId()" class="min-w-0">
+        <legend class="label">Hoặc nhập Sub ID (tối đa 5)</legend>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          @for (id of subIds(); track $index) {
+            <div>
+              <label class="sr-only" [for]="'conv-sub-' + $index">Sub ID {{ $index + 1 }}</label>
+              <input class="input" type="text" maxlength="50" autocapitalize="off" spellcheck="false" [id]="'conv-sub-' + $index" [name]="'sub' + $index"
+                     [placeholder]="'Sub ID ' + ($index + 1)" [ngModel]="id" (ngModelChange)="setSubId($index, $event)"
+                     [attr.aria-invalid]="subIdInvalid(id)" [attr.data-testid]="'convert-sub-' + $index">
+            </div>
+          }
+        </div>
+        <p class="muted mt-1">{{ campaignId() ? 'Đang dùng Sub ID của chiến dịch đã chọn.' : 'Chỉ gồm chữ cái không dấu và chữ số, tối đa 50 ký tự.' }}</p>
+      </fieldset>
+    </div>
+
+    <div id="conv-errors" aria-live="polite">
+      @if (errors().length) {
+        <ul class="rounded-lg bg-danger-soft px-3 py-2 text-[13px] text-danger" role="alert" data-testid="convert-errors">
+          @for (e of errors(); track $index) {
+            <li>{{ e }}</li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div>
+      <button type="submit" class="btn btn-primary" [disabled]="busy()" data-testid="convert-submit">{{ busy() ? 'Đang chuyển đổi…' : 'Chuyển đổi' }}</button>
+    </div>
+  </form>
+
+  @if (busy()) {
+    <div class="card flex flex-col gap-2.5 p-4" aria-busy="true"><span class="sr-only">Đang chuyển đổi…</span>
+      <div class="skeleton h-4 w-11/12"></div><div class="skeleton h-4 w-9/12"></div><div class="skeleton h-4 w-10/12"></div>
+    </div>
+  }
+
+  @if (results(); as rows) {
+    <section class="card min-w-0" aria-labelledby="conv-results">
+      <div class="flex flex-wrap items-center justify-between gap-3 px-4 pt-4">
+        <h2 id="conv-results">Kết quả ({{ rows.length }})</h2>
+        <app-copy-button [text]="allShortLinks()" label="Sao chép tất cả" [primary]="true" data-testid="convert-copy-all"/>
+      </div>
+      <div class="table-wrap mt-3">
+        <table class="tbl" data-testid="convert-results">
+          <thead><tr><th scope="col">Liên kết gốc</th><th scope="col">Trạng thái</th><th scope="col">Liên kết tiếp thị</th><th scope="col"><span class="sr-only">Thao tác</span></th></tr></thead>
+          <tbody>
+            @for (r of rows; track $index) {
+              <tr>
+                <td class="max-w-[280px] truncate" [title]="r.originUrl">{{ r.originUrl }}</td>
+                <td><app-status-badge [status]="r.status"/></td>
+                <td class="min-w-[180px]">
+                  @if (r.shortLink) {
+                    <span class="break-all font-mono text-[13px]">{{ r.shortLink }}</span>
+                  } @else {
+                    <span class="text-danger">{{ r.error || 'Không chuyển đổi được liên kết này.' }}</span>
+                  }
+                </td>
+                <td class="text-right">
+                  @if (r.shortLink) {
+                    <app-copy-button [text]="r.shortLink" ariaLabel="Sao chép liên kết tiếp thị"/>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>

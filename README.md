@@ -86,6 +86,7 @@ kira-app/
 ├── kira-portfolio-3d/    Standalone Next.js + three.js portfolio site
 ├── kira-bank/            Nested, separately git-tracked product (Kira Life)
 ├── farm-market/          Multi-branch farm e-commerce (Kira Farm): service + UI
+├── kira-affilate/        Shopee Affiliate platform for Vietnam: service + UI (see kira-affilate/README.md)
 ├── docker-compose*.yml   Local, crawl-only, and production stacks
 ├── nginx/                Reverse proxy config + templates
 ├── monitoring/           Grafana dashboards, Loki and Promtail configs
@@ -448,6 +449,7 @@ placeholders, never hard-coded in source.
 | MySQL | `3310` → `3306` | — |
 | RabbitMQ | `5672`, UI `15672` | — |
 | farm-market (UI / API / MySQL) | `4201` / `8081` / `3308` | `/api/v1` |
+| kira-affilate (UI / API / MySQL) | `4202` / `8082` / `3309` | `/api/v1` |
 
 ---
 

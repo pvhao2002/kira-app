@@ -1,0 +1,156 @@
+<div class="page">
+  <header>
+    <h1 data-testid="page-heading">Quản lý liên kết</h1>
+    <p class="muted mt-0.5">Lịch sử liên kết tiếp thị đã tạo và các chiến dịch (bộ Sub ID) của bạn.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Quản lý liên kết">
+    <button type="button" role="tab" class="tab" id="tab-links" aria-controls="panel-links" [attr.aria-selected]="tab() === 'links'" (click)="tab.set('links')" data-testid="tab-links">Lịch sử liên kết</button>
+    <button type="button" role="tab" class="tab" id="tab-campaigns" aria-controls="panel-campaigns" [attr.aria-selected]="tab() === 'campaigns'" (click)="tab.set('campaigns')" data-testid="tab-campaigns">Chiến dịch</button>
+  </div>
+
+  @if (tab() === 'links') {
+    <div id="panel-links" role="tabpanel" aria-labelledby="tab-links" class="flex min-w-0 flex-col gap-4">
+      <div class="card card-pad flex flex-col gap-3">
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_180px_220px]">
+          <form (ngSubmit)="applySearch()" role="search">
+            <label class="label" for="links-search">Tìm kiếm</label>
+            <div class="flex gap-2">
+              <input id="links-search" name="search" class="input" type="search" placeholder="Liên kết gốc hoặc liên kết tiếp thị" [(ngModel)]="searchDraft" data-testid="links-search">
+              <button type="submit" class="btn" data-testid="links-search-submit">Tìm</button>
+            </div>
+          </form>
+          <div>
+            <label class="label" for="links-status">Trạng thái</label>
+            <select id="links-status" class="input" [(ngModel)]="status" data-testid="links-status">
+              <option value="">Tất cả</option>
+              <option value="OK">Thành công</option>
+              <option value="FAILED">Thất bại</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="links-campaign">Chiến dịch</label>
+            <select id="links-campaign" class="input" [(ngModel)]="campaignId" data-testid="links-campaign">
+              <option value="">Tất cả</option>
+              @for (c of campaigns(); track c.id) {
+                <option [value]="c.id">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <app-date-range [(value)]="range"/>
+          <button type="button" class="btn" [disabled]="exporting()" (click)="exportCsv()" data-testid="links-export">{{ exporting() ? 'Đang xuất…' : 'Xuất CSV' }}</button>
+        </div>
+      </div>
+
+      <section class="card min-w-0" aria-label="Lịch sử liên kết">
+        <app-state-box [loading]="links.isLoading()" [error]="links.error()" [empty]="!rows().length" (retry)="links.reload()" [rows]="6"
+                       emptyTitle="Không có liên kết nào" emptyText="Chưa có liên kết khớp với bộ lọc. Hãy tạo liên kết ở trang Chuyển đổi liên kết hoặc đổi bộ lọc.">
+          <div class="table-wrap">
+            <table class="tbl" data-testid="links-table">
+              <thead>
+                <tr>
+                  <th appSortHeader field="createdAt" [sort]="sort()" (sortChange)="sort.set($event)">Thời gian tạo</th>
+                  <th scope="col">Liên kết gốc</th>
+                  <th scope="col">Liên kết tiếp thị</th>
+                  <th scope="col">Sub ID</th>
+                  <th scope="col">Chiến dịch</th>
+                  <th scope="col">Trạng thái</th>
+                  <th scope="col"><span class="sr-only">Thao tác</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (l of rows(); track l.id) {
+                  <tr>
+                    <td class="whitespace-nowrap">{{ formatDateTime(l.createdAt) }}</td>
+                    <td class="max-w-[240px] truncate" [title]="l.originUrl">{{ l.originUrl }}</td>
+                    <td class="whitespace-nowrap font-mono">
+                      @if (l.shortLink) { {{ l.shortLink }} } @else { <span class="font-sans text-danger" [title]="l.error ?? ''">{{ l.error || '—' }}</span> }
+                    </td>
+                    <td class="whitespace-nowrap">{{ l.subIds.join(', ') || '—' }}</td>
+                    <td class="whitespace-nowrap">{{ l.campaignName || '—' }}</td>
+                    <td><app-status-badge [status]="l.status"/></td>
+                    <td>
+                      <div class="flex justify-end gap-2">
+                        @if (confirmDeleteLink() === l.id) {
+                          <button type="button" class="btn btn-sm btn-danger" (click)="deleteLink(l.id)" data-testid="link-delete-confirm">Xác nhận xóa</button>
+                          <button type="button" class="btn btn-sm" (click)="confirmDeleteLink.set(null)">Hủy</button>
+                        } @else {
+                          @if (l.shortLink) {
+                            <app-copy-button [text]="l.shortLink" ariaLabel="Sao chép liên kết tiếp thị"/>
+                          }
+                          <button type="button" class="btn btn-sm" (click)="confirmDeleteLink.set(l.id)" data-testid="link-delete">Xóa</button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (meta(); as m) {
+            <div class="border-t border-line"><app-pager [page]="m.page" [totalPages]="m.totalPages" [total]="m.totalElements" (pageChange)="page.set($event)"/></div>
+          }
+        </app-state-box>
+      </section>
+      <p class="muted">Xóa chỉ gỡ dòng khỏi lịch sử; liên kết Shopee đã tạo vẫn hoạt động.</p>
+    </div>
+  } @else {
+    <div id="panel-campaigns" role="tabpanel" aria-labelledby="tab-campaigns" class="grid min-w-0 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+      <form class="card card-pad flex flex-col gap-3 self-start" (ngSubmit)="saveCampaign()" novalidate>
+        <h2>{{ editing() ? 'Sửa chiến dịch' : 'Tạo chiến dịch' }}</h2>
+        <div>
+          <label class="label" for="camp-name">Tên chiến dịch</label>
+          <input id="camp-name" name="name" class="input" type="text" maxlength="100" [(ngModel)]="campaignName" data-testid="campaign-name">
+        </div>
+        <div>
+          <label class="label" for="camp-subids">Sub ID</label>
+          <input id="camp-subids" name="subIds" class="input" type="text" autocapitalize="off" spellcheck="false" placeholder="fb01, video02" [(ngModel)]="campaignSubIds"
+                 aria-describedby="camp-subids-help" data-testid="campaign-subids">
+          <p id="camp-subids-help" class="muted mt-1">Tối đa 5 Sub ID, cách nhau bằng dấu phẩy. Chỉ gồm chữ cái không dấu và chữ số.</p>
+        </div>
+        @if (campaignError()) {
+          <p class="field-error" role="alert" data-testid="campaign-error">{{ campaignError() }}</p>
+        }
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-primary" [disabled]="savingCampaign()" data-testid="campaign-save">{{ savingCampaign() ? 'Đang lưu…' : editing() ? 'Lưu thay đổi' : 'Tạo chiến dịch' }}</button>
+          @if (editing()) {
+            <button type="button" class="btn" (click)="editCampaign(null)">Hủy</button>
+          }
+        </div>
+      </form>
+
+      <section class="card min-w-0" aria-label="Danh sách chiến dịch">
+        <app-state-box [loading]="campaignsRes.isLoading()" [error]="campaignsRes.error()" [empty]="!campaigns().length" (retry)="campaignsRes.reload()"
+                       emptyTitle="Chưa có chiến dịch" emptyText="Chiến dịch là một bộ Sub ID có tên, giúp bạn gắn nhanh khi tạo liên kết và xem hoa hồng theo nguồn.">
+          <div class="table-wrap">
+            <table class="tbl" data-testid="campaigns-table">
+              <thead><tr><th scope="col">Tên</th><th scope="col">Sub ID</th><th scope="col">Ngày tạo</th><th scope="col"><span class="sr-only">Thao tác</span></th></tr></thead>
+              <tbody>
+                @for (c of campaigns(); track c.id) {
+                  <tr>
+                    <td class="font-medium">{{ c.name }}</td>
+                    <td class="font-mono">{{ c.subIds.join(', ') }}</td>
+                    <td class="whitespace-nowrap">{{ formatDateTime(c.createdAt) }}</td>
+                    <td>
+                      <div class="flex justify-end gap-2">
+                        @if (confirmDeleteCampaign() === c.id) {
+                          <button type="button" class="btn btn-sm btn-danger" (click)="deleteCampaign(c.id)" data-testid="campaign-delete-confirm">Xác nhận xóa</button>
+                          <button type="button" class="btn btn-sm" (click)="confirmDeleteCampaign.set(null)">Hủy</button>
+                        } @else {
+                          <button type="button" class="btn btn-sm" (click)="editCampaign(c)" data-testid="campaign-edit">Sửa</button>
+                          <button type="button" class="btn btn-sm" (click)="confirmDeleteCampaign.set(c.id)" data-testid="campaign-delete">Xóa</button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </app-state-box>
+      </section>
+    </div>
+  }
+</div>

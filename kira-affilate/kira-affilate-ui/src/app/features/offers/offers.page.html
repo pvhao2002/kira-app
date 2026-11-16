@@ -1,0 +1,86 @@
+<div class="page">
+  <header>
+    <h1 data-testid="page-heading">Sản phẩm & Chiến dịch</h1>
+    <p class="muted mt-0.5">Ưu đãi hoa hồng đang mở trên Shopee Affiliate, lấy trực tiếp từ Shopee.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Loại ưu đãi">
+    @for (t of tabs; track t.id) {
+      <button type="button" role="tab" class="tab" [id]="'offers-tab-' + t.id" aria-controls="offers-panel" [attr.aria-selected]="tab() === t.id" (click)="selectTab(t.id)" [attr.data-testid]="'offers-tab-' + t.id">{{ t.label }}</button>
+    }
+  </div>
+
+  <div id="offers-panel" role="tabpanel" [attr.aria-labelledby]="'offers-tab-' + tab()" class="flex min-w-0 flex-col gap-4">
+    <div class="card card-pad grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
+      <form (ngSubmit)="applySearch()" role="search">
+        <label class="label" for="offers-keyword">Từ khóa</label>
+        <div class="flex gap-2">
+          <input id="offers-keyword" name="keyword" class="input" type="search" [placeholder]="view().placeholder" [(ngModel)]="keywordDraft" data-testid="offers-keyword">
+          <button type="submit" class="btn" data-testid="offers-search">Tìm</button>
+        </div>
+      </form>
+      <div>
+        <label class="label" for="offers-sort">Sắp xếp</label>
+        <select id="offers-sort" class="input" [(ngModel)]="sortType" data-testid="offers-sort">
+          <option value="">Mặc định của Shopee</option>
+          @for (s of view().sorts; track s.value) {
+            <option [value]="s.value">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (notConnected()) {
+      <div class="card">
+        <app-state-box [empty]="true" emptyTitle="Chưa kết nối Shopee Affiliate" emptyText="Cần App ID và Secret của Shopee Affiliate Open API để xem ưu đãi.">
+          <a empty-action class="btn btn-primary mt-2" routerLink="/app/settings" data-testid="offers-to-settings">Đi tới Cài đặt</a>
+        </app-state-box>
+      </div>
+    } @else {
+      <app-state-box class="block" [class.card]="!cards().length" [loading]="offers.isLoading()" [error]="offers.error()" [empty]="!cards().length" (retry)="offers.reload()" [rows]="6"
+                     emptyTitle="Không tìm thấy ưu đãi" emptyText="Thử từ khóa khác hoặc đổi cách sắp xếp.">
+        <ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="offers-list">
+          @for (c of cards(); track c.key) {
+            <li class="card flex min-w-0 gap-3 p-3">
+              @if (c.imageUrl) {
+                <img class="h-20 w-20 shrink-0 rounded-lg border border-line object-cover" [src]="c.imageUrl" alt="" width="80" height="80" loading="lazy" referrerpolicy="no-referrer">
+              }
+              <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+                <h2 class="line-clamp-2 text-sm font-medium" [title]="c.title">{{ c.title }}</h2>
+                <p><span class="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-strong">Hoa hồng {{ c.rate }}</span></p>
+                <ul class="text-xs text-muted">
+                  @for (f of c.facts; track $index) {
+                    <li class="truncate">{{ f }}</li>
+                  }
+                </ul>
+                <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
+                  @if (linkStates()[c.key]; as state) {
+                    @if (state.shortLink) {
+                      <span class="min-w-0 break-all font-mono text-xs">{{ state.shortLink }}</span>
+                      <app-copy-button [text]="state.shortLink" ariaLabel="Sao chép liên kết tiếp thị"/>
+                    } @else {
+                      <button type="button" class="btn btn-sm btn-primary" [disabled]="state.busy" (click)="getLink(c)" data-testid="offer-get-link">{{ state.busy ? 'Đang tạo…' : 'Lấy link' }}</button>
+                      @if (state.error) {
+                        <span class="text-xs text-danger" role="alert">{{ state.error }}</span>
+                      }
+                    }
+                  } @else {
+                    <button type="button" class="btn btn-sm btn-primary" (click)="getLink(c)" data-testid="offer-get-link">Lấy link</button>
+                  }
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+      </app-state-box>
+
+      <nav class="flex items-center justify-between gap-2" aria-label="Phân trang ưu đãi">
+        <p class="muted">Trang {{ page() }}</p>
+        <div class="flex gap-2">
+          <button type="button" class="btn btn-sm" [disabled]="page() <= 1 || offers.isLoading()" (click)="page.set(page() - 1)" data-testid="offers-prev">Trước</button>
+          <button type="button" class="btn btn-sm" [disabled]="!hasNext() || offers.isLoading()" (click)="page.set(page() + 1)" data-testid="offers-next">Sau</button>
+        </div>
+      </nav>
+    }
+  </div>
+</div>

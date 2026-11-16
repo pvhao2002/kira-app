@@ -1,0 +1,131 @@
+<div class="page max-w-[880px]">
+  <header>
+    <h1 data-testid="page-heading">Cài đặt</h1>
+  </header>
+
+  <section class="card card-pad" aria-labelledby="set-shopee">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 id="set-shopee">Kết nối Shopee Affiliate Open API</h2>
+      @if (credentials(); as c) {
+        @if (!c.configured) {
+          <span class="rounded-full bg-canvas px-2 py-0.5 text-xs font-medium text-muted" data-testid="shopee-status">Chưa kết nối Shopee</span>
+        } @else if (c.lastStatus) {
+          <span data-testid="shopee-status"><app-status-badge [status]="c.lastStatus === 'OK' ? 'CONNECTED' : c.lastStatus"/></span>
+        } @else {
+          <span class="rounded-full bg-canvas px-2 py-0.5 text-xs font-medium text-muted" data-testid="shopee-status">Chưa kiểm tra</span>
+        }
+      }
+    </div>
+
+    <app-state-box class="mt-3 block" [loading]="credentialsRes.isLoading()" [error]="credentialsRes.error()" (retry)="credentialsRes.reload()">
+      @if (credentials(); as c) {
+        @if (c.configured) {
+          <div class="rounded-lg border border-line bg-canvas px-3 py-2.5 text-[13px]" data-testid="shopee-status-detail">
+            <p><span class="text-muted">App ID:</span> <span class="font-mono">{{ c.appId }}</span> · <span class="text-muted">Kiểm tra lần cuối:</span> {{ formatDateTime(c.lastCheckedAt) }}</p>
+            @if (statusHelp()) {
+              <p class="mt-1 font-medium" [class.text-ok]="c.lastStatus === 'OK'" [class.text-danger]="c.lastStatus === 'INVALID_CREDENTIAL' || c.lastStatus === 'ERROR'" [class.text-warn]="c.lastStatus === 'NO_API_ACCESS' || c.lastStatus === 'RATE_LIMITED'">
+                {{ statusHelp() }}@if (c.lastStatus === 'NO_API_ACCESS') {. <a class="link" href="https://affiliate.shopee.vn/open_api" target="_blank" rel="noopener noreferrer">Đăng ký Open API<span class="sr-only"> (mở trong tab mới)</span></a>}
+              </p>
+            }
+            @if (c.lastStatus !== 'OK' && c.lastErrorMessage) {
+              <p class="mt-1 text-muted">Chi tiết từ Shopee: {{ c.lastErrorMessage }}@if (c.lastErrorCode) { ({{ c.lastErrorCode }})}</p>
+            }
+          </div>
+        } @else {
+          <p class="muted">Lấy App ID và Secret tại
+            <a class="link" href="https://affiliate.shopee.vn/open_api" target="_blank" rel="noopener noreferrer">affiliate.shopee.vn/open_api<span class="sr-only"> (mở trong tab mới)</span></a>.
+            Secret được mã hóa khi lưu và không bao giờ hiển thị lại.</p>
+        }
+
+        <form class="mt-4 grid gap-3 sm:grid-cols-2" (ngSubmit)="saveCredentials()" novalidate>
+          <div>
+            <label class="label" for="set-app-id">App ID</label>
+            <input id="set-app-id" name="appId" class="input" type="text" autocomplete="off" spellcheck="false" maxlength="64" [(ngModel)]="appId" data-testid="shopee-app-id">
+          </div>
+          <div>
+            <label class="label" for="set-secret">Secret</label>
+            <input id="set-secret" name="secret" class="input" type="password" autocomplete="new-password" maxlength="256" [(ngModel)]="secret"
+                   [placeholder]="c.configured ? 'Nhập Secret mới để thay thế' : ''" aria-describedby="set-secret-help" data-testid="shopee-secret">
+            <p id="set-secret-help" class="muted mt-1">{{ c.configured ? 'Secret đã lưu không được hiển thị. Nhập lại Secret khi muốn cập nhật.' : 'Chỉ dùng để gọi Shopee Open API cho tài khoản của bạn.' }}</p>
+          </div>
+          @if (credentialError()) {
+            <p class="field-error sm:col-span-2" role="alert" data-testid="shopee-error">{{ credentialError() }}</p>
+          }
+          <div class="flex flex-wrap gap-2 sm:col-span-2">
+            <button type="submit" class="btn btn-primary" [disabled]="!!credentialBusy()" data-testid="shopee-save">{{ credentialBusy() === 'save' ? 'Đang lưu…' : 'Lưu và kiểm tra' }}</button>
+            @if (c.configured) {
+              <button type="button" class="btn" [disabled]="!!credentialBusy()" (click)="testCredentials()" data-testid="shopee-test">{{ credentialBusy() === 'test' ? 'Đang kiểm tra…' : 'Kiểm tra kết nối' }}</button>
+              @if (confirmDelete()) {
+                <button type="button" class="btn btn-danger" [disabled]="!!credentialBusy()" (click)="deleteCredentials()" data-testid="shopee-delete-confirm">Xác nhận xóa</button>
+                <button type="button" class="btn" (click)="confirmDelete.set(false)">Hủy</button>
+              } @else {
+                <button type="button" class="btn" [disabled]="!!credentialBusy()" (click)="confirmDelete.set(true)" data-testid="shopee-delete">Xóa kết nối</button>
+              }
+            }
+          </div>
+        </form>
+      }
+    </app-state-box>
+  </section>
+
+  @if (credentials()?.configured) {
+    <section class="card card-pad" aria-labelledby="set-sync">
+      <h2 id="set-sync">Trạng thái tích hợp</h2>
+      <p class="muted mt-1 mb-3">Đơn hàng và hoa hồng được đồng bộ định kỳ từ Shopee; bạn cũng có thể đồng bộ thủ công.</p>
+      <app-sync-chip/>
+    </section>
+  }
+
+  <section class="card card-pad" aria-labelledby="set-profile">
+    <h2 id="set-profile">Hồ sơ</h2>
+    <form class="mt-3 grid gap-3 sm:grid-cols-2" (ngSubmit)="saveProfile()" novalidate>
+      <div>
+        <label class="label" for="set-email">Email</label>
+        <input id="set-email" class="input" type="email" [value]="auth.user()?.email ?? ''" disabled>
+      </div>
+      <div>
+        <label class="label" for="set-name">Họ tên</label>
+        <input id="set-name" name="fullName" class="input" type="text" autocomplete="name" maxlength="120" [(ngModel)]="fullName" [attr.aria-invalid]="!!profileError()" data-testid="profile-name">
+      </div>
+      @if (profileError()) {
+        <p class="field-error sm:col-span-2" role="alert">{{ profileError() }}</p>
+      }
+      <div class="sm:col-span-2">
+        <button type="submit" class="btn btn-primary" [disabled]="savingProfile()" data-testid="profile-save">{{ savingProfile() ? 'Đang lưu…' : 'Lưu hồ sơ' }}</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card card-pad" aria-labelledby="set-password">
+    <h2 id="set-password">Đổi mật khẩu</h2>
+    <p class="muted mt-1">Sau khi đổi, mọi phiên đăng nhập sẽ bị thu hồi và bạn cần đăng nhập lại.</p>
+    <form class="mt-3 grid gap-3 sm:grid-cols-3" (ngSubmit)="changePassword()" novalidate>
+      <div>
+        <label class="label" for="set-pw-current">Mật khẩu hiện tại</label>
+        <input id="set-pw-current" name="currentPassword" class="input" type="password" autocomplete="current-password" maxlength="72" [(ngModel)]="currentPassword" data-testid="password-current">
+      </div>
+      <div>
+        <label class="label" for="set-pw-new">Mật khẩu mới</label>
+        <input id="set-pw-new" name="newPassword" class="input" type="password" autocomplete="new-password" maxlength="72" [(ngModel)]="newPassword" data-testid="password-new">
+      </div>
+      <div>
+        <label class="label" for="set-pw-confirm">Nhập lại mật khẩu mới</label>
+        <input id="set-pw-confirm" name="confirmPassword" class="input" type="password" autocomplete="new-password" maxlength="72" [(ngModel)]="confirmPassword" data-testid="password-confirm">
+      </div>
+      @if (passwordError()) {
+        <p class="field-error sm:col-span-3" role="alert" data-testid="password-error">{{ passwordError() }}</p>
+      }
+      <div class="sm:col-span-3">
+        <button type="submit" class="btn" [disabled]="savingPassword()" data-testid="password-save">{{ savingPassword() ? 'Đang đổi…' : 'Đổi mật khẩu' }}</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card card-pad flex flex-wrap items-center justify-between gap-3" aria-labelledby="set-session">
+    <div>
+      <h2 id="set-session">Phiên đăng nhập</h2>
+      <p class="muted mt-0.5">Đang đăng nhập với {{ auth.user()?.email }}.</p>
+    </div>
+    <button type="button" class="btn" (click)="logout()" data-testid="settings-logout">Đăng xuất</button>
+  </section>
+</div>
