@@ -1,0 +1,1122 @@
+- generic [ref=f34e3]:
+  - generic [ref=f34e9] [cursor=pointer]:
+    - img "logo" [ref=f34e11]
+    - generic [ref=f34e13]: Shopee Affiliate VN
+  - generic [ref=f34e14]:
+    - generic [ref=f34e16]:
+      - heading "Xin chào, Shopee có thể giúp gì cho bạn?" [level=1] [ref=f34e17]
+      - generic [ref=f34e19]:
+        - textbox "Nhập từ khóa hoặc nội dung cần tìm" [ref=f34e21]
+        - generic [ref=f34e22] [cursor=pointer]
+    - generic [ref=f34e25]:
+      - generic [ref=f34e31]:
+        - generic [ref=f34e32]:
+          - button [expanded] [ref=f34e33]:
+            - heading "Điều Khoản Tham Gia Chương Trình Tiếp Thị Liên Kết" [level=2] [ref=f34e36] [cursor=pointer]
+          - generic [ref=f34e42]:
+            - generic [ref=f34e43] [cursor=pointer]: Điều Khoản và Điều Kiện Chương Trình Tiếp Thị Liên Kết
+            - generic [ref=f34e44] [cursor=pointer]: Các Điều Khoản Khác
+        - button [ref=f34e46]:
+          - heading "Thuế & Thanh Toán" [level=2] [ref=f34e49] [cursor=pointer]
+        - button [ref=f34e54]:
+          - heading "Hệ thống Shopee Affiliate" [level=2] [ref=f34e57] [cursor=pointer]
+        - button [ref=f34e62]:
+          - heading "Shopee Live" [level=2] [ref=f34e65] [cursor=pointer]
+        - button [ref=f34e70]:
+          - heading "Shopee Video" [level=2] [ref=f34e73] [cursor=pointer]
+        - button [ref=f34e78]:
+          - heading "MCN" [level=2] [ref=f34e81] [cursor=pointer]
+        - button [ref=f34e86]:
+          - heading "Các câu hỏi thường gặp" [level=2] [ref=f34e89] [cursor=pointer]
+        - button [ref=f34e94]:
+          - heading "Chương trình Shopee Seller Affiliate" [level=2] [ref=f34e97] [cursor=pointer]
+        - heading "Chương trình ShopeeFood Affiliate" [level=2] [ref=f34e102] [cursor=pointer]
+      - generic [ref=f34e104]:
+        - heading "ĐIỀU KHOẢN VÀ ĐIỀU KIỆN CHƯƠNG TRÌNH TIẾP THỊ LIÊN KẾT" [level=2] [ref=f34e105]
+        - generic [ref=f34e106]:
+          - generic [ref=f34e107]: Chương Trình Tiếp Thị Liên Kết Shopee là chương trình mà, Cá Nhân Kinh Doanh, Hộ Kinh Doanh và Doanh Nghiệp khi đăng ký tham gia thành công (“Đối Tác TTLK”) có thể đăng ký tài khoản để tự mình thực hiện hoạt động giới thiệu, cung ứng dịch vụ và/hoặc hợp tác với Shopee và/hoặc các Bên thứ ba để giới thiệu, cung ứng dịch vụ và nhận được một khoản phí và/hoặc Phí Hoa Hồng (như được định nghĩa dưới đây) từ Shopee, Người Bán trên Sàn TMĐT Shopee và/hoặc các bên khác cho các Đơn Hàng Thành Công (như được định nghĩa dưới đây) trên Sàn TMĐT (như được định nghĩa dưới đây) thông qua các Siêu Liên Kết (như được định nghĩa dưới đây). Nếu bạn là một Đối Tác TTLK, bạn được xem như là đã đồng ý với các điều khoản và điều kiện quy định tại đây (bao gồm các sửa đổi và bổ sung vào từng thời điểm cụ thể theo quyết định của Shopee) khi đăng ký tham gia vào Chương Trình TTLK và/hoặc khi bạn tiếp tục sử dụng Sàn TMĐT.
+          - paragraph [ref=f34e108]: Điều Khoản và Điều Kiện này là một phần không tách rời của Điều Khoản Dịch Vụ Shopee và các Chính Sách Shopee khác - vui lòng đọc Điều Khoản Dịch Vụ và các Chính Sách Shopee (như được định nghĩa dưới đây) công khai trên Sàn TMĐT Shopee có các tài liệu và chính sách này có chứa các thông tin quan trọng liên quan đến quyền và nghĩa vụ của bạn. Bất kỳ điều khoản và điều kiện nào được sử dụng tại Điều Khoản và Điều Kiện này sẽ có nghĩa như được quy định tại Điều Khoản Dịch Vụ và/hoặc các Chính Sách Shopee áp dụng. Tất cả các điều khoản và điều kiện được quy định tại Điều Khoản và Điều Kiện này có thể được điều chỉnh theo quyết định của Shopee theo các nguyên tắc quy định tại Điều Khoản Dịch Vụ.
+          - paragraph [ref=f34e109]: Điều Khoản và Điều Kiện này là một thỏa thuận ràng buộc về mặt pháp lý giữa bạn và Shopee. Nếu bạn dưới 18 tuổi hoặc chưa đủ tuổi hợp pháp để đồng ý Điều Khoản và Điều Kiện này, bạn phải được sự cho phép của cha mẹ hoặc người giám hộ hợp pháp để tham gia Chương Trình và cha mẹ hoặc người giám hộ hợp pháp của bạn phải đồng ý với Điều Khoản và Điều Kiện này. Vui lòng đảm bảo cha mẹ hoặc người giám hộ hợp pháp của bạn đã xem xét và đồng ý với Điều Khoản và Điều Kiện này cũng như các Chính Sách Shopee trước khi truy cập hoặc sử dụng hoặc tham gia Chương Trình. Nếu bạn là cha mẹ hoặc người giám hộ hợp pháp của trẻ vị thành niên đồng ý với Điều Khoản và Điều Kiện này, bạn phải chấp nhận các điều khoản của Điều Khoản và Điều Kiện này thay mặt cho trẻ và bạn sẽ chịu trách nhiệm cho mọi hoạt động truy cập, sử dụng, tham gia Chương Trình bằng tài khoản của trẻ, cho dù tài khoản đó hiện đang mở hay được tạo sau này.
+          - paragraph [ref=f34e110]: Để làm rõ và nhằm mục đích của Điều Khoản và Điều Kiện này, trường hợp Đối Tác TTLK là doanh nghiệp và/hoặc tổ chức, hành vi của bất kỳ bên nào có thể được diễn giải (trực tiếp hoặc gián tiếp, rõ ràng hoặc ngụ ý) là hành động theo sự ủy quyền, chỉ đạo hoặc theo một thỏa thuận với Đối Tác TTLK (bao gồm nhưng không giới hạn ở quan hệ người quản lý, lao động, đại lý, nhà thầu của Đối Tác TTLK) sẽ được xem như thể là hành vi của Đối Tác TTLK và Đối Tác TTLK sẽ chịu trách nhiệm cho các hành vi này theo Điều Khoản và Điều Kiện, và pháp luật áp dụng.
+          - paragraph [ref=f34e111]
+          - heading "I. ĐIỀU KHOẢN VÀ ĐIỀU KIỆN CHUNG" [level=2] [ref=f34e112]
+          - heading "ĐIỀU 1. ĐỊNH NGHĨA CHUNG" [level=2] [ref=f34e113]
+          - list [ref=f34e114]:
+            - listitem [ref=f34e115]:
+              - paragraph [ref=f34e116]: "Đối Tác Tiếp Thị Liên Kết hoặc Đối Tác TTLK: là các bên tham gia vào Chương Trình theo điều khoản và điều kiện này dưới các hình thức bao gồm, KOL Affiliate / KOC Affiliate, KOL Affiliate Doanh Nghiệp, MCN (Multi-Channel Network) - Mạng Lưới Đa Kênh, Người Bán Tiếp Thị Liên Kết (Seller Affiliate), Short-tail. Từng hình thức được quy định cụ thể tại Mục II, tuy nhiên Đối Tác TTLK phái đáp ứng các điều kiện cơ bản về hình thức hoạt động như nêu bên dưới đây cho từng hình thức một cách tương ứng:"
+          - paragraph [ref=f34e117]
+          - table [ref=f34e120]:
+            - rowgroup [ref=f34e127]:
+              - row [ref=f34e128]:
+                - cell [ref=f34e129]
+                - cell [ref=f34e130]:
+                  - paragraph [ref=f34e131]: Cá Nhân Kinh Doanh (*)
+                - cell [ref=f34e132]:
+                  - paragraph [ref=f34e133]: Hộ Kinh Doanh
+                - cell [ref=f34e134]:
+                  - paragraph [ref=f34e135]: Doanh Nghiệp
+                - cell [ref=f34e136]:
+                  - paragraph [ref=f34e137]: Lưu ý
+              - row [ref=f34e138]:
+                - cell [ref=f34e139]:
+                  - paragraph [ref=f34e140]: KOL Affiliate / KOC Affiliate
+                - cell [ref=f34e141]:
+                  - paragraph [ref=f34e142]: Có thể tham gia
+                - cell [ref=f34e143]:
+                  - paragraph [ref=f34e144]: Có thể tham gia
+                - cell [ref=f34e145]:
+                  - paragraph [ref=f34e146]: Không thể tham gia
+                - cell [ref=f34e147]
+              - row [ref=f34e148]:
+                - cell [ref=f34e149]:
+                  - paragraph [ref=f34e150]: KOL Affiliate Doanh Nghiệp
+                - cell [ref=f34e151]:
+                  - paragraph [ref=f34e152]: Không thể tham gia
+                - cell [ref=f34e153]:
+                  - paragraph [ref=f34e154]: Có thể tham gia
+                - cell [ref=f34e155]:
+                  - paragraph [ref=f34e156]: Có thể tham gia
+                - cell [ref=f34e157]:
+                  - paragraph [ref=f34e158]: Để làm rõ, KOL Affiliate Doanh Nghiệp chỉ nhằm mục đích thuận tiện trong tên gọi, không được hiểu rằng chỉ áp dụng cho Đối Tác TTLK hoạt động dưới loại hình doanh nghiệp.
+              - row [ref=f34e159]:
+                - cell [ref=f34e160]:
+                  - paragraph [ref=f34e161]: MCN (Multi-Channel Network) - Mạng Lưới Đa Kênh
+                - cell [ref=f34e162]:
+                  - paragraph [ref=f34e163]: Không thể tham gia
+                - cell [ref=f34e164]:
+                  - paragraph [ref=f34e165]: Có thể tham gia
+                - cell [ref=f34e166]:
+                  - paragraph [ref=f34e167]: Có thể tham gia
+                - cell [ref=f34e168]
+              - row [ref=f34e169]:
+                - cell [ref=f34e170]:
+                  - paragraph [ref=f34e171]: Người Bán Tiếp Thị Liên Kết (Seller Affiliate)
+                - cell [ref=f34e172]:
+                  - paragraph [ref=f34e173]: Có thể tham gia
+                - cell [ref=f34e174]:
+                  - paragraph [ref=f34e175]: Có thể tham gia
+                - cell [ref=f34e176]:
+                  - paragraph [ref=f34e177]: Có thể tham gia
+                - cell [ref=f34e178]
+              - row [ref=f34e179]:
+                - cell [ref=f34e180]:
+                  - paragraph [ref=f34e181]: Short-tail (Đối tác dịch vụ quảng bá, phát triển mạng lưới truyền thông)
+                - cell [ref=f34e182]:
+                  - paragraph [ref=f34e183]: Không thể tham gia
+                - cell [ref=f34e184]:
+                  - paragraph [ref=f34e185]: Không thể tham gia
+                - cell [ref=f34e186]:
+                  - paragraph [ref=f34e187]: Có thể tham gia
+                - cell [ref=f34e188]
+          - paragraph [ref=f34e189]:
+            - text: (*) Trong trường hợp hoạt động TTLK thực hiện thông qua Sàn TMĐT được xem là hoạt động kinh doanh dịch vụ thì Đối Tác có trách nhiệm tự thực hiện đầy đủ các thủ tục đăng ký, kê khai, xuất hóa đơn, các nghĩa vụ pháp lý, thuế có liên quan và cung cấp đầy đủ thông tin cho Shopee. Để tra cứu hoặc đăng ký mã số thuế kinh doanh, Đối Tác có thể tham khảo thông tin
+            - link "tại đây" [ref=f34e190] [cursor=pointer]:
+              - /url: https://help.shopee.vn/portal/10/article/203394?previousPage=other%20articles
+            - text: ". Cá Nhân Kinh Doanh: là cá nhân cư trú thực hiện hoạt động sản xuất, kinh doanh hàng hóa, dịch vụ theo quy định của pháp luật."
+          - list [ref=f34e191]:
+            - listitem [ref=f34e192]:
+              - paragraph [ref=f34e193]: "Chính Sách Shopee: bao gồm nhưng không giới hạn ở Điều Khoản Dịch Vụ, Chính Sách Bảo Mật, Điều Khoản Dịch Vụ shopee Video, Điều Khoản Dịch Vụ Shopee Livestream, các chính sách và quy chế khác do Shopee quy định vào từng thời điểm cụ thể (bao gồm các điều khoản và điều kiện được đăng tải trên website hoặc ứng dụng di động của Sàn Shopee, ví dụ như chính sách quyền riêng tư, chính sách về hàng hóa cấm bán hoặc bị hạn chế, chính sách hoàn trả và hoàn tiền, và các điều khoản, chính sách, quy chế, quy định, quy trình khác, các bài viết trên Trung tâm Hỗ Trợ Người Bán và Trung tâm Trợ Giúp của Shopee, các bài viết trên Hệ Thống Shopee nhằm thông tin đến Đối Tác TTLK trong quá trình tham gia Chương Trình)."
+            - listitem [ref=f34e194]:
+              - paragraph [ref=f34e195]: "Cookies: Là mã lưu giữ thông tin truy cập của khách hàng do Đối Tác TTLK dẫn vào Sàn TMĐT. Thời gian lưu giữ Cookies là 7 (bảy) ngày cho cả ứng dụng di động Shopee và website trang thương mại điện tử Shopee."
+            - listitem [ref=f34e196]:
+              - paragraph [ref=f34e197]: "Đơn Hàng Thành Công: Là đơn hàng mua hàng hóa hoặc dịch vụ được hoàn tất trên Sàn TMĐT bởi Khách Thăm (như định nghĩa dưới đây) trong thời gian 30 (ba mươi) ngày kể từ ngày Khách Thăm được Đối Tác TTLK dẫn đến Sàn Giao TMĐT thông qua Siêu Liên Kết tại Mạng Xã Hội và/hoặc Phương Tiện TTLK của Đối Tác TTLK, hoặc theo các tiêu chí khác do Shopee quyết định vào từng thời điểm cụ thể."
+          - paragraph [ref=f34e198]: "Đơn Hàng Thành Công không bao gồm: (i) các đơn hàng vi phạm hoặc có dấu hiệu vi phạm Chính Sách Shopee, (ii) các đơn hàng gian lận/giả mạo hoặc đơn hàng phát sinh từ Hành Vi Bị Cấm (như định nghĩa dưới đây) (bất kể có chứng cứ rõ ràng hoặc Shopee có căn cứ hợp lý để tự mình đưa ra quyết định hành vi đó thuộc Hành Vi Bị Cấm), (iii) người dùng được tạo ra bởi máy tính, chẳng hạn như bot, trình thu thập dữ liệu (spider), tập lệnh máy tính (script) hoặc bất kỳ phương thức tự động, giả lập hay gian lận nào khác nhằm tạo ra sự xuất hiện như một cá nhân thực tế, (iv) sử dụng các trường dữ liệu được điền sẵn, (v) đơn hàng bị huỷ hoặc bị Khách Thăm (hoặc còn được hiểu là người mua) từ chối nhận hàng hoặc bị trả hàng theo Chính Sách Trả Hàng Hoàn Tiền của Shopee hoặc theo các tiêu chí khác theo quyết định của Shopee vào từng thời điểm cụ thể. Để làm rõ, Shopee không có trách nhiệm giải thích hoặc chứng minh với Đối Tác TTLK về các quyết định của Shopee cho từng trường hợp theo quy định tại Mục này."
+          - list [ref=f34e199]:
+            - listitem [ref=f34e200]:
+              - paragraph [ref=f34e201]: "Giá Trị Thuần Đơn Hàng Thành Công: là tổng giá trị của các sản phẩm trong một Đơn Hàng Thành Công trừ đi các khoản giảm giá (bao gồm nhưng không giới hạn ở các khoản giảm giá hoặc mã ưu đãi đến từ Người Bán, Shopee hoặc bất kỳ bên thứ ba nào), Shopee Xu, và các khoản ưu đãi khác vào từng thời điểm cụ thể được áp dụng trực tiếp trên Sản Phẩm Trên Sàn TMĐT."
+            - listitem [ref=f34e202]:
+              - paragraph [ref=f34e203]:
+                - text: "Hành Vi Bị Cấm: Là các hành vi không được phép sử dụng và/hoặc thực hiện trong quá trình tham gia Chương Trình theo quy định tại Điều Khoản và Điều Kiện này, quyết định của Shopee, Chính Sách Shopee và/hoặc các thỏa thuận khác bằng văn bản giữa Đối Tác TTLK và Shopee. Các hành vi này có thể bao gồm nhưng không giới hạn ở các hành vi mang tính hoặc có thể được xác định là có thể mang tính (i) vi phạm Chính Sách Shopee (bao gồm nhưng không giới hạn ở các hành vi được quy định tại Chính Sách Chống Hành Vi Gian Lận"
+                - link "TẠI ĐÂY" [ref=f34e204] [cursor=pointer]:
+                  - /url: https://help.shopee.vn/portal/10/article/199468?previousPage=other%20articles
+                - text: "), (ii) quảng bá hoặc liên quan đến các hoạt động bất hợp pháp, bao gồm nhưng không giới hạn ở: các nội dung liên quan đến ma túy, lừa đảo qua mạng (phishing), khủng bố, hành vi tội phạm, các cuộc thi trái phép, mô hình đa cấp hoặc chuỗi thư dây chuyền (chain letters), (iii) quảng bá hoặc liên quan đến các sản phẩm hoặc hoạt động nhạy cảm, chẳng hạn như thuốc lá, cờ bạc hoặc vũ khí, (iv) liên quan đến nội dung khiêu dâm hoặc phản cảm, (v) chứa hình ảnh bạo lực, mang tính chất cực đoan hoặc quá mức rõ ràng, tàn bạo, (vi) có nội dung phỉ báng, thô tục hoặc không phù hợp, gây phản cảm dưới bất kỳ hình thức hay lý do nào, (vii) mang tính phân biệt đối xử hoặc chứa “ngôn từ thù ghét”, dù nhằm vào cá nhân hay nhóm người, bao gồm nhưng không giới hạn theo chủng tộc, giới tính, tín ngưỡng, nguồn gốc quốc gia, tôn giáo, xu hướng tính dục hoặc ngôn ngữ, (viii) chứa hoặc quảng bá mã độc, virus, sâu máy tính, tệp bị hỏng, phần mềm độc hại, công cụ bẻ khóa (crack) hoặc bất kỳ tài liệu nào có khả năng hoặc mục đích gây hại, làm gián đoạn hoạt động của phần mềm, phần cứng hoặc hệ thống bảo mật."
+            - listitem [ref=f34e205]:
+              - paragraph [ref=f34e206]: "Hệ Thống Shopee: Là hệ thống trực tuyến do Shopee cung cấp để Đối Tác TTLK và bên thứ ba có liên quan (bao gồm Người Bán) tham gia Chương Trình TTLK và cung cấp cho Đối Tác TTLK những thông tin thống kê và thông tin tài chính liên quan. Thông qua Hệ Thống Shopee, Đối Tác TTLK có thể tiếp cận các thông tin và tài liệu cần thiết, bao gồm: hoạt động của Đối Tác TTLK, tiếp nhận Tài Liệu Quảng Cáo, Kết Quả TTLK, đăng nhập để xem số tiền hoa hồng của Đối Tác TTLK, và các thông tin khác tùy theo độ khả dụng của Hệ Thống Shopee vào từng thời điểm cụ thể."
+            - listitem [ref=f34e207]:
+              - paragraph [ref=f34e208]: "Kết Quả TTLK: Là tất cả các Đơn Hàng Thành Công tính được tính toán theo các quy tắc và phương pháp được thiết lập trên Hệ Thống Shopee trong từng thời điểm và Shopee có thể thiết lập, điều chỉnh hoặc diễn giải trong từng thời điểm theo quyền quyết định riêng và tuyệt đối của Shopee. Quyết định của Shopee về Kết quả TTLK sẽ là quyết định cuối cùng, có tính kết luận và ràng buộc đối với các bên cho mọi mục đích. Tiền Hoa Hồng sẽ được xác định và thanh toán căn cứ vào Kết Quả TTLK như được xác định bởi Shopee."
+            - listitem [ref=f34e209]:
+              - paragraph [ref=f34e210]: "Khách Thăm: Là các cá nhân/người dùng Internet được chuyển tiếp tới Sàn TMĐT bằng đường dẫn kích hoạt khi nhấp chuột vào các Siêu Liên Kết do Đối Tác TTLK đăng trên Mạng Xã Hội và/hoặc Phương Tiện TTLK của Đối Tác TTLK."
+            - listitem [ref=f34e211]:
+              - paragraph [ref=f34e212]: "Mạng Xã Hội (Social Network): Là hệ thống thông tin cung cấp cho cộng đồng người sử dụng mạng các dịch vụ lưu trữ, cung cấp, sử dụng, tìm kiếm, chia sẻ và trao đổi thông tin với nhau, bao gồm dịch vụ tạo trang thông tin điện tử cá nhân, diễn đàn (forum), trò chuyện (chat) trực tuyến, chia sẻ âm thanh, hình ảnh và các hình thức dịch vụ tương tự khác (bao gồm nhưng không giới hạn ở Facebook, Snapchat, Zalo, Instagram, Pinterest, Twitter và các trang mạng xã hội khác được phát triển vào từng thời điểm cụ thể) được đăng ký với Chương Trình bởi Đối Tác TTLK và được chấp thuận bởi Shopee theo yêu cầu của từng loại chương trình thuộc Chương Trình TTLK quy định tại Chương III."
+            - listitem [ref=f34e213]:
+              - paragraph [ref=f34e214]: "Ngày Làm Việc: Là bất kỳ ngày nào trong tuần, ngoại trừ thứ Bảy, Chủ Nhật hoặc ngày lễ/Tết theo quy định của pháp luật."
+            - listitem [ref=f34e215]:
+              - paragraph [ref=f34e216]: "Người Bán: là tổ chức, cá nhân có Sản Phẩm Trên Sàn TMĐT."
+            - listitem [ref=f34e217]:
+              - paragraph [ref=f34e218]: "Nhấp Chuột hoặc nhấp chuột: Là việc kích hoạt đường dẫn Siêu Liên Kết của Chương Trình TTLK để đến với Sản Phẩm Trên Sàn TMĐT."
+            - listitem [ref=f34e219]:
+              - paragraph [ref=f34e220]: "Nội Dung Cấm: Là bất kỳ nội dung nào vi phạm pháp luật, đạo đức công cộng, hoặc xâm phạm quyền của bên thứ ba trong quá trình thực hiện các dự án cụ thể cho Chương Trình, bao gồm nhưng không giới hạn ở các nội dung vi phạm: Chính Sách Shopee, pháp luật, đạo đức xã hội, tiêu chuẩn cộng đồng, hoặc các nội dung xâm phạm quyền của bên thứ ba. Nội Dung Cấm bao gồm, nhưng không giới hạn, các chương trình kích động bạo lực, nội dung và ảnh minh họa gợi dục và khiêu dâm, tuyên bố gây nhầm lẫn hoặc nội dung mang tính phân biệt đối xử (ví dụ về giới tính, chủng tộc, chính trị, tôn giáo, quốc tịch hoặc tàn tật) hoặc các nội dung khác theo quyết định của Shopee (bao gồm nhưng không giới hạn ở nhóm nội dung cấm đăng video hoặc nội dung cấm trong livestream)."
+            - listitem [ref=f34e221]:
+              - paragraph [ref=f34e222]: "Phí Hoa Hồng: Là khoản phí Shopee thanh toán cho Đối Tác TTLK được tính căn cứ trên Kết Quả TTLK và tỷ lệ hoa hồng chia sẻ theo thông báo của Shopee vào từng thời điểm cụ thể. Bằng việc đề cập đến Phí Hoa Hồng, Phí Hoa Hồng có thể bao gồm một trong các loại sau: Hoa Hồng Cơ Bản, Hoa Hồng Xtra và Hoa Hồng Thưởng, được quyết định theo từng loại chương trình cụ thể thuộc Chương Trình TTLK quy định tại Chương III."
+            - listitem [ref=f34e223]:
+              - paragraph [ref=f34e224]: "Phương Tiện TTLK: là tất cả các phương tiện truyền thông, quảng cáo và/hoặc hiển thị của Đối Tác TTLK hoặc được Đối Tác TTLK sử dụng một cách hợp lệ, bao gồm nhưng không giới hạn ở các website, ứng dụng di động, cũng như các bản thông tin - newsletters (bao gồm các thông tin được đăng tải thông qua Shopee Video hoặc Shopee Live), kênh truyền thông của các đơn vị liên kết thứ cấp trong mạng lưới của Đối Tác TTLK, các phương tiện truyền thông, quảng cáo và/hoặc hiển thị do Đối Tác TTLK sở hữu hoặc kết nối được đăng ký với Chương Trình bởi Đối Tác TTLK và được chấp thuận bởi Shopee."
+            - listitem [ref=f34e225]:
+              - paragraph [ref=f34e226]: "Sàn Giao Dịch Thương Mại Điện Tử hoặc Sàn TMĐT hoặc Sàn Shopee (tùy vào từng ngữ cảnh cụ thể): có nghĩa là sàn giao dịch thương mại điện tử Shopee qua website www.shopee.vn và ứng dụng di động Shopee, hoặc bất kỳ ứng dụng hoặc nền tảng nào khác do Shopee vận hành, phát triển và/hoặc hợp tác theo thông báo hoặc theo quyết định của Shopee vào từng thời điểm cụ thể"
+            - listitem [ref=f34e227]:
+              - paragraph [ref=f34e228]: "Sản Phẩm Trên Sàn TMĐT: Là hàng hóa/dịch vụ được chào bán, bán và phân phối hợp lệ trên Sàn TMĐT."
+            - listitem [ref=f34e229]:
+              - paragraph [ref=f34e230]: "SEM (Search Engines Marketing): Là tiếp thị bằng công cụ tìm kiếm và bao gồm bất kỳ hình thức tiếp thị trực tuyến nào nhắm đến việc quảng bá các trang mạng điện tử bằng cách tăng khả năng hiển thị của những trang mạng điện tử này dựa trên trên kết quả tìm kiếm ở các công cụ tìm kiếm trực tuyến thông qua việc sử dụng gói ưu tiên vị trí, gói quảng cáo theo ngữ cảnh hoặc gói bảo đảm vị trí ở kết quả tìm kiếm ở các công cụ tìm kiếm trực tuyến."
+            - listitem [ref=f34e231]:
+              - paragraph [ref=f34e232]:
+                - text: "Shopee: Là đơn vị vận hành và quản lý sàn giao dịch thương mại điện tử"
+                - link "www.shopee.vn" [ref=f34e233] [cursor=pointer]:
+                  - /url: http://www.shopee.vn/?previousPage=other%20articles
+                - text: và ứng dụng di động Shopee.
+            - listitem [ref=f34e234]:
+              - paragraph [ref=f34e235]: "Siêu Liên Kết hoặc Đường Link TTLK: Là một đường dẫn đến Sàn TMĐT dưới hình thức địa chỉ URLs và HTML hoặc mã Javascript duy nhất, được cung cấp thông qua Chương Trình TTLK, để Đối Tác TTLK sử dụng tại Mạng Xã Hội và/hoặc Phương Tiện TTLK của mình (ví dụ như trang mạng điện tử đã được đăng ký). Để làm rõ, Shopee sẽ thông qua các Siêu Liên Kết được cung cấp cho mỗi Đối Tác TTLK cụ thể nhằm xác định các Đối Tác TTLK và quyết định các Kết Quả TTLK ."
+            - listitem [ref=f34e236]:
+              - paragraph [ref=f34e237]: "Số Dư: là Phí Hoa Hồng cộng dồn chưa thanh toán đã đến hạn và có thể thanh toán cho Đối Tác TTLK."
+            - listitem [ref=f34e238]:
+              - paragraph [ref=f34e239]: "Tài Liệu Quảng Cáo: Bao gồm nhưng không giới hạn ở các khung banner hiển thị, cửa sổ hiển thị (popup), bài viết hoặc bất cứ thông tin sản phẩm nào được hiển thị theo các hình thức tương tự hoặc được hiển thị theo bất cứ cách nào trên các phương tiện truyền thông, quảng cáo hoặc hiển thị theo sự quản lý của Shopee."
+            - listitem [ref=f34e240]:
+              - paragraph [ref=f34e241]: "Xung Đột Lợi Ích: là bất cứ và mọi mối quan hệ, kết nối, liên kết hoặc giao dịch (dù trực tiếp hay gián tiếp) giữa Đối tác TTLK, các Công ty liên kết của Đối tác TTLK, các giám đốc hoặc cổ đông của Đối Tác TTLK với bất kỳ nhân viên nào của Shopee vi phạm chính sách của Shopee về Xung Đột Lợi Ích trong từng thời điểm theo cách sẽ dẫn đến hoặc có thể dẫn đến các xung đột lợi ích (dù cho rõ ràng hay tiềm ẩn) giữa Đối tác TTLK với Shopee và/hoặc nhân viên của Shopee."
+            - listitem [ref=f34e242]:
+              - paragraph [ref=f34e243]: "Dấu Hiệu Liên Kết là các dấu hiệu, thông tin, dữ liệu chung dù trực tiếp hoặc gián tiếp giữa các tài khoản bao gồm nhưng không giới hạn: các tài khoản có dấu hiệu được đăng ký hàng loạt; các thông tin về địa chỉ nhận, gửi hàng; số điện thoại nhận, gửi hàng, tài khoản ngân hàng hoặc tài khoản nhận tiền thanh toán, thông tin thẻ tín dụng, thông tin định danh, mã số thuế, thiết bị đăng nhập, địa chỉ IP, hoặc bất cứ dữ liệu, thông tin, dấu hiệu nào khác;"
+            - listitem [ref=f34e244]:
+              - paragraph [ref=f34e245]: Tài Khoản Liên Kết là hai hay nhiều tài khoản Người dùng có một hoặc nhiều Dấu hiệu liên kết trực tiếp hoặc gián tiếp với nhau được ghi nhận trên hệ thống của Shopee hoặc do Shopee tự thu thập được. Các Tài Khoản Liên Kết sẽ luôn được coi là được sở hữu, quản lý hoặc vận hành bởi cùng một chủ thể hoặc một nhóm chủ thể liên quan đến nhau mà không phải là các bên độc lập.
+            - listitem [ref=f34e246]:
+              - paragraph [ref=f34e247]: Tài Khoản Đăng ký hàng loạt là các tài khoản được khởi tạo thông qua bất kỳ phần mềm hoặc phần cứng không được chấp thuận hoặc không được cung cấp bởi Shopee, bao gồm nhưng không giới hạn phần mềm giả lập, thiết bị giả lập, phần mềm tự động, phần mềm thay đổi thông tin thiết bị, hoặc bất kỳ phần mềm, thiết bị hoặc phần cứng nào khác, các tài khoản được khởi tạo trong cùng một khoảng thời gian nhất định với nhiều đặc điểm kỹ thuật giống nhau hoặc bất cứ dấu hiệu kỹ thuật bất thường nào khác mà Shopee nhận định con người bình thường không thể thực hiện được;
+          - paragraph [ref=f34e248]
+          - heading "ĐIỀU 2. NGUYÊN TẮC CHUNG VỀ VIỆC XÁC LẬP QUAN HỆ KHI THAM GIA CHƯƠNG TRÌNH" [level=2] [ref=f34e249]
+          - list [ref=f34e250]:
+            - listitem [ref=f34e251]:
+              - paragraph [ref=f34e252]: Việc Đối Tác TTLK đồng ý tham gia Chương Trình theo Điều Khoản và Điều Kiện này sẽ không thiết lập bất kỳ quan hệ nào giữa Đối Tác TTLK và Shopee nằm ngoài phạm vi Điều Khoản và Điều Kiện này; và cũng sẽ không được ngầm hiểu hay diễn giải dưới bất kỳ hình thức nào, là thiết lập bất kỳ quan hệ lao động, đại lý, liên doanh, hoặc các quan hệ mang tính chất tương tự giữa Shopee và Đối Tác TTLK một cách tương ứng.
+            - listitem [ref=f34e253]:
+              - paragraph [ref=f34e254]: Các điều khoản và điều kiện áp dụng riêng cho từng Đối Tác TTLK nằm ngoài phạm vi của Điều Khoản và Điều Kiện này và Chính Sách Shopee, cần phải có sự chấp thuận rõ ràng bằng văn bản của Shopee một cách tương ứng. Theo đó, các điều khoản và điều kiện áp dụng riêng không đáp ứng yêu cầu nêu tại Mục này sẽ không được áp dụng ngay cả khi Shopee không phản đối tính hợp lệ của những điều khoản và điều kiện này. Trong trường hợp có bất kỳ sự khác biệt nào giữa các điều khoản và điều kiện áp dụng riêng nêu trên và Điều Khoản và Điều Kiện này, Điều Khoản và Điều Kiện này sẽ được ưu tiên áp dụng.
+            - listitem [ref=f34e255]:
+              - paragraph [ref=f34e256]: Quan hệ hợp tác giữa Shopee và Đối Tác TTLK được xác lập thông qua quy trình đăng ký dưới hình thức Đối Tác TTLK gửi mẫu đơn đăng ký để tham gia vào Chương Trình TTLK thông qua Hệ Thống Shopee và/hoặc Đối Tác TTLK và Shopee tiến hành ký kết các thỏa thuận liên quan vào từng thời điểm cụ thể.
+            - listitem [ref=f34e257]:
+              - paragraph [ref=f34e258]: Xác định tư cách hoạt động và nghĩa vụ liên quan
+          - paragraph [ref=f34e259]: Đối Tác TTLK có trách nhiệm tự xác định tư cách hoạt động, tình trạng thuế và nghĩa vụ sử dụng hóa đơn của mình theo quy định pháp luật, đồng thời cung cấp đầy đủ, chính xác và kịp thời cho Shopee các thông tin, tài liệu hoặc cam kết cần thiết để Shopee áp dụng cơ chế xử lý phù hợp.
+          - paragraph [ref=f34e260]: Shopee sẽ thực hiện việc khấu trừ, kê khai, nộp thuế và/hoặc yêu cầu cung cấp hóa đơn, chứng từ theo thông tin, tài liệu hoặc cam kết do Đối Tác TTLK cung cấp và theo quy định pháp luật áp dụng tại từng thời điểm.
+          - paragraph [ref=f34e261]: Đối Tác TTLK có trách nhiệm cập nhật kịp thời cho Shopee khi có thay đổi về tư cách hoạt động, doanh thu, tình trạng thuế hoặc nghĩa vụ sử dụng hóa đơn có thể ảnh hưởng đến việc áp dụng cơ chế nêu trên, và chịu trách nhiệm đối với tính chính xác, đầy đủ của các thông tin, tài liệu và cam kết đã cung cấp.
+          - list [ref=f34e262]:
+            - listitem [ref=f34e263]:
+              - paragraph [ref=f34e264]: Bản chất khoản thù lao khi tham gia chương trình
+          - paragraph [ref=f34e265]: Khi cung cấp dịch vụ tiếp thị liên kết cho Shopee và/hoặc thông qua nền tảng của Shopee, khoản tiền mà Đối Tác TTLK nhận được Shopee, Người Bán trên Sàn TMĐT Shopee và/hoặc các đối tác khác từ hoạt động Tiếp Thị Liên Kết được xác định là khoản thu nhập phát sinh từ hoạt động kinh doanh trừ khi được quy định khác đi theo quy định của pháp luật.
+          - paragraph [ref=f34e266]: Đối với hoạt động kinh doanh phát sinh thông qua nền tảng thương mại điện tử của Shopee, Shopee có thể thực hiện việc khấu trừ, kê khai và nộp thay các khoản thuế GTGT, thuế thu nhập cá nhân và/hoặc các loại thuế khác thuộc trách nhiệm của Đối tác TTLK theo quy định pháp luật áp dụng tại từng thời điểm.
+          - paragraph [ref=f34e267]: Đối Tác TTLK có trách nhiệm cung cấp đầy đủ, chính xác và kịp thời các thông tin, tài liệu cần thiết để Shopee thực hiện nghĩa vụ khấu trừ, kê khai và nộp thuế theo quy định.
+          - list [ref=f34e268]:
+            - listitem [ref=f34e269]:
+              - paragraph [ref=f34e270]: Trong phạm vi pháp luật cho phép, khi Đối Tác TTLK thuộc trường hợp được ủy nhiệm xuất hóa đơn trong trường hợp có nhu cầu ủy nhiệm bên thứ ba xuất hóa đơn cho Shopee, và/hoặc Người bán, và/hoặc các đối tượng khác, bằng việc tham gia Chương Trình này (bất kể hình thức tham gia theo quy định tại Chương I nêu trên) một cách rõ ràng đồng ý, ủy quyền không hủy ngang cho một bên thứ ba được chấp thuận bởi Shopee nhằm đại diện cho Đối Tác TTLK thực hiện việc xuất hóa đơn cho Shopee, và/hoặc Người Bán và/hoặc các đối tượng khác đối với các khoản phí mà Đối Tác TTLK nhận được trừ trường hợp có thỏa thuận khác một cách rõ ràng với Shopee. Đồng thời, Đối Tác TTLK đồng ý và cho phép Shopee thu thập, xử lý, chia sẻ các thông tin cá nhân của Đối Tác TTLK cho các bên thứ ba có liên quan theo Chính Sách Bảo Mật của Shopee, cũng như hỗ trợ thực hiện và/hoặc thay mặt ký kết và/hoặc tạo lập các tài liệu và/hoặc văn bản liên quan giữa Đối Tác TTLK và bên thứ ba nêu trên (nếu áp dụng). Đối Tác TTLK sẽ bằng nỗ lực tối đa của mình cung cấp các thông tin, thực hiện các công việc theo yêu cầu của Shopee vào từng thời điểm cụ thể nhằm mục đích thực hiện quy định tại Mục này. Bất kỳ việc trì hoãn hoặc không phản hồi hoặc không thực hiện có liên quan đến các quy định tại Mục này sẽ được xem là vi phạm của Đối Tác TTLK, và Shopee có toàn quyền quyết định ngưng hợp tác hoặc chấm dứt việc hợp tác với Đối Tác TTLK đối với Chương Trình và xử lý theo Chính Sách Shopee.
+          - paragraph [ref=f34e271]: Nhằm đảm bảo tính minh bạch đến Đối Tác TTLK, Shopee sẽ thông tin đến Đối Tác TTLK về thông tin của bên thứ ba và các nội dung của thỏa thuận cần thiết giữa Đối Tác TTLK và bên thứ ba liên quan đến việc ủy quyền xuất hóa đơn cho Shopee vào từng thời điểm cụ thể.
+          - list [ref=f34e272]:
+            - listitem [ref=f34e273]:
+              - paragraph [ref=f34e274]: Đối Tác TTLK phải đảm bảo đăng ký hoạt động dưới một trong các hình thức được quy định tại Phần II của Điều Khoản và Điều Kiện này phù hợp với quy định của pháp luật về thuế áp dụng đối với đối tác TTLK. Để làm rõ, việc Đối Tác TTLK không cập nhật loại hình kinh doanh hoặc không duy trì các điều kiện và yêu cầu theo quy định của pháp luật để duy trì loại hình kinh doanh để phù hợp với quy định tại Điều Khoản và Điều Kiện này sẽ được xem là không đáp ứng điều kiện tham gia Chương Trình. Theo đó, Shopee được toàn quyền quyết định loại Đối Tác TTLK ra khỏi Chương Trình, và thực hiện các hành động cần thiết liên quan đến Tài Khoản TTLK của Đối Tác TTLK trong trường hợp này, bao gồm nhưng không giới hạn ở việc xóa hoàn toàn tài khoản, tạm khóa tài khoản, khấu trừ khoản thuế theo quy định của pháp luật áp dụng đối với chủ thể kinh doanh. Việc xử lý các quyền và nghĩa vụ còn tồn đọng giữa Shopee và Đối Tác TTLK sẽ theo hướng dẫn của Shopee vào từng thời điểm cụ thể.
+            - listitem [ref=f34e275]:
+              - paragraph [ref=f34e276]: Đối Tác TTLK chỉ được tham gia Chương Trình TTLK dưới 01 (một) trong các hình thức quy định cụ thể tại Phần II của Điều Khoản và Điều Kiện này.
+          - paragraph [ref=f34e277]: Trường hợp Đối Tác TTLK chọn tham gia hoặc đang tham gia hơn một (01) Loại Hình Tiếp Thị Liên Kết được quy định cụ thể tại Phần II của Điều Khoản và Điều Kiện này, Đối Tác TTLK sẽ được yêu cầu chọn tham gia một (01) chương trình trong thời gian năm (05) Ngày Làm Việc kể từ ngày Shopee thông báo cho Đối Tác TTLK. Trong trường hợp Đối Tác TTLK không chọn một chương trình để tham gia trong thời hạn (05) Ngày Làm Việc kể từ ngày Shopee thông báo cho Đối Tác TTLK như trên, Shopee theo quyết định của mình có thể chủ động giữ lại một tài khoản để tham gia một chương trình bất kỳ và đóng các tài khoản còn lại.
+          - list [ref=f34e278]:
+            - listitem [ref=f34e279]:
+              - paragraph [ref=f34e280]: Người Bán khi sử dụng các dịch vụ thông qua Chương Trình TTLK (mà không phải là một Đối Tác TTLK) sẽ phải ghi nhận các nội dung liên quan đến Chương Trình này trên Sàn TMĐT một cách hợp lý, bao gồm hoa hồng áp dụng cho Đối Tác TTLK đối với mỗi Đơn Hàng Thành Công (hay còn gọi là Hoa Hồng Xtra).
+          - paragraph [ref=f34e281]
+          - heading "ĐIỀU 3. NGHĨA VỤ VÀ CAM KẾT CHUNG CỦA ĐỐI TÁC TTLK" [level=2] [ref=f34e282]
+          - list [ref=f34e283]:
+            - listitem [ref=f34e284]:
+              - paragraph [ref=f34e285]: Bằng việc gửi đơn đăng ký tham gia theo quy định tại Mục I – Điều 2 và/hoặc ký kết, đồng ý các thỏa thuận có liên quan với Shopee theo từng trường hợp cụ thể, Đối Tác TTLK đồng ý và cam kết rằng mọi thông tin cung cấp bởi Đối Tác TTLK cho Shopee là chính xác và trung thực tại bất kỳ thời điểm nào trong quá trình tham gia Chương Trình. Đối Tác TTLK hiểu rõ và đồng ý rằng, Shopee sẽ dựa vào các thông tin được cung cấp này để thực hiện các hoạt động có liên quan với cơ quan nhà nước hoặc bên thứ ba có thẩm quyền. Để làm rõ, Shopee sẽ không chịu trách nhiệm với bất kỳ sai sót hoặc thiệt hại nào phát sinh từ các thông tin do Đối Tác TTLK cung cấp trong quá trình tham gia Chương Trình TTLK, bao gồm nhưng không giới hạn ở việc Đối Tác TTLK cung cấp thông tin không đúng, không đầy đủ, không cập nhật. Bất kỳ trường hợp cung cấp thông tin sai lệch hoặc không chính xác nào cho Shopee sẽ là cơ sở để Shopee đơn phương chấm dứt quan hệ hợp tác với Đối Tác TTLK hoặc bất kỳ thỏa thuận hoặc hợp đồng nào với Đối Tác TTLK ngay lập tức.
+            - listitem [ref=f34e286]:
+              - paragraph [ref=f34e287]:
+                - text: Đối Tác TTLK cung cấp đúng, đầy đủ cũng như đảm bảo cập nhật các thông tin thanh toán cho Shopee theo quy định
+                - link "TẠI ĐÂY" [ref=f34e288] [cursor=pointer]:
+                  - /url: https://help.shopee.vn/portal/10/article/180808?previousPage=other%20articles
+                - text: . Để làm rõ, Shopee sẽ dựa vào các thông tin thanh toán mà Đối Tác TTLK đã cung cấp cho Shopee dựa trên bản cập nhật mới nhất được ghi nhận trên Hệ Thống Shopee nhằm thực hiện các thủ tục có liên quan (bao gồm nhưng không giới hạn ở việc sử dụng các thông tin này để xuất các hóa đơn / chứng từ cho Đối Tác TTLK hoặc cung cấp thông tin cho cơ quan chức năng khi có yêu cầu hoặc theo quy định của pháp luật áp dụng). Đối Tác TTLK sẽ tự mình chịu trách nhiệm cho bất kỳ sai sót nào (bao gồm cả trường hợp không kịp thời cập nhật thông tin mới nhất) có liên quan đến thông tin thanh toán do Đối Tác TTLK cung cấp cho Shopee. Shopee trong trường hợp này sẽ không có trách nhiệm hỗ trợ điều chỉnh, sửa đổi các tài liệu, hóa đơn, chứng từ đã xuất, hoặc cập nhật các thông tin đã cung cấp cho cơ quan có thẩm quyền, và Đối Tác TTLK sẽ phải tự mình làm việc với các cơ quan có thẩm quyền để giải trình và/hoặc thực hiện các hành động cần thiết theo hướng dẫn, yêu cầu của pháp luật áp dụng.
+            - listitem [ref=f34e289]:
+              - paragraph [ref=f34e290]: Bằng việc tham gia và duy trì trạng thái tham gia Chương Trình TTLK, Đối Tác TTLK đồng ý việc Hệ Thống TLLK sẽ mặc định hiển thị thông tin liên hệ của Tài Khoản TTLK dưới chế độ công khai trừ trường hợp có thỏa thuận khác bằng văn bản với Shopee. Đối Tác TTLK có thể chủ động điều chỉnh chế độ hiển thị, chia sẻ thông tin liên hệ của Tài Khoản TTLK theo quyết định và nhu cầu của mình.
+            - listitem [ref=f34e291]:
+              - paragraph [ref=f34e292]: Đối Tác TTLK không được tạo và/hoặc duy trì Mạng Xã Hội, Phương Tiện TTLK, chương trình ứng dụng mà có thể dẫn đến nguy cơ nhầm lẫn với hình ảnh hoặc hiện diện của Shopee trên các Mạng Xã Hội, Phương Tiện TTLK của Đối Tác TTLK. Đối Tác TTLK không được sao chép tên thương hiệu, logo, hình ảnh hoặc hiện diện của Shopee, cũng như không được sao chép ảnh, đồ họa, thiết kế, văn bản, các quyền sở hữu trí tuệ, hoặc nội dung khác từ các trang mạng cũng như Sàn TMĐT của hoặc thuộc sự quản lý của Shopee (“Thông Tin Shopee”). Shopee nghiêm cấm việc Đối Tác TTLK thu thập bất kỳ thông tin nào trên Sàn TMĐT. Đặc biệt, Đối Tác TTLK không được phép có bất kỳ hành vi hoặc hoạt động nào có thể gây ấn tượng (một cách trực tiếp hoặc gián tiếp, rõ ràng hoặc ngụ ý) rằng Mạng Xã Hội và/hoặc Phương Tiện TTLK của Đối Tác TTLK là một dự án hoặc một chương trình của Shopee, hoặc đơn vị điều hành Mạng Xã Hội và/hoặc Phương Tiện TTLK đó có liên quan với Shopee theo bất kỳ cách thức hoặc hình thức nào bao gồm nhưng không giới hạn là nhân viên, là đại lý, người làm việc cho Shopee. Việc Đối Tác TTLK sử dụng bất kỳ tài liệu hoặc nội dung nào có liên quan đến hoặc phát sinh từ Thông Tin Shopee đều cần phải có sự đồng ý trước một cách rõ ràng bằng văn bản của Shopee.
+            - listitem [ref=f34e293]:
+              - paragraph [ref=f34e294]: Đối Tác TTLK chịu trách nhiệm cho việc đưa các Tài Liệu Quảng Cáo lên Mạng Xã Hội và/hoặc Phương Tiện TTLK đã đăng ký trong Chương Trình TTLK. Căn cứ vào các quyền của Shopee quy định tại Điều Khoản và Điều Kiện này, Đối Tác TTLK được toàn quyền quyết định có đưa Tài Liệu Quảng Cáo lên Mạng Xã Hội thuộc sở hữu của hoặc được quản lý, sử dụng hợp pháp bởi Đối Tác TTLK hay không và trong thời gian bao lâu, trừ khi Shopee có yêu cầu khác. Đối Tác TTLK sẽ được quyền gỡ bỏ các Tài Liệu Quảng Cáo này bất cứ lúc nào. Đối Tác TTLK chỉ được phép đưa các Tài Liệu Quảng Cáo lên Mạng Xã Hội và/hoặc Phương Tiện TTLK với điều kiện những Mạng Xã Hội và Phương Tiện TTLK này đã được đăng ký và chấp thuận bởi Shopee và/hoặc không chứa các nội dung vi phạm pháp luật hoặc không theo cách thức vi phạm pháp luật.
+            - listitem [ref=f34e295]:
+              - paragraph [ref=f34e296]: Bất kỳ sự vi phạm nào của Đối Tác TTLK đối với bất kỳ quy định nào thuộc Điều Khoản và Điều Kiện này và pháp luật áp dụng, hoặc xâm phạm quyền sở hữu công nghiệp hoặc quyền sở hữu trí tuệ nào khác của Shopee hoặc bất kỳ bên thứ ba nào mà có ảnh hưởng đến hình ảnh, danh tiếng, quyền, lợi ích hợp pháp hoặc hoạt động kinh doanh bình thường của Shopee, Người Bán trên Sàn TMĐT Shopee và hoặc các bên khác có liên quan trên Sàn TMĐT Shopee sẽ cho phép Shopee ngay lập tức chấm dứt tư cách của Đối Tác TTLK tại Chương Trình này mà không cần phải có thông báo đến cho Đối Tác TTLK. Điều này sẽ không ảnh hưởng đến bất kỳ quyền bổ sung nào khác của Shopee (bao gồm nhưng không giới hạn ở quyền khiếu nại, quyền yêu cầu bồi thường thiệt hại, quyền tạm ngừng hoặc chấm dứt tất cả và bất kỳ dịch vụ liên quan đến Đối Tác TTLK) mà Shopee được phép thực hiện đối với Đối Tác TTLK.
+            - listitem [ref=f34e297]:
+              - paragraph [ref=f34e298]: Không ảnh hưởng đến bất cứ quyền yêu cầu bồi thường, quyền hoặc biện pháp khắc phục nào khác của Shopee theo Điều Khoản và Điều Kiện này cũng như quy định của pháp luật áp dụng, Đối Tác TTLK phải bồi thường, bảo vệ và giữ cho Shopee không bị thiệt hại từ và đối với bất kỳ và tất cả các thiệt hại có thể phát sinh, thiết lập, thực hiện hoặc bị cáo buộc chống lại Shopee, hoặc thiệt hại mà Shopee phải gánh chịu và phát sinh (dù cho trực tiếp hoặc gián tiếp, rõ ràng hoặc ngụ ý) từ hoặc trong quá trình hoặc liên quan đến việc vi phạm các nghĩa vụ trong Điều Khoản và Điều Kiện này của Đối Tác TTLK hoặc dựa trên các vi phạm pháp luật của Đối Tác TTLK. Đối Tác TTLK có nghĩa vụ bồi thường cho Shopee đối với tất cả các yêu cầu mà bên thứ ba xác lập dựa trên các hành vi vi phạm đã nêu trên. Nếu Shopee yêu cầu Đối Tác TTLK cung cấp thông tin hoặc giải trình nhằm mục đích bảo vệ quyền lợi của Shopee trước pháp luật, Đối Tác TTLK có nghĩa vụ cung cấp những nội dung này cho Shopee trong khoảng thời gian hợp lý đối với từng trường hợp cụ thể tuy nhiên trong mọi trường hợp sẽ không quá ba (03) ngày hoặc thời hạn khác theo thông báo của Shopee kể từ ngày nhận được yêu cầu của Shopee, đồng thời sẽ hỗ trợ Shopee một cách hợp lý trong quá trình bảo vệ quyền lợi của Shopee trước pháp luật. Trong trường hợp Đối Tác TTLK vi phạm nghĩa vụ giải trình này, Đối Tác TTLK sẽ được xem như là đã thực hiện hành vi vi phạm, hành vi bị cấm theo Điều Khoản và Điều Kiện này và Shopee có toàn quyền xử lý Đối Tác TTLK theo quy định tại Điều Khoản và Điều Kiện này.
+            - listitem [ref=f34e299]:
+              - paragraph [ref=f34e300]: Đối Tác TTLK phải bồi thường cho Shopee bất kỳ chi phí nào phát sinh từ các khiếu nại, khiếu kiện của bên thứ ba dựa trên các hành vi vi phạm Điều Khoản và Điều Kiện này hoặc vi phạm pháp luật trong quá trình thực hiện Chương Trình TTLK này bởi Đối Tác TTLK. Các chi phí này sẽ bao gồm, nhưng không giới hạn ở, phí luật sư, án phí hoặc chi phí giải quyết tranh chấp khác (ví dụ như chi phí để thực hiện những quy trình độc lập nhằm thu thập chứng cứ, thiệt hại và những bất lợi khác mà Shopee phải gánh chịu).
+            - listitem [ref=f34e301]:
+              - paragraph [ref=f34e302]: Đối Tác TTLK cam kết rằng mình đã có và sẽ duy trì tất cả các giấy phép, giấy chấp thuận, phê duyệt, đăng ký hoặc tài liệu tương tự từ cơ quan nhà nước có thẩm quyền cũng như bất kỳ bên thứ ba nào có liên quan, để tham gia và thực hiện Chương Trình theo Điều Khoản và Điều Kiện này và theo quy định có liên quan của pháp luật Việt Nam, bao gồm nhưng không giới hạn ở các quy định về quảng cáo, thương mại điện tử, bảo vệ dữ liệu cá nhân và các văn bản hướng dẫn có liên quan.
+            - listitem [ref=f34e303]:
+              - paragraph [ref=f34e304]:
+                - text: Tất cả đơn hàng phát sinh trên Sàn TMĐT (bất kể có phải là Đơn Hàng Thành Công hay không) có liên quan đến hoặc phát sinh từ việc Đối Tác TTLK thực hiện các hoạt động theo Điều Khoản và Điều Kiện này đều được kiểm tra và rà soát thông qua hệ thống sàng lọc, nhận diện gian lận của Shopee để xác định các đơn hàng phát sinh này có phù hợp các điều kiện và điều khoản mà Shopee đặt ra hay không (bao gồm nhưng không giới hạn ở việc thanh toán Phí Hoa Hồng). Shopee được toàn quyền loại trừ các đơn hàng có các dấu hiệu bất thường trong giao dịch hoặc vi phạm chính sách
+                - link "Tiêu Chuẩn Cộng Đồng" [ref=f34e305] [cursor=pointer]:
+                  - /url: https://banhang.shopee.vn/edu/article/12984?previousPage=other%20articles
+                - text: và
+                - link "Chính Sách Shopee" [ref=f34e306] [cursor=pointer]:
+                  - /url: https://help.shopee.vn/portal/4/article/77242?previousPage=other%20articles
+                - text: mà phía Shopee xác nhận hoặc nhận diện được vào bất kỳ thời điểm nào bất kể việc các đơn hàng này có thể được xác định nằm trong nhóm Đơn Hàng Thành Công.
+            - listitem [ref=f34e307]:
+              - paragraph [ref=f34e308]: Nhằm đảm bảo việc tuân thủ các nghĩa vụ về bảo mật thông tin theo Điều Khoản và Điều Kiện này và theo quy định của pháp luật hiện hành đối với Sàn TMĐT, đồng thời hạn chế việc tuyên truyền, thông tin các hành vi gian lận, lách luật của Đối Tác TTLK, đảm bảo sự phát triển bền vững của Shopee, Sàn TMĐT, và cộng đồng người dùng Shopee; Đối Tác TTLK đồng ý và hiểu rằng và Shopee không có nghĩa vụ và được toàn quyền từ chối cung cấp cho Đối Tác TTLK các thông tin liên quan đến các vi phạm đối với đơn hàng phát sinh, bên cạnh các vi phạm khác của Đối Tác TTLK khi tham gia Chương Trình.
+            - listitem [ref=f34e309]:
+              - paragraph [ref=f34e310]: Đối Tác TTLK cam kết tuân thủ nghiêm túc và chặt chẽ bất kỳ nghĩa vụ và cam kết nào của Đối Tác TTLK tại Điều Khoản và Điều Kiện này (bao gồm nhưng không giới hạn ở các nghĩa vụ được quy định một cách tương ứng và áp dụng xuyên suốt tại Chương I, Chương II và Chương II), các Chính Sách Shopee được thông tin đến Đối Tác TTLK hoặc được công bố trên Sàn TMĐT và Hệ Thống Shopee vào từng thời điểm, và quy định của pháp luật áp dụng.
+            - listitem [ref=f34e311]:
+              - paragraph [ref=f34e312]: Trừ trường hợp có thỏa thuận trước, Đối tác liên kết phải báo cáo ngay lập tức bất kỳ Xung đột lợi ích nào cho Shopee khi xung đột đó phát sinh. Trong trường hợp có bất cứ Xung Đột Lợi Ích, Đối Tác TTLK đồng ý rằng Đối Tác TTLK sẽ không nhận bất kỳ Phí Hoa Hồng hoặc bất kỳ quyền hoặc lợi ích nào phát sinh từ hoặc có liên quan đến Chương Trình (bao gồm nhưng không giới hạn tiền thưởng, mã ưu đãi, Shopee Xu, khoản tài trợ) theo Điều Khoản và Điều Kiện này. Để làm rõ, trường hợp Shopee phát hiện ra bất kỳ vi phạm nào của Đối Tác TTLK liên quan đến việc báo cáo các theo quy định tại điểm này (bao gồm nhưng không giới hạn ở việc không khai báo, khai báo trễ, khai báo không chính xác các quan hệ của Đối Tác TTLK), Shopee được toàn quyền xử lý theo Chính Sách Shopee (bao gồm nhưng không giới hạn ở việc truy thu toàn bộ khoản tiền, lợi ích mà Shopee đã chi trả cho Đối Tác TTLK và/hoặc không chi trả, ghi nhận bất kỳ kết quả hoạt động hoặc chi phí nào cho Đối Tác TTLK).
+            - listitem [ref=f34e313]:
+              - paragraph [ref=f34e314]: "Đối Tác TTLK đồng ý rằng Shopee có toàn quyền ngay lập tức xóa, khóa tài khoản tiếp thị liên kết của Đối Tác TTLK (“Tài Khoản TTLK”); thay đổi, gỡ bỏ hoặc hủy từ Hệ Thống Shopee bất kỳ nội dung nào liên quan đến Tài Khoản TTLK của Đối Tác TTLK bao gồm nhưng không giới hạn ở các video, phiên livestream, hình ảnh, âm thanh được đăng tải trên Tài Khoản TTLK (“Nội Dung”), toàn bộ các thông tin cá nhân, thông tin đăng ký đã được cập nhật trên Tài Khoản TTLK với bất kỳ lý do nào mà theo đó Shopee có thể thông báo hoặc không cần thông báo hay chịu trách nhiệm với Đối Tác TTLK hay bên thứ ba nào khác trong trường hợp Đối Tác TTLK thực hiện hoặc có dấu hiệu thực hiện một trong các hành vi sau:"
+          - list [ref=f34e315]:
+            - listitem [ref=f34e316]:
+              - paragraph [ref=f34e317]: Tài Khoản TTLK của Đối Tác TTLK không phát sinh Kết Quả TTLK trong vòng 6 (sáu) tháng liên tục hoặc không hoạt động trong thời gian nhất định hoặc không cập nhật thông tin thanh toán, thông tin thuế hợp lệ và/hoặc các thông tin khác theo Chính Sách Shopee;
+            - listitem [ref=f34e318]:
+              - paragraph [ref=f34e319]:
+                - text: vi phạm các điều khoản trong Điều Khoản và Điều Kiện này cũng như Điều Khoản Dịch Vụ và Chính Sách Shopee, bao gồm nhưng không giới hạn
+                - link "Chính Sách Chống Hành Vi Gian Lận" [ref=f34e320] [cursor=pointer]:
+                  - /url: https://help.shopee.vn/portal/10/article/199468?previousPage=other%20articles
+                - text: đối với hoạt động tiếp thị liên kết;
+            - listitem [ref=f34e321]:
+              - paragraph [ref=f34e322]: thực hiện hành vi bất hợp pháp, lừa đảo, quấy rối, xâm phạm, đe dọa hoặc lạm dụng các chương trình, Chính Sách Shopee để nhận được nhiều quyền lợi hơn so với các Đối Tác TTLK khác (bao gồm nhưng không giới hạn ở mã ưu đãi, Shopee Xu, các khoản tài trợ hoặc quyền lợi khuyến mại);
+            - listitem [ref=f34e323]:
+              - paragraph [ref=f34e324]: tạo nhiều Tài Khoản TTLK để thực hiện các hành vi bị cấm quy định tại Điều Khoản và Điều Kiện này, Chính Sách Shopee;
+            - listitem [ref=f34e325]:
+              - paragraph [ref=f34e326]: "nhiều Tài Khoản TTLK được tạo mới hoặc sử dụng thường xuyên trên cùng một thiết bị (bao gồm nhưng không giới hạn: điện thoại, máy tính bảng, máy tính cá nhân) khi tham gia Chương Trình; hoặc có dấu hiệu kiểm soát, đăng nhập hoặc thao tác đồng thời trên nhiều tài khoản từ một thiết bị duy nhất trong khoảng thời gian ngắn bất thường."
+            - listitem [ref=f34e327]:
+              - paragraph [ref=f34e328]: sử dụng các thông tin giả mạo, không trung thực hoặc không chính chủ để đăng ký Tài Khoản TTLK bao gồm nhưng không giới hạn thông tin định danh, mã số thuế, tài khoản ngân hàng, thông tin mạng xã hội liên kết của Đối Tác TTLK;
+            - listitem [ref=f34e329]:
+              - paragraph [ref=f34e330]: sử dụng công cụ đăng ký Tài Khoản tự động; và
+            - listitem [ref=f34e331]:
+              - paragraph [ref=f34e332]: hành vi cạnh tranh không lành mạnh, gây thiệt hại và tổn thất về mặt danh tiếng và hình ảnh cho Shopee và/hoặc các đối tác, khách hàng, các bên thứ ba của Shopee.
+          - paragraph [ref=f34e333]: Ngoài ra, Shopee bảo lưu quyền tiến hành việc báo cáo cho cơ quan nhà nước có thẩm quyền theo quy định pháp luật và/hoăc tiến hành khởi kiện trong trường hợp Đối Tác TTLK thực hiện hành vi vi phạm pháp luật, lừa đảo, quấy rối, xâm phạm chiếm đoạt tài sản của Shopee và/hoặc đối tác, khách hàng và các bên thứ ba có liên quan của Shopee.
+          - list [ref=f34e334]:
+            - listitem [ref=f34e335]:
+              - paragraph [ref=f34e336]:
+                - text: Đối Tác TTLK sẽ không thực hiện, và sẽ không cho phép bất kỳ bên thứ ba nào thực hiện các hành vi gian lận quy định tại
+                - link "Chính Sách Chống Hành Vi Gian Lận" [ref=f34e337] [cursor=pointer]:
+                  - /url: https://help.shopee.vn/portal/10/article/199468?previousPage=other%20articles
+                - text: .
+            - listitem [ref=f34e338]:
+              - paragraph [ref=f34e339]: Đối Tác TTLK không được sử dụng và/hoặc sửa đổi các Tài Liệu Quảng Cáo và nội dung được truy cập thông qua Hệ Thống Shopee mà không có sự đồng ý trước bằng văn bản của Shopee, trừ khi việc cho phép được quy định cụ thể theo các điều khoản của Điều Khoản và Điều Kiện này.
+            - listitem [ref=f34e340]:
+              - paragraph [ref=f34e341]: Đối Tác TTLK không được sử dụng thư quảng cáo điện tử, tin nhắn SMS để quảng bá, truyền thông hoặc tiếp thị khi tham gia Chương Trình TTLK mà không có sự chấp thuận trước bằng văn bản của Shopee.
+          - paragraph [ref=f34e342]: Shopee sẽ không chịu bất kỳ trách nhiệm nào liên quan đến bất kỳ yêu cầu hoặc khiếu nại nào của bên thứ ba trong trường hợp có các vấn đề phát sinh từ việc gửi thư điện tử, tin nhắn SMS hoặc các phương thức tương đương (ví dụ như ZNS) của Đối Tác TTLK. Đối Tác TTLK theo đây cam kết tự chịu trách nhiệm trong trường hợp có các yêu cầu hoặc khiếu nại liên quan đến thư điện tử, tin nhắn SMS hoặc các phương thức tương đương (ví dụ như ZNS) của Đối Tác TTLK. Đối Tác TTLK trong mọi trường hợp không được phép sử dụng thương hiệu cũng như từ “Shopee” trong địa chỉ thư điện tử, trong URL, trong mã nguồn, và trong tiêu đề của thư điện tử/tin nhắn SMS hoặc các phương thức tương đương (ví dụ như ZNS). Trong mọi trường hợp, Đối Tác TTLK phải ghi hoặc diễn tả một cách rõ ràng rằng các thư điện tử, tin nhắn SMS hoặc các phương thức tương đương (ví dụ như ZNS) được gửi từ Đối Tác TTLK mà không phải được gửi từ hoặc thay mặt cho Shopee (bất kể trực tiếp hay gián tiếp, rõ ràng hay ngụ ý). Shopee có toàn quyền kiểm tra, yêu cầu phê duyệt đối với các thư điện tử và/hoặc tin nhắn SMS và/hoặc tin nhắn SMS hoặc các phương thức tương đương (ví dụ như ZNS) của Đối Tác TTLK. Các thư điện tử và/hoặc tin nhắn SMS và/hoặc các phương thức tương đương (ví dụ như ZNS) của Đối Tác TTLK có thông tin liên quan đến Shopee (bất kể trực tiếp hay gián tiếp, dưới dạng hình ảnh hoặc ngôn từ) đều phải được Shopee phê duyệt bằng văn bản trước khi sử dụng. Để làm rõ, Đối Tác TTLK phải bồi thường các chi phí và thiệt hại cho bên thứ ba và Shopee, trong trường hợp vi phạm yêu cầu của bên thứ ba hay vi phạm các điều khoản hạn chế quy định tại Điều Khoản và Điều Kiện này.
+          - list [ref=f34e343]:
+            - listitem [ref=f34e344]:
+              - paragraph [ref=f34e345]: Đối Tác TTLK chỉ được dùng các các Tài Liệu Quảng Cáo hoặc bất kỳ tài liệu nào phục vụ cho các hoạt động theo Chương Trình này (tùy từng trường hợp và theo yêu cầu của Shopee vào từng thời điểm) cho mục đích duy nhất là để thực hiện các hoạt động hợp tác theo Chương Trình TTLK và không được đề cập đến bất cứ hoạt động kinh doanh nào khác của Đối Tác TTLK. Mọi tài liệu quảng cáo riêng của Đối Tác TTLK mà không phải có từ Chương Trình này nếu có đề cập hoặc có liên quan đến Shopee dù theo bất cứ cách nào mà không liên quan đến việc thực hiện Chương Trình TTLK đều bị nghiêm cấm. Nếu Đối Tác TTLK sử dụng các tài liệu quảng cáo riêng mà có đề cập hoặc có liên quan đến Shopee theo bất cứ cách nào đều bị coi là hành vi vi phạm nghiêm trọng của Đối Tác TTLK.
+            - listitem [ref=f34e346]:
+              - paragraph [ref=f34e347]: Đối Tác TTLK phải chịu trách nhiệm về nội dung và hoạt động thường xuyên của Mạng Xã Hội và/hoặc Phương Tiện TTLK của Đối Tác TTLK, đảm bảo không vi phạm các quy định pháp luật, cũng như không gây ảnh hưởng hoặc có thể gây ảnh hưởng đến hình ảnh, danh tiếng, hoạt động kinh doanh của Shopee. Đối Tác TTLK không được đưa lên Mạng Xã Hội và/hoặc Phương Tiện TTLK của Đối Tác TTLK, không được lồng ghép các Nội Dung Cấm. Những Nội Dung Cấm này không được đề cập trên Mạng Xã Hội và/hoặc Phương Tiện TTLK của Đối Tác TTLK, và cũng không được tạo đường dẫn liên kết từ những Mạng Xã Hội và Phương Tiện TTLK nói trên đến nội dung tương ứng trên các trang mạng xã hội và phương tiện tiếp thị liên kết khác.
+            - listitem [ref=f34e348]:
+              - paragraph [ref=f34e349]: Mạng Xã Hội và/hoặc Phương Tiện TTLK của Đối Tác TTLK hoặc các nền tảng quảng cáo liên quan khác không được tiến hành, thực hiện, sử dụng, triển khai hay thiết lập thỏa thuận, các hoạt động truyền tải hoặc chia sẻ mà không có sự đồng ý trước của Shopee.
+            - listitem [ref=f34e350]:
+              - paragraph [ref=f34e351]: Đối Tác TTLK phải chịu trách nhiệm, đối với Shopee, về việc đảm bảo rằng nội dung quảng cáo/hiển thị của Đối Tác TTLK không vi phạm dù là trực tiếp hay gián tiếp các quy định của pháp luật về quảng cáo, hoạt động sàn thương mại điện tử, bảo vệ thông tin cá nhân hoặc tới quyền sở hữu của bên thứ ba cả trong lẫn ngoài nước hoặc bất kỳ quyền nào khác bất kể việc các quyền này chưa đáp ứng điều kiện đặc biệt nào để được pháp luật bảo vệ.
+            - listitem [ref=f34e352]:
+              - paragraph [ref=f34e353]: Nghiêm cấm sử dụng SEM và quảng cáo dựa trên từ khóa khác sử dụng thương hiệu Shopee hoặc quyền sở hữu trí tuệ của Shopee để dẫn đến Trang Sản Phẩm Trên Sàn TMĐT. Nói cách khác, “Shopee” và các từ hoặc cụm từ tương tự khác mà có thể gây hiểu lầm là Shopee hoặc có liên quan đến Shopee được xem như là từ khóa cấm.
+            - listitem [ref=f34e354]:
+              - paragraph [ref=f34e355]: Việc quảng cáo cho Shopee thông qua các hoạt động trên Mạng Xã Hội và/hoặc Phương Tiện TTLK hoặc các phương tiện quảng cáo/hiển thị khác theo quy định của pháp luật chỉ được phép thực hiện khi có yêu cầu của Shopee và không được sử dụng chữ Shopee hoặc thương hiệu Shopee hoặc Thông Tin Shopee hoặc bất cứ quyền sở hữu trí tuệ nào khác của Shopee, hay hiển thị nội dung gây nhầm lẫn với hoạt động chính thức của Shopee trên Mạng Xã Hội và/hoặc Phương Tiện TTLK, hoặc các phương tiện quảng cáo/hiển thị khác.
+            - listitem [ref=f34e356]:
+              - paragraph [ref=f34e357]: Đối Tác TTLK sẽ không thiết lập các chiến dịch quảng cáo trên hệ thống của Đối Tác TTLK thứ ba. Đối Tác TTLK chỉ được phép chuyển lưu lượng truy cập của mình và/hoặc của đơn vị liên kết thứ cấp của mình (trong trường hợp có mạng liên kết thứ cấp), đến trang Sản Phẩm Trên Sàn TMĐT.
+            - listitem [ref=f34e358]:
+              - paragraph [ref=f34e359]: Đối Tác TTLK phải đảm bảo rằng sẽ thiết lập các Cookies chỉ khi Tài Liệu Quảng Cáo hiện hữu trên Chương Trình TTLK đang được hiển thị trên Mạng Xã Hội và/hoặc Hệ Thống TTLK của Đối Tác TTLK, và người dùng nhấp chuột một cách tự nguyện và có ý thức. Việc sử dụng layer, các add-ons, iFrame, pop-up, pop-under, site-under, quảng cáo Tự động chuyển hướng[1], cookie dropping, công nghệ postview, các quảng cáo gây nhầm lẫn khiến người xem hiểu sai mà nhấp chuột làm hiển thị một nội dung định sẵn nào đó, đều không được phép và được xếp vào một trong những Hành Vi Bị Cấm. Đối với các chiến dịch, quảng cáo trên chương trình ứng dụng dẫn đến việc cài đặt bắt buộc các ứng dụng của nhà quảng cáo cũng là Hành Vi Bị Cấm. Để làm rõ, việc cài đặt bắt buộc cũng bao gồm các hành động không yêu cầu người sử dụng cho phép trước khi bắt đầu tải về/ chuyển hướng.
+            - listitem [ref=f34e360]:
+              - paragraph [ref=f34e361]: Việc sử dụng các đề nghị giao kết, các tên sáng tạo hoặc tên thương hiệu dành cho bất cứ cuộc thi hay chương trình xổ số nào cũng đều bị nghiêm cấm.
+            - listitem [ref=f34e362]:
+              - paragraph [ref=f34e363]: Đối Tác TTLK chỉ được dẫn các Siêu Liên Kết mà, hoặc quảng bá các sản phẩm, phiếu mua hàng ưu đãi, mã giảm giá đã được Shopee phê duyệt cụ thể cho các Đối Tác TTLK bằng văn bản (có thể bao gồm nhưng không giới hạn ở việc trao đổi qua email theo quyết định của Shopee vào từng thời điểm cụ thể) dưới hình thức truyền tải qua các bản tin của Đối Tác TTLK thông qua Mạng Xã Hội và/hoặc Phương Tiện TTLK. Đối Tác TTLK không được phép quảng bá cho các phiếu mua hàng ưu đãi khác, bao gồm nhưng không giới hạn bản tin gửi khách hàng qua thư điện tử, tin nhắn SMS, v.v…, quảng cáo trên báo in hoặc liên lạc dịch vụ chăm sóc khách hàng trừ trường hợp được phê duyệt cụ thể bởi Shopee bằng văn bản. Đối Tác TTLK không được phép đăng tải, dẫn các liên kết hoặc siêu liên kết, hay quảng bá bất kỳ các sản phẩm, phiếu mua hàng ưu đãi, mã giảm giá của các Người Bán trên các sàn thương mại điện tử khác và đang là đối thủ của Shopee (bao gồm nhưng không giới hạn ở các Sàn Thương Mại Điện Tử Tiktok, Lazada, Tiki, Sendo). Shopee có toàn quyền quyết định danh sách các sàn thương mại điện tử đang là đối thủ của Shopee vào từng thời điểm cụ thể.
+            - listitem [ref=f34e364]:
+              - paragraph [ref=f34e365]: Đối Tác TTLK phải ngay lập tức tháo gỡ các Tài Liệu Quảng Cáo, các tài liệu và thông tin khác mà Đối Tác TTLK có được khi tham gia Chương Trình khỏi Mạng Xã Hội và Phương Tiện TTLK của Đối Tác TTLK khi Shopee có yêu cầu hoặc ngay khi chấm dứt hợp tác với Shopee.
+            - listitem [ref=f34e366]:
+              - paragraph [ref=f34e367]: Trong quá trình thực hiện Chương Trình, Đối Tác TTLK không được phép tháo gỡ hoặc sử dụng công cụ không được Shopee cung cấp để thay đổi Siêu Liên Kết, Đường Link TTLK cũng như đường dẫn các sản phẩm, phiếu mua hàng ưu đãi, mã giảm giá của đối tác là các Người Bán trên Sàn TMĐT đã được Shopee phê duyệt cụ thể cho các Đối Tác TTLK trong suốt thời gian thực hiện Chương Trình (bao gồm Chương trình Shopee KOL Video (PPV), Chương trình Shopee KOL Livestream (PPLS)), và không được phép tháo gỡ các bài đăng/ video của Đối Tác TTLK khỏi các Mạng Xã Hội và Phương Tiện TTLK của Đối Tác TTLK khi Shopee chưa có yêu cầu ngay cả sau khi chấm dứt hợp tác thực hiện Chương Trình với Shopee theo Điều Khoản và Điều Kiện này hoặc cho từng chiến dịch của Chương Trình một cách tương ứng.
+            - listitem [ref=f34e368]:
+              - paragraph [ref=f34e369]: Đối Tác TTLK sẽ không được mua bất kỳ Sản Phẩm Trên Sàn TMĐT để bán lại hoặc dùng cho mục đích thương mại dưới bất cứ hình thức nào. Tương tự như vậy, Đối Tác TTLK không được yêu cầu hoặc khuyến khích bất kỳ bạn bè, người thân, cộng sự của mình hoặc bất cứ bên thứ ba nào khác mua bất kỳ Sản Phẩm Trên Sàn TMĐT nào thông qua các Tài Liệu Quảng Cáo hoặc các tài liệu và thông tin khác mà Đối Tác TTLK có được trong quá trình tham gia Chương Trình, để bán lại hoặc dùng cho mục đích thương mại với bất cứ hình thức nào.
+            - listitem [ref=f34e370]:
+              - paragraph [ref=f34e371]: Shopee và Đối Tác TTLK đồng ý rằng việc theo dõi và báo cáo sẽ được tiến hành bởi Hệ Thống Shopee bằng cách sử dụng Cookies trên trình duyệt của người dùng để truy ngược giao dịch về Đối Tác TTLK và sử dụng thiết bị hoặc phần mềm định danh để theo dõi giao dịch được thực hiện ở Sàn TMĐT.
+            - listitem [ref=f34e372]:
+              - paragraph [ref=f34e373]: Đối tác TTLK khi thực hiện livestream bán hàng phải tuân thủ đầy đủ các quy định của pháp luật có liên quan về Livestream bán hàng. Việc giới thiệu hàng hóa, dịch vụ trong phiên Livestream phải giới thiệu đầy đủ, rõ ràng thông tin trên nhãn hàng hóa (nhãn gốc hoặc nhãn phụ đối với hàng hóa nhập khẩu) hoặc các thông tin khác giới thiệu về hàng hóa, dịch vụ đảm bảo trung thực, minh bạch, và tuân thủ các hướng dẫn của Shopee. Trong trường hợp thực hiện quảng cáo trên Livestream, phải đảm bảo tuân thủ các quy định của pháp luật về quảng cáo. Trong trường hợp có sự tài trợ, hỗ trợ bởi các bên thứ ba (bao gồm cả Shopee) dưới bất kỳ hình thức nào, phải tuyên bố đầy đủ, rõ ràng về việc mình được tài trợ để giới thiệu về hàng hóa, dịch vụ.
+            - listitem [ref=f34e374]:
+              - paragraph [ref=f34e375]: "Đối Tác TTLK trong mọi trường hợp không được:"
+          - list [ref=f34e376]:
+            - listitem [ref=f34e377]:
+              - paragraph [ref=f34e378]: có bất kỳ hành động hoặc không hành động nào mà có thể một cách rõ ràng hoặc ngụ ý, một cách trực tiếp hoặc gián tiếp được xem là hoặc có dấu hiệu lan truyền thông tin không chính xác, chưa xác thực, gây ảnh hưởng tới hình ảnh, danh tiếng, uy tín của Shopee và các bên thứ ba có liên quan (để làm rõ, Shopee sẽ chủ động đánh giá các hành vi này và có thể thông tin đến Đối Tác TTLK bằng cách gửi văn bản qua email đã được Đối Tác TTLK đã đăng ký với Shopee);
+            - listitem [ref=f34e379]:
+              - paragraph [ref=f34e380]: bằng văn bản hoặc lời nói hoặc hành vi, phỉ báng, bình luận tiêu cực, đưa ra các ý kiến bất lợi hoặc chê bai dưới bất kỳ hình thức nào đối với Shopee và các công ty liên kết của Shopee, ban giám đốc, nhân viên, người lao động, đối tác, Đối Tác TTLK khác, đại lý, nhà thầu độc lập, bên tư vấn, bên kế nhiệm hoặc bên nhận chuyển nhượng của Shopee hoặc hoạt động kinh doanh, sản phẩm, người dùng hoặc khách hàng của Shopee trước, trong và sau khi tham gia Chương Trình;
+            - listitem [ref=f34e381]:
+              - paragraph [ref=f34e382]: "thực hiện bất kỳ hành động, cử chỉ, tuyên bố, phát ngôn, hoặc có bất kỳ hành vi vi phạm pháp luật, trái thuần phong mỹ tục, gây ảnh hưởng không tốt đến xã hội mà bị hạn chế các hoạt động của chính Đối Tác TTLK cũng như Shopee liên quan đến: phát sóng, biểu diễn, quảng cáo hoặc hành vi nào khác có thể làm ảnh hưởng đến xấu đến uy tín, hình ảnh và thương hiệu/nhãn hiệu của Shopee và/hoặc Sản Phẩm Trên Sàn Shopee (“Sự Kiện Truyền Thông”);"
+            - listitem [ref=f34e383]:
+              - paragraph [ref=f34e384]: sử dụng, trực tiếp hoặc gián tiếp, hình ảnh, thiết bị, trang phục, tên, thư tín của các đơn vị, cơ sở y tế, bác sĩ, dược sĩ, nhân viên y tế, thư cảm ơn của người bệnh, bài viết của bác sĩ, dược sĩ, nhân viên y tế để tham gia, hỗ trợ hoặc thúc đẩy hoạt động quảng cáo đối với thực phẩm và/hoặc thực phẩm chức năng;
+            - listitem [ref=f34e385]:
+              - paragraph [ref=f34e386]: "sử dụng các từ ngữ, hình ảnh, biểu đạt mang tính tuyệt đối hoặc phóng đại tính năng/công dụng trong hoạt động quảng cáo, bao gồm nhưng không giới hạn: sử dụng các từ ngữ như “nhất”, “duy nhất”, “tốt nhất”, “số một”, hoặc các từ/cụm từ có ý nghĩa tương tự, nếu không có tài liệu, chứng cứ hợp pháp và đầy đủ chứng minh nội dung quảng cáo theo quy định của pháp luật áp dụng và/hoặc theo yêu cầu của Shopee."
+          - paragraph [ref=f34e387]: Trong trường hợp Đối Tác TTLK vi phạm quy định tại Mục này, Shopee có toàn quyền yêu cầu Đối Tác TTLK phải bồi thường thiệt hại phát sinh trên thực tế và/hoặc Shopee có quyền đơn phương chấm dứt Điều Khoản và Điều Kiện này trước thời hạn mà không bị ràng buộc bởi bất cứ trách nhiệm pháp lý nào sau khi có thông báo chính thức bằng văn bản cho Đối Tác TTLK và bảo lưu quyền từ chối thanh toán Phí Hoa Hồng và các khoản phải thanh toán khác cho Đối Tác TTLK.
+          - list [ref=f34e388]:
+            - listitem [ref=f34e389]:
+              - paragraph [ref=f34e390]: Bất kể các quy định khác tại Điều Khoản và Điều Kiện này, Shopee được toàn quyền quyết định và áp dụng các biện pháp sau đây đối với Đối Tác TTLK và/hoặc bất cứ Tài Khoản Liên Kết nào theo toàn quyền quyết định của Shopee trong trường hợp Đối Tác TTLK hoặc bất cứ tài khoản nào có Dấu Hiệu Liên Kết với tài khoản của Đối Tác TTLK theo quy định của Shopee trong từng thời điểm, có hành vi vi phạm pháp luật, Chính Sách Shopee và Điều Khoản và Điều Kiện này theo quy định bên dưới đây. Để làm rõ, Shopee được quyền áp dụng một hoặc nhiều biện pháp cho cùng một hành vi dựa trên việc đánh giá tính chất, mức độ nghiêm trọng và các tổn thất mà hành vi vi phạm đó gây ra và quyết định của Shopee sẽ là quyết định cuối cùng. Việc Shopee không áp dụng bất kỳ biện pháp nào khi Đối Tác TTLK vi phạm không đồng nghĩa hoặc được diễn giải rằng Shopee từ bỏ các quyền đó một cách tương ứng.
+          - list [ref=f34e391]:
+            - listitem [ref=f34e392]:
+              - paragraph [ref=f34e393]: Gửi thông tin cảnh báo vi phạm tới Đối Tác TTLK;
+            - listitem [ref=f34e394]:
+              - paragraph [ref=f34e395]: Loại bỏ kết quả hoạt động trong quá trình tham gia Chương Trình của Đối Tác TTLK có hành vi vi phạm trong kỳ đối soát thanh toán tương ứng;
+            - listitem [ref=f34e396]:
+              - paragraph [ref=f34e397]: Từ chối thanh toán một phần hoặc toàn bộ các khoản tiền / nghĩa vụ tài chính của Shopee đối với Đối Tác TTLK, bao gồm nhưng không giới hạn ở Phí Hoa Hồng mà Đối Tác TTLK có thể được nhận được, bất kể đã có sự xác nhận / thông báo từ Shopee cho Đối Tác TTLK về các khoản thanh toán này;
+            - listitem [ref=f34e398]:
+              - paragraph [ref=f34e399]: Tạm hoãn/ngừng thanh toán có thời hạn các khoản tiền và/hoặc quyền lợi từ Shopee cho Đối Tác TTLK, bao gồm nhưng không giới hạn ở Phí Hoa Hồng/giải thưởng/mã giảm giá/Shopee Xu/khoản tài trợ/khoản ưu đãi có liên quan đến hoặc phát sinh từ hành vi vi phạm của Đối Tác TTLK, bao gồm nhưng không giới hạn ở hành vi gian lận. Quy định này nhằm mục đích phục vụ hoạt động điều tra, xác minh nội bộ của Shopee và/hoặc của cơ quan nhà nước có thẩm quyền. Để làm rõ, Shopee không chịu bất kỳ trách nhiệm nào có liên quan đến hoặc phát sinh từ việc thực hiện các quyền của Shopee dưới bất kỳ hình thức nào theo quy định tại đây;
+            - listitem [ref=f34e400]:
+              - paragraph [ref=f34e401]: Thu hồi tiền, tài sản, các chi phí có liên quan đến hoặc phát sinh từ hành vi phạm của Đối Tác TTLK;
+            - listitem [ref=f34e402]:
+              - paragraph [ref=f34e403]: Khóa Tài Khoản TTLK và ngừng hợp tác vĩnh viễn với Đối Tác TTLK và các tài khoản khác có liên quan đến Đối Tác TTLK vi phạm, và có quyền từ chối việc đăng ký tham gia Chương Trình của Đối Tác TTLK trong tương lai;
+            - listitem [ref=f34e404]:
+              - paragraph [ref=f34e405]: Báo cáo và phối hợp với cơ quan chức năng để tiến hành các cuộc điều tra, các biện pháp pháp lý để xử lý những hành vi vi phạm của Đối Tác TTLK;
+            - listitem [ref=f34e406]:
+              - paragraph [ref=f34e407]: Áp dụng các hành động hoặc biện pháp chế tài khác theo Tiêu Chuẩn Cộng Đồng, Quy Chế Hoạt Động, hoặc các Chính Sách Shopee.
+            - listitem [ref=f34e408]:
+              - paragraph [ref=f34e409]:
+                - text: Yêu cầu đối tác TTLK thanh toán một khoản tiền theo quy định cụ thể của
+                - link "Chính Sách Chống Hành Vi Gian Lận" [ref=f34e410] [cursor=pointer]:
+                  - /url: https://help.shopee.vn/portal/10/article/199468?previousPage=other%20articles
+                - text: .
+            - listitem [ref=f34e411]:
+              - paragraph [ref=f34e412]:
+                - text: Trường hợp Đối Tác TTLK vi phạm Điều Khoản và Điều Kiện này và/hoặc
+                - link "Chính Sách Chống Hành Vi Gian Lận" [ref=f34e413] [cursor=pointer]:
+                  - /url: https://help.shopee.vn/portal/10/article/199468?previousPage=other%20articles
+                - text: mà không hoàn tất nghĩa vụ thanh toán tại Điểm i nêu trên trong thời hạn 6 (sáu) tháng kể từ ngày phát sinh nghĩa vụ thanh toán, Shopee bảo lưu quyền từ chối thanh toán Phí Hoa Hồng và các khoản phải trả khác (nếu có) cho Đối Tác TTLK.
+          - paragraph [ref=f34e414]
+          - heading "ĐIỀU 4. DỊCH VỤ CHUNG ĐƯỢC CUNG CẤP BỞI SHOPEE" [level=2] [ref=f34e415]
+          - list [ref=f34e416]:
+            - listitem [ref=f34e417]:
+              - paragraph [ref=f34e418]: Shopee sẽ vận hành Sàn Shopee và Hệ Thống Shopee trong các giới hạn về khả năng kỹ thuật của Shopee. Shopee sẽ không có nghĩa vụ, trong các giới hạn này, bảo đảm Sàn Shopee và Hệ Thống Shopee không bị lỗi và không bị gián đoạn truy cập. Chất lượng và sự chính xác của các sản phẩm, Tài Liệu Quảng Cáo và các tập tin định dạng csv được cung cấp trên Hệ Thống Shopee sẽ thuộc quyền định đoạt tuyệt đối của Shopee.
+            - listitem [ref=f34e419]:
+              - paragraph [ref=f34e420]: Tất cả các hoạt động của Đối Tác TTLK sẽ được ghi nhận thông qua Hệ Thống Shopee và Đối Tác TTLK có thể truy cập vào các thống kê và báo cáo có liên quan.
+            - listitem [ref=f34e421]:
+              - paragraph [ref=f34e422]: Đối Tác TTLK sẽ được cung cấp các Tài Liệu Quảng Cáo khi tham gia Chương Trình TTLK (nếu áp dụng). Các Tài Liệu Quảng Cáo này sẽ được cập nhật theo từng thời kỳ.
+            - listitem [ref=f34e423]:
+              - paragraph [ref=f34e424]: Phí Hoa Hồng mà Shopee trả cho Đối Tác TTLK được dựa trên Kết Quả TTLK và Giá Trị Thuần Đơn Hàng Thành Công. Phí Hoa Hồng về nguyên tắc sẽ được tính trên mức hoa hồng do Shopee quy định hoặc do đối tác của Shopee ghi nhận cho từng dự án/công việc cụ thể khi tham gia Chương Trình thông qua Hệ Thống Shopee. Để làm rõ, mức hoa hồng do Shopee quy định (hay còn hiểu là tỷ lệ hoa hồng tùy vào từng ngữ cảnh) có thể được điều chỉnh bởi Shopee vào từng thời điểm cụ thể. Đối Tác TTLK cần chủ động tham khảo mức hoa hồng áp dụng được công bố bởi Shopee vào từng thời điểm cụ thể thông qua Tài Khoản TTLK của Đối Tác TTLK một cách tương ứng.
+            - listitem [ref=f34e425]:
+              - paragraph [ref=f34e426]: Shopee sẽ thanh toán cho Đối Tác TTLK liên quan đến các Đơn Hàng Thành Công thực tế được xác lập nhờ hoạt động quảng bá về/theo yêu cầu của Shopee, thực hiện bởi Đối Tác TTLK bằng cách triển khai trên Mạng Xã Hội và/hoặc Phương Tiện TTLK của Đối Tác TTLK.
+            - listitem [ref=f34e427]:
+              - paragraph [ref=f34e428]: Shopee có thể tính phí cho các dịch vụ mà Shopee cung cấp theo Điều Khoản và Điều Kiện này liên quan đến việc quản lý và duy trì Sàn Shopee và Hệ Thống Shopee. Phí này đã bao gồm Thuế Giá Trị Gia Tăng, và chưa bao gồm thuế nhà thầu(*) (nếu có) (hay còn gọi là “Phí Dịch Vụ”).
+          - paragraph [ref=f34e429]:
+            - text: Phí Dịch Vụ quy định tại Điều 4.6 này sẽ được tính toán theo phương thức và tỷ lệ được nêu rõ
+            - link "TẠI ĐÂY" [ref=f34e430] [cursor=pointer]:
+              - /url: https://help.shopee.vn/portal/10/article/174381?previousPage=other%20articles
+            - text: (và có thể thay đổi trong từng thời điểm theo thông báo của Shopee) như là một phần không tách rời của Điều Khoản và Điều Kiện này.
+          - paragraph [ref=f34e431]: (*) Để làm rõ, trường hợp Đối Tác TTLK cư trú ngoài lãnh thổ Việt Nam, Đối Tác TTLK theo đây đồng ý rằng khoản Phí Dịch Vụ mà Đối Tác TTLK thanh toán cho Shopee theo Điều 4.6 này sẽ không phải chịu bất kỳ khoản khấu trừ hoặc loại thuế nào tại nước sở tại của Đối Tác TTLK (bao gồm nhưng không giới hạn ở thuế nhà thầu nước ngoài hoặc thuế khấu trừ khác). Trường hợp pháp luật của nước sở tại bắt buộc phải khấu trừ thuế đối với khoản thanh toán này, Đối tác TTLK sẽ tự chịu toàn bộ khoản thuế phát sinh đó và có trách nhiệm trả thêm (gross-up) một khoản tiền tương ứng,để đảm bảo số tiền Phí Dịch Vụ mà Shopee thực nhận được sau khi khấu trừ sẽ không thay đổi và bằng đúng với số tiền Shopee đáng lẽ nhận được nếu không phát sinh bất kỳ khoản khấu trừ nào. Đối Tác TTLK có trách nhiệm cung cấp cho Shopee biên lai thuế khấu trừ chính thức và các bằng chứng khác về việc thanh toán khoản tiền đó cho Shopee và được Shopee chấp thuận mà không có tranh chấp nào khác.
+          - paragraph [ref=f34e432]
+          - heading "ĐIỀU 5. THÔNG TIN MẬT" [level=2] [ref=f34e433]
+          - list [ref=f34e434]:
+            - listitem [ref=f34e435]:
+              - paragraph [ref=f34e436]: "“Thông Tin Mật” có nghĩa là tất cả thông tin có tính chất bí mật bao gồm, nhưng không giới hạn ở: (a) bất kỳ thông tin độc quyền nào của một bên trong Điều Khoản và Điều Kiện này hoặc bất kỳ thỏa thuận nào được ký kết giữa Shopee và Đối Tác TTLK, được tiết lộ bởi một bên cho bên còn lại ở dạng văn bản, đồ họa, máy có thể đọc được hoặc dạng hữu hình khác và được đánh dấu \"Bí mật\" hoặc \"Độc quyền\" hoặc theo một số cách khác để chỉ ra tính chất bí mật của nó; (b) tài liệu Shopee và tất cả các thông tin tiếp thị hoặc kỹ thuật không công khai khác, ngay cả khi không được đánh dấu là bí mật; (c) tất cả thông tin do Shopee thu thập hoặc phát triển liên quan đến Người Dùng của Shopee; và (d) bất kỳ dữ liệu nào (bao gồm dữ liệu nội dung và thông tin chi tiết về nội dung) được Shopee và/hoặc các đối tác của Shopee (bao gồm cả Meta) chia sẻ liên quan đến các chương trình Shopee. Thông Tin Mật cũng bao gồm tiết lộ bằng miệng nếu thông tin đó được hiểu một cách hợp lý là bí mật trong bối cảnh tiết lộ."
+            - listitem [ref=f34e437]:
+              - paragraph [ref=f34e438]: "Ngoại lệ. Thông Tin Mật sẽ không bao gồm bất kỳ thông tin nào: (a) đã được biết đến công khai và được cung cấp rộng rãi trước thời điểm một bên tiết lộ cho bên còn lại; (b) được biết đến công khai và được công bố rộng rãi sau khi bên tiết lộ tiết lộ cho bên nhận thông tin mà không phải do có hành động hoặc không hành động nào của bên nhận thông tin; (c) đã thuộc quyền sở hữu hợp pháp của bên nhận thông tin tại thời điểm tiết lộ; (d) được bên nhận thông tin thu thập từ bên thứ ba mà không vi phạm nghĩa vụ bảo mật của bên thứ ba đó; (e) được phát triển độc lập bởi bên nhận thông tin mà không sử dụng hoặc tham chiếu đến Thông Tin Mật của bên tiết lộ; hoặc (f) được tiết lộ bởi bên nhận thông tin theo sự chấp thuận trước bằng văn bản của bên tiết lộ."
+            - listitem [ref=f34e439]:
+              - paragraph [ref=f34e440]: "Không sử dụng và không tiết lộ. Mỗi bên sẽ: (a) coi tất cả Thông Tin Mật của bên kia là bí mật và sử dụng cùng một mức độ cẩn trọng để bảo vệ Thông Tin Mật như sử dụng để bảo vệ thông tin bí mật của chính mình, nhưng trong mọi trường hợp không kém hơn sự cẩn trọng hợp lý; (b) không tiết lộ Thông Tin Mật đó cho bất kỳ bên thứ ba nào, ngoại trừ trên cơ sở \"cần biết\" cho các bên thứ ba đã ký thỏa thuận bảo mật có các điều khoản cơ bản về việc bảo vệ các Thông Tin Mật này như các quy định tại Mục này và/hoặc phù hợp với các điều khoản của Chương Trình Shopee, và bên đó đã nhận được sự đồng ý bằng văn bản về việc tiết lộ đó từ bên đã cung cấp Thông Tin Mật; và (c) không sử dụng Thông Tin Mật đó trừ khi liên quan đến việc thực hiện nghĩa vụ hoặc thực hiện các quyền của mình theo Điều Khoản và Điều Kiện này, theo các điều khoản của Chương Trình Shopee và/hoặc được bên kia cho phép rõ ràng bằng văn bản. Mỗi bên được phép tiết lộ Thông Tin Mật của bên kia nếu pháp luật yêu cầu, miễn là bên kia được thông báo nhanh chóng bằng văn bản về yêu cầu đó trước khi tiết lộ và hỗ trợ để có được lệnh bảo vệ thông tin đó khỏi bị tiết lộ công khai. Tuy nhiên, Đối Tác TTLK sẽ không đưa ra bất kỳ thông cáo báo chí nào hoặc đưa ra bất kỳ tuyên bố hoặc tiết lộ công khai nào (bao gồm cả báo chí internet, ví dụ: bất kỳ blog nào) trừ khi được Shopee chấp thuận."
+          - paragraph [ref=f34e441]
+          - heading "ĐIỀU 6. TRƯỜNG HỢP BẤT KHẢ KHÁNG" [level=2] [ref=f34e442]
+          - list [ref=f34e443]:
+            - listitem [ref=f34e444]:
+              - paragraph [ref=f34e445]: "Đối Tác TTLK đồng ý rằng Shopee không phải chịu trách nhiệm với Đối Tác TTLK hoặc bị coi là vi phạm các quy định của Điều Khoản và Điều Kiện này do chậm trễ trong việc thực hiện hoặc không thực hiện bất kỳ nghĩa vụ nào theo Điều Khoản và Điều Kiện này là kết quả của bất kỳ sự kiện nào xảy ra nằm ngoài khả năng kiểm soát hợp lý của Shopee (“Sự Kiện Bất Khả Kháng”), bao gồm nhưng không giới hạn ở:"
+          - list [ref=f34e446]:
+            - listitem [ref=f34e447]:
+              - paragraph [ref=f34e448]: Thiên tai, cháy nổ, lũ lụt, bão, hỏa hoạn hoặc tai nạn;
+            - listitem [ref=f34e449]:
+              - paragraph [ref=f34e450]: Chiến tranh hoặc nguy cơ chiến tranh, hành vi phá hoại, nổi loạn, nội chiến hoặc việc trưng dụng của nhà nước, hành vi khủng bố hoặc bất ổn dân sự;
+            - listitem [ref=f34e451]:
+              - paragraph [ref=f34e452]: Các hành vi, các hạn chế, quy định, văn bản dưới luật, các quy định cấm hoặc các biện pháp được ban hành hoặc thực hiện bởi bất kỳ cơ quan chính phủ hay chính quyền địa phương;
+            - listitem [ref=f34e453]:
+              - paragraph [ref=f34e454]: Đình công, bãi công hoặc các sự kiện tương tự khác hoặc các tranh chấp thương mại (dù cho có hoặc không có sự tham gia của người lao động của Shopee hoặc của bên thứ ba khác hay không);
+            - listitem [ref=f34e455]:
+              - paragraph [ref=f34e456]: Các dịch bệnh được công bố bởi Chính phủ hoặc Tổ chức Y tế Thế giới (WHO); và
+            - listitem [ref=f34e457]:
+              - paragraph [ref=f34e458]: Sự cố máy móc, thiết bị.
+          - list [ref=f34e459]:
+            - listitem [ref=f34e460]:
+              - paragraph [ref=f34e461]: Các Bên tiếp tục thực hiện các nghĩa vụ theo Điều Khoản và Điều Kiện này ngay sau khi Sự Kiện Bất Khả Kháng chấm dứt hoặc được loại bỏ. Trường hợp Sự Kiện Bất Khả Kháng xảy ra liên tục trong vòng ba mươi (30) ngày, thì Shopee được quyền quyết định chấm dứt Điều Khoản và Điều Kiện này.
+          - paragraph [ref=f34e462]
+          - heading "ĐIỀU 7. ĐIỀU CHỈNH, CHẤM DỨT CHƯƠNG TRÌNH VÀ CÁC QUY ĐỊNH KHÁC" [level=2] [ref=f34e463]
+          - list [ref=f34e464]:
+            - listitem [ref=f34e465]:
+              - paragraph [ref=f34e466]:
+                - text: Shopee được toàn quyền điều chỉnh, thay đổi, bổ sung các nội dung được quy định tại Điều Khoản và Điều Kiện này (“Điều Chỉnh”). Trường hợp Shopee thực hiện các Điều Chỉnh này, Shopee sẽ theo quyết định của mình và bằng các nỗ lực hợp lý thông báo tới Đối Tác TTLK hoặc công bố cập nhật
+                - link "TẠI ĐÂY" [ref=f34e467] [cursor=pointer]:
+                  - /url: https://help.shopee.vn/portal/10/article/206429?previousPage=other%20articles
+                - text: hoặc thông báo bằng email hoặc bằng tin nhắn về các Điều Chỉnh này. Đối Tác TTLK có nghĩa vụ kiểm tra định kỳ Sàn Shopee và Hệ Thống Shopee để cập nhật các Điều Chỉnh và thông báo tương ứng. Các Điều Chỉnh sẽ có hiệu lực vào ngày được công bố trừ khi có quy định khác một cách rõ ràng. Việc Đối Tác TTLK tiếp tục tham gia Chương Trình và/hoặc duy trì Tài Khoản TTLK theo Điều Khoản và Điều Kiện này được xem như là Đối Tác TTLK đồng ý với các Điều Chỉnh. Trường hợp Đối Tác TTLK không đồng ý với các Điều Chỉnh, Đối Tác TTLK được toàn quyền chấm dứt Điều Khoản và Điều Kiện này kể từ ngày thông báo hoặc ngày công bố điều chỉnh (tùy ngày nào đến trước) hoặc vui lòng ngừng truy cập Tài Khoản TTLK, Hệ Thống Shopee kể từ ngày các Điều Chỉnh có hiệu lực.
+            - listitem [ref=f34e468]:
+              - paragraph [ref=f34e469]: Shopee có quyền, ngay lập tức mà không phải thông báo trước, từ chối tiếp nhận, tạm ngừng hợp tác, chấm dứt hợp tác, và/hoặc áp dụng danh sách hạn chế hợp tác đối với bất kỳ Đối Tác TTLK nào thuộc danh sách hạn chế do cơ quan nhà nước có thẩm quyền cung cấp, công bố, hoặc đang được điều tra, xác minh bởi bất cứ cơ quan nhà nước có thẩm quyền nào dù với bất cứ lý do nào hoặc yêu cầu áp dụng các biện pháp hạn chế tại từng thời điểm, mà không cần chịu trách nhiệm đối với bất kỳ tổn thất hay khiếu nại nào phát sinh từ việc áp dụng quy định này.
+            - listitem [ref=f34e470]:
+              - paragraph [ref=f34e471]: Bên cạnh các trường hợp khác quy định tại Điều Khoản và Điều Kiện này, Shopee tùy theo quyết định của mình hoặc bởi bất kỳ lý do nào mà Shopee cho là phù hợp, được toàn quyền đơn phương chấm dứt bất kỳ nội dung nào thuộc Chương Trình hoặc Điều Khoản và Điều Kiện này bằng một thông báo bằng văn bản đến Bên Đối Tác TTLK trước ít nhất bảy (07) ngày.
+            - listitem [ref=f34e472]:
+              - paragraph [ref=f34e473]: Điều Khoản và Điều Kiện này sẽ thay thế và chấm dứt các thỏa thuận, thảo luận có liên quan trước đây giữa Shopee và Đối Tác TTLK (nếu có), trừ trường hợp có quyết định khác bằng văn bản của Shopee.
+            - listitem [ref=f34e474]:
+              - paragraph [ref=f34e475]: Việc tham gia vào Chương Trình TTLK của Đối Tác TTLK theo Điều Khoản và Điều Kiện này sẽ ngay lập tức chấm dứt trong trường hợp Đối Tác TTLK chết, giải thể, phá sản, mất khả năng thanh toán hoặc có yêu cầu mở thủ tục phá sản từ bên thứ ba.
+            - listitem [ref=f34e476]:
+              - paragraph [ref=f34e477]: Ngay khi có quyết định chấm dứt việc tham gia vào Chương Trình TTLK của Đối Tác TTLK bởi Shopee, Tài Khoản TTLK sẽ ngay lập tức được xử lý theo Chính Sách Shopee và Đối Tác TTLK phải ngay lập tức ngừng việc sử dụng Tài Liệu Quảng Cáo (dưới bất kỳ hình thức nào) và các tài liệu khác có liên quan đến Chương Trình do Shopee cung cấp.
+            - listitem [ref=f34e478]:
+              - paragraph [ref=f34e479]: Trường hợp quyết định chấm dứt việc tham gia vào Chương Trình TTLK của Đối Tác TTLK bởi Shopee do lỗi của Đối Tác TTLK (bao gồm nhưng không giới hạn ở việc vi phạm quy định pháp luật áp dụng, Điều Khoản và Điều Kiện này, Chính Sách Shopee), tất cả các khoản thanh toán đến hạn, các nghĩa vụ tài chính còn tồn đọng và phải trả bởi Shopee cho Đối Tác TTLK sẽ được Shopee giữ lại. Đồng thời, Shopee vẫn bảo lưu quyền yêu cầu bồi thường các thiệt hại trên thực tế cũng như áp dụng các quyền khác theo quy định của pháp luật áp dụng.
+          - paragraph [ref=f34e480]
+          - heading "ĐIỀU 8. LUẬT ĐIỀU CHỈNH VÀ GIẢI QUYẾT TRANH CHẤP" [level=2] [ref=f34e481]
+          - list [ref=f34e482]:
+            - listitem [ref=f34e483]:
+              - paragraph [ref=f34e484]: Điều Khoản và Điều Kiện này sẽ được điều chỉnh và giải thích theo luật pháp của Việt Nam.
+            - listitem [ref=f34e485]:
+              - paragraph [ref=f34e486]: Bất kỳ tranh chấp phát sinh từ hoặc liên quan đến việc thực hiện Điều Khoản và Điều Kiện này hoặc việc vi phạm, chấm dứt, hoặc vô hiệu Điều Khoản và Điều Kiện này sẽ được nỗ lực giải quyết thông qua đàm phán thiện chí giữa Các Bên trong một khoảng thời gian hợp lý do Shopee đưa ra, nhưng trong mọi trường hợp không vượt quá 30 ngày kể từ ngày có yêu cầu giải quyết tranh chấp bằng văn bản từ một bên, trừ trường hợp có thỏa thuận khác giữa Đối Tác TTLK và Shopee.
+            - listitem [ref=f34e487]:
+              - paragraph [ref=f34e488]: Mọi tranh chấp phát sinh từ hoặc liên quan đến Điều Khoản và Điều Kiện này sẽ được giải quyết bằng trọng tài tại trung tâm trọng tài quốc tế Việt Nam bên cạnh Phòng Thương Mại và Công Nghiệp Việt Nam (VIAC) theo quy tắc tố tụng trọng tài của trung tâm này. Nơi giải quyết tranh chấp là thành phố Hồ Chí Minh và ngôn ngữ giải quyết tranh chấp là tiếng Việt.
+          - paragraph [ref=f34e489]
+          - heading "ĐIỀU 9. THANH TOÁN" [level=2] [ref=f34e490]
+          - list [ref=f34e491]:
+            - listitem [ref=f34e492]:
+              - paragraph [ref=f34e493]: Trừ trường hợp có quy định khác đi tại Điều Khoản và Điều Kiện này (bao gồm nhưng không giới hạn ở các quy định riêng dành cho loại hình tham gia Chương Trình TLLK tại Mục II), thời gian thanh toán sẽ theo quy định tại Điều 9 này.
+            - listitem [ref=f34e494]:
+              - paragraph [ref=f34e495]: Chứng Từ Thanh Toán
+          - paragraph [ref=f34e496]: "Để cho rõ ràng, việc thanh toán Phí Hoa Hồng cho Đối Tác TTLK sẽ chỉ được thực hiện với điều kiện là Shopee nhận được đầy đủ chứng từ thanh toán từ Đối Tác TTLK (“Chứng Từ Thanh Toán”). Cho mục đích này, Chứng Từ Thanh Toán sẽ bao gồm:"
+          - list [ref=f34e497]:
+            - listitem [ref=f34e498]:
+              - paragraph [ref=f34e499]: "Nếu Đối Tác TTLK là doanh nghiệp, hộ kinh doanh (chủ động xuất hóa đơn): hóa đơn hợp lệ, các thông tin và chứng từ thanh toán khác theo yêu cầu của Shopee. Để làm rõ, doanh nghiệp, hộ kinh doanh trong trường hợp này là các Đối Tác TTLK là doanh nghiệp, hộ kinh doanh có ký kết hợp đồng, thỏa thuận cụ thể với Shopee để tham gia Chương Trình, cung ứng dịch vụ và đủ điều kiện xuất hóa đơn điện tử hợp lệ cho Shopee theo quy định của pháp luật áp dụng."
+            - listitem [ref=f34e500]:
+              - paragraph [ref=f34e501]: "Trong phạm vi pháp luật cho phép, nếu Đối Tác TTLK là cá nhân kinh doanh, hộ kinh doanh (ủy nhiệm xuất hóa đơn): hóa đơn hợp lệ do bên thứ ba được ủy nhiệm xuất thay, thông tin thanh toán, chứng từ, bao gồm nhưng không giới hạn họ và tên, CCCD, số tài khoản ngân hàng, mã số thuế kinh doanh và các thông tin khác theo yêu cầu của Shopee. Để làm rõ, cá nhân kinh doanh/ hộ kinh doanh trong trường hợp này là các Đối Tác TTLK thực hiện ủy nhiệm cho một bên thứ ba đủ điều kiện xuất hóa đơn điện tử hợp lệ cho Shopee theo quy định của pháp luật áp dụng và được chấp thuận một cách rõ ràng bởi Shopee."
+            - listitem [ref=f34e502]:
+              - paragraph [ref=f34e503]: Nếu Đối Tác TTLK là cá nhân kinh doanh, hộ kinh doanh có doanh thu dưới ngưỡng áp dụng quy định về hóa đơn theo quy định của pháp luật
+          - paragraph [ref=f34e504]: "Trường hợp Đối Tác TTLK là cá nhân có tổng doanh thu từ tất cả hoạt động kinh doanh trong năm dương lịch dưới 1.000.000.000 VNĐ (Bằng chữ: Một tỷ đồng) hoặc mức khác theo quy định của pháp luật trong từng thời điểm và không thuộc trường hợp phải sử dụng hóa đơn theo quy định pháp luật, Đối Tác TTLK có trách nhiệm cam kết và chịu trách nhiệm về tính chính xác của thông tin, bao gồm việc xác nhận:"
+          - list [ref=f34e505]:
+            - listitem [ref=f34e506]:
+              - list [ref=f34e507]:
+                - listitem [ref=f34e508]:
+                  - paragraph [ref=f34e509]: Tổng doanh thu từ tất cả các hoạt động kinh doanh trong năm dương lịch không đạt ngưỡng phải sử dụng hóa đơn theo quy định; và
+                - listitem [ref=f34e510]:
+                  - paragraph [ref=f34e511]: Không thuộc đối tượng phải sử dụng hóa đơn theo quy định pháp luật về hóa đơn hiện hành.
+          - paragraph [ref=f34e512]: Shopee có quyền yêu cầu Đối Tác TTLK cung cấp thông tin hoặc tài liệu cần thiết để xác minh việc áp dụng cơ chế này.
+          - list [ref=f34e513]:
+            - listitem [ref=f34e514]:
+              - paragraph [ref=f34e515]: Theo dõi Phí Hoa Hồng. Đối Tác TTLK có thể đăng nhập vào Hệ Thống Shopee để theo dõi Phí Hoa Hồng đã được tích lũy. Hàng tháng, Shopee tùy theo quyết định của mình sẽ gửi đối soát về Phí Hoa Hồng Đối Tác TTLK đạt được đã được Shopee duyệt qua email mà Đối Tác TTLK đã đăng ký qua Hệ Thống Shopee.
+            - listitem [ref=f34e516]:
+              - paragraph [ref=f34e517]: Các khoản phải trả. Shopee sẽ tiến hành chi trả cho Đối Tác TTLK sau khi đã cấn trừ đi các khoản Phí Dịch Vụ, các nghĩa vụ tài chính đến hạn của Đối Tác TTLK đối với Shopee theo từng thỏa thuận cụ thể, thuế áp dụng theo quy định của pháp luật áp dụng và Điều Khoản và Điều Kiện này. Để làm rõ, Shopee tại bất kỳ thời điểm nào, có quyền rà soát và tính toán lại các nghĩa vụ tài chính, thuế chưa được cấn trừ hợp lệ và thực hiện các hoạt động cần thiết để truy thu các khoản này theo quyết định và thông báo từ Shopee.
+            - listitem [ref=f34e518]:
+              - paragraph [ref=f34e519]: "Nếu Đối Tác TTLK là cá nhân kinh doanh, hộ kinh doanh, các nội dung sau sẽ được áp dụng:"
+          - list [ref=f34e520]:
+            - listitem [ref=f34e521]:
+              - paragraph [ref=f34e522]: Đối Tác TTLK có thời gian 24 (hai mươi bốn) giờ để kiểm tra và phản hồi về kết quả Phí Hoa Hồng kể từ thời điểm Shopee gửi kết quả cho Đối Tác TTLK hợp lệ. Sau thời gian 24 ( hai mươi bốn) giờ nêu trên, nếu Shopee không nhận được bất kỳ phản hồi nào của Đối Tác TTLK về kết quả đối soát qua nhân viên hỗ trợ thì Đối Tác TTLK được xem là đồng ý với Phí Hoa Hồng mà Shopee đã thông báo.
+            - listitem [ref=f34e523]:
+              - paragraph [ref=f34e524]: Phí Hoa Hồng do Shopee thông báo là thu nhập từ hoạt động kinh doanh của Đối Tác TTLK và đã bao gồm tất cả các loại thuế áp dụng (bao gồm nhưng không giới hạn ở thuế Giá trị gia tăng và thuế Thu nhập cá nhân) liên quan đến Phí Hoa Hồng và các khoản thu khác phát sinh từ việc tham gia Chương Trình. Đối với hoạt động kinh doanh phát sinh thông qua nền tảng thương mại điện tử của Shopee, Shopee thực hiện việc khấu trừ, kê khai và nộp thay các khoản thuế GTGT và thuế TNCN thuộc trách nhiệm của cá nhân kinh doanh hoặc hộ kinh doanh, theo quy định pháp luật áp dụng tại từng thời điểm. Để làm rõ, trừ khi có quy định cụ thể của cơ quan thuế áp dụng cho việc khấu trừ, kê khai và nộp thay, Shopee chỉ khấu trừ thuế dựa trên các tỷ lệ thuế suất cơ bản theo quy định của pháp luật thuế GTGT và thuế TNCN mà không áp dụng các mức điều chỉnh giảm trừ có thể thay đổi ở từng thời điểm.
+            - listitem [ref=f34e525]:
+              - paragraph [ref=f34e526]: Đối Tác TTLK có trách nhiệm cung cấp đầy đủ, chính xác và kịp thời các thông tin, tài liệu cần thiết để Shopee thực hiện nghĩa vụ khấu trừ, kê khai,nộp thuế và cấp chứng từ khấu trừ thuế theo quy định.
+            - listitem [ref=f34e527]:
+              - paragraph [ref=f34e528]: Các cơ chế về khấu trừ thuế, cung cấp hóa đơn và phương thức thanh toán có thể được Shopee điều chỉnh hoặc cập nhật tùy theo thay đổi của quy định pháp luật và cơ chế vận hành của Chương Trình.
+          - list [ref=f34e529]:
+            - listitem [ref=f34e530]:
+              - paragraph [ref=f34e531]: "Nếu Đối Tác TTLK là doanh nghiệp cư trú tại Việt Nam, các nội dung sau sẽ được áp dụng:"
+          - list [ref=f34e532]:
+            - listitem [ref=f34e533]:
+              - paragraph [ref=f34e534]: "Thời hạn thanh toán: việc thanh toán sẽ được thực hiện trong vòng 30 (ba mươi) Ngày Làm Việc kể từ ngày Shopee nhận được đầy đủ các Chứng Từ Thanh Toán hợp lệ từ Đối Tác TTLK, trừ trường hợp Shopee có căn cứ hoặc lý do hợp lý để nghi ngờ Đối Tác TTLK có thực hiện hành vi gian lận hoặc có các hành vi vi phạm Điều Khoản và Điều Kiện này."
+            - listitem [ref=f34e535]:
+              - paragraph [ref=f34e536]: "Thuế: Phí Hoa Hồng do Shopee thông báo là giá trị chưa bao gồm thuế giá trị gia tăng (GTGT). Đối Tác TTLK có trách nhiệm xuất hóa đơn GTGT hợp lệ theo quy định pháp luật, và Shopee sẽ thanh toán cho Đối Tác TTLK trên giá trị hóa đơn hợp lệ đó (bao gồm Phí Hoa Hồng và thuế GTGT tương ứng). Đối Tác TTLK (với vai trò là bên xuất hóa đơn) tự chịu trách nhiệm kê khai, quyết toán và thực hiện các nghĩa vụ thuế liên quan theo quy định của pháp luật."
+          - list [ref=f34e537]:
+            - listitem [ref=f34e538]:
+              - paragraph [ref=f34e539]: "Nếu Đối Tác TTLK là doanh nghiệp nước ngoài cư trú ngoài phạm vi lãnh thổ Việt Nam:"
+          - list [ref=f34e540]:
+            - listitem [ref=f34e541]:
+              - paragraph [ref=f34e542]: Phí Hoa Hồng do Shopee thông báo là giá trị chưa bao gồm thuế giá trị gia tăng (GTGT) tại Việt Nam.
+            - listitem [ref=f34e543]:
+              - paragraph [ref=f34e544]: Trường hợp các khoản thanh toán phải chịu thuế nhà thầu Việt Nam hoặc các loại thuế khác theo quy định của pháp luật trong từng thời điểm, Shopee sẽ tự chịu và nộp phần thuế GTGT thuộc nghĩa vụ thuế nhà thầu cho cơ quan thuế có thẩm quyền mà không khấu trừ vào khoản thanh toán cho Đối Tác TTLK. Đối Tác TTLK chịu trách nhiệm đối với phần thuế Thu nhập doanh nghiệp (TNDN) thuộc nghĩa vụ thuế nhà thầu liên quan đến Phí Hoa Hồng và các khoản thu khác phát sinh từ việc tham gia Chương Trình; Shopee sẽ khấu trừ phần thuế TNDN này vào khoản thanh toán trước khi chi trả số tiền còn lại sau khi đã khấu trừ thuế và đồng thời cung cấp cho Đối Tác TTLK chứng nhận hoặc tài liệu tương đương về số thuế đã khấu trừ. Đối Tác TTLK có trách nhiệm xuất hóa đơn hợp lệ của quốc gia sở tại cho Shopee. Để làm rõ, các nội dung liên quan đến thuế đối với Đối Tác TTLK sẽ được quy định cụ thể tại các thỏa thuận / tài liệu giữa Shopee và Đối Tác TTLK một cách tương ứng.
+          - list [ref=f34e545]:
+            - listitem [ref=f34e546]:
+              - paragraph [ref=f34e547]: Tạm ngừng thanh toán. Trong trường hợp Shopee phát hiện Đối Tác TTLK có dấu hiệu vi phạm các quy định, Chính Sách Shopee, và/hoặc Điều Khoản và Điều Kiện này, thời gian Shopee hoàn thành đối soát và thanh toán Phí Hoa Hồng có thể sẽ kéo dài hơn dự kiến. Theo đó, Shopee bảo lưu quyền không ghi nhận Phí Hoa Hồng cho đến khi Shopee hoàn tất các bước xác minh, kiểm tra theo quyết định riêng biệt của Shopee.
+            - listitem [ref=f34e548]:
+              - paragraph [ref=f34e549]: Thanh toán tối thiểu. Shopee sẽ chi trả các khoản Đối Tác TTLK được thụ hưởng định kỳ với mức chi trả tối thiểu là 10.000 VND (“mức Chi Trả Tối Thiểu”), bao gồm nhưng không giới hạn trường hợp tài khoản Shopee của Đối Tác TTLK bị khóa bởi Shopee. Nếu các khoản Đối Tác TTLK được thủ hưởng định kỳ dưới mức Chi Trả Tối Thiểu trong một giai đoạn nhất định, Shopee bảo lưu quyền tạm ngừng thanh toán khoản tiền có liên quan cho Đối Tác TTLK cho đến kỳ thanh toán mà các khoản Đối Tác TTLK được thủ hưởng đạt mức Chi Trả Tối Thiểu.
+            - listitem [ref=f34e550]:
+              - paragraph [ref=f34e551]: Khoản Bồi Hoàn
+          - paragraph [ref=f34e552]: "Shopee sẽ không chi trả Phí Hoa Hồng, các khoản thưởng, tài trợ, ưu đãi, các khoản khác mà Shopee sẽ chi trả cho Đối Tác TTLK nếu có thỏa thuận một cách rõ ràng, và Shopee bảo lưu quyền cấn trừ hoặc thực hiện yêu cầu bồi hoàn cho Shopee đối với các giao dịch đã thanh toán thuộc một trong các trường hợp sau:"
+          - list [ref=f34e553]:
+            - listitem [ref=f34e554]:
+              - paragraph [ref=f34e555]: các giao dịch không thỏa điều kiện để được xem là Đơn Hàng Thành Công;
+            - listitem [ref=f34e556]:
+              - paragraph [ref=f34e557]: giao dịch gian lận được phát hiện thủ công hoặc thông qua Hệ Thống Shopee;
+            - listitem [ref=f34e558]:
+              - paragraph [ref=f34e559]: giao dịch thực hiện thông qua sự thông đồng trên cơ sở Người Bán có liên quan đến Đối Tác TTLK hoặc Đối Tác TTLK mua sản phẩm thông qua Siêu Liên Kết;
+            - listitem [ref=f34e560]:
+              - paragraph [ref=f34e561]: giao dịch bị hủy bỏ, không hoàn tất, bị trả hàng hoàn tiền theo chính sách của Shopee;
+            - listitem [ref=f34e562]:
+              - paragraph [ref=f34e563]: giao dịch mua hàng ở Sàn TMĐT nhằm mục đích bán lại;
+            - listitem [ref=f34e564]:
+              - paragraph [ref=f34e565]: giao dịch được thực hiện thông qua Siêu Liên Kết được đặt ở Mạng Xã Hội và/hoặc Phương Tiện TTLK có chứa bất kỳ nội dung cấm nào; và
+            - listitem [ref=f34e566]:
+              - paragraph [ref=f34e567]: Giao dịch có liên quan đến bất kỳ Đối Tượng Hạn Chế nào.
+          - paragraph [ref=f34e568]: Cho mục đích nêu trên, Đối Tác TTLK tại đây ủy quyền vô điều kiện và không hủy ngang cho Shopee được quyền phong tỏa và/hoặc cấn trừ bất kỳ khoản tiền nào mà Shopee giữ thay hoặc phải thanh toán cho Đối Tác TTLK cho đến khi Đối Tác TTLK hoàn tất việc bồi hoàn toàn bộ các khoản Phí Hoa Hồng và/hoặc bất cứ các khoản phí khác mà Shopee cần thu lại từ Đối Tác TTLK vào từng thời điểm.
+          - paragraph [ref=f34e569]
+          - list [ref=f34e570]:
+            - listitem [ref=f34e571]:
+              - paragraph [ref=f34e572]: Từ Chối Thanh Toán và Chấm Dứt Hợp Tác
+          - list [ref=f34e573]:
+            - listitem [ref=f34e574]:
+              - paragraph [ref=f34e575]: "Đối với Đối Tác TTLK là doanh nghiệp, hộ kinh doanh (xuất hóa đơn):"
+          - paragraph [ref=f34e576]: Trong vòng 30 (ba mươi) ngày kể từ thời điểm hợp đồng hợp tác giữa Đối Tác TTLK và Shopee có hiệu lực, Đối Tác TTLK có nghĩa vụ cung cấp đúng và đầy đủ các thông tin có liên quan đến việc thanh toán theo quy định có liên quan một cách hợp lệ. Việc Đối Tác TTLK không tuân thủ nghĩa vụ quy định tại đây, sẽ ảnh hưởng đến quy trình đối soát Kết Quả TTLK bởi Shopee. Theo đó, Shopee bảo lưu quyền từ chối thanh toán Phí Hoa Hồng và các khoản phải trả khác (nếu có) cho Đối Tác TTLK mà không chịu bất kỳ trách nhiệm nào có liên quan đến hoặc phát sinh từ việc bảo lưu quyền này. Đồng thời, Đối Tác TTLK sẽ chịu hoàn toàn thiệt hại (nếu có) mà không phát sinh bất kỳ khiếu nại và/hoặc khiến kiện đến Shopee.
+          - paragraph [ref=f34e577]: Để cho rõ ràng, việc Đối Tác TTLK không cung cấp hoặc cung cấp không đầy đủ Chứng Từ Thanh Toán sẽ cấu thành việc Đối Tác TTLK đồng thuận chấm dứt hợp tác theo Điều Khoản và Điều Kiện này vào ngày thứ 30 (ba mươi) kể từ thời điểm Shopee gửi kết quả đối soát Đơn Hàng Thành Công.
+          - list [ref=f34e578]:
+            - listitem [ref=f34e579]:
+              - paragraph [ref=f34e580]: "Đối với Đối Tác TTLK là cá nhân kinh doanh, hộ kinh doanh (ủy nhiệm xuất hóa đơn):"
+          - paragraph [ref=f34e581]: Trong vòng 6 (sáu) tháng kể từ ngày phát sinh doanh thu cho Đối Tác TTLK nhưng Đối Tác TTLK không cung cấp hoặc cung cấp không đầy đủ Chứng Từ Thanh Toán hợp lệ, Shopee bảo lưu quyền từ chối thanh toán Phí Hoa Hồng và các khoản phải trả khác (nếu có) cho Đối Tác TTLK.
+          - paragraph [ref=f34e582]: Để cho rõ ràng, việc Đối Tác TTLK không cung cấp hoặc cung cấp không đầy đủ Chứng Từ Thanh Toán vào thời điểm kết thúc thời hạn 6 (sáu) tháng nêu trên sẽ cấu thành việc Đối Tác TTLK đồng thuận chấm dứt hợp tác theo Điều Khoản và Điều Kiện Thỏa Thuận Hợp Tác này.
+          - list [ref=f34e583]:
+            - listitem [ref=f34e584]:
+              - paragraph [ref=f34e585]: Đối tác TTLK không chấp hành quy định về hóa đơn điện tử
+          - paragraph [ref=f34e586]: Shopee bảo lưu quyền chấm dứt hợp tác nếu Đối Tác TTLK có doanh thu vượt ngưỡng, phải áp dụng hóa đơn điện tử theo quy định của cơ quan thuế. Đồng thời, Shopee sẽ thực hiện truy thu các khoản bồi thường, phạt thuế và phạt hành chính (nếu có) phát sinh từ việc không tuân thủ nghĩa vụ thuế của Đối Tác.
+          - list [ref=f34e587]:
+            - listitem [ref=f34e588]:
+              - paragraph [ref=f34e589]: Thuế Đối Với Các Khoản Thanh Toán mà Đối Tác TTLK Nhận Được Theo Chương Trình
+          - list [ref=f34e590]:
+            - listitem [ref=f34e591]:
+              - paragraph [ref=f34e592]: "Đối với Đối Tác TTLK là doanh nghiệp: Shopee sẽ chịu thuế giá trị gia tăng (GTGT) tại Việt Nam đối với Phí Hoa Hồng và các khoản thu khác phát sinh từ việc tham gia Chương Trình. Nếu Đối tác TTLK là doanh nghiệp nước ngoài cư trú ngoài phạm vi lãnh thổ Việt Nam = có trụ sở ngoài Việt Nam, Đối Tác TTLK sẽ chịu trách nhiệm đối với các khoản thuế Thu nhập doanh nghiệp tại Việt Nam liên quan đến Phí Hoa Hồng và các khoản thu khác phát sinh từ việc tham gia Chương Trình theo Điều Khoản và Điều Kiện này. Nếu Shopee phải khấu trừ bất kỳ khoản thuế nào từ các khoản tiền phải trả cho Đối Tác TTLK theo quy định của pháp luật Việt Nam, Shopee sẽ khấu trừ khoản tiền thuế vào Phí Hoa Hồng, các khoản phải thanh toán cho Đối Tác TTLK và cung cấp cho tài liệu chứng minh việc khấu trừ/nộp thuế theo yêu cầu (nếu có)."
+            - listitem [ref=f34e593]:
+              - paragraph [ref=f34e594]: "Đối với Đối Tác TTLK là cá nhân kinh doanh, hộ kinh doanh: Đối Tác TTLK sẽ chịu trách nhiệm đối với các khoản thuế (bao gồm nhưng không hạn chế ở Thuế Thu nhập cá nhân, thuế Giá trị gia tăng, và các khoản thuế khác phù hợp với quy định của pháp luật…) tại Việt Nam liên quan đến Phí Hoa Hồng và các khoản thu khác phát sinh từ việc tham gia Chương Trình theo Điều Khoản và Điều Kiện này. Đối với hoạt động kinh doanh phát sinh thông qua nền tảng thương mại điện tử của Shopee, Shopee thực hiện việc khấu trừ, kê khai và nộp thay các khoản thuế GTGT và thuế TNCN thuộc trách nhiệm của cá nhân kinh doanh hoặc hộ kinh doanh, theo quy định pháp luật áp dụng tại từng thời điểm. Để làm rõ, trừ khi có quy định cụ thể của cơ quan thuế áp dụng cho việc khấu trừ, kê khai và nộp thay, Shopee chỉ khấu trừ thuế dựa trên các tỷ lệ thuế suất cơ bản theo quy định của pháp luật thuế GTGT và thuế TNCN mà không áp dụng các mức điều chỉnh giảm trừ có thể thay đổi ở từng thời điểm."
+            - listitem [ref=f34e595]:
+              - paragraph [ref=f34e596]: Để cho rõ ràng, Đối Tác TTLK chịu trách nhiệm thực hiện quyết toán thuế hàng năm (nếu có) đối với các khoản Phí Hoa Hồng (hoặc các khoản tiền mà Đối Tác TTLK thụ hưởng theo Chương Trình này, tùy từng trường hợp), thu nhập và doanh thu mà Đối Tác TTLK nhận được từ việc tham gia Chương Trình, bao gồm nhưng không giới hạn ở thuế thu nhập cá nhân, thuế thu nhập doanh nghiệp, và các loại thuế khác theo quy định của pháp luật. Đối Tác TTLK phải đảm bảo tuân thủ tất cả các yêu cầu kê khai và nộp thuế liên quan, bao gồm việc lập và nộp báo cáo thuế hàng năm đúng hạn theo quy định của cơ quan thuế có thẩm quyền.
+            - listitem [ref=f34e597]:
+              - paragraph [ref=f34e598]: Nếu Đối Tác TTLK cư trú ngoài lãnh thổ Việt Nam, Đối Tác TTLK sẽ thực hiện dịch vụ hoàn toàn ngoài lãnh thổ Việt Nam vào mọi thời điểm. Trường hợp Shopee có nghĩa vụ theo luật pháp hiện hành để khấu trừ thuế trên bất kỳ khoản thanh toán nào được thực hiện cho Đối Tác TTLK theo Điều Khoản và Điều Kiện này, Shopee sẽ thực hiện việc khấu trừ và nộp cho cơ quan thuế có thẩm quyền theo đúng luật pháp hiện hành. Shopee sẽ cung cấp cho Đối Tác TTLK chứng từ về việc thanh toán khoản thuế này mà Đối Tác TTLK chấp nhận, và cung cấp sự hỗ trợ theo yêu cầu của Đối Tác TTLK để cho phép Đối Tác TTLK yêu cầu tín dụng cho bất kỳ khoản thuế nào đã bị khấu trừ. Trong phạm vi các khoản tiền đã bị khấu trừ và trừ đi, các khoản tiền bị khấu trừ này sẽ được xem xét, cho tất cả các mục đích của Điều Khoản và Điều Kiện này, là đã được thanh toán cho cơ quan thuế mà khoản khấu trừ và khấu trừ thuế đã được thực hiện, và Shopee sẽ không có bất kỳ nghĩa vụ nào để thanh toán số tiền tương đương với các khoản tiền đã bị khấu trừ, hoặc bất kỳ phần nào của chúng, cho Đối Tác TTLK.
+          - strong [ref=f34e600]
+          - paragraph [ref=f34e601]: ĐIỀU 10. TUYÊN BỐ VÀ BẢO ĐẢM
+          - list [ref=f34e602]:
+            - listitem [ref=f34e603]:
+              - paragraph [ref=f34e604]: "Đồng Tuyên Bố và Bảo Đảm. Mỗi bên theo đây tuyên bố và bảo đảm rằng: (a) được thành lập hợp lệ, tồn tại hợp pháp, và hoạt động theo đúng quy định của pháp luật nơi bên đó được thành lập; (b) việc chấp thuận, ký kết và thực hiện Điều Khoản và Điều Kiện này được thực hiện một cách hợp và đã có được chấp thuận hợp lệ; (c) Điều Khoản và Điều Kiện này ràng buộc và có hiệu lực thi hành với Đối Tác TTLK ngay khi Đối Tác TTLK đăng ký/tiếp tục tham gia Chương Trình; và (d) tuân thủ các quy định của pháp luật áp dụng trong suốt quá trình thực hiện các hoạt động theo Điều Khoản và Điều Kiện này."
+            - listitem [ref=f34e605]:
+              - paragraph [ref=f34e606]: Tuyên Bố và Bảo Đảm của Đối Tác TTLK. Đối Tác TTLK tuyên bố và bảo đảm rằng,
+          - list [ref=f34e607]:
+            - listitem [ref=f34e608]:
+              - heading "việc ký kết, thực hiện, bàn giao Điều Khoản và Điều Kiện này sẽ không mâu thuẫn hoặc cấu thành vi phạm theo các điều khoản của bất kỳ thỏa thuận, công cụ, phán quyết, nghị định hoặc bất kỳ lệnh, quy chế, quy tắc hoặc quy định nào của chính phủ áp dụng cho Đối Tác TTLK;" [level=2] [ref=f34e609]
+            - listitem [ref=f34e610]:
+              - heading "tất cả các thông tin mà Đối Tác TTLK cung cấp cho shopee là toàn vẹn, đúng, chính xác, và ghi nhận một cách rõ ràng, bao gồm nhưng không giới hạn ở việc Đối Tác TTLK có quyền thực hiện các hoạt động kinh doanh bao gồm việc cung cấp các sản phẩm và dịch vụ trong quá trình tham gia Chương Trình;" [level=2] [ref=f34e611]
+            - listitem [ref=f34e612]:
+              - heading "không có Phương Tiện TTLK nào chứa (i) bất kỳ thông tin nào vi phạm hoặc khuyến khích vi phạm bất kỳ luật hiện hành nào; (ii) thông tin hoặc bất kỳ ưu đãi nào mang tính gian lận hoặc lừa đảo; (iii) vi-rút, phần mềm độc hại, phần mềm gián điệp, Trojan, lừa đảo hoặc mã độc hại khác có thể vi phạm hoặc phá vỡ bất kỳ biện pháp bảo mật nào của nền tảng (Sàn TMĐT); (iv) tiếp thị thông tin hoặc quảng bá hàng giả hoặc kinh doanh bất hợp pháp (bao gồm cả ứng dụng hoặc phần mềm có chứa các khoản phí ẩn); (v) bất kỳ tài liệu nào vi phạm bất kỳ quyền nào của bất kỳ bên thứ ba nào; hoặc (vi) tài liệu có thể gây hại, lạm dụng, khiêu dâm hoặc tục tĩu, đe dọa hoặc phỉ báng." [level=2] [ref=f34e613]
+          - heading "ĐIỀU 11. BỒI THƯỜNG THIỆT HẠI" [level=2] [ref=f34e614]
+          - list [ref=f34e615]:
+            - listitem [ref=f34e616]:
+              - 'heading "Bồi thường bởi Đối Tác TTLK. Đối Tác TTLK sẽ bồi thường, bảo vệ và giữ cho Shopee và các công ty liên quan của Shopee và các giám đốc, cán bộ và nhân viên của họ khỏi tất cả các khiếu nại, khiếu kiện, hành động, tổn thất, thiệt hại, trách nhiệm pháp lý, chi phí và phí tổn, bao gồm phí luật sư và các chi phí pháp lý khác, phát sinh trực tiếp hoặc gián tiếp từ hoặc liên quan đến: (a) bất kỳ vi phạm nào của Đối Tác TTLK đối với bất kỳ quy định nào của Điều Khoản và Điều Kiện này; (b) bất kỳ sự không tuân thủ nào của Đối Tác TTLK trong việc thực hiện nghĩa vụ của mình theo Điều Khoản và Điều Kiện này và quy định pháp luật áp dụng; (c) bất kỳ vi phạm nào đối với bất kỳ quyền nào của bất kỳ bên thứ ba nào liên quan đến Phương Tiện TTLK; hoặc (d) Gian lận, sơ suất hoặc hành vi sai trái cố ý của Đối Tác TTLK." [level=2] [ref=f34e617]'
+            - listitem [ref=f34e618]:
+              - heading "Shopee sẽ thông báo ngay cho bên bồi thường về bất kỳ khiếu nại nào tuân theo Điều 11.1 nếu trên và sẽ cho phép bên bồi thường đảm nhận và kiểm soát việc xử lý các khiếu nại đó. Tuy nhiên, Shopee sẽ có quyền thuê luật sư riêng và tham gia bảo vệ các khiếu nại với chi phí duy nhất của bên bồi thường. Bên bồi thường sẽ có thẩm quyền duy nhất để bảo vệ, thỏa hiệp, giải quyết hoặc xử lý khiếu nại, nhưng sẽ không đồng ý với bất kỳ việc xử lý hoặc giải quyết khiếu nại nào thừa nhận trách nhiệm pháp lý hoặc áp đặt nghĩa vụ thực hiện hoặc thanh toán đối với Shopee mà không có sự đồng ý trước bằng văn bản của Shopee. Nếu các bên đồng ý giải quyết khiếu nại, bên bồi thường sẽ không công khai việc dàn xếp mà không có sự cho phép trước bằng văn bản của Shopee." [level=2] [ref=f34e619]
+          - strong [ref=f34e621]
+          - heading "ĐIỀU 12. GIỚI HẠN TRÁCH NHIỆM" [level=2] [ref=f34e622]
+          - list [ref=f34e623]:
+            - listitem [ref=f34e624]:
+              - heading "Tuyên bố từ chối bảo đảm. TẤT CẢ CÁC TÀI LIỆU SHOPEE VÀ LIÊN KẾT TTLK (SIÊU LIÊN KẾT) ĐƯỢC CUNG CẤP \"NGUYÊN TRẠNG\". ĐỐI TÁC TTLK THỪA NHẬN VÀ ĐỒNG Ý RẰNG SHOPEE SẼ KHÔNG CHỊU TRÁCH NHIỆM PHÁP LÝ PHÁT SINH TỪ LỖI CỦA BẤT KỲ CÔNG NGHỆ HOẶC QUY TRÌNH BẢO MẬT NÀO. SHOPEE KHÔNG ĐẢM BẢO RẰNG CÁC TÀI LIỆU SHOPEE HOẶC SIÊU LIÊN KẾT ĐƯỢC CUNG CẤP SẼ CÓ SẴN, CÓ THỂ TRUY CẬP, KHÔNG BỊ GIÁN ĐOẠN, AN TOÀN, CHÍNH XÁC, ĐẦY ĐỦ HOẶC KHÔNG CÓ LỖI, RẰNG CÁC KHIẾM KHUYẾT, NẾU CÓ, SẼ ĐƯỢC SỬA CHỮA, HOẶC MÁY CHỦ CUNG CẤP CÁC TÀI LIỆU TƯƠNG TỰ KHÔNG CÓ VI-RÚT, ĐỒNG HỒ, BỘ ĐẾM THỜI GIAN, BỘ ĐẾM, SÂU INTERNET, KHÓA PHẦN MỀM, THIẾT BỊ THẢ CHẾT, MÃ ĐỘC TROJAN, ĐỊNH TUYẾN, CỬA BẪY, BOM HẸN GIỜ HOẶC BẤT KỲ MÃ ĐỘC HẠI NÀO KHÁC, HƯỚNG DẪN, CHƯƠNG TRÌNH HOẶC THÀNH PHẦN." [level=2] [ref=f34e625]
+            - listitem [ref=f34e626]:
+              - heading "Tuyên bố từ chối trách nhiệm về các thiệt hại phát sinh. TRONG BẤT KỲ TRƯỜNG HỢP NÀO, SHOPEE SẼ KHÔNG CHỊU TRÁCH NHIỆM PHÁP LÝ VỚI ĐỐI TÁC TTLK VỀ CÁC THIỆT HẠI MÀ ĐƯỢC XEM LÀ HẬU QUẢ, MANG TÍNH NGẪU NHIÊN, ĐẶC BIỆT, TRỪNG PHẠT HOẶC LÀM GƯƠNG PHÁT SINH TỪ HOẶC LIÊN QUAN ĐẾN GIAO DỊCH ĐƯỢC THỰC HIỆN THEO ĐIỀU KHOẢN VÀ ĐIỀU KIỆN NÀY, BAO GỒM CẢ TỔN THẤT VỀ LỢI NHUẬN HOẶC TỔN THẤT KINH DOANH." [level=2] [ref=f34e627]
+            - listitem [ref=f34e628]:
+              - heading "Giới hạn trách nhiệm. TRONG MỌI TRƯỜNG HỢP, TOÀN BỘ TRÁCH NHIỆM PHÁP LÝ CỦA SHOPEE DƯỚI MỌI HÌNH THỨC PHÁT SINH TỪ HOẶC LIÊN QUAN ĐẾN ĐIỀU KHOẢN VÀ ĐIỀU KIỆN NÀY, BẤT KỂ DIỄN ĐÀN NÀO VÀ BẤT KỂ BẤT KỲ HÀNH ĐỘNG HOẶC KHIẾU NẠI NÀO DỰA TRÊN ĐIỀU KHOẢN VÀ ĐIỀU KIỆN NÀY HOẶC CÁC HỢP ĐỒNG CÓ LIÊN QUAN, SAI LẦM CÁ NHÂN HAY CÁCH KHÁC, SẼ KHÔNG VƯỢT QUÁ TỔNG SỐ TIỀN SHOPEE ĐÃ THANH TOÁN HOẶC PHẢI TRẢ CHO ĐỐI TÁC TTLK THEO ĐIỀU KHOẢN VÀ ĐIỀU KIỆN NÀY TRONG KHOẢNG THỜI GIAN 6 THÁNG TRƯỚC KHI KHIẾU NẠI ĐÓ PHÁT SINH." [level=2] [ref=f34e629]
+            - listitem [ref=f34e630]:
+              - heading "Phân bổ rủi ro độc lập. MỖI ĐIỀU KHOẢN CỦA ĐIỀU KHOẢN VÀ ĐIỀU KIỆN NÀY QUY ĐỊNH LIÊN QUAN ĐẾN GIỚI HẠN TRÁCH NHIỆM PHÁP LÝ HOẶC LOẠI TRỪ THIỆT HẠI ĐƯỢC ĐẶT RA TRÊN CƠ SỞ PHÂN BỔ RỦI RO GIỮA CÁC BÊN. SỰ PHÂN BỔ NÀY LÀ MỘT YẾU TỐ THIẾT YẾU. MỖI ĐIỀU KHOẢN NÀY CÓ THỂ TÁCH RỜI VÀ ĐỘC LẬP VỚI TẤT CẢ CÁC ĐIỀU KHOẢN KHÁC CỦA ĐIỀU KHOẢN VÀ ĐIỀU KIỆN NÀY VÀ MỖI ĐIỀU KHOẢN NÀY SẼ ĐƯỢC ÁP DỤNG NGAY CẢ KHI CÁC ĐIỀU KHOẢN NÀY KHÔNG ĐẠT ĐƯỢC MỤC ĐÍCH THIẾT YẾU CỦA CHÚNG." [level=2] [ref=f34e631]
+          - strong [ref=f34e633]
+          - heading "ĐIỀU 13. CÁC QUY ĐỊNH KHÁC" [level=2] [ref=f34e634]
+          - list [ref=f34e635]:
+            - listitem [ref=f34e636]:
+              - heading "Nhà thầu phụ. Shopee có thể thực hiện các quyền của mình theo Điều Khoản và Điều Kiện này thông qua các bên thứ ba và nhà thầu phụ của Shopee mà không cần phải thông báo đến hoặc xin chấp thuận trước bằng văn bản từ Đối Tác TTLK." [level=2] [ref=f34e637]
+            - listitem [ref=f34e638]:
+              - heading "Nhà thầu độc lập. Điều Khoản và Điều Kiện này sẽ không được hiểu là tạo mối quan hệ đối tác, liên doanh hoặc đại lý hoặc cấp nhượng quyền thương mại. Các bên là các nhà thầu độc lập trong việc thực hiện Điều Khoản và Điều Kiện này. Không bên nào được phép ràng buộc bên kia với bất kỳ trách nhiệm pháp lý hoặc nghĩa vụ nào hoặc tuyên bố rằng họ có bất kỳ thẩm quyền nào để làm như vậy." [level=2] [ref=f34e639]
+            - listitem [ref=f34e640]:
+              - heading "Thông cáo báo chí. Trừ khi được quy định rõ ràng trong Điều Khoản và Điều Kiện này hoặc theo yêu cầu của luật pháp áp dụng, Đối Tác TTLK sẽ không đưa ra bất kỳ thông báo công khai hoặc thông cáo báo chí nào liên quan đến sự hợp tác theo Điều Khoản và Điều Kiện này mà không có sự đồng ý trước của Shopee. Trường hợp Đối Tác TTLK được pháp luật yêu cầu phải đưa ra thông báo công khai về bất kỳ vấn đề nào liên quan đến sự hợp tác theo Điều Khoản và Điều Kiện này, Đối Tác TTLK sẽ phải gửi thông báo đến Shopee để thông tin về nội dung này và Shopee sẽ xem xét một cách thiện chí về nội dung của thông báo công khai đó trên tinh thần đảm bảo quyền lợi của Shopee và Đối Tác TTLK." [level=2] [ref=f34e641]
+            - listitem [ref=f34e642]:
+              - heading "Thông báo. Tất cả các thông báo theo các điều khoản của Điều Khoản và Điều Kiện này sẽ được coi là đã được đưa ra kể từ ngày chúng được nhận bằng chuyển phát nhanh qua đêm, email, bưu chính trả trước, thư bảo đảm hoặc thư bảo đảm, hoặc fax, và được gửi đến Shopee hoặc Đối Tác TTLK tại địa chỉ tương ứng của họ." [level=2] [ref=f34e643]
+            - listitem [ref=f34e644]:
+              - heading [level=2] [ref=f34e645]
+            - listitem [ref=f34e646]:
+              - heading [level=2] [ref=f34e647]
+            - listitem [ref=f34e648]:
+              - heading "Hiệu lực từng phần. Nếu bất kỳ điều khoản, điều kiện hoặc quy định nào trong Điều Khoản và Điều Kiện này được phát hiện là không hợp lệ, bất hợp pháp hoặc không thể thi hành ở bất kỳ mức độ nào, các bên sẽ cố gắng đồng ý với các sửa đổi để đảm bảo, trong phạm vi tối đa mà pháp luật cho phép, các ý định được thể hiện bao đầu trong Điều Khoản và Điều Kiện được thể hiện một cách toàn vẹn và chính xác. Nếu các bên không đồng ý về việc sửa đổi và hoặc điều chỉnh các điều khoản, điều kiện hoặc quy định không hợp lệ, thì các điều khoản, điều kiện hoặc quy định được xem là hoàn toàn độc lập với và không ảnh hưởng đến hiệu lực và tính hợp pháp của các điều khoản, điều kiện và quy định còn lại của Điều Khoản và Điều Kiện, điều khoản này sẽ tiếp tục có hiệu lực và có thể thi hành trong phạm vi tối đa được pháp luật cho phép và sẽ được duy trì, để đúng với ý định ban đầu của các bên liên quan." [level=2] [ref=f34e649]
+            - listitem [ref=f34e650]:
+              - heading "Biện pháp khắc phục cộng dồn. Không có bất kỳ quy định nào có thể diễn giải hoặc hiểu rằng việc thực hiện một phần hoặc một phần bất kỳ quyền hoặc biện pháp khắc phục nào sẽ ngăn cản bất kỳ việc thực hiện bất kỳ quyền hoặc biện pháp khắc phục nào khác hoặc tiếp theo. Các quyền và biện pháp khắc phục được quy định tại Điều Khoản và Điều Kiện là được cộng dồn và không loại trừ bất kỳ quyền hoặc biện pháp khắc phục nào được quy định theo quy định của pháp luật áp dụng." [level=2] [ref=f34e651]
+            - listitem [ref=f34e652]:
+              - heading "Ngôn ngữ. Nếu Điều Khoản và Điều Kiện được thực hiện bằng nhiều ngôn ngữ, thì chỉ có phiên bản tiếng Việt mới ràng buộc các bên." [level=2] [ref=f34e653]
+            - listitem [ref=f34e654]:
+              - heading "Tiêu đề. Các tiêu đề được sử dụng trong Điều Khoản và Điều Kiện chỉ nhằm mục đích tham khảo và sẽ không được xem xét khi giải thích Điều Khoản và Điều Kiện." [level=2] [ref=f34e655]
+            - listitem [ref=f34e656]:
+              - heading "Tính toàn vẹn. Các quy định tại đây này cấu thành toàn bộ thỏa thuận của các bên liên quan đến nội dung của Điều Khoản và Điều Kiện này và thay thế tất cả các trao đổi, tuyên bố, hiểu biết và thỏa thuận trước đó, bằng miệng hoặc bằng văn bản, giữa các bên liên quan đến các nội dung có liên quan được quy định. Không có điều khoản, điều khoản hoặc quy định nào của bất kỳ đơn đặt hàng, xác nhận hoặc hình thức kinh doanh nào khác mà một trong hai bên có thể sử dụng liên quan đến các giao dịch được dự tính bởi Điều Khoản và Điều Kiện sẽ có bất kỳ ảnh hưởng nào đến quyền, nghĩa vụ hoặc nghĩa vụ của các bên theo hoặc sửa đổi Điều Khoản và Điều Kiện, bất kể không phản đối Điều Khoản và Điều Kiện này." [level=2] [ref=f34e657]
+          - heading "II. CÁC LOẠI HÌNH THAM GIA CHƯƠNG TRÌNH TTLK" [level=1] [ref=f34e658]
+          - paragraph [ref=f34e659]: Khi tham gia Chương Trình TTLK, Đối Tác TTLK tùy vào loại hình kinh doanh và khả năng đáp ứng các yêu cầu và điều kiện do Shopee đặt ra vào từng thời điểm cụ thể, mà có thể lựa chọn đăng ký loại hình tham gia Chương Trình TTLK phù hợp dựa trên sự phê duyệt của Shopee.
+          - heading "ĐIỀU 1. KOL AFFILIATE / KOC AFFILIATE" [level=2] [ref=f34e660]
+          - list [ref=f34e661]:
+            - listitem [ref=f34e662]:
+              - heading "Cách Thức Đăng Ký" [level=2] [ref=f34e663]
+          - 'heading "ĐỐI TÁC TTLK LÀ CÁ NHÂN KINH DOANH, HỘ KINH DOANH (ỦY NHIỆM XUẤT HÓA ĐƠN) HOẠT ĐỘNG THEO LOẠI HÌNH: KOL AFFILIATE / KOC AFFILIATE, theo đó:" [level=2] [ref=f34e664]'
+          - list [ref=f34e665]:
+            - listitem [ref=f34e666]:
+              - paragraph [ref=f34e667]: “KOL Affiliate” là chương trình của Shopee dành cho các nhân vật có sức ảnh hưởng rộng rãi trên mạng xã hội và các kênh truyền thông; làm việc trong các lĩnh vực có chuyên môn, bao gồm nhưng không giới hạn ở Người chia sẻ quan điểm (về các nội dung bao gồm nhưng không giới hạn Làm đẹp/Du lịch/Phong cách sống/Thể thao/Công nghệ…).
+          - paragraph [ref=f34e668]: "Để đăng ký hình thức KOL Affiliate, Đối Tác TTLK phải đảm bảo đáp ứng các yêu cầu sau đây: (i) có ít nhất 5.000 người theo dõi / đăng ký trên TikTok / YouTube; hoặc (ii) có ít nhất 10.000 người theo dõi trên Facebook / Instagram."
+          - list [ref=f34e669]:
+            - listitem [ref=f34e670]:
+              - paragraph [ref=f34e671]: “KOC Affiliate” là chương trình của Shopee dành cho tất cả người tiêu dùng yêu thích việc mua sắm và chia sẻ trải nghiệm sử dụng sản phẩm với cộng đồng.
+          - paragraph [ref=f34e672]: "Để đăng ký hình thức KOC Affiliate, Đối Tác TTLK phải đảm bảo đáp ứng các yêu cầu sau đây: (i) Những đối tác không đáp ứng tiêu chí trở thành KOL Affiliate sẽ trở thành KOC Affiliate; và (ii) Trường hợp có nhiều tài khoản đạt mức KOC Affiliate nhưng có 1 tài khoản đạt mức KOL Affiliate: Căn cứ trên các tài khoản mạng xã hội khi bạn đăng ký tài khoản Shopee Affiliate có lượt follower cao nhất để xác định; và (iii) chỉ có thể có 1 (một) Tài Khoản TTLK."
+          - strong [ref=f34e674]
+          - list [ref=f34e675]:
+            - listitem [ref=f34e676]:
+              - heading "Quy Trình Đăng Ký" [level=2] [ref=f34e677]
+          - list [ref=f34e678]:
+            - listitem [ref=f34e679]:
+              - paragraph [ref=f34e680]:
+                - text: Đối Tác TTLK đăng ký tham gia chương trình KOL Affiliate/ KOC Affiliate
+                - link "TẠI ĐÂY" [ref=f34e681] [cursor=pointer]:
+                  - /url: https://affiliate.shopee.vn/?previousPage=other%20articles
+                - text: ", đồng thời cung cấp đầy đủ các tài liệu và thông tin liên quan theo hướng dẫn của Shopee vào từng thời điểm cụ thể theo quy định tại đây một cách tương ứng, để tạo Tài Khoản TTLK."
+            - listitem [ref=f34e682]:
+              - paragraph [ref=f34e683]: Shopee sẽ gửi mail xác nhận xét duyệt tài khoản thành công với loại hình KOL Affiliate hoặc KOC Affiliate tương ứng, sau đó Đối Tác TTLK có thể tham gia Chương Trình dưới hình thức tiến hành đăng bài với Siêu Liên Kết.
+            - listitem [ref=f34e684]:
+              - paragraph [ref=f34e685]: Trong mọi trường hợp, quyết định cuối cùng về việc xem xét liệu Đối Tác TTLK có đủ điều kiện hoặc không đủ điều kiện tham gia KOL Affiliate/KOC Affiliate thuộc về Shopee.
+          - paragraph [ref=f34e686]: "Lưu ý: Shopee tiến hành kiểm duyệt Tài Khoản TTLK của Đối Tác TTLK mỗi tháng. Trường hợp Tài Khoản TTLK vi phạm một trong các điều kiện và điều khoản của Chương Trình TTLK, Shopee có quyền thay đổi trạng thái Tài khoản TTLK để phù hợp với chính sách của Chương Trình TTLK."
+          - list [ref=f34e687]:
+            - listitem [ref=f34e688]:
+              - heading "Phí Hoa Hồng" [level=2] [ref=f34e689]
+          - list [ref=f34e690]:
+            - listitem [ref=f34e691]:
+              - paragraph [ref=f34e692]: Shopee sẽ trả Phí Hoa Hồng dựa trên doanh số từ những Đơn Hàng Thành Công trên Sàn TMĐT phát sinh từ Tài Khoản TTLK của Đối Tác TTLK được ghi nhận tại Kết Quả TTLK (hay còn được hiểu là một loại Hoa Hồng Cơ Bản).
+          - paragraph [ref=f34e693]:
+            - text: Phí Hoa Hồng Cơ Bản được áp dụng cho Đối Tác TTLK quy định tại mục Hoa Hồng Shopee trên Hệ Thống TTLK của Shopee
+            - link "TẠI ĐÂY" [ref=f34e694] [cursor=pointer]:
+              - /url: https://affiliate.shopee.vn/offer/shopee_offer?previousPage=other%20articles
+            - text: .
+          - list [ref=f34e695]:
+            - listitem [ref=f34e696]:
+              - paragraph [ref=f34e697]: Phí Hoa Hồng Cơ Bản Đối Tác TTLK được thụ hưởng = [Giá Trị Thuần Đơn Hàng Thành Công x tỷ lệ hoa hồng theo ngành hàng do Shopee quyết định tại từng thời điểm cụ thể]
+            - listitem [ref=f34e698]:
+              - paragraph [ref=f34e699]: Tổng giá trị Đối Tác TTLK được thụ hưởng khi tham gia Chương Trình
+          - paragraph [ref=f34e700]: Tổng giá trị Đối Tác TTLK được thụ hưởng trong tháng T = Phí Hoa Hồng Cơ Bản + Phí Hoa Hồng Thưởng (nếu có) + Phí Hoa Hồng Xtra (nếu có) + thưởng khác (nếu có) (phát sinh trong tháng T)
+          - paragraph [ref=f34e701]: "Trong đó:"
+          - paragraph [ref=f34e702]: "Tháng T: tháng diễn ra Chương Trình"
+          - paragraph [ref=f34e703]: "Phí Hoa Hồng Cơ Bản: xác định theo quy định tại Điều 1.3(a) và 1.3(b) Chương II này."
+          - paragraph [ref=f34e704]: "Phí Hoa Hồng Xtra: xác định theo quy định tại Điều 2.7 Chương I."
+          - paragraph [ref=f34e705]: "Phí Hoa Hồng Thưởng: Nhằm khuyến khích thúc đẩy doanh số trên Sàn TMĐT, Shopee sẽ có mức thưởng thêm hoa hồng tùy thuộc theo từng chương trình thưởng thêm và sẽ được thông báo đến từng Đối Tác TTLK thông qua email của Chương Trình TTLK."
+          - paragraph [ref=f34e706]: "Thưởng khác: nếu áp dụng, tùy theo quyết định và thông báo của Shopee vào từng thời điểm cụ thể."
+          - list [ref=f34e707]:
+            - listitem [ref=f34e708]:
+              - heading "Thời Gian Đối Soát và Thanh Toán" [level=2] [ref=f34e709]
+          - paragraph [ref=f34e710]:
+            - text: Các Đơn Hàng Thành Công sẽ được Shopee thực hiện đối soát để tính toán Kết Quả TTLK và thanh toán theo quy định
+            - link "TẠI ĐÂY" [ref=f34e711] [cursor=pointer]:
+              - /url: https://help.shopee.vn/portal/10/article/188941?previousPage=other%20articles
+            - text: . Để làm rõ, trường hợp có bất kỳ điều chỉnh và bổ sung nào có liên quan đến Thời Gian Đối Soát và Thanh Toán, Shopee sẽ bằng nỗ lực tối và nhanh chóng thông tin đến Đối Tác TTLK có liên quan về các điều chỉnh và bổ sung này. Tuy nhiên, Đối Tác TTLK có nghĩa vụ thường xuyên cập nhật các quy định liên quan để đảm bảo quyền và lợi ích của mình khi tham gia Chương Trình theo Điều Khoản và Điều Kiện này.
+          - paragraph [ref=f34e712]: "Lưu ý:"
+          - list [ref=f34e713]:
+            - listitem [ref=f34e714]:
+              - paragraph [ref=f34e715]: Nếu ngày gửi đối soát hoặc ngày thanh toán giá trị Đối Tác TTLK được thụ hưởng theo kế hoạch nêu trên trùng vào cuối tuần (thứ Bảy, Chủ Nhật) hoặc dịp Lễ/ Tết theo quy định của pháp luật, Shopee sẽ thực hiện những công việc này vào Ngày Làm Việc tiếp theo.
+            - listitem [ref=f34e716]:
+              - paragraph [ref=f34e717]: Trường hợp Đối Tác TTLK là cá nhân kinh doanh, hộ kinh doanh (ủy nhiệm xuất hóa đơn) và đã được ghi nhận bởi Hệ Thống TTLK và/hoặc bằng văn bản bởi Shopee, bên cạnh việc đảm bảo thông tin tài khoản thanh toán đã cập nhật đầy đủ và chính xác theo quy định tại mục nêu trên, Đối Tác TTLK phải đảm bảo luôn duy trình trạng thái hoạt động, các giấy tờ và tài liệu cần thiết để có thể tiếp tục được ghi nhận tình trạng cá nhân kinh doanh, hộ kinh doanh (ủy nhiệm xuất hóa đơn) như một trong những nghĩa vụ quan trọng trong quá trình tham gia Chương Trình, bên cạnh các quy định khác theo quy định tại đây được dẫn chiếu đến như là một phần của Điều Khoản và Điều Kiện này. Để làm rõ, trường hợp Đối Tác TTLK đã chuyển đổi sang hình thức Cá Nhân Kinh Doanh thành công hoặc được ghi nhận là hộ kinh doanh (ủy nhiệm xuất hóa đơn), nhưng không đủ điều kiện để ủy nhiệm bên thứ ba xuất hóa đơn theo thông báo từ Cơ quan thuế, các khoản thanh toán chưa có đầy đủ Chứng Từ Thanh Toán sẽ bị tạm hoãn cho tới khi Đối Tác TTLK có thể cung cấp Chứng Từ Thanh Toán theo quy định hoặc Shopee có toàn quyền quyết định từ chối thanh toán và chấm dứt hợp tác theo quy định tại Chương I - Điều 9.
+            - listitem [ref=f34e718]:
+              - paragraph [ref=f34e719]: Trong mọi trường hợp hoặc có bất kỳ mâu thuẫn hoặc tranh chấp có liên quan hoặc phát sinh đến các quy định tại đây, quyết định từ Shopee sẽ là quyết định cuối cùng và mang tính ràng buộc các bên có liên quan.
+          - strong [ref=f34e721]
+          - heading "ĐIỀU 2. KOL AFFILIATE DOANH NGHIỆP" [level=2] [ref=f34e722]
+          - list [ref=f34e723]:
+            - listitem [ref=f34e724]:
+              - heading "Cách Thức Đăng Ký" [level=2] [ref=f34e725]
+          - heading "ĐỐI TÁC TTLK CÓ THỂ ĐĂNG KÝ THAM GIA CHƯƠNG TRÌNH TTLK THEO LOẠI HÌNH KOL AFFILIATE DOANH NGHIỆP, với điều kiện phải đáp ứng đầy đủ các yêu cầu và điều kiện sau đây:" [level=2] [ref=f34e726]
+          - list [ref=f34e727]:
+            - listitem [ref=f34e728]:
+              - heading "Đã có Tài Khoản TTLK và Tài Khoản TTLK đang trong trạng thái hoạt động hợp lệ theo Chính Sách Shopee," [level=2] [ref=f34e729]
+            - listitem [ref=f34e730]:
+              - heading "Đạt yêu cầu về số lượng đơn hàng phát sinh hàng ngày (tùy theo chính sách của Chương Trình TTLK tại từng thời điểm)," [level=2] [ref=f34e731]
+            - listitem [ref=f34e732]:
+              - heading "Hoạt động dưới hình thức doanh nghiệp hoặc hộ kinh doanh (xuất hóa đơn) hoặc hộ kinh doanh (ủy nhiệm xuất hóa đơn) theo quy định của pháp luật áp dụng, và" [level=2] [ref=f34e733]
+            - listitem [ref=f34e734]:
+              - heading "Đủ điều kiện ký kết hợp đồng cung cấp dịch vụ với Shopee theo các tiêu chí do Shopee đặt ra vào từng thời điểm cụ thể." [level=2] [ref=f34e735]
+          - list [ref=f34e736]:
+            - listitem [ref=f34e737]:
+              - heading "Phí Hoa Hồng" [level=2] [ref=f34e738]
+          - list [ref=f34e739]:
+            - listitem [ref=f34e740]:
+              - paragraph [ref=f34e741]: Shopee sẽ trả Phí Hoa Hồng dựa trên doanh số từ những Đơn Hàng Thành Công trên Sàn TMĐT phát sinh từ Tài Khoản TTLK của Đối Tác TTLK được ghi nhận tại Kết Quả TTLK (hay còn được hiểu là một loại Hoa Hồng Cơ Bản).
+          - paragraph [ref=f34e742]:
+            - text: Phí Hoa Hồng Cơ Bản được áp dụng cho Đối Tác TTLK quy định tại mục Hoa Hồng Shopee trên Hệ Thống TTLK của Shopee
+            - link "TẠI ĐÂY" [ref=f34e743] [cursor=pointer]:
+              - /url: https://affiliate.shopee.vn/offer/shopee_offer?previousPage=other%20articles
+            - text: ":"
+          - list [ref=f34e744]:
+            - listitem [ref=f34e745]:
+              - paragraph [ref=f34e746]: Phí Hoa Hồng Cơ Bản Đối Tác TTLK được thụ hưởng = [Giá Trị Thuần Đơn Hàng Thành Công x tỷ lệ hoa hồng theo ngành hàng do Shopee quyết định tại từng thời điểm cụ thể]
+            - listitem [ref=f34e747]:
+              - paragraph [ref=f34e748]: "Tổng giá trị mỗi tháng mà Đối Tác TTLK có thể thụ hưởng sẽ được tính cụ thể như sau:"
+          - paragraph [ref=f34e749]: Tổng giá trị Đối Tác TTLK được thụ hưởng trong tháng T = Phí Hoa Hồng Cơ Bản + Phí Hoa Hồng Thưởng + Phí Hoa Hồng Xtra + thưởng khác (nếu có) (phát sinh trong tháng T)
+          - paragraph [ref=f34e750]: "Trong đó:"
+          - paragraph [ref=f34e751]: "Tháng T: tháng diễn ra Chương Trình"
+          - paragraph [ref=f34e752]: "Phí Hoa Hồng Cơ Bản: xác định theo quy định tại Điều 2.3(a) và 2.3(b) Chương II này."
+          - paragraph [ref=f34e753]: "Phí Hoa Hồng Xtra: xác định theo quy định tại Điều 2.7 Chương I."
+          - paragraph [ref=f34e754]: "Phí Hoa Hồng Thưởng: Nhằm khuyến khích thúc đẩy doanh số trên Sàn TMĐT, Shopee sẽ có mức thưởng thêm hoa hồng tùy thuộc theo từng chương trình thưởng thêm và sẽ được thông báo đến Người Bán Tiếp Thị Liên Kết thông qua email của Chương Trình."
+          - paragraph [ref=f34e755]: "Thưởng khác: nếu áp dụng, tùy theo quyết định và thông báo của Shopee vào từng thời điểm cụ thể."
+          - list [ref=f34e756]:
+            - listitem [ref=f34e757]:
+              - heading "Thời Gian Đối Soát và Thanh Toán" [level=2] [ref=f34e758]
+          - paragraph [ref=f34e759]:
+            - text: Các Đơn Hàng Thành Công sẽ được Shopee thực hiện đối soát để tính toán Kết Quả TTLK và thanh toán theo quy định
+            - link "TẠI ĐÂY" [ref=f34e760] [cursor=pointer]:
+              - /url: https://help.shopee.vn/portal/10/article/188941?previousPage=other%20articles
+            - text: . Để làm rõ, trường hợp có bất kỳ điều chỉnh và bổ sung nào có liên quan đến Thời Gian Đối Soát và Thanh Toán, Shopee sẽ bằng nỗ lực tối và nhanh chóng thông tin đến Đối Tác TTLK có liên quan về các điều chỉnh và bổ sung này. Tuy nhiên, Đối Tác TTLK có nghĩa vụ thường xuyên cập nhật các quy định liên quan để đảm bảo quyền và lợi ích của mình khi tham gia Chương Trình theo Điều Khoản và Điều Kiện này.
+          - paragraph [ref=f34e761]: "Lưu ý:"
+          - list [ref=f34e762]:
+            - listitem [ref=f34e763]:
+              - paragraph [ref=f34e764]: Nếu ngày gửi đối soát hoặc ngày thanh toán giá trị Đối Tác TTLK được thụ hưởng theo kế hoạch nêu trên trùng vào cuối tuần (thứ Bảy, Chủ Nhật) hoặc dịp Lễ/ Tết theo quy định của pháp luật, Shopee sẽ thực hiện những công việc này vào Ngày Làm Việc tiếp theo.
+            - listitem [ref=f34e765]:
+              - paragraph [ref=f34e766]: Để đảm bảo Đối Tác TTLK có thể nhận được thanh toán cho giá trị Đối Tác TTLK được thụ hưởng hàng tháng đầy đủ và nhanh chóng, Đối Tác TTLK vui lòng kiểm tra thông tin tài khoản thanh toán đã cập nhật trên trang Affiliate Website (https://affiliate.shopee.vn/). Trường hợp Đối Tác TTLK cập nhật hoặc cung cấp thông tin thanh toán không chính xác hoặc không đầy đủ dẫn đến việc chậm trễ hoặc trì hoãn thanh toán bất kỳ khoản giá trị nào Đối Tác TTLK được thụ hưởng từ Shopee cho Đối Tác TTLK, thì Shopee sẽ không được xem là vi phạm Điều Khoản và Điều Kiện này. Đối Tác TTLK phải hoàn toàn chịu trách nhiệm (bao gồm nhưng không giới hạn ở các khoản bồi thường, giải quyết khiếu nại từ bên thứ ba, nếu có) liên quan đến các thông tin thanh toán của Đối Tác TTLK.
+            - listitem [ref=f34e767]:
+              - paragraph [ref=f34e768]: Dự kiến trong vòng tối thiểu ba mươi (30) Ngày Làm Việc kể từ ngày Shopee nhận đầy đủ chứng từ thanh toán hợp lệ từ Đối Tác TTLK theo quy định tại Chương I - Điều 9, Shopee sẽ tiến hành thanh toán cho Đối Tác TTLK theo thông tin mà Đối Tác TTLK đã cung cấp trước đó theo quy định của Chính Sách Shopee.Trong mọi trường hợp, quyết định từ Shopee là quyết định cuối cùng.
+            - listitem [ref=f34e769]:
+              - paragraph [ref=f34e770]: Trong mọi trường hợp hoặc có bất kỳ mâu thuẫn hoặc tranh chấp có liên quan hoặc phát sinh đến các quy định tại đây, quyết định từ Shopee sẽ là quyết định cuối cùng và mang tính ràng buộc các bên có liên quan.
+          - strong [ref=f34e772]
+          - heading "ĐIỀU 3. MCN (MULTI-CHANNEL NETWORK) – MẠNG LƯỚI ĐA KÊNH" [level=2] [ref=f34e773]
+          - list [ref=f34e774]:
+            - listitem [ref=f34e775]:
+              - heading "Cách Thức Đăng Ký" [level=3] [ref=f34e776]
+          - heading "ĐỐI TÁC TTLK CÓ THỂ LỰA CHỌN THAM GIA CHƯƠNG TRÌNH TTLK DƯỚI LOẠI HÌNH MCN - đối tác chuyên hỗ trợ các KOLs (Key Opinion Leaders) trong việc tối ưu hóa hiệu suất công việc và nâng cao thu nhập qua việc tham gia vào các Chương Trình TTLK của Shopee; với điều kiện phải đáp ứng đầy đủ các yêu cầu và điều kiện sau đây:" [level=3] [ref=f34e777]
+          - list [ref=f34e778]:
+            - listitem [ref=f34e779]:
+              - 'heading "Đối Tác TTLK là MCN cung cấp được tài liệu chứng minh: Mạng lưới KOL/KOC (ít nhất có từ 10 KOL/KOC), có các KOL nổi bật, các thành tích hoặc dự án đã thực hiện, và các tiêu chí khác theo yêu cầu của Shopee vào từng thời điểm cụ thể;" [level=3] [ref=f34e780]'
+            - listitem [ref=f34e781]:
+              - heading "Có đủ điều kiện pháp lý để ký kết triển khai các hoạt động thuộc Chương Trình TTLK; và" [level=3] [ref=f34e782]
+            - listitem [ref=f34e783]:
+              - heading "Đã từng triển khai ít nhất 1 (một) phiên livestream có sự góp mặt của nhiều thương hiệu." [level=3] [ref=f34e784]
+          - list [ref=f34e785]:
+            - listitem [ref=f34e786]:
+              - heading "Phí Hoa Hồng và Điều Khoản Thanh Toán" [level=3] [ref=f34e787]
+          - paragraph [ref=f34e788]: "Các Đơn Hàng Thành Công sẽ được Shopee thực hiện đối soát để tính toán Kết Quả TTLK. Để làm rõ, Đối Tác TTLK theo đây đồng ý rằng Shopee sẽ là bên xác định và thực hiện việc đối soát và thanh toán cho Đối Tác TTLK là Đối Tác MCN và đơn vị liên kết thứ cấp trực thuộc Đối Tác MCN một cách tương ứng như sau:"
+          - list [ref=f34e789]:
+            - listitem [ref=f34e790]:
+              - paragraph [ref=f34e791]: "Đối với Đối Tác TTLK là Đối Tác MCN (không bao gồm đơn vị liên kết thứ cấp trực thuộc Đối Tác MCN):"
+          - paragraph [ref=f34e792]: Shopee sẽ tiến hành đối soát và thanh toán Phí Hoa Hồng (gồm có Phí Hoa Hồng Cơ Bản, Phí Hoa Hồng Xtra, các loại phí hoa hồng thưởng khác, thưởng khác (nếu có)) (sau đây còn được gọi là “Phí Hoa Hồng Quản Lý MCN”/”MCN Management Fee”) và phí dịch vụ chiến dịch do MCN thực hiện (sau đây gọi là “Phí Dịch Vụ Chiến Dịch”/“Campaign Service Fee”) cho các Đơn Hàng Thành Công từ ngày 1 – 30 hoặc 31 của tháng T và những Đơn Hàng Thành Công nhưng chưa được đối soát để tính vào Kết Quả TTLK ở các tháng trước đó (nếu có).
+          - list [ref=f34e793]:
+            - listitem [ref=f34e794]:
+              - paragraph [ref=f34e795]: Dự kiến từ ngày 5 đến ngày 15 của tháng T+1, Đối Tác MCN kiểm tra lịch sử thanh toán trên Hệ Thống Shopee, và tùy theo quyết định của Shope vào từng thời điểm, Shopee sẽ gửi email đối soát thông báo Phí Hoa Hồng Quản Lý MCN được duyệt cho Đối Tác MCN.
+            - listitem [ref=f34e796]:
+              - paragraph [ref=f34e797]: Dự kiến trong vòng tối thiểu ba mươi (30) Ngày Làm Việc kể từ ngày Shopee nhận đầy đủ chứng từ thanh toán hợp lệ từ đối tác theo quy định tại Chương I - Điều 9, Shopee tiến hành thanh toán Phí Hoa Hồng Quản Lý MCN đối với các Đơn Hàng Thành Công cho Đối Tác MCN theo tỷ lệ hoa hồng thỏa thuận giữa Đối Tác MCN và Đối Tác TTLK trực thuộc Đối Tác MCN.
+          - list [ref=f34e798]:
+            - listitem [ref=f34e799]:
+              - paragraph [ref=f34e800]: "Đối với đơn vị liên kết thứ cấp trực thuộc Đối Tác MCN:"
+          - paragraph [ref=f34e801]: Việc đối soát để tính toán Kết Quả TTLK và thanh toán giá trị mỗi tháng mà đơn vị liên kết thứ cấp trực thuộc Đối Tác TTLK có thể thụ hưởng sẽ tương ứng với từng loại hình tham gia Chương Trình TTLK của các đơn vị liên kết thứ cấp này một cách tương ứng.
+          - paragraph [ref=f34e802]: "Lưu ý:"
+          - list [ref=f34e803]:
+            - listitem [ref=f34e804]:
+              - paragraph [ref=f34e805]: Nếu ngày gửi đối soát hoặc ngày thanh toán Phí Hoa Hồng theo kế hoạch nêu trên trùng vào cuối tuần (thứ Bảy, Chủ Nhật) hoặc dịp Lễ/ Tết theo quy định của pháp luật, Shopee sẽ thực hiện những công việc này vào Ngày Làm Việc tiếp theo.
+            - listitem [ref=f34e806]:
+              - paragraph [ref=f34e807]: Để đảm bảo Đối Tác TTLK có thể nhận được Phí Hoa Hồng hàng tháng đầy đủ và nhanh chóng, Đối Tác TTLK vui lòng kiểm tra thông tin tài khoản thanh toán hoa hồng đã cập nhật trên trang Affiliate Website (https://affiliate.shopee.vn/). Trường hợp Đối Tác TTLK cập nhật hoặc cung cấp thông tin thanh toán không chính xác hoặc không đầy đủ dẫn đến việc chậm trễ hoặc trì hoãn thanh toán bất kỳ khoản khoản giá trị nào mà Đối Tác TTLK được thụ hưởng từ Shopee, thì Shopee sẽ không bị xem là vi phạm Điều Khoản và Điều Kiện này. Đối Tác TTLK phải hoàn toàn chịu trách nhiệm (bao gồm nhưng không giới hạn ở các khoản bồi thường, giải quyết khiếu nại từ bên thứ ba, nếu có) liên quan đến các thông tin thanh toán của Đối Tác TTLK.
+            - listitem [ref=f34e808]:
+              - paragraph [ref=f34e809]: Ngoài Phí Hoa Hồng Quản Lý MCN và Phí Dịch Vụ Chiến Dịch, MCN có thể được nhận thêm Phí Hoa Hồng bao gồm nhưng không giới hạn các khoản phí hoa hồng thưởng được tính trên hiệu suất hoặc các phí booking khác... đã và sẽ được quy định trong Điều Khoản và Điều Kiện này, nội dung chi tiết về phí hoa hồng thưởng này có thể được thống nhất và đối soát giữa Shopee và MCN thông qua email.
+            - listitem [ref=f34e810]:
+              - paragraph [ref=f34e811]:
+                - text: Để biết được mức phí hoa hồng của Chương Trình, Đối Tác TTLK vui lòng xem Hướng dẫn
+                - link "TẠI ĐÂY" [ref=f34e812] [cursor=pointer]:
+                  - /url: https://help.shopee.vn/portal/10/article/123037?previousPage=other%20articles
+                - text: .
+            - listitem [ref=f34e813]:
+              - paragraph [ref=f34e814]: Trường hợp có bất kỳ tranh cãi nào phát sinh từ hoặc liên quan đến Phí Hoa Hồng và điều khoản thanh toán, quyết định của Shopee sẽ mang tính cuối cùng và ràng buộc các bên có liên quan.
+          - strong [ref=f34e816]
+          - heading "ĐIỀU 4. ĐỐI TÁC TTLK HOẠT ĐỘNG THEO LOẠI HÌNH NGƯỜI BÁN TIẾP THỊ LIÊN KẾT TRÊN SÀN TMĐT" [level=2] [ref=f34e817]
+          - list [ref=f34e818]:
+            - listitem [ref=f34e819]:
+              - paragraph [ref=f34e820]: Điều kiện đăng ký
+          - list [ref=f34e821]:
+            - listitem [ref=f34e822]:
+              - paragraph [ref=f34e823]: NGƯỜI BÁN TIẾP THỊ LIÊN KẾT TRÊN SÀN TMĐT LÀ CÁ NHÂN KINH DOANH, HỘ KINH DOANH (ỦY NHIỆM XUẤT HÓA ĐƠN)
+          - list [ref=f34e824]:
+            - listitem [ref=f34e825]:
+              - paragraph [ref=f34e826]: Người Bán Tiếp Thị Liên Kết bao gồm (i) cá nhân kinh doanh, hộ kinh doanh đăng ký và thành lập hợp pháp theo quy định của pháp luật Việt Nam. Theo đó, Người Bán Tiếp Thị Liên Kết (ii) phải là cá nhân, hộ kinh doanh có đăng ký ngành nghề quảng cáo trong phạm vi hoạt động của Người Bán Tiếp Thị Liên Kết.
+            - listitem [ref=f34e827]:
+              - paragraph [ref=f34e828]: "Để đăng ký hình thức Người Bán Tiếp Thị Liên Kết, Đối Tác TTLK phải đảm bảo đáp ứng các yêu cầu sau đây: đã có gian hàng và đã đăng bán ít nhất năm (05) sản phẩm (không tính các sản phẩm vi phạm chính sách Shopee) trong gian hàng trên Nền Tảng."
+            - listitem [ref=f34e829]:
+              - paragraph [ref=f34e830]: Đối Tác TTLK khi hoạt động dưới hình thức này phải đảm bảo cá nhân thực hiện đăng ký Tài Khoản TTLK để liên kết với tài khoản bán hàng trên Shopee phải là chủ sở hữu tài khoản bán hàng trên Sàn Shopee hoặc đã được chủ sở hữu tài khoản bán hàng ủy quyền hợp pháp và đầy đủ theo quy định pháp luật. Đối Tác TTLK chịu trách nhiệm về tính hợp pháp, hợp lệ của việc đăng ký và ủy quyền (nếu có), đồng thời cam kết giữ cho Shopee khỏi bất kỳ khiếu nại, khiếu kiện, yêu cầu bồi thường thiệt hại nào có liên quan đến hoặc phát sinh từ việc đăng ký hoạt động dưới hình thức Người Bán TTLK (bao gồm nhưng không giới hạn ở việc tuân thủ các quy định liên quan đến nghĩa vụ thuế).
+          - list [ref=f34e831]:
+            - listitem [ref=f34e832]:
+              - paragraph [ref=f34e833]: NGƯỜI BÁN TIẾP THỊ LIÊN KẾT TRÊN SÀN TMĐT LÀ DOANH NGHIỆP, HỘ KINH DOANH (TỰ XUẤT HÓA ĐƠN)
+          - list [ref=f34e834]:
+            - listitem [ref=f34e835]:
+              - paragraph [ref=f34e836]: Đã có Tài Khoản TTLK và Tài Khoản TTLK đang trong trạng thái hoạt động hợp lệ theo Chính Sách Shopee,
+            - listitem [ref=f34e837]:
+              - paragraph [ref=f34e838]: Đạt yêu cầu về số lượng đơn hàng phát sinh hàng ngày (tùy theo chính sách của Chương Trình TTLK tại từng thời điểm),
+            - listitem [ref=f34e839]:
+              - paragraph [ref=f34e840]: Hoạt động dưới hình thức doanh nghiệp hoặc hộ kinh doanh (tự xuất hóa đơn) theo quy định của pháp luật áp dụng, và
+            - listitem [ref=f34e841]:
+              - paragraph [ref=f34e842]: Đủ điều kiện ký kết hợp đồng cung cấp dịch vụ với Shopee theo các tiêu chí do Shopee đặt ra vào từng thời điểm cụ thể.
+            - listitem [ref=f34e843]:
+              - paragraph [ref=f34e844]: Đủ điều kiện ký kết hợp đồng cung cấp dịch vụ với Shopee theo các tiêu chí do Shopee đặt ra vào từng thời điểm cụ thể.
+          - paragraph [ref=f34e845]: 2. Quy trình đăng ký
+          - list [ref=f34e846]:
+            - listitem [ref=f34e847]:
+              - paragraph [ref=f34e848]:
+                - text: Đối Tác TTLK đăng ký tham gia chương trình Seller Affiliate
+                - link "TẠI ĐÂY" [ref=f34e849] [cursor=pointer]:
+                  - /url: https://affiliate.shopee.vn/?previousPage=other%20articles
+                - text: ", đồng thời cung cấp đầy đủ các tài liệu và thông tin liên quan theo hướng dẫn của Shopee vào từng thời điểm cụ thể theo quy định tại đây một cách tương ứng, để tạo Tài Khoản TTLK."
+            - listitem [ref=f34e850]:
+              - paragraph [ref=f34e851]: Shopee sẽ gửi mail xác nhận xét duyệt tài khoản thành công với loại hình Seller Affiliate tương ứng, sau đó Đối Tác TTLK có thể tham gia Chương Trình dưới hình thức tiến hành đăng bài với Siêu Liên Kết.
+            - listitem [ref=f34e852]:
+              - paragraph [ref=f34e853]: Trong mọi trường hợp, quyết định cuối cùng về việc xem xét liệu Đối Tác TTLK có đủ điều kiện hoặc không đủ điều kiện tham gia Seller Affiliate thuộc về Shopee.
+          - paragraph [ref=f34e854]: "Lưu ý: Shopee tiến hành kiểm duyệt Tài Khoản TTLK của Đối Tác TTLK mỗi tháng. Trường hợp Tài Khoản TTLK vi phạm một trong các điều kiện và điều khoản của Chương Trình TTLK, Shopee có quyền thay đổi trạng thái Tài khoản TTLK để phù hợp với chính sách của Chương Trình TTLK."
+          - strong [ref=f34e856]
+          - heading "ĐIỀU 5. SHORT-TAIL - ĐỐI TÁC DỊCH VỤ QUẢNG BÁ, PHÁT TRIỂN MẠNG LƯỚI TRUYỀN THÔNG" [level=2] [ref=f34e857]
+          - list [ref=f34e858]:
+            - listitem [ref=f34e859]:
+              - heading "Cách Thức Đăng Ký" [level=3] [ref=f34e860]
+          - paragraph [ref=f34e861]: Đối Tác TTLK có thể lựa chọn tham gia Chương Trình TTLK dưới loại hình Short-tail (hay còn được hiểu là Đối tác dịch vụ quảng bá, phát triển mạng lưới truyền thông) với điều kiện phải đáp ứng đầy đủ các yêu cầu và điều kiện mà Shopee đưa ra vào từng thời điểm cụ thể, bao gồm nhưng không giới hạn ở việc Đối Tác TTLK sẽ cung cấp bất kỳ thông tin nào được Shopee yêu cầu và sẽ đảm bảo các thông tin đó là đúng, chính xác, và đầy đủ.
+          - paragraph [ref=f34e862]: Shopee có toàn quyền quyết định chấp nhận hoặc từ chối việc đăng ký tham gia Chương Trình TTLK của Đối Tác TTLK theo loại hình Short-tail này mà không cần phải đưa ra bất kỳ giải thích hoặc lý do nào.
+          - list [ref=f34e863]:
+            - listitem [ref=f34e864]:
+              - heading "Điều kiện tham gia Chương Trình" [level=3] [ref=f34e865]
+          - list [ref=f34e866]:
+            - listitem [ref=f34e867]:
+              - paragraph [ref=f34e868]: Mạng Xã Hội và Phương Tiện TTLK của Đối Tác TTLK phải được đăng tải công khai và truy cập được thông qua thông tin được cung cấp ở đơn đăng ký tham gia Chương Trình của Đối Tác TTLK. Đối Tác TTLK sẽ không đủ điều kiện tham gia, và Shopee có thể hủy việc tham gia Chương Trình của Đối Tác TTLK nếu Phương Tiện TTLK có chứa bất kỳ Nội Dung Cấm hoặc nội dung khác mà Shopee cho là không phù hợp.
+            - listitem [ref=f34e869]:
+              - paragraph [ref=f34e870]: Mạng Xã Hội của Đối Tác TTLK phải (i) không chứa nhãn hiệu, tên, hoặc logo của Shopee, hoặc thể hiện thông tin gây hiểu lầm, và (ii) nếu thông qua Facebook, chỉ được thể thiện thông qua một “fan page” và không thông qua “trang cá nhân”, đồng thời đảm bảo tuân thủ chính sách áp dụng cho người dùng của Facebook.
+          - list [ref=f34e871]:
+            - listitem [ref=f34e872]:
+              - heading "Phí Hoa Hồng Và Điều Khoản Thanh Toán" [level=3] [ref=f34e873]
+          - list [ref=f34e874]:
+            - listitem [ref=f34e875]:
+              - paragraph [ref=f34e876]: Phí Hoa Hồng. Các loại phí mà Shopee sẽ chi trả cho Đối Tác TTLK trong một tháng bất kỳ sẽ được tính theo mức được thể hiện ở các trang thông tin của Chương Trình hoặc theo thỏa thuận riêng bằng văn bản giữa Đối Tác TTLK và Shopee.
+            - listitem [ref=f34e877]:
+              - paragraph [ref=f34e878]: Cách Tính Phí Hoa Hồng. Phí Hoa Hồng cho một tháng bất kỳ sẽ được tính dựa trên (i) Ngân Sách Được Thông Qua; hoặc (ii) Giá Trị Giao Dịch Thành Công Thuần nhân với tỷ lệ hoa hồng tương ứng, tùy trường hợp nào nhỏ hơn. Nhằm mục đích của điều khoản này, Ngân Sách Được Thông Qua nghĩa là giá trị truyền thông dự chi được thông qua giữa Shopee và Đối Tác TTLK theo định kỳ hàng tháng bằng email hoặc phương thức khác theo thỏa thuận bằng văn bản giữa Đối Tác TTLK và Shopee.
+            - listitem [ref=f34e879]:
+              - paragraph [ref=f34e880]: Phí Hoa Hồng cho Đối Tác TTLK là công ty cư trú trong lãnh thổ Việt Nam chưa bao gồm thuế GTGT. Shopee thực hiện chi trả phí hoa hồng khi Đối Tác là Công ty trong nước xuất đầy đủ hóa đơn GTGT hợp lệ theo quy định.
+            - listitem [ref=f34e881]:
+              - paragraph [ref=f34e882]: Phí Hoa Hồng trả cho, và nhận bởi Đối Tác TTLK là công ty không cư trú trong lãnh thổ Việt Nam chưa bao gồm thuế GTGT nhưng đã bao gồm thuế TNDN. Nếu Shopee phải khấu trừ bất kỳ khoản thuế nào từ các khoản tiền phải trả cho Đối Tác TTLK theo quy định của pháp luật Việt Nam, Shopee sẽ khấu trừ khoản tiền thuế vào Phí Hoa Hồng và các khoản phải thanh toán cho Đối Tác TTLK và cung cấp cho Bên Liên Kết tài liệu chứng minh việc khấu trừ/nộp thuế theo yêu cầu (nếu có).
+            - listitem [ref=f34e883]:
+              - paragraph [ref=f34e884]: Thanh Toán.
+          - paragraph [ref=f34e885]: Dự kiến từ ngày 5 đến ngày 15 của tháng T+1 và tùy theo quyết định của Shope vào từng thời điểm, Shopee sẽ gửi email đối soát thông báo tổng Phí Hoa Hồng mà Đối Tác TTLK được duyệt trong tháng T (bao gồm nhưng không giới hạn các khoản như Phí Hoa Hồng Cơ Bản, Phí Hoa Hồng Xtra, phí hoa hồng thưởng hoặc các phí booking khác... đã và sẽ được quy định trong Điều Kiện và Điều Khoản này.
+          - paragraph [ref=f34e886]: Dự kiến trong vòng tối thiểu ba mươi (30) Ngày Làm Việc kể từ ngày Shopee nhận đầy đủ chứng từ thanh toán hợp lệ từ đối tác theo quy định tại Chương I Điều 9, Shopee sẽ tiến hành thanh toán tới Đối Tác TTLK theo thông tin đã được cung cấp hợp lệ trước đó cho Shopee bởi Đối Tác TTLK.
+          - strong [ref=f34e888]
+          - heading "III. CÁC ĐIỀU KHOẢN VÀ ĐIỀU KIỆN RIÊNG CHO TỪNG LOẠI CHƯƠNG TRÌNH THUỘC CHƯƠNG TRÌNH TTLK" [level=1] [ref=f34e889]
+          - paragraph [ref=f34e890]: Trong quá trình triển khai Chương Trình TTLK, tùy thuộc vào loại hình hoạt động mà Đối Tác TTLK đã đăng ký thành công với Shopee theo quy định tại Mục II nêu trên, Shopee có thể có các chương trình cụ thể thuộc Chương Trình TTLK sẽ được áp dụng cho Đối Tác TTLK. Cụ thể theo quy định bên dưới.
+          - paragraph [ref=f34e891]: Trong trường hợp có sự khác biệt giữa các điều khoản và điều kiện riêng cho từng loại chương trình thuộc Chương Trình TTLK quy định tại đây, các điều khoản và điều kiện quy định tại Chương I và Chương II sẽ được ưu tiên áp dụng.
+          - strong [ref=f34e893]
+          - heading "ĐIỀU 1. CHƯƠNG TRÌNH SHOPEE KOL BOOKING (PPP)" [level=2] [ref=f34e894]
+          - heading "1. Đối Tượng Áp Dụng" [level=3] [ref=f34e895]
+          - heading "Chương Trình Shopee KOL Booking (PPP) là chương trình chỉ áp dụng cho Đối Tác TTLK đăng ký tham gia Chương Trình TTLK theo loại hình KOL Affiliate / KOC Affiliate theo quy định tại Mục II – Điều 1; KOL Doanh Nghiệp theo quy định tại Mục II – Điều 2; và MCN theo quy định tại Mục II – Điều 3." [level=3] [ref=f34e896]
+          - heading "2. Cách Thức Tham Gia Chương Trình Shopee KOL Booking (PPP)" [level=3] [ref=f34e897]
+          - paragraph [ref=f34e898]: "Shopee sẽ gửi email thông báo hợp tác và chi tiết yêu cầu về nội dung công việc, thời gian diễn ra dự án, thời hạn phản hồi về việc chấp nhận hợp tác của Đối Tác TTLK, chi phí chi trả thực nhận (“Chi Phí Hợp Tác”) cho Đối Tác TTLK cho từng Chiến Dịch với tiêu đề: “Thư mời xác nhận KOL tham gia dự án – Chương trình Shopee KOL Booking” (“Email Hợp Tác”)."
+          - paragraph [ref=f34e899]: Đối Tác TTLK sẽ xem xét và xác nhận tham gia dự án bằng cách phản hồi bằng email đối với Email Hợp Tác mà Shopee đã gửi (“Email Xác Nhận Hợp Tác”). Email Xác Nhận Hợp Tác này sẽ là một phần không tách rời của Điều Khoản và Điều Kiện này. Đối Tác TTLK đồng ý một cách rõ ràng rằng nếu Shopee không nhận được bất kỳ phản hồi và/hoặc xác nhận nào bằng email từ Đối Tác TTLK trong vòng 3 (ba) ngày kể từ ngày gửi Email Hợp Tác, thì Đối Tác TTLK được xem là đồng ý và chịu sự ràng buộc với toàn bộ nội dung trong Email Hợp Tác như thể Đối Tác TTLK đã gửi Email Xác Nhận Hợp Tác đến cho Shopee như quy định tại đoạn liền kề nêu trên.
+          - heading "3. Phạm Vi Công Việc" [level=3] [ref=f34e900]
+          - generic [ref=f34e901]:
+            - list [ref=f34e902]:
+              - listitem [ref=f34e903]:
+                - paragraph [ref=f34e904]: Phạm vi công việc của Đối Tác TTLK khi tham gia Chương Trình “Shopee KOL Booking (PPP)” bao gồm, nhưng không giới hạn ở việc Đối Tác TTLK tham gia sản xuất hình ảnh, nội dung, và đăng tải các hình ảnh và nội dung lên Mạng Xã Hội và/hoặc Hệ Thống Affiliate của Đối Tác TTLK dựa trên yêu cầu của Shopee và các bên liên quan thông qua Shopee.
+              - listitem [ref=f34e905]:
+                - paragraph [ref=f34e906]: Đối Tác TTLK phải chịu trách nhiệm cho việc sản xuất và đăng tải trên Mạng Xã Hội và/hoặc Hệ Thống TTLK của Đối Tác TTLK các hình ảnh và nội dung phù hợp và liên quan đến yêu cầu mà bên phía Shopee và đối tác của Shopee đã đưa ra, cũng như tuân thủ các yêu cầu của Chính Sách Shopee.
+            - paragraph [ref=f34e907]: Để làm rõ, Đối Tác TTLK đồng ý và hiểu rằng Shopee được toàn quyền quyết định cung cấp các thông tin, tư liệu, mã khuyến mãi phục vụ cho dự án của Người Bán (“Tài Liệu Cung Cấp”) lên Mạng Xã Hội và/hoặc Hệ Thống TTLK của Đối Tác TTLK và thời gian đăng tải các nội dung đó một cách tương ứng. Đối Tác TTLK không được quyền gỡ bỏ các Tài Liệu Cung Cấp cho dự án theo yêu cầu của Người Bán bất cứ lúc nào kể cả khi đã hoàn tất công việc nêu tại Điều Khoản và Điều Kiện này, hoặc hoàn tất từng dự án cụ thể hoặc chấm dứt Điều Khoản và Điều Kiện này, trừ khi Shopee có yêu cầu cụ thể bằng văn bản.
+            - list [ref=f34e908]:
+              - listitem [ref=f34e909]:
+                - paragraph [ref=f34e910]: Đối Tác TTLK chỉ được phép đưa các Tài Liệu Cung Cấp phục vụ cho dự án của các Người Bán lên Mạng Xã Hội và/hoặc Hệ Thống TTLK của Đối Tác TTLK, với điều kiện những Mạng Xã Hội và/hoặc Hệ Thống TTLK của Đối Tác TTLK này đã được chấp thuận trước bằng văn bản bởi Shopee và các đối tác của Shopee.
+          - heading "4. Nghĩa Vụ Và Cam Kết Của Đối Tác TTLK" [level=3] [ref=f34e911]
+          - list [ref=f34e912]:
+            - listitem [ref=f34e913]:
+              - paragraph [ref=f34e914]: Đối Tác TTLK không được sử dụng và/hoặc sửa đổi các Tài Liệu Cung Cấp, cũng như các yêu cầu và thông tin, nội dung quảng cáo được cung cấp từ Shopee mà không có sự đồng ý trước bằng văn bản của Shopee, trừ khi việc cho phép được quy định cụ thể theo các điều khoản của Điều Khoản và Điều Kiện này.
+            - listitem [ref=f34e915]:
+              - paragraph [ref=f34e916]: Đối Tác TTLK đảm bảo tuân thủ lên bài đúng thời gian đã cam kết theo thông báo bằng văn bản và/hoặc email trước đó của Shopee.
+            - listitem [ref=f34e917]:
+              - paragraph [ref=f34e918]: Đối Tác TTLK chỉ được dùng các Tài Liệu Cung Cấp, thông tin và nội dung quảng cáo được Shopee cung cấp hoặc định hướng cho mục đích duy nhất là để thực hiện các hoạt động hợp tác theo Chương Trình Shopee KOL Booking (PPP) giữa Đối Tác TTLK và Shopee, và không được đề cập đến bất cứ hoạt động kinh doanh nào khác của Đối Tác TTLK dù là trực tiếp hoặc gián tiếp. Mọi thông tin và nội dung riêng khác của Đối Tác TTLK có đề cập hoặc có liên quan đến Shopee dù theo bất cứ hình thức nào nhưng chưa được sự chấp thuận trước bằng văn bản và/hoặc email bởi Shopee và không liên quan đến việc thực hiện Chương Trình Shopee KOL Booking (PPP) đều bị nghiêm cấm. Nếu Đối Tác TTLK sử dụng các thông tin, nội dung quảng cáo riêng mà có đề cập hoặc có liên quan đến Shopee mà chưa nhận được sự đồng ý bằng văn bản và/hoặc email từ Shopee thì Đối Tác TTLK bị xem là vi phạm nghiêm trọng Điều Khoản và Điều Kiện này.
+            - listitem [ref=f34e919]:
+              - paragraph [ref=f34e920]: Theo quy định của Shopee cho từng dự án cụ thể, Đối Tác TTLK có nghĩa vụ hoàn trả sản phẩm quảng cáo được Shopee và/hoặc đối tác của Shopee đã gửi đến cho Đối Tác TTLK sau khi hoàn tất Chiến Dịch.
+            - listitem [ref=f34e921]:
+              - paragraph [ref=f34e922]: "Quy định về việc hoàn trả lại sản phẩm quảng cáo cho Shopee và/hoặc đối tác của Shopee (nếu Shopee hoặc đối tác của Shopee có yêu cầu):"
+          - paragraph [ref=f34e923]: (i) Không có bất kỳ quy định nào được hiểu hay diễn giải rằng sản phẩm quảng cáo sẽ được chuyển quyền sở hữu cho Đối Tác TTLK trong quá trình thực hiện Chương Trình “Shopee KOL Booking (PPP). Đối Tác TTLK có nghĩa vụ hoàn trả sản phẩm quảng cáo trong vòng 07 (bảy) ngày sau ngày kết thúc từng chương trình cụ thể;
+          - paragraph [ref=f34e924]: (ii) Đối Tác TTLK có nghĩa vụ hoàn trả sản phẩm quảng cáo trực tiếp cho đối tác của Shopee hoặc Shopee nếu có yêu cầu cụ thể từ Shopee;
+          - paragraph [ref=f34e925]: (iii) Đối Tác TTLK phải quay video ghi lại quá trình mở sản phẩm quảng cáo và khi đóng gói sản phẩm quảng cáo để hoàn trả cho đối tác của Shopee. Để làm rõ, Shopee được toàn quyền từ chối giải quyết các khiếu nại, khiếu kiện có liên quan trong trường hợp Đối Tác TTLK không thực hiện đúng và đầy đủ các quy định này;
+          - paragraph [ref=f34e926]: (iv) Đối Tác TTLK chịu trách nhiệm đối với mọi thiệt hại và/hoặc tổn thất đối với sản phẩm quảng cáo kể từ thời điểm sản phẩm quảng cáo được giao thành công cho Đối Tác TTLK. Để làm rõ, sản phẩm quảng cáo được xác nhận đã giao thành công cho Đối Tác TTLK khi được ghi nhận bởi Shopee và/hoặc đối tác của Shopee và/hoặc bên vận chuyển về việc sản phẩm quảng cáo đã được giao đến địa chỉ mà Đối Tác TTLK đã thông báo để nhận sản phẩm. Trong mọi trường hợp, quyết định của Shopee sẽ là quyết định cuối cùng trong việc xác định một sản phẩm quảng cáo đã được giao thành công cho Đối Tác TTLK.
+          - heading "5. Điều Khoản Phạt" [level=3] [ref=f34e927]
+          - list [ref=f34e928]:
+            - listitem [ref=f34e929]:
+              - paragraph [ref=f34e930]: Điều Khoản Phạt
+          - paragraph [ref=f34e931]: "Trường hợp Đối Tác TTLK không tuân thủ các quy định về thời gian, sản phẩm, hướng dẫn nội dung và hình ảnh về bài đăng của Shopee hoặc đối tác Shopee; cũng như vi phạm các điều khoản về nghĩa vụ của Đối Tác TTLK đã được quy định tại Điều Khoản và Điều Kiện này, Shopee có quyền áp dụng các chế tài được quy định tại Điều Khoản và Điều Kiện này (bao gồm nhưng không giới hạn ở việc phạt và/hoặc chấm dứt hợp tác) với Đối Tác TTLK có hành vi vi phạm cụ thể như sau:"
+          - list [ref=f34e932]:
+            - listitem [ref=f34e933]:
+              - paragraph [ref=f34e934]: "Trường hợp Đối Tác TTLK lên bài trễ so với thời gian quy định (dù có thông báo hoặc không thông báo trước cho Shopee) và Đối Tác TTLK đã hỗ trợ lên bài theo thời gian mới đã cam kết với và được chấp thuận bởi Shopee: Vi phạm lần đầu tiên thì Shopee sẽ có hình thức cảnh cáo thông qua email đối với Đối Tác TTLK vi phạm."
+            - listitem [ref=f34e935]:
+              - paragraph [ref=f34e936]: "Trường hợp Đối Tác TTLK lên bài trễ so với thời gian quy định (dù có thông báo hoặc không thông báo trước cho Shopee) và Đối Tác TTLK đã hỗ trợ lên bài theo thời gian mới đã cam kết với và được chấp thuận bởi Shopee: Vi phạm từ lần thứ hai (02) trở lên thì Shopee có quyền ngay lập tức chấm dứt hợp tác với Đối Tác TTLK liên quan đến việc thực hiện Chương Trình Shopee KOL Booking (PPP) mà không cần thông báo trước. Đồng thời, Shopee được toàn quyền quyết định trong việc không hợp tác với Đối Tác TTLK trong tất cả các chương trình khác của Shopee."
+            - listitem [ref=f34e937]:
+              - paragraph [ref=f34e938]: "Trường hợp Đối Tác TTLK đã nhận sản phẩm do Shopee hoặc đối tác của Shopee gửi nhưng không lên bài theo đúng quy định và phạm vi công việc đã cam kết, và không có bất kỳ phản hồi nào về thời gian lên bài mới: Nếu đây là vi phạm ngay từ lần đầu tiên thì Shopee áp dụng tương tự các chế tài quy định tại Điểm (ii) này. Trong trường hợp này, Đối Tác TTLK có nghĩa vụ hoàn trả lại đúng và đủ số lượng sản phẩm đã nhận trước đó từ Shopee hoặc đối tác của Shopee hoặc hoàn trả đúng số tiền tương đương với giá trị sản phẩm đã nhận được để thực hiện phạm vi công việc đã cam kết trong vòng ba (03) ngày kể từ ngày Shopee gửi yêu cầu hoàn trả. Nếu Đối Tác TTLK không thực hiện nghĩa vụ hoàn trả này trong thời hạn yêu cầu, Shopee có toàn quyến quyết định tạm khóa Tài Khoản TTLK của Đối Tác TTLK cho đến khi Đối Tác TTLK hoàn tất việc hoàn trả sản phẩm hoặc số tiền tương đương với giá trị sản phẩm."
+          - paragraph [ref=f34e939]:
+            - text: Trường hợp Đối Tác TTLK không tuân thủ các quy định về hoàn trả sản phẩm quảng cáo nêu tại Điều Khoản và Điều Kiện này, Shopee có quyền chấm dứt hợp tác với Đối Tác TTLK và/hoặc tiến hành các biện pháp xử lý vi phạm đối với Đối Tác TTLK. Quy định về xử lý vi phạm hoàn trả sản phẩm quảng cáo được nêu
+            - link "TẠI ĐÂY" [ref=f34e940] [cursor=pointer]:
+              - /url: https://drive.google.com/file/d/1TSocGXla6saIZFqg4Od3KAl06WUfOgXh/view?previousPage=other%20articles
+            - text: .
+          - generic [ref=f34e941]:
+            - heading "ĐIỀU 2. CHƯƠNG TRÌNH QUẢNG CÁO CÙNG KOL (PPP)" [level=2] [ref=f34e942]
+            - list [ref=f34e943]:
+              - listitem [ref=f34e944]:
+                - heading "Đối Tượng Áp Dụng" [level=3] [ref=f34e945]
+            - paragraph [ref=f34e946]: Chương Trình Quảng Cáo Cùng KOL (PPP) là chương trình chỉ áp dụng cho Đối Tác TTLK đăng ký tham gia Chương Trình TTLK theo loại hình KOL Affiliate / KOC Affiliate theo quy định tại Mục II – Điều 1; KOL Doanh Nghiệp theo quy định tại Mục II – Điều 2; và MCN theo quy định tại Mục II – Điều 3.
+            - list [ref=f34e947]:
+              - listitem [ref=f34e948]:
+                - heading "Cách Thức Tham Gia Chương Trình Quảng Cáo Cùng KOL (PPP)" [level=3] [ref=f34e949]
+            - heading "Đối Tác TTLK chỉ có thể tham gia dựa trên quyết định của Shopee. Shopee bảo lưu quyền lựa chọn Đối Tác TTLK tham gia và tạm đình chỉ hoặc chấm dứt việc tham gia Chương Trình Quảng Cáo Cùng KOL (PPP)." [level=3] [ref=f34e950]
+            - list [ref=f34e951]:
+              - listitem [ref=f34e952]:
+                - heading "Phạm Vi Công Việc" [level=3] [ref=f34e953]
+            - list [ref=f34e954]:
+              - listitem [ref=f34e955]:
+                - paragraph [ref=f34e956]: Người Bán tham gia vào Chương Trình Quảng Cáo Cùng KOL (PPP) có thể bắt đầu cuộc nói chuyện trên Hệ Thống Shopee với Đối Tác TTLK tiềm năng và thống nhất về các hoạt động theo Chương Trình Quảng Cáo Cùng KOL (PPP) sẽ được cung cấp, phí áp dụng cho mỗi bài đăng trên Mạng Xã Hội và/hoặc Phương Tiện TTLK do Đối Tác TTLK thực hiện (“Phí Cố Định”) và ngày đăng bài có liên quan dự kiến. Người Bán Tham Gia sẽ phải ghi nhận các nội dung liên quan đến các hoạt động theo Chương Trình Quảng Cáo Cùng KOL (PPP) trên Sàn TMĐT một cách hợp lý, bao gồm hoa hồng áp dụng cho các Đối Tác TTLK cho mỗi Đơn Hàng Thành Công (hay còn gọi là Phí Hoa Hồng Xtra).
+              - listitem [ref=f34e957]:
+                - paragraph [ref=f34e958]: "Dựa trên các thỏa thuận giữa Người Bán Tham Gia và Đối Tác TTLK, một giao dịch có tính ràng buộc sẽ được hình thành (“Giao Dịch Quảng Cáo Cùng KOL (PPP)”). Liên quan đến mỗi Giao Dịch Quảng Cáo Cùng KOL PPP, Người Bán Tham Gia sẽ cung cấp Sản Phẩm Trên Sàn TMĐT (“Sản Phẩm Mẫu”) không thu phí cho Đối Tác TTLK trong thời hạn theo thỏa thuận giữa hai bên. Người Bán Tham Gia và Đối Tác TTLK xác nhận và đồng ý rằng:"
+            - list [ref=f34e959]:
+              - listitem [ref=f34e960]:
+                - paragraph [ref=f34e961]: Người Bán Tham Gia sẽ chịu phí vận chuyển và những phí khác, và sẽ bảo đảm rằng Sản Phẩm Mẫu giống như sản phẩm thật (bao gồm nhưng không giới hạn chất lượng và hình dáng). Shopee sẽ không chịu trách nhiệm đối với bất kỳ vấn đề nào phát sinh từ Sản Phẩm Mẫu, bap gồm nhưng không giới hạn ở các tranh chấp, khiếu nại, khiếu kiện liên quan đến Sản Phẩm Mẫu và sản phẩm trên thực tế
+              - listitem [ref=f34e962]:
+                - paragraph [ref=f34e963]: Đối Tác TTLK sẽ chịu trách nhiệm lưu giữ và bảo quản Sản Phẩm Mẫu, thậm chí trong trường hợp Giao Dịch Quảng Cáo Cùng KOL (PPP) có liên quan bị hủy bỏ hoặc bị chấm dứt trước khi Bên Đối Tác TTLK hoàn tất Giao Dịch Quảng Cáo Cùng KOL (PPP) tương ứng; và
+              - listitem [ref=f34e964]:
+                - paragraph [ref=f34e965]: Việc không thực hiện đầy đủ các bước nêu trên có thể dẫn đến Dịch Vụ Quảng Cáo Cùng KOL (PPP) bị tự động hủy bỏ.
+            - list [ref=f34e966]:
+              - listitem [ref=f34e967]:
+                - paragraph [ref=f34e968]: Đối Tác TTLK xác nhận đồng ý tuân thủ thời hạn áp dụng việc chấp nhận và xác nhận việc nhận Sản Phẩm Mẫu, và tiến hành đăng bài quảng cáo và hoàn tất Giao Dịch Quảng Cáo Cùng KOL (PPP). Việc vi phạm nghĩa vụ này sẽ dẫn đến việc Giao Dịch Quảng Cáo Cùng KOL (PPP) bị hủy bỏ và Đối Tác TTLK sẽ không nhận được các khoản thanh toán.
+            - list [ref=f34e969]:
+              - listitem [ref=f34e970]:
+                - heading "Nghĩa Vụ Và Cam Kết Của Các Bên Liên Quan" [level=3] [ref=f34e971]
+            - list [ref=f34e972]:
+              - listitem [ref=f34e973]:
+                - paragraph [ref=f34e974]: Người Bán Tham Gia sẽ phải thanh toán Phí Cố Định cho Shopee bằng phương thức thanh toán mà Shopee đề nghị trong thời hạn được nêu trên Hệ Thống Shopee.
+              - listitem [ref=f34e975]:
+                - paragraph [ref=f34e976]: Việc Đối Tác TTLK bắt đầu thực hiện dịch vụ Chương Trình Quảng Cáo Cùng KOL (PPP) phụ thuộc vào điều kiện Shopee phải nhận được Phí Cố Định.
+              - listitem [ref=f34e977]:
+                - paragraph [ref=f34e978]: "Đối Tác TTLK sẽ:"
+            - list [ref=f34e979]:
+              - listitem [ref=f34e980]:
+                - paragraph [ref=f34e981]: chịu trách nhiệm chuẩn bị và gửi nội dung để thực hiện Chương Trình Quảng Cáo Cùng KOL (PPP);
+              - listitem [ref=f34e982]:
+                - paragraph [ref=f34e983]: lấy xác nhận từ Người Bán Tham Gia trước khi đăng tải nội dung thực hiện Chương Trình Quảng Cáo Cùng KOL (PPP) trong khoảng thời gian Người Bán Tham Gia đồng ý. Việc không tuân thủ nghĩa vụ này, Giao Dịch Quảng Cáo Cùng KOL (PPP) sẽ bị hủy bỏ và Đối Tác TTLK sẽ không nhận được bất kỳ khoản thanh toán nào có liên quan. Dựa trên việc Người Bán Tham Gia xác nhận Chương Trình Quảng Cáo Cùng KOL (PPP) đã được hoàn thành bởi Đối Tác TTLK đối với các Giao Dịch Quảng Cáo Cùng KOL (PPP) một cách tương ứng, Shopee sẽ tiến hành giải ngân Phí Cố Định cho Đối Tác TTLK.
+            - list [ref=f34e984]:
+              - listitem [ref=f34e985]:
+                - paragraph [ref=f34e986]: "Đối Tác TTLK xác nhận và đồng ý rằng:"
+            - list [ref=f34e987]:
+              - listitem [ref=f34e988]:
+                - paragraph [ref=f34e989]: Việc hủy Giao Dịch Quảng Cáo Cùng KOL (PPP) (mà không phải là trường hợp hệ thống hủy tự động) phải có sự đồng thuận giữa Người Bán Tham Gia và Đối Tác TTLK có liên quan;
+              - listitem [ref=f34e990]:
+                - paragraph [ref=f34e991]: Việc Đối Tác TTLK không tuân thủ thời gian áp dụng được quy định trên Hệ Thống Shopee có thể dẫn đến việc tự động chấm dứt Giao Dịch Quảng Cáo Cùng KOL (PPP); và
+              - listitem [ref=f34e992]:
+                - paragraph [ref=f34e993]: Bất kỳ tranh chấp nào liên quan đến Giao Dịch Quảng Cáo Cùng KOL (PPP) (bao gồm nhưng không giới hạn việc thanh toán Phí Cố Định và việc cung cấp các dịch vụ theo Chương Trình Quảng Cáo Cùng KOL (PPP)) sẽ được xem xét và giải quyết bởi Shopee, và Shopee có quyền quyết định cuối cùng đối với kết quả giải quyết tranh chấp (bao gồm nhưng không giới hạn việc thanh toán hoặc hoàn trả một phần Phí Cố Định). Đối Tác TTLK sẽ cung cấp tất cả những thông tin và tài liệu cùng sự hỗ trợ cần thiết theo yêu cầu của Shopee liên quan đến tranh chấp này.
+            - list [ref=f34e994]:
+              - listitem [ref=f34e995]:
+                - paragraph [ref=f34e996]: Mỗi bên liên quan đến Chương Trình Quảng Cáo Cùng KOL (PPP) cũng như Giao Dịch Quảng Cáo Cùng KOL (PPP) tương ứng sẽ chịu các nghĩa vụ thuế phát sinh cho bên đó theo Điều Khoản và Điều Kiện này.
+              - listitem [ref=f34e997]:
+                - paragraph [ref=f34e998]: Phí Cố Định do Shopee xác định sẽ có giá trị cuối cùng và ràng buộc Đối Tác TTLK. Sau khi công việc theo Chương Trình Quảng Cáo Cùng KOL (PPP) được xác nhận hoàn tất, tổng tiền có thể nhận được cho từng công việc tương ứng sẽ được cập nhật vào kỳ đối soát gần nhất sau đó theo quy trình đối soát và thanh toán tương ứng với quy định cho từng loại hình mà Đối Tác TTLK đăng ký theo Điều Khoản và Điều Kiện này.
+            - strong:
+              - strong
+            - heading "ĐIỀU 3. CHƯƠNG TRÌNH SHOPEE KOL LIVESTREAM (PPLS)" [level=2] [ref=f34e999]
+            - list [ref=f34e1000]:
+              - listitem [ref=f34e1001]:
+                - heading "Đối Tượng Áp Dụng" [level=3] [ref=f34e1002]
+            - heading "Chương Trình Shopee KOL Livestream (PPLS) là chương trình chỉ áp dụng cho Đối Tác TTLK đăng ký tham gia Chương Trình TTLK theo loại hình KOL Affiliate / KOC Affiliate theo quy định tại Mục II – Điều 1; KOL Doanh Nghiệp theo quy định tại Mục II – Điều 2; và MCN theo quy định tại Mục II – Điều 3." [level=3] [ref=f34e1003]
+            - list [ref=f34e1004]:
+              - listitem [ref=f34e1005]:
+                - heading "Cách Thức Tham Gia Chương Trình Shopee KOL Livestream (PPLS)" [level=3] [ref=f34e1006]
+            - paragraph [ref=f34e1007]: "Shopee sẽ gửi email thông báo hợp tác cho Đối Tác TTLK với tiêu đề: “[Shopee KOL Booking Livestream] – Tên KOL – Xác nhận hợp tác dự án [Tên Dự Án]” (“Email Hợp Tác”) để ghi nhận chi tiết yêu cầu về nội dung công việc, thời gian diễn ra dự án, thời hạn phản hồi về việc chấp nhận hợp tác của Đối Tác TTLK, chi tiết các chi phí chi trả (“Chi Phí Hợp Tác Livestream”) ."
+            - paragraph [ref=f34e1008]: Đối Tác TTLK sẽ xem xét, và xác nhận tham gia dự án bằng cách phản hồi bằng email đối với Email Hợp Tác mà Shopee đã gửi (“Email Xác Nhận Hợp Tác”). Email Xác Nhận Hợp Tác này sẽ là một phần không tách rời Điều Khoản và Điều Kiện này.
+            - paragraph [ref=f34e1009]: Đối Tác TTLK đồng ý một cách rõ ràng rằng nếu Shopee không nhận được bất kỳ phản hồi và/hoặc xác nhận nào bằng email từ Đối Tác TTLK trong vòng 3 (ba) ngày kể từ ngày gửi Email Hợp Tác, thì Đối Tác TTLK được xem là đồng ý và chịu sự ràng buộc với toàn bộ những nội dung trong Email Hợp Tác như thể Đối Tác TTLK đã gửi Email Xác Nhận Hợp Tác đến cho Shopee như quy định tại đoạn liền kề nêu trên. Để làm rõ, trong khuôn khổ chi phí thỏa thuận tại Email Xác Nhận Hợp Tác, Chi Phí Hợp Tác Livestream sẽ được xác định cụ thể dựa theo kết quả nghiệm thu thực tế của từng công việc cụ thể cho Chương Trình Shopee KOL Livestream (PPLS), và Chi Phí Hợp Tác Livestream thanh toán cuối cùng sẽ được thông báo đến Đối Tác TTLK thông qua Email Hợp Tác nêu tại điều này.
+            - list [ref=f34e1010]:
+              - listitem [ref=f34e1011]:
+                - heading "Nghĩa Vụ Và Cam Kết Của Đối Tác TTLK" [level=3] [ref=f34e1012]
+            - list [ref=f34e1013]:
+              - listitem [ref=f34e1014]:
+                - paragraph [ref=f34e1015]:
+                  - text: Đối Tác TTLK tuân thủ các các quy định về Livestream của Shopee vào từng thời điểm, bao gồm nhưng không giới hạn ở các quy định
+                  - link "TẠI ĐÂY" [ref=f34e1016] [cursor=pointer]:
+                    - /url: https://help.shopee.vn/portal/10/article/204724?previousPage=other%20articles
+                  - text: .
+              - listitem [ref=f34e1017]:
+                - paragraph [ref=f34e1018]: Đối Tác TTLK không được sử dụng và/hoặc sửa đổi các Tài Liệu Livestream, cũng như các yêu cầu và thông tin, nội dung quảng cáo được cung cấp từ Shopee mà không có sự đồng ý trước bằng văn bản của Shopee, trừ khi việc cho phép được quy định cụ thể theo các điều khoản của Điều Khoản và Điều Kiện này. Nhằm mục đích của Điều Khoản và Điều Kiện này, Tài Liệu Livestream nghĩa là các thông tin, tư liệu, mã khuyến mãi phục vụ cho từng chiến dịch của các đối tác của Shopee có liên quan đến Chương Trình Shopee KOL Livestream (PPLS) này.
+              - listitem [ref=f34e1019]:
+                - paragraph [ref=f34e1020]: Đối Tác TTLK không được phép thay đổi thông tin đăng nhập Tài Khoản TTLK trong thời gian diễn ra livestream (bao gồm 7 (bảy) ngày trước và trong ngày diễn ra livestream). Nếu Đối Tác TTLK tự ý thay đổi thông tin đăng nhập, Shopee sẽ không cam đoan, bảo đảm, cam kết hay chịu trách nhiệm cho bất kỳ khoản Phí Hoa Hồng Xtra nào từ Người Bán mà Đối Tác TTLK có thể nhận được trong buổi livestream. Đồng thời, Đối Tác TTLK sẽ phải tự chịu trách nhiệm và chi phí cho các quyền lợi hợp lệ theo đúng quy định của Shopee cho các quyền lợi và ưu đãi được trao cho người dùng khi tương tác hoặc tham gia vào buổi livestream của mình.
+              - listitem [ref=f34e1021]:
+                - paragraph [ref=f34e1022]: Đối Tác TTLK đảm bảo tuân thủ thực hiện và tham dự đúng theo kế hoạch đã cam kết tại thông báo bằng văn bản của Shopee (bao gồm nhưng không giới hạn ở việc tuân thủ thực hiện đầy đủ số giờ livestream, thời gian bắt đầu và kết thúc việc livestream, các thời gian và yêu cầu khác từ Shopee vào từng thời điểm như đã thông báo trước cho Đối Tác TTLK).
+              - listitem [ref=f34e1023]:
+                - paragraph [ref=f34e1024]: Đối Tác TTLK chỉ được dùng các Tài Liệu Livestream, thông tin và nội dung tiếp thị được cung cấp hoặc định hướng bởi Shopee cho mục đích duy nhất là để thực hiện các hoạt động hợp tác theo Chương Trình Shopee KOL Livestream (PPLS) giữa Đối Tác TTLK và Shopee, và không được đề cập đến bất cứ hoạt động kinh doanh nào khác của Đối Tác TTLK dù là trực tiếp hoặc gián tiếp. Mọi thông tin và nội dung riêng khác của Đối Tác TTLK có đề cập hoặc có liên quan đến Shopee dù theo bất cứ cách nào nhưng chưa được sự chấp thuận trước bằng văn bản bởi Shopee và không liên quan đến việc thực hiện Chương Trình Shopee KOL Livestream (PPLS) đều bị nghiêm cấm. Nếu Đối Tác TTLK sử dụng các thông tin, nội dung quảng cáo riêng có đề cập hoặc có liên quan đến Shopee mà chưa nhận được sự đồng ý từ Shopee theo bất cứ cách nào đều bị coi là hành vi vi phạm nghiêm trọng Điều Khoản và Điều Kiện này của Đối Tác TTLK.
+              - listitem [ref=f34e1025]:
+                - paragraph [ref=f34e1026]: Đối Tác TTLK không được lồng ghép các nội dung vi phạm pháp luật, đạo đức công cộng, hoặc xâm phạm quyền của bên thứ ba trong quá trình thực hiện các dự án cụ thể cho Chương Trình Shopee KOL Livestream (PPLS) (“Nội Dung Cấm Livestream”). Nhằm mục đích của Điều này, Nội Dung Cấm Livestream này bao gồm, nhưng không giới hạn, các chương trình kích động bạo lực, nội dung và ảnh minh họa gợi dục và khiêu dâm, tuyên bố gây nhầm lẫn hoặc nội dung mang tính phân biệt đối xử (ví dụ về giới tính, chủng tộc, chính trị, tôn giáo, quốc tịch hoặc tàn tật). Nội Dung Cấm Livestream này không được đề cập trong quá trình thực hiện các Chiến Dịch cụ thể cho Chương Trình Shopee KOL Livestream (PPLS) dưới bất kỳ hình thức nào (dù là trực tiếp, gián tiếp, hay ngụ ý trên các Kênh Truyền Thông của KOL), và cũng không được tạo đường dẫn liên kết trong quá trình livestream hoặc từ những trang Mạng Xã Hội và/hoặc Kênh Truyền Thông của Đối Tác TTLK đến nội dung tương ứng trên các trang mạng điện tử khác mà theo Shopee có thể bị xếp vào nhóm Nội Dung Cấm Livestream.
+              - listitem [ref=f34e1027]:
+                - paragraph [ref=f34e1028]: Đối Tác TTLK đồng ý và cho phép không hủy ngang việc Shopee sử dụng hình ảnh của chính Đối Tác TTLK quảng bá cho livestream (bao gồm nhưng không giới hạn ở hình ảnh cá nhân của Đối Tác TTLK và nội dung của việc livestream thực hiện bởi Đối Tác TTLK theo yêu cầu của Shopee) và thời gian đăng tải các nội dung đó một cách tương ứng. Đối Tác TTLK không được quyền gỡ bỏ các Tài Liệu Livestream cho các chiến dịch tương ứng của Người Bán bất cứ lúc nào kể cả khi đã hoàn tất công việc nêu tại Điều Khoản và Điều Kiện này, hoặc hoàn tất từng chiến dịch cụ thể, hoặc chấm dứt việc tham gia Chương trình nói chung cũng như Chương Trình Shopee KOL Livestream (PPLS) nói riêng theo Điều Khoản và Điều Kiện này, trừ khi Shopee đồng ý một cách rõ ràng bằng văn bản.
+              - listitem [ref=f34e1029]:
+                - paragraph [ref=f34e1030]: Trong trường hợp Đối Tác TTLK vi phạm Điều Khoản và Điều Kiện này, Shopee có toàn quyền quyết định việc không thanh toán cho Đối Tác TTLK bất kỳ khoản thanh toán nào Đối Tác TTLK được hưởng.
+            - list [ref=f34e1031]:
+              - listitem [ref=f34e1032]:
+                - heading "Điều Khoản Phạt" [level=3] [ref=f34e1033]
+            - list [ref=f34e1034]:
+              - listitem [ref=f34e1035]:
+                - paragraph [ref=f34e1036]: "Trường hợp Đối Tác TTLK không tuân thủ nghiêm ngặt các quy định về thời gian, sản phẩm, hướng dẫn nội dung và hình ảnh về livestream của các nhãn hàng; cũng như vi phạm các điều khoản về nghĩa vụ của Đối Tác TTLK đã được quy định tại Điều Khoản và Điều Kiện này, Shopee có quyền áp dụng các chế tài được quy định tại Điều Khoản và Điều Kiện này (bao gồm nhưng không giới hạn ở việc phạt và/hoặc chấm dứt hợp tác với Đối Tác TTLK vi phạm cụ thể như sau:"
+            - paragraph [ref=f34e1037]: "Đối với Đối Tác TTLK tham gia tất cả các Chương Trình “Shopee KOL Livestream”:"
+            - list [ref=f34e1038]:
+              - listitem [ref=f34e1039]:
+                - paragraph [ref=f34e1040]: "Trường hợp Đối Tác TTLK tham gia buổi livestream trễ với thời gian quy định (dù có thông báo hoặc không thông báo trước cho Shopee) và Đối Tác TTLK đã hỗ trợ livestream theo thời gian mới đã cam kết với và được chấp thuận bởi Shopee: Vi phạm lần đầu tiên thì Shopee sẽ có hình thức cảnh cáo thông qua email đối với Đối Tác TTLK vi phạm."
+              - listitem [ref=f34e1041]:
+                - paragraph [ref=f34e1042]: "Trường hợp Bên Tham Gia buổi livestream trễ với thời gian quy định (dù có thông báo hoặc không thông báo trước cho Shopee) và Đối Tác TTLK đã hỗ trợ livestream theo thời gian mới đã cam kết với và được chấp thuận bởi Shopee: Vi phạm từ lần thứ hai (02) trở lên thì Shopee có quyền ngay lập tức chấm dứt hợp tác với Đối Tác TTLK liên quan đến việc thực hiện Chương Trình Shopee KOL Livestream (PPLS) mà không cần thông báo trước. Đồng thời, Shopee được toàn quyền quyết định trong việc không hợp tác với Đối Tác TTLK trong tất cả các chiến dịch khác của Shopee."
+              - listitem [ref=f34e1043]:
+                - paragraph [ref=f34e1044]: "Trường hợp Đối Tác TTLK đã nhận Sản Phẩm Mẫu do Shopee và/hoặc đối tác / nhãn hàng gửi nhưng không livestream theo đúng quy định và phạm vi công việc đã cam kết, không có bất kỳ phản hồi nào về thời gian livestream mới: Vi phạm ngay từ lần đầu tiên thì Shopee áp dụng tương tự các chế tài quy định tại Điều 5.1.a. Trong trường hợp này, Đối Tác TTLK có nghĩa vụ hoàn trả lại đúng và đủ số lượng Sản Phẩm Mẫu hoặc hoàn trả đúng số tiền tương đương với Sản Phẩm Mẫu đã nhận trước đó từ Shopee để thực hiện phạm vi công việc đã cam kết trong vòng ba (03) ngày kể từ ngày Shopee và/hoặc đối tác/nhãn hàng gửi yêu cầu hoàn trả. Nếu Đối Tác TTLK không thực hiện nghĩa vụ hoàn trả này trong thời hạn yêu cầu, Shopee có toàn quyền quyết định tạm khóa Tài Khoản TTLK của Đối Tác TTLK cho đến khi Đối Tác TTLK hoàn tất việc hoàn trả Sản Phẩm Mẫu hoặc số tiền tương đương với giá trị Sản Phẩm Mẫu."
+            - paragraph [ref=f34e1045]:
+              - text: Trường hợp Đối Tác TTLK không tuân thủ các quy định về hoàn trả Sản Phẩm Mẫu nêu tại Điều Khoản và Điều Kiện này, Shopee có quyền chấm dứt hợp tác với Đối Tác TTLK và/hoặc tiến hành các biện pháp xử lý vi phạm đối với Đối Tác TTLK. Quy định về xử lý vi phạm hoàn trả sản phẩm quảng cáo được nêu
+              - link "TẠI ĐÂY" [ref=f34e1046] [cursor=pointer]:
+                - /url: https://drive.google.com/file/d/1TSocGXla6saIZFqg4Od3KAl06WUfOgXh/view?previousPage=other%20articles
+              - text: .
+            - paragraph [ref=f34e1047]: "Đối với các Đối Tác TTLK tham gia Chương Trình Shopee KOL Livestream có nhận chi phí hợp tác cố định được ghi nhận tại Email Xác Nhận Hợp Tác:"
+            - list [ref=f34e1048]:
+              - listitem [ref=f34e1049]:
+                - paragraph [ref=f34e1050]: "Trường hợp Đối Tác TTLK tham gia buổi livestream trễ với thời gian quy định (dù có thông báo hoặc không thông báo trước cho Shopee) và Đối Tác TTLK đã hỗ trợ livestream theo thời gian mới đã cam kết với và được chấp thuận bởi Shopee: Vi phạm lần đầu tiên thì Shopee sẽ có hình thức cảnh cáo thông qua email đối với Đối Tác TTLK vi phạm."
+              - listitem [ref=f34e1051]:
+                - paragraph [ref=f34e1052]: "Trường hợp Đối Tác TTLK tham gia buổi livestream trễ với thời gian quy định (dù có thông báo hoặc không thông báo trước cho Shopee) và Đối Tác TTLK đã hỗ trợ livestream theo thời gian mới đã cam kết với và được chấp thuận bởi Shopee: Vi phạm từ lần thứ hai (02) trở lên thì Shopee có quyền áp dụng các hình thức phạt như sau:"
+            - list [ref=f34e1053]:
+              - listitem [ref=f34e1054]:
+                - paragraph [ref=f34e1055]: "Đối với Đối Tác TTLK đi trễ từ 1-15 phút (kể từ khi giờ phát trực tiếp bắt đầu): Đối Tác TTLK sẽ bị phạt 20% chi phí hợp tác cố định thuộc Chương Trình Shopee KOL Livestream (PPLS) mà không cần thông báo trước."
+              - listitem [ref=f34e1056]:
+                - paragraph [ref=f34e1057]: "Đối với Đối Tác TTLK đi trễ từ 15 phút trở lên (kể từ khi giờ phát trực tiếp bắt đầu): Shopee có quyền ngay lập tức chấm dứt hợp tác với Đối Tác TTLK liên quan đến việc thực hiện Chương Trình Shopee KOL Livestream (PPLS) mà không cần thông báo trước, đồng thời Shopee cũng sẽ không thanh toán bất kỳ khoản phí nào cho Đối Tác TTLK."
+              - listitem [ref=f34e1058]:
+                - paragraph [ref=f34e1059]: "Trường hợp Đối Tác TTLK đã nhận sản phẩm do Shopee và/hoặc đối tác / nhãn hàng gửi nhưng không livestream theo đúng quy định và phạm vi công việc đã cam kết, không có bất kỳ phản hồi nào về thời gian livestream mới: Vi phạm ngay từ lần đầu tiên thì Shopee áp dụng tương tự các chế tài quy định tại Điều 5.1.2.a và vi phạm lần thứ 2 trở đi sẽ áp dụng tương tự các chế tài quy định tại Điều 5.1.2.b. Trong trường hợp này, Đối Tác TTLK có nghĩa vụ hoàn trả lại đúng và đủ số lượng Sản Phẩm Mẫu hoặc hoàn trả đúng số tiền tương đương với Sản Phẩm Mẫu đã nhận trước đó từ Shopee để thực hiện phạm vi công việc đã cam kết trong vòng ba (03) ngày kể từ ngày Shopee và/hoặc đối tác/nhãn hàng gửi yêu cầu hoàn trả. Nếu Đối Tác TTLK không thực hiện nghĩa vụ hoàn trả này trong thời hạn yêu cầu, Shopee có toàn quyền quyết định tạm khóa Tài Khoản TTLK của Đối Tác TTLK cho đến khi Đối Tác TTLK hoàn tất việc hoàn trả Sản Phẩm Mẫu hoặc số tiền tương đương với giá trị Sản Phẩm Mẫu."
+            - paragraph [ref=f34e1060]:
+              - text: Trường hợp Đối Tác TTLK không tuân thủ các quy định về hoàn trả Sản Phẩm Mẫu nêu tại Điều Khoản và Điều Kiện này, Shopee có quyền chấm dứt hợp tác với Đối Tác TTLK và/hoặc tiến hành các biện pháp xử lý vi phạm đối với Đối Tác TTLK. Quy định về xử lý vi phạm hoàn trả sản phẩm quảng cáo được nêu
+              - link "TẠI ĐÂY" [ref=f34e1061] [cursor=pointer]:
+                - /url: https://drive.google.com/file/d/1TSocGXla6saIZFqg4Od3KAl06WUfOgXh/view?previousPage=other%20articles
+              - text: .
+            - paragraph [ref=f34e1062]: "[1] Quảng Cáo Tự Động Chuyển Hướng tức là tự động chuyển hướng người dùng đến các trang mạng của Nhà quảng cáo mà không có sự kích hoạt hoặc hành động nào của người dùng (như nhấp chuột, chạm vào)."
+            - paragraph
+            - heading "ĐIỀU 4. CHƯƠNG TRÌNH SHOPEE KOL VIDEO (PPV)" [level=2] [ref=f34e1063]
+            - list [ref=f34e1064]:
+              - listitem [ref=f34e1065]:
+                - heading "Đối Tượng Áp Dụng" [level=3] [ref=f34e1066]
+            - heading "Chương Trình Shopee KOL Video (PPV) là chương trình chỉ áp dụng cho Đối Tác TTLK đăng ký tham gia Chương Trình TTLK theo loại hình KOL Affiliate / KOC Affiliate theo quy định tại Chương II – Điều 1; KOL Doanh Nghiệp theo quy định tại Chương II – Điều 2; và MCN theo quy định tại Chương II – Điều 3." [level=3] [ref=f34e1067]
+            - list [ref=f34e1068]:
+              - listitem [ref=f34e1069]:
+                - heading "Cách Thức Tham Gia Chương Trình Shopee KOL Video (PPV)" [level=3] [ref=f34e1070]
+            - paragraph [ref=f34e1071]: "Shopee sẽ gửi email thông báo hợp tác cho Đối Tác TTLK với tiêu đề: “[Shopee KOL Booking Video] – Tên KOL – Xác nhận hợp tác dự án [Tên Dự Án]” (“Email Hợp Tác”) để ghi nhận chi tiết yêu cầu về nội dung công việc, thời gian diễn ra dự án, thời hạn phản hồi về việc chấp nhận hợp tác của Đối Tác TTLK, chi tiết các chi phí chi trả (“Chi Phí Hợp Tác Video”) ."
+            - paragraph [ref=f34e1072]: Đối Tác TTLK sẽ xem xét, và xác nhận tham gia Chiến Dịch bằng cách phản hồi bằng email đối với Email Hợp Tác mà Shopee đã gửi (“Email Xác Nhận Hợp Tác”). Email Xác Nhận Hợp Tác này sẽ là một phần không tách rời Điều Khoản và Điều Kiện này.
+            - paragraph [ref=f34e1073]: Nếu Shopee không nhận được bất kỳ phản hồi và/hoặc xác nhận nào bằng email từ Đối Tác TTLK trong vòng 3 ngày kể từ ngày gửi Email Hợp Tác, thì Đối Tác TTLK được xem là đồng ý và chịu sự ràng buộc với toàn bộ những nội dung trong Email Hợp Tác như thể Đối Tác TTLK đã gửi Email Xác Nhận Hợp Tác đến cho Shopee như quy định tại đoạn liền kề nêu trên. Để làm rõ, trong khuôn khổ chi phí thỏa thuận tại Email Xác Nhận Hợp Tác, Chi Phí Hợp Tác Video sẽ được xác định cụ thể dựa theo kết quả nghiệm thu thực tế của từng Chiến Dịch cụ thể cho Chương Trình Shopee KOL Video, và Chi Phí Hợp Tác Video thanh toán cuối cùng sẽ được thông báo đến Bên KOL thông qua Email Hợp Tác nêu tại điều này.
+            - list [ref=f34e1074]:
+              - listitem [ref=f34e1075]:
+                - heading "Nghĩa Vụ Và Cam Kết Của Đối Tác TTLK" [level=3] [ref=f34e1076]
+            - list [ref=f34e1077]:
+              - listitem [ref=f34e1078]:
+                - paragraph [ref=f34e1079]: Đối Tác TTLK không được sử dụng và/hoặc sửa đổi các Tài Liệu Video, cũng như các yêu cầu và thông tin, nội dung quảng cáo được cung cấp từ Shopee mà không có sự đồng ý trước bằng văn bản của Shopee, trừ khi việc cho phép được quy định cụ thể theo các điều khoản của Điều Khoản và Điều Kiện này. Nhằm mục đích của Điều Khoản và Điều Kiện này, Tài Liệu Video nghĩa là các thông tin, tư liệu, mã khuyến mãi phục vụ cho từng chiến dịch của các đối tác của Shopee có liên quan đến Chương Trình Shopee KOL Video (PPV) này.
+              - listitem [ref=f34e1080]:
+                - paragraph [ref=f34e1081]: Đối Tác TTLK không được phép thay đổi thông tin đăng nhập Tài Khoản TTLK trong thời gian tham gia thực hiện bất kỳ hoạt động này theo Chương Trình Shopee KOL Video (PPV) này. Nếu Đối Tác TTLK tự ý thay đổi thông tin đăng nhập của Tài Khoản TTLK, Shopee sẽ không cam đoan, bảo đảm, cam kết hay chịu trách nhiệm cho bất kỳ khoản Phí Hoa Hồng nào từ người bán mà Đối Tác TTLK có thể nhận được khi tham Chương Trình Shopee KOL Video (PPV) một cách tương ứng.
+              - listitem [ref=f34e1082]:
+                - paragraph [ref=f34e1083]: Đối Tác TTLK đảm bảo tuân thủ thực hiện và tham dự đúng theo kế hoạch đã cam kết tại thông báo bằng văn bản của Shopee (bao gồm nhưng không giới hạn ở việc tuân thủ thực hiện đầy đủ số video, thời lượng của 1 video, số sản phẩm tối thiểu trong 1 (một) video và yêu cầu khác từ Shopee vào từng thời điểm như đã thông báo trước cho Đối Tác TTLK).
+              - listitem [ref=f34e1084]:
+                - paragraph [ref=f34e1085]: Đối Tác TTLK chỉ được dùng các Tài Liệu Video, thông tin và nội dung quảng cáo được cung cấp hoặc định hướng bởi Shopee cho mục đích duy nhất là để thực hiện các hoạt động hợp tác theo Chương Trình Shopee KOL Video (PPV) giữa Đối Tác TTLK và Shopee, và không được đề cập đến bất cứ hoạt động kinh doanh nào khác của Đối Tác TTLK dù là trực tiếp hoặc gián tiếp. Mọi thông tin và nội dung riêng khác của Đối Tác TTLK có đề cập hoặc có liên quan đến Shopee dù theo bất cứ cách nào nhưng chưa được sự chấp thuận trước bằng văn bản bởi Shopee và không liên quan đến việc thực hiện Chương Trình Shopee KOL Video (PPV) đều bị nghiêm cấm. Nếu Đối Tác TTLK sử dụng các thông tin, nội dung quảng cáo riêng có đề cập hoặc có liên quan đến Shopee mà chưa nhận được sự đồng ý từ Shopee theo bất cứ cách nào đều bị coi là hành vi vi phạm nghiêm trọng Điều Khoản và Điều Kiện này của Đối Tác TTLK.
+              - listitem [ref=f34e1086]:
+                - paragraph [ref=f34e1087]: Trong trường hợp Đối Tác TTLK vi phạm Điều Khoản và Điều Kiện này, Shopee có toàn quyền quyết định việc không thanh toán cho Đối Tác TTLK bất kỳ khoản thanh toán nào Đối Tác TTLK được hưởng.
+            - list [ref=f34e1088]:
+              - listitem [ref=f34e1089]:
+                - heading "Điều Khoản Phạt" [level=3] [ref=f34e1090]
+            - paragraph [ref=f34e1091]: "Trường hợp Đối Tác TTLK không tuân thủ nghiêm ngặt các quy định về thời gian, sản phẩm, hướng dẫn nội dung và hình ảnh về video của các nhãn hàng; cũng như vi phạm các điều khoản về nghĩa vụ của Đối Tác TTLK đã được quy định tại Điều Khoản và Điều Kiện này, Shopee có quyền áp dụng các chế tài được quy định tại Điều Khoản và Điều Kiện này (bao gồm nhưng không giới hạn ở việc phạt và/hoặc chấm dứt hợp tác với Đối Tác TTLK vi phạm cụ thể như sau:"
+            - list [ref=f34e1092]:
+              - listitem [ref=f34e1093]:
+                - paragraph [ref=f34e1094]: "Đối với Đối Tác TTLK tham gia tất cả các Chương Trình Shopee KOL Video (PPV):"
+            - paragraph [ref=f34e1095]: "(i) Trường hợp Đối Tác TTLK đăng tải video trễ với thời gian quy định (dù có thông báo hoặc không thông báo trước cho Shopee) và Bên KOL đã hỗ trợ đăng video theo thời gian mới đã cam kết với và được chấp thuận bởi Shopee: Vi phạm lần đầu tiên thì Shopee sẽ có hình thức cảnh cáo thông qua email đối với Đối Tác TTLK vi phạm."
+            - paragraph [ref=f34e1096]: "(ii) Trường hợp Đối Tác TTLK đăng tải video trễ với thời gian quy định (dù có thông báo hoặc không thông báo trước cho Shopee) và Đối Tác TTLK đã hỗ trợ đăng tải video theo thời gian mới đã cam kết với và được chấp thuận bởi Shopee: Vi phạm từ lần thứ hai (02) trở lên thì Shopee có quyền ngay lập tức chấm dứt hợp tác với Đối Tác TTLK liên quan đến việc thực hiện Chương Trình “Shopee KOL Video (PPV)” mà không cần thông báo trước. Đồng thời, Shopee được toàn quyền quyết định trong việc không hợp tác với Đối Tác TTLK trong tất cả các chiến dịch khác của Shopee."
+            - paragraph [ref=f34e1097]: "(iii) Trường hợp Đối Tác TTLK đã nhận sản phẩm do Shopee và/hoặc đối tác / nhãn hàng gửi nhưng không đăng tải video theo đúng quy định và phạm vi công việc đã cam kết, không có bất kỳ phản hồi nào về thời gian đăng tải video mới: Vi phạm ngay từ lần đầu tiên thì Shopee áp dụng tương tự các chế tài quy định tại Điều 4.1.a. Trong trường hợp này, Đối Tác TTLK có nghĩa vụ hoàn trả lại đúng và đủ số lượng sản phẩm hoặc hoàn trả đúng số tiền tương đương với số lượng sản phẩm đã nhận trước đó từ Shopee để thực hiện phạm vi công việc đã cam kết trong vòng ba (03) ngày kể từ ngày Shopee và/hoặc đối tác / nhãn hàng gửi yêu cầu hoàn trả. Nếu Đối Tác TTLK không thực hiện nghĩa vụ hoàn trả này trong thời hạn yêu cầu, có toàn quyền quyết định tạm khóa Tài Khoản TTLK của Đối Tác TTLK cho đến khi Đối Tác TTLK hoàn tất việc hoàn trả Sản Phẩm Mẫu hoặc số tiền tương đương với giá trị Sản Phẩm Mẫu."
+            - paragraph [ref=f34e1098]:
+              - text: Trường hợp Đối Tác TTLK không tuân thủ các quy định về hoàn trả Sản Phẩm Mẫu nêu tại Điều Khoản và Điều Kiện này, Shopee có quyền chấm dứt hợp tác với Đối Tác TTLK và/hoặc tiến hành các biện pháp xử lý vi phạm đối với Đối Tác TTLK. Quy định về xử lý vi phạm hoàn trả sản phẩm quảng cáo được nêu
+              - link "TẠI ĐÂY" [ref=f34e1099] [cursor=pointer]:
+                - /url: https://drive.google.com/file/d/1TSocGXla6saIZFqg4Od3KAl06WUfOgXh/view?previousPage=other%20articles
+              - text: .
+            - list [ref=f34e1100]:
+              - listitem [ref=f34e1101]:
+                - paragraph [ref=f34e1102]: "Đối với các KOL tham gia Chương Trình Shopee KOL Video (PPV) có nhận chi phí hợp tác cố định:"
+            - paragraph [ref=f34e1103]: "(i) Trường hợp Đối Tác TTLK đăng tải video trễ với thời gian quy định (dù có thông báo hoặc không thông báo trước cho Shopee) và Đối Tác TTLK đã hỗ trợ đăng tải video theo thời gian mới đã cam kết với và được chấp thuận bởi Shopee: Vi phạm lần đầu tiên thì Shopee sẽ có hình thức cảnh cáo thông qua email đối với Đối Tác TTLK vi phạm."
+            - paragraph [ref=f34e1104]: "(ii) Trường hợp Đối Tác TTLK đăng tải video trễ với thời gian quy định (dù có thông báo hoặc không thông báo trước cho Shopee) và Đối Tác TTLK đã hỗ trợ đăng tải video theo thời gian mới đã cam kết với và được chấp thuận bởi Shopee: Vi phạm từ lần thứ hai (02) trở lên thì Shopee có quyền áp dụng các hình thức phạt tương ứng với quy định nêu rõ trong “Email xác nhận hợp tác tham gia” mà Shopee gửi khi mời Đối Tác TTLK tham gia Chương Trình Shopee KOL Video (PPV)."
+            - paragraph [ref=f34e1105]: "(iii) Trường hợp Đối Tác TTLK đã nhận sản phẩm do Shopee và/hoặc đối tác / nhãn hàng gửi nhưng không đăng tải video theo đúng quy định và phạm vi công việc đã cam kết, không có bất kỳ phản hồi nào về thời gian đăng tải video mới: Vi phạm ngay từ lần đầu tiên thì Shopee áp dụng tương tự các chế tài quy định tại Điều 4.1.2.a và vi phạm lần thứ 2 trở đi sẽ áp dụng tương tự các chế tài quy định tại Điều 4.1.2.b. Trong trường hợp này, Đối Tác TTLK có nghĩa vụ hoàn trả lại đúng và đủ số lượng sản phẩm hoặc hoàn trả đúng số tiền tương đương với số lượng sản phẩm đã nhận trước đó từ Shopee để thực hiện phạm vi công việc đã cam kết trong vòng ba (03) ngày kể từ ngày Shopee và/hoặc đối tác / nhãn hàng gửi yêu cầu hoàn trả. Nếu Đối Tác TTLK không thực hiện nghĩa vụ hoàn trả này trong thời hạn yêu cầu, có toàn quyền quyết định tạm khóa Tài Khoản TTLK của Đối Tác TTLK cho đến khi Đối Tác TTLK hoàn tất việc hoàn trả Sản Phẩm Mẫu hoặc số tiền tương đương với giá trị Sản Phẩm Mẫu."
+            - paragraph [ref=f34e1106]:
+              - text: Trường hợp Đối Tác TTLK không tuân thủ các quy định về hoàn trả Sản Phẩm Mẫu nêu tại Điều Khoản và Điều Kiện này, Shopee có quyền chấm dứt hợp tác với Đối Tác TTLK và/hoặc tiến hành các biện pháp xử lý vi phạm đối với Đối Tác TTLK. Quy định về xử lý vi phạm hoàn trả sản phẩm quảng cáo được nêu
+              - link "TẠI ĐÂY" [ref=f34e1107] [cursor=pointer]:
+                - /url: https://drive.google.com/file/d/1TSocGXla6saIZFqg4Od3KAl06WUfOgXh/view?previousPage=other%20articles
+              - text: .
+            - paragraph [ref=f34e1108]: "[1] Quảng cáo Tự động chuyển hướng tức là tự động chuyển hướng người dùng đến các trang mạng của Nhà quảng cáo mà không có sự kích hoạt hoặc hành động nào của người dùng (như nhấp chuột, chạm vào)."
+            - strong:
+              - strong
+          - paragraph [ref=f34e1109]: Điều Khoản và Điều Kiện này được đăng tải vào ngày 02/11/2026, có hiệu lực sau 7 (bảy) ngày kể từ ngày đăng tải.
+          - paragraph [ref=f34e1110]:
+            - text: Để tham khảo phiên bản trước của Điều Khoản và Điều Kiện này, vui lòng bấm vào
+            - strong [ref=f34e1112]:
+              - link "ĐÂY" [ref=f34e1113] [cursor=pointer]:
+                - /url: https://help.shopee.vn/portal/10/article/206429?previousPage=other%20articles
+          - generic [ref=f34e1114]:
+            - strong
+        - generic [ref=f34e1117]:
+          - generic [ref=f34e1118]: Bạn có hài lòng với bài viết này?
+          - generic [ref=f34e1119]:
+            - generic [ref=f34e1120] [cursor=pointer]: Hài lòng
+            - generic [ref=f34e1124] [cursor=pointer]: Không hài lòng
+  - generic [ref=f34e1128]:
+    - generic [ref=f34e1130]:
+      - generic [ref=f34e1131]: Bạn có muốn tìm thêm thông tin gì không?
+      - generic [ref=f34e1134] [cursor=pointer]:
+        - img "Liên hệ Shopee Affiliate" [ref=f34e1136]
+        - generic [ref=f34e1137]: Liên hệ Shopee Affiliate
+    - generic [ref=f34e1140]:
+      - generic [ref=f34e1141]: © 2021 Shopee. Tất cả các quyền được bảo lưu.
+      - link [ref=f34e1147] [cursor=pointer]:
+        - /url: https://www.facebook.com/ShopeeKOLAffiliate

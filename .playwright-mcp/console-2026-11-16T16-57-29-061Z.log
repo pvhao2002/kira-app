@@ -1,0 +1,27 @@
+[     659ms] [LOG] getModule module: {addListener: , removeListener: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     661ms] [LOG] getModule module: {isLoggedIn: , getAccountInfo: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     661ms] [LOG] getModule module: {showLoginScreen: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     661ms] [LOG] getModule module: {navigateAppRL: , navigateWeb: , openExternalLink: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     661ms] [LOG] getModule module: {configurePage: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     661ms] [LOG] getModule module: {popWebView: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     662ms] [LOG] getModule module: {fullScreenImage: , pickImage: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     662ms] [LOG] getModule module: {getApplicationInfo: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     662ms] [LOG] getModule module: {getNetworkInfo: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     662ms] [LOG] getModule module: {authTUTIDAccount: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     662ms] [LOG] getModule module: {showWebviewLoading: , hideWebviewLoading: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     675ms] [LOG] getModule module: {currentFromPageID: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     692ms] [LOG] getModule module: {getToken: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     692ms] [LOG] getModule module: {bankDFP: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     692ms] [LOG] getModule module: {authTUTIDAccount: } @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[     750ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://help.shopee.vn/api/inhouse/auth/v2/get_access_token:1
+[    1128ms] [LOG] {message: Channel Mgnt bottom chat result {"enable":true,"ha…ogin":false,"isPremium":false,"isHomePage":false}} @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/main.e33ad6d2.js:1
+[    1146ms] [LOG] isLoggedIn field is function @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[    1723ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://help.shopee.vn/api/inhouse/hc/mobile/v1/article?frontend_id=4&id=122941&device_id=ac9af47b-a27e-4ac0-969b-1e364b4e3ddb:1
+[    1743ms] [ERROR] Access to XMLHttpRequest at 'https://chatbot.shopee.vn/api/proactive' from origin 'https://help.shopee.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ https://help.shopee.vn/portal/4:1
+[    1744ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://chatbot.shopee.vn/api/proactive:1
+[    1760ms] [LOG] Current FCP 1720ms @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/main.e33ad6d2.js:1
+[    1792ms] [ERROR] Access to XMLHttpRequest at 'https://chatbot.shopee.vn/api/proactive' from origin 'https://help.shopee.vn' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ https://help.shopee.vn/portal/4:1
+[    1792ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://chatbot.shopee.vn/api/proactive:1
+[    1799ms] [LOG] {message: Channel Mgnt bottom chat result {"enable":true,"ha…ogin":false,"isPremium":false,"isHomePage":false}} @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/main.e33ad6d2.js:1
+[    1800ms] [LOG] isLoggedIn field is function @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/commonUtils1.a2145bcb.js:1
+[    1810ms] [LOG] {message: Channel Mgnt bottom chat result {"enable":true,"ha…ogin":false,"isPremium":false,"isHomePage":false}} @ https://cs.deo.shopeemobile.com/shopee/shopee-cs-live-vn/static/helpcenterfe/main.e33ad6d2.js:1
