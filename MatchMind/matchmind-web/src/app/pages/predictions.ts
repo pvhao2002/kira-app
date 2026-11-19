@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { LiveService } from '../core/live.service';
 import { Filters, PredictionRow } from '../core/models';
 import { FilterBar } from '../shared/filter-bar';
 import { fmtDateTime, humanize, num, pct, pickLabel } from '../shared/format';
@@ -68,6 +70,11 @@ export class PredictionsPage {
   private filters: Filters = {};
 
   readonly list = new PagedList<PredictionRow>(paging => this.api.predictions(this.filters, paging), { field: 'predictedAt', dir: 'desc' });
+
+  constructor() {
+    // Stay on the current page and sort; a new prediction may land on it.
+    inject(LiveService).predictions.pipe(takeUntilDestroyed()).subscribe(() => this.list.load());
+  }
 
   onFilters(f: Filters): void { this.filters = f; this.list.reload(); }
 }

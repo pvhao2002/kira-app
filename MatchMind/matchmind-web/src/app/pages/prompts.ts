@@ -61,6 +61,12 @@ import { ResultTag, StateView } from '../shared/ui';
               </div>
             } @else {
               @if (p.description) { <p style="margin-top:0">{{ p.description }}</p> }
+              @if (p.content.includes(KEY_PLACEHOLDER)) {
+                <p class="muted-text">
+                  @if (auth.isAdmin()) { Copy fills in <code ngNonBindable>{{EXTERNAL_API_KEY}}</code> with the agent API key. Paste the copy only into your agent. }
+                  @else { <code ngNonBindable>{{EXTERNAL_API_KEY}}</code> stands for the agent API key. Ask an admin to copy this prompt for an agent. }
+                </p>
+              }
               <pre class="prompt-view" data-testid="prompt-view">{{ p.content }}</pre>
             }
           </section>
@@ -190,7 +196,18 @@ export class PromptsPage implements OnInit {
     });
   }
 
-  copy(): void { this.messages.copy(this.selected()?.content ?? '', 'Prompt'); }
+  /** Admins copy what an agent needs, key included; viewers copy the stored text with the key placeholder. */
+  readonly KEY_PLACEHOLDER = '{{EXTERNAL_API_KEY}}';
+
+  copy(): void {
+    const p = this.selected();
+    if (!p) return;
+    if (!this.auth.isAdmin()) { this.messages.copy(p.content, 'Prompt'); return; }
+    this.api.promptForAgent(p.id).subscribe({
+      next: r => this.messages.copy(r.content, 'Prompt with the API key'),
+      error: e => this.messages.add({ severity: 'error', summary: 'Copy failed', detail: apiError(e).message }),
+    });
+  }
 
   typeValid(): boolean { return /^[A-Z][A-Z0-9_]{1,63}$/.test(this.newType.trim()); }
 

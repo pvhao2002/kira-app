@@ -197,7 +197,9 @@ test('detail pages: match result and corners, odds by stage, stats, Monte Carlo;
   await page.setViewportSize({ width: 390, height: 844 });
   for (const url of ['/dashboard', '/reports?tab=history', '/predictions', '/prompts']) {
     await page.goto(url);
-    await page.waitForLoadState('networkidle');
+    // Not 'networkidle': the live prediction stream keeps one request open for as long as the page is.
+    await expect(page.locator('.page-title')).not.toHaveText('');
+    await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth), url).toBeLessThanOrEqual(390);
   }
 });
@@ -249,4 +251,28 @@ test('a viewer can read but not change anything', async ({ page, request }) => {
   const vt = (await (await request.post('/api/v1/auth/login', { data: { username: viewer, password: 'viewer-pass-123' } })).json()).accessToken;
   const forbidden = await request.post('/api/v1/users', { headers: { Authorization: `Bearer ${vt}` }, data: { username: `x-${RUN}`, password: 'x-password-123', role: 'VIEWER' } });
   expect(forbidden.status()).toBe(403);
+});
+
+test('a new prediction shows up live on the predictions page, without a reload', async ({ page, request }) => {
+  const streamOpen = page.waitForResponse(r => r.url().endsWith('/api/v1/events/predictions') && r.status() === 200);
+  await login(page);
+  await page.goto('/predictions');
+  await streamOpen;
+  const home = `Live ${RUN}`;
+  await page.getByLabel('Search').fill(home);
+  await page.getByLabel('Search').press('Enter'); // the live reload keeps the page's filters
+  await expect(page.locator('table.dt tbody')).toContainText('No predictions match these filters.');
+  let navigations = 0;
+  page.on('framenavigated', f => { if (f === page.mainFrame()) navigations++; });
+
+  const body = livePayload();
+  body.eventId = `e2e-live-evt-${RUN}`;
+  body.match.externalMatchId = `e2e-live-${RUN}`;
+  body.match.homeTeam = home;
+  expect((await callback(request, 'predictions', body)).status()).toBe(201);
+
+  await expect(page.locator('.toast')).toContainText(`${home} – ${body.match.awayTeam}, by ${MODEL.name}`);
+  await expect(page.locator('table.dt tbody tr')).toHaveCount(1);
+  await expect(page.locator('table.dt tbody')).toContainText(home);
+  expect(navigations).toBe(0);
 });

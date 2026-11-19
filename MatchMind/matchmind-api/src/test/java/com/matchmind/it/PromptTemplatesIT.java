@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /** The default prediction prompt must describe both match states, and its examples must pass the real API. */
 class PromptTemplatesIT extends IntegrationTestBase {
@@ -56,5 +58,32 @@ class PromptTemplatesIT extends IntegrationTestBase {
         for (JsonNode odds : pre.get("odds")) assertThat(odds.get("stage").asText()).isIn("OPENING", "PRE_MATCH");
         MvcResult preRes = send(pre);
         assertThat(preRes.getResponse().getStatus()).as(preRes.getResponse().getContentAsString()).isEqualTo(201);
+    }
+
+    private String seededPromptId(String type) {
+        return db.queryForObject("SELECT id::text FROM prompt_templates WHERE template_type = ? AND updated_by IS NULL "
+            + "ORDER BY created_at LIMIT 1", String.class, type);
+    }
+
+    @Test
+    void adminCopyFillsInTheAgentKeyWhileTheStoredTextKeepsAPlaceholder() throws Exception {
+        for (String type : List.of("AI_PREDICTION", "AI_SETTLEMENT")) {
+            String id = seededPromptId(type);
+            String stored = adminGet("/api/v1/prompts/" + id).get("content").asText();
+            assertThat(stored).as(type).contains("X-Api-Key: {{EXTERNAL_API_KEY}}").doesNotContain(EXTERNAL_KEY);
+            String forAgent = adminGet("/api/v1/prompts/" + id + "/for-agent").get("content").asText();
+            assertThat(forAgent).as(type).contains("X-Api-Key: " + EXTERNAL_KEY).doesNotContain("{{EXTERNAL_API_KEY}}");
+        }
+    }
+
+    @Test
+    void viewerCannotReadTheAgentKey() throws Exception {
+        String name = "keyless-" + UUID.randomUUID().toString().substring(0, 8);
+        adminPost("/api/v1/users", Map.of("username", name, "password", "viewer-password-1", "role", "VIEWER"));
+        String viewer = login(name, "viewer-password-1");
+        MvcResult res = mvc.perform(get("/api/v1/prompts/" + seededPromptId("AI_PREDICTION") + "/for-agent")
+            .header("Authorization", "Bearer " + viewer)).andReturn();
+        assertThat(res.getResponse().getStatus()).isEqualTo(403);
+        assertThat(res.getResponse().getContentAsString()).doesNotContain(EXTERNAL_KEY);
     }
 }

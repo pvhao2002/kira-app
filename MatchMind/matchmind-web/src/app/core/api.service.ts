@@ -99,6 +99,8 @@ export class ApiService {
 
   // Prompts
   prompts() { return this.http.get<PromptTemplate[]>(`${API}/prompts`); }
+  /** Admin only: the prompt with the shared agent API key filled in. Never stored or shown, only copied. */
+  promptForAgent(id: string) { return this.http.get<{ content: string }>(`${API}/prompts/${id}/for-agent`); }
   updatePrompt(id: string, body: { content: string; description: string | null; active: boolean; expectedVersion: number }) {
     return this.http.put<PromptTemplate>(`${API}/prompts/${id}`, body);
   }

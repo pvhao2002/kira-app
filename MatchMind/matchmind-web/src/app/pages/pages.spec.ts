@@ -140,12 +140,13 @@ describe('PromptsPage', () => {
     req.flush({ status: 409, code: 'PROMPT_VERSION_CONFLICT', message: 'stale' }, { status: 409, statusText: 'Conflict' });
   });
 
-  it('copies the prompt content to the clipboard', async () => {
+  it('an admin copies the prompt with the agent API key filled in by the server', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     const f = await open();
     q(f, 'prompt-copy')!.click();
-    expect(writeText).toHaveBeenCalledWith('Original prompt');
+    http.expectOne('/api/v1/prompts/p1/for-agent').flush({ content: 'Original prompt, key filled in' });
+    expect(writeText).toHaveBeenCalledWith('Original prompt, key filled in');
   });
 });
 

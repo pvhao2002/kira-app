@@ -4,10 +4,13 @@ import com.matchmind.prompt.PromptService.CreatePrompt;
 import com.matchmind.prompt.PromptService.PromptView;
 import com.matchmind.prompt.PromptService.UpdatePrompt;
 import com.matchmind.security.Principals.UserPrincipal;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +29,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Prompt templates")
 public class PromptController {
+    /** Stored prompts name the agent key only by this placeholder; the key itself never reaches the database. */
+    static final String API_KEY_PLACEHOLDER = "{{EXTERNAL_API_KEY}}";
     private final PromptService service;
+    @Value("${app.external-api-key:}")
+    private String externalApiKey;
+
+    public record AgentPrompt(String content) {
+    }
 
     @GetMapping
     public List<PromptView> list() {
@@ -36,6 +46,14 @@ public class PromptController {
     @GetMapping("/{id}")
     public PromptView get(@PathVariable UUID id) {
         return service.get(id);
+    }
+
+    /** What an admin pastes into an agent: the prompt with the shared agent key filled in. Viewers never see the key. */
+    @GetMapping("/{id}/for-agent")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Prompt text with the agent API key filled in (admin only)")
+    public AgentPrompt forAgent(@PathVariable UUID id) {
+        return new AgentPrompt(service.get(id).content().replace(API_KEY_PLACEHOLDER, externalApiKey));
     }
 
     @PostMapping

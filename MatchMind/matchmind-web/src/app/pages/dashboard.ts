@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ChartOptions } from 'chart.js';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { LiveService } from '../core/live.service';
 import { apiError } from '../core/http';
 import { Dashboard, Filters, PredictionRow, ReviewItem } from '../core/models';
 import { FilterBar } from '../shared/filter-bar';
@@ -133,6 +135,7 @@ export class DashboardPage {
 
   constructor() {
     this.api.needsReview().subscribe({ next: r => this.review.set(r), error: () => undefined });
+    inject(LiveService).predictions.pipe(takeUntilDestroyed()).subscribe(() => this.load(this.range(), true));
   }
   readonly pct = pct;
   readonly fmtShort = fmtShort;
@@ -195,9 +198,10 @@ export class DashboardPage {
     return start === end ? start : `${start} – ${end}`;
   });
 
-  load(f: Filters): void {
+  /** `quiet` keeps the current figures on screen while a live update reloads them. */
+  load(f: Filters, quiet = false): void {
     this.range.set(f);
-    this.state.set('loading');
+    if (!quiet) this.state.set('loading');
     this.subs.forEach(s => s.unsubscribe()); // a newer filter wins over a slower older response
     this.subs = [this.api.dashboard(f, this.tz).subscribe({
       next: d => { this.data.set(d); this.state.set('ready'); },

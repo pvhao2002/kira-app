@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { ActivatedRoute } from '@angular/router';
 import { filter } from 'rxjs';
 import { AuthService } from '../core/auth.service';
+import { LiveService } from '../core/live.service';
 
 interface NavItem { path: string; label: string; icon: string; }
 
@@ -58,6 +59,7 @@ const NAV: NavItem[] = [
 })
 export class Shell {
   readonly auth = inject(AuthService);
+  private readonly live = inject(LiveService); // the shell exists only while signed in: listen for new predictions
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   readonly nav = NAV;

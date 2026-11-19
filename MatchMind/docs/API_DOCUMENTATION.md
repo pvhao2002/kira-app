@@ -247,12 +247,28 @@ Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no 
 `GET /prompts`, `GET /prompts/{id}`, `POST /prompts` `{name, templateType, content, description?}`,
 `PUT /prompts/{id}` `{content, description, active, expectedVersion}`. A stale `expectedVersion` returns
 `409 PROMPT_VERSION_CONFLICT`.
+`GET /prompts/{id}/for-agent` (ADMIN only) returns `{content}` with `{{EXTERNAL_API_KEY}}` replaced by the shared
+agent key; the web "Copy" button uses it for admins. Stored prompts keep the placeholder, so the key never enters the
+database, the prompt history or a viewer's screen.
 
 ### API logs
 - `GET /api-logs`: filters `providerId, status, endpoint, httpStatus, search, from, to`. Sort:
   `receivedAt, durationMs, httpStatus, endpoint`.
 - `GET /api-logs/endpoints`
 - `GET /api-logs/{id}`: includes the `processingResult` summary. Request bodies and keys are never logged.
+
+### Live events
+`GET /events/predictions` (ADMIN or VIEWER, `Accept: text/event-stream`) is a Server-Sent Events stream. After each
+new prediction is stored (not on a duplicate retry) it sends:
+
+```
+event:prediction
+data:{"predictionId":"…","matchId":"…","homeTeam":"…","awayTeam":"…","model":"…","predictionType":"LIVE"}
+```
+
+A `:ping` comment every 25 s keeps proxies from closing an idle stream. The server ends a stream after 30 minutes and
+the web client reconnects, so a revoked token stops receiving events within that time. The web client sends the JWT
+in the `Authorization` header (fetch, not `EventSource`), so the token never appears in a URL.
 
 ## curl quick start
 

@@ -15,6 +15,8 @@ import com.matchmind.external.ExternalDtos.SettleRequest;
 import com.matchmind.match.MatchRepository;
 import com.matchmind.match.MatchResultService;
 import com.matchmind.match.MatchResultService.ResultResponse;
+import com.matchmind.prediction.PredictionEvents;
+import com.matchmind.prediction.PredictionEvents.NewPrediction;
 import com.matchmind.prediction.PredictionIngestionService;
 import com.matchmind.security.Principals.ProviderPrincipal;
 import com.matchmind.settlement.SettlementService;
@@ -62,6 +64,7 @@ public class ExternalController {
     private final SettlementService settlement;
     private final MatchRepository matches;
     private final ExternalAuditService audit;
+    private final PredictionEvents events;
     private final Validator validator;
     private final ObjectMapper mapper;
 
@@ -75,12 +78,17 @@ public class ExternalController {
         String eventId = raw.path("eventId").isTextual() ? raw.path("eventId").asText() : null;
         return audited(caller, http, received, eventId, () -> {
             PredictionRequest r = bind(raw, PredictionRequest.class);
+            ModelRef model = modelOf(http, r);
             PredictionResponse response;
             try {
-                response = ingestion.ingest(caller.providerId(), modelOf(http, r), r, raw);
+                response = ingestion.ingest(caller.providerId(), model, r, raw);
             } catch (DataIntegrityViolationException race) {
                 // A concurrent retry inserted the same eventId first: answer as a duplicate.
                 response = ingestion.findDuplicate(caller.providerId(), r.eventId(), raw).orElseThrow(() -> race);
+            }
+            if (!response.duplicate()) { // ingest has committed: browsers can already load it
+                events.published(new NewPrediction(response.predictionId(), response.matchId(), r.match().homeTeam(),
+                    r.match().awayTeam(), model.name(), r.predictionType()));
             }
             return ResponseEntity.status(response.duplicate() ? HttpStatus.OK : HttpStatus.CREATED).body(response);
         });

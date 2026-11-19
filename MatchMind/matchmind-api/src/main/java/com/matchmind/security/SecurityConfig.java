@@ -1,5 +1,6 @@
 package com.matchmind.security;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +52,8 @@ public class SecurityConfig {
                 .authenticationEntryPoint((rq, rs, ex) -> write(rs, 401, "UNAUTHORIZED", "Authentication required"))
                 .accessDeniedHandler((rq, rs, ex) -> write(rs, 403, "FORBIDDEN", "You are not allowed to perform this action")))
             .authorizeHttpRequests(a -> a
+                // The end of an event stream re-enters the chain as an ASYNC dispatch of a request already authorized.
+                .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 .requestMatchers("/actuator/health/**", "/actuator/health", "/swagger-ui/**", "/swagger-ui.html",
                     "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
