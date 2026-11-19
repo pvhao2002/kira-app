@@ -84,7 +84,7 @@ public class ExternalController {
                 response = ingestion.ingest(caller.providerId(), model, r, raw);
             } catch (DataIntegrityViolationException race) {
                 // A concurrent retry inserted the same eventId first: answer as a duplicate.
-                response = ingestion.findDuplicate(caller.providerId(), r.eventId(), raw).orElseThrow(() -> race);
+                response = ingestion.findDuplicate(caller.providerId(), r, raw).orElseThrow(() -> race);
             }
             if (!response.duplicate()) { // ingest has committed: browsers can already load it
                 events.published(new NewPrediction(response.predictionId(), response.matchId(), r.match().homeTeam(),

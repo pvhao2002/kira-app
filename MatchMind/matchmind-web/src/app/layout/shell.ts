@@ -28,7 +28,7 @@ const NAV: NavItem[] = [
       <aside class="sidebar" aria-label="Main navigation">
         <a routerLink="/dashboard" class="brand">
           <span class="brand-mark" aria-hidden="true">M</span>
-          @if (!collapsed()) { <span class="brand-text"><strong>MatchMind</strong><small>AI Football Intelligence</small></span> }
+          @if (!collapsed()) { <span class="brand-text"><strong>MatchMind</strong><small>Private workspace</small></span> }
         </a>
         <nav>
           @for (item of nav; track item.path) {

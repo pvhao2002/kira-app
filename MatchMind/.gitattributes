@@ -1,0 +1,2 @@
+# Migrations match prompt text across line breaks: keep LF on every checkout, or replace() silently matches nothing.
+*.sql text eol=lf

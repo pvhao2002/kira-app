@@ -30,10 +30,16 @@ import java.math.BigDecimal;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -49,6 +55,10 @@ import java.util.UUID;
 public class PredictionIngestionService {
     /** The prompt asks models for 1000 Monte Carlo iterations; assumed when a payload omits the count. */
     static final int DEFAULT_SIMULATION_COUNT = 1000;
+    static final String UNKNOWN_LEAGUE = "Unknown league";
+    /** A screenshot of the same teams within this time of a known match is that match. */
+    private static final Duration SAME_MATCH_WINDOW = Duration.ofHours(12);
+    private static final int HALF_TIME_BREAK_MINUTES = 15;
 
     private final PredictionRepository predictions;
     private final PredictionOddsRepository oddsRepo;
@@ -65,12 +75,15 @@ public class PredictionIngestionService {
     public PredictionResponse ingest(UUID providerId, ModelRef modelRef, PredictionRequest r, JsonNode rawPayload) {
         validate(r);
         String hash = payloadHash(rawPayload);
-        Optional<Prediction> existing = predictions.findByProviderIdAndExternalEventId(providerId, r.eventId());
+        String eventId = eventIdOf(r, hash);
+        Optional<Prediction> existing = predictions.findByProviderIdAndExternalEventId(providerId, eventId);
         if (existing.isPresent()) return duplicate(existing.get(), hash);
 
         AiModel model = model(providerId, modelRef);
-        Match match = upsertMatch(providerId, r);
-        Prediction p = predictions.saveAndFlush(prediction(providerId, match.getId(), model.getId(), r, rawPayload, hash));
+        Instant predictedAt = r.predictedAt() != null ? r.predictedAt() : Instant.now();
+        Match match = upsertMatch(providerId, r, predictedAt);
+        Prediction p = predictions.saveAndFlush(
+            prediction(providerId, match.getId(), model.getId(), r, eventId, predictedAt, rawPayload, hash));
 
         Map<String, PredictionOdds> oddsByRef = new LinkedHashMap<>();
         for (OddsInput in : r.odds()) oddsByRef.put(in.ref(), oddsRepo.save(odds(p.getId(), in)));
@@ -88,7 +101,12 @@ public class PredictionIngestionService {
 
         Map<String, UUID> oddsIds = new LinkedHashMap<>();
         oddsByRef.forEach((ref, o) -> oddsIds.put(ref, o.getId()));
-        return new PredictionResponse(p.getId(), match.getId(), false, pickRefs, oddsIds);
+        return new PredictionResponse(p.getId(), match.getId(), match.getExternalMatchId(), false, pickRefs, oddsIds);
+    }
+
+    /** Without an eventId the payload itself is the idempotency key, so resending the same JSON is a duplicate. */
+    static String eventIdOf(PredictionRequest r, String payloadHash) {
+        return r.eventId() != null ? r.eventId() : "auto-" + payloadHash.substring(0, 32);
     }
 
     /**
@@ -104,9 +122,9 @@ public class PredictionIngestionService {
 
     /** Used after a concurrent insert of the same eventId lost the race on the unique key. */
     @Transactional(readOnly = true)
-    public Optional<PredictionResponse> findDuplicate(UUID providerId, String eventId, JsonNode rawPayload) {
-        return predictions.findByProviderIdAndExternalEventId(providerId, eventId)
-            .map(p -> duplicate(p, payloadHash(rawPayload)));
+    public Optional<PredictionResponse> findDuplicate(UUID providerId, PredictionRequest r, JsonNode rawPayload) {
+        String hash = payloadHash(rawPayload);
+        return predictions.findByProviderIdAndExternalEventId(providerId, eventIdOf(r, hash)).map(p -> duplicate(p, hash));
     }
 
     private PredictionResponse duplicate(Prediction p, String hash) {
@@ -119,7 +137,8 @@ public class PredictionIngestionService {
         Map<String, UUID> oddsIds = new LinkedHashMap<>();
         oddsRepo.findByPredictionIdOrderByMarketAscOddsStageAscSnapshotOrderAsc(p.getId())
             .forEach(o -> oddsIds.put(o.getOddsRef(), o.getId()));
-        return new PredictionResponse(p.getId(), p.getMatchId(), true, refs, oddsIds);
+        String externalMatchId = matches.findById(p.getMatchId()).map(Match::getExternalMatchId).orElse(null);
+        return new PredictionResponse(p.getId(), p.getMatchId(), externalMatchId, true, refs, oddsIds);
     }
 
     /**
@@ -127,30 +146,65 @@ public class PredictionIngestionService {
      * the latest callback; status is only taken from predictions until the results API has spoken, and results
      * (scores) are never touched here.
      */
-    private Match upsertMatch(UUID providerId, PredictionRequest r) {
+    private Match upsertMatch(UUID providerId, PredictionRequest r, Instant predictedAt) {
         var m = r.match();
         String status = m.status() != null ? m.status() : ("LIVE".equals(r.predictionType()) ? "LIVE" : "SCHEDULED");
+        String home = m.homeTeam().trim();
+        String away = m.awayTeam().trim();
+        String league = m.league() == null || m.league().isBlank() ? null : m.league().trim();
+        Instant start = m.startTime() != null ? m.startTime() : estimatedKickOff(r.matchMinute(), predictedAt);
+        String externalId = m.externalMatchId() != null ? m.externalMatchId() : externalIdByTeams(providerId, home, away, start);
         jdbc.update("""
             INSERT INTO matches (provider_id, external_match_id, league, home_team, away_team, start_time, status)
             VALUES (:provider, :ext, :league, :home, :away, :start, :status)
             ON CONFLICT (provider_id, external_match_id) DO NOTHING
-            """, new MapSqlParameterSource().addValue("provider", providerId).addValue("ext", m.externalMatchId())
-            .addValue("league", m.league().trim()).addValue("home", m.homeTeam().trim()).addValue("away", m.awayTeam().trim())
-            .addValue("start", Timestamp.from(m.startTime())).addValue("status", status));
-        Match match = matches.lockByProviderAndExternalId(providerId, m.externalMatchId()).orElseThrow();
+            """, new MapSqlParameterSource().addValue("provider", providerId).addValue("ext", externalId)
+            .addValue("league", league != null ? league : UNKNOWN_LEAGUE).addValue("home", home).addValue("away", away)
+            .addValue("start", Timestamp.from(start)).addValue("status", status));
+        Match match = matches.lockByProviderAndExternalId(providerId, externalId).orElseThrow();
         // Picks made after the result is known would never settle and could game the win rate.
         if (match.getResultUpdatedAt() != null && List.of("FINISHED", "CANCELLED").contains(match.getStatus())) {
             throw ApiException.conflict("MATCH_ALREADY_FINAL",
                 "This match is already " + match.getStatus() + "; predictions are no longer accepted for it");
         }
-        match.setLeague(m.league().trim());
-        match.setHomeTeam(m.homeTeam().trim());
-        match.setAwayTeam(m.awayTeam().trim());
-        match.setStartTime(m.startTime());
+        // Missing details never overwrite known ones: an estimated kick-off only applies to a new match.
+        if (league != null) match.setLeague(league);
+        match.setHomeTeam(home);
+        match.setAwayTeam(away);
+        if (m.startTime() != null) match.setStartTime(m.startTime());
         boolean resultKnown = match.getResultUpdatedAt() != null
             || List.of("FINISHED", "CANCELLED", "POSTPONED").contains(match.getStatus());
         if (!resultKnown) match.setStatus(status);
         return matches.saveAndFlush(match);
+    }
+
+    /**
+     * A LIVE screen shows the minute, not the kick-off.
+     * ponytail: assumes a 15-minute half-time and no stoppage time; good to a few minutes, enough to find the match.
+     */
+    static Instant estimatedKickOff(Integer matchMinute, Instant predictedAt) {
+        if (matchMinute == null) return predictedAt;
+        int elapsed = matchMinute + (matchMinute > 45 ? HALF_TIME_BREAK_MINUTES : 0);
+        return predictedAt.minus(Duration.ofMinutes(elapsed)).truncatedTo(ChronoUnit.MINUTES);
+    }
+
+    /**
+     * The match this provider already has for these teams around that kick-off; otherwise a stable id for a new one.
+     * Same teams on the same UTC day give the same id, so concurrent first screenshots end up on one match.
+     */
+    private String externalIdByTeams(UUID providerId, String home, String away, Instant start) {
+        List<String> near = jdbc.queryForList("""
+            SELECT external_match_id FROM matches
+            WHERE provider_id = :provider AND lower(home_team) = lower(:home) AND lower(away_team) = lower(:away)
+              AND start_time BETWEEN :from AND :to
+            ORDER BY abs(extract(epoch FROM start_time - :start)) LIMIT 1
+            """, new MapSqlParameterSource().addValue("provider", providerId).addValue("home", home).addValue("away", away)
+            .addValue("from", start.minus(SAME_MATCH_WINDOW).atOffset(ZoneOffset.UTC))
+            .addValue("to", start.plus(SAME_MATCH_WINDOW).atOffset(ZoneOffset.UTC))
+            .addValue("start", start.atOffset(ZoneOffset.UTC)), String.class);
+        if (!near.isEmpty()) return near.getFirst();
+        String key = home.toLowerCase(Locale.ROOT) + "|" + away.toLowerCase(Locale.ROOT) + "|" + LocalDate.ofInstant(start, ZoneOffset.UTC);
+        return "auto-" + sha256Hex(key.getBytes(java.nio.charset.StandardCharsets.UTF_8)).substring(0, 24);
     }
 
     /** Cross-field rules Bean Validation cannot express. All problems are reported together. */
@@ -297,13 +351,13 @@ public class PredictionIngestionService {
         }
     }
 
-    private static Prediction prediction(UUID providerId, UUID matchId, UUID modelId, PredictionRequest r,
-                                         JsonNode rawPayload, String hash) {
+    private static Prediction prediction(UUID providerId, UUID matchId, UUID modelId, PredictionRequest r, String eventId,
+                                         Instant predictedAt, JsonNode rawPayload, String hash) {
         Prediction p = new Prediction();
         p.setProviderId(providerId);
         p.setMatchId(matchId);
         p.setAiModelId(modelId);
-        p.setExternalEventId(r.eventId());
+        p.setExternalEventId(eventId);
         p.setPredictionType(r.predictionType());
         p.setMatchMinute(r.matchMinute());
         if (r.currentScore() != null) {
@@ -314,7 +368,7 @@ public class PredictionIngestionService {
             p.setCurrentHomeCorners(r.currentCorners().home());
             p.setCurrentAwayCorners(r.currentCorners().away());
         }
-        p.setPredictedAt(r.predictedAt());
+        p.setPredictedAt(predictedAt);
         p.setPayload(rawPayload);
         p.setPayloadHash(hash);
         p.setMetadata(r.metadata());
@@ -429,9 +483,16 @@ public class PredictionIngestionService {
     String payloadHash(JsonNode payload) {
         try {
             Object plain = json.treeToValue(payload, Object.class);
-            byte[] canonical = json.writer().with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writeValueAsBytes(plain);
-            return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(canonical));
-        } catch (NoSuchAlgorithmException | com.fasterxml.jackson.core.JsonProcessingException e) {
+            return sha256Hex(json.writer().with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writeValueAsBytes(plain));
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static String sha256Hex(byte[] bytes) {
+        try {
+            return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
     }

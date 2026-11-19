@@ -330,22 +330,11 @@ dialog.dialog::backdrop { background: rgba(20, 33, 61, .45); }
 .login-page { min-height: 100vh; display: grid; grid-template-columns: 1.1fr 1fr; }
 .login-art {
   color: #fff; padding: 3rem; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;
-  /* half a pitch: halfway line on the right edge, centre circle, penalty box, faint mowing stripes */
-  background:
-    radial-gradient(circle at 100% 50%, transparent 150px, rgba(255, 255, 255, .08) 151px, rgba(255, 255, 255, .08) 153px, transparent 154px),
-    linear-gradient(90deg, transparent calc(100% - 2px), rgba(255, 255, 255, .08) calc(100% - 2px)),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, .02) 0 80px, transparent 80px 160px),
-    linear-gradient(160deg, var(--mm-navy) 0%, var(--mm-navy-2) 100%);
-}
-.login-art::after { /* penalty box on the left touchline */
-  content: ''; position: absolute; left: -2px; top: 50%; width: 120px; height: 300px; transform: translateY(-50%);
-  border: 2px solid rgba(255, 255, 255, .07); border-left: 0;
+  background: linear-gradient(160deg, var(--mm-navy) 0%, var(--mm-navy-2) 100%);
 }
 .login-art > * { position: relative; z-index: 1; }
 .login-art h1 { font-size: 3.2rem; font-weight: 700; line-height: 1.02; max-width: 13ch; }
 .login-art p { color: #b4c0d6; max-width: 44ch; font-size: 1.05rem; }
-.login-points { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: .55rem; color: #c9d3e6; }
-.login-points i { color: var(--mm-lime); margin-right: .5rem; }
 .login-form-wrap { display: grid; place-items: center; padding: 2rem; background: var(--mm-surface); }
 .login-form {
   width: min(400px, 100%); display: flex; flex-direction: column; gap: 1rem; background: var(--mm-card); border: 1px solid var(--mm-line);

@@ -11,21 +11,16 @@ import { apiError } from '../core/http';
   template: `
     <div class="login-page">
       <section class="login-art">
-        <div class="brand"><span class="brand-mark">M</span><span class="brand-text"><strong>MatchMind</strong><small>AI Football Intelligence Platform</small></span></div>
+        <div class="brand"><span class="brand-mark">M</span><span class="brand-text"><strong>MatchMind</strong><small>Private workspace</small></span></div>
         <div>
-          <h1>Every AI pick, settled and scored.</h1>
-          <p>Track what each model predicted before kick-off and in play, then see how it actually played out.</p>
-          <ul class="login-points">
-            <li><i class="pi pi-check-circle" aria-hidden="true"></i>Picks settled by the backend, never by the model</li>
-            <li><i class="pi pi-check-circle" aria-hidden="true"></i>Quarter lines and live odds on the remaining match</li>
-            <li><i class="pi pi-check-circle" aria-hidden="true"></i>Win rates per model, market and league</li>
-          </ul>
+          <h1>Private workspace.</h1>
+          <p>Access is by invitation only.</p>
         </div>
         <span></span>
       </section>
       <section class="login-form-wrap">
         <form class="login-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-          <div class="login-mobile-brand"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-text"><strong>MatchMind</strong><small>AI Football Intelligence Platform</small></span></div>
+          <div class="login-mobile-brand"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-text"><strong>MatchMind</strong><small>Private workspace</small></span></div>
           <h2>Sign in</h2>
           <p class="login-sub">Use the account an administrator created for you.</p>
           @if (expired) { <div class="alert alert-warn" role="status">Your session ended. Sign in again to continue.</div> }

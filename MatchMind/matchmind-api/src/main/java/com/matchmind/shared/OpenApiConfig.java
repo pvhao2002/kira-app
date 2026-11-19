@@ -13,7 +13,7 @@ public class OpenApiConfig {
     @Bean
     OpenAPI matchMindOpenApi() {
         return new OpenAPI()
-            .info(new Info().title("MatchMind API").version("v1").description("AI Football Intelligence Platform"))
+            .info(new Info().title("MatchMind API").version("v1").description("MatchMind API"))
             .components(new Components()
                 .addSecuritySchemes("bearer", new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT"))
                 .addSecuritySchemes("apiKey", new SecurityScheme().type(SecurityScheme.Type.APIKEY)

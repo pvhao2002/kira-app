@@ -26,11 +26,10 @@ class PromptTemplatesIT extends IntegrationTestBase {
         return (ObjectNode) json.readTree(prompt.substring(prompt.indexOf('{', at)));
     }
 
+    /** Sent exactly as the prompt shows it: no ids, as an agent reading a screenshot would send it. */
     private MvcResult send(ObjectNode example) throws Exception {
-        String suffix = UUID.randomUUID().toString().substring(0, 8);
-        example.put("eventId", "prompt-example-" + suffix);
-        ((ObjectNode) example.get("match")).put("externalMatchId", "prompt-match-" + suffix);
-        return externalWith(Map.of("X-Api-Key", EXTERNAL_KEY, "X-Provider", "prompt-check", "X-Model-Name", "example"),
+        String provider = "prompt-check-" + UUID.randomUUID().toString().substring(0, 8);
+        return externalWith(Map.of("X-Api-Key", EXTERNAL_KEY, "X-Provider", provider, "X-Model-Name", "example"),
             "predictions", json.writeValueAsString(example));
     }
 
@@ -52,7 +51,10 @@ class PromptTemplatesIT extends IntegrationTestBase {
         MvcResult liveRes = send(live);
         assertThat(liveRes.getResponse().getStatus()).as(liveRes.getResponse().getContentAsString()).isEqualTo(201);
 
+        assertThat(live.has("eventId") || live.has("predictedAt") || live.get("match").has("externalMatchId")
+            || live.get("match").has("startTime")).as("LIVE example asks only for what a screenshot shows").isFalse();
         ObjectNode pre = exampleAfter(prompt, "\nPRE_MATCH EXAMPLE ("); // the heading line, not the "see ..." reference
+        assertThat(pre.has("eventId") || pre.has("predictedAt") || pre.get("match").has("externalMatchId")).isFalse();
         assertThat(pre.get("predictionType").asText()).isEqualTo("PRE_MATCH");
         assertThat(pre.has("matchMinute") || pre.has("currentScore") || pre.has("stats")).isFalse();
         for (JsonNode odds : pre.get("odds")) assertThat(odds.get("stage").asText()).isIn("OPENING", "PRE_MATCH");
@@ -85,5 +87,18 @@ class PromptTemplatesIT extends IntegrationTestBase {
             .header("Authorization", "Bearer " + viewer)).andReturn();
         assertThat(res.getResponse().getStatus()).isEqualTo(403);
         assertThat(res.getResponse().getContentAsString()).doesNotContain(EXTERNAL_KEY);
+    }
+
+    @Test
+    void bothPromptsMakeTheAgentSendTheRequestItself() throws Exception {
+        for (String type : List.of("AI_PREDICTION", "AI_SETTLEMENT")) {
+            String prompt = adminGet("/api/v1/prompts/" + seededPromptId(type)).get("content").asText();
+            assertThat(prompt).as(type)
+                .contains("SEND IT TO THE API YOURSELF", "Writing the JSON in the chat is not delivery", "CANNOT_CALL_API")
+                .doesNotContain("JSON only");
+        }
+        String prediction = predictionPrompt();
+        assertThat(prediction).contains("MISSING DATA IS NEVER A REASON NOT TO SEND").doesNotContain("\"eventId\" must be unique");
+        assertThat(prediction.indexOf("DELIVERY - MANDATORY")).isLessThan(prediction.indexOf("INPUT YOU WILL RECEIVE"));
     }
 }

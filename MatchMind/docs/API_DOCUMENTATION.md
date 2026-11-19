@@ -93,12 +93,15 @@ Full examples: [`samples/prediction-live.json`](samples/prediction-live.json) an
 
 | Field | Required | Rules |
 |---|---|---|
-| `eventId` | yes | `[A-Za-z0-9._:-]{1,128}`. Idempotency key per provider |
+| `eventId` | no | `[A-Za-z0-9._:-]{1,128}`. Idempotency key per provider. Absent: derived from the payload hash, so resending the same JSON is a duplicate |
 | `model.name`, `model.version` | no | Used only when `X-Model-Name` is absent. Neither present: `400 MODEL_REQUIRED` |
-| `match.externalMatchId`, `league`, `homeTeam`, `awayTeam`, `startTime` | yes | The match is upserted by `(provider, externalMatchId)` |
+| `match.homeTeam`, `match.awayTeam` | yes | |
+| `match.externalMatchId` | no | The match is upserted by `(provider, externalMatchId)`. Absent (screenshots): the provider's match with the same teams (case-insensitive) within 12 h of the kick-off is used, else a new match with a generated `auto-…` id |
+| `match.league` | no | Absent: `Unknown league` for a new match; a known league is never overwritten |
+| `match.startTime` | no | Absent: estimated as `predictedAt − matchMinute` (+15 min half-time after minute 45) for a new match; a known kick-off is never overwritten |
 | `match.status` | no | `SCHEDULED` or `LIVE` only. Terminal statuses come from the results API |
 | `predictionType` | yes | `PRE_MATCH` or `LIVE` |
-| `predictedAt` | yes | Instant |
+| `predictedAt` | no | Instant. Absent: the time the server received the prediction |
 | `matchMinute`, `currentScore` | LIVE only | Both required for LIVE. `currentCorners` is optional |
 | `odds[]` | yes, 1–200 | See below |
 | `picks[]` | yes, 1–20 | `{oddsRef, market, pick, probability 0..1, rank}`. `rank` is unique; `market` must equal the referenced odds' market; `pick` must fit the market |
@@ -123,12 +126,13 @@ Responses:
 - `201 Created` for a new prediction.
 - `200 OK` with `"duplicate": true` when the same `eventId` is retried with an identical body (canonical JSON hash).
 - `409 EVENT_ID_REUSED` when the same `eventId` arrives with a different body.
+- `externalMatchId` in the response is the id to send results and settlement requests with.
 - `409 MATCH_ALREADY_FINAL` when the match already has a FINISHED or CANCELLED result.
 - `400` on `odds[i].settlementBasis` when a 1X2 odds entry uses `REMAINING_MATCH`: 1X2 is always settled on the full match.
 - `429` from the proxy when one client IP sends more than about 10 callbacks per second (burst of 50).
 
 ```json
-{ "predictionId": "…", "matchId": "…", "duplicate": false,
+{ "predictionId": "…", "matchId": "…", "externalMatchId": "auto-…", "duplicate": false,
   "picks": [ { "pickId": "…", "rank": 1, "market": "AH", "pick": "HOME", "oddsId": "…" } ],
   "odds": { "ah-live": "…", "ou-live": "…" } }
 ```

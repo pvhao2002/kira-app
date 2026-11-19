@@ -44,12 +44,16 @@ public final class ExternalDtos {
     public record ModelRef(@NotBlank @Size(max = 128) String name, @NotBlank @Size(max = 64) String version) {
     }
 
-    /** Predictions may only report pre-match or in-play status; terminal statuses come from the results API. */
-    public record MatchInfo(@NotBlank @Pattern(regexp = ID) String externalMatchId,
-                            @NotBlank @Size(max = 160) String league,
+    /**
+     * Predictions may only report pre-match or in-play status; terminal statuses come from the results API. Only the
+     * teams are required: agents reading a screenshot have no match id, and a LIVE screen shows the minute, not the
+     * kick-off time.
+     */
+    public record MatchInfo(@Pattern(regexp = ID) String externalMatchId, // absent: matched by teams and kick-off
+                            @Size(max = 160) String league,
                             @NotBlank @Size(max = 160) String homeTeam,
                             @NotBlank @Size(max = 160) String awayTeam,
-                            @NotNull Instant startTime,
+                            Instant startTime, // absent: estimated from the match minute
                             @Pattern(regexp = "SCHEDULED|LIVE") String status) {
     }
 
@@ -98,11 +102,11 @@ public final class ExternalDtos {
                                     @DecimalMin("0") @DecimalMax("1") BigDecimal probability) {
     }
 
-    public record PredictionRequest(@NotBlank @Pattern(regexp = ID) String eventId,
+    public record PredictionRequest(@Pattern(regexp = ID) String eventId, // absent: derived from the payload
                                     @Valid ModelRef model, // optional: the X-Model-Name header wins
                                     @NotNull @Valid MatchInfo match,
                                     @NotBlank @Pattern(regexp = "PRE_MATCH|LIVE") String predictionType,
-                                    @NotNull Instant predictedAt,
+                                    Instant predictedAt, // absent: the time the server received it
                                     @Min(0) @Max(150) Integer matchMinute,
                                     @Valid Pair currentScore,
                                     @Valid Pair currentCorners,
@@ -117,8 +121,9 @@ public final class ExternalDtos {
     public record PickRef(UUID pickId, int rank, String market, String pick, UUID oddsId) {
     }
 
-    public record PredictionResponse(UUID predictionId, UUID matchId, boolean duplicate, List<PickRef> picks,
-                                     Map<String, UUID> odds) {
+    /** {@code externalMatchId} is the id to send match results with, generated when the prediction had none. */
+    public record PredictionResponse(UUID predictionId, UUID matchId, String externalMatchId, boolean duplicate,
+                                     List<PickRef> picks, Map<String, UUID> odds) {
     }
 
     public record ResultRequest(@NotBlank @Pattern(regexp = ID) String externalMatchId,
