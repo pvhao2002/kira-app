@@ -19,6 +19,7 @@ export const routes: Routes = [
       { path: 'reports', title: 'Reports · MatchMind', loadComponent: () => import('./pages/reports').then(m => m.ReportsPage) },
       { path: 'prompts', title: 'Prompt Notes · MatchMind', loadComponent: () => import('./pages/prompts').then(m => m.PromptsPage),
         canDeactivate: [(page: { canLeave(): boolean }) => page.canLeave()] },
+      { path: 'import', title: 'Import prediction · MatchMind', loadComponent: () => import('./pages/import').then(m => m.ImportPage) },
       { path: 'api-logs', title: 'API Logs · MatchMind', loadComponent: () => import('./pages/api-logs').then(m => m.ApiLogsPage) },
       { path: 'settings', title: 'Settings · MatchMind', loadComponent: () => import('./pages/settings').then(m => m.SettingsPage) },
     ],

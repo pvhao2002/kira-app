@@ -1,0 +1,139 @@
+# OpenAPI schema for a ChatGPT Custom GPT Action that sends predictions to MatchMind.
+# Setup (GPT editor > Configure > Actions > Create new action):
+#   1. Paste this file into "Schema".
+#   2. Authentication: API Key, Auth Type "Custom", Custom Header Name "X-Api-Key", key = EXTERNAL_API_KEY.
+#   3. In the GPT instructions, paste the prediction prompt (Prompt Notes > Copy) and add:
+#      "Send the prediction with the sendPrediction action. Use provider=chatgpt and your model name as model."
+# The action runs on OpenAI's servers, so it reaches the API even though the chat's code sandbox has no internet.
+# Provider and model go in the query string because Actions do not send arbitrary custom headers.
+openapi: 3.1.0
+info:
+  title: MatchMind predictions
+  version: "1.0"
+servers:
+  - url: https://match.kira.id.vn
+paths:
+  /api/v1/external/predictions:
+    post:
+      operationId: sendPrediction
+      summary: Store one football prediction. Returns 201 Created, or 200 OK when the same JSON was already stored.
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          description: Agent name, the same on every call. 2-64 characters a-z, 0-9, '-' or '_', e.g. chatgpt.
+          schema: { type: string, pattern: "^[a-z0-9][a-z0-9_-]{1,63}$" }
+        - name: model
+          in: query
+          required: true
+          description: The model that made the prediction, e.g. gpt-5.1.
+          schema: { type: string, maxLength: 128 }
+        - name: modelVersion
+          in: query
+          required: false
+          schema: { type: string, maxLength: 64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Prediction" }
+      responses:
+        "201": { description: "Stored", content: { application/json: { schema: { $ref: "#/components/schemas/Stored" } } } }
+        "200": { description: "Already stored (same JSON)", content: { application/json: { schema: { $ref: "#/components/schemas/Stored" } } } }
+        "400": { description: "Invalid JSON - read code and fieldErrors, fix and send again" }
+        "401": { description: "Wrong API key" }
+components:
+  schemas:
+    Pair:
+      type: object
+      required: [home, away]
+      properties: { home: { type: integer, minimum: 0 }, away: { type: integer, minimum: 0 } }
+    Odds:
+      type: object
+      required: [ref, market, stage]
+      description: >-
+        1X2 takes homeOdds, drawOdds, awayOdds and no line. AH/CORNER_AH take line (home side, multiple of 0.25),
+        homeOdds, awayOdds. OU/CORNER_OU take line (>= 0), overOdds, underOdds. LIVE odds need settlementBasis;
+        REMAINING_MATCH needs scoreAtCapture (cornersAtCapture for corner markets).
+      properties:
+        ref: { type: string, description: "Unique id within this JSON, referenced by picks[].oddsRef" }
+        market: { type: string, enum: ["1X2", AH, OU, CORNER_AH, CORNER_OU] }
+        stage: { type: string, enum: [OPENING, PRE_MATCH, LIVE] }
+        snapshotOrder: { type: integer, minimum: 1 }
+        line: { type: number }
+        lineDisplay: { type: string }
+        homeOdds: { type: number }
+        drawOdds: { type: number }
+        awayOdds: { type: number }
+        overOdds: { type: number }
+        underOdds: { type: number }
+        settlementBasis: { type: string, enum: [FULL_MATCH, REMAINING_MATCH] }
+        scoreAtCapture: { $ref: "#/components/schemas/Pair" }
+        cornersAtCapture: { $ref: "#/components/schemas/Pair" }
+    Prediction:
+      type: object
+      required: [match, predictionType, odds, picks, correctScore]
+      description: Leave out what you cannot read. For LIVE also send matchMinute and currentScore.
+      properties:
+        match:
+          type: object
+          required: [homeTeam, awayTeam]
+          properties:
+            homeTeam: { type: string }
+            awayTeam: { type: string }
+            league: { type: string, description: "Only when readable" }
+            startTime: { type: string, format: date-time, description: "Kick-off, only when shown (not on LIVE screens)" }
+            status: { type: string, enum: [SCHEDULED, LIVE] }
+        predictionType: { type: string, enum: [PRE_MATCH, LIVE] }
+        matchMinute: { type: integer, minimum: 0, maximum: 150 }
+        currentScore: { $ref: "#/components/schemas/Pair" }
+        currentCorners: { $ref: "#/components/schemas/Pair" }
+        odds: { type: array, minItems: 1, items: { $ref: "#/components/schemas/Odds" } }
+        stats:
+          type: object
+          properties:
+            possession: { type: object, properties: { home: { type: number }, away: { type: number } } }
+            shots: { $ref: "#/components/schemas/Pair" }
+            shotsOnTarget: { $ref: "#/components/schemas/Pair" }
+            shotsOffTarget: { $ref: "#/components/schemas/Pair" }
+            corners: { $ref: "#/components/schemas/Pair" }
+            yellowCards: { $ref: "#/components/schemas/Pair" }
+            redCards: { $ref: "#/components/schemas/Pair" }
+        simulation:
+          type: object
+          properties:
+            method: { type: string }
+            simulationCount: { type: integer }
+            randomSeed: { type: integer }
+            expectedRemainingGoals: { type: object, properties: { home: { type: number }, away: { type: number } } }
+            expectedRemainingCorners: { type: object, properties: { home: { type: number }, away: { type: number } } }
+            algorithmVersion: { type: string }
+            parameters: { type: object }
+            probabilities: { type: object }
+            correctScoreDistribution:
+              type: array
+              items: { type: object, properties: { home: { type: integer }, away: { type: integer }, probability: { type: number } } }
+        picks:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [oddsRef, market, pick, probability, rank]
+            properties:
+              oddsRef: { type: string }
+              market: { type: string, enum: ["1X2", AH, OU, CORNER_AH, CORNER_OU] }
+              pick: { type: string, enum: [HOME, DRAW, AWAY, OVER, UNDER] }
+              probability: { type: number, minimum: 0, maximum: 1 }
+              rank: { type: integer, minimum: 1 }
+        correctScore:
+          type: object
+          required: [home, away]
+          properties: { home: { type: integer }, away: { type: integer }, probability: { type: number } }
+        metadata: { type: object }
+    Stored:
+      type: object
+      properties:
+        predictionId: { type: string }
+        matchId: { type: string }
+        externalMatchId: { type: string }
+        duplicate: { type: boolean }

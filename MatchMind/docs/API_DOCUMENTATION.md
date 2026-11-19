@@ -87,6 +87,12 @@ with `UNKNOWN_FIELD`, so typos are not silently dropped.
 
 ### 1. `POST /api/v1/external/predictions`
 
+Agents that cannot set custom headers (e.g. a ChatGPT Custom GPT Action, see [`chatgpt-action.yaml`](chatgpt-action.yaml))
+may send `?provider=…&model=…&modelVersion=…` in the URL instead of `X-Provider` / `X-Model-Name` / `X-Model-Version`;
+`X-Api-Key` stays a header. Agents without internet (chat code sandboxes) reply `CANNOT_CALL_API` with the JSON body,
+which an admin pastes into **Import prediction**: `POST /api/v1/predictions/import?provider=…&model=…&modelVersion=…`
+(ADMIN JWT, body = the prediction JSON), with the same validation, audit log and live event as this endpoint.
+
 Stores one immutable prediction snapshot, creates or updates the match, and returns the generated ids.
 Full examples: [`samples/prediction-live.json`](samples/prediction-live.json) and
 [`samples/prediction-pre-match.json`](samples/prediction-pre-match.json).

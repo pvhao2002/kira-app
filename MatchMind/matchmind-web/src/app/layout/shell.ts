@@ -6,7 +6,7 @@ import { filter } from 'rxjs';
 import { AuthService } from '../core/auth.service';
 import { LiveService } from '../core/live.service';
 
-interface NavItem { path: string; label: string; icon: string; }
+interface NavItem { path: string; label: string; icon: string; adminOnly?: boolean; }
 
 const NAV: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: 'pi-th-large' },
@@ -15,6 +15,7 @@ const NAV: NavItem[] = [
   { path: '/models', label: 'AI Models', icon: 'pi-microchip-ai' },
   { path: '/reports', label: 'Reports', icon: 'pi-chart-bar' },
   { path: '/prompts', label: 'Prompt Notes', icon: 'pi-file-edit' },
+  { path: '/import', label: 'Import', icon: 'pi-upload', adminOnly: true },
   { path: '/api-logs', label: 'API Logs', icon: 'pi-list' },
   { path: '/settings', label: 'Settings', icon: 'pi-cog' },
 ];
@@ -32,11 +33,13 @@ const NAV: NavItem[] = [
         </a>
         <nav>
           @for (item of nav; track item.path) {
+            @if (!item.adminOnly || auth.isAdmin()) {
             <a [routerLink]="item.path" routerLinkActive="active" class="nav-link"
                [attr.title]="collapsed() ? item.label : null" [attr.aria-label]="collapsed() ? item.label : null" (click)="mobileOpen.set(false)">
               <i class="pi {{ item.icon }}" aria-hidden="true"></i>
               @if (!collapsed()) { <span>{{ item.label }}</span> }
             </a>
+            }
           }
         </nav>
         <button type="button" class="collapse-btn" (click)="toggle()" [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'">

@@ -59,6 +59,9 @@ public class ExternalController {
     private static final int MAX_BODY_CHARS = 1_000_000;
     public static final String MODEL_HEADER = "X-Model-Name";
     public static final String MODEL_VERSION_HEADER = "X-Model-Version";
+    /** Query-string fallbacks for agents that cannot set custom headers (e.g. ChatGPT Actions). */
+    public static final String MODEL_PARAM = "model";
+    public static final String MODEL_VERSION_PARAM = "modelVersion";
     private final PredictionIngestionService ingestion;
     private final MatchResultService resultService;
     private final SettlementService settlement;
@@ -73,12 +76,27 @@ public class ExternalController {
     public ResponseEntity<PredictionResponse> prediction(@AuthenticationPrincipal ProviderPrincipal caller,
                                                          @RequestBody String body,
                                                          HttpServletRequest http) {
+        return submitPrediction(caller, headerOrParam(http, MODEL_HEADER, MODEL_PARAM),
+            headerOrParam(http, MODEL_VERSION_HEADER, MODEL_VERSION_PARAM), body, http);
+    }
+
+    private static String headerOrParam(HttpServletRequest http, String header, String param) {
+        String value = http.getHeader(header);
+        return value == null || value.isBlank() ? http.getParameter(param) : value;
+    }
+
+    /**
+     * The whole prediction callback: strict binding, ingest, audit and the live event. Also used by the admin import
+     * of JSON an agent printed because it could not reach the API.
+     */
+    public ResponseEntity<PredictionResponse> submitPrediction(ProviderPrincipal caller, String modelName,
+                                                               String modelVersion, String body, HttpServletRequest http) {
         Instant received = Instant.now();
         JsonNode raw = parse(body, caller, http, received, null);
         String eventId = raw.path("eventId").isTextual() ? raw.path("eventId").asText() : null;
         return audited(caller, http, received, eventId, () -> {
             PredictionRequest r = bind(raw, PredictionRequest.class);
-            ModelRef model = modelOf(http, r);
+            ModelRef model = modelOf(modelName, modelVersion, r);
             PredictionResponse response;
             try {
                 response = ingestion.ingest(caller.providerId(), model, r, raw);
@@ -124,15 +142,13 @@ public class ExternalController {
     }
 
     /** The model named in X-Model-Name (+ optional X-Model-Version, default "1") wins over {@code model} in the body. */
-    static ModelRef modelOf(HttpServletRequest http, PredictionRequest r) {
-        String name = http.getHeader(MODEL_HEADER);
+    static ModelRef modelOf(String name, String version, PredictionRequest r) {
         if (name == null || name.isBlank()) {
             if (r.model() == null) {
                 throw ApiException.badRequest("MODEL_REQUIRED", "Send the model name in the X-Model-Name header");
             }
             return new ModelRef(r.model().name().trim(), r.model().version().trim());
         }
-        String version = http.getHeader(MODEL_VERSION_HEADER);
         ModelRef ref = new ModelRef(name.trim(), version == null || version.isBlank() ? "1" : version.trim());
         if (ref.name().length() > 128 || ref.version().length() > 64) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_MODEL_HEADER", "Model name or version is too long",

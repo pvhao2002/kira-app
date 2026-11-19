@@ -34,6 +34,8 @@ import java.util.regex.Pattern;
 public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     public static final String HEADER = "X-Api-Key";
     public static final String PROVIDER_HEADER = "X-Provider";
+    /** For agents that cannot set custom headers (e.g. ChatGPT Actions): ?provider= on the request URL. */
+    public static final String PROVIDER_PARAM = "provider";
     private static final Pattern PROVIDER_CODE = Pattern.compile("[a-z0-9][a-z0-9_-]{1,63}");
     private final byte[] keyHash;
     private final ProviderService providers;
@@ -65,12 +67,13 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         String raw = req.getHeader(PROVIDER_HEADER);
+        if (raw == null || raw.isBlank()) raw = req.getParameter(PROVIDER_PARAM);
         if (raw == null || raw.isBlank()) {
             reject(req, res, received, 400, "PROVIDER_REQUIRED", "Send your provider name in the X-Provider header");
             return;
         }
-        String code = raw.trim().toLowerCase(Locale.ROOT);
-        if (!PROVIDER_CODE.matcher(code).matches()) {
+        String code = providerCode(raw);
+        if (code == null) {
             reject(req, res, received, 400, "INVALID_PROVIDER", "X-Provider must be 2-64 characters: a-z, 0-9, '-' or '_'");
             return;
         }
@@ -78,6 +81,12 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
             new ProviderPrincipal(providerId, code), null, List.of(new SimpleGrantedAuthority("ROLE_PROVIDER"))));
         chain.doFilter(req, res);
+    }
+
+    /** The normalized provider code, or null when it is not 2-64 characters of a-z, 0-9, '-' or '_'. */
+    public static String providerCode(String raw) {
+        String code = raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT);
+        return PROVIDER_CODE.matcher(code).matches() ? code : null;
     }
 
     private void reject(HttpServletRequest req, HttpServletResponse res, Instant received, int status, String code,

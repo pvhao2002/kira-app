@@ -97,6 +97,13 @@ export class ApiService {
   model(id: string) { return this.http.get<AiModel>(`${API}/models/${id}`); }
   providers() { return this.http.get<Provider[]>(`${API}/providers`); }
 
+  /** Admin only: the JSON body an agent printed because it could not reach the API, sent as is. */
+  importPrediction(json: string, provider: string, model: string, modelVersion: string) {
+    return this.http.post<{ predictionId: string; matchId: string; duplicate: boolean }>(`${API}/predictions/import`, json, {
+      params: toParams({ provider, model, modelVersion }), headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   // Prompts
   prompts() { return this.http.get<PromptTemplate[]>(`${API}/prompts`); }
   /** Admin only: the prompt with the shared agent API key filled in. Never stored or shown, only copied. */

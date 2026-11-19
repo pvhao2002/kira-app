@@ -276,3 +276,24 @@ test('a new prediction shows up live on the predictions page, without a reload',
   await expect(page.locator('table.dt tbody')).toContainText(home);
   expect(navigations).toBe(0);
 });
+
+test('an admin imports the reply of an agent that could not reach the API', async ({ page }) => {
+  const body = livePayload();
+  delete body.eventId;
+  delete body.predictedAt;
+  delete body.match.externalMatchId;
+  delete body.match.startTime;
+  body.match.homeTeam = `Imported ${RUN}`;
+  const reply = `CANNOT_CALL_API\nX-Model-Name: ${MODEL.name}\n\`\`\`json\n${JSON.stringify(body, null, 2)}\n\`\`\``;
+
+  await login(page);
+  await page.locator('aside nav').getByRole('link', { name: 'Import', exact: true }).click();
+  await page.getByLabel('Provider').fill(PROVIDER_CODE);
+  await page.getByTestId('import-text').fill(reply);
+  await expect(page.getByLabel('Model', { exact: true })).toHaveValue(MODEL.name);
+  await page.getByRole('button', { name: 'Send prediction' }).click();
+  await expect(page.getByTestId('import-result')).toContainText('Prediction stored.');
+
+  await page.getByTestId('import-result').getByRole('link', { name: 'Open prediction' }).click();
+  await expect(page.locator('main')).toContainText(`Imported ${RUN}`);
+});

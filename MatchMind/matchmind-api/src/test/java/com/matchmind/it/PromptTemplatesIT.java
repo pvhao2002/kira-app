@@ -99,6 +99,8 @@ class PromptTemplatesIT extends IntegrationTestBase {
         }
         String prediction = predictionPrompt();
         assertThat(prediction).contains("MISSING DATA IS NEVER A REASON NOT TO SEND").doesNotContain("\"eventId\" must be unique");
+        // Sandboxed agents print the body for MatchMind > Import prediction instead of a curl command.
+        assertThat(prediction).contains("Import prediction", "X-Model-Name: <your model name>").doesNotContain("ready-to-run curl command");
         assertThat(prediction.indexOf("DELIVERY - MANDATORY")).isLessThan(prediction.indexOf("INPUT YOU WILL RECEIVE"));
     }
 }
