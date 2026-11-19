@@ -1,0 +1,69 @@
+# MatchMind stack: PostgreSQL + matchmind-api + matchmind-web (nginx serving the SPA and proxying /api).
+# Usage: cp .env.example .env (fill in the secrets), then: docker compose up -d --build
+name: matchmind
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: matchmind_db
+      POSTGRES_USER: ${DB_USERNAME:-matchmind}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - matchmind-db:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d matchmind_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./matchmind-api
+    image: matchmind-api:local
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/matchmind_db
+      DB_USERNAME: ${DB_USERNAME:-matchmind}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (32+ bytes)}
+      JWT_TTL: ${JWT_TTL:-PT8H}
+      EXTERNAL_API_KEY: ${EXTERNAL_API_KEY:?set EXTERNAL_API_KEY in .env (32+ characters)}
+      MATCHMIND_ADMIN_USERNAME: ${MATCHMIND_ADMIN_USERNAME:-}
+      MATCHMIND_ADMIN_PASSWORD: ${MATCHMIND_ADMIN_PASSWORD:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+    ports:
+      - "127.0.0.1:${API_PORT:-8090}:8090"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8090/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+
+  web:
+    build:
+      context: ./matchmind-web
+    image: matchmind-web:local
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # Plain HTTP on this machine only: put a TLS reverse proxy in front before exposing it (see README).
+      - "127.0.0.1:${WEB_PORT:-8088}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  matchmind-db:

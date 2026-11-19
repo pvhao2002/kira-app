@@ -1,0 +1,69 @@
+{
+  "eventId": "evt-20261120-ars-che-live-55",
+  "model": { "name": "GoalNet", "version": "2.1" },
+  "match": {
+    "externalMatchId": "epl-2026-ars-che",
+    "league": "Premier League",
+    "homeTeam": "Arsenal",
+    "awayTeam": "Chelsea",
+    "startTime": "2026-11-20T19:45:00Z",
+    "status": "LIVE"
+  },
+  "predictionType": "LIVE",
+  "predictedAt": "2026-11-20T20:40:00Z",
+  "matchMinute": 55,
+  "currentScore": { "home": 1, "away": 0 },
+  "currentCorners": { "home": 4, "away": 2 },
+  "odds": [
+    { "ref": "1x2-open", "market": "1X2", "stage": "OPENING", "homeOdds": 2.10, "drawOdds": 3.40, "awayOdds": 3.50 },
+    { "ref": "1x2-pre", "market": "1X2", "stage": "PRE_MATCH", "homeOdds": 2.05, "drawOdds": 3.45, "awayOdds": 3.60 },
+    {
+      "ref": "ah-live", "market": "AH", "stage": "LIVE", "snapshotOrder": 1, "line": -0.25, "lineDisplay": "0/-0.5",
+      "homeOdds": 1.95, "awayOdds": 1.90, "settlementBasis": "REMAINING_MATCH",
+      "scoreAtCapture": { "home": 1, "away": 0 }, "capturedAt": "2026-11-20T20:39:30Z"
+    },
+    {
+      "ref": "ou-live", "market": "OU", "stage": "LIVE", "line": 2.25, "overOdds": 1.85, "underOdds": 2.00,
+      "settlementBasis": "FULL_MATCH", "scoreAtCapture": { "home": 1, "away": 0 }, "capturedAt": "2026-11-20T20:39:30Z"
+    },
+    {
+      "ref": "cou-live", "market": "CORNER_OU", "stage": "LIVE", "line": 10.5, "overOdds": 1.90, "underOdds": 1.90,
+      "settlementBasis": "FULL_MATCH", "cornersAtCapture": { "home": 4, "away": 2 }, "capturedAt": "2026-11-20T20:39:30Z"
+    }
+  ],
+  "stats": {
+    "possession": { "home": 58.5, "away": 41.5 },
+    "shots": { "home": 11, "away": 5 },
+    "shotsOnTarget": { "home": 5, "away": 2 },
+    "shotsOffTarget": { "home": 6, "away": 3 },
+    "corners": { "home": 4, "away": 2 },
+    "yellowCards": { "home": 1, "away": 2 },
+    "redCards": { "home": 0, "away": 0 },
+    "extra": { "dangerousAttacks": { "home": 41, "away": 22 } }
+  },
+  "simulation": {
+    "method": "MONTE_CARLO_POISSON",
+    "simulationCount": 1000,
+    "randomSeed": 42,
+    "expectedRemainingGoals": { "home": 0.8, "away": 0.4 },
+    "expectedRemainingCorners": { "home": 3.1, "away": 2.2 },
+    "algorithmVersion": "poisson-v1",
+    "parameters": { "homeAttack": 1.42, "awayAttack": 0.91 },
+    "probabilities": {
+      "1X2": { "HOME": 0.70, "DRAW": 0.20, "AWAY": 0.10 },
+      "OU_2.25": { "OVER": 0.54, "UNDER": 0.46 }
+    },
+    "correctScoreDistribution": [
+      { "home": 1, "away": 0, "probability": 0.27 },
+      { "home": 2, "away": 0, "probability": 0.19 },
+      { "home": 2, "away": 1, "probability": 0.14 }
+    ]
+  },
+  "picks": [
+    { "oddsRef": "ah-live", "market": "AH", "pick": "HOME", "probability": 0.58, "rank": 1 },
+    { "oddsRef": "ou-live", "market": "OU", "pick": "OVER", "probability": 0.54, "rank": 2 },
+    { "oddsRef": "cou-live", "market": "CORNER_OU", "pick": "UNDER", "probability": 0.52, "rank": 3 }
+  ],
+  "correctScore": { "home": 1, "away": 0, "probability": 0.27 },
+  "metadata": { "promptTemplate": "AI_PREDICTION", "promptVersion": 1, "notes": "Home side dominating territory." }
+}

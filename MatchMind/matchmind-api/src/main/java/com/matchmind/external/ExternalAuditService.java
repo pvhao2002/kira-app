@@ -1,0 +1,63 @@
+package com.matchmind.external;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.matchmind.shared.ClientIpResolver;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+
+/**
+ * Persists callback audit rows in their own transaction so a failed (rolled back) callback is still recorded.
+ */
+@Service
+@RequiredArgsConstructor
+public class ExternalAuditService {
+    private static final Logger log = LoggerFactory.getLogger(ExternalAuditService.class);
+    private final ExternalApiRequestRepository requests;
+    private final ClientIpResolver ips;
+
+    public record Entry(UUID providerId, String eventId, int httpStatus, String requestStatus,
+                        JsonNode result, String error) {
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public UUID record(HttpServletRequest http, Instant receivedAt, Entry e) {
+        ExternalApiRequest row = new ExternalApiRequest();
+        row.setProviderId(e.providerId());
+        row.setRequestId(requestId(http));
+        row.setEventId(truncate(e.eventId(), 128));
+        row.setEndpoint(truncate(http.getRequestURI(), 160));
+        row.setHttpMethod(http.getMethod());
+        row.setHttpStatus(e.httpStatus());
+        row.setRequestStatus(e.requestStatus());
+        row.setProcessingResult(e.result());
+        row.setErrorMessage(truncate(e.error(), 2000));
+        row.setClientIp(ips.resolve(http));
+        row.setReceivedAt(receivedAt);
+        row.setDurationMs((int) Math.max(0, Duration.between(receivedAt, Instant.now()).toMillis()));
+        requests.save(row);
+        log.info("External callback endpoint={} provider={} event={} status={} result={} durationMs={}",
+            row.getEndpoint(), e.providerId(), row.getEventId(), e.httpStatus(), e.requestStatus(), row.getDurationMs());
+        return row.getId();
+    }
+
+    /** Caller-supplied X-Request-Id when well formed; otherwise the trace id assigned to this request. */
+    static String requestId(HttpServletRequest http) {
+        String id = http.getHeader("X-Request-Id");
+        if (id != null && id.matches("[A-Za-z0-9._:-]{1,128}")) return id;
+        String trace = org.slf4j.MDC.get("traceId");
+        return trace != null ? trace : UUID.randomUUID().toString();
+    }
+
+    private static String truncate(String s, int max) {
+        return s == null || s.length() <= max ? s : s.substring(0, max);
+    }
+}

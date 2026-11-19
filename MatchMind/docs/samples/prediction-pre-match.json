@@ -1,0 +1,26 @@
+{
+  "eventId": "evt-20261121-rma-bar-pre",
+  "model": { "name": "GoalNet", "version": "2.1" },
+  "match": {
+    "externalMatchId": "laliga-2026-rma-bar",
+    "league": "La Liga",
+    "homeTeam": "Real Madrid",
+    "awayTeam": "Barcelona",
+    "startTime": "2026-11-21T20:00:00Z"
+  },
+  "predictionType": "PRE_MATCH",
+  "predictedAt": "2026-11-21T18:00:00Z",
+  "odds": [
+    { "ref": "1x2", "market": "1X2", "stage": "PRE_MATCH", "homeOdds": 2.40, "drawOdds": 3.30, "awayOdds": 2.90 },
+    { "ref": "ah", "market": "AH", "stage": "PRE_MATCH", "line": -0.25, "homeOdds": 1.98, "awayOdds": 1.88 },
+    { "ref": "ou", "market": "OU", "stage": "PRE_MATCH", "line": 2.75, "overOdds": 1.92, "underOdds": 1.94 },
+    { "ref": "cou", "market": "CORNER_OU", "stage": "PRE_MATCH", "line": 9.75, "overOdds": 1.90, "underOdds": 1.90 },
+    { "ref": "cah", "market": "CORNER_AH", "stage": "PRE_MATCH", "line": -1.5, "homeOdds": 1.95, "awayOdds": 1.85 }
+  ],
+  "picks": [
+    { "oddsRef": "1x2", "market": "1X2", "pick": "HOME", "probability": 0.45, "rank": 1 },
+    { "oddsRef": "ou", "market": "OU", "pick": "OVER", "probability": 0.56, "rank": 2 },
+    { "oddsRef": "cou", "market": "CORNER_OU", "pick": "OVER", "probability": 0.55, "rank": 3 }
+  ],
+  "correctScore": { "home": 2, "away": 1, "probability": 0.11 }
+}

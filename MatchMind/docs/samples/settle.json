@@ -1,0 +1,10 @@
+{
+  "externalMatchId": "epl-2026-ars-che",
+  "aiCalculations": [
+    {
+      "pickId": "00000000-0000-0000-0000-000000000000",
+      "result": "HALF_LOSS",
+      "explanation": "AH HOME -0.25, REMAINING_MATCH from 1-0. Final 2-1, so the remaining match ended 1-1 (margin 0). Line -0.25 splits into 0 (push) and -0.5 (loss): HALF_LOSS."
+    }
+  ]
+}
