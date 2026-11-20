@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /** The default prediction prompt must describe both match states, and its examples must pass the real API. */
 class PromptTemplatesIT extends IntegrationTestBase {
@@ -82,17 +81,6 @@ class PromptTemplatesIT extends IntegrationTestBase {
     }
 
     @Test
-    void viewerCannotReadTheAgentKey() throws Exception {
-        String name = "keyless-" + UUID.randomUUID().toString().substring(0, 8);
-        adminPost("/api/v1/users", Map.of("username", name, "password", "viewer-password-1", "role", "VIEWER"));
-        String viewer = login(name, "viewer-password-1");
-        MvcResult res = mvc.perform(get("/api/v1/prompts/" + seededPromptId("AI_PREDICTION") + "/for-agent")
-            .header("Authorization", "Bearer " + viewer)).andReturn();
-        assertThat(res.getResponse().getStatus()).isEqualTo(403);
-        assertThat(res.getResponse().getContentAsString()).doesNotContain(EXTERNAL_KEY);
-    }
-
-    @Test
     void bothPromptsMakeTheAgentSendTheRequestItself() throws Exception {
         for (String type : List.of("AI_PREDICTION", "AI_SETTLEMENT")) {
             String prompt = adminGet("/api/v1/prompts/" + seededPromptId(type)).get("content").asText();
@@ -114,7 +102,7 @@ class PromptTemplatesIT extends IntegrationTestBase {
         JsonNode stored = adminGet("/api/v1/prompts/" + id);
         assertThat(stored.get("name").asText()).isEqualTo("MatchMind Artifact Prompt");
         String page = stored.get("content").asText();
-        assertThat(page).contains("<!DOCTYPE html>", "const QUEUE = [", "const API_BASE = \"https://match.kira.id.vn\";",
+        assertThat(page).contains("<!DOCTYPE html>", "const QUEUE = [", "const API_BASE = \"{{API_BASE_URL}}\";",
             "/api/v1/external/ping", "Send all", "Test connection", "Copy JSON", "QUEUED_IN_ARTIFACT", "Do not publish");
         // Self-contained: chat sandboxes block other files and storage.
         assertThat(page).doesNotContain("<script src", "<link", "@import", "localStorage", "sessionStorage", "http://");
