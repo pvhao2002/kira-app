@@ -21,8 +21,9 @@ public class AiModelController {
     private final AiModelService service;
 
     @GetMapping
-    public List<ModelView> list(@RequestParam(required = false) UUID providerId) {
-        return service.list(providerId);
+    public List<ModelView> list(@RequestParam(required = false) UUID providerId,
+                                @RequestParam(required = false) Boolean includeArchived) {
+        return service.list(providerId, includeArchived);
     }
 
     @GetMapping("/{id}")

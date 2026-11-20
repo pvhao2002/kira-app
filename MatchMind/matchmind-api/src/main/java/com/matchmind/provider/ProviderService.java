@@ -22,21 +22,24 @@ import java.util.UUID;
 public class ProviderService {
     private final NamedParameterJdbcTemplate jdbc;
 
+    /** {@code models} counts the models in use: merged and archived ones are left out unless archived rows are listed. */
     public record ProviderView(UUID id, String code, String name, long models, long predictions, Instant lastCallbackAt,
-                               Instant createdAt) {
+                               Instant createdAt, Instant archivedAt) {
     }
 
     private static final String VIEW_SQL = """
-        SELECT p.id, p.code, p.name, p.created_at,
-               (SELECT count(*) FROM ai_models m WHERE m.provider_id = p.id) AS models,
+        SELECT p.id, p.code, p.name, p.created_at, p.archived_at,
+               (SELECT count(*) FROM ai_models m WHERE m.provider_id = p.id %s) AS models,
                (SELECT count(*) FROM predictions pr WHERE pr.provider_id = p.id) AS predictions,
                (SELECT max(r.received_at) FROM external_api_requests r WHERE r.provider_id = p.id) AS last_callback_at
         FROM providers p
         """;
 
     @Transactional(readOnly = true)
-    public List<ProviderView> list() {
-        return jdbc.query(VIEW_SQL + " ORDER BY p.name", (rs, i) -> view(rs));
+    public List<ProviderView> list(Boolean includeArchived) {
+        boolean all = Boolean.TRUE.equals(includeArchived);
+        return jdbc.query(VIEW_SQL.formatted(all ? "" : "AND m.merged_into_id IS NULL AND m.archived_at IS NULL")
+            + (all ? "" : " WHERE p.archived_at IS NULL") + " ORDER BY p.name", (rs, i) -> view(rs));
     }
 
     /**
@@ -68,9 +71,9 @@ public class ProviderService {
     }
 
     private static ProviderView view(ResultSet rs) throws SQLException {
-        Timestamp last = rs.getTimestamp("last_callback_at");
+        Timestamp last = rs.getTimestamp("last_callback_at"), archived = rs.getTimestamp("archived_at");
         return new ProviderView(rs.getObject("id", UUID.class), rs.getString("code"), rs.getString("name"),
             rs.getLong("models"), rs.getLong("predictions"), last == null ? null : last.toInstant(),
-            rs.getTimestamp("created_at").toInstant());
+            rs.getTimestamp("created_at").toInstant(), archived == null ? null : archived.toInstant());
     }
 }

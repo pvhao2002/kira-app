@@ -46,7 +46,7 @@ public class PredictionQueryService {
     static final String FROM = """
         FROM predictions p
         JOIN matches m ON m.id = p.match_id
-        JOIN ai_models am ON am.id = p.ai_model_id
+        """ + Sql.EFFECTIVE_MODEL_JOIN + """
         LEFT JOIN prediction_correct_scores cs ON cs.prediction_id = p.id AND cs.score_rank = 1
         LEFT JOIN LATERAL (SELECT x.* FROM prediction_picks x WHERE x.prediction_id = p.id
                            ORDER BY x.pick_rank LIMIT 1) pk ON true
@@ -74,7 +74,7 @@ public class PredictionQueryService {
                m.id AS "matchId", m.league AS "league", m.home_team AS "homeTeam", m.away_team AS "awayTeam",
                m.start_time AS "startTime", m.status AS "matchStatus",
                m.final_home_score AS "finalHomeScore", m.final_away_score AS "finalAwayScore",
-               am.id AS "modelId", am.name AS "modelName", am.version AS "modelVersion",
+               am.id AS "modelId", %s AS "modelName", am.name AS "modelKey", am.version AS "modelVersion",
                cs.home_score AS "predictedHomeScore", cs.away_score AS "predictedAwayScore",
                cs.probability AS "correctScoreProbability",
                pk.id AS "topPickId", pk.market AS "topPickMarket", pk.pick AS "topPick", pk.probability AS "topPickProbability",
@@ -83,10 +83,10 @@ public class PredictionQueryService {
                (SELECT count(*) FROM prediction_picks y WHERE y.prediction_id = p.id) AS "pickCount",
                pc.wins AS "pickWins", pc.half_wins AS "pickHalfWins", pc.losses AS "pickLosses",
                pc.half_losses AS "pickHalfLosses", pc.push_void AS "pickPushOrVoid", pc.pending AS "pickPending"
-        """.formatted(Sql.PRICE);
+        """.formatted(Sql.MODEL_NAME, Sql.PRICE);
 
     private static final Map<String, String> SORT = Map.of(
-        "predictedAt", "p.predicted_at", "league", "m.league", "model", "am.name", "type", "p.prediction_type",
+        "predictedAt", "p.predicted_at", "league", "m.league", "model", Sql.MODEL_NAME, "type", "p.prediction_type",
         "minute", "p.match_minute", "probability", "pk.probability", "startTime", "m.start_time");
 
     @Transactional(readOnly = true)

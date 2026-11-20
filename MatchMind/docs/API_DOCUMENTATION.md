@@ -81,6 +81,12 @@ The dashboard, predictions and reports share these filters:
 | `market` | `1X2`, `AH`, `OU`, `CORNER_AH`, `CORNER_OU` (pick level) |
 | `result` | Current settlement result of the pick, `PENDING` included |
 | `search` | Substring of teams, league or external match id, ignoring case, accents and Unicode form (`atletico` finds `Atlético`, `munchen` finds `München`). No transliteration: `muenchen`/`munich` do not match |
+| `includeArchived` | `true` also counts archived providers, models and matches. Default: archived rows are left out of every figure, list and dropdown. A model whose provider or merge target is archived is archived too. Naming one explicitly shows only that one: `modelId` shows that archived model (not other archived rows), `providerId` that archived provider, `matchId` that archived match. Archived matches stay out of aggregates even with `modelId` |
+
+**Model names.** Reports group on the *effective model*: a model merged into another (same provider) counts as its target,
+and `modelId` = the target also covers the merged models. `modelName` is the display name (the admin's rename, else the
+provider-supplied name); `modelKey` is always the provider-supplied name. Merged models are not deleted: they are only
+hidden from model lists and dropdowns, and `includeArchived=true` shows them again.
 
 ---
 
@@ -276,15 +282,20 @@ after a corrected score. An admin resolves them with recalculate or override; th
 
 ### Providers and AI models (read-only)
 Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no create or update endpoints.
-- `GET /providers`: `{id, code, name, models, predictions, lastCallbackAt, createdAt}` for filters.
-- `GET /models?providerId=`, `GET /models/{id}`: prediction count, settled, wins, losses, pending, win rate and the
-  last prediction time.
+- `GET /providers?includeArchived=`: `{id, code, name, models, predictions, lastCallbackAt, createdAt, archivedAt}` for
+  filters. Archived providers are hidden unless `includeArchived=true`; `models` counts the models in use (no merged or
+  archived ones unless `includeArchived=true`).
+- `GET /models?providerId=&includeArchived=`, `GET /models/{id}`: `name` (provider-supplied key), `displayName` (the
+  rename, else `name`), `archivedAt`, `mergedIntoId`, prediction count, settled, wins, losses, pending, win rate and the
+  last prediction time. The figures cover the model and every model merged into it, and leave out predictions on
+  archived matches. The list hides merged and archived models (and those of an archived provider) unless
+  `includeArchived=true`.
 
 ### Matches and predictions
 | Path | Notes |
 |---|---|
-| `GET /matches` | `search, status, league, providerId, from, to` (on start time), `overdue=true` (only overdue). Rows carry `overdue`: kick-off more than 3 h ago and still `SCHEDULED`/`LIVE`. Sort: `startTime, league, homeTeam, awayTeam, status, predictionCount` |
-| `GET /matches/leagues` | Distinct leagues |
+| `GET /matches` | `search, status, league, providerId, from, to` (on start time), `overdue=true` (only overdue), `includeArchived=true` (archived matches and those of an archived provider; naming `providerId` shows that provider's). Rows carry `overdue`: kick-off more than 3 h ago and still `SCHEDULED`/`LIVE`. Sort: `startTime, league, homeTeam, awayTeam, status, predictionCount` |
+| `GET /matches/leagues` | Distinct leagues of the visible matches; `?includeArchived=true` adds those of archived matches |
 | `GET /matches/{id}` | `{match, models[] (per-model summary + latest prediction), latestStats, resultHistory[]}` |
 | `GET /predictions` | Shared filters plus `resultScope=TOP\|ANY` (default `TOP`): `result` matches the top-ranked pick, or any pick with `ANY` (with `market`, the same pick). Sort: `predictedAt, league, model, type, minute, probability, startTime`. One row per prediction with its top-ranked pick, `pickCount` and exclusive per-pick counts `pickWins, pickHalfWins, pickLosses, pickHalfLosses, pickPushOrVoid, pickPending` |
 | `POST /matches/{id}/result` (admin) | Enter or correct the result: `{status, finalScore?, finalCorners?, halfTimeScore?, halfTimeCorners?, reason? (≤ 2000)}`. Same field rules as the external results API, applied as of now: never `STALE_RESULT`, `FINISHED` allowed before `startTime`. A change is stored in the result history with source `ADMIN`, `changedBy` (the admin's id; the username and `reason` are in `newResult`). Returns `ResultResponse` like the external API; `FINISHED`/`CANCELLED` settles pending picks and `settlement.needsReview` counts settled picks that now differ |

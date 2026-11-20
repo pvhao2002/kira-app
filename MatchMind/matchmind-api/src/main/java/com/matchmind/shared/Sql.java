@@ -30,6 +30,15 @@ public final class Sql {
     public static final String PRICE = "CASE pk.pick WHEN 'HOME' THEN o.home_odds WHEN 'AWAY' THEN o.away_odds "
         + "WHEN 'DRAW' THEN o.draw_odds WHEN 'OVER' THEN o.over_odds ELSE o.under_odds END";
 
+    /**
+     * Prediction alias p -> its effective model, alias am: the model it was merged into (V24), else itself. Reports group
+     * on am, so a merged model's predictions roll up into the surviving model; am0 is the model the agent named.
+     */
+    public static final String EFFECTIVE_MODEL_JOIN =
+        " JOIN ai_models am0 ON am0.id = p.ai_model_id JOIN ai_models am ON am.id = COALESCE(am0.merged_into_id, am0.id) ";
+    /** The name to show for effective model alias am: the admin's display name, else the provider-supplied one. */
+    public static final String MODEL_NAME = "COALESCE(am.display_name, am.name)";
+
     private Sql() {
     }
 

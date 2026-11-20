@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -18,7 +19,7 @@ public class ProviderController {
     private final ProviderService service;
 
     @GetMapping
-    public List<ProviderView> list() {
-        return service.list();
+    public List<ProviderView> list(@RequestParam(required = false) Boolean includeArchived) {
+        return service.list(includeArchived);
     }
 }

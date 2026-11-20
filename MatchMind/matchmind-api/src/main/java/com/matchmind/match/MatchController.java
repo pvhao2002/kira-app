@@ -38,15 +38,16 @@ public class MatchController {
                                                   @RequestParam(required = false) Instant from,
                                                   @RequestParam(required = false) Instant to,
                                                   @RequestParam(required = false) Boolean overdue,
+                                                  @RequestParam(required = false) Boolean includeArchived,
                                                   @RequestParam(required = false) Integer page,
                                                   @RequestParam(required = false) Integer size,
                                                   @RequestParam(required = false) String sort) {
-        return service.list(search, status, league, providerId, from, to, overdue, page, size, sort);
+        return service.list(search, status, league, providerId, from, to, overdue, includeArchived, page, size, sort);
     }
 
     @GetMapping("/leagues")
-    public List<String> leagues() {
-        return service.leagues();
+    public List<String> leagues(@RequestParam(required = false) Boolean includeArchived) {
+        return Boolean.TRUE.equals(includeArchived) ? service.leaguesIncludingArchived() : service.leagues();
     }
 
     @GetMapping("/{id}")

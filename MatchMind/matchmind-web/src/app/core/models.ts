@@ -35,12 +35,15 @@ export interface Filters {
 
 export interface Provider {
   id: string; code: string; name: string; models: number; predictions: number; lastCallbackAt: string | null; createdAt: string;
+  archivedAt?: string | null;
 }
 
 export interface AiModel {
   id: string; providerId: string; providerName: string; name: string; version: string; description: string | null;
   status: 'ACTIVE' | 'DISABLED'; totalPredictions: number; settledPicks: number; wins: number; losses: number;
   pendingPicks: number; winRate: number | null; lastPredictionAt: string | null; createdAt: string; updatedAt: string;
+  /** What to show: the admin's rename, else `name` (the provider-supplied key). */
+  displayName?: string; archivedAt?: string | null; mergedIntoId?: string | null;
 }
 
 export interface MatchRow {
@@ -60,7 +63,7 @@ export interface LatestModelPrediction {
   topPickPrice: number | null; topPickResult: SettlementResult;
 }
 export interface MatchModelSummary {
-  modelId: string; modelName: string; modelVersion: string; predictions: number; picks: number; wins: number;
+  modelId: string; modelName: string; modelKey?: string; modelVersion: string; predictions: number; picks: number; wins: number;
   losses: number; pushOrVoid: number; pending: number; winRate: number | null; lastPredictedAt: string;
   latest: LatestModelPrediction | null;
 }
@@ -91,7 +94,7 @@ export interface PredictionRow {
   id: string; predictedAt: string; predictionType: PredictionType; matchMinute: number | null;
   currentHomeScore: number | null; currentAwayScore: number | null; eventId: string; matchId: string; league: string;
   homeTeam: string; awayTeam: string; startTime: string; matchStatus: MatchStatus; finalHomeScore: number | null;
-  finalAwayScore: number | null; modelId: string; modelName: string; modelVersion: string;
+  finalAwayScore: number | null; modelId: string; modelName: string; modelKey?: string; modelVersion: string;
   predictedHomeScore: number | null; predictedAwayScore: number | null; correctScoreProbability: number | null;
   topPickId: string | null; topPickMarket: Market | null; topPick: string | null; topPickProbability: number | null;
   topPickLine: number | null; topPickLineDisplay: string | null; topPickStage: string | null; topPickPrice: number | null;
@@ -170,7 +173,7 @@ export interface Dashboard {
 }
 
 export interface ModelPerformanceRow extends PerformanceCounts {
-  modelId: string; modelName: string; modelVersion: string; providerName: string; predictions: number;
+  modelId: string; modelName: string; modelKey?: string; modelVersion: string; providerName: string; predictions: number;
   correctScoreEvaluated: number; correctScoreHits: number; correctScoreAccuracy: number | null;
 }
 export interface BreakdownRow extends PerformanceCounts { key: string; }
@@ -178,7 +181,7 @@ export interface MarketPerformanceRow extends PerformanceCounts { market: Market
 
 export interface HistoryRow {
   pickId: string; predictionId: string; predictedAt: string; matchId: string; league: string; homeTeam: string;
-  awayTeam: string; startTime: string; matchStatus: MatchStatus; modelId: string; modelName: string; modelVersion: string;
+  awayTeam: string; startTime: string; matchStatus: MatchStatus; modelId: string; modelName: string; modelKey?: string; modelVersion: string;
   predictionType: PredictionType; matchMinute: number | null; currentHomeScore: number | null; currentAwayScore: number | null;
   predictedHomeScore: number | null; predictedAwayScore: number | null; correctScoreProbability: number | null;
   finalHomeScore: number | null; finalAwayScore: number | null; finalHomeCorners: number | null; finalAwayCorners: number | null;
@@ -188,7 +191,7 @@ export interface HistoryRow {
 }
 
 export interface ComparisonEntry {
-  matchId: string; predictionId: string; modelId: string; modelName: string; modelVersion: string; predictedAt: string;
+  matchId: string; predictionId: string; modelId: string; modelName: string; modelKey?: string; modelVersion: string; predictedAt: string;
   predictionType: PredictionType; matchMinute: number | null; predictedHomeScore: number | null; predictedAwayScore: number | null;
   correctScoreProbability: number | null; correctScoreHit: boolean | null; market: Market | null; pick: string | null;
   probability: number | null; line: number | null; lineDisplay: string | null; price: number | null;
@@ -205,7 +208,7 @@ export interface ComparisonCoverage { minModels: number; matches: number; }
 
 export interface MonteCarloRow {
   predictionId: string; predictedAt: string; matchId: string; league: string; homeTeam: string; awayTeam: string;
-  matchStatus: MatchStatus; modelName: string; modelVersion: string; predictionType: PredictionType; matchMinute: number | null;
+  matchStatus: MatchStatus; modelName: string; modelKey?: string; modelVersion: string; predictionType: PredictionType; matchMinute: number | null;
   currentHomeScore: number | null; currentAwayScore: number | null; method: string; simulationCount: number;
   randomSeed: number | null; algorithmVersion: string | null; expectedHomeGoals: number | null; expectedAwayGoals: number | null;
   expectedHomeCorners: number | null; expectedAwayCorners: number | null; probabilitiesJson: string | null;

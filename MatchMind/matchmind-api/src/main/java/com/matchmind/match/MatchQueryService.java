@@ -44,7 +44,8 @@ public class MatchQueryService {
                m.result_updated_at AS "resultUpdatedAt", m.created_at AS "createdAt", m.updated_at AS "updatedAt",
                %s AS "overdue",
                (SELECT count(*) FROM predictions p WHERE p.match_id = m.id) AS "predictionCount",
-               (SELECT count(DISTINCT p.ai_model_id) FROM predictions p WHERE p.match_id = m.id) AS "modelCount"
+               (SELECT count(DISTINCT COALESCE(a.merged_into_id, a.id)) FROM predictions p
+                JOIN ai_models a ON a.id = p.ai_model_id WHERE p.match_id = m.id) AS "modelCount"
         FROM matches m JOIN providers pv ON pv.id = m.provider_id
         """.formatted(OVERDUE);
 
@@ -54,8 +55,8 @@ public class MatchQueryService {
 
     @Transactional(readOnly = true)
     public PageResponse<Map<String, Object>> list(String search, String status, String league, UUID providerId,
-                                                  Instant from, Instant to, Boolean overdue, Integer page, Integer size,
-                                                  String sort) {
+                                                  Instant from, Instant to, Boolean overdue, Boolean includeArchived,
+                                                  Integer page, Integer size, String sort) {
         int pg = Paging.page(page), sz = Paging.size(size);
         if (status != null && !status.isBlank() && !List.of("SCHEDULED", "LIVE", "FINISHED", "CANCELLED", "POSTPONED").contains(status)) {
             throw ApiException.badRequest("INVALID_STATUS", "Unknown match status");
@@ -69,6 +70,7 @@ public class MatchQueryService {
             .and("m.start_time >= :from", "from", from)
             .and("m.start_time < :to", "to", to);
         if (Boolean.TRUE.equals(overdue)) w.and(OVERDUE);
+        Filters.activeMatches(w, includeArchived, providerId != null);
         long total = jdbc.queryForObject("SELECT count(*) FROM matches m" + w.sql(), w.params, Long.class);
         Paging.limit(w.params, pg, sz);
         List<Map<String, Object>> rows = jdbc.query(COLUMNS + w.sql() + " ORDER BY "
@@ -76,9 +78,18 @@ public class MatchQueryService {
         return Paging.response(rows, pg, sz, total);
     }
 
+    /** Leagues of the visible matches; cached, so a later archive must evict {@link CacheConfig#LEAGUES}. */
     @Cacheable(CacheConfig.LEAGUES)
     @Transactional(readOnly = true)
     public List<String> leagues() {
+        Sql.Where w = new Sql.Where();
+        Filters.activeMatches(w, false, false);
+        return jdbc.queryForList("SELECT DISTINCT league FROM matches m" + w.sql() + " ORDER BY league", Map.of(), String.class);
+    }
+
+    /** Every league, archived matches included (uncached: only an admin looking at archived data asks). */
+    @Transactional(readOnly = true)
+    public List<String> leaguesIncludingArchived() {
         return jdbc.queryForList("SELECT DISTINCT league FROM matches ORDER BY league", Map.of(), String.class);
     }
 
@@ -93,32 +104,33 @@ public class MatchQueryService {
             .orElseThrow(() -> ApiException.notFound("MATCH_NOT_FOUND", "Match not found"));
 
         List<Map<String, Object>> models = jdbc.query("""
-            SELECT am.id AS "modelId", am.name AS "modelName", am.version AS "modelVersion",
+            SELECT am.id AS "modelId", %1$s AS "modelName", am.name AS "modelKey", am.version AS "modelVersion",
                    count(DISTINCT p.id) AS "predictions", count(pk.id) AS "picks",
-                   %s AS "wins", %s AS "losses", %s AS "pushOrVoid", %s AS "pending",
+                   %2$s AS "wins", %3$s AS "losses", %4$s AS "pushOrVoid", %5$s AS "pending",
                    max(p.predicted_at) AS "lastPredictedAt"
-            FROM predictions p JOIN ai_models am ON am.id = p.ai_model_id
-            LEFT JOIN prediction_picks pk ON pk.prediction_id = p.id %s
+            FROM predictions p %6$s
+            LEFT JOIN prediction_picks pk ON pk.prediction_id = p.id %7$s
             WHERE p.match_id = :id
-            GROUP BY am.id, am.name, am.version ORDER BY am.name
-            """.formatted(Stats.WINS, Stats.LOSSES, Stats.PUSH_VOID, Stats.PENDING, Stats.CURRENT_RESULT_JOIN), p, Sql.ROW);
+            GROUP BY am.id, am.display_name, am.name, am.version ORDER BY %1$s
+            """.formatted(Sql.MODEL_NAME, Stats.WINS, Stats.LOSSES, Stats.PUSH_VOID, Stats.PENDING, Sql.EFFECTIVE_MODEL_JOIN,
+            Stats.CURRENT_RESULT_JOIN), p, Sql.ROW);
         models.forEach(row -> row.put("winRate", Stats.winRate(((Number) row.get("wins")).longValue(),
             ((Number) row.get("losses")).longValue())));
 
         List<Map<String, Object>> latest = jdbc.query("""
-            SELECT DISTINCT ON (p.ai_model_id) p.id AS "predictionId", p.ai_model_id AS "modelId", p.predicted_at AS "predictedAt",
+            SELECT DISTINCT ON (am.id) p.id AS "predictionId", am.id AS "modelId", p.predicted_at AS "predictedAt",
                    p.prediction_type AS "predictionType", p.match_minute AS "matchMinute",
                    cs.home_score AS "predictedHomeScore", cs.away_score AS "predictedAwayScore", cs.probability AS "correctScoreProbability",
                    pk.market AS "topPickMarket", pk.pick AS "topPick", pk.probability AS "topPickProbability", o.line AS "topPickLine",
                    %s AS "topPickPrice", COALESCE(r.result, 'PENDING') AS "topPickResult"
-            FROM predictions p
+            FROM predictions p %s
             LEFT JOIN prediction_correct_scores cs ON cs.prediction_id = p.id AND cs.score_rank = 1
             LEFT JOIN LATERAL (SELECT x.* FROM prediction_picks x WHERE x.prediction_id = p.id ORDER BY x.pick_rank LIMIT 1) pk ON true
             LEFT JOIN prediction_odds o ON o.id = pk.odds_id
             LEFT JOIN prediction_pick_results r ON r.pick_id = pk.id AND r.is_current
             WHERE p.match_id = :id
-            ORDER BY p.ai_model_id, p.predicted_at DESC
-            """.formatted(Sql.PRICE), p, Sql.ROW);
+            ORDER BY am.id, p.predicted_at DESC
+            """.formatted(Sql.PRICE, Sql.EFFECTIVE_MODEL_JOIN), p, Sql.ROW);
         Map<Object, Map<String, Object>> latestByModel = new LinkedHashMap<>();
         latest.forEach(row -> latestByModel.put(row.get("modelId"), row));
         models.forEach(row -> row.put("latest", latestByModel.get(row.get("modelId"))));
