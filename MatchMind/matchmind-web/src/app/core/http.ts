@@ -15,6 +15,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const request = isApi && token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
   return next(request).pipe(catchError((err: HttpErrorResponse) => {
     if (isApi && err.status === 401 && !req.url.endsWith('/auth/login')) auth.expire();
+    else if (isApi && err.status === 403 && apiError(err).code === 'PASSWORD_CHANGE_REQUIRED') auth.requirePasswordChange();
     return throwError(() => err);
   }));
 };
@@ -28,6 +29,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(catchError((err: HttpErrorResponse) => {
     if (err.status === 0) {
       messages.add({ severity: 'error', summary: 'Server unreachable', detail: 'Check your connection and try again.' });
+    } else if (err.status === 403 && apiError(err).code === 'PASSWORD_CHANGE_REQUIRED') {
+      messages.add({ severity: 'warn', summary: 'Change your password', detail: 'Choose a new password to continue.' });
     } else if (err.status === 403) {
       messages.add({ severity: 'warn', summary: 'Not allowed', detail: 'Your role cannot perform this action.' });
     } else if (err.status === 429) {
@@ -50,10 +53,30 @@ export function apiError(raw: unknown): ApiError {
   return { status, code: 'UNKNOWN', message: status ? `Request failed (${status})` : 'Request failed' };
 }
 
-export const authGuard: CanActivateFn = (_route, state) => {
+/** The API message plus its field errors ("Password is too common"), for inline form errors. */
+export function apiErrorText(raw: unknown): string {
+  const e = apiError(raw);
+  const extra = Object.values(e.fieldErrors ?? {}).filter(m => m && !e.message.includes(m));
+  return [e.message, ...extra].join(' ');
+}
+
+/** Only same-app paths: never redirect to an absolute/external URL taken from the query string, nor back to login. */
+export function safeReturnUrl(target: string | null | undefined): string {
+  return target && target.startsWith('/') && !target.startsWith('//') && !target.startsWith('/\\') && !target.startsWith('/login')
+    ? target : '/dashboard';
+}
+
+/** No session in this tab: borrow one from another open tab (Ctrl+click) before sending the user to login. */
+export const authGuard: CanActivateFn = async (_route, state) => {
   const auth = inject(AuthService);
-  return auth.isAuthenticated() ? true : inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+  const router = inject(Router);
+  return auth.isAuthenticated() || await auth.fromOtherTab() ? true : router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
 };
 
-export const guestGuard: CanActivateFn = () =>
-  inject(AuthService).isAuthenticated() ? inject(Router).createUrlTree(['/dashboard']) : true;
+/** Signed in already (here or in another tab): go where `returnUrl` points instead of showing the login form. */
+export const guestGuard: CanActivateFn = async route => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return auth.isAuthenticated() || await auth.fromOtherTab()
+    ? router.parseUrl(safeReturnUrl(route.queryParamMap?.get('returnUrl'))) : true;
+};
