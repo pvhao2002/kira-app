@@ -48,6 +48,44 @@ class IngestionRulesIT extends IntegrationTestBase {
     }
 
     @Test
+    void controlAndDirectionCharactersAreRejectedWith400() throws Exception { // UX-029, UX-030, UX-096
+        String provider = newIntegration("rules-model").provider();
+        ObjectNode nul = live();
+        ((ObjectNode) nul.get("match")).put("homeTeam", "Ars\u0000enal");
+        assertRejected(send(provider, nul), 400, "VALIDATION_ERROR", "match.homeTeam");
+
+        ObjectNode nulInMetadata = live();
+        ((ObjectNode) nulInMetadata.get("metadata")).put("notes", "a\u0000b");
+        assertRejected(send(provider, nulInMetadata), 400, "VALIDATION_ERROR", "metadata.notes");
+
+        ObjectNode bidi = live();
+        ((ObjectNode) bidi.get("match")).put("awayTeam", "\u202EaeslehC");
+        assertRejected(send(provider, bidi), 400, "VALIDATION_ERROR", "match.awayTeam");
+
+        String surrogate = Payloads.livePrediction(id("e"), id("m"), "rules-model").replace("\"Chelsea\"", "\"\\ud800\"");
+        assertRejected(external(provider, "predictions", surrogate), 400, "VALIDATION_ERROR", "match.awayTeam");
+
+        ObjectNode invisible = live();
+        ((ObjectNode) invisible.get("match")).put("homeTeam", "\u200B\u200B");
+        assertRejected(send(provider, invisible), 400, "VALIDATION_ERROR", "match.homeTeam");
+
+        ObjectNode same = live();
+        ((ObjectNode) same.get("match")).put("awayTeam", "ARSENAL ");
+        assertRejected(send(provider, same), 400, "VALIDATION_ERROR", "match.awayTeam");
+    }
+
+    @Test
+    void teamNamesAreStoredWithCollapsedWhitespace() throws Exception { // UX-096
+        String provider = newIntegration("rules-model").provider();
+        ObjectNode p = live();
+        ((ObjectNode) p.get("match")).put("homeTeam", " Real\nMadrid\u00A0 B\u200B ");
+        MvcResult res = send(provider, p);
+        assertThat(res.getResponse().getStatus()).as(res.getResponse().getContentAsString()).isEqualTo(201);
+        assertThat(db.queryForObject("SELECT home_team FROM matches WHERE id = ?::uuid", String.class,
+            read(res).get("matchId").asText())).isEqualTo("Real Madrid B");
+    }
+
+    @Test
     void timesOutsideTheWindowAreRejected() throws Exception { // UX-028, UX-098
         String provider = newIntegration("rules-model").provider();
         ObjectNode far = live();

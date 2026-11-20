@@ -20,6 +20,7 @@ import com.matchmind.model.AiModel;
 import com.matchmind.model.AiModelRepository;
 import com.matchmind.shared.ApiException;
 import com.matchmind.shared.CacheConfig;
+import com.matchmind.shared.TextRules;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
@@ -80,6 +81,7 @@ public class PredictionIngestionService {
     @CacheEvict(value = CacheConfig.LEAGUES, allEntries = true)
     @Transactional
     public PredictionResponse ingest(UUID providerId, ModelRef modelRef, PredictionRequest r, JsonNode rawPayload) {
+        PredictionValidator.validateText(rawPayload);
         PredictionValidator.validate(r);
         String hash = payloadHash(rawPayload);
         String eventId = eventIdOf(r, hash);
@@ -156,9 +158,9 @@ public class PredictionIngestionService {
     private Match upsertMatch(UUID providerId, PredictionRequest r, Instant predictedAt) {
         var m = r.match();
         String status = m.status() != null ? m.status() : ("LIVE".equals(r.predictionType()) ? "LIVE" : "SCHEDULED");
-        String home = m.homeTeam().trim();
-        String away = m.awayTeam().trim();
-        String league = m.league() == null || m.league().isBlank() ? null : m.league().trim();
+        String home = TextRules.clean(m.homeTeam());
+        String away = TextRules.clean(m.awayTeam());
+        String league = m.league() == null || TextRules.clean(m.league()).isEmpty() ? null : TextRules.clean(m.league());
         Instant start = m.startTime() != null ? m.startTime() : estimatedKickOff(r.matchMinute(), predictedAt);
         String externalId = m.externalMatchId() != null ? m.externalMatchId() : externalIdByTeams(providerId, home, away, start);
         jdbc.update("""

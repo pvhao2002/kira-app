@@ -102,6 +102,25 @@ class PredictionValidatorTest {
         assertTrue(errorsAt(timed("LIVE", null, null, "2026-11-21T00:00:00Z")).containsKey("odds[0].capturedAt"));
     }
 
+    private static PredictionRequest teams(String home, String away) {
+        return new PredictionRequest(null, null, new MatchInfo(null, null, home, away, null, null), "PRE_MATCH", null,
+            null, null, null, List.of(total("o1", TWO, null)), null, null, List.of(pick("o1", 1)),
+            new CorrectScoreInput(1, 1, null), null);
+    }
+
+    @Test
+    void invisibleTeamNamesAreBlank() {
+        Map<String, String> errors = errorsAt(teams("​​", " "));
+        assertTrue(errors.containsKey("match.homeTeam"));
+        assertTrue(errors.containsKey("match.awayTeam"));
+    }
+
+    @Test
+    void aTeamCannotPlayItself() {
+        assertTrue(errorsAt(teams("Arsenal", " arsenal ")).containsKey("match.awayTeam"));
+        assertDoesNotThrow(() -> PredictionValidator.validate(teams("Arsenal", "Chelsea"), NOW));
+    }
+
     @Test
     void finalScoreCannotBeBelowCurrentScore() {
         var r = request("LIVE", 60, new Pair(2, 0), List.of(total("o1", TWO, null)), List.of(pick("o1", 1)),

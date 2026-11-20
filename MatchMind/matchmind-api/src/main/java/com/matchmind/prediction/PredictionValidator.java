@@ -9,6 +9,7 @@ import com.matchmind.external.ExternalDtos.PredictionRequest;
 import com.matchmind.external.ExternalDtos.SimulationInput;
 import com.matchmind.settlement.SettlementEngine;
 import com.matchmind.shared.ApiException;
+import com.matchmind.shared.TextRules;
 import com.matchmind.shared.TimeRules;
 import org.springframework.http.HttpStatus;
 
@@ -17,6 +18,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +37,7 @@ final class PredictionValidator {
         if (live && r.matchMinute() == null) errors.put("matchMinute", "required for LIVE predictions");
         if (live && r.currentScore() == null) errors.put("currentScore", "required for LIVE predictions");
         validateTimes(r, live, now, errors);
+        validateTeams(r.match().homeTeam(), r.match().awayTeam(), errors);
 
         Map<String, OddsInput> oddsByRef = validateOdds(r.odds(), live, errors);
         validatePicks(r.picks(), oddsByRef, errors);
@@ -48,6 +51,48 @@ final class PredictionValidator {
         if (!errors.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Prediction payload is invalid", errors);
         }
+    }
+
+    /**
+     * Every string value and field name of the raw payload: NUL, unpaired surrogates and BiDi controls are refused
+     * with 400 instead of failing in the database (409) or reversing how a name displays.
+     */
+    static void validateText(JsonNode raw) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        walkText(raw, "", errors);
+        if (!errors.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Prediction payload has forbidden characters", errors);
+        }
+    }
+
+    private static void walkText(JsonNode node, String path, Map<String, String> errors) {
+        if (node.isTextual()) {
+            String problem = TextRules.forbiddenCharacter(node.textValue());
+            if (problem != null) errors.putIfAbsent(path.isEmpty() ? "body" : path, problem);
+        } else if (node.isArray()) {
+            for (int i = 0; i < node.size(); i++) walkText(node.get(i), path + "[" + i + "]", errors);
+        } else if (node.isObject()) {
+            node.properties().forEach(e -> {
+                String child = path.isEmpty() ? e.getKey() : path + "." + e.getKey();
+                String problem = TextRules.forbiddenCharacter(e.getKey());
+                if (problem != null) errors.putIfAbsent(child, "field name " + problem);
+                walkText(e.getValue(), child, errors);
+            });
+        }
+    }
+
+    /** Names are compared after {@link TextRules#clean}: invisible-only names are blank, and a team cannot play itself. */
+    private static void validateTeams(String home, String away, Map<String, String> errors) {
+        String h = TextRules.clean(home);
+        String a = TextRules.clean(away);
+        if (h == null || h.isEmpty()) errors.put("match.homeTeam", "must not be blank");
+        if (a == null || a.isEmpty()) errors.put("match.awayTeam", "must not be blank");
+        else if (h != null && teamKey(h).equals(teamKey(a))) errors.put("match.awayTeam", "must differ from homeTeam");
+    }
+
+    /** Identity of a team name for matching: cleaned and case-insensitive. */
+    static String teamKey(String name) {
+        return TextRules.clean(name).toLowerCase(Locale.ROOT);
     }
 
     /** Shared time window, plus: a PRE_MATCH prediction (absent predictedAt = now) is made before kick-off. */
