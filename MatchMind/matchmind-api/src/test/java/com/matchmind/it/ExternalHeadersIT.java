@@ -122,9 +122,9 @@ class ExternalHeadersIT extends IntegrationTestBase {
     void defaultPromptsTellAgentsToSendProviderAndModelAsHeaders() {
         String prediction = db.queryForObject("SELECT content FROM prompt_templates WHERE template_type = 'AI_PREDICTION'", String.class);
         assertThat(prediction).contains("X-Api-Key", "X-Provider", "X-Model-Name", "X-Model-Version",
-            "POST https://match.kira.id.vn/api/v1/external/predictions").doesNotContain("\"model\": {");
+            "POST {{API_BASE_URL}}/api/v1/external/predictions").doesNotContain("\"model\": {");
         String settle = db.queryForObject("SELECT content FROM prompt_templates WHERE template_type = 'AI_SETTLEMENT'", String.class);
-        assertThat(settle).contains("X-Api-Key", "X-Provider", "POST https://match.kira.id.vn/api/v1/external/predictions/settle");
+        assertThat(settle).contains("X-Api-Key", "X-Provider", "POST {{API_BASE_URL}}/api/v1/external/predictions/settle");
     }
 
     @Test
