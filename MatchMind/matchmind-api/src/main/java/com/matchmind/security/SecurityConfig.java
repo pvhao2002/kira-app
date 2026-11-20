@@ -3,26 +3,25 @@ package com.matchmind.security;
 import com.matchmind.external.ExternalController;
 import com.matchmind.external.ExternalPingController;
 import jakarta.servlet.DispatcherType;
-import jakarta.servlet.http.HttpServletResponse;
+import com.matchmind.shared.ApiErrors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,6 +35,7 @@ import java.util.List;
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtFilter;
     private final ApiKeyAuthenticationFilter apiKeyFilter;
+    private final AdminActionAuditFilter adminActionAuditFilter;
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -48,11 +48,14 @@ public class SecurityConfig {
             .cors(c -> {
             })
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // The API owns the security headers of /api/* (nginx adds only HSTS there); nginx owns them for the SPA.
             .headers(h -> h.frameOptions(f -> f.deny())
+                .referrerPolicy(r -> r.policy(ReferrerPolicy.NO_REFERRER))
                 .contentSecurityPolicy(c -> c.policyDirectives("default-src 'self'; frame-ancestors 'none'; object-src 'none'")))
             .exceptionHandling(e -> e
-                .authenticationEntryPoint((rq, rs, ex) -> write(rs, 401, "UNAUTHORIZED", "Authentication required"))
-                .accessDeniedHandler((rq, rs, ex) -> write(rs, 403, "FORBIDDEN", "You are not allowed to perform this action")))
+                .authenticationEntryPoint((rq, rs, ex) -> ApiErrors.write(rq, rs, 401, "UNAUTHORIZED", "Authentication required"))
+                .accessDeniedHandler((rq, rs, ex) -> ApiErrors.write(rq, rs, 403, "FORBIDDEN",
+                    "You are not allowed to perform this action")))
             .authorizeHttpRequests(a -> a
                 // The end of an event stream re-enters the chain as an ASYNC dispatch of a request already authorized.
                 .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
@@ -63,11 +66,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/external/**").hasRole("PROVIDER")
                 .requestMatchers("/api/v1/auth/**").hasAnyRole("ADMIN", "VIEWER")
                 .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
+                // Callback audit trail: client IPs, endpoints and error text are for admins only (the UI hides the menu).
+                .requestMatchers("/api/v1/api-logs", "/api/v1/api-logs/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAnyRole("ADMIN", "VIEWER")
                 .requestMatchers("/api/v1/**").hasRole("ADMIN")
                 .anyRequest().denyAll())
             .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(adminActionAuditFilter, JwtAuthenticationFilter.class)
             .build();
     }
 
@@ -82,6 +88,13 @@ public class SecurityConfig {
     @Bean
     FilterRegistrationBean<ApiKeyAuthenticationFilter> apiKeyFilterRegistration(ApiKeyAuthenticationFilter f) {
         FilterRegistrationBean<ApiKeyAuthenticationFilter> r = new FilterRegistrationBean<>(f);
+        r.setEnabled(false);
+        return r;
+    }
+
+    @Bean
+    FilterRegistrationBean<AdminActionAuditFilter> adminActionAuditFilterRegistration(AdminActionAuditFilter f) {
+        FilterRegistrationBean<AdminActionAuditFilter> r = new FilterRegistrationBean<>(f);
         r.setEnabled(false);
         return r;
     }
@@ -107,16 +120,11 @@ public class SecurityConfig {
         external.setAllowedHeaders(List.of("Content-Type", ApiKeyAuthenticationFilter.HEADER,
             ApiKeyAuthenticationFilter.PROVIDER_HEADER, ExternalController.MODEL_HEADER,
             ExternalController.MODEL_VERSION_HEADER, "X-Request-Id"));
+        external.setExposedHeaders(List.of("X-Correlation-ID", "Retry-After"));
         external.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/v1/external/**", external); // the first registered match wins
         source.registerCorsConfiguration("/api/v1/**", c);
         return source;
-    }
-
-    private static void write(HttpServletResponse res, int status, String code, String message) throws IOException {
-        res.setStatus(status);
-        res.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        res.getWriter().write("{\"status\":" + status + ",\"code\":\"" + code + "\",\"message\":\"" + message + "\"}");
     }
 }

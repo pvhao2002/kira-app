@@ -5,7 +5,7 @@ import { Observable, forkJoin } from 'rxjs';
 import {
   AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
-  Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User,
+  Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
 } from './models';
 
 export const API = '/api/v1';
@@ -81,11 +81,23 @@ export class ApiService {
   changePassword(currentPassword: string, newPassword: string) {
     return this.http.post<void>(`${API}/auth/change-password`, { currentPassword, newPassword });
   }
-  createUser(body: { username: string; password: string; role: string }) { return this.http.post<User>(`${API}/users`, body); }
-  updateUser(id: string, body: { role?: string; status?: string }) { return this.http.patch<User>(`${API}/users/${id}`, body); }
-  resetPassword(id: string, newPassword: string) {
-    return this.http.post<void>(`${API}/users/${id}/reset-password`, { newPassword });
+  createUser(body: { username: string; password: string; role: string; mustChangePassword?: boolean }) {
+    return this.http.post<User>(`${API}/users`, body);
   }
+  updateUser(id: string, body: { role?: string; status?: string }) { return this.http.patch<User>(`${API}/users/${id}`, body); }
+  resetPassword(id: string, newPassword: string, mustChangePassword = false) {
+    return this.http.post<void>(`${API}/users/${id}/reset-password`, { newPassword, mustChangePassword });
+  }
+  /** Ends every session of the user on every device; `logout()` ends only this one. */
+  logoutAll() { return this.http.post<void>(`${API}/auth/logout-all`, {}); }
+  /** Sliding renewal: swap the stored token for the new one before `expiresAt`. A 401 means the session is over. */
+  refreshToken() { return this.http.post<LoginResponse>(`${API}/auth/refresh`, {}); }
+  /** Admin: a random 16-character password for the create-user and reset forms. Nothing is stored server-side. */
+  generatePassword() { return this.http.post<{ password: string }>(`${API}/users/generate-password`, {}); }
+  /** Admin: clear the failed-login lockout of a user. */
+  unlockUser(id: string) { return this.http.post<void>(`${API}/users/${id}/unlock`, {}); }
+  /** Admin: who changed which account (role, status, password reset, unlock). */
+  userAudit(q: { userId?: string } & Paging) { return this.http.get<Page<UserAuditRow>>(`${API}/users/audit`, { params: toParams(q) }); }
 
   // Dashboard & reports
   modelPerformance(f: Filters) {

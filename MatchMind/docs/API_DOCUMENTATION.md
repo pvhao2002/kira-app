@@ -3,8 +3,8 @@
 Base path: `/api/v1`. JSON only. Timestamps are ISO-8601 UTC instants (`2026-11-20T19:45:00Z`). Decimals such as odds,
 lines and probabilities are JSON numbers backed by `BigDecimal`.
 
-Interactive docs: `/swagger-ui.html` and `/v3/api-docs`. They are on in local runs and off when `SWAGGER_ENABLED=false`,
-which is the compose default.
+Interactive docs: `/swagger-ui.html` and `/v3/api-docs`, on the API port (8090) only. They are on in local runs and off
+when `SWAGGER_ENABLED=false`, which is the compose default. The web container (8088) answers 404 for both paths.
 
 ## Authentication
 
@@ -15,11 +15,22 @@ which is the compose default.
 | Anyone (connectivity test) | nothing | `GET /api/v1/external/ping` only |
 
 Roles:
-- `VIEWER` can call every `GET` plus `/auth/**`.
+- `VIEWER` can call every `GET` except `/api-logs/**` (admin only), plus `/auth/**`.
 - `ADMIN` can also call every `POST`, `PUT`, `PATCH` and `DELETE`.
 
-A JWT carries the user's `token_version`. Logout, password change, password reset and disabling the user revoke every
-older token.
+A JWT carries the user's `token_version` and a token id (`jti`). Password change, password reset, disabling the user and
+`POST /auth/logout-all` revoke every older token; `POST /auth/logout` revokes only the token that made the call. A token
+lasts `JWT_TTL` (8 h); `POST /auth/refresh` swaps it for a new one at any time, but never past `JWT_MAX_SESSION` (24 h)
+after the password sign-in. Event streams of a revoked session end at once.
+
+A user flagged `mustChangePassword` can call only `GET /auth/me`, `POST /auth/change-password` and the two logouts; every
+other call is `403 PASSWORD_CHANGE_REQUIRED` until the password is changed.
+
+Passwords: 10–72 bytes, not the user name, not a repeated character or pattern, not a simple sequence (`1234567890`,
+`abcdefghij`), not a common password (`400 WEAK_PASSWORD`, message in `fieldErrors`).
+
+Client IPs (rate limits, API log): `X-Forwarded-For` is honoured only from `TRUSTED_PROXIES`; the web container's nginx
+overwrites it with the TCP peer unless an operator trusts a specific front proxy (see README).
 
 ## Errors
 
@@ -31,17 +42,23 @@ Every error has the same shape:
   "path": "/api/v1/external/predictions", "traceId": "4f1c..." }
 ```
 
-Responses never contain stack traces, SQL or internal paths. Quote `traceId` when reporting a problem.
+Responses never contain stack traces, SQL or internal paths. Quote `traceId` when reporting a problem. The same shape
+(UTF-8, with `traceId`, `path` and an empty `fieldErrors`) is used for 401 and 403 from the security layer and for the
+API-key filter. `fieldErrors` messages name the limit or format (`must be at most 128 characters`, `must be an ISO-8601
+instant with Z or an offset, e.g. 2026-12-05T20:00:00Z`), never Java types. A malformed id in a URL path is a
+`404 NOT_FOUND` ("Prediction not found"), a malformed query parameter a `400 INVALID_PARAMETER` naming the expected type.
+A wrong `Content-Type` is `415 UNSUPPORTED_MEDIA_TYPE` ("Content-Type must be application/json").
 
 | Status | Codes |
 |---|---|
-| 400 | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `UNKNOWN_FIELD` (callbacks reject unknown fields), `INVALID_FIELD_TYPE`, `INVALID_PARAMETER`, `INVALID_DATE_RANGE` (`from` not before `to`; `fieldErrors.from` is set), `INVALID_RESULT_SCOPE`, `INVALID_MARKET`, `INVALID_TYPE`, `INVALID_RESULT`, `INVALID_STATUS`, `INVALID_TIMEZONE`, `INVALID_GROUP`, `EXPORT_TOO_LARGE`, `BAD_CURRENT_PASSWORD` |
+| 400 | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `UNKNOWN_FIELD` (callbacks reject unknown fields), `INVALID_FIELD_TYPE`, `INVALID_PARAMETER`, `INVALID_DATE_RANGE` (`from` not before `to`; `fieldErrors.from` is set), `INVALID_RESULT_SCOPE`, `INVALID_MARKET`, `INVALID_TYPE`, `INVALID_RESULT`, `INVALID_STATUS`, `INVALID_TIMEZONE`, `INVALID_GROUP`, `EXPORT_TOO_LARGE`, `BAD_CURRENT_PASSWORD`, `PASSWORD_UNCHANGED`, `WEAK_PASSWORD` |
 | 401 | `UNAUTHORIZED`, `BAD_CREDENTIALS`, `INVALID_API_KEY` |
-| 403 | `FORBIDDEN` |
-| 404 | `MATCH_NOT_FOUND`, `PREDICTION_NOT_FOUND`, `PICK_NOT_FOUND`, `MODEL_NOT_FOUND`, `PROMPT_NOT_FOUND`, `USER_NOT_FOUND`, `LOG_NOT_FOUND` |
+| 403 | `FORBIDDEN`, `PASSWORD_CHANGE_REQUIRED` |
+| 404 | `NOT_FOUND` (bad id in path), `MATCH_NOT_FOUND`, `PREDICTION_NOT_FOUND`, `PICK_NOT_FOUND`, `MODEL_NOT_FOUND`, `PROMPT_NOT_FOUND`, `USER_NOT_FOUND`, `LOG_NOT_FOUND` |
 | 409 | `EVENT_ID_REUSED`, `MATCH_ALREADY_FINAL`, `STALE_RESULT`, `PROMPT_VERSION_CONFLICT`, `CONCURRENT_UPDATE`, `DATA_CONFLICT`, `USERNAME_EXISTS`, `PROMPT_NAME_EXISTS`, `SELF_LOCKOUT` |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` |
 | 422 | `PICK_NOT_IN_MATCH` |
-| 429 | `LOGIN_RATE_LIMITED` |
+| 429 | `LOGIN_RATE_LIMITED` (login and change-password, `Retry-After`), `RATE_LIMITED` (too many rejected API keys from one IP, `Retry-After: 60`), `TOO_MANY_STREAMS` |
 | 500 | `INTERNAL_ERROR` |
 
 ## Pagination, sorting and filters
@@ -232,14 +249,19 @@ after a corrected score. An admin resolves them with recalculate or override; th
 ### Auth and users
 | Method | Path | Role | Notes |
 |---|---|---|---|
-| POST | `/auth/login` | public | `{username, password}` → `{accessToken, expiresAt, user}`. Rate-limited per IP (20) and per username (5 failures) |
-| POST | `/auth/logout` | any | 204. Revokes all of the user's tokens |
-| GET | `/auth/me` | any | Current user |
-| POST | `/auth/change-password` | any | `{currentPassword, newPassword (10–72)}` → 204. Revokes tokens |
-| GET | `/users` | admin | All users |
-| POST | `/users` | admin | `{username, password, role}` |
-| PATCH | `/users/{id}` | admin | `{role?, status?}`. Admins cannot demote or disable themselves (`SELF_LOCKOUT`) |
-| POST | `/users/{id}/reset-password` | admin | `{newPassword}` → 204 |
+| POST | `/auth/login` | public | `{username, password}` → `{accessToken, expiresAt, user}`. Only failures count: 5 per (username, client IP) lock that pair for 15 min, 30 per IP in 5 min block the IP (`429`, `Retry-After`). A stranger cannot lock `admin` out from another IP |
+| POST | `/auth/logout` | any | 204. Ends this session only |
+| POST | `/auth/logout-all` | any | 204. Ends every session of the user (all devices) |
+| POST | `/auth/refresh` | any | → `{accessToken, expiresAt, user}`. New token (sliding); never later than 24 h after the password sign-in. The old token stays valid until it expires. Call it before `expiresAt`; a 401 means sign in again |
+| GET | `/auth/me` | any | Current user (`mustChangePassword`) |
+| POST | `/auth/change-password` | any | `{currentPassword, newPassword (10–72)}` → 204. Revokes all tokens and clears `mustChangePassword`. 5 wrong current passwords in 15 min give `429`; a new password equal to the current one is `400 PASSWORD_UNCHANGED` |
+| GET | `/users` | admin | All users: `{id, username, role, status, lastLoginAt, createdAt, updatedAt, mustChangePassword, loginLocked}` |
+| POST | `/users` | admin | `{username, password, role, mustChangePassword?}` |
+| POST | `/users/generate-password` | admin | → `{password}`: 16 random characters that pass the policy. Nothing is stored; put it in the create or reset form and hand it over |
+| PATCH | `/users/{id}` | admin | `{role?, status?}`. Admins cannot demote or disable themselves (`SELF_LOCKOUT`). Role and status changes are audited |
+| POST | `/users/{id}/reset-password` | admin | `{newPassword, mustChangePassword?}` → 204 |
+| POST | `/users/{id}/unlock` | admin | 204. Clears the failed-login lockout of the user on every IP |
+| GET | `/users/audit` | admin | `userId?, page, size` → `{data:[{id, at, actor, targetId, target, action, oldValue, newValue, clientIp}], meta}`. Actions: `USER_CREATED`, `ROLE_CHANGED`, `STATUS_CHANGED`, `PASSWORD_RESET`, `PASSWORD_CHANGED`, `LOGIN_UNLOCKED` |
 
 ### Providers and AI models (read-only)
 Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no create or update endpoints.
@@ -286,11 +308,17 @@ agent key and `{{MATCHMIND_SHEET_URL}}` by the `MATCHMIND_SHEET_URL` link (empty
 uses it for admins. Stored prompts keep the placeholder, so the key never enters the
 database, the prompt history or a viewer's screen.
 
-### API logs
+### API logs (admin only)
+VIEWER gets `403` on every `/api-logs` path; the web client hides the menu entry for viewers.
 - `GET /api-logs`: filters `providerId, status, endpoint, httpStatus, search, from, to`. Sort:
-  `receivedAt, durationMs, httpStatus, endpoint`.
+  `receivedAt, durationMs, httpStatus, endpoint`. Rows carry `providerName` and `actor`.
 - `GET /api-logs/endpoints`
-- `GET /api-logs/{id}`: includes the `processingResult` summary. Request bodies and keys are never logged.
+- `GET /api-logs/{id}`: includes `providerName`, `actor` and the `processingResult` summary. Request bodies and keys are
+  never logged.
+- `actor` is the signed-in admin behind an import, settle, recalculate or override done from the dashboard (those
+  calls leave a row too); it is `null` for agent calls.
+- Calls with a missing or wrong API key are sampled: one row per client IP per minute, and `429 RATE_LIMITED` beyond 30
+  per minute from one IP, so a flood cannot fill this table.
 
 ### Live events
 `GET /events/predictions` (ADMIN or VIEWER, `Accept: text/event-stream`) is a Server-Sent Events stream. After each
@@ -301,9 +329,11 @@ event:prediction
 data:{"predictionId":"…","matchId":"…","homeTeam":"…","awayTeam":"…","model":"…","predictionType":"LIVE"}
 ```
 
-A `:ping` comment every 25 s keeps proxies from closing an idle stream. The server ends a stream after 30 minutes and
-the web client reconnects, so a revoked token stops receiving events within that time. The web client sends the JWT
-in the `Authorization` header (fetch, not `EventSource`), so the token never appears in a URL.
+A `:ping` comment every 25 s keeps proxies from closing an idle stream. The server ends a stream after 30 minutes (or
+when its JWT expires, whichever is first) and the web client reconnects. A stream ends immediately when its session is
+revoked (logout, `logout-all`, password change or reset, user disabled). One user may hold 5 streams (opening a sixth
+closes the oldest) and the server 200 (`429 TOO_MANY_STREAMS`); a browser that falls behind is dropped. The web client
+sends the JWT in the `Authorization` header (fetch, not `EventSource`), so the token never appears in a URL.
 
 ## curl quick start
 

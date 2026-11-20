@@ -1,5 +1,7 @@
 package com.matchmind.shared;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -9,18 +11,28 @@ import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.matchmind.shared.ApiTypes.ErrorResponse;
 
@@ -38,22 +50,56 @@ public class GlobalExceptionHandler {
             log.warn("API request rejected traceId={} path={} status={} code={}", traceId(), request.getRequestURI(),
                 ex.getStatus().value(), ex.getCode());
         }
+        Map<String, String> fields = new LinkedHashMap<>();
+        ex.getFieldErrors().forEach((field, message) -> fields.put(field, readable(field, message)));
         return ResponseEntity.status(ex.getStatus()).headers(ex.getHeaders())
-            .body(error(ex.getStatus(), ex.getCode(), ex.getMessage(), ex.getFieldErrors(), request));
+            .body(error(ex.getStatus(), ex.getCode(), ex.getMessage(), fields, request));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ErrorResponse> validation(MethodArgumentNotValidException ex, HttpServletRequest request) {
         Map<String, String> fields = new LinkedHashMap<>();
-        for (FieldError e : ex.getBindingResult().getFieldErrors()) fields.putIfAbsent(e.getField(), e.getDefaultMessage());
-        ex.getBindingResult().getGlobalErrors().forEach(e -> fields.putIfAbsent(e.getObjectName(), e.getDefaultMessage()));
+        for (FieldError e : ex.getBindingResult().getFieldErrors()) fields.putIfAbsent(e.getField(), fieldMessage(e));
+        ex.getBindingResult().getGlobalErrors().forEach(e -> fields.putIfAbsent(e.getObjectName(),
+            readable(e.getObjectName(), e.getDefaultMessage())));
         return response(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Request validation failed", fields, request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ErrorResponse> malformed(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        Map<String, String> fields = Map.of();
+        if (ex.getCause() instanceof JsonMappingException jm && !jm.getPath().isEmpty()) {
+            StringBuilder path = new StringBuilder();
+            for (JsonMappingException.Reference ref : jm.getPath()) {
+                if (ref.getFieldName() != null) path.append(path.isEmpty() ? "" : ".").append(ref.getFieldName());
+                else path.append('[').append(ref.getIndex()).append(']');
+            }
+            Class<?> target = jm instanceof InvalidFormatException f ? f.getTargetType() : null;
+            fields = Map.of(path.toString(), target == null ? "has the wrong type or format"
+                : "must be " + describe(target));
+        }
         return response(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Request body is not valid JSON for this endpoint",
-            Map.of(), request);
+            fields, request);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    ResponseEntity<ErrorResponse> unsupportedMediaType(HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+        String supported = ex.getSupportedMediaTypes().isEmpty() ? "application/json"
+            : ex.getSupportedMediaTypes().stream().map(MediaType::toString).collect(Collectors.joining(", "));
+        return response(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_MEDIA_TYPE",
+            "Content-Type must be " + supported + " (send the header 'Content-Type: application/json')", Map.of(), request);
+    }
+
+    /** A malformed id in the URL means no such record, not a bad request. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ErrorResponse> argumentMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        if (ex.getParameter().hasParameterAnnotation(PathVariable.class)) {
+            return response(HttpStatus.NOT_FOUND, "NOT_FOUND", notFoundMessage(request.getRequestURI(), ex.getValue()),
+                Map.of(), request);
+        }
+        String expected = ex.getRequiredType() == null ? "a valid value" : describe(ex.getRequiredType());
+        return response(HttpStatus.BAD_REQUEST, "INVALID_PARAMETER", ex.getName() + " must be " + expected,
+            Map.of(ex.getName(), "must be " + expected), request);
     }
 
     @ExceptionHandler({TypeMismatchException.class, ConstraintViolationException.class, IllegalArgumentException.class})
@@ -98,6 +144,65 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception traceId={} path={} exception={}", traceId(), request.getRequestURI(),
             ex.getClass().getSimpleName(), ex);
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Unexpected server error", Map.of(), request);
+    }
+
+    private static final Pattern SIZE = Pattern.compile("size must be between (\\d+) and (\\d+)");
+    private static final String INSTANT_HELP = "an ISO-8601 instant with Z or an offset, e.g. 2026-12-05T20:00:00Z";
+
+    /** One field's message: no Java types or conversion text, only what the caller can act on. */
+    private static String fieldMessage(FieldError e) {
+        if (e.isBindingFailure()) {
+            TypeMismatchException mismatch = e.contains(TypeMismatchException.class) ? e.unwrap(TypeMismatchException.class) : null;
+            Class<?> type = mismatch == null ? null : mismatch.getRequiredType();
+            return type == null ? "has an invalid value" : "must be " + describe(type);
+        }
+        return readable(e.getField(), e.getDefaultMessage());
+    }
+
+    /** Rewrites generic bean-validation and parser messages into ones that name the limit or the expected format. */
+    static String readable(String field, String message) {
+        if (message == null) return "is invalid";
+        Matcher size = SIZE.matcher(message);
+        if (size.matches()) {
+            int min = Integer.parseInt(size.group(1));
+            int max = Integer.parseInt(size.group(2));
+            return min == 0 ? "must be at most " + max + " characters"
+                : "must be between " + min + " and " + max + " characters";
+        }
+        String leaf = field.substring(field.lastIndexOf('.') + 1);
+        if ("wrong type or format".equals(message) && (leaf.endsWith("At") || leaf.endsWith("Time"))) {
+            return "must be " + INSTANT_HELP;
+        }
+        return message;
+    }
+
+    private static String describe(Class<?> type) {
+        if (Instant.class.equals(type)) return INSTANT_HELP;
+        if (LocalDate.class.equals(type)) return "a date such as 2026-12-05";
+        if (UUID.class.equals(type)) return "a UUID";
+        if (Boolean.class.equals(type) || boolean.class.equals(type)) return "true or false";
+        if (Number.class.isAssignableFrom(type) || type.isPrimitive()) return "a number";
+        if (type.isEnum()) {
+            return "one of " + Arrays.stream(type.getEnumConstants()).map(Object::toString).collect(Collectors.joining(", "));
+        }
+        return "a valid value";
+    }
+
+    /** "/api/v1/predictions/not-a-uuid" becomes "Prediction not found". */
+    static String notFoundMessage(String uri, Object value) {
+        String[] segments = uri.split("/");
+        for (int i = 1; i < segments.length; i++) {
+            if (segments[i].equals(String.valueOf(value))) {
+                String name = segments[i - 1];
+                if (name.endsWith("ies")) name = name.substring(0, name.length() - 3) + "y";
+                else if (name.endsWith("s")) name = name.substring(0, name.length() - 1);
+                if (!name.isEmpty() && name.matches("[a-z-]+")) {
+                    String words = name.replace('-', ' ');
+                    return Character.toUpperCase(words.charAt(0)) + words.substring(1) + " not found";
+                }
+            }
+        }
+        return "Not found";
     }
 
     private ResponseEntity<ErrorResponse> response(HttpStatus status, String code, String message,

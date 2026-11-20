@@ -32,6 +32,8 @@ public class User {
     private String status = "ACTIVE";
     @Column(name = "token_version", nullable = false)
     private int tokenVersion;
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword;
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
     @Column(name = "created_at", nullable = false, updatable = false)

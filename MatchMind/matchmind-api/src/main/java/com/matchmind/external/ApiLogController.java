@@ -33,7 +33,7 @@ public class ApiLogController {
         SELECT r.id AS "id", r.received_at AS "receivedAt", r.provider_id AS "providerId", pv.name AS "providerName",
                r.endpoint AS "endpoint", r.http_method AS "httpMethod", r.request_id AS "requestId", r.event_id AS "eventId",
                r.http_status AS "httpStatus", r.request_status AS "requestStatus", r.duration_ms AS "durationMs",
-               r.error_message AS "errorMessage", r.client_ip AS "clientIp"
+               r.error_message AS "errorMessage", r.client_ip AS "clientIp", r.actor AS "actor"
         FROM external_api_requests r LEFT JOIN providers pv ON pv.id = r.provider_id
         """;
 
@@ -74,17 +74,19 @@ public class ApiLogController {
         return jdbc.queryForList("SELECT DISTINCT endpoint FROM external_api_requests ORDER BY endpoint", Map.of(), String.class);
     }
 
-    public record LogDetail(UUID id, Instant receivedAt, UUID providerId, UUID apiKeyId, String requestId, String eventId,
-                            String endpoint, String httpMethod, int httpStatus, String requestStatus,
-                            JsonNode processingResult, String errorMessage, String clientIp, int durationMs) {
+    public record LogDetail(UUID id, Instant receivedAt, UUID providerId, String providerName, UUID apiKeyId, String requestId,
+                            String eventId, String endpoint, String httpMethod, int httpStatus, String requestStatus,
+                            JsonNode processingResult, String errorMessage, String clientIp, int durationMs, String actor) {
     }
 
     @GetMapping("/{id}")
     @Transactional(readOnly = true)
     public LogDetail detail(@PathVariable UUID id) {
         ExternalApiRequest r = requests.findById(id).orElseThrow(() -> ApiException.notFound("LOG_NOT_FOUND", "Log entry not found"));
-        return new LogDetail(r.getId(), r.getReceivedAt(), r.getProviderId(), r.getApiKeyId(), r.getRequestId(), r.getEventId(),
-            r.getEndpoint(), r.getHttpMethod(), r.getHttpStatus(), r.getRequestStatus(), r.getProcessingResult(),
-            r.getErrorMessage(), r.getClientIp(), r.getDurationMs());
+        String providerName = r.getProviderId() == null ? null : jdbc.queryForList("SELECT name FROM providers WHERE id = :id",
+            Map.of("id", r.getProviderId()), String.class).stream().findFirst().orElse(null);
+        return new LogDetail(r.getId(), r.getReceivedAt(), r.getProviderId(), providerName, r.getApiKeyId(), r.getRequestId(),
+            r.getEventId(), r.getEndpoint(), r.getHttpMethod(), r.getHttpStatus(), r.getRequestStatus(),
+            r.getProcessingResult(), r.getErrorMessage(), r.getClientIp(), r.getDurationMs(), r.getActor());
     }
 }
