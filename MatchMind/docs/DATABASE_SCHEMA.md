@@ -178,6 +178,18 @@ Append-only copy of every saved version: `template_id`, `version` (unique togeth
 `version` bump; `tr_prompt_template_versions_append_only` rejects `UPDATE` and `DELETE`. Restore saves an old version's
 content as a new version.
 
+### Archive, rename and merge (V24)
+- `providers`, `ai_models` and `matches` get `archived_at TIMESTAMPTZ` (NULL = visible) and a partial index
+  `ix_<table>_active ... WHERE archived_at IS NULL`. Nothing is deleted.
+- `ai_models.display_name` (nullable) overrides the shown name; `(name, version)` identity is untouched.
+- `ai_models.merged_into_id` points at the surviving model of the same provider: composite FK
+  `fk_ai_models_merged_into (merged_into_id, provider_id) -> ai_models (id, provider_id)` plus
+  `ck_ai_models_not_self_merged`. Trigger `trg_ai_models_no_chain` (function `mm_ai_models_no_chain`, `BEFORE INSERT OR
+  UPDATE OF merged_into_id`) raises `P0001` `MM_MODEL_MERGE_CHAIN: <id>` when the target is itself merged, or when other
+  models already merge into the row being merged. Re-pointing A->B to A->C is application logic.
+- `admin_actions` (append-only, V23 triggers): `entity` (`PROVIDER|MODEL|MATCH`), `entity_id`, `action`
+  (`ARCHIVE|UNARCHIVE|RENAME|MERGE|UNMERGE`), `reason`, `actor`, `at`, `details` JSONB; index `(entity, entity_id, at DESC)`.
+
 ## Search folding (V22)
 `mm_fold(text)` = lower-case + `unaccent` + NFC, `IMMUTABLE`. Search and the league filter compare `mm_fold` on both
 sides, so "atletico" finds "Atlético". No index yet: a leading-wildcard `LIKE` cannot use a btree; a `pg_trgm` GIN index
