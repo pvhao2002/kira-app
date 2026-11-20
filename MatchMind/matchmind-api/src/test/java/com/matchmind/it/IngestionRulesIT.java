@@ -86,6 +86,75 @@ class IngestionRulesIT extends IntegrationTestBase {
     }
 
     @Test
+    void spellingVariantsOfTheTeamsLandOnOneMatch() throws Exception { // UX-104
+        String provider = newIntegration("rules-model").provider();
+        String suffix = UUID.randomUUID().toString().substring(0, 6);
+        String matchId = null;
+        for (String[] teams : new String[][]{{"Atlético Madrid " + suffix, "Real Betis"},
+            {"ATLETICO  MADRID " + suffix + " FC", "real betis"}, {"Atlético Madrid " + suffix, "Real Betis CF"}}) {
+            ObjectNode p = live();
+            ObjectNode match = (ObjectNode) p.get("match");
+            match.remove("externalMatchId");
+            match.put("homeTeam", teams[0]).put("awayTeam", teams[1]);
+            MvcResult res = send(provider, p);
+            assertThat(res.getResponse().getStatus()).as(res.getResponse().getContentAsString()).isEqualTo(201);
+            String got = read(res).get("matchId").asText();
+            if (matchId == null) matchId = got;
+            assertThat(got).as(teams[0]).isEqualTo(matchId);
+        }
+        assertThat(db.queryForObject("SELECT home_team FROM matches WHERE id = ?::uuid", String.class, matchId))
+            .isEqualTo("Atlético Madrid " + suffix); // first spelling kept for display
+    }
+
+    @Test
+    void sameExternalMatchIdWithOtherTeamsIsAConflict() throws Exception { // UX-045
+        String provider = newIntegration("rules-model").provider();
+        String ext = id("m");
+        assertThat(send(provider, json.readTree(Payloads.livePrediction(id("e"), ext, "rules-model"))).getResponse().getStatus())
+            .isEqualTo(201);
+
+        ObjectNode other = (ObjectNode) json.readTree(Payloads.livePrediction(id("e"), ext, "rules-model"));
+        ((ObjectNode) other.get("match")).put("homeTeam", "Totally Different Team");
+        assertRejected(send(provider, other), 409, "MATCH_MISMATCH", "match.homeTeam");
+        assertThat(db.queryForObject("SELECT home_team FROM matches WHERE external_match_id = ?", String.class, ext))
+            .isEqualTo("Arsenal");
+
+        ObjectNode variant = (ObjectNode) json.readTree(Payloads.livePrediction(id("e"), ext, "rules-model"));
+        ((ObjectNode) variant.get("match")).put("homeTeam", "ARSENAL FC");
+        assertThat(send(provider, variant).getResponse().getStatus()).isEqualTo(201);
+
+        // A PRE_MATCH prediction after the stored kick-off (19:45) is refused even without startTime in the payload.
+        ObjectNode late = (ObjectNode) json.readTree(Payloads.preMatchWithCorners(id("e"), ext, "rules-model", "HOME"));
+        ObjectNode lateMatch = (ObjectNode) late.get("match");
+        lateMatch.remove("startTime");
+        lateMatch.put("homeTeam", "Arsenal").put("awayTeam", "Chelsea");
+        late.put("predictedAt", "2025-11-20T21:00:00Z");
+        assertRejected(send(provider, late), 400, "VALIDATION_ERROR", "predictedAt");
+    }
+
+    @Test
+    void rescheduledPostponedMatchIsScheduledAgainWithHistory() throws Exception { // UX-105
+        String provider = newIntegration("rules-model").provider();
+        String ext = id("m");
+        String first = Payloads.preMatchWithCorners(id("e"), ext, "rules-model", "HOME");
+        assertThat(external(provider, "predictions", first).getResponse().getStatus()).isEqualTo(201);
+        assertThat(external(provider, "matches/results", Payloads.result(ext, "POSTPONED", null, null, "2025-11-21T19:00:00Z"))
+            .getResponse().getStatus()).isEqualTo(200);
+
+        String moved = Payloads.preMatchWithCorners(id("e"), ext, "rules-model", "AWAY")
+            .replace("\"startTime\": \"2025-11-21T20:00:00Z\"", "\"startTime\": \"2025-11-28T20:00:00Z\"");
+        MvcResult res = external(provider, "predictions", moved);
+        assertThat(res.getResponse().getStatus()).as(res.getResponse().getContentAsString()).isEqualTo(201);
+
+        String matchId = read(res).get("matchId").asText();
+        var row = db.queryForMap("SELECT status, start_time FROM matches WHERE id = ?::uuid", matchId);
+        assertThat(row.get("status")).isEqualTo("SCHEDULED");
+        assertThat(((java.sql.Timestamp) row.get("start_time")).toInstant()).isEqualTo(java.time.Instant.parse("2025-11-28T20:00:00Z"));
+        JsonNode history = adminGet("/api/v1/matches/" + matchId).get("resultHistory");
+        assertThat(history.toString()).contains("2025-11-21T20:00:00Z", "2025-11-28T20:00:00Z", "POSTPONED", "SCHEDULED");
+    }
+
+    @Test
     void atMostTwoPicks() throws Exception { // UX-097
         ObjectNode p = live();
         com.fasterxml.jackson.databind.node.ArrayNode picks = (com.fasterxml.jackson.databind.node.ArrayNode) p.get("picks");

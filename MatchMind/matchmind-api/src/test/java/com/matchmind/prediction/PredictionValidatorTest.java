@@ -122,6 +122,18 @@ class PredictionValidatorTest {
     }
 
     @Test
+    void teamKeyIgnoresCaseSpacingAccentsAndClubSuffix() {
+        String key = PredictionValidator.teamKey("Atlético Madrid");
+        assertEquals("atletico madrid", key);
+        for (String v : List.of("Atletico Madrid", "ATLÉTICO  MADRID", "Atlético Madrid FC", "Atletico Madrid F.C.",
+            "Atlético Madrid", " atlético madrid ")) {
+            assertEquals(key, PredictionValidator.teamKey(v), v);
+        }
+        assertEquals("paris saint germain", PredictionValidator.teamKey("Paris Saint-Germain"));
+        assertEquals("fc", PredictionValidator.teamKey("FC")); // a name that is only the suffix keeps it
+    }
+
+    @Test
     void identicalPicksAreRejected() {
         // Two snapshots of the same OU 2.5 line: picking OVER on both is the same bet twice.
         var sameLine = request("PRE_MATCH", null, null,

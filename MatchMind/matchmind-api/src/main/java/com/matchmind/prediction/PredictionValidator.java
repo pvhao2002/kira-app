@@ -14,6 +14,7 @@ import com.matchmind.shared.TimeRules;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /** Pure cross-field validation of a prediction payload; no I/O, so it is unit-testable without a database. */
 final class PredictionValidator {
@@ -90,9 +92,22 @@ final class PredictionValidator {
         else if (h != null && teamKey(h).equals(teamKey(a))) errors.put("match.awayTeam", "must differ from homeTeam");
     }
 
-    /** Identity of a team name for matching: cleaned and case-insensitive. */
+    private static final Pattern MARKS = Pattern.compile("\\p{M}+");
+    private static final Pattern SEPARATORS = Pattern.compile("[^\\p{L}\\p{N}]+");
+    private static final Pattern CLUB_SUFFIX = Pattern.compile(" (fc|cf|sc|afc)$");
+
+    /**
+     * Identity of a team name when a match is recognised by its teams: case, accents, punctuation, spacing and a
+     * trailing club suffix (FC, CF, SC, AFC) do not matter. "Atlético Madrid FC" and "ATLETICO  MADRID" are one team.
+     * ponytail: no alias table ("Atletico de Madrid", "Man Utd"); an admin merge tool would be the next step.
+     */
     static String teamKey(String name) {
-        return TextRules.clean(name).toLowerCase(Locale.ROOT);
+        String folded = MARKS.matcher(Normalizer.normalize(TextRules.clean(name), Normalizer.Form.NFD)).replaceAll("");
+        String key = SEPARATORS.matcher(folded.toLowerCase(Locale.ROOT).replace(".", "").replace("'", "").replace("’", ""))
+            .replaceAll(" ").trim();
+        if (key.isEmpty()) return TextRules.clean(name).toLowerCase(Locale.ROOT); // no letters or digits at all
+        String stripped = CLUB_SUFFIX.matcher(key).replaceFirst("");
+        return stripped.isEmpty() ? key : stripped;
     }
 
     /** Shared time window, plus: a PRE_MATCH prediction (absent predictedAt = now) is made before kick-off. */

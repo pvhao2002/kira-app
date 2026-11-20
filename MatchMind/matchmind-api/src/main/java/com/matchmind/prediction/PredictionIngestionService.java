@@ -42,7 +42,6 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -163,28 +162,66 @@ public class PredictionIngestionService {
         String league = m.league() == null || TextRules.clean(m.league()).isEmpty() ? null : TextRules.clean(m.league());
         Instant start = m.startTime() != null ? m.startTime() : estimatedKickOff(r.matchMinute(), predictedAt);
         String externalId = m.externalMatchId() != null ? m.externalMatchId() : externalIdByTeams(providerId, home, away, start);
-        jdbc.update("""
+        boolean created = jdbc.update("""
             INSERT INTO matches (provider_id, external_match_id, league, home_team, away_team, start_time, status)
             VALUES (:provider, :ext, :league, :home, :away, :start, :status)
             ON CONFLICT (provider_id, external_match_id) DO NOTHING
             """, new MapSqlParameterSource().addValue("provider", providerId).addValue("ext", externalId)
             .addValue("league", league != null ? league : UNKNOWN_LEAGUE).addValue("home", home).addValue("away", away)
-            .addValue("start", Timestamp.from(start)).addValue("status", status));
+            .addValue("start", Timestamp.from(start)).addValue("status", status)) == 1;
         Match match = matches.lockByProviderAndExternalId(providerId, externalId).orElseThrow();
         // Picks made after the result is known would never settle and could game the win rate.
         if (match.getResultUpdatedAt() != null && FINAL_STATUSES.contains(match.getStatus())) {
             throw ApiException.conflict("MATCH_ALREADY_FINAL",
                 "This match is already " + match.getStatus() + "; predictions are no longer accepted for it");
         }
-        // Missing details never overwrite known ones: an estimated kick-off only applies to a new match.
+        if (!created) checkSameTeams(match, home, away);
+        if ("PRE_MATCH".equals(r.predictionType()) && m.startTime() == null && predictedAt.isAfter(match.getStartTime())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Prediction payload is invalid",
+                Map.of("predictedAt", "a PRE_MATCH prediction must be made before the match's kick-off (" + match.getStartTime() + ")"));
+        }
+        // Missing details never overwrite known ones: an estimated kick-off only applies to a new match. Team names
+        // keep the spelling first seen (they are equal by teamKey here).
         if (league != null) match.setLeague(league);
-        match.setHomeTeam(home);
-        match.setAwayTeam(away);
-        if (m.startTime() != null) match.setStartTime(m.startTime());
         boolean resultKnown = match.getResultUpdatedAt() != null
             || RESULT_STATUSES.contains(match.getStatus());
-        if (!resultKnown) match.setStatus(status);
+        Instant newStart = m.startTime() == null ? null : m.startTime().truncatedTo(ChronoUnit.MICROS); // TIMESTAMPTZ precision
+        boolean moved = newStart != null && !newStart.equals(match.getStartTime());
+        // A new kick-off for a postponed match means it was rescheduled: it is open for predictions again.
+        String newStatus = !resultKnown || (moved && "POSTPONED".equals(match.getStatus())) ? status : match.getStatus();
+        if (moved) {
+            recordKickOffMove(match, newStart, newStatus);
+            match.setStartTime(newStart);
+        }
+        match.setStatus(newStatus);
         return matches.saveAndFlush(match);
+    }
+
+    /** {@code externalMatchId} names one game: a payload with other teams for it is an agent mistake, not an update. */
+    private static void checkSameTeams(Match match, String home, String away) {
+        Map<String, String> diff = new LinkedHashMap<>();
+        if (!PredictionValidator.teamKey(match.getHomeTeam()).equals(PredictionValidator.teamKey(home))) {
+            diff.put("match.homeTeam", "stored '" + match.getHomeTeam() + "', sent '" + home + "'");
+        }
+        if (!PredictionValidator.teamKey(match.getAwayTeam()).equals(PredictionValidator.teamKey(away))) {
+            diff.put("match.awayTeam", "stored '" + match.getAwayTeam() + "', sent '" + away + "'");
+        }
+        if (!diff.isEmpty()) {
+            throw new ApiException(HttpStatus.CONFLICT, "MATCH_MISMATCH",
+                "externalMatchId " + match.getExternalMatchId() + " is already a match between other teams", diff);
+        }
+    }
+
+    /** Kick-off moves go to the match's result history, so a reschedule is visible on the match page. */
+    private void recordKickOffMove(Match match, Instant newStart, String newStatus) {
+        jdbc.update("""
+            INSERT INTO match_result_history (match_id, previous_result, new_result, change_source)
+            VALUES (:match, CAST(:before AS jsonb), CAST(:after AS jsonb), 'PROVIDER')
+            """, new MapSqlParameterSource().addValue("match", match.getId())
+            .addValue("before", json.createObjectNode().put("startTime", match.getStartTime().toString())
+                .put("status", match.getStatus()).toString())
+            .addValue("after", json.createObjectNode().put("startTime", newStart.toString())
+                .put("status", newStatus).toString()));
     }
 
     /**
@@ -202,17 +239,24 @@ public class PredictionIngestionService {
      * Same teams on the same UTC day give the same id, so concurrent first screenshots end up on one match.
      */
     private String externalIdByTeams(UUID providerId, String home, String away, Instant start) {
-        List<String> near = jdbc.queryForList("""
-            SELECT external_match_id FROM matches
-            WHERE provider_id = :provider AND lower(home_team) = lower(:home) AND lower(away_team) = lower(:away)
-              AND start_time BETWEEN :from AND :to
-            ORDER BY abs(extract(epoch FROM start_time - :start)) LIMIT 1
-            """, new MapSqlParameterSource().addValue("provider", providerId).addValue("home", home).addValue("away", away)
+        String homeKey = PredictionValidator.teamKey(home);
+        String awayKey = PredictionValidator.teamKey(away);
+        // Team names are compared by teamKey in Java; the time window keeps the candidate list small.
+        List<Map<String, Object>> near = jdbc.queryForList("""
+            SELECT external_match_id, home_team, away_team FROM matches
+            WHERE provider_id = :provider AND start_time BETWEEN :from AND :to
+            ORDER BY abs(extract(epoch FROM start_time - :start))
+            """, new MapSqlParameterSource().addValue("provider", providerId)
             .addValue("from", start.minus(SAME_MATCH_WINDOW).atOffset(ZoneOffset.UTC))
             .addValue("to", start.plus(SAME_MATCH_WINDOW).atOffset(ZoneOffset.UTC))
-            .addValue("start", start.atOffset(ZoneOffset.UTC)), String.class);
-        if (!near.isEmpty()) return near.getFirst();
-        String key = home.toLowerCase(Locale.ROOT) + "|" + away.toLowerCase(Locale.ROOT) + "|" + LocalDate.ofInstant(start, ZoneOffset.UTC);
+            .addValue("start", start.atOffset(ZoneOffset.UTC)));
+        for (Map<String, Object> row : near) {
+            if (homeKey.equals(PredictionValidator.teamKey((String) row.get("home_team")))
+                && awayKey.equals(PredictionValidator.teamKey((String) row.get("away_team")))) {
+                return (String) row.get("external_match_id");
+            }
+        }
+        String key = homeKey + "|" + awayKey + "|" + LocalDate.ofInstant(start, ZoneOffset.UTC);
         return "auto-" + sha256Hex(key.getBytes(StandardCharsets.UTF_8)).substring(0, 24);
     }
 
