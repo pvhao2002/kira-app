@@ -60,7 +60,7 @@ const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCas
               }
             </tbody>
           </table></div>
-          <mm-paginator [page]="page()" [size]="size" [total]="filtered().length" [sizes]="[]" unit="models" (change)="setPage($event)" />
+          <mm-paginator [page]="page()" [size]="size" [total]="filtered().length" [sizes]="[]" unit="models" (pageChange)="setPage($event)" />
         </section>
       }
     </div>`,

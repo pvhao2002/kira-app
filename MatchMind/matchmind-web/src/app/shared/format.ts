@@ -1,7 +1,30 @@
 import { PredictionStatsView, SettlementResult } from '../core/models';
 
-const dateTime = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-const shortDateTime = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+/**
+ * One display locale for the whole app, matching its English text: "29 Dec 2026, 17:00" (day first, 24-hour), never the
+ * browser's locale. Times stay in the viewer's own time zone; `tzLabel()` names it (UX-021, UX-112).
+ */
+export const APP_LOCALE = 'en-GB';
+const dateTime = new Intl.DateTimeFormat(APP_LOCALE, { dateStyle: 'medium', timeStyle: 'short' });
+const shortDateTime = new Intl.DateTimeFormat(APP_LOCALE, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+/** "GMT+7": the offset of the zone times are shown in (the browser's unless `timeZone` is given). */
+export function tzLabel(at = new Date(), timeZone?: string): string {
+  const parts = new Intl.DateTimeFormat(APP_LOCALE, { timeZone, timeZoneName: 'shortOffset' }).formatToParts(at);
+  return parts.find(p => p.type === 'timeZoneName')?.value ?? 'GMT';
+}
+
+/** Explicit BiDi embeddings, overrides, isolates and marks: agent-supplied text may carry them (UX-030). */
+export const BIDI_CONTROLS = /[‎‏‪-‮⁦-⁩]/g;
+
+/**
+ * Agent text (team, league, model names) for display: when it carries BiDi controls it is wrapped in FSI…PDI, which
+ * closes any unterminated override at its end, so it cannot reorder the text around it. Plain text is returned as is.
+ */
+export function bidiSafe(v: string | null | undefined): string {
+  if (v === null || v === undefined || v === '') return '—';
+  return new RegExp(BIDI_CONTROLS.source).test(v) ? `⁨${v}⁩` : v;
+}
 
 export function fmtDateTime(iso: string | null | undefined): string {
   return iso ? dateTime.format(new Date(iso)) : '—';
@@ -90,7 +113,7 @@ export function cell(row: Record<string, unknown>, c: Col): string {
     case 'num': return num(v as number | null);
     case 'date': return fmtDateTime(v as string | null);
     case 'int': return v === null || v === undefined ? '—' : String(v);
-    default: return v === null || v === undefined || v === '' ? '—' : String(v);
+    default: return bidiSafe(v === null || v === undefined ? v : String(v));
   }
 }
 
@@ -123,7 +146,7 @@ export interface FieldChange { field: string; before: string; after: string; }
 export function changedFields(before: Record<string, unknown> | null | undefined, after: Record<string, unknown> | null | undefined): FieldChange[] {
   const show = (v: unknown): string => {
     if (v === null || v === undefined || v === '') return '—';
-    if (typeof v === 'string') return /^\d{4}-\d\d-\d\dT/.test(v) ? fmtDateTime(v) : /^[A-Z][A-Z_]+$/.test(v) ? humanize(v) : v;
+    if (typeof v === 'string') return /^\d{4}-\d\d-\d\dT/.test(v) ? fmtDateTime(v) : /^[A-Z][A-Z_]+$/.test(v) ? humanize(v) : bidiSafe(v);
     return typeof v === 'object' ? JSON.stringify(v) : String(v);
   };
   const label = (k: string) => humanize(k.replace(/([a-z\d])([A-Z])/g, '$1_$2'));

@@ -7,18 +7,50 @@ import {
 // ------------------------------------------------------------------ toasts
 export interface Toast { id: number; severity: 'success' | 'info' | 'warn' | 'error'; summary: string; detail?: string; }
 
+const TOAST_MS = 5000;
+
+/**
+ * Errors stay until dismissed; other toasts leave after 5 s, counting only while the stack is not hovered or focused
+ * (WCAG 2.2.1). Nothing is dropped; an identical toast already on screen restarts its countdown instead of stacking.
+ */
 @Injectable({ providedIn: 'root' })
 export class ToastService {
   readonly toasts = signal<Toast[]>([]);
   private seq = 0;
+  private paused = false;
+  private readonly timers = new Map<number, ReturnType<typeof setTimeout>>();
 
   add(t: Omit<Toast, 'id'>): void {
-    const id = ++this.seq;
-    this.toasts.update(list => [...list.slice(-3), { ...t, id }]);
-    setTimeout(() => this.dismiss(id), t.severity === 'error' ? 8000 : 5000);
+    const same = this.toasts().find(x => x.severity === t.severity && x.summary === t.summary && x.detail === t.detail);
+    const id = same?.id ?? ++this.seq;
+    if (!same) this.toasts.update(list => [...list, { ...t, id }]);
+    this.schedule(id, t.severity);
   }
 
-  dismiss(id: number): void { this.toasts.update(list => list.filter(x => x.id !== id)); }
+  dismiss(id: number): void {
+    clearTimeout(this.timers.get(id));
+    this.timers.delete(id);
+    this.toasts.update(list => list.filter(x => x.id !== id));
+  }
+
+  /** Hover / focus inside the stack: stop every countdown. */
+  pause(): void {
+    this.paused = true;
+    for (const t of this.timers.values()) clearTimeout(t);
+    this.timers.clear();
+  }
+
+  /** Pointer and focus left: each remaining toast gets a fresh 5 s. */
+  resume(): void {
+    this.paused = false;
+    for (const t of this.toasts()) this.schedule(t.id, t.severity);
+  }
+
+  private schedule(id: number, severity: Toast['severity']): void {
+    clearTimeout(this.timers.get(id));
+    if (this.paused || severity === 'error') return;
+    this.timers.set(id, setTimeout(() => this.dismiss(id), TOAST_MS));
+  }
 
   /** Copies text and reports the outcome; `what` names it in the toast ("JSON", "API key"). */
   copy(text: string, what: string): void {
@@ -33,7 +65,8 @@ export class ToastService {
   selector: 'mm-toasts',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="toasts" aria-live="polite">
+    <div class="toasts" aria-live="polite" (mouseenter)="toast.pause()" (mouseleave)="toast.resume()"
+      (focusin)="toast.pause()" (focusout)="focusOut($event)">
       @for (t of toast.toasts(); track t.id) {
         <div class="toast toast-{{ t.severity }}" [attr.role]="t.severity === 'error' ? 'alert' : 'status'">
           <div><strong>{{ t.summary }}</strong>@if (t.detail) { <span>{{ t.detail }}</span> }</div>
@@ -44,6 +77,10 @@ export class ToastService {
 })
 export class Toasts {
   readonly toast = inject(ToastService);
+
+  focusOut(e: FocusEvent): void {
+    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)) this.toast.resume();
+  }
 }
 
 // ------------------------------------------------------------------ dialog (native <dialog>: focus trap + Esc for free)
@@ -53,12 +90,12 @@ let dialogSeq = 0;
   selector: 'mm-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <dialog #d class="dialog" [style.width]="width()" [attr.aria-labelledby]="titleId" (close)="onNativeClose()" (cancel)="!closable() && $event.preventDefault()">
+    <dialog #d class="dialog" [style.width]="width()" [attr.aria-labelledby]="titleId" [attr.aria-busy]="busy() || null" (close)="onNativeClose()" (cancel)="onCancel($event)">
       <header class="dialog-head">
         <h2 [id]="titleId">{{ header() }}</h2>
-        @if (closable()) { <button type="button" class="btn btn-text btn-icon" aria-label="Close" (click)="closed.emit()"><i class="pi pi-times"></i></button> }
+        @if (closable()) { <button type="button" class="btn btn-text btn-icon" aria-label="Close" [disabled]="busy()" (click)="closed.emit()"><i class="pi pi-times"></i></button> }
       </header>
-      @if (open()) { <div class="dialog-body"><ng-content /></div> }
+      @if (open()) { <fieldset class="dialog-body" [disabled]="busy()"><ng-content /></fieldset> }
     </dialog>`,
 })
 export class Dialog {
@@ -66,6 +103,11 @@ export class Dialog {
   readonly header = input('');
   readonly width = input('min(520px, 95vw)');
   readonly closable = input(true);
+  /**
+   * The page's submit is in flight: every control in the body is disabled (native `<fieldset disabled>`), and the
+   * dialog cannot be closed until it ends, so a double click or Enter cannot send the request twice.
+   */
+  readonly busy = input(false);
   readonly closed = output<void>();
   readonly titleId = `mm-dialog-${++dialogSeq}`;
   private readonly el = viewChild.required<ElementRef<HTMLDialogElement>>('d');
@@ -78,11 +120,16 @@ export class Dialog {
     });
   }
 
+  /** Esc. A statement, not an expression: a listener returning `false` makes Angular prevent the default (UX-120). */
+  onCancel(e: Event): void {
+    if (!this.closable() || this.busy()) e.preventDefault();
+  }
+
   /** Esc (native cancel → close) while the parent still thinks it is open. */
   onNativeClose(): void {
     if (!this.open()) return;
     // Chrome closes a modal on a second Esc even when cancel is prevented; a non-closable dialog must stay up.
-    if (!this.closable()) this.el().nativeElement.showModal?.();
+    if (!this.closable() || this.busy()) this.el().nativeElement.showModal?.();
     else this.closed.emit();
   }
 }
@@ -168,7 +215,7 @@ export function sortParam(sort: Sort): string | undefined {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nav class="paginator" aria-label="Pagination">
-      <span class="muted-text">{{ first() }}–{{ last() }} of {{ total() }}{{ unit() ? ' ' + unit() : '' }}</span>
+      <span class="muted-text" role="status">{{ first() }}–{{ last() }} of {{ total() }}{{ unit() ? ' ' + unit() : '' }}</span>
       <span class="row">
         <button type="button" class="btn btn-text btn-icon" aria-label="First page" [disabled]="page() === 0" (click)="go(0)"><i class="pi pi-angle-double-left"></i></button>
         <button type="button" class="btn btn-text btn-icon" aria-label="Previous page" [disabled]="page() === 0" (click)="go(page() - 1)"><i class="pi pi-angle-left"></i></button>
@@ -189,30 +236,42 @@ export class Paginator {
   readonly total = input(0);
   readonly sizes = input<number[]>([25, 50, 100]);
   readonly unit = input('');
-  readonly change = output<{ page: number; size: number }>();
+  /** Not `change`: the `<select>`'s DOM change event bubbles to the host and would reach the same listener (UX-080). */
+  readonly pageChange = output<{ page: number; size: number }>();
   readonly pages = computed(() => Math.max(1, Math.ceil(this.total() / this.size())));
   readonly first = computed(() => this.total() === 0 ? 0 : this.page() * this.size() + 1);
   readonly last = computed(() => Math.min(this.total(), (this.page() + 1) * this.size()));
 
-  go(p: number): void { this.change.emit({ page: p, size: this.size() }); }
-  resize(e: Event): void { this.change.emit({ page: 0, size: Number((e.target as HTMLSelectElement).value) }); }
+  go(p: number): void { this.pageChange.emit({ page: p, size: this.size() }); }
+  resize(e: Event): void { this.pageChange.emit({ page: 0, size: Number((e.target as HTMLSelectElement).value) }); }
 }
 
-/** Drag handle on the right edge of a header cell. */
+/** Drag handle on the right edge of a header cell; also a focusable separator: Left/Right resize (Shift: 64px). */
 @Directive({ selector: 'th[mmResize]', host: { class: 'resizable' } })
 export class ResizableColumn {
   constructor() {
     const th = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     const handle = document.createElement('span');
     handle.className = 'col-resizer';
-    handle.setAttribute('aria-hidden', 'true');
+    handle.setAttribute('role', 'separator');
+    handle.setAttribute('aria-orientation', 'vertical');
+    handle.tabIndex = 0;
     th.appendChild(handle);
+    const setWidth = (px: number) => { const w = `${Math.max(48, Math.round(px))}px`; th.style.width = w; th.style.minWidth = w; };
+    // The header text is projected after construction: name the handle once it is there.
+    queueMicrotask(() => handle.setAttribute('aria-label', `Resize column ${th.textContent?.trim() ?? ''}`.trim()));
+    handle.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const step = (e.shiftKey ? 64 : 16) * (e.key === 'ArrowRight' ? 1 : -1);
+      setWidth((th.offsetWidth || parseFloat(th.style.width) || 0) + step);
+    });
     handle.addEventListener('pointerdown', down => {
       down.preventDefault();
       down.stopPropagation();
       const startX = down.clientX, startW = th.offsetWidth;
       handle.setPointerCapture?.(down.pointerId);
-      const move = (e: PointerEvent) => { const w = `${Math.max(48, startW + e.clientX - startX)}px`; th.style.width = w; th.style.minWidth = w; };
+      const move = (e: PointerEvent) => setWidth(startW + e.clientX - startX);
       const up = () => {
         handle.removeEventListener('pointermove', move);
         for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) handle.removeEventListener(t, up);
@@ -241,6 +300,7 @@ export class Expansion {
     <div class="tabs" role="tablist" (keydown)="key($event)">
       @for (t of tabs(); track t.value) {
         <button type="button" role="tab" class="tab" [id]="'tab-' + t.value" [class.active]="t.value === value()" [attr.aria-selected]="t.value === value()"
+          [attr.aria-controls]="t.value === value() ? controls() : null"
           [attr.tabindex]="t.value === value() ? 0 : -1" (click)="value.set(t.value)">{{ t.label }}</button>
       }
     </div>`,
@@ -248,14 +308,21 @@ export class Expansion {
 export class Tabs {
   readonly tabs = input.required<{ value: string; label: string }[]>();
   readonly value = model.required<string>();
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  /** Id of the page's `role="tabpanel"` element; set on the selected tab as `aria-controls`. */
+  readonly controls = input<string | null>(null);
 
+  /**
+   * APG tabs with manual activation: arrows, Home and End move focus; Enter/Space (a click) selects. Reports load a
+   * query per tab, so automatic activation would fire one request per key press (UX-125).
+   */
   key(e: KeyboardEvent): void {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    const list = this.tabs();
-    const i = list.findIndex(t => t.value === this.value());
-    const next = list[(i + (e.key === 'ArrowRight' ? 1 : list.length - 1)) % list.length];
-    this.value.set(next.value);
-    queueMicrotask(() => this.host.nativeElement.querySelector<HTMLElement>(`#tab-${next.value}`)?.focus());
+    const buttons = [...(e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role="tab"]')];
+    const i = buttons.indexOf(document.activeElement as HTMLElement);
+    const n = buttons.length;
+    const target = e.key === 'Home' ? 0 : e.key === 'End' ? n - 1
+      : e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i - 1 + n) % n : -1;
+    if (target < 0 || !n) return;
+    e.preventDefault();
+    buttons[target].focus();
   }
 }

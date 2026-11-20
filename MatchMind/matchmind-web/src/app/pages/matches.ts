@@ -86,7 +86,7 @@ import { ResultTag, ScoreChip } from '../shared/ui';
           </table>
         </div>
         @if (!list.error()) {
-        <mm-paginator [page]="list.page()" [size]="list.size()" [total]="list.total()" unit="matches" (change)="list.setPage($event)" />
+        <mm-paginator [page]="list.page()" [size]="list.size()" [total]="list.total()" unit="matches" (pageChange)="list.setPage($event)" />
         }
       </section>
     </div>`,

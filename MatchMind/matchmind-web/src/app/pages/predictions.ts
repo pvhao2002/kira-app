@@ -102,7 +102,7 @@ export function pickSummary(p: PredictionRow): string {
         </table>
         </div>
         @if (!list.error()) {
-        <mm-paginator [page]="list.page()" [size]="list.size()" [total]="list.total()" unit="predictions" (change)="list.setPage($event)" />
+        <mm-paginator [page]="list.page()" [size]="list.size()" [total]="list.total()" unit="predictions" (pageChange)="list.setPage($event)" />
         }
       </section>
     </div>`,
