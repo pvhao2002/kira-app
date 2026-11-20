@@ -9,9 +9,11 @@ import com.matchmind.external.ExternalDtos.PredictionRequest;
 import com.matchmind.external.ExternalDtos.SimulationInput;
 import com.matchmind.settlement.SettlementEngine;
 import com.matchmind.shared.ApiException;
+import com.matchmind.shared.TimeRules;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,10 +26,15 @@ final class PredictionValidator {
 
     /** Cross-field rules Bean Validation cannot express. All problems are reported together. */
     static void validate(PredictionRequest r) {
+        validate(r, Instant.now());
+    }
+
+    static void validate(PredictionRequest r, Instant now) {
         Map<String, String> errors = new LinkedHashMap<>();
         boolean live = "LIVE".equals(r.predictionType());
         if (live && r.matchMinute() == null) errors.put("matchMinute", "required for LIVE predictions");
         if (live && r.currentScore() == null) errors.put("currentScore", "required for LIVE predictions");
+        validateTimes(r, live, now, errors);
 
         Map<String, OddsInput> oddsByRef = validateOdds(r.odds(), live, errors);
         validatePicks(r.picks(), oddsByRef, errors);
@@ -40,6 +47,20 @@ final class PredictionValidator {
         if (r.simulation() != null) validateSimulation(r.simulation(), errors);
         if (!errors.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Prediction payload is invalid", errors);
+        }
+    }
+
+    /** Shared time window, plus: a PRE_MATCH prediction (absent predictedAt = now) is made before kick-off. */
+    private static void validateTimes(PredictionRequest r, boolean live, Instant now, Map<String, String> errors) {
+        Instant start = r.match().startTime();
+        TimeRules.checkKickOff(start, "match.startTime", now, errors);
+        TimeRules.checkObserved(r.predictedAt(), "predictedAt", now, errors);
+        for (int i = 0; i < r.odds().size(); i++) {
+            TimeRules.checkObserved(r.odds().get(i).capturedAt(), "odds[" + i + "].capturedAt", now, errors);
+        }
+        Instant predictedAt = r.predictedAt() != null ? r.predictedAt() : now;
+        if (!live && start != null && predictedAt.isAfter(start) && !errors.containsKey("predictedAt")) {
+            errors.put("predictedAt", "a PRE_MATCH prediction must be made before match.startTime (absent predictedAt = now)");
         }
     }
 

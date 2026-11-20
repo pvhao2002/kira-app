@@ -1,6 +1,9 @@
 package com.matchmind.it;
 
-/** Callback payload builders matching docs/samples. */
+/**
+ * Callback payload builders matching docs/samples. Prediction times are in the past: the API refuses a predictedAt
+ * more than 5 minutes ahead of its clock.
+ */
 final class Payloads {
     private Payloads() {
     }
@@ -12,16 +15,16 @@ final class Payloads {
               "eventId": "%s",
               "model": {"name": "%s", "version": "1.0"},
               "match": {"externalMatchId": "%s", "league": "Premier League", "homeTeam": "Arsenal",
-                        "awayTeam": "Chelsea", "startTime": "2026-11-20T19:45:00Z", "status": "LIVE"},
+                        "awayTeam": "Chelsea", "startTime": "2025-11-20T19:45:00Z", "status": "LIVE"},
               "predictionType": "LIVE",
-              "predictedAt": "2026-11-20T20:40:00Z",
+              "predictedAt": "2025-11-20T20:40:00Z",
               "matchMinute": 55,
               "currentScore": {"home": 1, "away": 0},
               "odds": [
                 {"ref": "1x2-open", "market": "1X2", "stage": "OPENING", "homeOdds": 2.10, "drawOdds": 3.40, "awayOdds": 3.50},
                 {"ref": "ah-live", "market": "AH", "stage": "LIVE", "line": -0.5, "lineDisplay": "-0.5",
                  "homeOdds": 1.95, "awayOdds": 1.90, "settlementBasis": "REMAINING_MATCH",
-                 "scoreAtCapture": {"home": 1, "away": 0}, "capturedAt": "2026-11-20T20:39:30Z"},
+                 "scoreAtCapture": {"home": 1, "away": 0}, "capturedAt": "2025-11-20T20:39:30Z"},
                 {"ref": "ou-live", "market": "OU", "stage": "LIVE", "line": 2.25, "overOdds": 1.85, "underOdds": 2.00,
                  "settlementBasis": "FULL_MATCH", "scoreAtCapture": {"home": 1, "away": 0}}
               ],
@@ -47,9 +50,9 @@ final class Payloads {
               "eventId": "%s",
               "model": {"name": "%s", "version": "1.0"},
               "match": {"externalMatchId": "%s", "league": "La Liga", "homeTeam": "Real Madrid",
-                        "awayTeam": "Barcelona", "startTime": "2026-11-21T20:00:00Z"},
+                        "awayTeam": "Barcelona", "startTime": "2025-11-21T20:00:00Z"},
               "predictionType": "PRE_MATCH",
-              "predictedAt": "2026-11-21T18:00:00Z",
+              "predictedAt": "2025-11-21T18:00:00Z",
               "odds": [
                 {"ref": "1x2", "market": "1X2", "stage": "PRE_MATCH", "homeOdds": 2.40, "drawOdds": 3.30, "awayOdds": 2.90},
                 {"ref": "cou", "market": "CORNER_OU", "stage": "PRE_MATCH", "line": 9.75, "overOdds": 1.90, "underOdds": 1.90},

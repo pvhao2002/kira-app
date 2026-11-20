@@ -10,6 +10,7 @@ import com.matchmind.shared.ApiException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -58,6 +59,47 @@ class PredictionValidatorTest {
         assertTrue(errors.containsKey("odds[1].ref"), "duplicate ref");
         assertTrue(errors.containsKey("picks[1].rank"), "duplicate rank");
         assertEquals("unknown odds ref 'missing'", errors.get("picks[1].oddsRef"));
+    }
+
+    private static final Instant NOW = Instant.parse("2026-11-20T12:00:00Z");
+
+    private static PredictionRequest timed(String type, String startTime, String predictedAt, String capturedAt) {
+        OddsInput o = new OddsInput("o1", "OU", "PRE_MATCH", null, new BigDecimal("2.5"), null, null, null, null, TWO, TWO,
+            null, null, null, capturedAt == null ? null : Instant.parse(capturedAt), null);
+        return new PredictionRequest(null, null,
+            new MatchInfo(null, null, "A", "B", startTime == null ? null : Instant.parse(startTime), null), type,
+            predictedAt == null ? null : Instant.parse(predictedAt), "LIVE".equals(type) ? 30 : null,
+            "LIVE".equals(type) ? new Pair(0, 0) : null, null, List.of(o), null, null, List.of(pick("o1", 1)),
+            new CorrectScoreInput(1, 1, null), null);
+    }
+
+    private static Map<String, String> errorsAt(PredictionRequest r) {
+        return assertThrows(ApiException.class, () -> PredictionValidator.validate(r, NOW)).getFieldErrors();
+    }
+
+    @Test
+    void futurePredictedAtIsRejected() {
+        assertTrue(errorsAt(timed("LIVE", null, "2036-11-20T12:00:00Z", null)).containsKey("predictedAt"));
+        assertDoesNotThrow(() -> PredictionValidator.validate(timed("LIVE", null, "2026-11-20T12:04:00Z", null), NOW));
+    }
+
+    @Test
+    void preMatchPredictionMustNotBeAfterKickOff() {
+        assertTrue(errorsAt(timed("PRE_MATCH", "2026-11-20T10:00:00Z", "2026-11-20T11:00:00Z", null)).containsKey("predictedAt"));
+        // Absent predictedAt means "now": a PRE_MATCH for a match that already kicked off is refused too.
+        assertTrue(errorsAt(timed("PRE_MATCH", "2026-11-20T10:00:00Z", null, null)).containsKey("predictedAt"));
+        assertDoesNotThrow(() -> PredictionValidator.validate(timed("PRE_MATCH", "2026-11-20T15:00:00Z", null, null), NOW));
+    }
+
+    @Test
+    void kickOffOutsideTheWindowIsRejected() {
+        assertTrue(errorsAt(timed("PRE_MATCH", "+10000-01-01T00:00:00Z", null, null)).containsKey("match.startTime"));
+        assertTrue(errorsAt(timed("LIVE", "0001-01-01T00:00:00Z", null, null)).containsKey("match.startTime"));
+    }
+
+    @Test
+    void futureCapturedAtIsRejected() {
+        assertTrue(errorsAt(timed("LIVE", null, null, "2026-11-21T00:00:00Z")).containsKey("odds[0].capturedAt"));
     }
 
     @Test
