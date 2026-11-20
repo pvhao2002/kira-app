@@ -1,0 +1,124 @@
+name: Build changed services
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      projects: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          base: ${{ github.ref_name }}
+          filters: |
+            kira-gateway: ['kira-gateway/**']
+            kira-data-manager: ['kira-data-manager/**']
+            kira-producer: ['kira-producer/**']
+            kira-queue: ['kira-queue/**']
+            kira-crawl-java: ['kira-crawl-java/**']
+            kira-websocket: ['kira-websocket/**']
+            kira-schema: ['kira-schema/**']
+            farm-market/farm-market-service: ['farm-market/farm-market-service/**']
+            farm-market/farm-market-ui: ['farm-market/farm-market-ui/**']
+            MatchMind/matchmind-api: ['MatchMind/matchmind-api/**']
+            MatchMind/matchmind-web: ['MatchMind/matchmind-web/**']
+            kira-news-247/kira-news-247-service: ['kira-news-247/kira-news-247-service/**']
+            kira-news-247/kira-news-247-ui: ['kira-news-247/kira-news-247-ui/**']
+            kira-tool/kira-tool-service:
+              - 'kira-tool/kira-tool-service/**'
+              - 'kira-tool/deploy/Dockerfile'
+              - 'kira-tool/deploy/Dockerfile.dockerignore'
+              - 'kira-tool/deploy/patch-chrome-installer.mjs'
+            kira-tool/kira-tool-ui: ['kira-tool/kira-tool-ui/**']
+            kira-portfolio-3d: ['kira-portfolio-3d/**']
+
+  build:
+    name: Build ${{ matrix.project }}
+    needs: changes
+    if: needs.changes.outputs.projects != '' && needs.changes.outputs.projects != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.changes.outputs.projects) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Select build
+        id: target
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: |
+          if [[ "$PROJECT" == kira-tool/kira-tool-service ]]; then
+            # The deployment Dockerfile expects the service under app/.
+            context="$RUNNER_TEMP/kira-tool"
+            mkdir -p "$context/app" "$context/deploy"
+            cp -r "$PROJECT"/{package.json,package-lock.json,src} "$context/app/"
+            cp kira-tool/deploy/{Dockerfile,Dockerfile.dockerignore,patch-chrome-installer.mjs} "$context/deploy/"
+            echo "kind=docker" >> "$GITHUB_OUTPUT"
+            echo "context=$context" >> "$GITHUB_OUTPUT"
+            echo "file=$context/deploy/Dockerfile" >> "$GITHUB_OUTPUT"
+          elif [[ -f "$PROJECT/Dockerfile" ]]; then
+            echo "kind=docker" >> "$GITHUB_OUTPUT"
+            echo "context=$PROJECT" >> "$GITHUB_OUTPUT"
+            echo "file=$PROJECT/Dockerfile" >> "$GITHUB_OUTPUT"
+          elif [[ -f "$PROJECT/pom.xml" ]]; then
+            echo "kind=maven" >> "$GITHUB_OUTPUT"
+          else
+            echo "kind=npm" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.target.outputs.kind == 'docker'
+      - uses: docker/build-push-action@v6
+        if: steps.target.outputs.kind == 'docker'
+        with:
+          context: ${{ steps.target.outputs.context }}
+          file: ${{ steps.target.outputs.file }}
+          load: true
+          cache-from: type=gha,scope=${{ matrix.project }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.project }}
+
+      - uses: actions/setup-java@v4
+        if: steps.target.outputs.kind == 'maven'
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.project == 'kira-news-247/kira-news-247-service' && '25' || '21' }}
+          cache: maven
+          cache-dependency-path: ${{ matrix.project }}/pom.xml
+      - name: Build Maven project
+        if: steps.target.outputs.kind == 'maven'
+        working-directory: ${{ matrix.project }}
+        run: mvn -B -DskipTests package
+
+      - uses: actions/setup-node@v4
+        if: steps.target.outputs.kind == 'npm'
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+      - name: Build npm project
+        if: steps.target.outputs.kind == 'npm'
+        working-directory: ${{ matrix.project }}
+        run: |
+          npm ci
+          npm run build
