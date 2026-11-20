@@ -219,3 +219,29 @@ export interface ReviewItem {
   market: Market; pick: string; currentResult: SettlementResult; newResult: SettlementResult; reason: string | null;
   settledAt: string;
 }
+
+export interface ScorePair { home: number; away: number; }
+/** POST /matches/{id}/result (admin). Same rules as the external results API; resultAt is the server time. */
+export interface AdminResultRequest {
+  status: MatchStatus; finalScore?: ScorePair | null; finalCorners?: ScorePair | null; halfTimeScore?: ScorePair | null;
+  halfTimeCorners?: ScorePair | null; reason?: string | null;
+}
+export interface ResultResponse { matchId: string; status: MatchStatus; changed: boolean; settlement: MatchSettlement | null; }
+/** GET /settlements/matches/{id}/prompt-input: what the settlement prompt needs, with the pick ids. */
+export interface SettlementPromptInput {
+  matchId: string; externalMatchId: string; league: string; homeTeam: string; awayTeam: string; startTime: string;
+  status: MatchStatus; finalScore: ScorePair | null; finalCorners: ScorePair | null; halfTimeScore: ScorePair | null;
+  picks: SettlementPromptInputPick[];
+}
+export interface SettlementPromptInputPick {
+  pickId: string; predictionId: string; market: Market; pick: string; line: number | null; lineDisplay: string | null;
+  oddsStage: string; settlementBasis: string | null; price: number | null; scoreAtCapture: ScorePair | null;
+  cornersAtCapture: ScorePair | null; currentResult: SettlementResult;
+}
+/** keyRendered is false when {{EXTERNAL_API_KEY}} is still in the text (viewers, or no key configured). */
+export interface AgentPrompt { content: string; keyRendered: boolean; }
+export interface PromptVersionSummary {
+  version: number; description: string | null; active: boolean; updatedBy: string | null; updatedByUsername: string | null;
+  createdAt: string;
+}
+export interface PromptVersion extends PromptVersionSummary { content: string; }
