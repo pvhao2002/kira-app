@@ -96,10 +96,14 @@ describe('PredictionDetailPage', () => {
     c.reason = 'manual check';
     c.submitAction();
     c.submitAction();
+    f.detectChanges();
+    const dlg = f.nativeElement.querySelector('mm-dialog dialog') as HTMLElement;
+    expect(dlg.getAttribute('aria-busy')).toBe('true');
     http.expectOne(r => r.url === '/api/v1/settlements/picks/k1/override')
       .flush({ status: 409, code: 'MATCH_NOT_FINAL', message: 'The match is LIVE. Enter its final result first' }, { status: 409, statusText: 'Conflict' });
     f.detectChanges();
     expect(c.actionError()).toContain('Enter its final result first');
+    expect(dlg.hasAttribute('aria-busy')).toBe(false);   // unlocked again to fix and resend
   });
 
   it('focuses the first field, requires a 5-character reason and previews the impact (UX-032)', async () => {

@@ -104,6 +104,18 @@ describe('MatchDetailPage', () => {
     expect(text(q(f, 'result-outcome'))).toContain('1 settled, 2 already settled, 0 pending, 2 need review');
   });
 
+  it('locks the result dialog while it saves (UX-109)', async () => {
+    const f = await open([]);
+    q(f, 'result-open')!.click();
+    f.detectChanges();
+    f.componentInstance.submitResult();
+    f.detectChanges();
+    const dlg = f.nativeElement.querySelector('mm-dialog dialog') as HTMLElement;
+    expect(dlg.getAttribute('aria-busy')).toBe('true');
+    expect((dlg.querySelector('fieldset.dialog-body') as HTMLFieldSetElement).disabled).toBe(true);
+    http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/matches/m1/result');
+  });
+
   it('asks for the final score of a FINISHED match and sends nothing without it (UX-001)', async () => {
     const f = await open([]);
     const c = f.componentInstance;
@@ -126,6 +138,8 @@ describe('MatchDetailPage', () => {
     c.recalcReason = 'Score corrected';
     c.recalculateAll();
     c.recalculateAll();   // a double click sends once (UX-109)
+    f.detectChanges();
+    expect(f.nativeElement.querySelectorAll('mm-dialog dialog')[1].getAttribute('aria-busy')).toBe('true');
     const req = http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/settlements/matches/m1/recalculate');
     expect(req.request.body).toEqual({ reason: 'Score corrected' });
     req.flush([{ pickId: 'k1', market: 'OU', pick: 'OVER', result: 'LOSS', status: 'SUPERSEDED', reason: 'Score corrected', aiResult: null, aiAgrees: null }]);

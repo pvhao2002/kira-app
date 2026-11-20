@@ -169,7 +169,7 @@ const MIN_REASON = 5;
       }
     </div>
 
-    <mm-dialog [open]="resultOpen()" (closed)="resultOpen.set(false)" header="Match result">
+    <mm-dialog [open]="resultOpen()" [busy]="savingResult()" (closed)="resultOpen.set(false)" header="Match result">
       @if (resultOpen()) {
         <form class="stack" (ngSubmit)="submitResult()">
           <p class="muted-text">Saved as an admin result in the result history. FINISHED or CANCELLED settles the pending picks;
@@ -200,7 +200,7 @@ const MIN_REASON = 5;
       }
     </mm-dialog>
 
-    <mm-dialog [open]="recalcOpen()" (closed)="recalcOpen.set(false)" header="Recalculate affected picks">
+    <mm-dialog [open]="recalcOpen()" [busy]="recalcPending()" (closed)="recalcOpen.set(false)" header="Recalculate affected picks">
       @if (recalcOpen()) {
         <form class="stack" (ngSubmit)="recalculateAll()">
           <p class="muted-text">These picks get a new result from the current match result. The old results stay in history, marked superseded:</p>

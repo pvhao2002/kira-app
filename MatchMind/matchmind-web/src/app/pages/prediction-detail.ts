@@ -218,7 +218,7 @@ const MIN_REASON = 5;
       }
     </div>
 
-    <mm-dialog [open]="!!action()" (closed)="action.set(null)" [header]="action()?.kind === 'override' ? 'Override result' : 'Recalculate result'">
+    <mm-dialog [open]="!!action()" [busy]="saving()" (closed)="action.set(null)" [header]="action()?.kind === 'override' ? 'Override result' : 'Recalculate result'">
       @if (action(); as a) {
         <form class="stack" (ngSubmit)="submitAction()">
           <p class="muted-text">{{ a.pick.market }} {{ a.pick.pick }} {{ lineText(a.pick.market, a.pick.line) }} — current: {{ humanize(a.pick.settlementStatus) }}.
