@@ -1,5 +1,11 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { CanActivateFn, Router, Routes } from '@angular/router';
+import { AuthService } from './core/auth.service';
 import { authGuard, guestGuard } from './core/http';
+import { NotFoundPage } from './layout/not-found';
+
+/** Admin-only pages: the API refuses viewers anyway (403); this keeps them from landing on an empty, failing page. */
+const adminGuard: CanActivateFn = () => inject(AuthService).isAdmin() || inject(Router).createUrlTree(['/dashboard']);
 
 export const routes: Routes = [
   { path: 'login', canActivate: [guestGuard], title: 'Sign in', loadComponent: () => import('./pages/login').then(m => m.LoginPage) },
@@ -19,11 +25,11 @@ export const routes: Routes = [
       { path: 'reports', title: 'Reports', loadComponent: () => import('./pages/reports').then(m => m.ReportsPage) },
       { path: 'prompts', title: 'Prompt Notes', loadComponent: () => import('./pages/prompts').then(m => m.PromptsPage),
         canDeactivate: [(page: { canLeave(): boolean | Promise<boolean> }) => page.canLeave()] },
-      { path: 'import', title: 'Import prediction', loadComponent: () => import('./pages/import').then(m => m.ImportPage) },
-      { path: 'api-logs', title: 'API Logs', loadComponent: () => import('./pages/api-logs').then(m => m.ApiLogsPage) },
+      { path: 'import', title: 'Import prediction', canActivate: [adminGuard], loadComponent: () => import('./pages/import').then(m => m.ImportPage) },
+      { path: 'api-logs', title: 'API Logs', canActivate: [adminGuard], loadComponent: () => import('./pages/api-logs').then(m => m.ApiLogsPage) },
       { path: 'settings', title: 'Settings', loadComponent: () => import('./pages/settings').then(m => m.SettingsPage) },
+      // Signed-in unknown URL: a 404 inside the shell. Signed out, the parent's authGuard sends it to login first.
+      { path: '**', title: 'Page not found', component: NotFoundPage },
     ],
   },
-  { path: '**', redirectTo: '' },
 ];
-
