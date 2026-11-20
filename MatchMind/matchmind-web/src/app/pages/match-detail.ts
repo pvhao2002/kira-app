@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { apiError } from '../core/http';
 import { AdminResultRequest, MATCH_STATUSES, MatchStatus, ResultHistory, ReviewItem, ScorePair } from '../core/models';
+import { PageTitle } from '../core/page-title';
 import { errorMessage, safeValue, viewState } from '../core/resource';
-import { fmtDateTime, humanize, lineSplit, pct, pickText, resultChanges, statRows } from '../shared/format';
+import { bidiSafe, fmtDateTime, humanize, lineSplit, pct, pickText, resultChanges, statRows } from '../shared/format';
 import { Dialog, ToastService } from '../shared/kit';
 import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
 
@@ -47,8 +47,8 @@ const MIN_REASON = 5;
         <section class="panel">
           <header>
             <div>
-              <h2>{{ d.match.homeTeam }} <span class="muted-text">vs</span> {{ d.match.awayTeam }}</h2>
-              <p class="muted-text sub">{{ d.match.league }} · kick-off {{ fmt(d.match.startTime) }} · {{ d.match.providerName }} · {{ d.match.externalMatchId }}</p>
+              <h2>{{ bidi(d.match.homeTeam) }} <span class="muted-text">vs</span> {{ bidi(d.match.awayTeam) }}</h2>
+              <p class="muted-text sub">{{ bidi(d.match.league) }} · kick-off {{ fmt(d.match.startTime) }} · {{ bidi(d.match.providerName) }} · {{ bidi(d.match.externalMatchId) }}</p>
             </div>
             <div class="row head-actions">
               <mm-result [value]="d.match.status" kind="status" />
@@ -142,7 +142,7 @@ const MIN_REASON = 5;
           <section class="panel">
             <header><h2>Latest live stats</h2>@if (d.latestStats) { <span class="muted-text">{{ d.latestStats.matchMinute ?? '—' }}' · {{ fmt(d.latestStats.predictedAt) }}</span> }</header>
             @if (d.latestStats; as s) {
-              <table class="dt" aria-label="Latest live stats"><thead><tr><th>Stat</th><th class="num">{{ d.match.homeTeam }}</th><th class="num">{{ d.match.awayTeam }}</th></tr></thead>
+              <table class="dt" aria-label="Latest live stats"><thead><tr><th>Stat</th><th class="num">{{ bidi(d.match.homeTeam) }}</th><th class="num">{{ bidi(d.match.awayTeam) }}</th></tr></thead>
                 <tbody>@for (r of statRows(s); track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody></table>
             } @else { <p class="muted-text">No stats were sent with predictions for this match.</p> }
           </section>
@@ -256,10 +256,11 @@ export class MatchDetailPage {
   readonly changes = resultChanges;
   readonly pickText = pickText;
   readonly lineSplit = lineSplit;
+  readonly bidi = bidiSafe;
 
   constructor() {
-    const title = inject(Title);
-    effect(() => { const m = this.detail()?.match; if (m) title.setTitle(`${m.homeTeam} – ${m.awayTeam} · MatchMind`); });
+    const title = inject(PageTitle);
+    effect(() => { const m = this.detail()?.match; if (m) title.set(`${bidiSafe(m.homeTeam)} – ${bidiSafe(m.awayTeam)}`); });
     effect(() => { this.id(); this.outcome.set(''); });
   }
 

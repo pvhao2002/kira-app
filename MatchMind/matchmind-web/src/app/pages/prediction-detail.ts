@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { apiError } from '../core/http';
+import { PageTitle } from '../core/page-title';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { PickDetail, PickResultRow, PredictionDetail } from '../core/models';
 import {
-  basisNote, extraStatRows, fmtDateTime, humanize, lineSplit, lineText, num, pct, probabilityTables, score, settlementSentence, statRows,
+  basisNote, bidiSafe, extraStatRows, fmtDateTime, humanize, lineSplit, lineText, num, pct, probabilityTables, score, settlementSentence, statRows,
 } from '../shared/format';
 import { Dialog, Expansion, Tabs, ToastService } from '../shared/kit';
 import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
@@ -42,8 +42,8 @@ const MIN_REASON = 5;
         <section class="panel">
           <header>
             <div>
-              <h2><a [routerLink]="['/matches', d.match.id]">{{ d.match.homeTeam }} – {{ d.match.awayTeam }}</a></h2>
-              <p class="muted-text sub">{{ d.match.league }} · {{ d.model.name }} {{ d.model.version }} · predicted {{ fmt(d.predictedAt) }} · event {{ d.eventId }}</p>
+              <h2><a [routerLink]="['/matches', d.match.id]">{{ bidi(d.match.homeTeam) }} – {{ bidi(d.match.awayTeam) }}</a></h2>
+              <p class="muted-text sub">{{ bidi(d.match.league) }} · {{ bidi(d.model.name) }} {{ bidi(d.model.version) }} · predicted {{ fmt(d.predictedAt) }} · event {{ d.eventId }}</p>
             </div>
             <mm-result [value]="d.match.status" kind="status" />
           </header>
@@ -160,14 +160,14 @@ const MIN_REASON = 5;
             @case ('stats') {
               @if (d.stats; as s) {
                 <table class="dt" aria-label="Stats">
-                  <thead><tr><th>Stat</th><th class="num">{{ d.match.homeTeam }}</th><th class="num">{{ d.match.awayTeam }}</th></tr></thead>
+                  <thead><tr><th>Stat</th><th class="num">{{ bidi(d.match.homeTeam) }}</th><th class="num">{{ bidi(d.match.awayTeam) }}</th></tr></thead>
                   <tbody>@for (r of statRows(); track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody>
                 </table>
                 @if (extraStats(); as x) {
                   @if (x.rows.length) {
                     <h3 class="sub-h">Other stats</h3>
                     <table class="dt" aria-label="Other stats">
-                      <thead><tr><th>Stat</th><th class="num">{{ d.match.homeTeam }}</th><th class="num">{{ d.match.awayTeam }}</th></tr></thead>
+                      <thead><tr><th>Stat</th><th class="num">{{ bidi(d.match.homeTeam) }}</th><th class="num">{{ bidi(d.match.awayTeam) }}</th></tr></thead>
                       <tbody>@for (r of x.rows; track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody>
                     </table>
                   }
@@ -284,6 +284,7 @@ export class PredictionDetailPage {
   readonly lineText = lineText;
   readonly score = score;
   readonly lineSplit = lineSplit;
+  readonly bidi = bidiSafe;
   readonly sentence = settlementSentence;
   readonly minReason = MIN_REASON;
   private readonly reviewResource = rxResource({ params: () => this.id(), stream: ({ params }) => this.api.needsReview({ predictionId: params }) });
@@ -299,8 +300,8 @@ export class PredictionDetailPage {
 
   constructor() {
     effect(() => { this.id(); this.expanded.clear(); }); // another prediction: collapse the opened rows
-    const title = inject(Title);
-    effect(() => { const m = this.detail()?.match; if (m) title.setTitle(`${m.homeTeam} – ${m.awayTeam} · MatchMind`); });
+    const title = inject(PageTitle);
+    effect(() => { const m = this.detail()?.match; if (m) title.set(`${bidiSafe(m.homeTeam)} – ${bidiSafe(m.awayTeam)}`); });
   }
 
   reviewOf(pickId: string) { return this.review().find(r => r.pickId === pickId); }

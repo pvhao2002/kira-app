@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { PredictionDetail, ReviewItem } from '../core/models';
+import { PageTitle } from '../core/page-title';
 import { PredictionDetailPage } from './prediction-detail';
 
 const admin = { id: 'u1', username: 'admin', role: 'ADMIN', status: 'ACTIVE', lastLoginAt: null, createdAt: '', updatedAt: '' };
@@ -78,6 +79,14 @@ describe('PredictionDetailPage', () => {
   it('titles the page with the teams (UX-005)', async () => {
     await open();
     expect(document.title).toBe('Home FC – Away FC · MatchMind');
+    expect(TestBed.inject(PageTitle).value()).toBe('Home FC – Away FC');
+  });
+
+  it('keeps a BiDi override in agent names inside that name (UX-030)', async () => {
+    const f = await open({ ...base, match: { ...base.match, awayTeam: '‮Away' }, model: { ...base.model, name: '‮GPT' } } as PredictionDetail);
+    expect(TestBed.inject(PageTitle).value()).toBe('Home FC – ⁨‮Away⁩');
+    expect(f.nativeElement.querySelector('h2')!.textContent).toContain('⁨‮Away⁩');
+    expect(f.nativeElement.querySelector('.sub')!.textContent).toContain('⁨‮GPT⁩');
   });
 
   it('offers Override only on a final match and says why (UX-065)', async () => {

@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { PageTitle } from '../core/page-title';
 import { ModelDetailPage } from './model-detail';
 
 const admin = { id: 'u1', username: 'admin', role: 'ADMIN', status: 'ACTIVE', lastLoginAt: null, createdAt: '', updatedAt: '' };
@@ -46,6 +47,13 @@ describe('ModelDetailPage', () => {
   it('titles the page with the model name (UX-005)', async () => {
     await open();
     expect(document.title).toBe('GPT v1 · MatchMind');
+    expect(TestBed.inject(PageTitle).value()).toBe('GPT v1');
+  });
+
+  it('keeps a BiDi override in the model name inside that name (UX-030)', async () => {
+    const f = await open(undefined, { ...model, name: '‮GPT' });
+    expect(TestBed.inject(PageTitle).value()).toBe('⁨‮GPT⁩ v1');
+    expect(f.nativeElement.querySelector('h2')!.textContent).toContain('⁨‮GPT⁩');
   });
 
   it('links to all predictions of the model and warns on a small sample (UX-081)', async () => {

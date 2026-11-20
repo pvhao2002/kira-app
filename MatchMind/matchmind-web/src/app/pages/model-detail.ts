@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
-import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { ChartOptions } from 'chart.js';
 import { ApiService } from '../core/api.service';
+import { PageTitle } from '../core/page-title';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { ChartView } from '../shared/chart';
-import { fmtDateTime, humanize, lineSplit, pct, pickText } from '../shared/format';
+import { bidiSafe, fmtDateTime, humanize, lineSplit, pct, pickText } from '../shared/format';
 import { ResultTag, ScoreChip, StateView } from '../shared/ui';
 
 /** Below this many settled picks a win rate says little (UX-018/UX-081). */
@@ -26,8 +26,8 @@ const SMALL_SAMPLE = 30;
       <mm-state [state]="state()" [message]="error()" />
       @if (model(); as m) {
         <section class="panel">
-          <header><div><h2>{{ m.name }} <span class="muted-text">{{ m.version }}</span></h2>
-            <p class="muted-text sub">{{ m.providerName }}, first seen {{ fmt(m.createdAt) }}</p></div>
+          <header><div><h2>{{ bidi(m.name) }} <span class="muted-text">{{ m.version }}</span></h2>
+            <p class="muted-text sub">{{ bidi(m.providerName) }}, first seen {{ fmt(m.createdAt) }}</p></div>
             <a class="btn btn-outline btn-sm" data-testid="view-all" routerLink="/predictions" [queryParams]="{ modelId: m.id }">View all {{ m.totalPredictions }} predictions</a></header>
           @if (m.description) { <p class="page-note mb-2">{{ m.description }}</p> }
           <div class="kpis">
@@ -113,9 +113,10 @@ export class ModelDetailPage {
   readonly humanize = humanize;
   readonly pickText = pickText;
   readonly lineSplit = lineSplit;
+  readonly bidi = bidiSafe;
 
   constructor() {
-    const title = inject(Title);
-    effect(() => { const m = this.model(); if (m) title.setTitle(`${m.name} ${m.version} · MatchMind`); });
+    const title = inject(PageTitle);
+    effect(() => { const m = this.model(); if (m) title.set(`${bidiSafe(m.name)} ${bidiSafe(m.version)}`); });
   }
 }

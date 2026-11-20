@@ -7,6 +7,7 @@ import { Subject } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { routes } from '../app.routes';
 import { LiveService } from '../core/live.service';
+import { PageTitle } from '../core/page-title';
 
 const user = (role: 'ADMIN' | 'VIEWER') => ({ id: 'u1', username: 'kim', role, status: 'ACTIVE', lastLoginAt: null, createdAt: '', updatedAt: '' });
 const signIn = (role: 'ADMIN' | 'VIEWER') => sessionStorage.setItem('matchmind.session',
@@ -60,6 +61,19 @@ describe('shell a11y', () => {
     expect(h1.getAttribute('tabindex')).toBe('-1');
     expect(document.activeElement).toBe(h1);
     expect(root(h).querySelector('[aria-live="polite"].sr-only')?.textContent).toContain('Page not found');
+  });
+
+  it('heads the page with the name a page gives itself, until the next page (UX-005)', async () => {
+    const h = await start('ADMIN', '/first-missing');
+    const h1 = root(h).querySelector('h1') as HTMLElement;
+    TestBed.inject(PageTitle).set('Home FC – Away FC');
+    await h.fixture.whenStable();
+    expect(h1.textContent?.trim()).toBe('Home FC – Away FC');
+    expect(document.title).toBe('Home FC – Away FC · MatchMind');
+    await h.navigateByUrl('/second-missing');
+    await h.fixture.whenStable();
+    expect(h1.textContent?.trim()).toBe('Page not found');
+    expect(document.activeElement).toBe(h1);
   });
 
   it('mobile drawer: menu button controls it, focus moves in, Tab wraps, Esc closes and returns focus (UX-036)', async () => {

@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { AuthService } from '../core/auth.service';
 import { LiveService } from '../core/live.service';
+import { PageTitle } from '../core/page-title';
 import { tzLabel } from '../shared/format';
 
 interface NavItem { path: string; label: string; icon: string; adminOnly?: boolean; }
@@ -57,7 +58,7 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
         <header class="topbar">
           <button #menuBtn type="button" class="btn btn-text btn-icon menu-btn" aria-label="Open navigation" aria-controls="mm-sidebar"
             [attr.aria-expanded]="mobileOpen()" (click)="openNav()"><i class="pi pi-bars"></i></button>
-          <h1 #pageTitle class="page-title" tabindex="-1">{{ title() }}</h1>
+          <h1 #pageTitle class="page-title" tabindex="-1">{{ heading() }}</h1>
           <div class="topbar-right">
             <span class="tz-chip" [title]="'Times are shown in your time zone (' + tzName + ')'">{{ tz }}</span>
             <span class="user-chip"><span class="avatar" aria-hidden="true">{{ auth.user()?.username?.charAt(0) }}</span>{{ auth.user()?.username }}<small>{{ auth.user()?.role === 'ADMIN' ? 'Admin' : 'Viewer' }}</small></span>
@@ -88,6 +89,9 @@ export class Shell {
   readonly title = toSignal(
     this.router.events.pipe(filter(e => e instanceof NavigationEnd), map(() => this.routeTitle()), startWith(this.routeTitle())),
     { requireSync: true });
+  private readonly page = inject(PageTitle);
+  /** The name a detail page gives itself (UX-005), else the route title. */
+  readonly heading = computed(() => this.page.value() || this.title());
 
   constructor() {
     // A new page (not a query-only change such as a filter or a tab): focus its heading and announce it.
@@ -98,6 +102,7 @@ export class Shell {
       const first = path === null;
       if (next === path) return;
       path = next;
+      this.page.value.set(null);   // the previous page's own name does not carry over
       if (first) return;
       this.announced.set(this.routeTitle());
       afterNextRender(() => this.pageTitle().nativeElement.focus({ preventScroll: true }), { injector: this.injector });

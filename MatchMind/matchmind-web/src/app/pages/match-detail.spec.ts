@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MatchDetail, ReviewItem } from '../core/models';
+import { PageTitle } from '../core/page-title';
 import { MatchDetailPage } from './match-detail';
 
 const admin = { id: 'u1', username: 'admin', role: 'ADMIN', status: 'ACTIVE', lastLoginAt: null, createdAt: '', updatedAt: '' };
@@ -84,6 +85,15 @@ describe('MatchDetailPage', () => {
   it('titles the page with the teams (UX-005)', async () => {
     await open();
     expect(document.title).toBe('Home FC – Away FC · MatchMind');
+    expect(TestBed.inject(PageTitle).value()).toBe('Home FC – Away FC');
+  });
+
+  it('keeps a BiDi override in a team name inside that name (UX-030)', async () => {
+    const f = await open([], { ...detail, match: { ...match, homeTeam: '‮Home', league: '‮League' } } as unknown as MatchDetail);
+    const safe = '⁨‮Home⁩';
+    expect(TestBed.inject(PageTitle).value()).toBe(`${safe} – Away FC`);
+    expect(f.nativeElement.querySelector('h2')!.textContent).toContain(safe);
+    expect(f.nativeElement.querySelector('.sub')!.textContent).toContain('⁨‮League⁩');
   });
 
   it('an admin enters a result and sees the settlement outcome (UX-001)', async () => {
