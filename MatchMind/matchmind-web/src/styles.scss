@@ -29,7 +29,7 @@
   --mm-surface-2: #f6f8fb;       /* table heads, quiet fills */
   --mm-surface-3: #eceff4;       /* chips, muted score tiles */
   --mm-line-2: #c9d2dd;          /* hover / stronger borders */
-  --mm-input-line: #8593a6;      /* form control border: 3:1 on white (WCAG 1.4.11) */
+  --mm-input-line: #7a889c;      /* form control border, WCAG 1.4.11: 3.6:1 on white, 3.3:1 on the page surface, 3.1:1 on surface-3 */
   --mm-ink-3: #66738a;           /* placeholders, hints (4.8:1 on white) */
   --mm-green-ink: #0f5e3a;       /* text on green-soft */
   --mm-blue: #2f6db5;
@@ -58,7 +58,7 @@
   :root {
     color-scheme: dark;
     --mm-surface: #0a111f; --mm-surface-2: #0e1727; --mm-surface-3: #1b2842; --mm-card: #111b2f;
-    --mm-line: #22304a; --mm-line-2: #34476a; --mm-input-line: #5a6f98;
+    --mm-line: #22304a; --mm-line-2: #34476a; --mm-input-line: #5a6f98;   /* 3.4:1 on the card, 3.7:1 on the surface */
     --mm-ink: #e7edf8; --mm-ink-2: #a6b4cc; --mm-ink-3: #8b9ab5;
     --mm-link: #5fd3a8; --mm-green-soft: #11362d; --mm-green-ink: #7fe0b0;
     --mm-blue-soft: #15284a; --mm-blue-ink: #92bdf2;
@@ -107,6 +107,9 @@ a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .win { color: var(--mm-win); }
 .loss { color: var(--mm-loss); }
+/* Agent-supplied text (team, league, model names) sits in inline elements: isolate each one, so a stray BiDi control in
+   one name cannot reorder its neighbours (UX-030; `bidiSafe()` in format.ts closes it inside a single string). */
+:where(a, span, strong, small, b, em, code, label, time) { unicode-bidi: isolate; }
 
 /* ---------- shell */
 .shell { display: flex; min-height: 100vh; }
@@ -152,7 +155,10 @@ a:hover { text-decoration: underline; text-underline-offset: 2px; }
   width: 1.75rem; height: 1.75rem; border-radius: 50%; display: grid; place-items: center; background: var(--mm-green-soft); color: var(--mm-green-ink);
   font-weight: 700; font-size: var(--fs-xs); text-transform: uppercase;
 }
-.user-chip small { background: var(--mm-surface); border: 1px solid var(--mm-line); border-radius: 99px; padding: 0 .5rem; font-size: var(--fs-xs); }
+.user-chip small, .tz-chip { background: var(--mm-surface); border: 1px solid var(--mm-line); border-radius: 99px; padding: 0 .5rem; font-size: var(--fs-xs); }
+.tz-chip { color: var(--mm-ink-2); white-space: nowrap; cursor: help; }
+.page-title:focus { outline: none; }   /* focused by the router for screen readers (UX-123), not a control */
+.page-title:focus-visible { outline: 2px solid var(--mm-green); outline-offset: 2px; }
 .btn.menu-btn { display: none; }   /* .btn comes later with equal weight: needs the extra class */
 .content { padding: 1.5rem; min-width: 0; max-width: 1600px; width: 100%; }
 .content:focus { outline: none; }
@@ -166,7 +172,15 @@ a:hover { text-decoration: underline; text-underline-offset: 2px; }
   .collapse-btn { display: none; }
   .btn.menu-btn { display: inline-flex; }
   .user-chip small, .topbar-right .label { display: none; }
+  .topbar { padding: 0 .75rem; gap: .5rem; }
   .content { padding: .75rem; }
+}
+
+/* Short viewports (phone landscape, 844x390): the header scrolls away and tables scroll with the page instead of in a
+   nested box, so more than one data row fits (UX-100). */
+@media (max-height: 500px) {
+  .topbar { position: static; }
+  .table-wrap.tall, .table-wrap.short { max-height: none; }
 }
 
 /* ---------- building blocks */
@@ -197,7 +211,6 @@ mm-state:empty { display: none; }   /* ready state renders nothing: no phantom f
   .kpi { padding: .7rem .8rem; column-gap: .5rem; }
   .kpi strong { font-size: 1.6rem; }
   .kpi > i { width: 2rem; height: 2rem; font-size: .95rem; }
-  .input, .input-sm { font-size: 1rem; }   /* 16px: iOS Safari zooms the page on focus below this */
 }
 .kpi {
   display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: .75rem;
@@ -492,10 +505,11 @@ dialog.dialog::backdrop { background: rgba(15, 27, 51, .5); backdrop-filter: blu
 .dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.1rem .5rem; }
 .dialog-head h2 { margin: 0; font-size: var(--fs-lg); }
 .dialog-body { padding: .4rem 1.1rem 1.1rem; }
+fieldset.dialog-body { border: 0; margin: 0; min-width: 0; }   /* a fieldset so `busy` can disable every control at once */
 .dialog-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1rem; position: sticky; bottom: 0; background: var(--mm-card); padding: .7rem 0 1.1rem; margin-bottom: -1.1rem; }
 @keyframes mm-pop { from { opacity: 0; transform: translateY(8px) scale(.98); } }
 @keyframes mm-slide-in { from { opacity: 0; transform: translateX(16px); } }
-.toasts { position: fixed; top: 1rem; right: 1rem; z-index: 1000; display: flex; flex-direction: column; gap: .5rem; width: min(360px, calc(100vw - 2rem)); }
+.toasts { position: fixed; top: 1rem; right: 1rem; z-index: 1000; display: flex; flex-direction: column; gap: .5rem; width: min(360px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow-y: auto; }
 .toast {
   display: flex; justify-content: space-between; gap: .5rem; background: var(--mm-card); border: 1px solid var(--mm-line); border-left: 4px solid var(--mm-green);
   border-radius: 8px; padding: .65rem .5rem .65rem .85rem; box-shadow: var(--mm-shadow-md); animation: mm-slide-in .22s var(--mm-ease);
@@ -596,4 +610,23 @@ dialog.dialog::backdrop { background: rgba(15, 27, 51, .5); backdrop-filter: blu
   .btn-icon, .btn-icon.btn-sm, .paginator .btn-icon { width: 2.5rem; height: 2.5rem; min-height: 2.5rem; }
   .chip { min-height: 2.5rem; }
   .tab { padding: .8rem 1rem; }
+  .col-resizer { width: 14px; touch-action: none; }   /* drag the column, do not scroll the table */
+}
+
+/* Targets at least 24px tall (WCAG 2.5.8): sort headers, table links, panel header links. Zero specificity, so
+   .truncate / .clamp keep their own layout. */
+.sort-btn, .back-link { min-height: 1.5rem; }
+:where(.dt td a:not(.btn), .panel > header a) { display: inline-block; min-height: 1.5rem; line-height: 1.5rem; }
+.col-resizer:focus-visible { outline: 2px solid var(--mm-green); outline-offset: -2px; background: rgba(14, 124, 102, .25); }
+
+/* Phones: 16px controls, or iOS Safari zooms the page on focus (UX-087). Last in the file so it wins over .input-sm.
+   Date inputs may shrink; on the narrowest screens the date range stacks (UX-041, 320px reflow). */
+@media (max-width: 640px) {
+  .input, .input-sm, select, textarea { font-size: 1rem; }
+  input[type="date"] { min-width: 0; }
+}
+@media (max-width: 400px) {
+  .date-range { flex-wrap: wrap; }
+  .filter-fields > .date-range > .input { flex: 1 1 100%; }
+  .date-range > span[aria-hidden="true"] { display: none; }
 }
