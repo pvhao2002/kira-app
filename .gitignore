@@ -45,6 +45,8 @@ data/
 # Playwright persistent browser profiles (kira-crawl, kira-crawl-java)
 .playwright/
 .playwright-test/
+.playwright-mcp/
+*.tgz
 
 # Cursor IDE debug/session logs
 .cursor/**/*.log

@@ -1,0 +1,15 @@
+{
+  "name": "kira-queue-v2",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.9" },
+  "scripts": { "start": "node --env-file-if-exists=.env src/main.js", "test": "node --test" },
+  "dependencies": {
+    "amqplib": "^0.10.5",
+    "decimal.js": "^10.4.3",
+    "mysql2": "^3.11.0",
+    "patchright": "1.64.3",
+    "protobufjs": "^7.4.0"
+  }
+}

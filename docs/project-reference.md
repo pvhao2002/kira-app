@@ -194,6 +194,41 @@ database.
 
 Each Java module is a standalone Spring Boot app. From the module directory:
 
+Java4Shell temporary mitigation: Java service entrypoints, Compose environments,
+and Maven `spring-boot:run` defaults disable Base64 intrinsics with
+`-XX:-UseBASE64Intrinsics`. Keep this flag until the deployed JDK is verified patched.
+Compose appends it to `JAVA_TOOL_OPTIONS` from the shell or Compose interpolation
+env file; if extra JVM options exist only in a service `env_file`, also supply them
+through that interpolation environment so they are preserved.
+For IDE runs, add the flag to **VM options**. For a manually launched JAR, use
+`java -XX:-UseBASE64Intrinsics -jar app.jar`. If overriding
+`-Dspring-boot.run.jvmArguments`, include the mitigation in the replacement value.
+Verify a running JVM with `jcmd <pid> VM.flags -all` and check
+`UseBASE64Intrinsics = false`; container or service restart is required for changes
+to take effect. These repository settings do not modify already running services.
+
+Docker builds pin Amazon Corretto **21.0.13.1.2** or **25.0.5.1.2** using
+versioned downloads and SHA-256 checksums for AMD64/ARM64. The patched JDK is
+used by Maven and `jlink`, and copied into Java 25 runtime images. Keep the
+Base64 mitigation even after upgrading. Update the URL and both architecture
+checksums together when moving to a newer security release.
+
+Bank CI builds both images, checks the service JVM, and deploys their immutable
+digests to the existing Portainer stack while preserving its environment,
+networks and volumes. It no longer publishes or deploys `latest`. For manual
+`kira-bank/docker-compose.hub.yml` deployments, set `KIRA_BANK_SERVICE_IMAGE`
+and `KIRA_BANK_UI_IMAGE` to those verified `repository@sha256:...` references.
+Affiliate CI also builds and checks its Docker image; it does not deploy VPS 2.
+The external Affiliate deployment must build this Dockerfile or use an image
+that passes `python3 scripts/check_java_image.py IMAGE` before replacing the
+running patched container. CloudBeaver is managed outside this repository;
+retain its patched VPS image until its upstream JVM has been verified.
+
+`scripts/deploy-ec2.sh` checks pulled Java images before restarting containers
+and refuses an unpatched JVM or missing mitigation. Run the focused policy tests
+with `python3 -m unittest discover -s scripts -p test_java_security.py`
+(requires `PyYAML==6.0.2`). These checks do not authorize a deployment.
+
 ```bash
 cd kira-gateway
 ./mvnw.cmd spring-boot:run      # Windows

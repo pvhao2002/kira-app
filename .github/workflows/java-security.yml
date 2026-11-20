@@ -1,0 +1,15 @@
+name: Java runtime security policy
+on:
+  push:
+    paths: ['**/Dockerfile', 'scripts/*java*', 'scripts/prepare_bank_stack.py', '.github/workflows/**']
+  pull_request:
+    paths: ['**/Dockerfile', 'scripts/*java*', 'scripts/prepare_bank_stack.py', '.github/workflows/**']
+permissions:
+  contents: read
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install PyYAML==6.0.2
+      - run: python3 -m unittest discover -s scripts -p test_java_security.py
