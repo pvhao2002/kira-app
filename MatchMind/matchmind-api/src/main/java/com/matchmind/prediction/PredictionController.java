@@ -20,12 +20,13 @@ import java.util.UUID;
 public class PredictionController {
     private final PredictionQueryService service;
 
-    /** Filters: from, to, league, modelId, providerId, type, market, matchId, search, result (top pick). */
+    /** Shared filters; {@code result} applies to the top pick, or to any pick with {@code resultScope=ANY}. */
     @GetMapping
-    public PageResponse<Map<String, Object>> list(Filters filters, @RequestParam(required = false) Integer page,
+    public PageResponse<Map<String, Object>> list(Filters filters, @RequestParam(required = false) String resultScope,
+                                                  @RequestParam(required = false) Integer page,
                                                   @RequestParam(required = false) Integer size,
                                                   @RequestParam(required = false) String sort) {
-        return service.list(filters, page, size, sort);
+        return service.list(filters, resultScope, page, size, sort);
     }
 
     /** Everything stored for one prediction: odds, stats, simulation, picks with settlement history, raw payload. */

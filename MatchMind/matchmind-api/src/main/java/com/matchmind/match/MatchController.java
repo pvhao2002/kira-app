@@ -28,10 +28,11 @@ public class MatchController {
                                                   @RequestParam(required = false) UUID providerId,
                                                   @RequestParam(required = false) Instant from,
                                                   @RequestParam(required = false) Instant to,
+                                                  @RequestParam(required = false) Boolean overdue,
                                                   @RequestParam(required = false) Integer page,
                                                   @RequestParam(required = false) Integer size,
                                                   @RequestParam(required = false) String sort) {
-        return service.list(search, status, league, providerId, from, to, page, size, sort);
+        return service.list(search, status, league, providerId, from, to, overdue, page, size, sort);
     }
 
     @GetMapping("/leagues")

@@ -35,7 +35,7 @@ Responses never contain stack traces, SQL or internal paths. Quote `traceId` whe
 
 | Status | Codes |
 |---|---|
-| 400 | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `UNKNOWN_FIELD` (callbacks reject unknown fields), `INVALID_FIELD_TYPE`, `INVALID_PARAMETER`, `INVALID_DATE_RANGE`, `INVALID_MARKET`, `INVALID_TYPE`, `INVALID_RESULT`, `INVALID_STATUS`, `INVALID_TIMEZONE`, `INVALID_GROUP`, `EXPORT_TOO_LARGE`, `BAD_CURRENT_PASSWORD` |
+| 400 | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `UNKNOWN_FIELD` (callbacks reject unknown fields), `INVALID_FIELD_TYPE`, `INVALID_PARAMETER`, `INVALID_DATE_RANGE` (`from` not before `to`; `fieldErrors.from` is set), `INVALID_RESULT_SCOPE`, `INVALID_MARKET`, `INVALID_TYPE`, `INVALID_RESULT`, `INVALID_STATUS`, `INVALID_TIMEZONE`, `INVALID_GROUP`, `EXPORT_TOO_LARGE`, `BAD_CURRENT_PASSWORD` |
 | 401 | `UNAUTHORIZED`, `BAD_CREDENTIALS`, `INVALID_API_KEY` |
 | 403 | `FORBIDDEN` |
 | 404 | `MATCH_NOT_FOUND`, `PREDICTION_NOT_FOUND`, `PICK_NOT_FOUND`, `MODEL_NOT_FOUND`, `PROMPT_NOT_FOUND`, `USER_NOT_FOUND`, `LOG_NOT_FOUND` |
@@ -57,13 +57,13 @@ The dashboard, predictions and reports share these filters:
 
 | Param | Meaning |
 |---|---|
-| `from`, `to` | Instants. `from` is inclusive, `to` is exclusive. They filter on `predicted_at` |
-| `league` | Exact league |
+| `from`, `to` | Instants. `from` is inclusive, `to` is exclusive. They filter on `predicted_at`. Either may be sent alone (open range). `from` must be before `to` |
+| `league` | Exact league name, ignoring surrounding spaces, case and accents (`liga nandu` = `Liga Ñandú`) |
 | `modelId`, `providerId`, `matchId` | UUIDs |
 | `type` | `PRE_MATCH` or `LIVE` |
 | `market` | `1X2`, `AH`, `OU`, `CORNER_AH`, `CORNER_OU` (pick level) |
 | `result` | Current settlement result of the pick, `PENDING` included |
-| `search` | Case-insensitive match on teams, league or external match id |
+| `search` | Substring of teams, league or external match id, ignoring case, accents and Unicode form (`atletico` finds `Atlético`, `munchen` finds `München`). No transliteration: `muenchen`/`munich` do not match |
 
 ---
 
@@ -250,10 +250,10 @@ Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no 
 ### Matches and predictions
 | Path | Notes |
 |---|---|
-| `GET /matches` | `search, status, league, providerId, from, to` (on start time). Sort: `startTime, league, homeTeam, awayTeam, status, predictionCount` |
+| `GET /matches` | `search, status, league, providerId, from, to` (on start time), `overdue=true` (only overdue). Rows carry `overdue`: kick-off more than 3 h ago and still `SCHEDULED`/`LIVE`. Sort: `startTime, league, homeTeam, awayTeam, status, predictionCount` |
 | `GET /matches/leagues` | Distinct leagues |
 | `GET /matches/{id}` | `{match, models[] (per-model summary + latest prediction), latestStats, resultHistory[]}` |
-| `GET /predictions` | Shared filters. Sort: `predictedAt, league, model, type, minute, probability, startTime`. One row per prediction with its top-ranked pick |
+| `GET /predictions` | Shared filters plus `resultScope=TOP\|ANY` (default `TOP`): `result` matches the top-ranked pick, or any pick with `ANY` (with `market`, the same pick). Sort: `predictedAt, league, model, type, minute, probability, startTime`. One row per prediction with its top-ranked pick, `pickCount` and exclusive per-pick counts `pickWins, pickHalfWins, pickLosses, pickHalfLosses, pickPushOrVoid, pickPending` |
 | `GET /predictions/{id}` | Full record: match, model, odds snapshots, stats, simulation, picks with full settlement history, correct scores, metadata and the original **payload** |
 
 ### Settlement (admin)
@@ -267,14 +267,15 @@ Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no 
 ### Dashboard and reports
 | Path | Notes |
 |---|---|
-| `GET /dashboard?tz=Europe/London` | `totals`, `winRateOverTime` (daily, in `tz`), `predictionsByModel`, `predictionsByMarket`, `resultDistribution`, `modelPerformance` |
-| `GET /reports/model-performance` | Per model: predictions, picks, settled, wins/half wins, losses/half losses, push/void, pending, win rate, average probability, correct-score evaluated, hits and accuracy |
+| `GET /dashboard?tz=Europe/London` | `period`, `totals`, `winRateOverTime` (daily, in `tz`), `predictionsByModel`, `predictionsByMarket`, `resultDistribution` (one row per result, `PENDING` its own row), `modelPerformance`. `period` = `{from, to, basis: "predictedAt", firstPredictedAt, lastPredictedAt}`: the requested bounds (`null` = open) and the predictions actually counted. `totals.overdueMatches` uses only `league`/`providerId`, like `GET /matches?overdue=true` |
+| `GET /reports/model-performance` | Per model: predictions, picks, settled, wins/half wins, losses/half losses, push/void, pending, win rate, average probability, correct-score evaluated, hits and accuracy. `wins`/`losses` include the halves; `fullWins + halfWins + fullLosses + halfLosses + pushOrVoid = settled` is the exclusive split (also in breakdown, market performance and dashboard totals) |
 | `GET /reports/breakdown?by=market\|league\|type\|stage\|model` | The same counters grouped by the chosen key |
 | `GET /reports/prediction-history` | One row per pick, paginated. Sort: `predictedAt, league, model, market, probability, price, line, result, minute, type, homeTeam` |
 | `GET /reports/prediction-history/export?format=csv\|xlsx` | Same filters and sort. At most 50 000 rows (`EXPORT_TOO_LARGE`). Cells starting with `= + - @` are neutralised |
 | `GET /reports/market-performance` | All five markets, always listed |
 | `GET /reports/model-comparison?minModels=2` | Paginated matches predicted by at least N models, with each model's latest prediction and top pick |
-| `GET /reports/monte-carlo` | `{summary, page}`: simulation inputs and outputs next to actual outcomes |
+| `GET /reports/model-comparison/coverage` | Same filters. `[{minModels, matches}]` for 1..the largest model count (max 20); empty when nothing matches. Use it to default `minModels` to a value with data |
+| `GET /reports/monte-carlo` | `{summary, page}`: simulation inputs and outputs next to actual outcomes. `summary.finishedPredictions` is the sample of the accuracy figures (`correctScoreHits / finishedPredictions`) |
 
 ### Prompt templates
 `GET /prompts`, `GET /prompts/{id}`, `POST /prompts` `{name, templateType, content, description?}`,

@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Observable, forkJoin } from 'rxjs';
 import {
-  AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, ComparisonMatch, Dashboard, Filters, HistoryRow,
+  AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
   Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User,
 } from './models';
@@ -108,16 +108,21 @@ export class ApiService {
   modelComparison(f: Filters, minModels: number, p: Paging) {
     return this.http.get<Page<ComparisonMatch>>(`${API}/reports/model-comparison`, { params: toParams({ ...f, minModels, ...p }) });
   }
+  modelComparisonCoverage(f: Filters) {
+    return this.http.get<ComparisonCoverage[]>(`${API}/reports/model-comparison/coverage`, { params: toParams({ ...f }) });
+  }
   monteCarlo(f: Filters, p: Paging) {
     return this.http.get<MonteCarloReport>(`${API}/reports/monte-carlo`, { params: toParams({ ...f, ...p }) });
   }
 
   // Matches & predictions
-  matches(q: { search?: string; status?: string; league?: string; providerId?: string; from?: string; to?: string } & Paging) {
+  matches(q: { search?: string; status?: string; league?: string; providerId?: string; from?: string; to?: string;
+    overdue?: boolean } & Paging) {
     return this.http.get<Page<MatchRow>>(`${API}/matches`, { params: toParams(q) });
   }
-  predictions(f: Filters, p: Paging) {
-    return this.http.get<Page<PredictionRow>>(`${API}/predictions`, { params: toParams({ ...f, ...p }) });
+  /** resultScope: `result` applies to the top pick (TOP, default) or to any pick (ANY). */
+  predictions(f: Filters, p: Paging, resultScope?: 'TOP' | 'ANY') {
+    return this.http.get<Page<PredictionRow>>(`${API}/predictions`, { params: toParams({ ...f, ...p, resultScope }) });
   }
 
   // Settlement (admin)

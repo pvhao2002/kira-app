@@ -45,6 +45,8 @@ export interface MatchRow {
   finalHomeCorners: number | null; finalAwayCorners: number | null; htHomeScore: number | null; htAwayScore: number | null;
   htHomeCorners: number | null; htAwayCorners: number | null; resultUpdatedAt: string | null;
   predictionCount: number; modelCount: number; createdAt: string; updatedAt: string;
+  /** Kick-off more than 3 h ago and still SCHEDULED or LIVE: the result is due. */
+  overdue: boolean;
 }
 
 export interface LatestModelPrediction {
@@ -81,6 +83,9 @@ export interface PredictionRow {
   topPickId: string | null; topPickMarket: Market | null; topPick: string | null; topPickProbability: number | null;
   topPickLine: number | null; topPickLineDisplay: string | null; topPickStage: string | null; topPickPrice: number | null;
   settlementStatus: SettlementResult; pickCount: number;
+  /** Current results of all picks; mutually exclusive, they sum to pickCount. */
+  pickWins: number; pickHalfWins: number; pickLosses: number; pickHalfLosses: number; pickPushOrVoid: number;
+  pickPending: number;
 }
 
 export interface OddsSnapshot {
@@ -129,11 +134,20 @@ export interface PredictionDetail {
 export interface PerformanceCounts {
   picks: number; settled: number; wins: number; losses: number; pushOrVoid: number; pending: number;
   halfWins: number; halfLosses: number; avgProbability: number | null; winRate: number | null;
+  /** WIN / LOSS only. fullWins + halfWins + fullLosses + halfLosses + pushOrVoid = settled (wins/losses include halves). */
+  fullWins: number; fullLosses: number;
 }
 export interface DashboardTotals extends PerformanceCounts {
   totalPredictions: number; totalMatches: number; activeModels: number; totalModels: number; predictionsToday: number;
+  /** Matches overdue for a result; same scope as GET /matches?overdue=true&league=&providerId= (no date/model filter). */
+  overdueMatches: number;
+}
+/** What the dashboard counted: requested bounds (null = open) on predictedAt and the first/last prediction inside them. */
+export interface DashboardPeriod {
+  from: string | null; to: string | null; basis: 'predictedAt'; firstPredictedAt: string | null; lastPredictedAt: string | null;
 }
 export interface Dashboard {
+  period: DashboardPeriod;
   totals: DashboardTotals;
   winRateOverTime: { day: string; wins: number; losses: number; settled: number; winRate: number | null }[];
   predictionsByModel: { model: string; predictions: number }[];
@@ -172,6 +186,9 @@ export interface ComparisonMatch {
   finalHomeScore: number | null; finalAwayScore: number | null; finalHomeCorners: number | null; finalAwayCorners: number | null;
   models: ComparisonEntry[];
 }
+
+/** Matches GET /reports/model-comparison would return for each minModels value. */
+export interface ComparisonCoverage { minModels: number; matches: number; }
 
 export interface MonteCarloRow {
   predictionId: string; predictedAt: string; matchId: string; league: string; homeTeam: string; awayTeam: string;
