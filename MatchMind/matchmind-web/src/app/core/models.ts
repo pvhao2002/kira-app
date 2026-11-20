@@ -65,6 +65,15 @@ export interface MatchStats {
   shotsOffTargetAway: number | null; cornersHome: number | null; cornersAway: number | null;
   yellowCardsHome: number | null; yellowCardsAway: number | null; redCardsHome: number | null; redCardsAway: number | null;
 }
+/** Response of POST /external/predictions and /predictions/import. */
+export interface PredictionIngestResponse {
+  predictionId: string; matchId: string; externalMatchId: string; duplicate: boolean;
+  picks: { pickId: string; rank: number; market: Market; pick: string; oddsId: string }[];
+  odds: Record<string, string>;
+  /** On a 201: an earlier prediction with the same model, match, type, minute and picks (agent retry). */
+  possibleDuplicateOf: string | null;
+}
+/** previousResult/newResult may also be a kick-off move: { startTime, status }. */
 export interface ResultHistory {
   id: string; previousResult: Record<string, unknown>; newResult: Record<string, unknown>; changeSource: string; changedAt: string;
 }

@@ -116,6 +116,7 @@ components:
         picks:
           type: array
           minItems: 1
+          maxItems: 2
           items:
             type: object
             required: [oddsRef, market, pick, probability, rank]
