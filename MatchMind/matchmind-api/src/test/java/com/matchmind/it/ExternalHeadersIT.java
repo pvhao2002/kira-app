@@ -64,8 +64,12 @@ class ExternalHeadersIT extends IntegrationTestBase {
         assertThat(read(badProvider).get("code").asText()).isEqualTo("INVALID_PROVIDER");
 
         assertThat(db.queryForObject("SELECT count(*) FROM providers WHERE code = 'acme'", Integer.class)).isZero();
+        // Bad-key rejections are sampled to one row per IP per window (UX-073), so only the first one of the run is
+        // guaranteed a row; rejections with a valid key (400) are always audited.
         assertThat(db.queryForObject("SELECT count(*) FROM external_api_requests WHERE request_status = 'REJECTED' "
-            + "AND http_status IN (400, 401) AND provider_id IS NULL", Integer.class)).isGreaterThanOrEqualTo(4);
+            + "AND http_status = 400 AND provider_id IS NULL", Integer.class)).isGreaterThanOrEqualTo(2);
+        assertThat(db.queryForObject("SELECT count(*) FROM external_api_requests WHERE request_status = 'REJECTED' "
+            + "AND http_status = 401 AND provider_id IS NULL", Integer.class)).isGreaterThanOrEqualTo(1);
     }
 
     @Test

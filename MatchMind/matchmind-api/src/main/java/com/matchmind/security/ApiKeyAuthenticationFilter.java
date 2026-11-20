@@ -4,12 +4,13 @@ import com.matchmind.external.ExternalAuditService;
 import com.matchmind.external.ExternalPingController;
 import com.matchmind.provider.ProviderService;
 import com.matchmind.security.Principals.ProviderPrincipal;
+import com.matchmind.shared.ApiErrors;
+import com.matchmind.shared.ClientIpResolver;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,15 +42,19 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     private final byte[] keyHash;
     private final ProviderService providers;
     private final ExternalAuditService audit;
+    private final ApiKeyFailureThrottle throttle;
+    private final ClientIpResolver ips;
 
     public ApiKeyAuthenticationFilter(@Value("${app.external-api-key:}") String key, ProviderService providers,
-                                      ExternalAuditService audit) {
+                                      ExternalAuditService audit, ApiKeyFailureThrottle throttle, ClientIpResolver ips) {
         if (key == null || key.length() < 32) {
             throw new IllegalStateException("EXTERNAL_API_KEY must be set to at least 32 characters");
         }
         this.keyHash = sha256(key);
         this.providers = providers;
         this.audit = audit;
+        this.throttle = throttle;
+        this.ips = ips;
     }
 
     @Override
@@ -67,7 +72,16 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         String key = req.getHeader(HEADER);
         // Compare hashes so the comparison is constant-time and independent of the presented length.
         if (key == null || !MessageDigest.isEqual(sha256(key), keyHash)) {
-            reject(req, res, received, 401, "INVALID_API_KEY", key == null ? "Missing API key" : "Invalid API key");
+            // Unauthenticated floods must not grow the audit table: 429 past the limit, and one row per IP per window.
+            int hits = throttle.hit(ips.resolve(req));
+            if (throttle.exceeded(hits)) {
+                res.setHeader("Retry-After", "60");
+                ApiErrors.write(req, res, 429, "RATE_LIMITED", "Too many rejected requests from this address. Check the API key and retry in a minute");
+            } else if (hits == 1) {
+                reject(req, res, received, 401, "INVALID_API_KEY", key == null ? "Missing API key" : "Invalid API key");
+            } else {
+                ApiErrors.write(req, res, 401, "INVALID_API_KEY", key == null ? "Missing API key" : "Invalid API key");
+            }
             return;
         }
         String raw = req.getHeader(PROVIDER_HEADER);
@@ -96,9 +110,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     private void reject(HttpServletRequest req, HttpServletResponse res, Instant received, int status, String code,
                         String message) throws IOException {
         audit.record(req, received, new ExternalAuditService.Entry(null, null, status, "REJECTED", null, message));
-        res.setStatus(status);
-        res.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        res.getWriter().write("{\"status\":" + status + ",\"code\":\"" + code + "\",\"message\":\"" + message + "\"}");
+        ApiErrors.write(req, res, status, code, message);
     }
 
     private static byte[] sha256(String value) {
