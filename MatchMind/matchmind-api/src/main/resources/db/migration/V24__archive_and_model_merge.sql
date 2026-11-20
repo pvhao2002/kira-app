@@ -19,9 +19,15 @@ CREATE INDEX ix_ai_models_merged_into ON ai_models (merged_into_id) WHERE merged
 
 -- Merges are one level deep: a merge target never has a target, and a row that others merge into cannot be merged away.
 -- Re-pointing A -> B to A -> C when B is merged into C is application logic; this only rejects the 2-level chain.
+-- The checks only read, so two concurrent merges (A->B and B->C) could both pass under READ COMMITTED. Merges are
+-- same-provider only (composite FK), so a per-provider transaction lock serialises them; the SELECTs below run after
+-- the lock is granted and therefore see the rival's committed row.
 CREATE FUNCTION mm_ai_models_no_chain() RETURNS trigger
     LANGUAGE plpgsql SET search_path = pg_catalog, public AS $$
 BEGIN
+    IF NEW.merged_into_id IS NOT NULL THEN
+        PERFORM pg_advisory_xact_lock(hashtext('mm_model_merge'), hashtext(NEW.provider_id::text));
+    END IF;
     IF NEW.merged_into_id IS NOT NULL AND (
         EXISTS (SELECT 1 FROM ai_models t WHERE t.id = NEW.merged_into_id AND t.merged_into_id IS NOT NULL)
         OR EXISTS (SELECT 1 FROM ai_models c WHERE c.merged_into_id = NEW.id)
@@ -40,7 +46,7 @@ CREATE TABLE admin_actions (
     entity     VARCHAR(16) NOT NULL CHECK (entity IN ('PROVIDER', 'MODEL', 'MATCH')),
     entity_id  UUID        NOT NULL,
     action     VARCHAR(16) NOT NULL CHECK (action IN ('ARCHIVE', 'UNARCHIVE', 'RENAME', 'MERGE', 'UNMERGE')),
-    reason     TEXT        NOT NULL,
+    reason     TEXT        NOT NULL CONSTRAINT ck_admin_actions_reason_not_blank CHECK (btrim(reason) <> ''),
     actor      UUID REFERENCES users (id),
     at         TIMESTAMPTZ NOT NULL DEFAULT now(),
     details    JSONB
