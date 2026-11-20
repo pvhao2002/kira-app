@@ -1,12 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { apiError } from '../core/http';
 import { ApiLogDetail, ApiLogRow } from '../core/models';
 import { safeValue } from '../core/resource';
-import { localDay } from '../shared/filter-bar';
-import { dayEndExclusive, dayStart, fmtDateTime, humanize } from '../shared/format';
+import { dayRange } from '../shared/filter-bar';
+import { fmtDateTime, humanize } from '../shared/format';
 import { Dialog, Paginator, SortHeader, ToastService } from '../shared/kit';
 import { PagedList } from '../shared/paged-list';
 import { JsonView, ResultTag } from '../shared/ui';
@@ -38,7 +38,9 @@ import { fromQuery, toQuery } from '../shared/url-state';
             <option value="">Any outcome</option>
             @for (s of statuses; track s.value) { <option [value]="s.value">{{ s.label }}</option> }
           </select>
-          <span class="filter-actions"><button type="submit" class="btn btn-primary btn-sm"><i class="pi pi-check"></i> Apply</button></span>
+          @if (dateError()) { <span class="field-error" role="alert">{{ dateError() }}</span> }
+          <span class="filter-actions"><button type="submit" class="btn btn-primary btn-sm" [disabled]="!!rangeError()"><i class="pi pi-check"></i> Apply</button>
+            @if (pending()) { <span class="pending-note" role="status">Changes not applied</span> }</span>
         </div>
       </form>
       <section class="panel flush">
@@ -53,17 +55,26 @@ import { fromQuery, toQuery } from '../shared/url-state';
             <tbody>
               @for (l of list.rows(); track l.id) {
                 <tr class="clickable" (click)="open(l)" tabindex="0" (keydown.enter)="open(l)">
-                  <td class="nowrap">{{ fmt(l.receivedAt) }}</td><td class="hide-sm">{{ l.providerName ?? '—' }}</td><td class="hide-sm"><code>{{ l.httpMethod }} {{ l.endpoint }}</code></td>
+                  <td class="nowrap">{{ fmt(l.receivedAt) }}</td><td class="hide-sm">{{ l.providerName ?? '—' }}@if (l.actor) { <span class="cell-sub">by {{ l.actor }}</span> }</td><td class="hide-sm"><code>{{ l.httpMethod }} {{ l.endpoint }}</code></td>
                   <td class="num">{{ l.httpStatus }}</td><td><mm-result [value]="l.requestStatus" kind="status" /></td><td><span class="clamp" [title]="l.errorMessage ?? ''">{{ l.errorMessage ?? '' }}</span></td>
                   <td class="hide-sm"><span class="truncate" [title]="l.eventId ?? ''">{{ l.eventId ?? '—' }}</span></td><td class="num hide-sm">{{ l.durationMs }}</td><td class="hide-sm">{{ l.clientIp ?? '—' }}</td>
                 </tr>
               } @empty {
-                <tr><td colspan="9" class="empty">{{ list.loading() ? 'Loading…' : list.error() || 'No API calls match these filters.' }}</td></tr>
+                <tr><td colspan="9" class="empty">
+                  @if (list.loading()) { Loading… }
+                  @else if (list.error()) {
+                    <div class="empty-state" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><strong>Couldn't load API calls</strong><span>{{ list.error() }}</span>
+                      <button type="button" class="btn btn-outline btn-sm" data-testid="retry" (click)="list.load()"><i class="pi pi-refresh"></i> Retry</button></div>
+                  }
+                  @else { No API calls match these filters. }
+                </td></tr>
               }
             </tbody>
           </table>
         </div>
+        @if (!list.error()) {
         <mm-paginator [page]="list.page()" [size]="list.size()" [total]="list.total()" [sizes]="[50, 100, 200]" unit="calls" (change)="list.setPage($event)" />
+        }
       </section>
     </div>
 
@@ -75,7 +86,9 @@ import { fromQuery, toQuery } from '../shared/url-state';
           <dt>Outcome</dt><dd>{{ d.httpStatus }} · {{ humanize(d.requestStatus) }} · {{ d.durationMs }} ms</dd>
           <dt>Request id</dt><dd><code>{{ d.requestId }}</code></dd>
           <dt>Event id</dt><dd>{{ d.eventId ?? '—' }}</dd>
-          <dt>Provider / key</dt><dd>{{ d.providerId ?? '—' }} / {{ d.apiKeyId ?? '—' }}</dd>
+          <dt>Provider</dt><dd>{{ d.providerName ?? '—' }}</dd>
+          <dt>Signed-in user</dt><dd>{{ d.actor ?? '—' }}</dd>
+          <dt>API key id</dt><dd>{{ d.apiKeyId ?? '—' }}</dd>
           <dt>Client IP</dt><dd>{{ d.clientIp ?? '—' }}</dd>
           <dt>Error</dt><dd>{{ d.errorMessage ?? '—' }}</dd>
         </dl>
@@ -83,6 +96,9 @@ import { fromQuery, toQuery } from '../shared/url-state';
         <mm-json [value]="d.processingResult" />
       }
     </mm-dialog>`,
+  styles: `
+    .pending-note { color: var(--mm-pending); font-size: .8rem; font-weight: 600; }
+    @media (max-height: 500px) { .table-wrap.tall { max-height: none; } }`,
 })
 export class ApiLogsPage {
   private readonly api = inject(ApiService);
@@ -114,15 +130,24 @@ export class ApiLogsPage {
   private applied: Parameters<ApiService['apiLogs']>[0] = {};
   readonly list = new PagedList<ApiLogRow>(paging => this.api.apiLogs({ ...this.applied, ...paging }), { field: 'receivedAt', dir: 'desc' }, 50);
 
+  /** The fields as of the last Apply; differences are shown as not applied. */
+  private readonly appliedKey = signal('');
+  private readonly key = computed(() =>
+    JSON.stringify([this.search(), this.providerId(), this.endpoint(), this.status(), this.from(), this.to()]));
+  readonly pending = computed(() => this.key() !== this.appliedKey());
+  readonly rangeError = computed(() => dayRange(this.from(), this.to()).error ?? '');
+  readonly dateError = computed(() => this.rangeError() || (this.list.fieldErrors()['from'] ?? ''));
+
   apply(updateUrl = true): void {
+    if (this.rangeError()) return;
     const [search, providerId, endpoint, status, from, to] =
       [this.search().trim(), this.providerId(), this.endpoint(), this.status(), this.from(), this.to()];
-    const start = localDay(from) ?? localDay(to);
-    const end = localDay(to) ?? start;
+    const range = dayRange(from, to);
     this.applied = {
       search: search || undefined, providerId: providerId || undefined, endpoint: endpoint || undefined,
-      status: status || undefined, from: start ? dayStart(start) : undefined, to: end ? dayEndExclusive(end) : undefined,
+      status: status || undefined, from: range.from, to: range.to,
     };
+    this.appliedKey.set(this.key());
     // First load keeps the page and sort that came with the URL; an applied filter starts over at page 1.
     if (updateUrl) this.list.reload(); else this.list.load();
     if (updateUrl) {
