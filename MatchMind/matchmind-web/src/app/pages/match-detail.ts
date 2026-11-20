@@ -85,7 +85,7 @@ const MIN_REASON = 5;
 
         <section class="panel flush">
           <header><h2>Models on this match</h2></header>
-          <div class="table-wrap"><table class="dt compact-sm">
+          <div class="table-wrap"><table class="dt compact-sm" aria-label="Models on this match">
             <thead><tr><th>Model</th><th class="num hide-sm">Predictions</th><th class="hide-sm">Latest</th><th class="hide-sm">Predicted score</th><th>Top pick</th><th class="num hide-sm">Prob.</th>
                 <th class="num hide-sm">Price</th><th>Result</th><th class="num hide-sm">W / L</th><th class="num" title="(Win + half win) divided by settled picks. Push and void are left out.">Win rate</th><th class="num hide-sm">Pending</th></tr></thead>
             <tbody>
@@ -142,7 +142,7 @@ const MIN_REASON = 5;
           <section class="panel">
             <header><h2>Latest live stats</h2>@if (d.latestStats) { <span class="muted-text">{{ d.latestStats.matchMinute ?? '—' }}' · {{ fmt(d.latestStats.predictedAt) }}</span> }</header>
             @if (d.latestStats; as s) {
-              <table class="dt"><thead><tr><th>Stat</th><th class="num">{{ d.match.homeTeam }}</th><th class="num">{{ d.match.awayTeam }}</th></tr></thead>
+              <table class="dt" aria-label="Latest live stats"><thead><tr><th>Stat</th><th class="num">{{ d.match.homeTeam }}</th><th class="num">{{ d.match.awayTeam }}</th></tr></thead>
                 <tbody>@for (r of statRows(s); track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody></table>
             } @else { <p class="muted-text">No stats were sent with predictions for this match.</p> }
           </section>
@@ -155,7 +155,7 @@ const MIN_REASON = 5;
                 @if (why(h)) { <div class="muted-text">Reason: {{ why(h) }}</div> }
                 @if (changes(h.previousResult, h.newResult); as rows) {
                   @if (rows.length) {
-                    <div class="table-wrap"><table class="dt">
+                    <div class="table-wrap"><table class="dt" [attr.aria-label]="'Changes on ' + fmt(h.changedAt)">
                       <thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead>
                       <tbody>@for (c of rows; track c.field) { <tr><td>{{ c.field }}</td><td class="muted-text">{{ c.before }}</td><td><strong>{{ c.after }}</strong></td></tr> }</tbody>
                     </table></div>

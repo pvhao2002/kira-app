@@ -68,8 +68,8 @@ const MIN_REASON = 5;
         }
 
         <section class="panel">
-        <mm-tabs [tabs]="tabList()" [(value)]="tab" />
-        <div class="tabpanel" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
+        <mm-tabs controls="prediction-panel" [tabs]="tabList()" [(value)]="tab" />
+        <div class="tabpanel" id="prediction-panel" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
           @switch (tab()) {
             @case ('picks') {
               <div class="table-wrap"><table class="dt compact-sm" aria-label="Picks">
@@ -125,7 +125,7 @@ const MIN_REASON = 5;
               </table></div>
             }
             @case ('odds') {
-              <div class="table-wrap"><table class="dt">
+              <div class="table-wrap"><table class="dt" aria-label="Odds">
                 <thead>
                   <tr><th>Ref</th><th>Stage</th><th class="num" title="Snapshot number within the stage">#</th><th class="num">Line</th><th class="num">Home</th><th class="num">Draw</th><th class="num">Away</th>
                     <th class="num">Over</th><th class="num">Under</th><th>Basis</th><th>At capture</th><th>Captured</th></tr>
@@ -149,7 +149,7 @@ const MIN_REASON = 5;
               </table></div>
             }
             @case ('scores') {
-              <table class="dt">
+              <table class="dt" aria-label="Correct scores">
                 <thead><tr><th class="num">Rank</th><th>Score</th><th class="num">Probability</th></tr></thead>
                 <tbody>
                   @for (c of d.correctScores; track c.rank) { <tr><td class="num">{{ c.rank }}</td><td><mm-score [home]="c.home" [away]="c.away" /></td><td class="num">{{ pct(c.probability) }}</td></tr> }
@@ -159,7 +159,7 @@ const MIN_REASON = 5;
             }
             @case ('stats') {
               @if (d.stats; as s) {
-                <table class="dt">
+                <table class="dt" aria-label="Stats">
                   <thead><tr><th>Stat</th><th class="num">{{ d.match.homeTeam }}</th><th class="num">{{ d.match.awayTeam }}</th></tr></thead>
                   <tbody>@for (r of statRows(); track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody>
                 </table>
@@ -200,7 +200,7 @@ const MIN_REASON = 5;
                 </div>
                 @if (s.correctScoreDistribution?.length) {
                   <h3 class="sub-h">Score distribution</h3>
-                  <div class="table-wrap short"><table class="dt">
+                  <div class="table-wrap short"><table class="dt" aria-label="Score distribution">
                     <thead><tr><th>Score</th><th class="num">Probability</th></tr></thead>
                     <tbody>@for (c of s.correctScoreDistribution!; track $index) { <tr><td><mm-score [home]="c.home" [away]="c.away" [muted]="true" /></td><td class="num">{{ pct(c.probability) }}</td></tr> }</tbody>
                   </table></div>

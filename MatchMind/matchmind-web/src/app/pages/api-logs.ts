@@ -45,7 +45,7 @@ import { fromQuery, toQuery } from '../shared/url-state';
       </form>
       <section class="panel flush">
         <div class="table-wrap tall">
-          <table class="dt compact-sm" [class.loading]="list.loading()" [attr.aria-busy]="list.loading()">
+          <table class="dt compact-sm" aria-label="API calls" [class.loading]="list.loading()" [attr.aria-busy]="list.loading()">
             <thead>
               <tr><th mmSort="receivedAt" [sort]="list.sort()" (sortChange)="list.setSort($event)">Received</th><th class="hide-sm">Provider</th>
                 <th class="hide-sm" mmSort="endpoint" [sort]="list.sort()" (sortChange)="list.setSort($event)">Endpoint</th>

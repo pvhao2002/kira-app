@@ -184,6 +184,37 @@ describe('ModelsPage', () => {
   });
 });
 
+/** UX-040: the row's link is its one tab stop (a routerLink row is focusable unless told not to), and the table has a name. */
+function expectOneTabStopPerRow(el: HTMLElement) {
+  expect(el.querySelector('table')!.getAttribute('aria-label')).toBeTruthy();
+  const rows = [...el.querySelectorAll('tbody tr.clickable')];
+  expect(rows.length).toBeGreaterThan(0);
+  for (const tr of rows) {
+    expect(tr.getAttribute('tabindex')).toBe('-1');
+    expect(tr.querySelector('a[href]')).not.toBeNull();
+  }
+}
+
+describe('list rows (UX-040)', () => {
+  it('matches', async () => {
+    const t = await open('/matches', MatchesPage);
+    await t.answer({ '/api/v1/matches': page([match()]) });
+    expectOneTabStopPerRow(t.el());
+  });
+
+  it('predictions', async () => {
+    const t = await open('/predictions', PredictionsPage);
+    await t.answer({ '/api/v1/predictions': page([prediction()]) });
+    expectOneTabStopPerRow(t.el());
+  });
+
+  it('models', async () => {
+    const t = await open('/models', ModelsPage);
+    await t.answer({ '/api/v1/models': [model(1)] });
+    expectOneTabStopPerRow(t.el());
+  });
+});
+
 describe('ApiLogsPage', () => {
   const log: ApiLogRow = {
     id: 'l1', receivedAt: '2026-11-19T08:00:00Z', providerId: '0fb8f294-uuid', providerName: 'Agent One', endpoint: '/api/v1/predictions/import',
@@ -201,6 +232,15 @@ describe('ApiLogsPage', () => {
     expect(dl).toContain('Agent One');
     expect(dl).toContain('admin');
     expect(dl).not.toContain('0fb8f294');
+  });
+
+  it('opens a call from one keyboard stop per row, the row itself, and names the table (UX-040)', async () => {
+    const t = await open('/api-logs', ApiLogsPage);
+    await t.answer({ '/api/v1/api-logs': page([log]) });
+    expect(t.el().querySelector('table')!.getAttribute('aria-label')).toBeTruthy();
+    const tr = t.el().querySelector('tbody tr') as HTMLElement;
+    expect(tr.getAttribute('tabindex')).toBe('0');
+    expect(tr.querySelectorAll('a[href], button, [tabindex]')).toHaveLength(0);
   });
 
   it('shows the From-after-To error and sends nothing (UX-110)', async () => {

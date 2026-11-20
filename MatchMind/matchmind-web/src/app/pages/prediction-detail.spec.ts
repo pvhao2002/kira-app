@@ -156,6 +156,19 @@ describe('PredictionDetailPage', () => {
     expect(cells).toContain('-0.25');
   });
 
+  it('ties the selected tab to its panel and names every table (UX-040)', async () => {
+    const f = await open();
+    const el = f.nativeElement as HTMLElement;
+    const panel = el.querySelector('[role="tabpanel"]') as HTMLElement;
+    expect(panel.id).toBeTruthy();
+    for (const tab of ['picks', 'odds', 'scores', 'stats', 'sim']) {
+      f.componentInstance.tab.set(tab);
+      f.detectChanges();
+      expect(el.querySelector('[role="tab"][aria-selected="true"]')!.getAttribute('aria-controls')).toBe(panel.id);
+      for (const t of el.querySelectorAll('table')) expect(t.getAttribute('aria-label'), tab).toBeTruthy();
+    }
+  });
+
   it('shows extra stats and Monte Carlo probabilities as tables (UX-025)', async () => {
     const f = await open();
     f.componentInstance.tab.set('stats');

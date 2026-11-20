@@ -51,7 +51,7 @@ export function pickSummary(p: PredictionRow): string {
           }
         </div>
         <div class="table-wrap tall">
-        <table class="dt compact-sm cards" [class.loading]="list.loading()" [attr.aria-busy]="list.loading()">
+        <table class="dt compact-sm cards" aria-label="Predictions" [class.loading]="list.loading()" [attr.aria-busy]="list.loading()">
           <thead>
             <tr>
               <th class="hide-sm" mmSort="predictedAt" [sort]="list.sort()" (sortChange)="list.setSort($event)">Predicted at</th>
@@ -72,7 +72,7 @@ export function pickSummary(p: PredictionRow): string {
           </thead>
           <tbody>
             @for (p of list.rows(); track p.id) {
-            <tr class="clickable" [routerLink]="['/predictions', p.id]">
+            <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]">
               <td class="nowrap hide-sm"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
               <td><span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }}</span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">{{ p.modelName }} · {{ fmt(p.predictedAt) }}</a></td>
               <td class="nowrap hide-sm">{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td>

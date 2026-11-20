@@ -170,6 +170,13 @@ describe('MatchDetailPage', () => {
     expect(text(q(f, 'prediction-history'))).toContain('AH HOME -0.25');
   });
 
+  it('names every table (UX-040)', async () => {
+    const f = await open([], { ...detail, latestStats: { matchMinute: 20, predictedAt: '', possessionHome: 50, possessionAway: 50 } } as unknown as MatchDetail);
+    const tables = [...f.nativeElement.querySelectorAll('table')] as HTMLElement[];
+    expect(tables.length).toBeGreaterThan(3);
+    for (const t of tables) expect(t.getAttribute('aria-label')).toBeTruthy();
+  });
+
   it('copies the settlement prompt input (UX-119)', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });

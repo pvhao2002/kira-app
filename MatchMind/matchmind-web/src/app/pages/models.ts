@@ -33,7 +33,7 @@ const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCas
       }
       @if (state() === 'ready') {
         <section class="panel flush">
-          <div class="table-wrap tall"><table class="dt compact-sm">
+          <div class="table-wrap tall"><table class="dt compact-sm" aria-label="AI models">
             <thead>
               <tr><th mmSort="name" [sort]="sort()" (sortChange)="setSort($event)">Model</th><th class="hide-sm" mmSort="providerName" [sort]="sort()" (sortChange)="setSort($event)">Provider</th>
                 <th mmSort="totalPredictions" class="num hide-sm" [sort]="sort()" (sortChange)="setSort($event)">Predictions</th>
@@ -42,7 +42,7 @@ const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCas
             </thead>
             <tbody>
               @for (m of rows(); track m.id) {
-              <tr class="clickable" [routerLink]="['/models', m.id]">
+              <tr class="clickable" tabindex="-1" [routerLink]="['/models', m.id]">
                 <td><a [routerLink]="['/models', m.id]">{{ m.name }}</a> @if (m.status === 'DISABLED') { <span class="tag tag-secondary">Disabled</span> }<span class="cell-sub">{{ m.version }}<span class="show-sm"> · {{ m.providerName }}</span></span></td>
                 <td class="hide-sm">{{ m.providerName }}</td>
                 <td class="num hide-sm">{{ m.totalPredictions }}</td>

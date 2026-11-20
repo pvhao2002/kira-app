@@ -45,7 +45,7 @@ import { ResultTag, ScoreChip } from '../shared/ui';
       </form>
       <section class="panel flush">
         <div class="table-wrap tall">
-          <table class="dt compact-sm" [class.loading]="list.loading()" [attr.aria-busy]="list.loading()">
+          <table class="dt compact-sm" aria-label="Matches" [class.loading]="list.loading()" [attr.aria-busy]="list.loading()">
             <thead>
               <tr>
                 <th class="hide-sm" mmSort="startTime" [sort]="list.sort()" (sortChange)="list.setSort($event)">Kick-off</th>
@@ -59,7 +59,7 @@ import { ResultTag, ScoreChip } from '../shared/ui';
             </thead>
             <tbody>
               @for (m of list.rows(); track m.id) {
-                <tr class="clickable" [routerLink]="['/matches', m.id]">
+                <tr class="clickable" tabindex="-1" [routerLink]="['/matches', m.id]">
                   <td class="nowrap hide-sm">{{ fmt(m.startTime) }}</td>
                   <td class="hide-sm league"><span class="truncate" [title]="m.league">{{ m.league }}</span></td>
                   <td><a class="truncate" [routerLink]="['/matches', m.id]" [title]="m.homeTeam + ' – ' + m.awayTeam">{{ m.homeTeam }} – {{ m.awayTeam }}</a><span class="cell-sub hide-sm">{{ m.externalMatchId }}</span><span class="cell-sub show-sm">{{ m.league }} · {{ fmt(m.startTime) }}</span></td>
