@@ -18,10 +18,12 @@ import com.matchmind.match.MatchResultService.ResultResponse;
 import com.matchmind.prediction.PredictionEvents;
 import com.matchmind.prediction.PredictionEvents.NewPrediction;
 import com.matchmind.prediction.PredictionIngestionService;
+import com.matchmind.provider.ProviderService;
 import com.matchmind.security.Principals.ProviderPrincipal;
 import com.matchmind.settlement.SettlementService;
 import com.matchmind.settlement.SettlementService.MatchSettlement;
 import com.matchmind.shared.ApiException;
+import com.matchmind.shared.TextRules;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -71,6 +73,12 @@ public class ExternalController {
     private final PredictionEvents events;
     private final Validator validator;
     private final ObjectMapper mapper;
+    private final ProviderService providers;
+
+    /** A provider whose first request is rejected has no row yet (UX-077): its audit entry carries no provider. */
+    private UUID auditedProvider(ProviderPrincipal caller) {
+        return providers.exists(caller.providerId()) ? caller.providerId() : null;
+    }
 
     @PostMapping("/predictions")
     @Operation(summary = "Insert an AI prediction (idempotent on eventId)")
@@ -100,7 +108,7 @@ public class ExternalController {
             ModelRef model = modelOf(modelName, modelVersion, r);
             PredictionResponse response;
             try {
-                response = ingestion.ingest(caller.providerId(), model, r, raw);
+                response = ingestion.ingest(caller.providerId(), caller.providerCode(), model, r, raw);
             } catch (DataIntegrityViolationException race) {
                 // A concurrent retry inserted the same eventId first: answer as a duplicate.
                 response = ingestion.findDuplicate(caller.providerId(), r, raw).orElseThrow(() -> race);
@@ -151,13 +159,17 @@ public class ExternalController {
 
     /** The model named in X-Model-Name (+ optional X-Model-Version, default "1") wins over {@code model} in the body. */
     static ModelRef modelOf(String name, String version, PredictionRequest r) {
-        if (name == null || name.isBlank()) {
-            if (r.model() == null) {
+        String headerName = TextRules.clean(name);
+        if (headerName == null || headerName.isEmpty()) {
+            ModelRef body = r.model() == null ? null
+                : new ModelRef(TextRules.clean(r.model().name()), TextRules.clean(r.model().version()));
+            if (body == null || body.name().isEmpty() || body.version().isEmpty()) {
                 throw ApiException.badRequest("MODEL_REQUIRED", "Send the model name in the X-Model-Name header");
             }
-            return new ModelRef(r.model().name().trim(), r.model().version().trim());
+            return body;
         }
-        ModelRef ref = new ModelRef(name.trim(), version == null || version.isBlank() ? "1" : version.trim());
+        String headerVersion = TextRules.clean(version);
+        ModelRef ref = new ModelRef(headerName, headerVersion == null || headerVersion.isEmpty() ? "1" : headerVersion);
         if (ref.name().length() > 128 || ref.version().length() > 64) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_MODEL_HEADER", "Model name or version is too long",
                 Map.of(MODEL_HEADER, "max 128 characters", MODEL_VERSION_HEADER, "max 64 characters"));
@@ -170,17 +182,17 @@ public class ExternalController {
         try {
             ResponseEntity<T> response = work.get();
             boolean duplicate = response.getBody() instanceof PredictionResponse p && p.duplicate();
-            audit.record(http, received, new Entry(caller.providerId(), eventId,
+            audit.record(http, received, new Entry(auditedProvider(caller), eventId,
                 response.getStatusCode().value(), duplicate ? "DUPLICATE" : "SUCCESS", summary(response.getBody()), null));
             return response;
         } catch (ApiException e) {
             JsonNode fields = e.getFieldErrors().isEmpty() ? null : mapper.valueToTree(Map.of("fieldErrors", e.getFieldErrors()));
-            audit.record(http, received, new Entry(caller.providerId(), eventId, e.getStatus().value(),
+            audit.record(http, received, new Entry(auditedProvider(caller), eventId, e.getStatus().value(),
                 e.getStatus().is4xxClientError() ? "REJECTED" : "FAILED", fields, e.getCode() + ": " + e.getMessage()));
             throw e;
         } catch (RuntimeException e) {
             int status = statusOf(e);
-            audit.record(http, received, new Entry(caller.providerId(), eventId, status,
+            audit.record(http, received, new Entry(auditedProvider(caller), eventId, status,
                 status < 500 ? "REJECTED" : "FAILED", null, "Unexpected error (" + e.getClass().getSimpleName() + ")"));
             throw e;
         }
@@ -210,7 +222,7 @@ public class ExternalController {
             return node;
         } catch (JsonProcessingException | IllegalArgumentException e) {
             ApiException error = ApiException.badRequest("MALFORMED_REQUEST", "Body must be a JSON object (max 1 MB)");
-            audit.record(http, received, new Entry(caller.providerId(), eventId, 400, "REJECTED", null,
+            audit.record(http, received, new Entry(auditedProvider(caller), eventId, 400, "REJECTED", null,
                 error.getMessage()));
             throw error;
         }

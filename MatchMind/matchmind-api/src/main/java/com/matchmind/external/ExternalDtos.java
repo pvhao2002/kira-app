@@ -27,6 +27,8 @@ public final class ExternalDtos {
     public static final String BASIS = "FULL_MATCH|REMAINING_MATCH";
     public static final String RESULTS = "WIN|LOSS|HALF_WIN|HALF_LOSS|PUSH|VOID|PENDING";
     private static final String ID = "^[A-Za-z0-9._:-]{1,128}$";
+    /** plan.md and the prompts ask for the top two picks (rank 1 and 2); more would let one model dominate win rates. */
+    public static final int MAX_PICKS = 2;
 
     private ExternalDtos() {
     }
@@ -120,7 +122,7 @@ public final class ExternalDtos {
                                     @NotEmpty @Size(max = 200) List<@NotNull @Valid OddsInput> odds,
                                     @Valid StatsInput stats,
                                     @Valid SimulationInput simulation,
-                                    @NotEmpty @Size(max = 20) List<@NotNull @Valid PickInput> picks,
+                                    @NotEmpty @Size(max = MAX_PICKS) List<@NotNull @Valid PickInput> picks,
                                     @NotNull @Valid CorrectScoreInput correctScore,
                                     JsonNode metadata) {
     }
@@ -128,9 +130,13 @@ public final class ExternalDtos {
     public record PickRef(UUID pickId, int rank, String market, String pick, UUID oddsId) {
     }
 
-    /** {@code externalMatchId} is the id to send match results with, generated when the prediction had none. */
+    /**
+     * {@code externalMatchId} is the id to send match results with, generated when the prediction had none.
+     * {@code possibleDuplicateOf}: on a new (201) prediction, the earliest stored prediction of the same model, match,
+     * type and minute with the same picks (an agent retry under a new eventId); null otherwise. Advisory only.
+     */
     public record PredictionResponse(UUID predictionId, UUID matchId, String externalMatchId, boolean duplicate,
-                                     List<PickRef> picks, Map<String, UUID> odds) {
+                                     List<PickRef> picks, Map<String, UUID> odds, UUID possibleDuplicateOf) {
     }
 
     /**

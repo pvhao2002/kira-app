@@ -6,11 +6,11 @@
     "league": "Premier League",
     "homeTeam": "Arsenal",
     "awayTeam": "Chelsea",
-    "startTime": "2026-11-20T19:45:00Z",
+    "startTime": "2026-11-19T19:45:00Z",
     "status": "LIVE"
   },
   "predictionType": "LIVE",
-  "predictedAt": "2026-11-20T20:40:00Z",
+  "predictedAt": "2026-11-19T20:40:00Z",
   "matchMinute": 55,
   "currentScore": { "home": 1, "away": 0 },
   "currentCorners": { "home": 4, "away": 2 },
@@ -20,15 +20,15 @@
     {
       "ref": "ah-live", "market": "AH", "stage": "LIVE", "snapshotOrder": 1, "line": -0.25, "lineDisplay": "0/-0.5",
       "homeOdds": 1.95, "awayOdds": 1.90, "settlementBasis": "REMAINING_MATCH",
-      "scoreAtCapture": { "home": 1, "away": 0 }, "capturedAt": "2026-11-20T20:39:30Z"
+      "scoreAtCapture": { "home": 1, "away": 0 }, "capturedAt": "2026-11-19T20:39:30Z"
     },
     {
       "ref": "ou-live", "market": "OU", "stage": "LIVE", "line": 2.25, "overOdds": 1.85, "underOdds": 2.00,
-      "settlementBasis": "FULL_MATCH", "scoreAtCapture": { "home": 1, "away": 0 }, "capturedAt": "2026-11-20T20:39:30Z"
+      "settlementBasis": "FULL_MATCH", "scoreAtCapture": { "home": 1, "away": 0 }, "capturedAt": "2026-11-19T20:39:30Z"
     },
     {
       "ref": "cou-live", "market": "CORNER_OU", "stage": "LIVE", "line": 10.5, "overOdds": 1.90, "underOdds": 1.90,
-      "settlementBasis": "FULL_MATCH", "cornersAtCapture": { "home": 4, "away": 2 }, "capturedAt": "2026-11-20T20:39:30Z"
+      "settlementBasis": "FULL_MATCH", "cornersAtCapture": { "home": 4, "away": 2 }, "capturedAt": "2026-11-19T20:39:30Z"
     }
   ],
   "stats": {
@@ -61,8 +61,7 @@
   },
   "picks": [
     { "oddsRef": "ah-live", "market": "AH", "pick": "HOME", "probability": 0.58, "rank": 1 },
-    { "oddsRef": "ou-live", "market": "OU", "pick": "OVER", "probability": 0.54, "rank": 2 },
-    { "oddsRef": "cou-live", "market": "CORNER_OU", "pick": "UNDER", "probability": 0.52, "rank": 3 }
+    { "oddsRef": "ou-live", "market": "OU", "pick": "OVER", "probability": 0.54, "rank": 2 }
   ],
   "correctScore": { "home": 1, "away": 0, "probability": 0.27 },
   "metadata": { "promptTemplate": "AI_PREDICTION", "promptVersion": 1, "notes": "Home side dominating territory." }

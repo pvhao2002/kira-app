@@ -9,14 +9,20 @@ import com.matchmind.external.ExternalDtos.PredictionRequest;
 import com.matchmind.external.ExternalDtos.SimulationInput;
 import com.matchmind.settlement.SettlementEngine;
 import com.matchmind.shared.ApiException;
+import com.matchmind.shared.TextRules;
+import com.matchmind.shared.TimeRules;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /** Pure cross-field validation of a prediction payload; no I/O, so it is unit-testable without a database. */
 final class PredictionValidator {
@@ -24,10 +30,16 @@ final class PredictionValidator {
 
     /** Cross-field rules Bean Validation cannot express. All problems are reported together. */
     static void validate(PredictionRequest r) {
+        validate(r, Instant.now());
+    }
+
+    static void validate(PredictionRequest r, Instant now) {
         Map<String, String> errors = new LinkedHashMap<>();
         boolean live = "LIVE".equals(r.predictionType());
         if (live && r.matchMinute() == null) errors.put("matchMinute", "required for LIVE predictions");
         if (live && r.currentScore() == null) errors.put("currentScore", "required for LIVE predictions");
+        validateTimes(r, live, now, errors);
+        validateTeams(r.match().homeTeam(), r.match().awayTeam(), errors);
 
         Map<String, OddsInput> oddsByRef = validateOdds(r.odds(), live, errors);
         validatePicks(r.picks(), oddsByRef, errors);
@@ -40,6 +52,75 @@ final class PredictionValidator {
         if (r.simulation() != null) validateSimulation(r.simulation(), errors);
         if (!errors.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Prediction payload is invalid", errors);
+        }
+    }
+
+    /**
+     * Every string value and field name of the raw payload: NUL, unpaired surrogates and BiDi controls are refused
+     * with 400 instead of failing in the database (409) or reversing how a name displays.
+     */
+    static void validateText(JsonNode raw) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        walkText(raw, "", errors);
+        if (!errors.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Prediction payload has forbidden characters", errors);
+        }
+    }
+
+    private static void walkText(JsonNode node, String path, Map<String, String> errors) {
+        if (node.isTextual()) {
+            String problem = TextRules.forbiddenCharacter(node.textValue());
+            if (problem != null) errors.putIfAbsent(path.isEmpty() ? "body" : path, problem);
+        } else if (node.isArray()) {
+            for (int i = 0; i < node.size(); i++) walkText(node.get(i), path + "[" + i + "]", errors);
+        } else if (node.isObject()) {
+            node.properties().forEach(e -> {
+                String child = path.isEmpty() ? e.getKey() : path + "." + e.getKey();
+                String problem = TextRules.forbiddenCharacter(e.getKey());
+                if (problem != null) errors.putIfAbsent(child, "field name " + problem);
+                walkText(e.getValue(), child, errors);
+            });
+        }
+    }
+
+    /** Names are compared after {@link TextRules#clean}: invisible-only names are blank, and a team cannot play itself. */
+    private static void validateTeams(String home, String away, Map<String, String> errors) {
+        String h = TextRules.clean(home);
+        String a = TextRules.clean(away);
+        if (h == null || h.isEmpty()) errors.put("match.homeTeam", "must not be blank");
+        if (a == null || a.isEmpty()) errors.put("match.awayTeam", "must not be blank");
+        else if (h != null && teamKey(h).equals(teamKey(a))) errors.put("match.awayTeam", "must differ from homeTeam");
+    }
+
+    private static final Pattern MARKS = Pattern.compile("\\p{M}+");
+    private static final Pattern SEPARATORS = Pattern.compile("[^\\p{L}\\p{N}]+");
+    private static final Pattern CLUB_SUFFIX = Pattern.compile(" (fc|cf|sc|afc)$");
+
+    /**
+     * Identity of a team name when a match is recognised by its teams: case, accents, punctuation, spacing and a
+     * trailing club suffix (FC, CF, SC, AFC) do not matter. "Atlético Madrid FC" and "ATLETICO  MADRID" are one team.
+     * ponytail: no alias table ("Atletico de Madrid", "Man Utd"); an admin merge tool would be the next step.
+     */
+    static String teamKey(String name) {
+        String folded = MARKS.matcher(Normalizer.normalize(TextRules.clean(name), Normalizer.Form.NFD)).replaceAll("");
+        String key = SEPARATORS.matcher(folded.toLowerCase(Locale.ROOT).replace(".", "").replace("'", "").replace("’", ""))
+            .replaceAll(" ").trim();
+        if (key.isEmpty()) return TextRules.clean(name).toLowerCase(Locale.ROOT); // no letters or digits at all
+        String stripped = CLUB_SUFFIX.matcher(key).replaceFirst("");
+        return stripped.isEmpty() ? key : stripped;
+    }
+
+    /** Shared time window, plus: a PRE_MATCH prediction (absent predictedAt = now) is made before kick-off. */
+    private static void validateTimes(PredictionRequest r, boolean live, Instant now, Map<String, String> errors) {
+        Instant start = r.match().startTime();
+        TimeRules.checkKickOff(start, "match.startTime", now, errors);
+        TimeRules.checkObserved(r.predictedAt(), "predictedAt", now, errors);
+        for (int i = 0; i < r.odds().size(); i++) {
+            TimeRules.checkObserved(r.odds().get(i).capturedAt(), "odds[" + i + "].capturedAt", now, errors);
+        }
+        Instant predictedAt = r.predictedAt() != null ? r.predictedAt() : now;
+        if (!live && start != null && predictedAt.isAfter(start) && !errors.containsKey("predictedAt")) {
+            errors.put("predictedAt", "a PRE_MATCH prediction must be made before match.startTime (absent predictedAt = now)");
         }
     }
 
@@ -67,6 +148,7 @@ final class PredictionValidator {
 
     private static void validatePicks(List<PickInput> picks, Map<String, OddsInput> oddsByRef, Map<String, String> errors) {
         Set<Integer> ranks = new HashSet<>();
+        Set<String> bets = new HashSet<>();
         for (int i = 0; i < picks.size(); i++) {
             PickInput p = picks.get(i);
             String f = "picks[" + i + "].";
@@ -75,6 +157,11 @@ final class PredictionValidator {
             if (o == null) {
                 errors.put(f + "oddsRef", "unknown odds ref '" + p.oddsRef() + "'");
                 continue;
+            }
+            // The same side of the same market, stage and line is one bet, whichever odds snapshot it points at.
+            String line = o.line() == null ? "" : o.line().stripTrailingZeros().toPlainString();
+            if (!bets.add(o.market() + "|" + o.stage() + "|" + line + "|" + p.pick())) {
+                errors.put("picks[" + i + "]", "duplicate pick: same market, stage, line and side as an earlier pick");
             }
             if (!o.market().equals(p.market())) errors.put(f + "market", "pick market " + p.market() + " does not match odds market " + o.market());
             try {

@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -39,15 +40,27 @@ public class ProviderService {
     }
 
     /**
-     * The provider id for a code, creating the provider on first use. Runs outside any transaction so the insert is
-     * visible at once; ON CONFLICT absorbs a concurrent first call with the same code.
+     * The provider id for a code. Nothing is written: a provider that does not exist yet gets a deterministic id
+     * (derived from the code), and its row is only inserted by {@link #ensureExists} once a prediction is accepted, so
+     * a rejected request never leaves an empty provider behind (UX-077).
      */
     @Cacheable(CacheConfig.PROVIDER_IDS)
     public UUID resolve(String code) {
-        return find(code).orElseGet(() -> {
-            jdbc.update("INSERT INTO providers (code, name) VALUES (:code, :code) ON CONFLICT (code) DO NOTHING", Map.of("code", code));
-            return find(code).orElseThrow();
-        });
+        return find(code).orElseGet(() -> UUID.nameUUIDFromBytes(("matchmind-provider:" + code).getBytes(StandardCharsets.UTF_8)));
+    }
+
+    /**
+     * Creates the provider row for an id from {@link #resolve}, inside the caller's transaction so a rejected
+     * prediction rolls it back. ON CONFLICT absorbs a concurrent first call with the same code.
+     */
+    public void ensureExists(UUID id, String code) {
+        jdbc.update("INSERT INTO providers (id, code, name) VALUES (:id, :code, :code) ON CONFLICT DO NOTHING",
+            Map.of("id", id, "code", code));
+    }
+
+    /** False for a provider whose first request has not been accepted yet. */
+    public boolean exists(UUID id) {
+        return !jdbc.queryForList("SELECT 1 FROM providers WHERE id = :id", Map.of("id", id), Integer.class).isEmpty();
     }
 
     private Optional<UUID> find(String code) {
