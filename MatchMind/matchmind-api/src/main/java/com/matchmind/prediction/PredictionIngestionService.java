@@ -156,12 +156,15 @@ public class PredictionIngestionService {
     /**
      * Models are created on first use and matched like providers: case-insensitive name, "1" = "1.0". Inside this transaction a concurrent first insert of the same model makes
      * ON CONFLICT wait for it, so the second lookup finds that row; a rejected prediction rolls its new model back.
+     * A model merged into another (same provider, one level deep) lands on its target; after an unmerge the old name
+     * finds its own row again, while the predictions stored in between stay on the target. Archived models still accept.
      */
     private AiModel model(UUID providerId, ModelRef ref) {
-        return models.findSameModel(providerId, ref.name(), ref.version()).orElseGet(() -> {
+        AiModel found = models.findSameModel(providerId, ref.name(), ref.version()).orElseGet(() -> {
             models.insertIfMissing(providerId, ref.name(), ref.version());
             return models.findSameModel(providerId, ref.name(), ref.version()).orElseThrow();
         });
+        return found.getMergedIntoId() == null ? found : models.findById(found.getMergedIntoId()).orElseThrow();
     }
 
     /** Used after a concurrent insert of the same eventId lost the race on the unique key. */

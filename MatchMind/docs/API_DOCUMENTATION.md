@@ -103,6 +103,12 @@ rejected request creates nothing; its API log row then has no provider.
 | `X-Model-Name` | predictions | The model, e.g. `gpt-5.1` (≤ 128 characters). Wins over `model` in the body. Matched like `X-Provider`: spaces trimmed and collapsed, case ignored (`GPT-5.1` = `gpt-5.1`); the first spelling stored is the display name |
 | `X-Model-Version` | no | ≤ 64 characters, default `1`. Trailing `.0` groups are ignored when matching (`1` = `1.0` = `1.00`) |
 
+**Merged models.** If an admin merged the named model into another model of the same provider, a new prediction under the
+old name is stored on the target (`ai_models.merged_into_id`), and no model row is created. Archived models, providers and
+matches still accept callbacks; ingest never unarchives anything. After an unmerge the old name resolves to its own model
+again; predictions stored in between are immutable snapshots and stay on the target. The response and the API log carry
+ids only (no model name), so they already point at the stored prediction.
+
 Anyone holding the key can write as any provider name, so treat it like a password and rotate it by changing
 `EXTERNAL_API_KEY` and restarting the API.
 

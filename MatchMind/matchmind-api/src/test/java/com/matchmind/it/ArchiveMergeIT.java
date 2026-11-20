@@ -287,6 +287,60 @@ class ArchiveMergeIT extends IntegrationTestBase {
         assertThat(byId(models, "id", b.modelId()).get("totalPredictions").asInt()).isEqualTo(1);
     }
 
+    /** Ingests one prediction of {@code model} on a fresh match and returns the model id it landed on. */
+    private UUID ingestLandsOn(String provider, String model) throws Exception {
+        String eventId = "e-" + UUID.randomUUID();
+        var result = external(provider, "predictions",
+            Payloads.livePrediction(eventId, "am-" + UUID.randomUUID().toString().substring(0, 8), model));
+        assertThat(result.getResponse().getStatus()).as(result.getResponse().getContentAsString()).isEqualTo(201);
+        return db.queryForObject("SELECT ai_model_id FROM predictions WHERE external_event_id = ?", UUID.class, eventId);
+    }
+
+    @Test
+    void ingestOfMergedSourceLandsOnTarget() throws Exception {
+        Integration in = newIntegration("Ingest Target");
+        Seed target = seed(in.provider(), "Ingest Target", WIN_2_0);
+        Seed source = seed(in.provider(), "Ingest Source", LOSS_0_2);
+        UUID providerId = providerId(in);
+        mergeInto(source.modelId(), target.modelId());
+        int modelRows = db.queryForObject("SELECT count(*) FROM ai_models WHERE provider_id = ?", Integer.class, providerId);
+
+        // The old spelling, and its case/spacing variants (same V14 identity), land on the target; no model row is added.
+        UUID exact = ingestLandsOn(in.provider(), "Ingest Source");
+        assertThat(exact).isEqualTo(target.modelId());
+        assertThat(ingestLandsOn(in.provider(), "  ingest   SOURCE ")).isEqualTo(target.modelId());
+        assertThat(db.queryForObject("SELECT count(*) FROM ai_models WHERE provider_id = ?", Integer.class, providerId))
+            .isEqualTo(modelRows);
+        // The merged row itself is untouched, and its own old predictions stay on it.
+        assertThat(db.queryForObject("SELECT merged_into_id FROM ai_models WHERE id = ?", UUID.class, source.modelId()))
+            .isEqualTo(target.modelId());
+        assertThat(db.queryForObject("SELECT count(*) FROM predictions WHERE ai_model_id = ?", Integer.class, source.modelId()))
+            .isEqualTo(1);
+
+        // Unmerge: new ingests of the old name go back to the source; the post-merge predictions are immutable snapshots
+        // and stay on the target.
+        db.update("UPDATE ai_models SET merged_into_id = NULL WHERE id = ?", source.modelId());
+        assertThat(ingestLandsOn(in.provider(), "Ingest Source")).isEqualTo(source.modelId());
+        assertThat(db.queryForObject("SELECT count(*) FROM predictions WHERE ai_model_id = ?", Integer.class, target.modelId()))
+            .isEqualTo(3);
+        assertThat(db.queryForObject("SELECT count(*) FROM ai_models WHERE provider_id = ?", Integer.class, providerId))
+            .isEqualTo(modelRows);
+    }
+
+    @Test
+    void archivedMergedSourceStillAcceptsIngestOnTarget() throws Exception {
+        Integration in = newIntegration("Arch Target");
+        Seed target = seed(in.provider(), "Arch Target", WIN_2_0);
+        Seed source = seed(in.provider(), "Arch Source", LOSS_0_2);
+        mergeInto(source.modelId(), target.modelId());
+        archive("ai_models", source.modelId());
+
+        // Owner decision 2: archived rows still accept callbacks; ingest neither blocks nor unarchives.
+        assertThat(ingestLandsOn(in.provider(), "Arch Source")).isEqualTo(target.modelId());
+        assertThat(db.queryForObject("SELECT archived_at IS NOT NULL FROM ai_models WHERE id = ?", Boolean.class, source.modelId()))
+            .isTrue();
+    }
+
     @Test
     void displayNameReplacesNameButKeyStays() throws Exception {
         Integration in = newIntegration("raw-key");

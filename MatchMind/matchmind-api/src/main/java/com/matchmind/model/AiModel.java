@@ -31,6 +31,13 @@ public class AiModel {
     private String description;
     @Column(nullable = false)
     private String status = "ACTIVE";
+    /** Read-only here: V24 columns are written by SQL (admin actions), never by a stale entity save. */
+    @Column(name = "display_name", insertable = false, updatable = false)
+    private String displayName;
+    @Column(name = "merged_into_id", insertable = false, updatable = false)
+    private UUID mergedIntoId;
+    @Column(name = "archived_at", insertable = false, updatable = false)
+    private Instant archivedAt;
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
