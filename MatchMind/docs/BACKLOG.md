@@ -1069,3 +1069,44 @@ Góc nhìn: bàn phím và trợ năng thật trên stack `:8088`, header HTTP, 
 - Đo kích thước thật sau khi bật gzip (UX-121) và xác nhận SSE vẫn chạy.
 - Chưa dựng được trạng thái "sổ trống" (không xoá dữ liệu thật); cần DB riêng để kiểm onboarding lần đầu.
 
+
+---
+
+# Trạng thái triển khai (Dev lanes, 2026-11-20, nhánh `matchmind/backlog`)
+
+Làm song song theo 9 lane (API: A ingestion, B security/ops, C results/settle/prompts, E read side; Web: W1 shell/kit/a11y,
+W2 list, W3 detail, W4 dashboard/reports, W5 import/prompts/settings/session) cộng 1 lane design (D) và 1 lượt tích hợp.
+Verify: API `mvn -B clean verify` 89 unit + 100 IT xanh; Web `ng test` 210/210 + `ng build` xanh. Chưa QA trên trình duyệt
+thật (không chạy dev server/Playwright). Migration mới: V14–V22.
+
+## Đã sửa
+001 003 004 005 006 007 008 009 010 011 013 015 016 017 020 021 022 023 024 025 026 028 029 030 031 032 033 034 035 036
+037 038 039 040 042 043 044 045 046(tín hiệu `possibleDuplicateOf`) 048 049 050 051 052 053 055 056 057 058 059 060 062
+063 064 065 066 067 068 069 070 071 072 073 074 075 076 077 078 079 080 081 082 083 084 085 087 089 090 091 092 093 094
+095 096 097 098 101 102 103 105 106 107 109 110 111 112 113 114 115 116 117 119 120 121 122 123 124 125
+
+## Đã đúng từ trước (chỉ thêm test)
+012 014 054 (CORS preflight; thêm expose headers)
+
+## Làm một phần
+- UX-041, UX-100: chỉ sửa CSS, chưa đo ở 320px / điện thoại ngang trên trình duyệt.
+- UX-086: lọc league bỏ hoa thường/dấu/khoảng trắng; chưa có alias/gộp tên giải.
+- UX-099: tìm kiếm bỏ dấu ở matches/predictions/dashboard/reports; ô search của API Logs chưa.
+- UX-104: chuẩn hoá tên đội khi tự nhận diện trận; công cụ gộp trận → plan.
+- UX-108, UX-118: tên model/provider khớp không phân biệt hoa thường; tên hiển thị provider vẫn là code viết thường; rename/gộp → plan.
+
+## Chỉ có plan, chờ quyết định của owner (`docs/plans/2026-11-20-*.md`)
+- UX-027 + UX-061 + UX-019: API key theo provider, màn Providers → `per-provider-api-keys.md`
+- UX-047 + UX-104 (gộp): định danh trận xuyên provider → `cross-provider-match-identity.md`
+- UX-088: trigger/role DB cho bất biến, append-only → `db-level-integrity.md`
+- UX-018: ROI/units, cảnh báo mẫu nhỏ, calibration → `roi-units-calibration.md`
+- UX-002 + UX-108 (gộp): archive, rename, merge, dữ liệu E2E → `archive-rename-merge-hygiene.md`
+- UX-046 (cách tính report): đếm prediction trùng → `duplicate-prediction-counting.md`
+
+## Thay đổi hành vi cần biết khi deploy
+- `POST /auth/logout` chỉ đăng xuất phiên hiện tại; `POST /auth/logout-all` đăng xuất mọi nơi. Token có `jti`, bảng `revoked_tokens`.
+- nginx không còn tin `X-Forwarded-For` của client; sau reverse proxy TLS phải mount `/etc/nginx/real-ip.d/*.conf` (README).
+- Đặt `PUBLIC_BASE_URL` ở prod: prompt dùng `{{API_BASE_URL}}`, nếu thiếu sẽ lấy từ `Host`/`X-Forwarded-Proto` của request.
+- Env mới: `JWT_MAX_SESSION` (24h), `EXTERNAL_MAX_REJECTED_PER_IP` (30); `LOGIN_MAX_ATTEMPTS_PER_IP` 20 → 30.
+- Agent API: tối đa 2 pick; thời gian phải ISO-8601 có offset; `predictedAt`/`capturedAt` ≤ now + 5 phút; `resultAt` ≤ now + 5 phút.
+- `/api-logs` và `/import` chỉ cho ADMIN. User bị đặt `mustChangePassword` chỉ vào được Settings cho tới khi đổi mật khẩu.
