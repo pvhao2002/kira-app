@@ -1,4 +1,4 @@
-<!-- Keep one concern per pull request. See CONTRIBUTING.md. -->
+<!-- Keep one concern per pull request. -->
 
 ## What and why
 

@@ -39,9 +39,8 @@ Every module builds, runs, and is verified on its own — **there is no root bui
 - [kira-bank (Kira Life)](#kira-bank-kira-life)
 - [farm-market (Kira Farm)](#farm-market-kira-farm)
 - [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
 - [Roadmap](#roadmap)
-- [License](#license)
+- [Third-party Data](#third-party-data)
 - [Acknowledgements](#acknowledgements)
 
 ---
@@ -773,33 +772,6 @@ the API base URL to your machine's LAN IP and make sure the gateway is bound to 
 ---
 
 
-## Contributing
-
-Contributions are welcome. Start with **[CONTRIBUTING.md](../CONTRIBUTING.md)** — it covers the branch
-and commit conventions, the layered `AGENTS.override.md` instructions, the verification rule, and
-the non-negotiables (money handling, logging, migrations, redelivery safety, Playwright cleanup).
-
-Quick version:
-
-1. Open an issue before large or architectural work.
-2. Branch from `main`, keep one concern per pull request.
-3. Read the target module's `AGENTS.override.md` before changing it.
-4. Verify only the module you changed — `./mvnw.cmd compile` for Java.
-5. Use [Conventional Commits](https://www.conventionalcommits.org/): `feat(kira-gateway): …`.
-
-Everyone participating is expected to follow the [Code of Conduct](../CODE_OF_CONDUCT.md). Security
-issues go through [SECURITY.md](../SECURITY.md), never a public issue.
-
-### Good first contributions
-
-- Test coverage — most modules have none; `kira-producer`, `kira-data-manager`
-  and `kira-schema` are entirely untested.
-- Documentation for individual modules and their APIs.
-- Replacing the hand-run SQL scripts in `kira-schema` with a proper migration tool.
-- Frontend specs for `kira-ui`, which has a Karma runner configured but no committed tests.
-
----
-
 ## Roadmap
 
 Not a commitment, but the direction of travel:
@@ -815,19 +787,11 @@ Have an opinion on the ordering? Open a
 
 ---
 
-## License
+## Third-party Data
 
-Released under the [MIT License](../LICENSE) — © 2026 Pham Van Hao.
-
-You may use, modify, and distribute this software, including commercially, provided the copyright
-notice and licence text are retained. The software comes with no warranty.
-
-**Third-party data**: some modules crawl external sites (AiScore, Google Drive, Scribd, Studocu).
-The MIT licence covers this source code only, not the data those services publish. You are
-responsible for complying with their terms of service, robots directives, and rate limits, and with
-the data-protection law in your jurisdiction, when you run any crawler in this repository.
-
-`kira-bank/` is a separate repository with its own licensing — check it there.
+Some modules access data from external sites, including AiScore, Google Drive, Scribd, and Studocu.
+When running a crawler, follow the source's terms of service, robots directives, and rate limits,
+as well as applicable data-protection laws.
 
 ---
 

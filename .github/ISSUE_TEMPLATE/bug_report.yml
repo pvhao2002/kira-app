@@ -5,8 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the report. Please do **not** file security vulnerabilities here —
-        follow [SECURITY.md](../blob/main/SECURITY.md) instead.
+        Report security vulnerabilities privately through
+        [GitHub Security Advisories](https://github.com/pvhao2002/kira-app/security/advisories/new).
 
   - type: dropdown
     id: module
