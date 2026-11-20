@@ -155,3 +155,108 @@ export function changedFields(before: Record<string, unknown> | null | undefined
     .filter(k => JSON.stringify(before?.[k] ?? null) !== JSON.stringify(after?.[k] ?? null))
     .map(k => ({ field: label(k), before: show(before?.[k]), after: show(after?.[k]) }));
 }
+
+// ------------------------------------------------------------------ detail pages (match, prediction, model)
+
+/** UX-008: one line convention everywhere: the decimal line ("-0.25"); the agent's display text only when no number. */
+export function lineText(market: string | null | undefined, v: number | null | undefined, display?: string | null): string {
+  return v === null || v === undefined ? display || '—' : line(market, v);
+}
+
+/** Tooltip of a quarter line: its two half stakes, nearest to zero first ("-0.25" -> "0/-0.5"); '' otherwise. */
+export function lineSplit(market: string | null | undefined, v: number | null | undefined): string {
+  if (v === null || v === undefined) return '';
+  const q = Math.round(Number(v) * 4);   // quarters are exact integers; no float sums on the line itself
+  if (q % 2 === 0) return '';
+  const s = Math.sign(q);
+  return `${line(market, (q - s) / 4)}/${line(market, (q + s) / 4)}`;
+}
+
+/** `pickLabel` with the UX-008 line convention. */
+export function pickText(market: string | null | undefined, pick: string | null | undefined, l?: number | null, display?: string | null): string {
+  if (!market || !pick) return '—';
+  return market === '1X2' ? `1X2 · ${pick}` : `${market.replace('_', ' ')} ${pick} ${lineText(market, l, display)}`;
+}
+
+/** UX-095: a REMAINING_MATCH pick counts only what happens after the odds were captured. '' for full-match picks. */
+export function basisNote(basis: string | null | undefined, market: string | null | undefined, home: number | null | undefined,
+                          away: number | null | undefined, minute: number | null | undefined): string {
+  if (basis !== 'REMAINING_MATCH') return '';
+  const what = market?.startsWith('CORNER_') ? 'Corners' : 'Goals';
+  return `${what} after ${minute === null || minute === undefined ? 'capture' : `${minute}'`} from ${score(home, away)}`;
+}
+
+/** UX-004: one sentence explaining a settlement row from its `details` (engine `settle-v1` keys). */
+export function settlementSentence(details: Record<string, unknown> | null | undefined, result: string): string {
+  const d = (details ?? {}) as Record<string, any>;
+  const head = pickText(d['market'], d['pick'], d['line']);
+  const sc = (s: unknown) => String(s).replace('-', '–');
+  const engine = humanize(d['engineResult'] ?? result);
+  const override = d['overriddenTo'] ? ` Admin override: ${engine} set to ${humanize(d['overriddenTo'])}.` : '';
+  if (result === 'PENDING' && d['previousResult']) {
+    return `${head}: match is ${humanize(d['matchStatus'])} again → Pending (was ${humanize(d['previousResult'])}).`;
+  }
+  if (d['matchStatus'] === 'CANCELLED') return `${head}: match cancelled → ${engine}.${override}`;
+  if (d['basisScore'] === undefined) return `${head}: match ${humanize(d['matchStatus'])} → ${engine}.${override}`;
+  const remaining = d['settlementBasis'] === 'REMAINING_MATCH';
+  const corners = d['finalCorners'] !== undefined;
+  let s = `${head} ${remaining ? `on the remaining match from ${sc(d['atCapture'])}` : 'on the full match'}: `
+    + `final${corners ? ' corners' : ''} ${sc(d['finalCorners'] ?? d['finalScore'])}${remaining ? `, so ${sc(d['basisScore'])} counts` : ''}. `;
+  const legs = (d['legs'] ?? []) as { line: number; margin: number; result: string }[];
+  const leg = (l: { line: number; margin: number; result: string }) =>
+    `${line(d['market'], l.line)} (margin ${l.margin}, ${humanize(l.result).toLowerCase()})`;
+  if (d['outcome1x2']) s += `Outcome ${humanize(d['outcome1x2'])} → ${engine}.`;
+  else if (legs.length === 2) s += `Quarter line split: ${leg(legs[0])} and ${leg(legs[1])} → ${engine}.`;
+  else if (legs.length === 1) s += `Margin ${legs[0].margin} → ${engine}.`;
+  else s += `→ ${engine}.`;
+  return s + override;
+}
+
+const RESULT_AUDIT_KEYS = new Set(['resultAt', 'requestId', 'changedBy', 'reason']);
+const RESULT_PAIRS: [label: string, home: string, away: string][] = [
+  ['Final score', 'finalHomeScore', 'finalAwayScore'], ['HT score', 'htHomeScore', 'htAwayScore'],
+  ['Corners', 'finalHomeCorners', 'finalAwayCorners'], ['HT corners', 'htHomeCorners', 'htAwayCorners'],
+];
+
+/** UX-003/UX-105: changed fields of a match result history row; home/away pairs read as one score, audit keys left out. */
+export function resultChanges(before: Record<string, unknown> | null | undefined, after: Record<string, unknown> | null | undefined): FieldChange[] {
+  const view = (r: Record<string, unknown> | null | undefined) => {
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(r ?? {})) {
+      const pair = RESULT_PAIRS.find(p => p[1] === k || p[2] === k);
+      if (RESULT_AUDIT_KEYS.has(k)) continue;
+      if (pair) out[pair[0]] = score(r![pair[1]] as number | null, r![pair[2]] as number | null);
+      else out[k === 'startTime' ? 'Kick-off' : k] = r![k];
+    }
+    return out;
+  };
+  return changedFields(view(before), view(after));
+}
+
+/** UX-025: `stats.extra` entries shaped `{home, away}` as stat rows; anything else stays for the JSON view. */
+export function extraStatRows(extra: unknown): { rows: [string, unknown, unknown][]; rest: Record<string, unknown> | null } {
+  const rows: [string, unknown, unknown][] = [];
+  const rest: Record<string, unknown> = {};
+  if (!extra || typeof extra !== 'object') return { rows, rest: null };
+  for (const [k, v] of Object.entries(extra as Record<string, unknown>)) {
+    if (v && typeof v === 'object' && ('home' in v || 'away' in v)) {
+      const p = v as { home?: unknown; away?: unknown };
+      rows.push([humanize(k.replace(/([a-z\d])([A-Z])/g, '$1_$2')), p.home ?? null, p.away ?? null]);
+    } else rest[k] = v;
+  }
+  return { rows, rest: Object.keys(rest).length ? rest : null };
+}
+
+/** UX-025: Monte Carlo probabilities `{market: {outcome: p}}` (or flat `{outcome: p}`) as small tables. */
+export function probabilityTables(p: unknown): { market: string; rows: { outcome: string; probability: number }[] }[] {
+  const groups = new Map<string, { outcome: string; probability: number }[]>();
+  const add = (market: string, outcome: string, v: number) => groups.set(market, [...(groups.get(market) ?? []), { outcome: humanize(outcome), probability: v }]);
+  if (!p || typeof p !== 'object') return [];
+  for (const [k, v] of Object.entries(p as Record<string, unknown>)) {
+    if (typeof v === 'number') add('', k, v);
+    else if (v && typeof v === 'object') {
+      for (const [o, x] of Object.entries(v as Record<string, unknown>)) if (typeof x === 'number') add(humanize(k), o, x);
+    }
+  }
+  return [...groups].map(([market, rows]) => ({ market, rows }));
+}
