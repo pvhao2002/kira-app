@@ -61,6 +61,16 @@
    - Any additions (for example `de` in "Atletico de Madrid")? Recommended: no stop-word list in phase 1. The admin merge
      covers the rest.
 
+## Owner decisions (2026-11-20)
+
+1. Soft key: normalised `home + away`, `start_time` within ±6 h. League is a tie-breaker only; it never blocks a link.
+2. **Auto-link** on an exact normalised key match, plus an admin "Suggested merges" list for near matches.
+3. **Phase 1 = (a):** each provider keeps its own result; the fixture shows a "result mismatch" badge when member
+   results differ. **Phase 2 = (b)**, only after the per-provider-keys plan lands: a result from an admin or from a key
+   with the `RESULTS` scope propagates to every member match, one `match_result_history` row per member.
+4. Same-provider members of one fixture share results automatically (same transaction, one history row each).
+5. Normalisation as listed; no stop-word list in phase 1.
+
 ## Blast radius (GitNexus, upstream)
 
 | Symbol | Risk | Notes |

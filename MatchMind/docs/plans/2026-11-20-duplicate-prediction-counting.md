@@ -55,6 +55,18 @@ generated column**
    instead of `match_id`? Recommended: yes. When the model-merge plan lands, it should use the effective model. Confirm
    the ordering of plans.
 
+## Owner decisions (2026-11-20)
+
+1. Default policy **`latest`**. Dashboard win rate and ROI will change versus today, because re-sends stop counting
+   more than once; say so in the release note.
+2. Exact `match_minute` (NULL = NULL for PRE_MATCH); no 5-minute buckets.
+3. No rejection at ingest: keep 201 and return `possibleDuplicateOf`. The idempotency contract is unchanged.
+4. Every aggregate follows the policy; lists (Predictions page, prediction history, match detail) show all rows with a
+   "not counted" marker.
+5. Yes: key on `COALESCE(m.fixture_id, m.id)` once fixtures land and on the effective model once model merge lands.
+   Plan order: db-level-integrity → archive/merge → fixtures → duplicate counting; ROI and per-provider keys are
+   independent.
+
 ## Blast radius (GitNexus, upstream)
 
 | Symbol | Risk | Notes |

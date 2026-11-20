@@ -59,6 +59,20 @@ Those belong to other lanes. This plan reuses their normaliser if it exists.
 6. **E2E stack.** Approve a separate `docker-compose.e2e.yml` (project `matchmind-e2e`, web on `:8188`, DB on `tmpfs`) and
    an npm script `e2e:stack`.
 
+## Owner decisions (2026-11-20)
+
+Context: some providers are external agents the owner does not control.
+
+1. **Archive is "this is bad data".** Archiving a provider hides its models and matches through the filter (no writes to
+   children). Archived matches are excluded from every aggregate (win rate, ROI, dashboard, reports);
+   `includeArchived=true` brings them back.
+2. Archived providers, models and matches still accept callbacks; the new data stays hidden. Blocking is `DISABLED`.
+3. Merge only within one provider, enforced in the DB.
+4. Ingests of a merged model's old name go to the target (`merged_into_id`). After unmerge, post-merge predictions stay
+   on the target (document it).
+5. No bulk "Disable all" users action.
+6. Approved: `docker-compose.e2e.yml` (project `matchmind-e2e`, web `:8188`, DB on tmpfs) and npm script `e2e:stack`.
+
 ## Blast radius (GitNexus, upstream)
 
 | Symbol | Risk | Notes |

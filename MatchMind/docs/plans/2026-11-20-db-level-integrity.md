@@ -39,6 +39,15 @@ transition only). Grants then become defence in depth.
 4. **Error surface.** A trigger violation is a bug, never a user error. Recommended: `SQLSTATE 'P0001'` with message
    `MM_IMMUTABLE: <table>`. The handler maps it to `500 INTERNAL_ERROR` and logs the table name only (no row data).
 
+## Owner decisions (2026-11-20)
+
+1. **Triggers only.** No role split: the app keeps one DB credential, and no manual prod SQL step is needed. Task 4 is
+   out of scope (kept below for later reference only).
+2. No escape hatch in code. Data fixes are reviewed `V<n>__fix_*.sql` migrations that disable and re-enable the trigger.
+3. Scope as recommended: the 6 prediction tables immutable; `match_result_history` and `prediction_pick_results`
+   append-only (plus `fixture_link_history` when the fixtures plan lands); `external_api_requests` excluded.
+4. `P0001` / `MM_IMMUTABLE: <table>`, mapped to `500 INTERNAL_ERROR`, table name only in the log.
+
 ## Blast radius (GitNexus, upstream)
 
 | Symbol | Risk | Notes |
@@ -128,7 +137,7 @@ Text search for writes: `grep -rn "UPDATE\|DELETE" matchmind-api/src` hits only 
 - [ ] Verify the full suite with `cd MatchMind/matchmind-api && mvn -B verify` (Docker needed). The existing settlement ITs
   are the regression net.
 
-### Task 4 (phase 2, after decision 1): Role split
+### Task 4 (phase 2, after decision 1): Role split — NOT SCHEDULED (owner chose triggers only, 2026-11-20)
 
 **Files:** `application.yml` (`spring.flyway.user/password` = owner; datasource = app role), `docker-compose.yml`,
 `.env.example`, new `MatchMind/db/init/10-app-role.sh` (mounted to `/docker-entrypoint-initdb.d`), migration

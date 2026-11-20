@@ -50,6 +50,15 @@
 5. **Which picks.** Recommended: every pick (all ranks), consistent with today's win rate. Should there also be a "top pick
    only" toggle? Recommended: not now.
 
+## Owner decisions (2026-11-20)
+
+All as recommended:
+1. `staked` includes PUSH, excludes VOID.
+2. Small-sample badge at n < 30 (win rate n = wins + losses; ROI n = staked); a UI constant, not configurable.
+3. Calibration counts WIN = 1 and LOSS = 0 only; halves, PUSH and VOID excluded and shown as "excluded: N".
+4. 10 fixed bins of width 0.1; bins with fewer than 5 picks greyed out.
+5. Every pick (all ranks); no top-pick toggle.
+
 ## Blast radius (GitNexus, upstream)
 
 | Symbol | Risk | Dependants |

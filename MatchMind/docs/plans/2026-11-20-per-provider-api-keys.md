@@ -49,6 +49,21 @@ Key format: `mmk_<keyId>_<secret>`.
 6. **Rotation overlap.** Rotation is "issue new + revoke old later", and both keys work meanwhile. Is a manual revoke
    enough, or do you want an automatic expiry (`expires_at`)? Recommended: manual (YAGNI).
 
+## Owner decisions (2026-11-20)
+
+Context: some providers are external agents the owner does not control.
+
+1. New keys get `PREDICTIONS` + `SETTLE_REQUEST`. An admin grants `RESULTS` per key, only to a trusted results feeder.
+2. **Approved rule change:** providers are created only by an admin (Providers screen); a per-provider key may still
+   auto-create models. Update the AGENTS.override rule "providers and models are created by external calls, never by
+   hand" in the same change as Task 4. The legacy shared-key path keeps auto-creating providers until cut-over.
+3. Legacy shared key stays accepted (audited `legacyKey=true`) until **2026-12-31**. The cut-over is an ops step: unset
+   `EXTERNAL_API_KEY` on that date. No date check in code. `EXTERNAL_API_KEY` becomes optional (Task 2).
+4. Admin import for a `DISABLED` provider: `403 PROVIDER_DISABLED`.
+5. **Dropped.** Admin result entry already exists as `POST /api/v1/matches/{id}/result` (backlog lane C). Task 5 is not
+   needed; no `PUT` endpoint.
+6. Manual revoke only; no `expires_at`.
+
 ## Blast radius (GitNexus, upstream)
 
 | Symbol | Risk | Direct dependants |
@@ -170,7 +185,7 @@ Endpoints. The `ADMIN` role is already enforced by `SecurityConfig` for non-GET 
 - [ ] Update `docs/API_DOCUMENTATION.md` ("Providers and AI models" stops being read-only), `docs/samples/*.json` and
   `core/models.ts` together, as AGENTS.override requires.
 
-### Task 5 (if decision 5 = yes): Admin result entry
+### Task 5 (if decision 5 = yes): Admin result entry — DROPPED (already exists as `POST /matches/{id}/result`)
 
 **Files:** Modify `match/MatchResultService.java` (new `applyAdmin(UUID matchId, ResultRequest r, UUID actor)`, sharing
 `merged`/history logic with `change_source='ADMIN'`, `changed_by=actor`) and `match/MatchController.java`.
