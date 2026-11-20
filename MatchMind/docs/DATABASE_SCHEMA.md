@@ -50,8 +50,18 @@ empty. Admins create every other account.
 | password_hash | VARCHAR(100) | BCrypt, cost 12 |
 | role | VARCHAR(16) | `ADMIN` or `VIEWER` |
 | status | VARCHAR(16) | `ACTIVE` or `DISABLED` |
-| token_version | INTEGER | Copied into every JWT as claim `tv`. Bumped on logout, password change, reset and disable, which revokes all older tokens |
+| token_version | INTEGER | Copied into every JWT as claim `tv`. Bumped on logout-all, password change, reset and disable, which revokes all older tokens |
+| must_change_password | BOOLEAN | V19. Set by an admin on create/reset; every call except `me`, change-password and logout is `403 PASSWORD_CHANGE_REQUIRED` until the user changes it |
 | last_login_at, created_at, updated_at | TIMESTAMPTZ | |
+
+### user_audit (V19)
+Who changed which account: `actor_id`/`actor_username`, `target_id`/`target_username`, `action` (`USER_CREATED`,
+`ROLE_CHANGED`, `STATUS_CHANGED`, `PASSWORD_RESET`, `PASSWORD_CHANGED`, `LOGIN_UNLOCKED`), `old_value`, `new_value`,
+`client_ip`, `at`. No FK to `users`, so history outlives the account.
+
+### revoked_tokens (V21)
+`jti` (PK) and `expires_at`. `POST /auth/logout` revokes only the current token's `jti`; rows can be purged once
+`expires_at` has passed.
 
 ### providers / provider_api_keys
 A provider is an AI agent that sends callbacks. It is created on its first call from the `X-Provider` header
@@ -65,7 +75,9 @@ A provider is an AI agent that sends callbacks. It is created on its first call 
 
 ### ai_models
 Created per provider on first use (`X-Model-Name` / `X-Model-Version`, else `model` in the body) with
-`INSERT … ON CONFLICT DO NOTHING`. `(provider_id, name, version)` is unique. `status` is always `ACTIVE` now.
+`INSERT … ON CONFLICT DO NOTHING`. `(provider_id, name, version)` is unique. V14 adds `ux_ai_models_provider_identity`
+on the provider, `lower(name)` and the normalised version (`1` = `1.0`; names are trimmed before insert), so names match
+case-insensitively and the first spelling is kept (skipped with a NOTICE if existing rows already collide). `status` is always `ACTIVE` now.
 `ux_ai_models_id_provider (id, provider_id)` exists only as the target of a composite FK.
 
 ### matches
@@ -75,13 +87,15 @@ One row per provider and external match: `ux_matches_provider_external (provider
 |---|---|
 | status | `SCHEDULED`, `LIVE`, `FINISHED`, `CANCELLED`, `POSTPONED`. Predictions may only set `SCHEDULED`/`LIVE`. Terminal states come from the results API |
 | final_*, ht_* scores and corners | SMALLINT pairs. `ck_matches_finished_has_score`: a `FINISHED` match has a final score. `ck_matches_ht_le_ft`: the half-time score is not above the full-time score |
-| result_updated_at | Timestamp of the result currently applied. Older results are rejected as `409 STALE_RESULT` |
+| result_updated_at | Timestamp of the result currently applied. Older provider results are rejected as `409 STALE_RESULT`; a stored time more than 5 minutes in the future never blocks a later result, and admin entries (`POST /matches/{id}/result`) never get `STALE_RESULT` |
 
 Indexes: `start_time DESC`, `league`, `status`.
 
 ### match_result_history
 Append-only record of every result change: `previous_result` and `new_result` as JSONB, `change_source` (`PROVIDER` or
-`ADMIN`), and `source_request_id` pointing to the audited external request.
+`ADMIN`), and `source_request_id` pointing to the audited external request. Admin rows carry `changed_by` and the
+username and `reason` inside `new_result`. A kick-off change (reschedule, POSTPONED back to SCHEDULED) is also recorded
+as a `{startTime, status}` pair.
 
 ### predictions
 One immutable snapshot per callback.
@@ -148,12 +162,25 @@ A pick with no current row is **pending**. The read side reports it as `PENDING`
 Audit row for every call to `/api/v1/external/**`, including rejected ones. It stores the outcome (`SUCCESS`,
 `DUPLICATE`, `REJECTED`, `FAILED`), HTTP status, duration, client IP, request id, event id, and a `processing_result`
 JSONB summary. **Request bodies, API keys and headers are never stored here.** The accepted prediction body is stored
-only in `predictions.payload`.
+only in `predictions.payload`. V20 adds `actor`: the signed-in admin behind an import, settle, recalculate or override
+(NULL for agent calls). Bad-key calls are sampled to one row per IP per minute.
 
 ### prompt_templates
 Editable AI prompt notes. `name` is unique. `template_type` matches `^[A-Z][A-Z0-9_]{1,63}$`. `version` starts at 1 and
 increases on each save. Saves use optimistic concurrency: the client sends `expectedVersion`, and a mismatch returns
-`409 PROMPT_VERSION_CONFLICT`.
+`409 PROMPT_VERSION_CONFLICT`. Templates name the API as `{{API_BASE_URL}}` (V17), filled from `PUBLIC_BASE_URL` or the
+request origin.
+
+### prompt_template_versions (V16)
+Append-only copy of every saved version: `template_id`, `version` (unique together), `content`, `description`,
+`active`, `updated_by`, `created_at`. Trigger `tr_prompt_templates_version` writes a row on insert and on every
+`version` bump; `tr_prompt_template_versions_append_only` rejects `UPDATE` and `DELETE`. Restore saves an old version's
+content as a new version.
+
+## Search folding (V22)
+`mm_fold(text)` = lower-case + `unaccent` + NFC, `IMMUTABLE`. Search and the league filter compare `mm_fold` on both
+sides, so "atletico" finds "Atlético". No index yet: a leading-wildcard `LIKE` cannot use a btree; a `pg_trgm` GIN index
+on `mm_fold(...)` is the upgrade if search gets slow.
 
 ## Read-side aggregation
 

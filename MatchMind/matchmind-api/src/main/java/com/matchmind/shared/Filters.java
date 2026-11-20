@@ -21,7 +21,7 @@ public record Filters(Instant from, Instant to, String league, UUID modelId, UUI
     private static final Set<String> RESULTS = Set.of("WIN", "LOSS", "HALF_WIN", "HALF_LOSS", "PUSH", "VOID", "PENDING");
 
     /**
-     * Free-text search on match alias m, bound as :q ({@link Paging#contains}). mm_fold (V40) ignores case, accents and
+     * Free-text search on match alias m, bound as :q ({@link Paging#contains}). mm_fold (V22) ignores case, accents and
      * Unicode normal form, so "atletico" finds "Atlético" and "munchen" finds "München".
      */
     public static final String SEARCH = "(mm_fold(m.home_team) LIKE mm_fold(:q) OR mm_fold(m.away_team) LIKE mm_fold(:q)"
