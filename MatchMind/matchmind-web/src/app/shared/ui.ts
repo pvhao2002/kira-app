@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { humanize, resultSeverity, statusSeverity } from './format';
+import { BIDI_CONTROLS, humanize, resultSeverity, statusSeverity } from './format';
 import { ToastService } from './kit';
 
 /** Scoreboard tile: the one signature visual of MatchMind. Missing values stay a dash, never 0. */
@@ -7,7 +7,8 @@ import { ToastService } from './kit';
   selector: 'mm-score',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<span class="score-chip" role="img" [class.muted]="muted()" [attr.aria-label]="label()">
-    <span>{{ home() ?? '—' }}</span><span class="sep">:</span><span>{{ away() ?? '—' }}</span></span>`,
+    @if (home() == null && away() == null) { <span>—</span> }
+    @else { <span>{{ home() ?? '—' }}</span><span class="sep">:</span><span>{{ away() ?? '—' }}</span> }</span>`,
 })
 export class ScoreChip {
   readonly home = input<number | null | undefined>(null);
@@ -45,12 +46,14 @@ export class ResultTag {
 export class JsonView {
   private readonly toast = inject(ToastService);
   readonly value = input<unknown>(null);
+  /** BiDi controls are shown as JSON escapes: visible, still valid JSON, and they cannot reorder the text (UX-030). */
   readonly pretty = computed(() => {
     const v = this.value();
+    let s: string;
     if (typeof v === 'string') {
-      try { return JSON.stringify(JSON.parse(v), null, 2); } catch { return v; }
-    }
-    return JSON.stringify(v, null, 2);
+      try { s = JSON.stringify(JSON.parse(v), null, 2); } catch { s = v; }
+    } else s = JSON.stringify(v, null, 2);
+    return s.replace(BIDI_CONTROLS, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
   });
 
   copy(): void { this.toast.copy(this.pretty(), 'JSON'); }

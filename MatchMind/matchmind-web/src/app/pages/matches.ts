@@ -77,7 +77,7 @@ import { ResultTag, ScoreChip } from '../shared/ui';
             </tbody>
           </table>
         </div>
-        <mm-paginator [page]="list.page()" [size]="list.size()" [total]="list.total()" unit="matches" (change)="list.setPage($event)" />
+        <mm-paginator [page]="list.page()" [size]="list.size()" [total]="list.total()" unit="matches" (pageChange)="list.setPage($event)" />
       </section>
     </div>`,
 })

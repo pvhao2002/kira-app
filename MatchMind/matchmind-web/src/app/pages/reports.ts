@@ -233,7 +233,7 @@ export class ModelBreakdown {
                 }
               </tbody>
             </table></div>
-            <mm-paginator [page]="historyPage()" [size]="historySize()" [total]="historyTotal()" [sizes]="[50, 100, 200]" unit="picks" (change)="setHistoryPage($event)" />
+            <mm-paginator [page]="historyPage()" [size]="historySize()" [total]="historyTotal()" [sizes]="[50, 100, 200]" unit="picks" (pageChange)="setHistoryPage($event)" />
           </section>
         }
 
@@ -300,7 +300,7 @@ export class ModelBreakdown {
                   } @empty { <tr><td colspan="13" class="empty">No match has predictions from that many models.</td></tr> }
                 </tbody>
               </table></div>
-              <mm-paginator [page]="comparisonPage()" [size]="20" [sizes]="[20]" [total]="comparisonTotal()" unit="matches" (change)="setComparisonPage($event.page)" />
+              <mm-paginator [page]="comparisonPage()" [size]="20" [sizes]="[20]" [total]="comparisonTotal()" unit="matches" (pageChange)="setComparisonPage($event.page)" />
             }
           </section>
         }
@@ -358,7 +358,7 @@ export class ModelBreakdown {
                 }
               </tbody>
             </table></div>
-            <mm-paginator [page]="mcPage()" [size]="25" [sizes]="[25]" [total]="monteCarlo()?.page?.meta?.totalElements ?? 0" unit="predictions" (change)="setMcPage($event.page)" />
+            <mm-paginator [page]="mcPage()" [size]="25" [sizes]="[25]" [total]="monteCarlo()?.page?.meta?.totalElements ?? 0" unit="predictions" (pageChange)="setMcPage($event.page)" />
           </section>
         }
       }

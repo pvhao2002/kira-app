@@ -63,7 +63,7 @@ import { fromQuery, toQuery } from '../shared/url-state';
             </tbody>
           </table>
         </div>
-        <mm-paginator [page]="list.page()" [size]="list.size()" [total]="list.total()" [sizes]="[50, 100, 200]" unit="calls" (change)="list.setPage($event)" />
+        <mm-paginator [page]="list.page()" [size]="list.size()" [total]="list.total()" [sizes]="[50, 100, 200]" unit="calls" (pageChange)="list.setPage($event)" />
       </section>
     </div>
 
