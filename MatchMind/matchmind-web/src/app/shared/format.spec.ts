@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toFilters } from './filter-bar';
+import { dayRange, toFilters } from './filter-bar';
 import { cell, line, pct, pickLabel, resultSeverity } from './format';
 import { sortParam, sortRows } from './kit';
 
@@ -58,12 +58,16 @@ describe('report filters', () => {
     expect(f.result).toBe('WIN');
   });
 
-  it('treats a single picked day as that whole day', () => {
-    for (const f of [toFilters({ from: '2026-05-01' }), toFilters({ to: '2026-05-01' })]) {
-      expect(f.from).toBe(new Date(2026, 4, 1).toISOString());
-      expect(f.to).toBe(new Date(2026, 4, 2).toISOString());
-    }
+  it('leaves the other end open when only From or only To is set (UX-110)', () => {
+    expect(toFilters({ from: '2026-05-01' })).toMatchObject({ from: new Date(2026, 4, 1).toISOString(), to: undefined });
+    expect(toFilters({ to: '2026-05-01' })).toMatchObject({ from: undefined, to: new Date(2026, 4, 2).toISOString() });
     expect(toFilters({ from: 'not-a-date' }).from).toBeUndefined();
+  });
+
+  it('rejects From after To and accepts a single day (UX-110)', () => {
+    expect(dayRange('2026-12-31', '2026-12-01').error).toBe('From must be on or before To.');
+    expect(dayRange('2026-12-01', '2026-12-01')).toEqual({
+      from: new Date(2026, 11, 1).toISOString(), to: new Date(2026, 11, 2).toISOString() });
   });
 });
 
