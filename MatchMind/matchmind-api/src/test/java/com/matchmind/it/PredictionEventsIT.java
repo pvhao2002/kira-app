@@ -3,9 +3,11 @@ package com.matchmind.it;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.Duration;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -27,12 +29,15 @@ class PredictionEventsIT extends IntegrationTestBase {
         assertThat(created.getResponse().getStatus()).isEqualTo(201);
         String predictionId = read(created).get("predictionId").asText();
 
-        String events = stream.getResponse().getContentAsString();
-        assertThat(events).contains("event:prediction").contains(predictionId).contains("stream-model");
+        // Delivery runs off the agent's request thread, so it lands a moment after the callback returned.
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
+            assertThat(stream.getResponse().getContentAsString()).contains("event:prediction").contains(predictionId)
+                .contains("stream-model"));
 
         // A retried callback is a duplicate: nothing new to announce.
         MvcResult again = external(provider, "predictions", body);
         assertThat(again.getResponse().getStatus()).isEqualTo(200);
+        Thread.sleep(300);
         String after = stream.getResponse().getContentAsString();
         assertThat(after.split(predictionId, -1)).hasSize(2);
     }
