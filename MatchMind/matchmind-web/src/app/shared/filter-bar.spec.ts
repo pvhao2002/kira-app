@@ -4,15 +4,24 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { describe, expect, it } from 'vitest';
+import { Component } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { FilterBar } from './filter-bar';
 
+@Component({ imports: [FilterBar], template: `<mm-filter-bar [fields]="['result', 'resultScope']" />` })
+class ScopedHost {}
+
 describe('FilterBar and the URL', () => {
+  let harnessBar: () => FilterBar;
   async function open(url: string) {
     TestBed.configureTestingModule({
-      providers: [provideRouter([{ path: 'page', component: FilterBar }]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideRouter([{ path: 'page', component: FilterBar }, { path: 'scoped', component: ScopedHost }]),
+        provideHttpClient(), provideHttpClientTesting()],
     });
     const harness = await RouterTestingHarness.create();
-    const bar = await harness.navigateByUrl(url, FilterBar);
+    await harness.navigateByUrl(url);
+    harnessBar = () => harness.fixture.debugElement.query(By.directive(FilterBar)).componentInstance;
+    const bar = harnessBar();
     const http = TestBed.inject(HttpTestingController);
     /** Answers the league/model lookups, then waits for the router. */
     const settle = async () => { http.match(() => true).forEach(r => r.flush([])); await harness.fixture.whenStable(); };
@@ -36,5 +45,59 @@ describe('FilterBar and the URL', () => {
     bar.reset();
     await settle();
     expect(router.url).toBe('/page');
+  });
+
+  it('shows an inline error and applies nothing when From is after To (UX-110)', async () => {
+    const { bar, settle } = await open('/page');
+    const emitted: unknown[] = [];
+    bar.changed.subscribe(f => emitted.push(f));
+    bar.form.patchValue({ from: '2026-12-31', to: '2026-12-01' });
+    bar.apply();
+    await settle();
+    expect(bar.dateError()).toBe('From must be on or before To.');
+    expect(emitted).toHaveLength(0);
+  });
+
+  it('marks edits as pending until Apply (UX-079)', async () => {
+    const { bar } = await open('/page');
+    expect(bar.pending()).toBe(false);
+    bar.form.patchValue({ league: 'EPL' });
+    expect(bar.pending()).toBe(true);
+    bar.apply();
+    expect(bar.pending()).toBe(false);
+  });
+
+  it('carries the result scope in the filters and the URL when the page offers it (UX-075)', async () => {
+    const { router, settle } = await open('/scoped?resultScope=ANY&result=WIN');
+    const bar = harnessBar();
+    expect(bar.current()).toMatchObject({ result: 'WIN', resultScope: 'ANY' });
+    bar.form.patchValue({ resultScope: '' });
+    bar.apply();
+    await settle();
+    expect(router.url).not.toContain('resultScope');
+  });
+});
+
+describe('FilterBar badge and layout', () => {
+  function create(days: number | null, height = 900) {
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: height });
+    TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] });
+    const f = TestBed.createComponent(FilterBar);
+    f.componentRef.setInput('initialDays', days);
+    f.detectChanges();
+    TestBed.inject(HttpTestingController).match(() => true).forEach(r => r.flush([]));
+    return f.componentInstance;
+  }
+
+  it('does not count the default date range, and counts a changed range once (UX-042)', () => {
+    const bar = create(30);
+    expect(bar.activeCount()).toBe(0);
+    bar.form.patchValue({ from: '2026-01-01', to: '2026-01-31', league: 'EPL' });
+    bar.apply(false);
+    expect(bar.activeCount()).toBe(2);
+  });
+
+  it('starts collapsed on a short viewport (UX-100)', () => {
+    expect(create(null, 390).collapsed()).toBe(true);
   });
 });

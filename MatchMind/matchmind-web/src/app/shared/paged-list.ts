@@ -8,6 +8,15 @@ import { Page } from '../core/models';
 import { Sort, sortParam } from './kit';
 import { toQuery } from './url-state';
 
+/** A failed list request in words: the API message with its field errors; offline and 413 get a hint what to do. */
+export function listError(raw: unknown): string {
+  const e = apiError(raw);
+  if (e.status === 0) return 'Server unreachable. Check your connection, then retry.';
+  if (e.status === 413) return 'The request is too large. Narrow the filters, then retry.';
+  const fields = Object.values(e.fieldErrors ?? {});
+  return fields.length ? `${e.message}: ${fields.join('; ')}` : e.message;
+}
+
 /**
  * State of one server-paged, sortable table, backed by an rxResource: a superseded request is cancelled, and the
  * previous rows stay on screen while the next page loads. Create it in a field initializer (needs an injection
@@ -33,7 +42,9 @@ export class PagedList<T> {
   readonly rows = computed(() => this.data()?.data ?? []);
   readonly total = computed(() => this.data()?.meta.totalElements ?? 0);
   readonly loading = computed(() => this.resource.isLoading());
-  readonly error = computed(() => (this.resource.error() ? apiError(this.resource.error()).message : ''));
+  readonly error = computed(() => (this.resource.error() ? listError(this.resource.error()) : ''));
+  /** Per-field messages of a 400 (e.g. `from` of INVALID_DATE_RANGE), for showing next to the filter. */
+  readonly fieldErrors = computed(() => (this.resource.error() ? apiError(this.resource.error()).fieldErrors ?? {} : {}));
 
   constructor(fetch: (p: Paging) => Observable<Page<T>>, sort: Sort, size = 25) {
     this.defaults = { size, sort: sortParam(sort) };

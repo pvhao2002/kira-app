@@ -77,6 +77,23 @@ describe('PagedList', () => {
     expect(list.error()).toBe('bad range');
   });
 
+  it('explains offline, too-large and field errors in words, and Retry fetches again (UX-037, UX-110)', async () => {
+    const { list, calls } = setup();
+    const fail = async (e: HttpErrorResponse) => { list.load(); await settle(); calls.at(-1)!.out.error(e); await settle(); };
+    await fail(new HttpErrorResponse({ status: 0 }));
+    expect(list.error()).toBe('Server unreachable. Check your connection, then retry.');
+    await fail(new HttpErrorResponse({ status: 413, error: '<html>' }));
+    expect(list.error()).toBe('The request is too large. Narrow the filters, then retry.');
+    await fail(new HttpErrorResponse({ status: 400, error: {
+      status: 400, code: 'INVALID_DATE_RANGE', message: 'Invalid date range', fieldErrors: { from: 'from must be before to' } } }));
+    expect(list.error()).toBe('Invalid date range: from must be before to');
+    expect(list.fieldErrors()).toEqual({ from: 'from must be before to' });
+    const before = calls.length;
+    list.load();
+    await settle();
+    expect(calls).toHaveLength(before + 1);
+  });
+
   it('restores page, size and sort from the URL and writes them back, omitting defaults', async () => {
     const navigate = vi.fn().mockResolvedValue(true);
     const { list, calls } = setup({ page: '3', size: '50', sort: 'league,asc' }, navigate);
