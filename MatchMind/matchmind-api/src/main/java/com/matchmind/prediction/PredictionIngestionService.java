@@ -1,8 +1,12 @@
 package com.matchmind.prediction;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.matchmind.external.ExternalDtos.CorrectScoreInput;
 import com.matchmind.external.ExternalDtos.OddsInput;
 import com.matchmind.external.ExternalDtos.Pair;
@@ -17,16 +21,19 @@ import com.matchmind.match.Match;
 import com.matchmind.match.MatchRepository;
 import com.matchmind.model.AiModel;
 import com.matchmind.model.AiModelRepository;
-import com.matchmind.settlement.SettlementEngine;
+import com.matchmind.provider.ProviderService;
 import com.matchmind.shared.ApiException;
+import com.matchmind.shared.CacheConfig;
+import com.matchmind.shared.TextRules;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
@@ -34,12 +41,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -59,6 +66,12 @@ public class PredictionIngestionService {
     /** A screenshot of the same teams within this time of a known match is that match. */
     private static final Duration SAME_MATCH_WINDOW = Duration.ofHours(12);
     private static final int HALF_TIME_BREAK_MINUTES = 15;
+    /** The match is over and its result is known: predictions are refused. */
+    private static final Set<String> FINAL_STATUSES = Set.of("FINISHED", "CANCELLED");
+    /** The match will not change by itself any more: a prediction must not overwrite its status. */
+    private static final Set<String> RESULT_STATUSES = Set.of("FINISHED", "CANCELLED", "POSTPONED");
+    /** Payload fields holding an instant; their text is compared as the instant for idempotency. */
+    private static final Set<String> TIME_FIELDS = Set.of("predictedAt", "startTime", "capturedAt");
 
     private final PredictionRepository predictions;
     private final PredictionOddsRepository oddsRepo;
@@ -68,17 +81,22 @@ public class PredictionIngestionService {
     private final PredictionCorrectScoreRepository scoreRepo;
     private final MatchRepository matches;
     private final AiModelRepository models;
+    private final ProviderService providers;
     private final NamedParameterJdbcTemplate jdbc;
     private final ObjectMapper json;
 
+    @CacheEvict(value = CacheConfig.LEAGUES, allEntries = true)
     @Transactional
-    public PredictionResponse ingest(UUID providerId, ModelRef modelRef, PredictionRequest r, JsonNode rawPayload) {
-        validate(r);
+    public PredictionResponse ingest(UUID providerId, String providerCode, ModelRef modelRef, PredictionRequest r,
+                                     JsonNode rawPayload) {
+        PredictionValidator.validateText(rawPayload);
+        PredictionValidator.validate(r);
         String hash = payloadHash(rawPayload);
         String eventId = eventIdOf(r, hash);
         Optional<Prediction> existing = predictions.findByProviderIdAndExternalEventId(providerId, eventId);
-        if (existing.isPresent()) return duplicate(existing.get(), hash);
+        if (existing.isPresent()) return duplicate(existing.get(), hash, legacyPayloadHash(rawPayload));
 
+        providers.ensureExists(providerId, providerCode); // rolled back with the prediction if anything below rejects it
         AiModel model = model(providerId, modelRef);
         Instant predictedAt = r.predictedAt() != null ? r.predictedAt() : Instant.now();
         Match match = upsertMatch(providerId, r, predictedAt);
@@ -101,7 +119,33 @@ public class PredictionIngestionService {
 
         Map<String, UUID> oddsIds = new LinkedHashMap<>();
         oddsByRef.forEach((ref, o) -> oddsIds.put(ref, o.getId()));
-        return new PredictionResponse(p.getId(), match.getId(), match.getExternalMatchId(), false, pickRefs, oddsIds);
+        return new PredictionResponse(p.getId(), match.getId(), match.getExternalMatchId(), false, pickRefs, oddsIds,
+            sameContentAs(p));
+    }
+
+    /**
+     * UX-046: agents often invent a new eventId on retry, so the same prediction is stored twice. Idempotency stays
+     * (provider, eventId) + hash; this only names the earlier twin so the caller and the API log can see it.
+     */
+    private UUID sameContentAs(Prediction p) {
+        List<UUID> twin = jdbc.queryForList("""
+            WITH sig AS (
+                SELECT k.prediction_id,
+                       string_agg(k.market || '|' || k.pick || '|' || coalesce(o.line::text, '') || '|' || o.odds_stage, ','
+                                  ORDER BY k.market, k.pick, o.line, o.odds_stage) AS s
+                FROM prediction_picks k JOIN prediction_odds o ON o.id = k.odds_id
+                WHERE k.prediction_id IN (SELECT id FROM predictions WHERE match_id = :match AND ai_model_id = :model)
+                GROUP BY k.prediction_id)
+            SELECT p.id FROM predictions p
+            JOIN sig a ON a.prediction_id = p.id
+            JOIN sig b ON b.prediction_id = :self AND b.s = a.s
+            WHERE p.match_id = :match AND p.ai_model_id = :model AND p.prediction_type = :type
+              AND coalesce(p.match_minute, -1) = :minute AND p.id <> :self
+            ORDER BY p.predicted_at, p.id LIMIT 1
+            """, new MapSqlParameterSource().addValue("match", p.getMatchId()).addValue("model", p.getAiModelId())
+            .addValue("self", p.getId()).addValue("type", p.getPredictionType())
+            .addValue("minute", p.getMatchMinute() == null ? -1 : p.getMatchMinute()), UUID.class);
+        return twin.isEmpty() ? null : twin.getFirst();
     }
 
     /** Without an eventId the payload itself is the idempotency key, so resending the same JSON is a duplicate. */
@@ -110,13 +154,13 @@ public class PredictionIngestionService {
     }
 
     /**
-     * Models are created on first use. Inside this transaction a concurrent first insert of the same model makes
+     * Models are created on first use and matched like providers: case-insensitive name, "1" = "1.0". Inside this transaction a concurrent first insert of the same model makes
      * ON CONFLICT wait for it, so the second lookup finds that row; a rejected prediction rolls its new model back.
      */
     private AiModel model(UUID providerId, ModelRef ref) {
-        return models.findByProviderIdAndNameAndVersion(providerId, ref.name(), ref.version()).orElseGet(() -> {
+        return models.findSameModel(providerId, ref.name(), ref.version()).orElseGet(() -> {
             models.insertIfMissing(providerId, ref.name(), ref.version());
-            return models.findByProviderIdAndNameAndVersion(providerId, ref.name(), ref.version()).orElseThrow();
+            return models.findSameModel(providerId, ref.name(), ref.version()).orElseThrow();
         });
     }
 
@@ -124,11 +168,12 @@ public class PredictionIngestionService {
     @Transactional(readOnly = true)
     public Optional<PredictionResponse> findDuplicate(UUID providerId, PredictionRequest r, JsonNode rawPayload) {
         String hash = payloadHash(rawPayload);
-        return predictions.findByProviderIdAndExternalEventId(providerId, eventIdOf(r, hash)).map(p -> duplicate(p, hash));
+        return predictions.findByProviderIdAndExternalEventId(providerId, eventIdOf(r, hash))
+            .map(p -> duplicate(p, hash, legacyPayloadHash(rawPayload)));
     }
 
-    private PredictionResponse duplicate(Prediction p, String hash) {
-        if (!p.getPayloadHash().equals(hash)) {
+    private PredictionResponse duplicate(Prediction p, String hash, String legacyHash) {
+        if (!p.getPayloadHash().equals(hash) && !p.getPayloadHash().equals(legacyHash)) {
             throw new ApiException(HttpStatus.CONFLICT, "EVENT_ID_REUSED",
                 "eventId was already used for a different prediction payload; send a new eventId");
         }
@@ -138,7 +183,7 @@ public class PredictionIngestionService {
         oddsRepo.findByPredictionIdOrderByMarketAscOddsStageAscSnapshotOrderAsc(p.getId())
             .forEach(o -> oddsIds.put(o.getOddsRef(), o.getId()));
         String externalMatchId = matches.findById(p.getMatchId()).map(Match::getExternalMatchId).orElse(null);
-        return new PredictionResponse(p.getId(), p.getMatchId(), externalMatchId, true, refs, oddsIds);
+        return new PredictionResponse(p.getId(), p.getMatchId(), externalMatchId, true, refs, oddsIds, null);
     }
 
     /**
@@ -149,33 +194,71 @@ public class PredictionIngestionService {
     private Match upsertMatch(UUID providerId, PredictionRequest r, Instant predictedAt) {
         var m = r.match();
         String status = m.status() != null ? m.status() : ("LIVE".equals(r.predictionType()) ? "LIVE" : "SCHEDULED");
-        String home = m.homeTeam().trim();
-        String away = m.awayTeam().trim();
-        String league = m.league() == null || m.league().isBlank() ? null : m.league().trim();
+        String home = TextRules.clean(m.homeTeam());
+        String away = TextRules.clean(m.awayTeam());
+        String league = m.league() == null || TextRules.clean(m.league()).isEmpty() ? null : TextRules.clean(m.league());
         Instant start = m.startTime() != null ? m.startTime() : estimatedKickOff(r.matchMinute(), predictedAt);
         String externalId = m.externalMatchId() != null ? m.externalMatchId() : externalIdByTeams(providerId, home, away, start);
-        jdbc.update("""
+        boolean created = jdbc.update("""
             INSERT INTO matches (provider_id, external_match_id, league, home_team, away_team, start_time, status)
             VALUES (:provider, :ext, :league, :home, :away, :start, :status)
             ON CONFLICT (provider_id, external_match_id) DO NOTHING
             """, new MapSqlParameterSource().addValue("provider", providerId).addValue("ext", externalId)
             .addValue("league", league != null ? league : UNKNOWN_LEAGUE).addValue("home", home).addValue("away", away)
-            .addValue("start", Timestamp.from(start)).addValue("status", status));
+            .addValue("start", Timestamp.from(start)).addValue("status", status)) == 1;
         Match match = matches.lockByProviderAndExternalId(providerId, externalId).orElseThrow();
         // Picks made after the result is known would never settle and could game the win rate.
-        if (match.getResultUpdatedAt() != null && List.of("FINISHED", "CANCELLED").contains(match.getStatus())) {
+        if (match.getResultUpdatedAt() != null && FINAL_STATUSES.contains(match.getStatus())) {
             throw ApiException.conflict("MATCH_ALREADY_FINAL",
                 "This match is already " + match.getStatus() + "; predictions are no longer accepted for it");
         }
-        // Missing details never overwrite known ones: an estimated kick-off only applies to a new match.
+        if (!created) checkSameTeams(match, home, away);
+        if ("PRE_MATCH".equals(r.predictionType()) && m.startTime() == null && predictedAt.isAfter(match.getStartTime())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Prediction payload is invalid",
+                Map.of("predictedAt", "a PRE_MATCH prediction must be made before the match's kick-off (" + match.getStartTime() + ")"));
+        }
+        // Missing details never overwrite known ones: an estimated kick-off only applies to a new match. Team names
+        // keep the spelling first seen (they are equal by teamKey here).
         if (league != null) match.setLeague(league);
-        match.setHomeTeam(home);
-        match.setAwayTeam(away);
-        if (m.startTime() != null) match.setStartTime(m.startTime());
         boolean resultKnown = match.getResultUpdatedAt() != null
-            || List.of("FINISHED", "CANCELLED", "POSTPONED").contains(match.getStatus());
-        if (!resultKnown) match.setStatus(status);
+            || RESULT_STATUSES.contains(match.getStatus());
+        Instant newStart = m.startTime() == null ? null : m.startTime().truncatedTo(ChronoUnit.MICROS); // TIMESTAMPTZ precision
+        boolean moved = newStart != null && !newStart.equals(match.getStartTime());
+        // A new kick-off for a postponed match means it was rescheduled: it is open for predictions again.
+        String newStatus = !resultKnown || (moved && "POSTPONED".equals(match.getStatus())) ? status : match.getStatus();
+        if (moved) {
+            recordKickOffMove(match, newStart, newStatus);
+            match.setStartTime(newStart);
+        }
+        match.setStatus(newStatus);
         return matches.saveAndFlush(match);
+    }
+
+    /** {@code externalMatchId} names one game: a payload with other teams for it is an agent mistake, not an update. */
+    private static void checkSameTeams(Match match, String home, String away) {
+        Map<String, String> diff = new LinkedHashMap<>();
+        if (!PredictionValidator.teamKey(match.getHomeTeam()).equals(PredictionValidator.teamKey(home))) {
+            diff.put("match.homeTeam", "stored '" + match.getHomeTeam() + "', sent '" + home + "'");
+        }
+        if (!PredictionValidator.teamKey(match.getAwayTeam()).equals(PredictionValidator.teamKey(away))) {
+            diff.put("match.awayTeam", "stored '" + match.getAwayTeam() + "', sent '" + away + "'");
+        }
+        if (!diff.isEmpty()) {
+            throw new ApiException(HttpStatus.CONFLICT, "MATCH_MISMATCH",
+                "externalMatchId " + match.getExternalMatchId() + " is already a match between other teams", diff);
+        }
+    }
+
+    /** Kick-off moves go to the match's result history, so a reschedule is visible on the match page. */
+    private void recordKickOffMove(Match match, Instant newStart, String newStatus) {
+        jdbc.update("""
+            INSERT INTO match_result_history (match_id, previous_result, new_result, change_source)
+            VALUES (:match, CAST(:before AS jsonb), CAST(:after AS jsonb), 'PROVIDER')
+            """, new MapSqlParameterSource().addValue("match", match.getId())
+            .addValue("before", json.createObjectNode().put("startTime", match.getStartTime().toString())
+                .put("status", match.getStatus()).toString())
+            .addValue("after", json.createObjectNode().put("startTime", newStart.toString())
+                .put("status", newStatus).toString()));
     }
 
     /**
@@ -193,162 +276,25 @@ public class PredictionIngestionService {
      * Same teams on the same UTC day give the same id, so concurrent first screenshots end up on one match.
      */
     private String externalIdByTeams(UUID providerId, String home, String away, Instant start) {
-        List<String> near = jdbc.queryForList("""
-            SELECT external_match_id FROM matches
-            WHERE provider_id = :provider AND lower(home_team) = lower(:home) AND lower(away_team) = lower(:away)
-              AND start_time BETWEEN :from AND :to
-            ORDER BY abs(extract(epoch FROM start_time - :start)) LIMIT 1
-            """, new MapSqlParameterSource().addValue("provider", providerId).addValue("home", home).addValue("away", away)
+        String homeKey = PredictionValidator.teamKey(home);
+        String awayKey = PredictionValidator.teamKey(away);
+        // Team names are compared by teamKey in Java; the time window keeps the candidate list small.
+        List<Map<String, Object>> near = jdbc.queryForList("""
+            SELECT external_match_id, home_team, away_team FROM matches
+            WHERE provider_id = :provider AND start_time BETWEEN :from AND :to
+            ORDER BY abs(extract(epoch FROM start_time - :start))
+            """, new MapSqlParameterSource().addValue("provider", providerId)
             .addValue("from", start.minus(SAME_MATCH_WINDOW).atOffset(ZoneOffset.UTC))
             .addValue("to", start.plus(SAME_MATCH_WINDOW).atOffset(ZoneOffset.UTC))
-            .addValue("start", start.atOffset(ZoneOffset.UTC)), String.class);
-        if (!near.isEmpty()) return near.getFirst();
-        String key = home.toLowerCase(Locale.ROOT) + "|" + away.toLowerCase(Locale.ROOT) + "|" + LocalDate.ofInstant(start, ZoneOffset.UTC);
-        return "auto-" + sha256Hex(key.getBytes(java.nio.charset.StandardCharsets.UTF_8)).substring(0, 24);
-    }
-
-    /** Cross-field rules Bean Validation cannot express. All problems are reported together. */
-    void validate(PredictionRequest r) {
-        Map<String, String> errors = new LinkedHashMap<>();
-        boolean live = "LIVE".equals(r.predictionType());
-        if (live && r.matchMinute() == null) errors.put("matchMinute", "required for LIVE predictions");
-        if (live && r.currentScore() == null) errors.put("currentScore", "required for LIVE predictions");
-
-        Map<String, OddsInput> oddsByRef = validateOdds(r.odds(), live, errors);
-        validatePicks(r.picks(), oddsByRef, errors);
-
-        CorrectScoreInput cs = r.correctScore();
-        Pair cur = r.currentScore();
-        if (cs != null && cur != null && (cs.home() < cur.home() || cs.away() < cur.away())) {
-            errors.put("correctScore", "the predicted FINAL score cannot be lower than the current score");
-        }
-        if (r.simulation() != null) validateSimulation(r.simulation(), errors);
-        if (!errors.isEmpty()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Prediction payload is invalid", errors);
-        }
-    }
-
-    private static Map<String, OddsInput> validateOdds(List<OddsInput> odds, boolean live, Map<String, String> errors) {
-        Map<String, OddsInput> byRef = new LinkedHashMap<>();
-        for (int i = 0; i < odds.size(); i++) {
-            OddsInput o = odds.get(i);
-            String f = "odds[" + i + "].";
-            if (byRef.put(o.ref(), o) != null) errors.put(f + "ref", "duplicate odds ref '" + o.ref() + "'");
-            if (!live && "LIVE".equals(o.stage())) errors.put(f + "stage", "LIVE odds are not allowed in a PRE_MATCH prediction");
-            validatePrices(o, f, errors);
-            if (o.settlementBasis() == null && "LIVE".equals(o.stage())) {
-                errors.put(f + "settlementBasis", "required for LIVE odds (FULL_MATCH or REMAINING_MATCH)");
-            }
-            if ("1X2".equals(o.market()) && "REMAINING_MATCH".equals(o.settlementBasis())) {
-                errors.put(f + "settlementBasis", "1X2 is always settled on the full match (FULL_MATCH)");
-            } else if ("REMAINING_MATCH".equals(o.settlementBasis())) {
-                boolean corner = o.market().startsWith("CORNER_");
-                if (corner && o.cornersAtCapture() == null) errors.put(f + "cornersAtCapture", "required for REMAINING_MATCH corner odds");
-                if (!corner && o.scoreAtCapture() == null) errors.put(f + "scoreAtCapture", "required for REMAINING_MATCH odds");
+            .addValue("start", start.atOffset(ZoneOffset.UTC)));
+        for (Map<String, Object> row : near) {
+            if (homeKey.equals(PredictionValidator.teamKey((String) row.get("home_team")))
+                && awayKey.equals(PredictionValidator.teamKey((String) row.get("away_team")))) {
+                return (String) row.get("external_match_id");
             }
         }
-        return byRef;
-    }
-
-    private static void validatePicks(List<PickInput> picks, Map<String, OddsInput> oddsByRef, Map<String, String> errors) {
-        Set<Integer> ranks = new HashSet<>();
-        for (int i = 0; i < picks.size(); i++) {
-            PickInput p = picks.get(i);
-            String f = "picks[" + i + "].";
-            if (!ranks.add(p.rank())) errors.put(f + "rank", "duplicate rank " + p.rank());
-            OddsInput o = oddsByRef.get(p.oddsRef());
-            if (o == null) {
-                errors.put(f + "oddsRef", "unknown odds ref '" + p.oddsRef() + "'");
-                continue;
-            }
-            if (!o.market().equals(p.market())) errors.put(f + "market", "pick market " + p.market() + " does not match odds market " + o.market());
-            try {
-                SettlementEngine.validatePick(p.market(), p.pick());
-            } catch (IllegalArgumentException e) {
-                errors.put(f + "pick", e.getMessage());
-            }
-        }
-    }
-
-    private static void validateSimulation(SimulationInput sim, Map<String, String> errors) {
-        if (sim.probabilities() != null) checkProbabilities(sim.probabilities(), "simulation.probabilities", errors);
-        JsonNode dist = sim.correctScoreDistribution();
-        if (dist == null) return;
-        if (!dist.isArray()) {
-            errors.put("simulation.correctScoreDistribution", "must be an array of {home, away, probability}");
-            return;
-        }
-        for (int i = 0; i < dist.size(); i++) {
-            JsonNode e = dist.get(i);
-            String path = "simulation.correctScoreDistribution[" + i + "]";
-            if (!isScore(e.path("home")) || !isScore(e.path("away")) || !e.path("probability").isNumber()) {
-                errors.put(path, "must be {home >= 0, away >= 0, probability}");
-            } else {
-                checkProbabilities(e.get("probability"), path + ".probability", errors);
-            }
-        }
-    }
-
-    private static boolean isScore(JsonNode n) {
-        return n.canConvertToInt() && n.asInt() >= 0;
-    }
-
-    /** Fields that do not belong to the market are rejected rather than silently dropped. */
-    private static void validatePrices(OddsInput o, String f, Map<String, String> errors) {
-        switch (o.market()) {
-            case "1X2" -> {
-                if (o.line() != null) errors.put(f + "line", "must be absent for 1X2");
-                require(o.homeOdds(), f + "homeOdds", errors);
-                require(o.drawOdds(), f + "drawOdds", errors);
-                require(o.awayOdds(), f + "awayOdds", errors);
-                forbid(o.overOdds(), f + "overOdds", errors);
-                forbid(o.underOdds(), f + "underOdds", errors);
-            }
-            case "AH", "CORNER_AH" -> {
-                checkLine(o.line(), f, false, errors);
-                require(o.homeOdds(), f + "homeOdds", errors);
-                require(o.awayOdds(), f + "awayOdds", errors);
-                forbid(o.drawOdds(), f + "drawOdds", errors);
-                forbid(o.overOdds(), f + "overOdds", errors);
-                forbid(o.underOdds(), f + "underOdds", errors);
-            }
-            default -> {
-                checkLine(o.line(), f, true, errors);
-                require(o.overOdds(), f + "overOdds", errors);
-                require(o.underOdds(), f + "underOdds", errors);
-                forbid(o.homeOdds(), f + "homeOdds", errors);
-                forbid(o.drawOdds(), f + "drawOdds", errors);
-                forbid(o.awayOdds(), f + "awayOdds", errors);
-            }
-        }
-    }
-
-    private static void checkLine(BigDecimal line, String f, boolean total, Map<String, String> errors) {
-        if (line == null) errors.put(f + "line", "required");
-        else if (!SettlementEngine.isValidLine(line)) errors.put(f + "line", "must be a multiple of 0.25");
-        else if (total && line.signum() < 0) errors.put(f + "line", "total line cannot be negative");
-    }
-
-    private static void require(Object v, String field, Map<String, String> errors) {
-        if (v == null) errors.put(field, "required for this market");
-    }
-
-    private static void forbid(Object v, String field, Map<String, String> errors) {
-        if (v != null) errors.put(field, "not allowed for this market");
-    }
-
-    private static void checkProbabilities(JsonNode node, String path, Map<String, String> errors) {
-        if (node.isNumber()) {
-            double v = node.asDouble();
-            if (v < 0 || v > 1) errors.put(path, "probability must be between 0 and 1");
-        } else if (node.isContainerNode()) {
-            var it = node.fields();
-            if (node.isArray()) for (int i = 0; i < node.size(); i++) checkProbabilities(node.get(i), path + "[" + i + "]", errors);
-            else while (it.hasNext()) {
-                var e = it.next();
-                checkProbabilities(e.getValue(), path + "." + e.getKey(), errors);
-            }
-        }
+        String key = homeKey + "|" + awayKey + "|" + LocalDate.ofInstant(start, ZoneOffset.UTC);
+        return "auto-" + sha256Hex(key.getBytes(StandardCharsets.UTF_8)).substring(0, 24);
     }
 
     private static Prediction prediction(UUID providerId, UUID matchId, UUID modelId, PredictionRequest r, String eventId,
@@ -360,14 +306,8 @@ public class PredictionIngestionService {
         p.setExternalEventId(eventId);
         p.setPredictionType(r.predictionType());
         p.setMatchMinute(r.matchMinute());
-        if (r.currentScore() != null) {
-            p.setCurrentHomeScore(r.currentScore().home());
-            p.setCurrentAwayScore(r.currentScore().away());
-        }
-        if (r.currentCorners() != null) {
-            p.setCurrentHomeCorners(r.currentCorners().home());
-            p.setCurrentAwayCorners(r.currentCorners().away());
-        }
+        Pair.apply(r.currentScore(), p::setCurrentHomeScore, p::setCurrentAwayScore);
+        Pair.apply(r.currentCorners(), p::setCurrentHomeCorners, p::setCurrentAwayCorners);
         p.setPredictedAt(predictedAt);
         p.setPayload(rawPayload);
         p.setPayloadHash(hash);
@@ -410,14 +350,8 @@ public class PredictionIngestionService {
         o.setOverOdds(in.overOdds());
         o.setUnderOdds(in.underOdds());
         o.setSettlementBasis(in.settlementBasis() == null ? "FULL_MATCH" : in.settlementBasis());
-        if (in.scoreAtCapture() != null) {
-            o.setHomeScoreAtCapture(in.scoreAtCapture().home());
-            o.setAwayScoreAtCapture(in.scoreAtCapture().away());
-        }
-        if (in.cornersAtCapture() != null) {
-            o.setHomeCornersAtCapture(in.cornersAtCapture().home());
-            o.setAwayCornersAtCapture(in.cornersAtCapture().away());
-        }
+        Pair.apply(in.scoreAtCapture(), o::setHomeScoreAtCapture, o::setAwayScoreAtCapture);
+        Pair.apply(in.cornersAtCapture(), o::setHomeCornersAtCapture, o::setAwayCornersAtCapture);
         o.setCapturedAt(in.capturedAt());
         o.setExtra(in.extra());
         return o;
@@ -430,30 +364,12 @@ public class PredictionIngestionService {
             s.setPossessionHome(in.possession().home());
             s.setPossessionAway(in.possession().away());
         }
-        if (in.shots() != null) {
-            s.setShotsHome(in.shots().home());
-            s.setShotsAway(in.shots().away());
-        }
-        if (in.shotsOnTarget() != null) {
-            s.setShotsOnTargetHome(in.shotsOnTarget().home());
-            s.setShotsOnTargetAway(in.shotsOnTarget().away());
-        }
-        if (in.shotsOffTarget() != null) {
-            s.setShotsOffTargetHome(in.shotsOffTarget().home());
-            s.setShotsOffTargetAway(in.shotsOffTarget().away());
-        }
-        if (in.corners() != null) {
-            s.setCornersHome(in.corners().home());
-            s.setCornersAway(in.corners().away());
-        }
-        if (in.yellowCards() != null) {
-            s.setYellowCardsHome(in.yellowCards().home());
-            s.setYellowCardsAway(in.yellowCards().away());
-        }
-        if (in.redCards() != null) {
-            s.setRedCardsHome(in.redCards().home());
-            s.setRedCardsAway(in.redCards().away());
-        }
+        Pair.apply(in.shots(), s::setShotsHome, s::setShotsAway);
+        Pair.apply(in.shotsOnTarget(), s::setShotsOnTargetHome, s::setShotsOnTargetAway);
+        Pair.apply(in.shotsOffTarget(), s::setShotsOffTargetHome, s::setShotsOffTargetAway);
+        Pair.apply(in.corners(), s::setCornersHome, s::setCornersAway);
+        Pair.apply(in.yellowCards(), s::setYellowCardsHome, s::setYellowCardsAway);
+        Pair.apply(in.redCards(), s::setRedCardsHome, s::setRedCardsAway);
         s.setExtra(in.extra());
         return s;
     }
@@ -479,19 +395,48 @@ public class PredictionIngestionService {
         return s;
     }
 
-    /** Hash of the canonical (key-sorted) JSON, so a retry with reordered keys or whitespace is still a duplicate. */
+    /**
+     * Hash of the canonical JSON, so a retry that an agent re-generated is still a duplicate: keys sorted, text values
+     * cleaned ({@link TextRules#clean}) and instants in one form ("…+07:00" and "….000Z" of the same instant agree).
+     */
     String payloadHash(JsonNode payload) {
+        return keySortedHash(canonical(payload.deepCopy(), null));
+    }
+
+    /** The hash stored before UX-106; a retry of such a prediction must still be recognised. */
+    private String legacyPayloadHash(JsonNode payload) {
+        return keySortedHash(payload);
+    }
+
+    private static JsonNode canonical(JsonNode node, String field) {
+        if (node.isTextual()) {
+            String text = TextRules.clean(node.textValue());
+            if (field != null && TIME_FIELDS.contains(field)) { // Set.of rejects contains(null)
+                try {
+                    text = Instant.parse(text).toString();
+                } catch (DateTimeParseException notATime) {
+                    // left as text; binding has already rejected it if it was a real time field
+                }
+            }
+            return TextNode.valueOf(text);
+        }
+        if (node instanceof ArrayNode a) for (int i = 0; i < a.size(); i++) a.set(i, canonical(a.get(i), null));
+        if (node instanceof ObjectNode o) o.properties().forEach(e -> e.setValue(canonical(e.getValue(), e.getKey())));
+        return node;
+    }
+
+    private String keySortedHash(JsonNode payload) {
         try {
             Object plain = json.treeToValue(payload, Object.class);
             return sha256Hex(json.writer().with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writeValueAsBytes(plain));
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             throw new IllegalStateException(e);
         }
     }
 
     private static String sha256Hex(byte[] bytes) {
         try {
-            return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }

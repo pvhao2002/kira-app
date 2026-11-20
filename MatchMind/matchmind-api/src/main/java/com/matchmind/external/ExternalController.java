@@ -3,6 +3,7 @@ package com.matchmind.external;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -12,21 +13,23 @@ import com.matchmind.external.ExternalDtos.PredictionRequest;
 import com.matchmind.external.ExternalDtos.PredictionResponse;
 import com.matchmind.external.ExternalDtos.ResultRequest;
 import com.matchmind.external.ExternalDtos.SettleRequest;
-import com.matchmind.match.MatchRepository;
 import com.matchmind.match.MatchResultService;
 import com.matchmind.match.MatchResultService.ResultResponse;
 import com.matchmind.prediction.PredictionEvents;
 import com.matchmind.prediction.PredictionEvents.NewPrediction;
 import com.matchmind.prediction.PredictionIngestionService;
+import com.matchmind.provider.ProviderService;
 import com.matchmind.security.Principals.ProviderPrincipal;
 import com.matchmind.settlement.SettlementService;
 import com.matchmind.settlement.SettlementService.MatchSettlement;
 import com.matchmind.shared.ApiException;
+import com.matchmind.shared.TextRules;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -44,6 +47,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -65,11 +69,16 @@ public class ExternalController {
     private final PredictionIngestionService ingestion;
     private final MatchResultService resultService;
     private final SettlementService settlement;
-    private final MatchRepository matches;
     private final ExternalAuditService audit;
     private final PredictionEvents events;
     private final Validator validator;
     private final ObjectMapper mapper;
+    private final ProviderService providers;
+
+    /** A provider whose first request is rejected has no row yet (UX-077): its audit entry carries no provider. */
+    private UUID auditedProvider(ProviderPrincipal caller) {
+        return providers.exists(caller.providerId()) ? caller.providerId() : null;
+    }
 
     @PostMapping("/predictions")
     @Operation(summary = "Insert an AI prediction (idempotent on eventId)")
@@ -99,7 +108,7 @@ public class ExternalController {
             ModelRef model = modelOf(modelName, modelVersion, r);
             PredictionResponse response;
             try {
-                response = ingestion.ingest(caller.providerId(), model, r, raw);
+                response = ingestion.ingest(caller.providerId(), caller.providerCode(), model, r, raw);
             } catch (DataIntegrityViolationException race) {
                 // A concurrent retry inserted the same eventId first: answer as a duplicate.
                 response = ingestion.findDuplicate(caller.providerId(), r, raw).orElseThrow(() -> race);
@@ -119,8 +128,7 @@ public class ExternalController {
                                                   HttpServletRequest http) {
         Instant received = Instant.now();
         JsonNode raw = parse(body, caller, http, received, null);
-        String eventId = raw.path("externalMatchId").isTextual() ? raw.path("externalMatchId").asText() : null;
-        return audited(caller, http, received, eventId, () -> {
+        return audited(caller, http, received, matchRef(raw), () -> {
             ResultRequest r = bind(raw, ResultRequest.class);
             return ResponseEntity.ok(resultService.apply(caller.providerId(), r, ExternalAuditService.requestId(http)));
         });
@@ -133,23 +141,35 @@ public class ExternalController {
                                                   HttpServletRequest http) {
         Instant received = Instant.now();
         JsonNode raw = parse(body, caller, http, received, null);
-        String eventId = raw.path("externalMatchId").isTextual() ? raw.path("externalMatchId").asText() : null;
-        return audited(caller, http, received, eventId, () -> {
+        return audited(caller, http, received, matchRef(raw), () -> {
             SettleRequest r = bind(raw, SettleRequest.class);
-            return ResponseEntity.ok(settlement.settleMatch(
-                resolveMatch(caller, r.externalMatchId()), "EXTERNAL_REQUEST", null, r.aiCalculations()));
+            UUID matchId = resultService.matchIdOf(caller.providerId(), r.externalMatchId(), r.matchId(), r.predictionId());
+            return ResponseEntity.ok(settlement.settleMatch(matchId, "EXTERNAL_REQUEST", null, r.aiCalculations()));
         });
+    }
+
+    /** The id the API log shows for a results or settle call: whichever of the three match ids was sent. */
+    private static String matchRef(JsonNode raw) {
+        for (String field : new String[]{"externalMatchId", "matchId", "predictionId"}) {
+            JsonNode v = raw.path(field);
+            if (v.isTextual()) return v.asText(); // the audit truncates it
+        }
+        return null;
     }
 
     /** The model named in X-Model-Name (+ optional X-Model-Version, default "1") wins over {@code model} in the body. */
     static ModelRef modelOf(String name, String version, PredictionRequest r) {
-        if (name == null || name.isBlank()) {
-            if (r.model() == null) {
+        String headerName = TextRules.clean(name);
+        if (headerName == null || headerName.isEmpty()) {
+            ModelRef body = r.model() == null ? null
+                : new ModelRef(TextRules.clean(r.model().name()), TextRules.clean(r.model().version()));
+            if (body == null || body.name().isEmpty() || body.version().isEmpty()) {
                 throw ApiException.badRequest("MODEL_REQUIRED", "Send the model name in the X-Model-Name header");
             }
-            return new ModelRef(r.model().name().trim(), r.model().version().trim());
+            return body;
         }
-        ModelRef ref = new ModelRef(name.trim(), version == null || version.isBlank() ? "1" : version.trim());
+        String headerVersion = TextRules.clean(version);
+        ModelRef ref = new ModelRef(headerName, headerVersion == null || headerVersion.isEmpty() ? "1" : headerVersion);
         if (ref.name().length() > 128 || ref.version().length() > 64) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_MODEL_HEADER", "Model name or version is too long",
                 Map.of(MODEL_HEADER, "max 128 characters", MODEL_VERSION_HEADER, "max 64 characters"));
@@ -157,27 +177,22 @@ public class ExternalController {
         return ref;
     }
 
-    private java.util.UUID resolveMatch(ProviderPrincipal caller, String externalMatchId) {
-        return matches.findByProviderIdAndExternalMatchId(caller.providerId(), externalMatchId).map(m -> m.getId())
-            .orElseThrow(() -> ApiException.notFound("MATCH_NOT_FOUND", "No match with this externalMatchId exists for your provider"));
-    }
-
     private <T> ResponseEntity<T> audited(ProviderPrincipal caller, HttpServletRequest http, Instant received,
                                           String eventId, Supplier<ResponseEntity<T>> work) {
         try {
             ResponseEntity<T> response = work.get();
             boolean duplicate = response.getBody() instanceof PredictionResponse p && p.duplicate();
-            audit.record(http, received, new Entry(caller.providerId(), eventId,
+            audit.record(http, received, new Entry(auditedProvider(caller), eventId,
                 response.getStatusCode().value(), duplicate ? "DUPLICATE" : "SUCCESS", summary(response.getBody()), null));
             return response;
         } catch (ApiException e) {
             JsonNode fields = e.getFieldErrors().isEmpty() ? null : mapper.valueToTree(Map.of("fieldErrors", e.getFieldErrors()));
-            audit.record(http, received, new Entry(caller.providerId(), eventId, e.getStatus().value(),
+            audit.record(http, received, new Entry(auditedProvider(caller), eventId, e.getStatus().value(),
                 e.getStatus().is4xxClientError() ? "REJECTED" : "FAILED", fields, e.getCode() + ": " + e.getMessage()));
             throw e;
         } catch (RuntimeException e) {
             int status = statusOf(e);
-            audit.record(http, received, new Entry(caller.providerId(), eventId, status,
+            audit.record(http, received, new Entry(auditedProvider(caller), eventId, status,
                 status < 500 ? "REJECTED" : "FAILED", null, "Unexpected error (" + e.getClass().getSimpleName() + ")"));
             throw e;
         }
@@ -186,7 +201,7 @@ public class ExternalController {
     /** Same status GlobalExceptionHandler answers with, so the API log shows what the provider saw. */
     private static int statusOf(RuntimeException e) {
         if (e instanceof DataIntegrityViolationException || e instanceof OptimisticLockingFailureException) return 409;
-        if (e instanceof IllegalArgumentException || e instanceof jakarta.validation.ConstraintViolationException) return 400;
+        if (e instanceof IllegalArgumentException || e instanceof ConstraintViolationException) return 400;
         return 500;
     }
 
@@ -207,7 +222,7 @@ public class ExternalController {
             return node;
         } catch (JsonProcessingException | IllegalArgumentException e) {
             ApiException error = ApiException.badRequest("MALFORMED_REQUEST", "Body must be a JSON object (max 1 MB)");
-            audit.record(http, received, new Entry(caller.providerId(), eventId, 400, "REJECTED", null,
+            audit.record(http, received, new Entry(auditedProvider(caller), eventId, 400, "REJECTED", null,
                 error.getMessage()));
             throw error;
         }
@@ -222,7 +237,7 @@ public class ExternalController {
         } catch (UnrecognizedPropertyException e) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "UNKNOWN_FIELD", "Unknown field '" + e.getPropertyName() + "'",
                 Map.of(path(e), "unknown field"));
-        } catch (com.fasterxml.jackson.databind.JsonMappingException e) {
+        } catch (JsonMappingException e) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_FIELD_TYPE", "A field has the wrong type or format",
                 Map.of(path(e), "wrong type or format"));
         } catch (JsonProcessingException e) {
@@ -237,7 +252,7 @@ public class ExternalController {
         return value;
     }
 
-    private static String path(com.fasterxml.jackson.databind.JsonMappingException e) {
+    private static String path(JsonMappingException e) {
         StringBuilder b = new StringBuilder();
         for (var ref : e.getPath()) {
             if (ref.getFieldName() != null) b.append(b.isEmpty() ? "" : ".").append(ref.getFieldName());

@@ -6,17 +6,21 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class PromptService {
     private final PromptTemplateRepository prompts;
+    private final NamedParameterJdbcTemplate jdbc;
 
     public record PromptView(UUID id, String name, String templateType, String content, String description, int version,
                              boolean active, UUID updatedBy, Instant createdAt, Instant updatedAt) {
@@ -65,7 +69,7 @@ public class PromptService {
             throw ApiException.conflict("PROMPT_VERSION_CONFLICT",
                 "This template was saved by someone else (now version " + t.getVersion() + "). Reload before saving.");
         }
-        boolean changed = !t.getContent().equals(r.content()) || !java.util.Objects.equals(t.getDescription(), r.description())
+        boolean changed = !t.getContent().equals(r.content()) || !Objects.equals(t.getDescription(), r.description())
             || t.isActive() != r.active();
         if (!changed) return PromptView.of(t);
         t.setContent(r.content());
@@ -74,6 +78,49 @@ public class PromptService {
         t.setVersion(t.getVersion() + 1);
         t.setUpdatedBy(actor);
         return PromptView.of(prompts.saveAndFlush(t));
+    }
+
+    /** One saved version, without its text (a template can be 200 000 characters). */
+    public record VersionSummary(int version, String description, boolean active, UUID updatedBy,
+                                 String updatedByUsername, Instant createdAt) {
+    }
+
+    public record VersionView(int version, String description, boolean active, UUID updatedBy, String updatedByUsername,
+                              Instant createdAt, String content) {
+    }
+
+    /** {@code expectedVersion} is the current version the user saw, as for an update. */
+    public record RestoreRequest(@NotNull Integer expectedVersion) {
+    }
+
+    private static final String VERSION_COLUMNS = """
+        SELECT v.version, v.description, v.active, v.updated_by, u.username, v.created_at, v.content
+        FROM prompt_template_versions v LEFT JOIN users u ON u.id = v.updated_by
+        WHERE v.template_id = :id""";
+
+    /** Every saved version, newest first. prompt_template_versions is filled by a database trigger on each save. */
+    @Transactional(readOnly = true)
+    public List<VersionSummary> versions(UUID id) {
+        if (!prompts.existsById(id)) throw notFound();
+        return jdbc.query(VERSION_COLUMNS.replace("v.content", "NULL AS content") + " ORDER BY v.version DESC", Map.of("id", id),
+            (rs, i) -> new VersionSummary(rs.getInt(1), rs.getString(2), rs.getBoolean(3), rs.getObject(4, UUID.class),
+                rs.getString(5), rs.getTimestamp(6).toInstant()));
+    }
+
+    @Transactional(readOnly = true)
+    public VersionView version(UUID id, int version) {
+        return jdbc.query(VERSION_COLUMNS + " AND v.version = :version", Map.of("id", id, "version", version),
+                (rs, i) -> new VersionView(rs.getInt(1), rs.getString(2), rs.getBoolean(3), rs.getObject(4, UUID.class),
+                    rs.getString(5), rs.getTimestamp(6).toInstant(), rs.getString(7)))
+            .stream().findFirst().orElseThrow(() -> ApiException.notFound("PROMPT_NOT_FOUND", "Prompt version not found"));
+    }
+
+    /** Saves an old version's text and description again as a new version; the history itself never changes. */
+    @Transactional
+    public PromptView restore(UUID id, int version, RestoreRequest r, UUID actor) {
+        VersionView old = version(id, version);
+        PromptTemplate t = prompts.lockById(id).orElseThrow(PromptService::notFound);
+        return update(id, new UpdatePrompt(old.content(), old.description(), t.isActive(), r.expectedVersion()), actor);
     }
 
     private static ApiException notFound() {

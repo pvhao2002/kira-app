@@ -1,10 +1,13 @@
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse, httpResource } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { Observable, forkJoin } from 'rxjs';
 import {
-  AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, ComparisonMatch, Dashboard, Filters, HistoryRow,
+  AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
-  Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User,
+  Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
+  AdminResultRequest, AgentPrompt, PromptVersion, PromptVersionSummary, ResultResponse, SettlementPromptInput,
+  PredictionIngestResponse,
 } from './models';
 
 export const API = '/api/v1';
@@ -27,6 +30,50 @@ export interface Paging { page?: number; size?: number; sort?: string; }
 export class ApiService {
   private readonly http = inject(HttpClient);
 
+  // Reactive reads (httpResource). Call from an injection context (field initializer). They run again when the
+  // signals they read change, cancel the superseded request and expose status()/error(); view with core/resource.ts.
+  leaguesResource(enabled: () => boolean = () => true) { return httpResource<string[]>(() => (enabled() ? `${API}/matches/leagues` : undefined)); }
+  providersResource() { return httpResource<Provider[]>(() => `${API}/providers`); }
+  apiLogEndpointsResource() { return httpResource<string[]>(() => `${API}/api-logs/endpoints`); }
+  modelsResource(enabled: () => boolean = () => true) { return httpResource<AiModel[]>(() => (enabled() ? `${API}/models` : undefined)); }
+  matchResource(id: () => string) { return httpResource<MatchDetail>(() => `${API}/matches/${encodeURIComponent(id())}`); }
+  /** A model with its breakdowns and latest predictions, loaded together; any failure fails the whole view. */
+  modelOverviewResource(id: () => string) {
+    return rxResource({
+      params: id,
+      stream: ({ params: modelId }) => {
+        const f = { modelId };
+        return forkJoin({
+          model: this.http.get<AiModel>(`${API}/models/${encodeURIComponent(modelId)}`),
+          market: this.breakdown(f, 'market'),
+          type: this.breakdown(f, 'type'),
+          recent: this.predictions(f, { page: 0, size: 15, sort: 'predictedAt,desc' }),
+        });
+      },
+    });
+  }
+  /** One model's results by market and by league under the given filters (modelId included). */
+  modelBreakdownResource(f: () => Filters) {
+    return rxResource({
+      params: f,
+      stream: ({ params }) => forkJoin({ market: this.breakdown(params, 'market'), league: this.breakdown(params, 'league') }),
+    });
+  }
+  /** Idle (no request) while `f` returns undefined, e.g. until the filter bar has reported its first filters. */
+  dashboardResource(f: () => Filters | undefined, tz: string) {
+    return httpResource<Dashboard>(() => { const x = f(); return x ? { url: `${API}/dashboard`, params: toParams({ ...x, tz }) } : undefined; });
+  }
+  recentPredictionsResource(f: () => Filters | undefined, size = 10) {
+    return httpResource<Page<PredictionRow>>(() => {
+      const x = f();
+      return x ? { url: `${API}/predictions`, params: toParams({ ...x, page: 0, size, sort: 'predictedAt,desc' }) } : undefined;
+    });
+  }
+  usersResource(enabled: () => boolean = () => true) { return httpResource<User[]>(() => (enabled() ? `${API}/users` : undefined)); }
+  promptsResource() { return httpResource<PromptTemplate[]>(() => `${API}/prompts`); }
+  needsReviewResource() { return httpResource<ReviewItem[]>(() => `${API}/settlements/needs-review`); }
+  predictionResource(id: () => string) { return httpResource<PredictionDetail>(() => `${API}/predictions/${encodeURIComponent(id())}`); }
+
   // Auth & users
   login(username: string, password: string) {
     return this.http.post<LoginResponse>(`${API}/auth/login`, { username, password });
@@ -36,17 +83,25 @@ export class ApiService {
   changePassword(currentPassword: string, newPassword: string) {
     return this.http.post<void>(`${API}/auth/change-password`, { currentPassword, newPassword });
   }
-  users() { return this.http.get<User[]>(`${API}/users`); }
-  createUser(body: { username: string; password: string; role: string }) { return this.http.post<User>(`${API}/users`, body); }
-  updateUser(id: string, body: { role?: string; status?: string }) { return this.http.patch<User>(`${API}/users/${id}`, body); }
-  resetPassword(id: string, newPassword: string) {
-    return this.http.post<void>(`${API}/users/${id}/reset-password`, { newPassword });
+  createUser(body: { username: string; password: string; role: string; mustChangePassword?: boolean }) {
+    return this.http.post<User>(`${API}/users`, body);
   }
+  updateUser(id: string, body: { role?: string; status?: string }) { return this.http.patch<User>(`${API}/users/${id}`, body); }
+  resetPassword(id: string, newPassword: string, mustChangePassword = false) {
+    return this.http.post<void>(`${API}/users/${id}/reset-password`, { newPassword, mustChangePassword });
+  }
+  /** Ends every session of the user on every device; `logout()` ends only this one. */
+  logoutAll() { return this.http.post<void>(`${API}/auth/logout-all`, {}); }
+  /** Sliding renewal: swap the stored token for the new one before `expiresAt`. A 401 means the session is over. */
+  refreshToken() { return this.http.post<LoginResponse>(`${API}/auth/refresh`, {}); }
+  /** Admin: a random 16-character password for the create-user and reset forms. Nothing is stored server-side. */
+  generatePassword() { return this.http.post<{ password: string }>(`${API}/users/generate-password`, {}); }
+  /** Admin: clear the failed-login lockout of a user. */
+  unlockUser(id: string) { return this.http.post<void>(`${API}/users/${id}/unlock`, {}); }
+  /** Admin: who changed which account (role, status, password reset, unlock). */
+  userAudit(q: { userId?: string } & Paging) { return this.http.get<Page<UserAuditRow>>(`${API}/users/audit`, { params: toParams(q) }); }
 
   // Dashboard & reports
-  dashboard(f: Filters, tz: string) {
-    return this.http.get<Dashboard>(`${API}/dashboard`, { params: toParams({ ...f, tz }) });
-  }
   modelPerformance(f: Filters) {
     return this.http.get<ModelPerformanceRow[]>(`${API}/reports/model-performance`, { params: toParams({ ...f }) });
   }
@@ -67,23 +122,24 @@ export class ApiService {
   modelComparison(f: Filters, minModels: number, p: Paging) {
     return this.http.get<Page<ComparisonMatch>>(`${API}/reports/model-comparison`, { params: toParams({ ...f, minModels, ...p }) });
   }
+  modelComparisonCoverage(f: Filters) {
+    return this.http.get<ComparisonCoverage[]>(`${API}/reports/model-comparison/coverage`, { params: toParams({ ...f }) });
+  }
   monteCarlo(f: Filters, p: Paging) {
     return this.http.get<MonteCarloReport>(`${API}/reports/monte-carlo`, { params: toParams({ ...f, ...p }) });
   }
 
   // Matches & predictions
-  matches(q: { search?: string; status?: string; league?: string; providerId?: string; from?: string; to?: string } & Paging) {
+  matches(q: { search?: string; status?: string; league?: string; providerId?: string; from?: string; to?: string;
+    overdue?: boolean } & Paging) {
     return this.http.get<Page<MatchRow>>(`${API}/matches`, { params: toParams(q) });
   }
-  leagues() { return this.http.get<string[]>(`${API}/matches/leagues`); }
-  match(id: string) { return this.http.get<MatchDetail>(`${API}/matches/${id}`); }
-  predictions(f: Filters, p: Paging) {
-    return this.http.get<Page<PredictionRow>>(`${API}/predictions`, { params: toParams({ ...f, ...p }) });
+  /** resultScope: `result` applies to the top pick (TOP, default) or to any pick (ANY). */
+  predictions(f: Filters, p: Paging, resultScope?: 'TOP' | 'ANY') {
+    return this.http.get<Page<PredictionRow>>(`${API}/predictions`, { params: toParams({ ...f, ...p, resultScope }) });
   }
-  prediction(id: string) { return this.http.get<PredictionDetail>(`${API}/predictions/${id}`); }
 
   // Settlement (admin)
-  needsReview() { return this.http.get<ReviewItem[]>(`${API}/settlements/needs-review`); }
   settleMatch(matchId: string) { return this.http.post<MatchSettlement>(`${API}/settlements/matches/${matchId}`, {}); }
   recalculatePick(pickId: string, reason: string) {
     return this.http.post<PickSettlement>(`${API}/settlements/picks/${pickId}/recalculate`, { reason });
@@ -92,22 +148,17 @@ export class ApiService {
     return this.http.post<PickSettlement>(`${API}/settlements/picks/${pickId}/override`, { result, reason });
   }
 
-  // AI models & providers
-  models(providerId?: string) { return this.http.get<AiModel[]>(`${API}/models`, { params: toParams({ providerId }) }); }
-  model(id: string) { return this.http.get<AiModel>(`${API}/models/${id}`); }
-  providers() { return this.http.get<Provider[]>(`${API}/providers`); }
-
   /** Admin only: the JSON body an agent printed because it could not reach the API, sent as is. */
   importPrediction(json: string, provider: string, model: string, modelVersion: string) {
-    return this.http.post<{ predictionId: string; matchId: string; duplicate: boolean }>(`${API}/predictions/import`, json, {
+    return this.http.post<PredictionIngestResponse>(`${API}/predictions/import`, json, {
       params: toParams({ provider, model, modelVersion }), headers: { 'Content-Type': 'application/json' },
     });
   }
 
   // Prompts
   prompts() { return this.http.get<PromptTemplate[]>(`${API}/prompts`); }
-  /** Admin only: the prompt with the shared agent API key filled in. Never stored or shown, only copied. */
-  promptForAgent(id: string) { return this.http.get<{ content: string }>(`${API}/prompts/${id}/for-agent`); }
+  /** The prompt with the API URL and sheet link filled in, and for admins the agent key. Never stored or shown, only copied. */
+  promptForAgent(id: string) { return this.http.get<AgentPrompt>(`${API}/prompts/${id}/for-agent`); }
   updatePrompt(id: string, body: { content: string; description: string | null; active: boolean; expectedVersion: number }) {
     return this.http.put<PromptTemplate>(`${API}/prompts/${id}`, body);
   }
@@ -119,6 +170,28 @@ export class ApiService {
   apiLogs(q: { providerId?: string; status?: string; endpoint?: string; search?: string; from?: string; to?: string } & Paging) {
     return this.http.get<Page<ApiLogRow>>(`${API}/api-logs`, { params: toParams(q) });
   }
-  apiLogEndpoints() { return this.http.get<string[]>(`${API}/api-logs/endpoints`); }
   apiLog(id: string) { return this.http.get<ApiLogDetail>(`${API}/api-logs/${id}`); }
+
+  // Match results, review and prompt history
+  /** Admin: enter or correct a match result; FINISHED or CANCELLED settles the pending picks. */
+  enterMatchResult(matchId: string, body: AdminResultRequest) {
+    return this.http.post<ResultResponse>(`${API}/matches/${matchId}/result`, body);
+  }
+  /** Picks needing review, optionally of one match or one prediction. */
+  needsReview(q: { matchId?: string; predictionId?: string } = {}) {
+    return this.http.get<ReviewItem[]>(`${API}/settlements/needs-review`, { params: toParams(q) });
+  }
+  /** Admin: recalculate every pick of the match that needs review, with one reason. */
+  recalculateMatch(matchId: string, reason: string) {
+    return this.http.post<PickSettlement[]>(`${API}/settlements/matches/${matchId}/recalculate`, { reason });
+  }
+  settlementPromptInput(matchId: string) {
+    return this.http.get<SettlementPromptInput>(`${API}/settlements/matches/${matchId}/prompt-input`);
+  }
+  promptVersions(id: string) { return this.http.get<PromptVersionSummary[]>(`${API}/prompts/${id}/versions`); }
+  promptVersion(id: string, version: number) { return this.http.get<PromptVersion>(`${API}/prompts/${id}/versions/${version}`); }
+  /** Admin: saves an old version again as the newest one. */
+  restorePromptVersion(id: string, version: number, expectedVersion: number) {
+    return this.http.post<PromptTemplate>(`${API}/prompts/${id}/versions/${version}/restore`, { expectedVersion });
+  }
 }

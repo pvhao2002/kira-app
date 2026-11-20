@@ -1,5 +1,6 @@
 package com.matchmind.report;
 
+import com.matchmind.match.MatchQueryService;
 import com.matchmind.shared.ApiException;
 import com.matchmind.shared.ApiTypes.PageResponse;
 import com.matchmind.shared.Filters;
@@ -11,17 +12,25 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /** All report figures are aggregated in PostgreSQL; the browser only ever receives one page or one summary. */
 @Service
 @RequiredArgsConstructor
 public class ReportService {
     public static final int EXPORT_LIMIT = 50_000;
+    private static final int MAX_COMPARISON_PAGE_SIZE = 50;
+    private static final int DEFAULT_MIN_MODELS = 2;
+    private static final int MAX_MIN_MODELS = 20;
+    /** Count columns of {@link #AGG}; a market without picks reports zero for each. */
+    private static final List<String> COUNT_COLUMNS =
+        List.of("picks", "settled", "wins", "losses", "pushOrVoid", "pending", "halfWins", "halfLosses", "fullWins", "fullLosses");
     private final NamedParameterJdbcTemplate jdbc;
 
     /** Pick-level base: every pick with its prediction, match, model, odds snapshot and current settlement. */
@@ -33,9 +42,14 @@ public class ReportService {
         JOIN prediction_odds o ON o.id = pk.odds_id
         """ + Stats.CURRENT_RESULT_JOIN;
 
+    /**
+     * wins/losses include the halves (win-rate basis). fullWins + halfWins + fullLosses + halfLosses + pushOrVoid
+     * = settled, so those five are the mutually exclusive split.
+     */
     static final String AGG = """
         count(pk.id) AS "picks", %s AS "settled", %s AS "wins", %s AS "losses", %s AS "pushOrVoid", %s AS "pending",
         count(*) FILTER (WHERE r.result = 'HALF_WIN') AS "halfWins", count(*) FILTER (WHERE r.result = 'HALF_LOSS') AS "halfLosses",
+        count(*) FILTER (WHERE r.result = 'WIN') AS "fullWins", count(*) FILTER (WHERE r.result = 'LOSS') AS "fullLosses",
         round(avg(pk.probability), 4) AS "avgProbability"
         """.formatted(Stats.SETTLED, Stats.WINS, Stats.LOSSES, Stats.PUSH_VOID, Stats.PENDING);
 
@@ -161,7 +175,7 @@ public class ReportService {
         jdbc.query(HISTORY_COLUMNS + HISTORY_FROM + w.sql() + historyOrder(sort), w.params, Sql.ROW)
             .forEach(row -> out.add(EXPORT_COLUMNS.stream().map(c -> {
                 Object v = row.get(c);
-                return v instanceof java.time.Instant i ? (Object) i.toString() : v;
+                return v instanceof Instant i ? (Object) i.toString() : v;
             }).toList()));
         return out;
     }
@@ -174,7 +188,7 @@ public class ReportService {
         for (String market : Filters.MARKETS) {
             Map<String, Object> empty = new LinkedHashMap<>();
             empty.put("market", market);
-            for (String k : List.of("picks", "settled", "wins", "losses", "pushOrVoid", "pending", "halfWins", "halfLosses")) empty.put(k, 0L);
+            COUNT_COLUMNS.forEach(k -> empty.put(k, 0L));
             empty.put("avgProbability", null);
             byMarket.put(market, empty);
         }
@@ -188,8 +202,8 @@ public class ReportService {
     // ------------------------------------------------------------------ Report 4: model comparison on the same matches
     @Transactional(readOnly = true)
     public PageResponse<Map<String, Object>> modelComparison(Filters f, Integer minModels, Integer page, Integer size) {
-        int pg = Paging.page(page), sz = Math.min(Paging.size(size), 50);
-        int min = minModels == null ? 2 : Math.max(1, Math.min(minModels, 20));
+        int pg = Paging.page(page), sz = Math.min(Paging.size(size), MAX_COMPARISON_PAGE_SIZE);
+        int min = minModels == null ? DEFAULT_MIN_MODELS : Math.max(1, Math.min(minModels, MAX_MIN_MODELS));
         Sql.Where w = f.where(false);
         w.params.addValue("minModels", min);
         String matchIds = "SELECT p.match_id FROM predictions p JOIN matches m ON m.id = p.match_id " + w.sql()
@@ -229,6 +243,22 @@ public class ReportService {
         entries.forEach(e -> byMatch.computeIfAbsent(e.get("matchId"), k -> new ArrayList<>()).add(e));
         matches.forEach(mt -> mt.put("models", byMatch.getOrDefault(mt.get("matchId"), List.of())));
         return Paging.response(matches, pg, sz, total);
+    }
+
+    /**
+     * How many matches each minModels value would return (same filters), from 1 up to the largest model count
+     * present, so the UI can default to a value that has data. Empty when nothing matches.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> modelComparisonCoverage(Filters f) {
+        Sql.Where w = f.where(false);
+        w.params.addValue("maxModels", MAX_MIN_MODELS);
+        return jdbc.query("""
+            WITH c AS (SELECT count(DISTINCT p.ai_model_id) AS k FROM predictions p JOIN matches m ON m.id = p.match_id
+                       %s GROUP BY p.match_id)
+            SELECT n AS "minModels", (SELECT count(*) FROM c WHERE c.k >= n) AS "matches"
+            FROM generate_series(1, LEAST((SELECT max(k) FROM c), :maxModels)) AS n ORDER BY n
+            """.formatted(w.sql()), w.params, Sql.ROW);
     }
 
     // ------------------------------------------------------------------ Report 5: Monte Carlo analysis
@@ -293,10 +323,22 @@ public class ReportService {
         Sql.Where pred = f.where(false);
         Map<String, Object> totals = jdbc.query("""
             SELECT count(*) AS "totalPredictions", count(DISTINCT p.match_id) AS "totalMatches",
-                   count(DISTINCT p.ai_model_id) AS "activeModels"
+                   count(DISTINCT p.ai_model_id) AS "activeModels",
+                   min(p.predicted_at) AS "firstPredictedAt", max(p.predicted_at) AS "lastPredictedAt"
             FROM predictions p JOIN matches m ON m.id = p.match_id %s
             """.formatted(pred.sql()), pred.params, Sql.ROW).getFirst();
+        // The range the KPIs counted: the requested bounds (null = open) and the predictions actually inside them.
+        Map<String, Object> period = new LinkedHashMap<>();
+        period.put("from", f.from());
+        period.put("to", f.to());
+        period.put("basis", "predictedAt");
+        period.put("firstPredictedAt", totals.remove("firstPredictedAt"));
+        period.put("lastPredictedAt", totals.remove("lastPredictedAt"));
         totals.put("totalModels", jdbc.queryForObject("SELECT count(*) FROM ai_models", Map.of(), Long.class));
+        // Same scope as GET /matches?overdue=true&league=&providerId= so the figure can link to that list.
+        Sql.Where ow = new Sql.Where().and(Filters.LEAGUE, "league", f.league())
+            .and("m.provider_id = :providerId", "providerId", f.providerId()).and(MatchQueryService.OVERDUE);
+        totals.put("overdueMatches", jdbc.queryForObject("SELECT count(*) FROM matches m" + ow.sql(), ow.params, Long.class));
 
         Filters today = new Filters(null, null, f.league(), f.modelId(), f.providerId(), f.type(), f.market(), null, null, null);
         // [start of today, start of tomorrow) in the viewer's time zone; future-dated snapshots are not "today".
@@ -311,6 +353,7 @@ public class ReportService {
         totals.putAll(picks);
 
         Map<String, Object> out = new LinkedHashMap<>();
+        out.put("period", period);
         out.put("totals", totals);
         pw.params.addValue("tz", tz);
         List<Map<String, Object>> daily = jdbc.query("""
@@ -336,8 +379,8 @@ public class ReportService {
     static String zone(String timezone) {
         if (timezone == null || timezone.isBlank()) return "UTC";
         try {
-            return java.time.ZoneId.of(timezone).getId();
-        } catch (java.time.DateTimeException e) {
+            return ZoneId.of(timezone).getId();
+        } catch (DateTimeException e) {
             throw ApiException.badRequest("INVALID_TIMEZONE", "Unknown time zone");
         }
     }

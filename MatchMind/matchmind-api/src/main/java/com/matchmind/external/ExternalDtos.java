@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /** Request/response contracts of the three external callback APIs (see docs/API_DOCUMENTATION.md). */
 public final class ExternalDtos {
@@ -26,11 +27,19 @@ public final class ExternalDtos {
     public static final String BASIS = "FULL_MATCH|REMAINING_MATCH";
     public static final String RESULTS = "WIN|LOSS|HALF_WIN|HALF_LOSS|PUSH|VOID|PENDING";
     private static final String ID = "^[A-Za-z0-9._:-]{1,128}$";
+    /** plan.md and the prompts ask for the top two picks (rank 1 and 2); more would let one model dominate win rates. */
+    public static final int MAX_PICKS = 2;
 
     private ExternalDtos() {
     }
 
     public record Pair(@NotNull @Min(0) @Max(99) Integer home, @NotNull @Min(0) @Max(99) Integer away) {
+        /** Hands both sides to the setters; an absent pair leaves them untouched. */
+        public static void apply(Pair p, Consumer<Integer> home, Consumer<Integer> away) {
+            if (p == null) return;
+            home.accept(p.home());
+            away.accept(p.away());
+        }
     }
 
     public record PossessionPair(@NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal home,
@@ -113,7 +122,7 @@ public final class ExternalDtos {
                                     @NotEmpty @Size(max = 200) List<@NotNull @Valid OddsInput> odds,
                                     @Valid StatsInput stats,
                                     @Valid SimulationInput simulation,
-                                    @NotEmpty @Size(max = 20) List<@NotNull @Valid PickInput> picks,
+                                    @NotEmpty @Size(max = MAX_PICKS) List<@NotNull @Valid PickInput> picks,
                                     @NotNull @Valid CorrectScoreInput correctScore,
                                     JsonNode metadata) {
     }
@@ -121,12 +130,22 @@ public final class ExternalDtos {
     public record PickRef(UUID pickId, int rank, String market, String pick, UUID oddsId) {
     }
 
-    /** {@code externalMatchId} is the id to send match results with, generated when the prediction had none. */
+    /**
+     * {@code externalMatchId} is the id to send match results with, generated when the prediction had none.
+     * {@code possibleDuplicateOf}: on a new (201) prediction, the earliest stored prediction of the same model, match,
+     * type and minute with the same picks (an agent retry under a new eventId); null otherwise. Advisory only.
+     */
     public record PredictionResponse(UUID predictionId, UUID matchId, String externalMatchId, boolean duplicate,
-                                     List<PickRef> picks, Map<String, UUID> odds) {
+                                     List<PickRef> picks, Map<String, UUID> odds, UUID possibleDuplicateOf) {
     }
 
-    public record ResultRequest(@NotBlank @Pattern(regexp = ID) String externalMatchId,
+    /**
+     * Names the match by exactly one of {@code externalMatchId}, {@code matchId} or {@code predictionId}: agents that
+     * let the server generate the external id ({@code auto-...}) only know the ids of the prediction response.
+     */
+    public record ResultRequest(@Pattern(regexp = ID) String externalMatchId,
+                                UUID matchId,
+                                UUID predictionId,
                                 @NotBlank @Pattern(regexp = "SCHEDULED|LIVE|FINISHED|CANCELLED|POSTPONED") String status,
                                 @Valid Pair finalScore,
                                 @Valid Pair finalCorners,
@@ -139,7 +158,10 @@ public final class ExternalDtos {
                                 @Size(max = 4000) String explanation) {
     }
 
-    public record SettleRequest(@NotBlank @Pattern(regexp = ID) String externalMatchId,
+    /** Names the match like {@link ResultRequest}: exactly one of externalMatchId, matchId or predictionId. */
+    public record SettleRequest(@Pattern(regexp = ID) String externalMatchId,
+                                UUID matchId,
+                                UUID predictionId,
                                 @Size(max = 200) List<@NotNull @Valid AiCalculation> aiCalculations) {
     }
 }

@@ -87,19 +87,32 @@ describe('PromptsPage', () => {
 
     f.componentInstance.startEdit();
     await f.whenStable();
-    f.componentInstance.draft = 'Changed';
-    vi.stubGlobal('confirm', () => true);
-    f.componentInstance.cancel();
+    f.componentInstance.draft.set('Changed');
+    const done = f.componentInstance.cancel();
+    TestBed.inject(ConfirmService).answer(true);
+    await done;
     await f.whenStable();
     expect(f.componentInstance.editing()).toBe(false);
     expect(q(f, 'prompt-view')!.textContent).toContain('Original prompt');
-    vi.unstubAllGlobals();
+  });
+
+  it('keeps editing when the discard dialog is declined, and asks before leaving the page', async () => {
+    const f = await open();
+    f.componentInstance.startEdit();
+    f.componentInstance.draft.set('Changed');
+    const done = f.componentInstance.cancel();
+    TestBed.inject(ConfirmService).answer(false);
+    await done;
+    expect(f.componentInstance.editing()).toBe(true);
+    const leave = f.componentInstance.canLeave() as Promise<boolean>;
+    TestBed.inject(ConfirmService).answer(true);
+    expect(await leave).toBe(true);
   });
 
   it('saves with the expected version and shows the new version', async () => {
     const f = await open();
     f.componentInstance.startEdit();
-    f.componentInstance.draft = 'Improved prompt';
+    f.componentInstance.draft.set('Improved prompt');
     f.componentInstance.save();
     const req = http.expectOne('/api/v1/prompts/p1');
     expect(req.request.method).toBe('PUT');
@@ -114,26 +127,26 @@ describe('PromptsPage', () => {
   it('keeps the draft and warns on a version conflict', async () => {
     const f = await open();
     f.componentInstance.startEdit();
-    f.componentInstance.draft = 'My edits';
+    f.componentInstance.draft.set('My edits');
     f.componentInstance.save();
     http.expectOne('/api/v1/prompts/p1').flush({ status: 409, code: 'PROMPT_VERSION_CONFLICT', message: 'stale' }, { status: 409, statusText: 'Conflict' });
     await f.whenStable();
     expect(f.componentInstance.conflict()).toBe(true);
     expect(f.componentInstance.editing()).toBe(true);
-    expect(f.componentInstance.draft).toBe('My edits');
+    expect(f.componentInstance.draft()).toBe('My edits');
     expect(text(f.nativeElement)).toContain('Someone saved a newer version');
   });
 
   it('after a conflict and reload, saving still sends the version the draft started from', async () => {
     const f = await open();
     f.componentInstance.startEdit();
-    f.componentInstance.draft = 'My edits';
+    f.componentInstance.draft.set('My edits');
     f.componentInstance.save();
     http.expectOne('/api/v1/prompts/p1').flush({ status: 409, code: 'PROMPT_VERSION_CONFLICT', message: 'stale' }, { status: 409, statusText: 'Conflict' });
     f.componentInstance.reloadLatest();
     http.expectOne('/api/v1/prompts').flush([{ ...prompt, content: 'Their edits', version: 4 }]);
     await f.whenStable();
-    expect(f.componentInstance.draft).toBe('My edits');
+    expect(f.componentInstance.draft()).toBe('My edits');
     f.componentInstance.save();
     const req = http.expectOne('/api/v1/prompts/p1');
     expect(req.request.body.expectedVersion).toBe(3); // never 4: that would overwrite their save

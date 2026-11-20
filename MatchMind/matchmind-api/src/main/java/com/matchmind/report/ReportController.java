@@ -70,6 +70,12 @@ public class ReportController {
         return reports.modelComparison(filters, minModels, page, size);
     }
 
+    @GetMapping("/reports/model-comparison/coverage")
+    @Operation(summary = "Matches available per minModels value (1..max), to pick a non-empty default")
+    public List<Map<String, Object>> modelComparisonCoverage(Filters filters) {
+        return reports.modelComparisonCoverage(filters);
+    }
+
     @GetMapping("/reports/monte-carlo")
     public Map<String, Object> monteCarlo(Filters filters, @RequestParam(required = false) Integer page,
                                           @RequestParam(required = false) Integer size) {

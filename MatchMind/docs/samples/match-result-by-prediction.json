@@ -1,0 +1,8 @@
+{
+  "predictionId": "00000000-0000-0000-0000-000000000000",
+  "status": "FINISHED",
+  "finalScore": { "home": 2, "away": 1 },
+  "finalCorners": { "home": 7, "away": 4 },
+  "halfTimeScore": { "home": 1, "away": 0 },
+  "resultAt": "2026-11-10T21:40:00Z"
+}

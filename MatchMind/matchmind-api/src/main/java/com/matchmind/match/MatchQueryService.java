@@ -2,11 +2,14 @@ package com.matchmind.match;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.matchmind.shared.ApiException;
+import com.matchmind.shared.CacheConfig;
+import com.matchmind.shared.Filters;
 import com.matchmind.shared.ApiTypes.PageResponse;
 import com.matchmind.shared.Paging;
 import com.matchmind.shared.Sql;
 import com.matchmind.shared.Stats;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,12 @@ public class MatchQueryService {
     private final NamedParameterJdbcTemplate jdbc;
     private final MatchResultHistoryRepository history;
 
+    /**
+     * Kick-off was more than 3 hours ago and the match is still SCHEDULED or LIVE: a result is due but missing.
+     * ponytail: fixed 3 h covers 90' + extra time + breaks; make it configurable if non-football sports arrive.
+     */
+    public static final String OVERDUE = "(m.status IN ('SCHEDULED','LIVE') AND m.start_time < now() - interval '3 hours')";
+
     private static final String COLUMNS = """
         SELECT m.id AS "id", m.external_match_id AS "externalMatchId", m.provider_id AS "providerId",
                pv.name AS "providerName", m.league AS "league", m.home_team AS "homeTeam", m.away_team AS "awayTeam",
@@ -33,10 +42,11 @@ public class MatchQueryService {
                m.ht_home_score AS "htHomeScore", m.ht_away_score AS "htAwayScore",
                m.ht_home_corners AS "htHomeCorners", m.ht_away_corners AS "htAwayCorners",
                m.result_updated_at AS "resultUpdatedAt", m.created_at AS "createdAt", m.updated_at AS "updatedAt",
+               %s AS "overdue",
                (SELECT count(*) FROM predictions p WHERE p.match_id = m.id) AS "predictionCount",
                (SELECT count(DISTINCT p.ai_model_id) FROM predictions p WHERE p.match_id = m.id) AS "modelCount"
         FROM matches m JOIN providers pv ON pv.id = m.provider_id
-        """;
+        """.formatted(OVERDUE);
 
     private static final Map<String, String> SORT = Map.of("startTime", "m.start_time", "league", "m.league",
         "homeTeam", "m.home_team", "awayTeam", "m.away_team", "status", "m.status",
@@ -44,19 +54,21 @@ public class MatchQueryService {
 
     @Transactional(readOnly = true)
     public PageResponse<Map<String, Object>> list(String search, String status, String league, UUID providerId,
-                                                  Instant from, Instant to, Integer page, Integer size, String sort) {
+                                                  Instant from, Instant to, Boolean overdue, Integer page, Integer size,
+                                                  String sort) {
         int pg = Paging.page(page), sz = Paging.size(size);
         if (status != null && !status.isBlank() && !List.of("SCHEDULED", "LIVE", "FINISHED", "CANCELLED", "POSTPONED").contains(status)) {
             throw ApiException.badRequest("INVALID_STATUS", "Unknown match status");
         }
+        Filters.checkRange(from, to);
         Sql.Where w = new Sql.Where()
-            .and("(m.home_team ILIKE :q OR m.away_team ILIKE :q OR m.league ILIKE :q OR m.external_match_id ILIKE :q)",
-                "q", search == null || search.isBlank() ? null : Paging.contains(search))
+            .and(Filters.SEARCH, "q", search == null || search.isBlank() ? null : Paging.contains(search))
             .and("m.status = :status", "status", status)
-            .and("m.league = :league", "league", league)
+            .and(Filters.LEAGUE, "league", league)
             .and("m.provider_id = :providerId", "providerId", providerId)
             .and("m.start_time >= :from", "from", from)
             .and("m.start_time < :to", "to", to);
+        if (Boolean.TRUE.equals(overdue)) w.and(OVERDUE);
         long total = jdbc.queryForObject("SELECT count(*) FROM matches m" + w.sql(), w.params, Long.class);
         Paging.limit(w.params, pg, sz);
         List<Map<String, Object>> rows = jdbc.query(COLUMNS + w.sql() + " ORDER BY "
@@ -64,6 +76,7 @@ public class MatchQueryService {
         return Paging.response(rows, pg, sz, total);
     }
 
+    @Cacheable(CacheConfig.LEAGUES)
     @Transactional(readOnly = true)
     public List<String> leagues() {
         return jdbc.queryForList("SELECT DISTINCT league FROM matches ORDER BY league", Map.of(), String.class);

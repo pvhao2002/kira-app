@@ -1,5 +1,6 @@
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ApplicationRef, Resource, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { ToastService } from '../shared/kit';
@@ -7,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { authInterceptor, errorInterceptor } from './http';
+import { errorMessage, safeValue, viewState } from './resource';
 
 const future = () => new Date(Date.now() + 3_600_000).toISOString();
 const user = { id: 'u1', username: 'admin', role: 'ADMIN', status: 'ACTIVE', lastLoginAt: null, createdAt: '', updatedAt: '' };
@@ -63,8 +65,8 @@ describe('ApiService + interceptors', () => {
     sessionStorage.setItem('matchmind.session', JSON.stringify({ token: 'jwt-1', expiresAt: future(), user }));
     const auth = TestBed.inject(AuthService);
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    TestBed.inject(ApiService).dashboard({}, 'UTC').subscribe({ error: () => undefined });
-    http.expectOne(r => r.url === '/api/v1/dashboard').flush({ code: 'UNAUTHORIZED' }, { status: 401, statusText: 'Unauthorized' });
+    TestBed.inject(ApiService).me().subscribe({ error: () => undefined });
+    http.expectOne('/api/v1/auth/me').flush({ code: 'UNAUTHORIZED' }, { status: 401, statusText: 'Unauthorized' });
 
     expect(auth.isAuthenticated()).toBe(false);
     expect(sessionStorage.getItem('matchmind.session')).toBeNull();
@@ -85,8 +87,55 @@ describe('ApiService + interceptors', () => {
 
   it('shows a toast for server errors', () => {
     const add = vi.spyOn(TestBed.inject(ToastService), 'add');
-    TestBed.inject(ApiService).leagues().subscribe({ error: () => undefined });
-    http.expectOne('/api/v1/matches/leagues').flush({ code: 'INTERNAL_ERROR', message: 'x', traceId: 't-1' }, { status: 500, statusText: 'Server Error' });
+    TestBed.inject(ApiService).me().subscribe({ error: () => undefined });
+    http.expectOne('/api/v1/auth/me').flush({ code: 'INTERNAL_ERROR', message: 'x', traceId: 't-1' }, { status: 500, statusText: 'Server Error' });
     expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error', summary: 'Server error' }));
   });
 });
+
+describe('resources over ApiService', () => {
+  let http: HttpTestingController;
+  beforeEach(() => {
+    sessionStorage.clear();
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])), provideHttpClientTesting(), ToastService],
+    });
+    http = TestBed.inject(HttpTestingController);
+  });
+  afterEach(() => http.verify());
+
+  it('cancels the old request when the id changes and loads the new one', async () => {
+    const id = signal('m1');
+    const res = TestBed.runInInjectionContext(() => TestBed.inject(ApiService).matchResource(id));
+    TestBed.tick();
+    const first = http.expectOne('/api/v1/matches/m1');
+    expect(viewStateOf(res)).toBe('loading');
+    id.set('m2');
+    TestBed.tick();
+    expect(first.cancelled).toBe(true);
+    http.expectOne('/api/v1/matches/m2').flush({ match: { id: 'm2' } });
+    await TestBed.inject(ApplicationRef).whenStable();
+    expect(res.value()?.match.id).toBe('m2');
+    expect(viewStateOf(res)).toBe('ready');
+  });
+
+  it('shows the API message for a failed read and value stays safe to read', async () => {
+    const res = TestBed.runInInjectionContext(() => TestBed.inject(ApiService).modelsResource());
+    TestBed.tick();
+    http.expectOne('/api/v1/models').flush({ status: 404, code: 'NOT_FOUND', message: 'No such model' }, { status: 404, statusText: 'Not Found' });
+    await TestBed.inject(ApplicationRef).whenStable();
+    expect(viewStateOf(res)).toBe('error');
+    expect(TestBed.runInInjectionContext(() => errorMessage(res))()).toBe('No such model');
+    expect(TestBed.runInInjectionContext(() => safeValue(res, []))()).toEqual([]);
+  });
+
+  it('does not request anything while disabled', () => {
+    TestBed.runInInjectionContext(() => TestBed.inject(ApiService).leaguesResource(() => false));
+    TestBed.tick();
+    http.expectNone('/api/v1/matches/leagues');
+  });
+});
+
+function viewStateOf(res: Resource<unknown>) {
+  return TestBed.runInInjectionContext(() => viewState(res))();
+}

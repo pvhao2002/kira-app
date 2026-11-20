@@ -5,6 +5,7 @@ import com.matchmind.match.Match;
 import com.matchmind.match.MatchRepository;
 import com.matchmind.model.AiModel;
 import com.matchmind.model.AiModelRepository;
+import com.matchmind.provider.Provider;
 import com.matchmind.provider.ProviderRepository;
 import com.matchmind.settlement.PickResult;
 import com.matchmind.settlement.PickResultRepository;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -52,6 +54,19 @@ public class PredictionQueryService {
         LEFT JOIN prediction_pick_results r ON r.pick_id = pk.id AND r.is_current
         """;
 
+    /** Current result of every pick of the prediction (alias pc), mutually exclusive counts summing to pickCount. */
+    private static final String PICK_COUNTS = """
+        LEFT JOIN LATERAL (SELECT count(*) FILTER (WHERE yr.result = 'WIN') AS wins,
+                                  count(*) FILTER (WHERE yr.result = 'HALF_WIN') AS half_wins,
+                                  count(*) FILTER (WHERE yr.result = 'LOSS') AS losses,
+                                  count(*) FILTER (WHERE yr.result = 'HALF_LOSS') AS half_losses,
+                                  count(*) FILTER (WHERE yr.result IN ('PUSH','VOID')) AS push_void,
+                                  count(*) FILTER (WHERE yr.result IS NULL OR yr.result = 'PENDING') AS pending
+                           FROM prediction_picks y
+                           LEFT JOIN prediction_pick_results yr ON yr.pick_id = y.id AND yr.is_current
+                           WHERE y.prediction_id = p.id) pc ON true
+        """;
+
     static final String COLUMNS = """
         SELECT p.id AS "id", p.predicted_at AS "predictedAt", p.prediction_type AS "predictionType",
                p.match_minute AS "matchMinute", p.current_home_score AS "currentHomeScore",
@@ -65,7 +80,9 @@ public class PredictionQueryService {
                pk.id AS "topPickId", pk.market AS "topPickMarket", pk.pick AS "topPick", pk.probability AS "topPickProbability",
                o.line AS "topPickLine", o.line_display AS "topPickLineDisplay", o.odds_stage AS "topPickStage",
                %s AS "topPickPrice", COALESCE(r.result, 'PENDING') AS "settlementStatus",
-               (SELECT count(*) FROM prediction_picks y WHERE y.prediction_id = p.id) AS "pickCount"
+               (SELECT count(*) FROM prediction_picks y WHERE y.prediction_id = p.id) AS "pickCount",
+               pc.wins AS "pickWins", pc.half_wins AS "pickHalfWins", pc.losses AS "pickLosses",
+               pc.half_losses AS "pickHalfLosses", pc.push_void AS "pickPushOrVoid", pc.pending AS "pickPending"
         """.formatted(Sql.PRICE);
 
     private static final Map<String, String> SORT = Map.of(
@@ -73,18 +90,40 @@ public class PredictionQueryService {
         "minute", "p.match_minute", "probability", "pk.probability", "startTime", "m.start_time");
 
     @Transactional(readOnly = true)
-    public PageResponse<Map<String, Object>> list(Filters f, Integer page, Integer size, String sort) {
+    /**
+     * {@code result} matches the top-ranked pick ({@code resultScope=TOP}, default) or any pick of the prediction
+     * ({@code ANY}); with ANY and {@code market}, the same pick must have both.
+     */
+    public PageResponse<Map<String, Object>> list(Filters f, String resultScope, Integer page, Integer size, String sort) {
         int pg = Paging.page(page), sz = Paging.size(size);
+        boolean any = scopeIsAny(resultScope);
         Sql.Where w = f.where(false);
         if (f.result() != null && !f.result().isBlank()) {
-            if ("PENDING".equals(f.result())) w.and("(r.result IS NULL OR r.result = 'PENDING')");
-            else w.and("r.result = :topResult", "topResult", f.result());
+            String pending = "(%1$s.result IS NULL OR %1$s.result = 'PENDING')";
+            if (!any) {
+                if ("PENDING".equals(f.result())) w.and(pending.formatted("r"));
+                else w.and("r.result = :topResult", "topResult", f.result());
+            } else {
+                boolean isPending = "PENDING".equals(f.result());
+                String market = f.market() == null || f.market().isBlank() ? "" : " AND a.market = :market";
+                String exists = "EXISTS (SELECT 1 FROM prediction_picks a LEFT JOIN prediction_pick_results ar"
+                    + " ON ar.pick_id = a.id AND ar.is_current WHERE a.prediction_id = p.id" + market + " AND "
+                    + (isPending ? pending.formatted("ar") : "ar.result = :anyResult") + ")";
+                if (isPending) w.and(exists);
+                else w.and(exists, "anyResult", f.result());
+            }
         }
         long total = jdbc.queryForObject("SELECT count(*) " + FROM + w.sql(), w.params, Long.class);
         Paging.limit(w.params, pg, sz);
-        List<Map<String, Object>> rows = jdbc.query(COLUMNS + FROM + w.sql() + " ORDER BY "
+        List<Map<String, Object>> rows = jdbc.query(COLUMNS + FROM + PICK_COUNTS + w.sql() + " ORDER BY "
             + Paging.orderBy(sort, SORT, "p.predicted_at DESC") + ", p.id LIMIT :limit OFFSET :offset", w.params, Sql.ROW);
         return Paging.response(rows, pg, sz, total);
+    }
+
+    private static boolean scopeIsAny(String resultScope) {
+        if (resultScope == null || resultScope.isBlank() || "TOP".equals(resultScope)) return false;
+        if ("ANY".equals(resultScope)) return true;
+        throw ApiException.badRequest("INVALID_RESULT_SCOPE", "resultScope must be TOP or ANY");
     }
 
     public record OddsView(UUID id, String ref, String market, String stage, int snapshotOrder, BigDecimal line,
@@ -142,7 +181,7 @@ public class PredictionQueryService {
         Prediction p = predictions.findById(id).orElseThrow(() -> ApiException.notFound("PREDICTION_NOT_FOUND", "Prediction not found"));
         Match m = matches.findById(p.getMatchId()).orElseThrow();
         AiModel am = models.findById(p.getAiModelId()).orElseThrow();
-        String providerName = providers.findById(p.getProviderId()).map(x -> x.getName()).orElse(null);
+        String providerName = providers.findById(p.getProviderId()).map(Provider::getName).orElse(null);
 
         List<PredictionOdds> oddsRows = odds.findByPredictionIdOrderByMarketAscOddsStageAscSnapshotOrderAsc(id);
         Map<UUID, PredictionOdds> oddsById = oddsRows.stream().collect(Collectors.toMap(PredictionOdds::getId, Function.identity()));
@@ -150,26 +189,8 @@ public class PredictionQueryService {
         Map<UUID, List<PickResult>> history = results.findByPickIdInOrderBySettledAtDesc(
             pickRows.stream().map(PredictionPick::getId).toList()).stream().collect(Collectors.groupingBy(PickResult::getPickId));
 
-        List<PickView> pickViews = pickRows.stream().map(pk -> {
-            PredictionOdds o = oddsById.get(pk.getOddsId());
-            List<ResultView> rs = history.getOrDefault(pk.getId(), List.of()).stream().map(r -> new ResultView(r.getId(),
-                r.getResult(), r.getSettledAt(), r.getSource(), r.getCalculationVersion(), r.isCurrent(), r.getSupersededAt(),
-                r.getReason(), r.getDetails())).toList();
-            String status = rs.stream().filter(ResultView::current).map(ResultView::result).findFirst().orElse("PENDING");
-            return new PickView(pk.getId(), pk.getPickRank(), pk.getMarket(), pk.getPick(), pk.getProbability(), o.getId(),
-                o.getOddsRef(), o.priceOf(pk.getPick()), o.getLine(), o.getOddsStage(), status, rs);
-        }).toList();
-
-        Map<String, Object> match = new java.util.LinkedHashMap<>();
-        match.put("id", m.getId());
-        match.put("externalMatchId", m.getExternalMatchId());
-        match.put("providerId", m.getProviderId());
-        match.put("providerName", providerName);
-        match.put("league", m.getLeague());
-        match.put("homeTeam", m.getHomeTeam());
-        match.put("awayTeam", m.getAwayTeam());
-        match.put("startTime", m.getStartTime());
-        match.putAll(m.resultSnapshot());
+        List<PickView> pickViews = pickViews(pickRows, oddsById, history);
+        Map<String, Object> match = matchView(m, providerName);
         Map<String, Object> model = Map.of("id", am.getId(), "name", am.getName(), "version", am.getVersion());
 
         return new Detail(p.getId(), p.getExternalEventId(), p.getPredictionType(), p.getMatchMinute(), p.getCurrentHomeScore(),
@@ -183,5 +204,32 @@ public class PredictionQueryService {
             scores.findByPredictionIdOrderByScoreRankAsc(id).stream()
                 .map(s -> new ScoreView(s.getScoreRank(), s.getHomeScore(), s.getAwayScore(), s.getProbability())).toList(),
             p.getMetadata(), p.getPayload());
+    }
+
+    private static List<PickView> pickViews(List<PredictionPick> pickRows, Map<UUID, PredictionOdds> oddsById,
+                                            Map<UUID, List<PickResult>> history) {
+        return pickRows.stream().map(pk -> {
+            PredictionOdds o = oddsById.get(pk.getOddsId());
+            List<ResultView> rs = history.getOrDefault(pk.getId(), List.of()).stream().map(r -> new ResultView(r.getId(),
+                r.getResult(), r.getSettledAt(), r.getSource(), r.getCalculationVersion(), r.isCurrent(), r.getSupersededAt(),
+                r.getReason(), r.getDetails())).toList();
+            String status = rs.stream().filter(ResultView::current).map(ResultView::result).findFirst().orElse("PENDING");
+            return new PickView(pk.getId(), pk.getPickRank(), pk.getMarket(), pk.getPick(), pk.getProbability(), o.getId(),
+                o.getOddsRef(), o.priceOf(pk.getPick()), o.getLine(), o.getOddsStage(), status, rs);
+        }).toList();
+    }
+
+    private static Map<String, Object> matchView(Match m, String providerName) {
+        Map<String, Object> match = new LinkedHashMap<>();
+        match.put("id", m.getId());
+        match.put("externalMatchId", m.getExternalMatchId());
+        match.put("providerId", m.getProviderId());
+        match.put("providerName", providerName);
+        match.put("league", m.getLeague());
+        match.put("homeTeam", m.getHomeTeam());
+        match.put("awayTeam", m.getAwayTeam());
+        match.put("startTime", m.getStartTime());
+        match.putAll(m.resultSnapshot());
+        return match;
     }
 }

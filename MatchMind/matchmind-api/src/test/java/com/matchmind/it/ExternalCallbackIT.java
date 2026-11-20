@@ -86,7 +86,8 @@ class ExternalCallbackIT extends IntegrationTestBase {
         assertThat(lowerFinal.getResponse().getStatus()).isEqualTo(400);
 
         assertThat(external(in.provider(), "predictions", "not json").getResponse().getStatus()).isEqualTo(400);
-        assertThat(db.queryForObject("SELECT count(*) FROM predictions WHERE provider_id = ?", Integer.class, providerId(in))).isZero();
+        // Nothing stored, not even the provider: only an accepted prediction creates it (UX-077).
+        assertThat(db.queryForObject("SELECT count(*) FROM providers WHERE code = ?", Integer.class, in.provider())).isZero();
     }
 
     @Test
@@ -98,7 +99,7 @@ class ExternalCallbackIT extends IntegrationTestBase {
             .getResponse().getStatus()).isEqualTo(201);
 
         // B reporting a result for A's external match id finds nothing (ownership scoped by provider).
-        MvcResult res = external(b.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-20T21:40:00Z"));
+        MvcResult res = external(b.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-10T21:40:00Z"));
         assertThat(res.getResponse().getStatus()).isEqualTo(404);
         // B using the same external match id gets its own, separate match.
         assertThat(external(b.provider(), "predictions", Payloads.livePrediction(id("e"), matchId, b.modelName()))
@@ -118,7 +119,7 @@ class ExternalCallbackIT extends IntegrationTestBase {
         JsonNode live = read(external(in.provider(), "predictions", Payloads.livePrediction(id("e"), matchId, in.modelName())));
 
         // Final 2-1: live AH HOME -0.5 taken at 1-0 -> remaining 1-1 -> LOSS; OU 2.25 full match (3 goals) -> WIN.
-        MvcResult res = external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-20T21:40:00Z"));
+        MvcResult res = external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-10T21:40:00Z"));
         assertThat(res.getResponse().getStatus()).isEqualTo(200);
         JsonNode settlement = read(res).get("settlement");
         assertThat(settlement.get("settled").asInt()).isEqualTo(2);
@@ -128,26 +129,25 @@ class ExternalCallbackIT extends IntegrationTestBase {
         assertThat(currentResult(ouPick)).isEqualTo("WIN");
 
         // Re-sending the identical result changes nothing and adds no history.
-        MvcResult again = external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-20T21:40:00Z"));
+        MvcResult again = external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-10T21:40:00Z"));
         assertThat(read(again).get("changed").asBoolean()).isFalse();
         assertThat(db.queryForObject("SELECT count(*) FROM match_result_history h JOIN matches m ON m.id = h.match_id WHERE m.external_match_id = ?",
             Integer.class, matchId)).isEqualTo(1);
         // An older result arriving late is rejected.
-        assertThat(external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":3,\"away\":1}", null, "2026-11-20T21:00:00Z"))
+        assertThat(external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":3,\"away\":1}", null, "2026-11-10T21:00:00Z"))
             .getResponse().getStatus()).isEqualTo(409);
 
         // Corner picks stay pending while the corner result is missing, then settle once it arrives.
         String cornerMatch = id("m");
         JsonNode pre = read(external(in.provider(), "predictions", Payloads.preMatchWithCorners(id("e"), cornerMatch, in.modelName(), "HOME")));
-        JsonNode noCorners = read(external(in.provider(), "matches/results", Payloads.result(cornerMatch, "FINISHED", "{\"home\":1,\"away\":0}", null, "2026-11-21T22:00:00Z")));
+        JsonNode noCorners = read(external(in.provider(), "matches/results", Payloads.result(cornerMatch, "FINISHED", "{\"home\":1,\"away\":0}", null, "2026-11-11T22:00:00Z")));
         assertThat(noCorners.get("settlement").get("settled").asInt()).isEqualTo(1);
-        assertThat(noCorners.get("settlement").get("pending").asInt()).isEqualTo(2);
+        assertThat(noCorners.get("settlement").get("pending").asInt()).isEqualTo(1);
         assertThat(currentResult(pre.get("picks").get(1).get("pickId").asText())).isNull();
 
-        external(in.provider(), "matches/results", Payloads.result(cornerMatch, "FINISHED", "{\"home\":1,\"away\":0}", "{\"home\":6,\"away\":4}", "2026-11-21T22:05:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(cornerMatch, "FINISHED", "{\"home\":1,\"away\":0}", "{\"home\":6,\"away\":4}", "2026-11-11T22:05:00Z"));
         assertThat(currentResult(pre.get("picks").get(0).get("pickId").asText())).isEqualTo("WIN");     // 1X2 HOME at 1-0
-        assertThat(currentResult(pre.get("picks").get(1).get("pickId").asText())).isEqualTo("HALF_WIN"); // OVER 9.75, 10 corners
-        assertThat(currentResult(pre.get("picks").get(2).get("pickId").asText())).isEqualTo("WIN");     // HOME -1.5 corners 6-4
+        assertThat(currentResult(pre.get("picks").get(1).get("pickId").asText())).isEqualTo("WIN");     // HOME -1.5 corners 6-4
     }
 
     @Test
@@ -155,12 +155,12 @@ class ExternalCallbackIT extends IntegrationTestBase {
         Integration in = newIntegration("gpt-x");
         String cancelled = id("m");
         JsonNode c = read(external(in.provider(), "predictions", Payloads.preMatchWithCorners(id("e"), cancelled, in.modelName(), "AWAY")));
-        external(in.provider(), "matches/results", Payloads.result(cancelled, "CANCELLED", null, null, "2026-11-21T22:00:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(cancelled, "CANCELLED", null, null, "2026-11-11T22:00:00Z"));
         assertThat(currentResult(c.get("picks").get(0).get("pickId").asText())).isEqualTo("VOID");
 
         String postponed = id("m");
         JsonNode p = read(external(in.provider(), "predictions", Payloads.preMatchWithCorners(id("e"), postponed, in.modelName(), "AWAY")));
-        external(in.provider(), "matches/results", Payloads.result(postponed, "POSTPONED", null, null, "2026-11-21T22:00:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(postponed, "POSTPONED", null, null, "2026-11-11T22:00:00Z"));
         assertThat(currentResult(p.get("picks").get(0).get("pickId").asText())).isNull();
 
         // FINISHED 2-0: 1X2 AWAY loses. The AI claims WIN: stored as advisory, the backend result stands.

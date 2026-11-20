@@ -27,12 +27,12 @@ class ReviewFixesIT extends IntegrationTestBase {
         String ahPick = live.get("picks").get(0).get("pickId").asText();
         String ouPick = live.get("picks").get(1).get("pickId").asText();
 
-        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-20T21:40:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-10T21:40:00Z"));
         assertThat(currentResult(ouPick)).isEqualTo("WIN"); // OVER 2.25 with 3 goals
         assertThat(reviewPickIds()).doesNotContain(ouPick);
 
         // Correction to 1-1: OVER 2.25 is now a HALF_LOSS, but the stored WIN is never changed silently.
-        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":1,\"away\":1}", null, "2026-11-20T21:50:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":1,\"away\":1}", null, "2026-11-10T21:50:00Z"));
         assertThat(currentResult(ouPick)).isEqualTo("WIN");
         // Only picks whose result would now differ are listed: AH HOME -0.5 on remaining 0-1 is still a LOSS.
         assertThat(reviewPickIds()).contains(ouPick).doesNotContain(ahPick);
@@ -42,7 +42,7 @@ class ReviewFixesIT extends IntegrationTestBase {
         assertThat(reviewPickIds()).doesNotContain(ouPick);
 
         // The match is reopened (abandoned and replayed): settled picks are listed and can go back to pending.
-        external(in.provider(), "matches/results", Payloads.result(matchId, "LIVE", null, null, "2026-11-20T22:00:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(matchId, "LIVE", null, null, "2026-11-10T22:00:00Z"));
         assertThat(reviewPickIds()).contains(ahPick);
         JsonNode unsettled = adminPost("/api/v1/settlements/picks/" + ahPick + "/recalculate", Map.of("reason", "match reopened"));
         assertThat(unsettled.get("status").asText()).isEqualTo("UNSETTLED");
@@ -50,7 +50,7 @@ class ReviewFixesIT extends IntegrationTestBase {
         assertThat(db.queryForObject("SELECT count(*) FROM prediction_pick_results WHERE pick_id = ?::uuid", Integer.class, ahPick)).isEqualTo(2);
 
         // Once the match finishes again, the pending pick settles normally.
-        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":3,\"away\":0}", null, "2026-11-20T23:00:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":3,\"away\":0}", null, "2026-11-10T23:00:00Z"));
         assertThat(currentResult(ahPick)).isEqualTo("WIN"); // remaining 2-0 on HOME -0.5
     }
 
@@ -70,7 +70,7 @@ class ReviewFixesIT extends IntegrationTestBase {
         Integration in = newIntegration("gpt-x");
         String matchId = id("m");
         external(in.provider(), "predictions", Payloads.preMatchWithCorners(id("e"), matchId, in.modelName(), "HOME"));
-        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":1,\"away\":0}", null, "2026-11-21T22:00:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":1,\"away\":0}", null, "2026-11-11T22:00:00Z"));
 
         MvcResult late = external(in.provider(), "predictions", Payloads.preMatchWithCorners(id("e"), matchId, in.modelName(), "HOME"));
         assertThat(late.getResponse().getStatus()).isEqualTo(409);
@@ -86,11 +86,11 @@ class ReviewFixesIT extends IntegrationTestBase {
         Integration in = newIntegration("gpt-x");
         String matchId = id("m");
         external(in.provider(), "predictions", Payloads.preMatchWithCorners(id("e"), matchId, in.modelName(), "HOME"));
-        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":1,\"away\":0}", "{\"home\":6,\"away\":4}", "2026-11-21T22:00:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":1,\"away\":0}", "{\"home\":6,\"away\":4}", "2026-11-11T22:00:00Z"));
 
         MvcResult res = external(in.provider(), "matches/results", """
             {"externalMatchId": "%s", "status": "FINISHED", "finalScore": {"home":1,"away":0},
-             "halfTimeScore": {"home":0,"away":0}, "resultAt": "2026-11-21T22:10:00Z"}
+             "halfTimeScore": {"home":0,"away":0}, "resultAt": "2026-11-11T22:10:00Z"}
             """.formatted(matchId));
         assertThat(res.getResponse().getStatus()).isEqualTo(200);
         assertThat(db.queryForObject("SELECT final_home_corners FROM matches WHERE external_match_id = ?", Integer.class, matchId)).isEqualTo(6);
@@ -99,7 +99,7 @@ class ReviewFixesIT extends IntegrationTestBase {
         // A kept half-time score must still fit the new final score.
         MvcResult lower = external(in.provider(), "matches/results", """
             {"externalMatchId": "%s", "status": "FINISHED", "finalScore": {"home":0,"away":0},
-             "halfTimeScore": {"home":1,"away":0}, "resultAt": "2026-11-21T22:20:00Z"}
+             "halfTimeScore": {"home":1,"away":0}, "resultAt": "2026-11-11T22:20:00Z"}
             """.formatted(matchId));
         assertThat(lower.getResponse().getStatus()).isEqualTo(400);
     }

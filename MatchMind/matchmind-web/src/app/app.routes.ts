@@ -1,29 +1,36 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { CanActivateFn, Router, Routes } from '@angular/router';
+import { AuthService, passwordChangeGuard } from './core/auth.service';
 import { authGuard, guestGuard } from './core/http';
+import { NotFoundPage } from './layout/not-found';
+
+/** Admin-only pages: the API refuses viewers anyway (403); this keeps them from landing on an empty, failing page. */
+const adminGuard: CanActivateFn = () => inject(AuthService).isAdmin() || inject(Router).createUrlTree(['/dashboard']);
 
 export const routes: Routes = [
-  { path: 'login', canActivate: [guestGuard], title: 'Sign in · MatchMind', loadComponent: () => import('./pages/login').then(m => m.LoginPage) },
+  { path: 'login', canActivate: [guestGuard], title: 'Sign in', loadComponent: () => import('./pages/login').then(m => m.LoginPage) },
   {
     path: '',
     canActivate: [authGuard],
+    canActivateChild: [passwordChangeGuard],
     loadComponent: () => import('./layout/shell').then(m => m.Shell),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-      { path: 'dashboard', title: 'Dashboard · MatchMind', loadComponent: () => import('./pages/dashboard').then(m => m.DashboardPage) },
-      { path: 'matches', title: 'Matches · MatchMind', loadComponent: () => import('./pages/matches').then(m => m.MatchesPage) },
-      { path: 'matches/:id', title: 'Match · MatchMind', loadComponent: () => import('./pages/match-detail').then(m => m.MatchDetailPage) },
-      { path: 'predictions', title: 'Predictions · MatchMind', loadComponent: () => import('./pages/predictions').then(m => m.PredictionsPage) },
-      { path: 'predictions/:id', title: 'Prediction · MatchMind', loadComponent: () => import('./pages/prediction-detail').then(m => m.PredictionDetailPage) },
-      { path: 'models', title: 'AI Models · MatchMind', loadComponent: () => import('./pages/models').then(m => m.ModelsPage) },
-      { path: 'models/:id', title: 'AI Model · MatchMind', loadComponent: () => import('./pages/model-detail').then(m => m.ModelDetailPage) },
-      { path: 'reports', title: 'Reports · MatchMind', loadComponent: () => import('./pages/reports').then(m => m.ReportsPage) },
-      { path: 'prompts', title: 'Prompt Notes · MatchMind', loadComponent: () => import('./pages/prompts').then(m => m.PromptsPage),
-        canDeactivate: [(page: { canLeave(): boolean }) => page.canLeave()] },
-      { path: 'import', title: 'Import prediction · MatchMind', loadComponent: () => import('./pages/import').then(m => m.ImportPage) },
-      { path: 'api-logs', title: 'API Logs · MatchMind', loadComponent: () => import('./pages/api-logs').then(m => m.ApiLogsPage) },
-      { path: 'settings', title: 'Settings · MatchMind', loadComponent: () => import('./pages/settings').then(m => m.SettingsPage) },
+      { path: 'dashboard', title: 'Dashboard', loadComponent: () => import('./pages/dashboard').then(m => m.DashboardPage) },
+      { path: 'matches', title: 'Matches', loadComponent: () => import('./pages/matches').then(m => m.MatchesPage) },
+      { path: 'matches/:id', title: 'Match', loadComponent: () => import('./pages/match-detail').then(m => m.MatchDetailPage) },
+      { path: 'predictions', title: 'Predictions', loadComponent: () => import('./pages/predictions').then(m => m.PredictionsPage) },
+      { path: 'predictions/:id', title: 'Prediction', loadComponent: () => import('./pages/prediction-detail').then(m => m.PredictionDetailPage) },
+      { path: 'models', title: 'AI Models', loadComponent: () => import('./pages/models').then(m => m.ModelsPage) },
+      { path: 'models/:id', title: 'AI Model', loadComponent: () => import('./pages/model-detail').then(m => m.ModelDetailPage) },
+      { path: 'reports', title: 'Reports', loadComponent: () => import('./pages/reports').then(m => m.ReportsPage) },
+      { path: 'prompts', title: 'Prompt Notes', loadComponent: () => import('./pages/prompts').then(m => m.PromptsPage),
+        canDeactivate: [(page: { canLeave(): boolean | Promise<boolean> }) => page.canLeave()] },
+      { path: 'import', title: 'Import prediction', canActivate: [adminGuard], loadComponent: () => import('./pages/import').then(m => m.ImportPage) },
+      { path: 'api-logs', title: 'API Logs', canActivate: [adminGuard], loadComponent: () => import('./pages/api-logs').then(m => m.ApiLogsPage) },
+      { path: 'settings', title: 'Settings', loadComponent: () => import('./pages/settings').then(m => m.SettingsPage) },
+      // Signed-in unknown URL: a 404 inside the shell. Signed out, the parent's authGuard sends it to login first.
+      { path: '**', title: 'Page not found', component: NotFoundPage },
     ],
   },
-  { path: '**', redirectTo: '' },
 ];
-

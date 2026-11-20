@@ -20,6 +20,10 @@ export interface ApiError {
 export interface User {
   id: string; username: string; role: Role; status: 'ACTIVE' | 'DISABLED';
   lastLoginAt: string | null; createdAt: string; updatedAt: string;
+  /** UX-059: the next sign-in must change the password first (every other call is 403 PASSWORD_CHANGE_REQUIRED). */
+  mustChangePassword?: boolean;
+  /** UX-043: the user has too many failed sign-ins from some IP; an admin can unlock (`POST /users/{id}/unlock`). */
+  loginLocked?: boolean;
 }
 export interface LoginResponse { accessToken: string; expiresAt: string; user: User; }
 
@@ -45,6 +49,8 @@ export interface MatchRow {
   finalHomeCorners: number | null; finalAwayCorners: number | null; htHomeScore: number | null; htAwayScore: number | null;
   htHomeCorners: number | null; htAwayCorners: number | null; resultUpdatedAt: string | null;
   predictionCount: number; modelCount: number; createdAt: string; updatedAt: string;
+  /** Kick-off more than 3 h ago and still SCHEDULED or LIVE: the result is due. */
+  overdue: boolean;
 }
 
 export interface LatestModelPrediction {
@@ -65,6 +71,15 @@ export interface MatchStats {
   shotsOffTargetAway: number | null; cornersHome: number | null; cornersAway: number | null;
   yellowCardsHome: number | null; yellowCardsAway: number | null; redCardsHome: number | null; redCardsAway: number | null;
 }
+/** Response of POST /external/predictions and /predictions/import. */
+export interface PredictionIngestResponse {
+  predictionId: string; matchId: string; externalMatchId: string; duplicate: boolean;
+  picks: { pickId: string; rank: number; market: Market; pick: string; oddsId: string }[];
+  odds: Record<string, string>;
+  /** On a 201: an earlier prediction with the same model, match, type, minute and picks (agent retry). */
+  possibleDuplicateOf: string | null;
+}
+/** previousResult/newResult may also be a kick-off move: { startTime, status }. */
 export interface ResultHistory {
   id: string; previousResult: Record<string, unknown>; newResult: Record<string, unknown>; changeSource: string; changedAt: string;
 }
@@ -81,6 +96,9 @@ export interface PredictionRow {
   topPickId: string | null; topPickMarket: Market | null; topPick: string | null; topPickProbability: number | null;
   topPickLine: number | null; topPickLineDisplay: string | null; topPickStage: string | null; topPickPrice: number | null;
   settlementStatus: SettlementResult; pickCount: number;
+  /** Current results of all picks; mutually exclusive, they sum to pickCount. */
+  pickWins: number; pickHalfWins: number; pickLosses: number; pickHalfLosses: number; pickPushOrVoid: number;
+  pickPending: number;
 }
 
 export interface OddsSnapshot {
@@ -129,11 +147,20 @@ export interface PredictionDetail {
 export interface PerformanceCounts {
   picks: number; settled: number; wins: number; losses: number; pushOrVoid: number; pending: number;
   halfWins: number; halfLosses: number; avgProbability: number | null; winRate: number | null;
+  /** WIN / LOSS only. fullWins + halfWins + fullLosses + halfLosses + pushOrVoid = settled (wins/losses include halves). */
+  fullWins: number; fullLosses: number;
 }
 export interface DashboardTotals extends PerformanceCounts {
   totalPredictions: number; totalMatches: number; activeModels: number; totalModels: number; predictionsToday: number;
+  /** Matches overdue for a result; same scope as GET /matches?overdue=true&league=&providerId= (no date/model filter). */
+  overdueMatches: number;
+}
+/** What the dashboard counted: requested bounds (null = open) on predictedAt and the first/last prediction inside them. */
+export interface DashboardPeriod {
+  from: string | null; to: string | null; basis: 'predictedAt'; firstPredictedAt: string | null; lastPredictedAt: string | null;
 }
 export interface Dashboard {
+  period: DashboardPeriod;
   totals: DashboardTotals;
   winRateOverTime: { day: string; wins: number; losses: number; settled: number; winRate: number | null }[];
   predictionsByModel: { model: string; predictions: number }[];
@@ -173,6 +200,9 @@ export interface ComparisonMatch {
   models: ComparisonEntry[];
 }
 
+/** Matches GET /reports/model-comparison would return for each minModels value. */
+export interface ComparisonCoverage { minModels: number; matches: number; }
+
 export interface MonteCarloRow {
   predictionId: string; predictedAt: string; matchId: string; league: string; homeTeam: string; awayTeam: string;
   matchStatus: MatchStatus; modelName: string; modelVersion: string; predictionType: PredictionType; matchMinute: number | null;
@@ -203,8 +233,10 @@ export interface ApiLogRow {
   httpMethod: string; requestId: string; eventId: string | null; httpStatus: number;
   requestStatus: 'SUCCESS' | 'DUPLICATE' | 'REJECTED' | 'FAILED'; durationMs: number; errorMessage: string | null;
   clientIp: string | null;
+  /** UX-052: the signed-in admin behind an import, settle or override; null for agent calls. */
+  actor?: string | null;
 }
-export interface ApiLogDetail extends Omit<ApiLogRow, 'providerName'> { apiKeyId: string | null; processingResult: unknown; }
+export interface ApiLogDetail extends ApiLogRow { apiKeyId: string | null; processingResult: unknown; }
 
 export interface PickSettlement {
   pickId: string; market: Market; pick: string; result: SettlementResult; status: string; reason: string | null;
@@ -219,3 +251,35 @@ export interface ReviewItem {
   market: Market; pick: string; currentResult: SettlementResult; newResult: SettlementResult; reason: string | null;
   settledAt: string;
 }
+
+/** UX-044: one row of the account audit (`GET /users/audit`). `oldValue`/`newValue` hold role or status changes. */
+export interface UserAuditRow {
+  id: string; at: string; actor: string | null; targetId: string; target: string;
+  action: 'USER_CREATED' | 'ROLE_CHANGED' | 'STATUS_CHANGED' | 'PASSWORD_RESET' | 'PASSWORD_CHANGED' | 'LOGIN_UNLOCKED';
+  oldValue: string | null; newValue: string | null; clientIp: string | null;
+}
+export interface ScorePair { home: number; away: number; }
+/** POST /matches/{id}/result (admin). Same rules as the external results API; resultAt is the server time. */
+export interface AdminResultRequest {
+  status: MatchStatus; finalScore?: ScorePair | null; finalCorners?: ScorePair | null; halfTimeScore?: ScorePair | null;
+  halfTimeCorners?: ScorePair | null; reason?: string | null;
+}
+export interface ResultResponse { matchId: string; status: MatchStatus; changed: boolean; settlement: MatchSettlement | null; }
+/** GET /settlements/matches/{id}/prompt-input: what the settlement prompt needs, with the pick ids. */
+export interface SettlementPromptInput {
+  matchId: string; externalMatchId: string; league: string; homeTeam: string; awayTeam: string; startTime: string;
+  status: MatchStatus; finalScore: ScorePair | null; finalCorners: ScorePair | null; halfTimeScore: ScorePair | null;
+  picks: SettlementPromptInputPick[];
+}
+export interface SettlementPromptInputPick {
+  pickId: string; predictionId: string; market: Market; pick: string; line: number | null; lineDisplay: string | null;
+  oddsStage: string; settlementBasis: string | null; price: number | null; scoreAtCapture: ScorePair | null;
+  cornersAtCapture: ScorePair | null; currentResult: SettlementResult;
+}
+/** keyRendered is false when {{EXTERNAL_API_KEY}} is still in the text (viewers, or no key configured). */
+export interface AgentPrompt { content: string; keyRendered: boolean; }
+export interface PromptVersionSummary {
+  version: number; description: string | null; active: boolean; updatedBy: string | null; updatedByUsername: string | null;
+  createdAt: string;
+}
+export interface PromptVersion extends PromptVersionSummary { content: string; }

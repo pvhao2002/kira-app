@@ -47,6 +47,9 @@ public class ExternalApiRequest {
     private String errorMessage;
     @Column(name = "client_ip")
     private String clientIp;
+    /** The signed-in user behind an admin-initiated call (import, settle, override); null for provider calls. */
+    @Column(name = "actor")
+    private String actor;
     @Column(name = "received_at", nullable = false)
     private Instant receivedAt;
     @Column(name = "duration_ms", nullable = false)

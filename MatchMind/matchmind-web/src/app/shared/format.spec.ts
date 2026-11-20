@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { toFilters } from './filter-bar';
-import { cell, line, pct, pickLabel, resultSeverity } from './format';
+import { dayRange, toFilters } from './filter-bar';
+import { cell, line, pct, pickText, resultSeverity } from './format';
 import { sortParam, sortRows } from './kit';
 
 describe('format helpers', () => {
@@ -16,8 +16,9 @@ describe('format helpers', () => {
     expect(line('CORNER_AH', 1)).toBe('+1');
     expect(line('OU', 2.5)).toBe('2.5');
     expect(line('AH', 0.25, '0/0.5')).toBe('0/0.5');
-    expect(pickLabel('OU', 'OVER', 2.25)).toBe('OU OVER 2.25');
-    expect(pickLabel('1X2', 'HOME')).toBe('1X2 · HOME');
+    expect(pickText('OU', 'OVER', 2.25)).toBe('OU OVER 2.25');
+    expect(pickText('1X2', 'HOME')).toBe('1X2 · HOME');
+    expect(pickText('AH', 'HOME', -0.25, '0/-0.5')).toBe('AH HOME -0.25');   // UX-008: the decimal line wins
   });
 
   it('maps half results to the same colour family as full results', () => {
@@ -58,11 +59,25 @@ describe('report filters', () => {
     expect(f.result).toBe('WIN');
   });
 
-  it('treats a single picked day as that whole day', () => {
-    for (const f of [toFilters({ from: '2026-05-01' }), toFilters({ to: '2026-05-01' })]) {
-      expect(f.from).toBe(new Date(2026, 4, 1).toISOString());
-      expect(f.to).toBe(new Date(2026, 4, 2).toISOString());
-    }
+  it('leaves the other end open when only From or only To is set (UX-110)', () => {
+    expect(toFilters({ from: '2026-05-01' })).toMatchObject({ from: new Date(2026, 4, 1).toISOString(), to: undefined });
+    expect(toFilters({ to: '2026-05-01' })).toMatchObject({ from: undefined, to: new Date(2026, 4, 2).toISOString() });
     expect(toFilters({ from: 'not-a-date' }).from).toBeUndefined();
+  });
+
+  it('rejects From after To and accepts a single day (UX-110)', () => {
+    expect(dayRange('2026-12-31', '2026-12-01').error).toBe('From must be on or before To.');
+    expect(dayRange('2026-12-01', '2026-12-01')).toEqual({
+      from: new Date(2026, 11, 1).toISOString(), to: new Date(2026, 11, 2).toISOString() });
+  });
+});
+
+describe('changedFields', () => {
+  it('lists only changed fields, with readable labels and values', async () => {
+    const { changedFields } = await import('./format');
+    expect(changedFields({ status: 'LIVE', htHomeScore: null, same: 1 }, { status: 'FINISHED', htHomeScore: 1, same: 1 })).toEqual([
+      { field: 'Status', before: 'Live', after: 'Finished' },
+      { field: 'HT home score', before: '—', after: '1' },
+    ]);
   });
 });

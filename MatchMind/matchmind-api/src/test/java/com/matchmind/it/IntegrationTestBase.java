@@ -28,6 +28,7 @@ public abstract class IntegrationTestBase {
     static final String ADMIN = "admin";
     static final String ADMIN_PASSWORD = "admin-password-123";
     static final String EXTERNAL_KEY = "test-external-key-0123456789-abcdefghij";
+    static final String SHEET_URL = "https://docs.google.com/spreadsheets/d/test-sheet/edit";
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine")
         .withDatabaseName("matchmind_db");
 
@@ -45,6 +46,7 @@ public abstract class IntegrationTestBase {
         r.add("app.bootstrap-admin.password", () -> ADMIN_PASSWORD);
         r.add("app.login-rate-limit.max-attempts-per-ip", () -> "1000");
         r.add("app.external-api-key", () -> EXTERNAL_KEY);
+        r.add("app.matchmind-sheet-url", () -> SHEET_URL);
     }
 
     @Autowired

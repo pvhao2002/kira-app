@@ -1,11 +1,14 @@
 package com.matchmind.external;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.matchmind.security.Principals.UserPrincipal;
 import com.matchmind.shared.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,12 +44,19 @@ public class ExternalAuditService {
         row.setProcessingResult(e.result());
         row.setErrorMessage(truncate(e.error(), 2000));
         row.setClientIp(ips.resolve(http));
+        row.setActor(actor());
         row.setReceivedAt(receivedAt);
         row.setDurationMs((int) Math.max(0, Duration.between(receivedAt, Instant.now()).toMillis()));
         requests.save(row);
         log.info("External callback endpoint={} provider={} event={} status={} result={} durationMs={}",
             row.getEndpoint(), e.providerId(), row.getEventId(), e.httpStatus(), e.requestStatus(), row.getDurationMs());
         return row.getId();
+    }
+
+    /** The signed-in dashboard user, when an admin acted through the UI; never a provider or an anonymous caller. */
+    private static String actor() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getPrincipal() instanceof UserPrincipal u ? truncate(u.username(), 64) : null;
     }
 
     /** Caller-supplied X-Request-Id when well formed; otherwise the trace id assigned to this request. */
