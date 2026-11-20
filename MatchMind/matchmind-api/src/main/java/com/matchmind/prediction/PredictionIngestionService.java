@@ -119,7 +119,33 @@ public class PredictionIngestionService {
 
         Map<String, UUID> oddsIds = new LinkedHashMap<>();
         oddsByRef.forEach((ref, o) -> oddsIds.put(ref, o.getId()));
-        return new PredictionResponse(p.getId(), match.getId(), match.getExternalMatchId(), false, pickRefs, oddsIds);
+        return new PredictionResponse(p.getId(), match.getId(), match.getExternalMatchId(), false, pickRefs, oddsIds,
+            sameContentAs(p));
+    }
+
+    /**
+     * UX-046: agents often invent a new eventId on retry, so the same prediction is stored twice. Idempotency stays
+     * (provider, eventId) + hash; this only names the earlier twin so the caller and the API log can see it.
+     */
+    private UUID sameContentAs(Prediction p) {
+        List<UUID> twin = jdbc.queryForList("""
+            WITH sig AS (
+                SELECT k.prediction_id,
+                       string_agg(k.market || '|' || k.pick || '|' || coalesce(o.line::text, '') || '|' || o.odds_stage, ','
+                                  ORDER BY k.market, k.pick, o.line, o.odds_stage) AS s
+                FROM prediction_picks k JOIN prediction_odds o ON o.id = k.odds_id
+                WHERE k.prediction_id IN (SELECT id FROM predictions WHERE match_id = :match AND ai_model_id = :model)
+                GROUP BY k.prediction_id)
+            SELECT p.id FROM predictions p
+            JOIN sig a ON a.prediction_id = p.id
+            JOIN sig b ON b.prediction_id = :self AND b.s = a.s
+            WHERE p.match_id = :match AND p.ai_model_id = :model AND p.prediction_type = :type
+              AND coalesce(p.match_minute, -1) = :minute AND p.id <> :self
+            ORDER BY p.predicted_at, p.id LIMIT 1
+            """, new MapSqlParameterSource().addValue("match", p.getMatchId()).addValue("model", p.getAiModelId())
+            .addValue("self", p.getId()).addValue("type", p.getPredictionType())
+            .addValue("minute", p.getMatchMinute() == null ? -1 : p.getMatchMinute()), UUID.class);
+        return twin.isEmpty() ? null : twin.getFirst();
     }
 
     /** Without an eventId the payload itself is the idempotency key, so resending the same JSON is a duplicate. */
@@ -157,7 +183,7 @@ public class PredictionIngestionService {
         oddsRepo.findByPredictionIdOrderByMarketAscOddsStageAscSnapshotOrderAsc(p.getId())
             .forEach(o -> oddsIds.put(o.getOddsRef(), o.getId()));
         String externalMatchId = matches.findById(p.getMatchId()).map(Match::getExternalMatchId).orElse(null);
-        return new PredictionResponse(p.getId(), p.getMatchId(), externalMatchId, true, refs, oddsIds);
+        return new PredictionResponse(p.getId(), p.getMatchId(), externalMatchId, true, refs, oddsIds, null);
     }
 
     /**

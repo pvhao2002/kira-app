@@ -213,6 +213,23 @@ class IngestionRulesIT extends IntegrationTestBase {
     }
 
     @Test
+    void sameContentUnderANewEventIdNamesTheEarlierPrediction() throws Exception { // UX-046
+        String provider = newIntegration("rules-model").provider();
+        ObjectNode p = live();
+        MvcResult first = send(provider, p);
+        assertThat(read(first).get("possibleDuplicateOf").isNull()).isTrue();
+
+        ObjectNode again = p.deepCopy().put("eventId", id("e")).put("predictedAt", "2025-11-20T20:41:00Z");
+        MvcResult second = send(provider, again);
+        assertThat(second.getResponse().getStatus()).isEqualTo(201); // idempotency rules unchanged: stored as new
+        assertThat(read(second).get("possibleDuplicateOf").asText()).isEqualTo(read(first).get("predictionId").asText());
+
+        ObjectNode otherPick = p.deepCopy().put("eventId", id("e"));
+        ((ObjectNode) otherPick.get("picks").get(0)).put("pick", "AWAY");
+        assertThat(read(send(provider, otherPick)).get("possibleDuplicateOf").isNull()).isTrue();
+    }
+
+    @Test
     void atMostTwoPicks() throws Exception { // UX-097
         ObjectNode p = live();
         com.fasterxml.jackson.databind.node.ArrayNode picks = (com.fasterxml.jackson.databind.node.ArrayNode) p.get("picks");

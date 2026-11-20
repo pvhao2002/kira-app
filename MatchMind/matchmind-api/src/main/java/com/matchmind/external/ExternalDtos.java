@@ -130,9 +130,13 @@ public final class ExternalDtos {
     public record PickRef(UUID pickId, int rank, String market, String pick, UUID oddsId) {
     }
 
-    /** {@code externalMatchId} is the id to send match results with, generated when the prediction had none. */
+    /**
+     * {@code externalMatchId} is the id to send match results with, generated when the prediction had none.
+     * {@code possibleDuplicateOf}: on a new (201) prediction, the earliest stored prediction of the same model, match,
+     * type and minute with the same picks (an agent retry under a new eventId); null otherwise. Advisory only.
+     */
     public record PredictionResponse(UUID predictionId, UUID matchId, String externalMatchId, boolean duplicate,
-                                     List<PickRef> picks, Map<String, UUID> odds) {
+                                     List<PickRef> picks, Map<String, UUID> odds, UUID possibleDuplicateOf) {
     }
 
     public record ResultRequest(@NotBlank @Pattern(regexp = ID) String externalMatchId,
