@@ -86,6 +86,14 @@ class IngestionRulesIT extends IntegrationTestBase {
     }
 
     @Test
+    void atMostTwoPicks() throws Exception { // UX-097
+        ObjectNode p = live();
+        com.fasterxml.jackson.databind.node.ArrayNode picks = (com.fasterxml.jackson.databind.node.ArrayNode) p.get("picks");
+        picks.addObject().put("oddsRef", "1x2-open").put("market", "1X2").put("pick", "HOME").put("probability", 0.5).put("rank", 3);
+        assertRejected(send(newIntegration("rules-model").provider(), p), 400, "VALIDATION_ERROR", "picks");
+    }
+
+    @Test
     void timesOutsideTheWindowAreRejected() throws Exception { // UX-028, UX-098
         String provider = newIntegration("rules-model").provider();
         ObjectNode far = live();

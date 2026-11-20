@@ -133,6 +133,7 @@ final class PredictionValidator {
 
     private static void validatePicks(List<PickInput> picks, Map<String, OddsInput> oddsByRef, Map<String, String> errors) {
         Set<Integer> ranks = new HashSet<>();
+        Set<String> bets = new HashSet<>();
         for (int i = 0; i < picks.size(); i++) {
             PickInput p = picks.get(i);
             String f = "picks[" + i + "].";
@@ -141,6 +142,11 @@ final class PredictionValidator {
             if (o == null) {
                 errors.put(f + "oddsRef", "unknown odds ref '" + p.oddsRef() + "'");
                 continue;
+            }
+            // The same side of the same market, stage and line is one bet, whichever odds snapshot it points at.
+            String line = o.line() == null ? "" : o.line().stripTrailingZeros().toPlainString();
+            if (!bets.add(o.market() + "|" + o.stage() + "|" + line + "|" + p.pick())) {
+                errors.put("picks[" + i + "]", "duplicate pick: same market, stage, line and side as an earlier pick");
             }
             if (!o.market().equals(p.market())) errors.put(f + "market", "pick market " + p.market() + " does not match odds market " + o.market());
             try {

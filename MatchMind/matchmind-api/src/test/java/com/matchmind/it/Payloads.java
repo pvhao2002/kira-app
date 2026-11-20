@@ -43,7 +43,7 @@ final class Payloads {
             """.formatted(eventId, model, matchId);
     }
 
-    /** PRE_MATCH prediction with optional corner markets. */
+    /** PRE_MATCH prediction with optional corner markets; two picks (1X2, corner AH), the cap the prompts promise. */
     static String preMatchWithCorners(String eventId, String matchId, String model, String homePick) {
         return """
             {
@@ -60,8 +60,7 @@ final class Payloads {
               ],
               "picks": [
                 {"oddsRef": "1x2", "market": "1X2", "pick": "%s", "probability": 0.45, "rank": 1},
-                {"oddsRef": "cou", "market": "CORNER_OU", "pick": "OVER", "probability": 0.55, "rank": 2},
-                {"oddsRef": "cah", "market": "CORNER_AH", "pick": "HOME", "probability": 0.52, "rank": 3}
+                {"oddsRef": "cah", "market": "CORNER_AH", "pick": "HOME", "probability": 0.52, "rank": 2}
               ],
               "correctScore": {"home": 2, "away": 1, "probability": 0.11}
             }

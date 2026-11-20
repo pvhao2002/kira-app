@@ -141,13 +141,12 @@ class ExternalCallbackIT extends IntegrationTestBase {
         JsonNode pre = read(external(in.provider(), "predictions", Payloads.preMatchWithCorners(id("e"), cornerMatch, in.modelName(), "HOME")));
         JsonNode noCorners = read(external(in.provider(), "matches/results", Payloads.result(cornerMatch, "FINISHED", "{\"home\":1,\"away\":0}", null, "2026-11-21T22:00:00Z")));
         assertThat(noCorners.get("settlement").get("settled").asInt()).isEqualTo(1);
-        assertThat(noCorners.get("settlement").get("pending").asInt()).isEqualTo(2);
+        assertThat(noCorners.get("settlement").get("pending").asInt()).isEqualTo(1);
         assertThat(currentResult(pre.get("picks").get(1).get("pickId").asText())).isNull();
 
         external(in.provider(), "matches/results", Payloads.result(cornerMatch, "FINISHED", "{\"home\":1,\"away\":0}", "{\"home\":6,\"away\":4}", "2026-11-21T22:05:00Z"));
         assertThat(currentResult(pre.get("picks").get(0).get("pickId").asText())).isEqualTo("WIN");     // 1X2 HOME at 1-0
-        assertThat(currentResult(pre.get("picks").get(1).get("pickId").asText())).isEqualTo("HALF_WIN"); // OVER 9.75, 10 corners
-        assertThat(currentResult(pre.get("picks").get(2).get("pickId").asText())).isEqualTo("WIN");     // HOME -1.5 corners 6-4
+        assertThat(currentResult(pre.get("picks").get(1).get("pickId").asText())).isEqualTo("WIN");     // HOME -1.5 corners 6-4
     }
 
     @Test

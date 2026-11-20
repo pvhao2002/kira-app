@@ -122,6 +122,23 @@ class PredictionValidatorTest {
     }
 
     @Test
+    void identicalPicksAreRejected() {
+        // Two snapshots of the same OU 2.5 line: picking OVER on both is the same bet twice.
+        var sameLine = request("PRE_MATCH", null, null,
+            List.of(total("o1", TWO, null), total("o2", new BigDecimal("1.95"), null)),
+            List.of(pick("o1", 1), pick("o2", 2)), new CorrectScoreInput(1, 1, null));
+        assertTrue(errorsAt(sameLine).containsKey("picks[1]"));
+
+        var sameRef = request("PRE_MATCH", null, null, List.of(total("o1", TWO, null)),
+            List.of(pick("o1", 1), pick("o1", 2)), new CorrectScoreInput(1, 1, null));
+        assertTrue(errorsAt(sameRef).containsKey("picks[1]"));
+
+        var otherSide = request("PRE_MATCH", null, null, List.of(total("o1", TWO, null)),
+            List.of(pick("o1", 1), new PickInput("o1", "OU", "UNDER", new BigDecimal("0.4"), 2)), new CorrectScoreInput(1, 1, null));
+        assertDoesNotThrow(() -> PredictionValidator.validate(otherSide, NOW));
+    }
+
+    @Test
     void finalScoreCannotBeBelowCurrentScore() {
         var r = request("LIVE", 60, new Pair(2, 0), List.of(total("o1", TWO, null)), List.of(pick("o1", 1)),
             new CorrectScoreInput(1, 1, null));
