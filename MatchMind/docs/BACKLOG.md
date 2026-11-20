@@ -1095,10 +1095,10 @@ thật (không chạy dev server/Playwright). Migration mới: V14–V22.
 - UX-104: chuẩn hoá tên đội khi tự nhận diện trận; công cụ gộp trận → plan.
 - UX-108, UX-118: tên model/provider khớp không phân biệt hoa thường; tên hiển thị provider vẫn là code viết thường; rename/gộp → plan.
 
-## Chỉ có plan, chờ quyết định của owner (`docs/plans/2026-11-20-*.md`)
+## Chỉ có plan (`docs/plans/2026-11-20-*.md`); owner đã chốt quyết định ngày 2026-11-20
 - UX-027 + UX-061 + UX-019: API key theo provider, màn Providers → `per-provider-api-keys.md`
 - UX-047 + UX-104 (gộp): định danh trận xuyên provider → `cross-provider-match-identity.md`
-- UX-088: trigger/role DB cho bất biến, append-only → `db-level-integrity.md`
+- UX-088: **đã làm** (V23, chỉ trigger; tách role DB không làm theo quyết định owner) → `db-level-integrity.md`
 - UX-018: ROI/units, cảnh báo mẫu nhỏ, calibration → `roi-units-calibration.md`
 - UX-002 + UX-108 (gộp): archive, rename, merge, dữ liệu E2E → `archive-rename-merge-hygiene.md`
 - UX-046 (cách tính report): đếm prediction trùng → `duplicate-prediction-counting.md`

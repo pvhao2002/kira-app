@@ -141,12 +141,31 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(status).headers(framework.getHeaders())
                 .body(error(status, status.name(), status.getReasonPhrase(), Map.of(), request));
         }
+        String immutableTable = immutableTable(ex);
+        if (immutableTable != null) {
+            // A DB trigger (V23) blocked a write to a snapshot or append-only table: a bug. Table name only, no row data.
+            log.error("immutable table write blocked: {} traceId={} path={}", immutableTable, traceId(), request.getRequestURI());
+            return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Unexpected server error", Map.of(), request);
+        }
         log.error("Unhandled exception traceId={} path={} exception={}", traceId(), request.getRequestURI(),
             ex.getClass().getSimpleName(), ex);
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Unexpected server error", Map.of(), request);
     }
 
-    private static final Pattern SIZE = Pattern.compile("size must be between (\\d+) and (\\d+)");
+    private static final Pattern IMMUTABLE = Pattern.compile("MM_IMMUTABLE: (\\w+)");
+
+    /** The table named by a V23 trigger violation (SQLSTATE P0001) anywhere in the cause chain, else null. */
+    private static String immutableTable(Throwable ex) {
+        for (Throwable t = ex; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof java.sql.SQLException sql && "P0001".equals(sql.getSQLState()) && sql.getMessage() != null) {
+                Matcher m = IMMUTABLE.matcher(sql.getMessage());
+                if (m.find()) return m.group(1);
+            }
+        }
+        return null;
+    }
+
+    private static final Pattern SIZE =Pattern.compile("size must be between (\\d+) and (\\d+)");
     private static final String INSTANT_HELP = "an ISO-8601 instant with Z or an offset, e.g. 2026-12-05T20:00:00Z";
 
     /** One field's message: no Java types or conversion text, only what the caller can act on. */

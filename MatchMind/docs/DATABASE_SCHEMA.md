@@ -19,7 +19,8 @@ Enumerations are `VARCHAR` + `CHECK`, so a new value is an additive migration th
 - Flexible or provider-specific data is `JSONB`: raw payloads, extra stats, simulation output and settlement details.
 - Home and away values are stored as pairs. A pair is either fully present or fully `NULL`, enforced by `ck_*_pair`
   checks. A missing score is never stored as a fake `0`.
-- Prediction data is immutable after ingestion. JPA maps those entities as `@Immutable`.
+- Prediction data is immutable after ingestion. JPA maps those entities as `@Immutable`, and V23 enforces it in the
+  database (see "Immutability triggers").
 
 ## Entity overview
 
@@ -181,6 +182,20 @@ content as a new version.
 `mm_fold(text)` = lower-case + `unaccent` + NFC, `IMMUTABLE`. Search and the league filter compare `mm_fold` on both
 sides, so "atletico" finds "Atlético". No index yet: a leading-wildcard `LIKE` cannot use a btree; a `pg_trgm` GIN index
 on `mm_fold(...)` is the upgrade if search gets slow.
+
+## Immutability triggers (V23)
+`BEFORE UPDATE OR DELETE` row triggers plus a `BEFORE TRUNCATE` statement trigger raise `SQLSTATE P0001` with message
+`MM_IMMUTABLE: <table>`. They fire for superusers and the table owner too.
+
+- Immutable (`trg_<table>_immutable`, function `mm_forbid_change`): `predictions`, `prediction_odds`, `prediction_stats`,
+  `prediction_simulations`, `prediction_picks`, `prediction_correct_scores`, `match_result_history`.
+- Supersede only (`trg_prediction_pick_results_supersede_only`): the one legal update is `is_current` true→false,
+  `superseded_at` NULL→ts and `superseded_by` NULL→id, each once. Every other column is frozen; delete is rejected.
+- Not protected: `external_api_requests` (retention purges it), and the mutable tables.
+
+A violation is a bug: the API returns `500 INTERNAL_ERROR` and logs the table name only. A deliberate data fix is a
+reviewed migration that does `ALTER TABLE … DISABLE TRIGGER …`, the fix, then `ENABLE TRIGGER …`. A new immutable or
+append-only table adds its own triggers in the migration that creates it.
 
 ## Read-side aggregation
 
