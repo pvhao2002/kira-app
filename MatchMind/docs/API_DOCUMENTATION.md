@@ -55,7 +55,7 @@ A wrong `Content-Type` is `415 UNSUPPORTED_MEDIA_TYPE` ("Content-Type must be ap
 | 401 | `UNAUTHORIZED`, `BAD_CREDENTIALS`, `INVALID_API_KEY` |
 | 403 | `FORBIDDEN`, `PASSWORD_CHANGE_REQUIRED` |
 | 404 | `NOT_FOUND` (bad id in path), `MATCH_NOT_FOUND`, `PREDICTION_NOT_FOUND`, `PICK_NOT_FOUND`, `MODEL_NOT_FOUND`, `PROMPT_NOT_FOUND`, `USER_NOT_FOUND`, `LOG_NOT_FOUND` |
-| 409 | `EVENT_ID_REUSED`, `MATCH_ALREADY_FINAL`, `STALE_RESULT`, `PROMPT_VERSION_CONFLICT`, `CONCURRENT_UPDATE`, `DATA_CONFLICT`, `USERNAME_EXISTS`, `PROMPT_NAME_EXISTS`, `SELF_LOCKOUT` |
+| 409 | `EVENT_ID_REUSED`, `MATCH_ALREADY_FINAL`, `STALE_RESULT`, `MATCH_NOT_STARTED`, `MATCH_NOT_FINAL`, `PROMPT_VERSION_CONFLICT`, `CONCURRENT_UPDATE`, `DATA_CONFLICT`, `USERNAME_EXISTS`, `PROMPT_NAME_EXISTS`, `SELF_LOCKOUT` |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` |
 | 422 | `PICK_NOT_IN_MATCH` |
 | 429 | `LOGIN_RATE_LIMITED` (login and change-password, `Retry-After`), `RATE_LIMITED` (too many rejected API keys from one IP, `Retry-After: 60`), `TOO_MANY_STREAMS` |
@@ -186,14 +186,15 @@ Responses:
 ### 2. `POST /api/v1/external/matches/results`
 
 Inserts or updates the actual result of a match that already exists for this provider (`404 MATCH_NOT_FOUND` otherwise).
-Example: [`samples/match-result.json`](samples/match-result.json).
+Examples: [`samples/match-result.json`](samples/match-result.json),
+[`samples/match-result-by-prediction.json`](samples/match-result-by-prediction.json).
 
 | Field | Rules |
 |---|---|
-| `externalMatchId` | Required |
-| `status` | `SCHEDULED`, `LIVE`, `FINISHED`, `CANCELLED`, `POSTPONED`. `FINISHED` requires `finalScore` |
+| `externalMatchId`, `matchId`, `predictionId` | Send exactly **one** (`400 VALIDATION_ERROR` otherwise). `matchId` and `predictionId` are the UUIDs of the prediction response; use them when the server generated the `externalMatchId` (`auto-…`). The match must belong to the caller's provider |
+| `status` | `SCHEDULED`, `LIVE`, `FINISHED`, `CANCELLED`, `POSTPONED`. `FINISHED` requires `finalScore` and a match whose `startTime` has passed (`409 MATCH_NOT_STARTED`) |
 | `finalScore`, `finalCorners`, `halfTimeScore`, `halfTimeCorners` | `{home, away}`. The half-time score cannot exceed the final score. If an update leaves out `finalCorners` or half-time data, the stored values are kept while the status allows them |
-| `resultAt` | Required. A result older than the one already applied is rejected with `409 STALE_RESULT` |
+| `resultAt` | Required. At most 5 minutes after the server time (`400 VALIDATION_ERROR`, field `resultAt`). A result older than the one already applied is rejected with `409 STALE_RESULT`; a stored `resultAt` that is itself more than 5 minutes ahead (accepted before this rule) never blocks a newer result |
 
 Re-sending the same result is idempotent: it returns `"changed": false`. Each real change is appended to the match's
 result history. When the status becomes `FINISHED` or `CANCELLED`, pending picks settle automatically. Already-settled
@@ -213,7 +214,7 @@ Replace `pickId` with an id returned by the predictions API.
 
 | Field | Rules |
 |---|---|
-| `externalMatchId` | Required |
+| `externalMatchId`, `matchId`, `predictionId` | Exactly one, as for match results |
 | `aiCalculations[]` | Optional, ≤ 200 entries: `{pickId, result, explanation}`. Every `pickId` must belong to this match (`422 PICK_NOT_IN_MATCH`) |
 
 The deterministic engine is authoritative. AI calculations are **advisory**:
@@ -276,15 +277,21 @@ Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no 
 | `GET /matches/leagues` | Distinct leagues |
 | `GET /matches/{id}` | `{match, models[] (per-model summary + latest prediction), latestStats, resultHistory[]}` |
 | `GET /predictions` | Shared filters plus `resultScope=TOP\|ANY` (default `TOP`): `result` matches the top-ranked pick, or any pick with `ANY` (with `market`, the same pick). Sort: `predictedAt, league, model, type, minute, probability, startTime`. One row per prediction with its top-ranked pick, `pickCount` and exclusive per-pick counts `pickWins, pickHalfWins, pickLosses, pickHalfLosses, pickPushOrVoid, pickPending` |
+| `POST /matches/{id}/result` (admin) | Enter or correct the result: `{status, finalScore?, finalCorners?, halfTimeScore?, halfTimeCorners?, reason? (≤ 2000)}`. Same field rules as the external results API, applied as of now: never `STALE_RESULT`, `FINISHED` allowed before `startTime`. A change is stored in the result history with source `ADMIN`, `changedBy` (the admin's id; the username and `reason` are in `newResult`). Returns `ResultResponse` like the external API; `FINISHED`/`CANCELLED` settles pending picks and `settlement.needsReview` counts settled picks that now differ |
 | `GET /predictions/{id}` | Full record: match, model, odds snapshots, stats, simulation, picks with full settlement history, correct scores, metadata and the original **payload** |
 
 ### Settlement (admin)
 | Path | Body | Notes |
 |---|---|---|
 | `POST /settlements/matches/{matchId}` | – | Settle pending picks now |
-| `GET /settlements/needs-review` | — | Settled picks whose match result changed afterwards and would now settle differently (newest 500 checked) |
-| `POST /settlements/picks/{pickId}/recalculate` | `{reason}` | Re-runs the engine and supersedes the current result. If the match is no longer FINISHED or CANCELLED, a settled pick goes back to `PENDING` (status `UNSETTLED`) |
-| `POST /settlements/picks/{pickId}/override` | `{result, reason}` | Manual result and supersedes the current result |
+| `GET /settlements/needs-review?matchId=&predictionId=` | — | Settled picks whose match result changed afterwards and would now settle differently (newest 500 checked). Both filters are optional; the list length is the badge count for a match or prediction |
+| `POST /settlements/matches/{matchId}/recalculate` | `{reason}` | Recalculates every pick of the match that `needs-review` lists, with one reason. Returns `PickSettlement[]` (empty when nothing needed review); `404 MATCH_NOT_FOUND` |
+| `GET /settlements/matches/{matchId}/prompt-input` (viewers too) | — | Input of the settlement prompt: `{matchId, externalMatchId, league, homeTeam, awayTeam, startTime, status, finalScore, finalCorners, halfTimeScore, picks[{pickId, predictionId, market, pick, line, lineDisplay, oddsStage, settlementBasis, price, scoreAtCapture, cornersAtCapture, currentResult}]}`. Pairs are `{home, away}` or `null` |
+| `POST /settlements/picks/{pickId}/recalculate` | `{reason}` | Re-runs the engine and always writes a new row that supersedes the current one, so the reason is recorded. Status `UNCHANGED` (same result), `SUPERSEDED`, `SETTLED` or, if the match is no longer FINISHED or CANCELLED, `UNSETTLED` (back to `PENDING`). Status `PENDING`: nothing written, `reason` says why |
+| `POST /settlements/picks/{pickId}/override` | `{result, reason}` | Manual result that supersedes the current one. Only for a FINISHED or CANCELLED match (`409 MATCH_NOT_FINAL`). The same result again is `UNCHANGED` and writes nothing |
+
+The `reason` of a `PickSettlement` returned by recalculate or override is the admin's reason. Rows written by an admin
+store the admin's username in `details.actedBy`.
 
 ### Dashboard and reports
 | Path | Notes |
@@ -303,10 +310,25 @@ Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no 
 `GET /prompts`, `GET /prompts/{id}`, `POST /prompts` `{name, templateType, content, description?}`,
 `PUT /prompts/{id}` `{content, description, active, expectedVersion}`. A stale `expectedVersion` returns
 `409 PROMPT_VERSION_CONFLICT`.
-`GET /prompts/{id}/for-agent` (ADMIN only) returns `{content}` with `{{EXTERNAL_API_KEY}}` replaced by the shared
-agent key and `{{MATCHMIND_SHEET_URL}}` by the `MATCHMIND_SHEET_URL` link (empty when unset); the web "Copy" button
-uses it for admins. Stored prompts keep the placeholder, so the key never enters the
-database, the prompt history or a viewer's screen.
+`content` is at most 200 000 characters and `description` 2000 (`400 VALIDATION_ERROR` with the limit in
+`fieldErrors`).
+`GET /prompts/{id}/for-agent` returns `{content, keyRendered}`, the text the web "Copy" button copies:
+- `{{API_BASE_URL}}` becomes `PUBLIC_BASE_URL`, or when unset the origin of the request (`Host`, and
+  `X-Forwarded-Proto` from nginx), e.g. `https://match.example.org`.
+- `{{MATCHMIND_SHEET_URL}}` becomes the `MATCHMIND_SHEET_URL` link (empty when unset).
+- `{{EXTERNAL_API_KEY}}` becomes the shared agent key for ADMIN callers only. `keyRendered` is `false` for viewers
+  (and when no key is configured): the placeholder is still in the text, so the UI must say so instead of reporting a
+  ready-to-use copy.
+Stored prompts keep the placeholders, so the key never enters the database, the prompt history or a viewer's screen.
+
+Prompt history: every saved version (API saves, restores and migrations that bump `version`) is kept append-only.
+- `GET /prompts/{id}/versions`: newest first, `[{version, description, active, updatedBy, updatedByUsername, createdAt}]`
+  without the text.
+- `GET /prompts/{id}/versions/{version}`: the same plus `content` (`404 PROMPT_NOT_FOUND`).
+- `POST /prompts/{id}/versions/{version}/restore` (admin) `{expectedVersion}`: saves that version's content and
+  description again as a new version and returns the template. A stale `expectedVersion` is `409 PROMPT_VERSION_CONFLICT`.
+
+Default templates: `AI_PREDICTION`, `AI_SETTLEMENT`, `AI_ARTIFACT` and `AI_MATCH_RESULT` (sending a match result).
 
 ### API logs (admin only)
 VIEWER gets `403` on every `/api-logs` path; the web client hides the menu entry for viewers.

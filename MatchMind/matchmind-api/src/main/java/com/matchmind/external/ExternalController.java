@@ -13,8 +13,6 @@ import com.matchmind.external.ExternalDtos.PredictionRequest;
 import com.matchmind.external.ExternalDtos.PredictionResponse;
 import com.matchmind.external.ExternalDtos.ResultRequest;
 import com.matchmind.external.ExternalDtos.SettleRequest;
-import com.matchmind.match.Match;
-import com.matchmind.match.MatchRepository;
 import com.matchmind.match.MatchResultService;
 import com.matchmind.match.MatchResultService.ResultResponse;
 import com.matchmind.prediction.PredictionEvents;
@@ -69,7 +67,6 @@ public class ExternalController {
     private final PredictionIngestionService ingestion;
     private final MatchResultService resultService;
     private final SettlementService settlement;
-    private final MatchRepository matches;
     private final ExternalAuditService audit;
     private final PredictionEvents events;
     private final Validator validator;
@@ -123,8 +120,7 @@ public class ExternalController {
                                                   HttpServletRequest http) {
         Instant received = Instant.now();
         JsonNode raw = parse(body, caller, http, received, null);
-        String eventId = raw.path("externalMatchId").isTextual() ? raw.path("externalMatchId").asText() : null;
-        return audited(caller, http, received, eventId, () -> {
+        return audited(caller, http, received, matchRef(raw), () -> {
             ResultRequest r = bind(raw, ResultRequest.class);
             return ResponseEntity.ok(resultService.apply(caller.providerId(), r, ExternalAuditService.requestId(http)));
         });
@@ -137,12 +133,20 @@ public class ExternalController {
                                                   HttpServletRequest http) {
         Instant received = Instant.now();
         JsonNode raw = parse(body, caller, http, received, null);
-        String eventId = raw.path("externalMatchId").isTextual() ? raw.path("externalMatchId").asText() : null;
-        return audited(caller, http, received, eventId, () -> {
+        return audited(caller, http, received, matchRef(raw), () -> {
             SettleRequest r = bind(raw, SettleRequest.class);
-            return ResponseEntity.ok(settlement.settleMatch(
-                resolveMatch(caller, r.externalMatchId()), "EXTERNAL_REQUEST", null, r.aiCalculations()));
+            UUID matchId = resultService.matchIdOf(caller.providerId(), r.externalMatchId(), r.matchId(), r.predictionId());
+            return ResponseEntity.ok(settlement.settleMatch(matchId, "EXTERNAL_REQUEST", null, r.aiCalculations()));
         });
+    }
+
+    /** The id the API log shows for a results or settle call: whichever of the three match ids was sent. */
+    private static String matchRef(JsonNode raw) {
+        for (String field : new String[]{"externalMatchId", "matchId", "predictionId"}) {
+            JsonNode v = raw.path(field);
+            if (v.isTextual()) return v.asText(); // the audit truncates it
+        }
+        return null;
     }
 
     /** The model named in X-Model-Name (+ optional X-Model-Version, default "1") wins over {@code model} in the body. */
@@ -159,11 +163,6 @@ public class ExternalController {
                 Map.of(MODEL_HEADER, "max 128 characters", MODEL_VERSION_HEADER, "max 64 characters"));
         }
         return ref;
-    }
-
-    private UUID resolveMatch(ProviderPrincipal caller, String externalMatchId) {
-        return matches.findByProviderIdAndExternalMatchId(caller.providerId(), externalMatchId).map(Match::getId)
-            .orElseThrow(() -> ApiException.notFound("MATCH_NOT_FOUND", "No match with this externalMatchId exists for your provider"));
     }
 
     private <T> ResponseEntity<T> audited(ProviderPrincipal caller, HttpServletRequest http, Instant received,

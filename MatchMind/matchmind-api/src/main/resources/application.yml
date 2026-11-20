@@ -43,6 +43,8 @@ app:
   external-api-key: ${EXTERNAL_API_KEY:}
   # Google Sheet that agents append the requests they could not send to; the admin copy of the prompts names it.
   matchmind-sheet-url: ${MATCHMIND_SHEET_URL:}
+  # Origin agents call (e.g. https://match.example.org); prompts copied for agents name it. Empty: the request origin.
+  public-base-url: ${PUBLIC_BASE_URL:}
   cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   trusted-proxies: ${TRUSTED_PROXIES:127.0.0.1/32,::1/128}
   bootstrap-admin:

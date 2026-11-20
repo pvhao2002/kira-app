@@ -6,6 +6,7 @@ import {
   AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
   Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
+  AdminResultRequest, AgentPrompt, PromptVersion, PromptVersionSummary, ResultResponse, SettlementPromptInput,
 } from './models';
 
 export const API = '/api/v1';
@@ -155,8 +156,8 @@ export class ApiService {
 
   // Prompts
   prompts() { return this.http.get<PromptTemplate[]>(`${API}/prompts`); }
-  /** Admin only: the prompt with the shared agent API key filled in. Never stored or shown, only copied. */
-  promptForAgent(id: string) { return this.http.get<{ content: string }>(`${API}/prompts/${id}/for-agent`); }
+  /** The prompt with the API URL and sheet link filled in, and for admins the agent key. Never stored or shown, only copied. */
+  promptForAgent(id: string) { return this.http.get<AgentPrompt>(`${API}/prompts/${id}/for-agent`); }
   updatePrompt(id: string, body: { content: string; description: string | null; active: boolean; expectedVersion: number }) {
     return this.http.put<PromptTemplate>(`${API}/prompts/${id}`, body);
   }
@@ -169,4 +170,27 @@ export class ApiService {
     return this.http.get<Page<ApiLogRow>>(`${API}/api-logs`, { params: toParams(q) });
   }
   apiLog(id: string) { return this.http.get<ApiLogDetail>(`${API}/api-logs/${id}`); }
+
+  // Match results, review and prompt history
+  /** Admin: enter or correct a match result; FINISHED or CANCELLED settles the pending picks. */
+  enterMatchResult(matchId: string, body: AdminResultRequest) {
+    return this.http.post<ResultResponse>(`${API}/matches/${matchId}/result`, body);
+  }
+  /** Picks needing review, optionally of one match or one prediction. */
+  needsReview(q: { matchId?: string; predictionId?: string } = {}) {
+    return this.http.get<ReviewItem[]>(`${API}/settlements/needs-review`, { params: toParams(q) });
+  }
+  /** Admin: recalculate every pick of the match that needs review, with one reason. */
+  recalculateMatch(matchId: string, reason: string) {
+    return this.http.post<PickSettlement[]>(`${API}/settlements/matches/${matchId}/recalculate`, { reason });
+  }
+  settlementPromptInput(matchId: string) {
+    return this.http.get<SettlementPromptInput>(`${API}/settlements/matches/${matchId}/prompt-input`);
+  }
+  promptVersions(id: string) { return this.http.get<PromptVersionSummary[]>(`${API}/prompts/${id}/versions`); }
+  promptVersion(id: string, version: number) { return this.http.get<PromptVersion>(`${API}/prompts/${id}/versions/${version}`); }
+  /** Admin: saves an old version again as the newest one. */
+  restorePromptVersion(id: string, version: number, expectedVersion: number) {
+    return this.http.post<PromptTemplate>(`${API}/prompts/${id}/versions/${version}/restore`, { expectedVersion });
+  }
 }

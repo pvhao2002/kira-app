@@ -22,7 +22,7 @@ class ReportsIT extends IntegrationTestBase {
         // Second model of the same provider analyses the same match (created on its first call).
         read(external(a.provider(), "predictions", Payloads.livePrediction("eb-" + matchId, matchId, "model-b")));
         // Final 2-1 -> each model: AH LOSS, OU WIN.
-        external(a.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-20T21:40:00Z"));
+        external(a.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-10T21:40:00Z"));
 
         String q = "?providerId=" + providerId(a);
         JsonNode perf = adminGet("/api/v1/reports/model-performance" + q);
