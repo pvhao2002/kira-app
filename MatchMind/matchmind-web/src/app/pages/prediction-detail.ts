@@ -9,7 +9,7 @@ import { apiError } from '../core/http';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { PickDetail, PickResultRow, PredictionDetail } from '../core/models';
 import {
-  basisNote, extraStatRows, fmtDateTime, humanize, lineSplit, lineText, num, pct, probabilityTables, settlementSentence, statRows,
+  basisNote, extraStatRows, fmtDateTime, humanize, lineSplit, lineText, num, pct, probabilityTables, score, settlementSentence, statRows,
 } from '../shared/format';
 import { Dialog, Expansion, Tabs, ToastService } from '../shared/kit';
 import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
@@ -51,11 +51,11 @@ const MIN_REASON = 5;
             <div class="fact"><span class="fact-label">Type</span>{{ humanize(d.predictionType) }}{{ d.matchMinute !== null ? ' · ' + d.matchMinute + "'" : '' }}</div>
             @if (d.predictionType === 'LIVE') {
               <div class="fact"><span class="fact-label">Score at prediction</span><mm-score [home]="d.currentHomeScore" [away]="d.currentAwayScore" [muted]="true" /></div>
-              <div class="fact"><span class="fact-label">Corners at prediction</span>{{ d.currentHomeCorners ?? '—' }} : {{ d.currentAwayCorners ?? '—' }}</div>
+              <div class="fact"><span class="fact-label">Corners at prediction</span>{{ score(d.currentHomeCorners, d.currentAwayCorners) }}</div>
             }
             <div class="fact"><span class="fact-label">Most likely score</span><span class="row"><mm-score [home]="d.correctScores[0]?.home" [away]="d.correctScores[0]?.away" /> {{ pct(d.correctScores[0]?.probability) }}</span></div>
             <div class="fact"><span class="fact-label">Final</span><mm-score [home]="d.match.finalHomeScore" [away]="d.match.finalAwayScore" [muted]="d.match.status !== 'FINISHED'" /></div>
-            <div class="fact"><span class="fact-label">Final corners</span>{{ d.match.finalHomeCorners ?? '—' }} : {{ d.match.finalAwayCorners ?? '—' }}</div>
+            <div class="fact"><span class="fact-label">Final corners</span>{{ score(d.match.finalHomeCorners, d.match.finalAwayCorners) }}</div>
           </div>
         </section>
 
@@ -72,7 +72,7 @@ const MIN_REASON = 5;
         <div class="tabpanel" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
           @switch (tab()) {
             @case ('picks') {
-              <div class="table-wrap"><table class="dt compact-sm">
+              <div class="table-wrap"><table class="dt compact-sm" aria-label="Picks">
                 <thead>
                   <tr><th class="th-icon"><span class="sr-only">Details</span></th><th class="num hide-sm">#</th><th class="hide-sm">Market</th><th>Pick</th><th class="num">Line</th><th class="hide-sm">Stage</th>
                     <th class="num hide-sm">Prob.</th><th class="num hide-sm">Price</th><th>Result</th><th class="hide-sm">Settled by</th>@if (auth.isAdmin()) { <th><span class="sr-only">Actions</span></th> }</tr>
@@ -166,7 +166,7 @@ const MIN_REASON = 5;
                 @if (extraStats(); as x) {
                   @if (x.rows.length) {
                     <h3 class="sub-h">Other stats</h3>
-                    <table class="dt">
+                    <table class="dt" aria-label="Other stats">
                       <thead><tr><th>Stat</th><th class="num">{{ d.match.homeTeam }}</th><th class="num">{{ d.match.awayTeam }}</th></tr></thead>
                       <tbody>@for (r of x.rows; track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody>
                     </table>
@@ -189,7 +189,7 @@ const MIN_REASON = 5;
                   <div><h3 class="mb-2">Probabilities</h3>
                     <div class="prob-tables">
                       @for (t of probTables(); track t.market) {
-                        <table class="dt">
+                        <table class="dt" [attr.aria-label]="(t.market || 'Outcome') + ' probabilities'">
                           <thead><tr><th>{{ t.market || 'Outcome' }}</th><th class="num">Probability</th></tr></thead>
                           <tbody>@for (r of t.rows; track r.outcome) { <tr><td>{{ r.outcome }}</td><td class="num">{{ pct(r.probability) }}</td></tr> }</tbody>
                         </table>
@@ -282,6 +282,7 @@ export class PredictionDetailPage {
   readonly pct = pct;
   readonly num = num;
   readonly lineText = lineText;
+  readonly score = score;
   readonly lineSplit = lineSplit;
   readonly sentence = settlementSentence;
   readonly minReason = MIN_REASON;

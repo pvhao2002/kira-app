@@ -120,7 +120,7 @@ const MIN_REASON = 5;
         <section class="panel flush" id="prediction-history" data-testid="prediction-history">
           <header><h2>Prediction history ({{ predTotal() }})</h2>
             @if (predTotal() > predictions().length) { <span class="muted-text">Showing the latest {{ predictions().length }}</span> }</header>
-          <div class="table-wrap"><table class="dt compact-sm">
+          <div class="table-wrap"><table class="dt compact-sm" aria-label="Prediction history">
             <thead><tr><th>Predicted</th><th>Model</th><th class="hide-sm">Type</th><th class="hide-sm">Score then</th><th>Top pick</th><th class="num hide-sm">Prob.</th><th>Result</th></tr></thead>
             <tbody>
               @for (p of predictions(); track p.id) {
