@@ -78,8 +78,8 @@ public class AuthController {
     }
 
     @GetMapping("/users")
-    public List<UserView> users() {
-        return auth.list();
+    public List<UserView> users(@RequestParam(required = false) String status) {
+        return auth.list(status);
     }
 
     @PostMapping("/users")

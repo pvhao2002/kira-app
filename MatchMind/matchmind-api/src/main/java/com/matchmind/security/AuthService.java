@@ -146,9 +146,15 @@ public class AuthService {
         events.publishEvent(new SessionsRevoked(u.getId(), null));
     }
 
+    /** All users, or only those with {@code status} (ACTIVE or DISABLED); anything else is a 400. */
     @Transactional(readOnly = true)
-    public List<UserView> list() {
-        return users.findAllByOrderByUsernameAsc().stream().map(u -> UserView.of(u, limiter.isLocked(u.getUsername()))).toList();
+    public List<UserView> list(String status) {
+        if (status != null && !status.isBlank() && !status.equals("ACTIVE") && !status.equals("DISABLED")) {
+            throw ApiException.badRequest("INVALID_STATUS", "status must be ACTIVE or DISABLED");
+        }
+        boolean all = status == null || status.isBlank();
+        return users.findAllByOrderByUsernameAsc().stream().filter(u -> all || status.equals(u.getStatus()))
+            .map(u -> UserView.of(u, limiter.isLocked(u.getUsername()))).toList();
     }
 
     @Transactional

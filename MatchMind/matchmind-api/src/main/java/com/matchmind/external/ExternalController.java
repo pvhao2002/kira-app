@@ -115,7 +115,8 @@ public class ExternalController {
             }
             if (!response.duplicate()) { // ingest has committed: browsers can already load it
                 events.published(new NewPrediction(response.predictionId(), response.matchId(), r.match().homeTeam(),
-                    r.match().awayTeam(), model.name(), r.predictionType()));
+                    r.match().awayTeam(), ingestion.modelNameOf(response.predictionId(), model.name()),
+                    r.predictionType()));
             }
             return ResponseEntity.status(response.duplicate() ? HttpStatus.OK : HttpStatus.CREATED).body(response);
         });

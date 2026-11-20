@@ -1,6 +1,8 @@
 package com.matchmind.match;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.matchmind.shared.AdminActions;
+import com.matchmind.shared.AdminActions.Kind;
 import com.matchmind.shared.ApiException;
 import com.matchmind.shared.CacheConfig;
 import com.matchmind.shared.Filters;
@@ -9,6 +11,7 @@ import com.matchmind.shared.Paging;
 import com.matchmind.shared.Sql;
 import com.matchmind.shared.Stats;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -26,6 +29,7 @@ import java.util.UUID;
 public class MatchQueryService {
     private final NamedParameterJdbcTemplate jdbc;
     private final MatchResultHistoryRepository history;
+    private final AdminActions admin;
 
     /**
      * Kick-off was more than 3 hours ago and the match is still SCHEDULED or LIVE: a result is due but missing.
@@ -42,7 +46,7 @@ public class MatchQueryService {
                m.ht_home_score AS "htHomeScore", m.ht_away_score AS "htAwayScore",
                m.ht_home_corners AS "htHomeCorners", m.ht_away_corners AS "htAwayCorners",
                m.result_updated_at AS "resultUpdatedAt", m.created_at AS "createdAt", m.updated_at AS "updatedAt",
-               %s AS "overdue",
+               m.archived_at AS "archivedAt", %s AS "overdue",
                (SELECT count(*) FROM predictions p WHERE p.match_id = m.id) AS "predictionCount",
                (SELECT count(DISTINCT COALESCE(a.merged_into_id, a.id)) FROM predictions p
                 JOIN ai_models a ON a.id = p.ai_model_id WHERE p.match_id = m.id) AS "modelCount"
@@ -85,6 +89,14 @@ public class MatchQueryService {
         Sql.Where w = new Sql.Where();
         Filters.activeMatches(w, false, false);
         return jdbc.queryForList("SELECT DISTINCT league FROM matches m" + w.sql() + " ORDER BY league", w.params, String.class);
+    }
+
+    /** Admin: hides a match from every aggregate and list, or brings it back; logged with the reason. Idempotent. */
+    @CacheEvict(value = CacheConfig.LEAGUES, allEntries = true)
+    @Transactional
+    public Map<String, Object> setArchived(UUID id, boolean archive, String reason, UUID actor) {
+        admin.setArchived(Kind.MATCH, id, archive, reason, actor);
+        return detail(id);
     }
 
     /** Every league, archived matches included (uncached: only an admin looking at archived data asks). */

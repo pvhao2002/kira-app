@@ -141,6 +141,12 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(status).headers(framework.getHeaders())
                 .body(error(status, status.name(), status.getReasonPhrase(), Map.of(), request));
         }
+        if (violatesMergeChain(ex)) {
+            // A concurrent merge got there first (V24 trigger): same answer as the service-level check. No row data.
+            log.warn("model merge chain rejected by the database traceId={} path={}", traceId(), request.getRequestURI());
+            return response(HttpStatus.CONFLICT, "MODEL_ALREADY_MERGED",
+                "The models changed while merging; reload and try again", Map.of(), request);
+        }
         String immutableTable = immutableTable(ex);
         if (immutableTable != null) {
             // A DB trigger (V23) blocked a write to a snapshot or append-only table: a bug. Table name only, no row data.
@@ -163,6 +169,15 @@ public class GlobalExceptionHandler {
             }
         }
         return null;
+    }
+
+    /** A V24 trigger violation (SQLSTATE P0001, MM_MODEL_MERGE_CHAIN) anywhere in the cause chain. */
+    private static boolean violatesMergeChain(Throwable ex) {
+        for (Throwable t = ex; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof java.sql.SQLException sql && "P0001".equals(sql.getSQLState()) && sql.getMessage() != null
+                && sql.getMessage().contains("MM_MODEL_MERGE_CHAIN")) return true;
+        }
+        return false;
     }
 
     private static final Pattern SIZE =Pattern.compile("size must be between (\\d+) and (\\d+)");

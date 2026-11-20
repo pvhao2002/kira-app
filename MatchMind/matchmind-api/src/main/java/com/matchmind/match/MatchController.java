@@ -3,6 +3,7 @@ package com.matchmind.match;
 import com.matchmind.match.MatchResultService.AdminResultRequest;
 import com.matchmind.match.MatchResultService.ResultResponse;
 import com.matchmind.security.Principals.UserPrincipal;
+import com.matchmind.shared.AdminActions.ReasonRequest;
 import com.matchmind.shared.ApiTypes.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,7 +56,18 @@ public class MatchController {
         return service.detail(id);
     }
 
-    /** POST under /api/v1 requires ADMIN in SecurityConfig. */
+    /** POST under /api/v1 requires ADMIN in SecurityConfig (there is no write API for matches besides archive and result). */
+    @PostMapping("/{id}/archive")
+    @Operation(summary = "Hide a match (bad data) from every aggregate and list (admin); returns the match detail")
+    public Map<String, Object> archive(@PathVariable UUID id, @Valid @RequestBody ReasonRequest r, @AuthenticationPrincipal UserPrincipal me) {
+        return service.setArchived(id, true, r.reason(), me.id());
+    }
+
+    @PostMapping("/{id}/unarchive")
+    public Map<String, Object> unarchive(@PathVariable UUID id, @Valid @RequestBody ReasonRequest r, @AuthenticationPrincipal UserPrincipal me) {
+        return service.setArchived(id, false, r.reason(), me.id());
+    }
+
     @PostMapping("/{id}/result")
     @Operation(summary = "Enter or correct the match result (admin); FINISHED or CANCELLED settles pending picks")
     public ResultResponse enterResult(@PathVariable UUID id, @Valid @RequestBody AdminResultRequest r,

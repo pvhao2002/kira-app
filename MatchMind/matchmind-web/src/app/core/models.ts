@@ -47,6 +47,7 @@ export interface AiModel {
 }
 
 export interface MatchRow {
+  archivedAt?: string | null;
   id: string; externalMatchId: string; providerId: string; providerName: string; league: string; homeTeam: string;
   awayTeam: string; startTime: string; status: MatchStatus; finalHomeScore: number | null; finalAwayScore: number | null;
   finalHomeCorners: number | null; finalAwayCorners: number | null; htHomeScore: number | null; htAwayScore: number | null;
@@ -55,6 +56,10 @@ export interface MatchRow {
   /** Kick-off more than 3 h ago and still SCHEDULED or LIVE: the result is due. */
   overdue: boolean;
 }
+
+export interface AdminReasonRequest { reason: string; }
+export interface ModelRenameRequest extends AdminReasonRequest { displayName: string; }
+export interface ModelMergeRequest extends AdminReasonRequest { targetModelId: string; }
 
 export interface LatestModelPrediction {
   predictionId: string; modelId: string; predictedAt: string; predictionType: PredictionType; matchMinute: number | null;

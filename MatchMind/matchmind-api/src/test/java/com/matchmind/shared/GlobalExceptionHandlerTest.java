@@ -26,4 +26,16 @@ class GlobalExceptionHandlerTest {
         assertThat(out.getOut()).contains("immutable table write blocked: predictions")
             .doesNotContain("UPDATE predictions").doesNotContain("PL/pgSQL");
     }
+
+    @Test
+    void racingModelMergeChainIs409AndLogsNoRowData(CapturedOutput out) {
+        var sql = new SQLException("ERROR: MM_MODEL_MERGE_CHAIN: 3f2b8f5e-0000-0000-0000-000000000001\n  Where: PL/pgSQL function", "P0001");
+        var ex = new UncategorizedSQLException("update", "UPDATE ai_models SET merged_into_id = ? WHERE id = ?", sql);
+
+        var res = new GlobalExceptionHandler().unexpected(ex, new MockHttpServletRequest("POST", "/api/v1/models/x/merge"));
+
+        assertThat(res.getStatusCode().value()).isEqualTo(409);
+        assertThat(res.getBody().code()).isEqualTo("MODEL_ALREADY_MERGED");
+        assertThat(out.getOut()).doesNotContain("3f2b8f5e").doesNotContain("UPDATE ai_models");
+    }
 }

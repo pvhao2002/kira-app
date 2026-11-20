@@ -278,7 +278,7 @@ after a corrected score. An admin resolves them with recalculate or override; th
 | POST | `/auth/refresh` | any | → `{accessToken, expiresAt, user}`. New token (sliding); never later than 24 h after the password sign-in. The old token stays valid until it expires. Call it before `expiresAt`; a 401 means sign in again |
 | GET | `/auth/me` | any | Current user (`mustChangePassword`) |
 | POST | `/auth/change-password` | any | `{currentPassword, newPassword (10–72)}` → 204. Revokes all tokens and clears `mustChangePassword`. 5 wrong current passwords in 15 min give `429`; a new password equal to the current one is `400 PASSWORD_UNCHANGED` |
-| GET | `/users` | admin | All users: `{id, username, role, status, lastLoginAt, createdAt, updatedAt, mustChangePassword, loginLocked}` |
+| GET | `/users` | admin | All users by default. Filter with `?status=ACTIVE` or `?status=DISABLED`. Invalid values return `400 INVALID_STATUS`. Returns `{id, username, role, status, lastLoginAt, createdAt, updatedAt, mustChangePassword, loginLocked}` |
 | POST | `/users` | admin | `{username, password, role, mustChangePassword?}` |
 | POST | `/users/generate-password` | admin | → `{password}`: 16 random characters that pass the policy. Nothing is stored; put it in the create or reset form and hand it over |
 | PATCH | `/users/{id}` | admin | `{role?, status?}`. Admins cannot demote or disable themselves (`SELF_LOCKOUT`). Role and status changes are audited |
@@ -286,8 +286,8 @@ after a corrected score. An admin resolves them with recalculate or override; th
 | POST | `/users/{id}/unlock` | admin | 204. Clears the failed-login lockout of the user on every IP |
 | GET | `/users/audit` | admin | `userId?, page, size` → `{data:[{id, at, actor, targetId, target, action, oldValue, newValue, clientIp}], meta}`. Actions: `USER_CREATED`, `ROLE_CHANGED`, `STATUS_CHANGED`, `PASSWORD_RESET`, `PASSWORD_CHANGED`, `LOGIN_UNLOCKED` |
 
-### Providers and AI models (read-only)
-Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no create or update endpoints.
+### Providers and AI models
+Both are created by external calls (`X-Provider`, `X-Model-Name`).
 - `GET /providers?includeArchived=`: `{id, code, name, models, predictions, lastCallbackAt, createdAt, archivedAt}` for
   filters. Archived providers are hidden unless `includeArchived=true`; `models` counts the models in use (no merged or
   archived ones unless `includeArchived=true`).
@@ -296,6 +296,20 @@ Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no 
   last prediction time. The figures cover the model and every model merged into it, and, like the reports, leave out
   archived merged models and predictions on archived matches unless `includeArchived=true`. The list hides merged and
   archived models (and those of an archived provider, unless `providerId` names it) unless `includeArchived=true`.
+
+### Archive, rename and merge (admin)
+
+Every write requires an admin and a non-blank `reason` of at most 500 characters. Viewers receive 403.
+Missing or blank reasons return `400 VALIDATION_ERROR`. Changes are recorded in the admin audit log.
+
+| Method and path | Body and response |
+|---|---|
+| `POST /{providers,models,matches}/{id}/{archive,unarchive}` | `{reason}`. Returns the updated provider, model or match detail. `archivedAt` is a timestamp when archived and null when active. Use `includeArchived=true` on the corresponding list to show archived entries. |
+| `PATCH /models/{id}` | `{displayName, reason}`. A blank `displayName` restores the provider-supplied name. The name can be at most 128 characters. Returns the updated model. |
+| `POST /models/{id}/merge` | `{targetModelId, reason}`. Returns the source model with `mergedIntoId` set. Conflicts return `409 MODEL_MERGE_CROSS_PROVIDER` or `409 MODEL_ALREADY_MERGED`. |
+| `POST /models/{id}/unmerge` | `{reason}`. Returns the model with `mergedIntoId` cleared. |
+
+See [admin request examples](samples/admin-archive-merge.json).
 
 ### Matches and predictions
 | Path | Notes |

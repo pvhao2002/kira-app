@@ -1,8 +1,12 @@
 package com.matchmind.provider;
 
+import com.matchmind.shared.AdminActions;
+import com.matchmind.shared.AdminActions.Kind;
 import com.matchmind.shared.CacheConfig;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +25,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProviderService {
     private final NamedParameterJdbcTemplate jdbc;
+    private final AdminActions admin;
 
     /** {@code models} counts the models in use: merged and archived ones are left out unless archived rows are listed. */
     public record ProviderView(UUID id, String code, String name, long models, long predictions, Instant lastCallbackAt,
@@ -40,6 +45,24 @@ public class ProviderService {
         boolean all = Boolean.TRUE.equals(includeArchived);
         return jdbc.query(VIEW_SQL.formatted(all ? "" : "AND m.merged_into_id IS NULL AND m.archived_at IS NULL")
             + (all ? "" : " WHERE p.archived_at IS NULL") + " ORDER BY p.name", (rs, i) -> view(rs));
+    }
+
+    @Transactional(readOnly = true)
+    public ProviderView get(UUID id) {
+        return jdbc.query(VIEW_SQL.formatted("AND m.merged_into_id IS NULL AND m.archived_at IS NULL") + " WHERE p.id = :id",
+                new MapSqlParameterSource("id", id), (rs, i) -> view(rs))
+            .stream().findFirst().orElseThrow(Kind.PROVIDER::notFound);
+    }
+
+    /**
+     * Admin: hides a provider (its models and matches follow) or brings it back; logged with the reason. Idempotent.
+     * Evicts the league dropdown, which lists only visible matches.
+     */
+    @CacheEvict(value = CacheConfig.LEAGUES, allEntries = true)
+    @Transactional
+    public ProviderView setArchived(UUID id, boolean archive, String reason, UUID actor) {
+        admin.setArchived(Kind.PROVIDER, id, archive, reason, actor);
+        return get(id);
     }
 
     /**

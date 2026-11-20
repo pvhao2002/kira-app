@@ -22,6 +22,7 @@ import com.matchmind.match.MatchRepository;
 import com.matchmind.model.AiModel;
 import com.matchmind.model.AiModelRepository;
 import com.matchmind.provider.ProviderService;
+import com.matchmind.shared.Sql;
 import com.matchmind.shared.ApiException;
 import com.matchmind.shared.CacheConfig;
 import com.matchmind.shared.TextRules;
@@ -165,6 +166,16 @@ public class PredictionIngestionService {
             return models.findSameModel(providerId, ref.name(), ref.version()).orElseThrow();
         });
         return found.getMergedIntoId() == null ? found : models.findById(found.getMergedIntoId()).orElseThrow();
+    }
+
+    /**
+     * The name to show for the model a stored prediction counts under (merge target, display name), as in the reports;
+     * {@code fallback} when it cannot be found. For the live event, sent after the commit.
+     */
+    @Transactional(readOnly = true)
+    public String modelNameOf(UUID predictionId, String fallback) {
+        return jdbc.queryForList("SELECT " + Sql.MODEL_NAME + " FROM predictions p" + Sql.EFFECTIVE_MODEL_JOIN + "WHERE p.id = :id",
+            Map.of("id", predictionId), String.class).stream().findFirst().orElse(fallback);
     }
 
     /** Used after a concurrent insert of the same eventId lost the race on the unique key. */

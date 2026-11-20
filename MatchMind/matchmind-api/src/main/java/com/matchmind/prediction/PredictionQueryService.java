@@ -180,7 +180,9 @@ public class PredictionQueryService {
     public Detail detail(UUID id) {
         Prediction p = predictions.findById(id).orElseThrow(() -> ApiException.notFound("PREDICTION_NOT_FOUND", "Prediction not found"));
         Match m = matches.findById(p.getMatchId()).orElseThrow();
-        AiModel am = models.findById(p.getAiModelId()).orElseThrow();
+        AiModel landed = models.findById(p.getAiModelId()).orElseThrow();
+        // As in the reports: the model it was merged into, shown by its display name; the key stays the provider's name.
+        AiModel am = landed.getMergedIntoId() == null ? landed : models.findById(landed.getMergedIntoId()).orElse(landed);
         String providerName = providers.findById(p.getProviderId()).map(Provider::getName).orElse(null);
 
         List<PredictionOdds> oddsRows = odds.findByPredictionIdOrderByMarketAscOddsStageAscSnapshotOrderAsc(id);
@@ -191,7 +193,8 @@ public class PredictionQueryService {
 
         List<PickView> pickViews = pickViews(pickRows, oddsById, history);
         Map<String, Object> match = matchView(m, providerName);
-        Map<String, Object> model = Map.of("id", am.getId(), "name", am.getName(), "version", am.getVersion());
+        Map<String, Object> model = Map.of("id", am.getId(),
+            "name", am.getDisplayName() == null ? am.getName() : am.getDisplayName(), "key", am.getName(), "version", am.getVersion());
 
         return new Detail(p.getId(), p.getExternalEventId(), p.getPredictionType(), p.getMatchMinute(), p.getCurrentHomeScore(),
             p.getCurrentAwayScore(), p.getCurrentHomeCorners(), p.getCurrentAwayCorners(), p.getPredictedAt(), p.getCreatedAt(),

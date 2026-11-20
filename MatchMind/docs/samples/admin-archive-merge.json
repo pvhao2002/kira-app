@@ -1,0 +1,19 @@
+{
+  "archive": {
+    "reason": "Hide a duplicate entry"
+  },
+  "unarchive": {
+    "reason": "Restore an entry archived by mistake"
+  },
+  "rename": {
+    "displayName": "Match Analyst",
+    "reason": "Use a clearer display name"
+  },
+  "merge": {
+    "targetModelId": "6fbc5dd3-030c-46d9-8753-5e0dbdbf600c",
+    "reason": "Combine duplicate model names"
+  },
+  "unmerge": {
+    "reason": "Restore separate model reporting"
+  }
+}
