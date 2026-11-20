@@ -24,6 +24,7 @@ import com.matchmind.security.Principals.ProviderPrincipal;
 import com.matchmind.settlement.SettlementService;
 import com.matchmind.settlement.SettlementService.MatchSettlement;
 import com.matchmind.shared.ApiException;
+import com.matchmind.shared.TextRules;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -147,13 +148,17 @@ public class ExternalController {
 
     /** The model named in X-Model-Name (+ optional X-Model-Version, default "1") wins over {@code model} in the body. */
     static ModelRef modelOf(String name, String version, PredictionRequest r) {
-        if (name == null || name.isBlank()) {
-            if (r.model() == null) {
+        String headerName = TextRules.clean(name);
+        if (headerName == null || headerName.isEmpty()) {
+            ModelRef body = r.model() == null ? null
+                : new ModelRef(TextRules.clean(r.model().name()), TextRules.clean(r.model().version()));
+            if (body == null || body.name().isEmpty() || body.version().isEmpty()) {
                 throw ApiException.badRequest("MODEL_REQUIRED", "Send the model name in the X-Model-Name header");
             }
-            return new ModelRef(r.model().name().trim(), r.model().version().trim());
+            return body;
         }
-        ModelRef ref = new ModelRef(name.trim(), version == null || version.isBlank() ? "1" : version.trim());
+        String headerVersion = TextRules.clean(version);
+        ModelRef ref = new ModelRef(headerName, headerVersion == null || headerVersion.isEmpty() ? "1" : headerVersion);
         if (ref.name().length() > 128 || ref.version().length() > 64) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_MODEL_HEADER", "Model name or version is too long",
                 Map.of(MODEL_HEADER, "max 128 characters", MODEL_VERSION_HEADER, "max 64 characters"));

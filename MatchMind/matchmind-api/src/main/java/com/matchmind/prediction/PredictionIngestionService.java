@@ -124,13 +124,13 @@ public class PredictionIngestionService {
     }
 
     /**
-     * Models are created on first use. Inside this transaction a concurrent first insert of the same model makes
+     * Models are created on first use and matched like providers: case-insensitive name, "1" = "1.0". Inside this transaction a concurrent first insert of the same model makes
      * ON CONFLICT wait for it, so the second lookup finds that row; a rejected prediction rolls its new model back.
      */
     private AiModel model(UUID providerId, ModelRef ref) {
-        return models.findByProviderIdAndNameAndVersion(providerId, ref.name(), ref.version()).orElseGet(() -> {
+        return models.findSameModel(providerId, ref.name(), ref.version()).orElseGet(() -> {
             models.insertIfMissing(providerId, ref.name(), ref.version());
-            return models.findByProviderIdAndNameAndVersion(providerId, ref.name(), ref.version()).orElseThrow();
+            return models.findSameModel(providerId, ref.name(), ref.version()).orElseThrow();
         });
     }
 

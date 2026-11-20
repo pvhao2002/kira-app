@@ -174,6 +174,26 @@ class IngestionRulesIT extends IntegrationTestBase {
     }
 
     @Test
+    void modelNamesAndVersionsFollowOneRule() throws Exception { // UX-108, UX-118, UX-017
+        String provider = newIntegration("rules-model").provider();
+        String[][] variants = {{"GPT-5.1", "1.0"}, {"gpt-5.1", "1"}, {" gpt-5.1 ", "1.00"}, {"Gpt-5.1", null}};
+        for (String[] v : variants) {
+            java.util.Map<String, String> headers = new java.util.HashMap<>(java.util.Map.of(
+                "X-Api-Key", EXTERNAL_KEY, "X-Provider", provider, "X-Model-Name", v[0]));
+            if (v[1] != null) headers.put("X-Model-Version", v[1]);
+            MvcResult res = externalWith(headers, "predictions", Payloads.livePrediction(id("e"), id("m"), "ignored"));
+            assertThat(res.getResponse().getStatus()).as(res.getResponse().getContentAsString()).isEqualTo(201);
+        }
+        assertThat(db.queryForList("SELECT m.name || '@' || m.version FROM ai_models m JOIN providers p ON p.id = m.provider_id "
+            + "WHERE p.code = ?", String.class, provider)).containsExactly("GPT-5.1@1.0"); // first spelling kept
+
+        externalWith(java.util.Map.of("X-Api-Key", EXTERNAL_KEY, "X-Provider", provider, "X-Model-Name", "gpt-5.1",
+            "X-Model-Version", "2"), "predictions", Payloads.livePrediction(id("e"), id("m"), "ignored"));
+        assertThat(db.queryForObject("SELECT count(*) FROM ai_models m JOIN providers p ON p.id = m.provider_id WHERE p.code = ?",
+            Integer.class, provider)).isEqualTo(2); // another version is another model
+    }
+
+    @Test
     void atMostTwoPicks() throws Exception { // UX-097
         ObjectNode p = live();
         com.fasterxml.jackson.databind.node.ArrayNode picks = (com.fasterxml.jackson.databind.node.ArrayNode) p.get("picks");
