@@ -84,7 +84,7 @@ public class MatchQueryService {
     public List<String> leagues() {
         Sql.Where w = new Sql.Where();
         Filters.activeMatches(w, false, false);
-        return jdbc.queryForList("SELECT DISTINCT league FROM matches m" + w.sql() + " ORDER BY league", Map.of(), String.class);
+        return jdbc.queryForList("SELECT DISTINCT league FROM matches m" + w.sql() + " ORDER BY league", w.params, String.class);
     }
 
     /** Every league, archived matches included (uncached: only an admin looking at archived data asks). */

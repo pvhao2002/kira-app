@@ -81,7 +81,7 @@ The dashboard, predictions and reports share these filters:
 | `market` | `1X2`, `AH`, `OU`, `CORNER_AH`, `CORNER_OU` (pick level) |
 | `result` | Current settlement result of the pick, `PENDING` included |
 | `search` | Substring of teams, league or external match id, ignoring case, accents and Unicode form (`atletico` finds `Atlético`, `munchen` finds `München`). No transliteration: `muenchen`/`munich` do not match |
-| `includeArchived` | `true` also counts archived providers, models and matches. Default: archived rows are left out of every figure, list and dropdown. A model whose provider or merge target is archived is archived too. Naming one explicitly shows only that one: `modelId` shows that archived model (not other archived rows), `providerId` that archived provider, `matchId` that archived match. Archived matches stay out of aggregates even with `modelId` |
+| `includeArchived` | `true` also counts archived providers, models and matches. Default: archived rows are left out of every figure, list and dropdown. A model is hidden when it, its merge target or its provider is archived. Naming one explicitly shows only that one: `modelId` shows that archived model (its provider must not be archived, and its archived merged models stay hidden), `providerId` that archived provider, `matchId` that archived match. Archived matches stay out of aggregates even with `modelId` |
 
 **Model names.** Reports group on the *effective model*: a model merged into another (same provider) counts as its target,
 and `modelId` = the target also covers the merged models. `modelName` is the display name (the admin's rename, else the
@@ -287,9 +287,9 @@ Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no 
   archived ones unless `includeArchived=true`).
 - `GET /models?providerId=&includeArchived=`, `GET /models/{id}`: `name` (provider-supplied key), `displayName` (the
   rename, else `name`), `archivedAt`, `mergedIntoId`, prediction count, settled, wins, losses, pending, win rate and the
-  last prediction time. The figures cover the model and every model merged into it, and leave out predictions on
-  archived matches. The list hides merged and archived models (and those of an archived provider) unless
-  `includeArchived=true`.
+  last prediction time. The figures cover the model and every model merged into it, and, like the reports, leave out
+  archived merged models and predictions on archived matches unless `includeArchived=true`. The list hides merged and
+  archived models (and those of an archived provider, unless `providerId` names it) unless `includeArchived=true`.
 
 ### Matches and predictions
 | Path | Notes |

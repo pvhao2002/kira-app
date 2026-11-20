@@ -32,10 +32,23 @@ public class AiModelService {
                             Instant createdAt, Instant updatedAt, Instant archivedAt, UUID mergedIntoId) {
     }
 
-    /** The model and the models merged into it (alias m = the surviving model). */
-    private static final String FAMILY = "(SELECT c.id FROM ai_models c WHERE c.id = m.id OR c.merged_into_id = m.id)";
-    private static final String MATCH_ACTIVE =
-        " AND NOT EXISTS (SELECT 1 FROM matches mt WHERE mt.id = pr.match_id AND mt.archived_at IS NOT NULL)";
+    /**
+     * The model and the models merged into it (alias m = the surviving model). Same rules as {@code Filters}: archived
+     * merged models and predictions on archived matches are left out unless archived rows are included.
+     */
+    private static String family(boolean all) {
+        return "(SELECT c.id FROM ai_models c WHERE c.id = m.id OR (c.merged_into_id = m.id"
+            + (all ? "" : " AND c.archived_at IS NULL") + "))";
+    }
+
+    private static String matchActive(boolean all) {
+        return all ? "" : " AND NOT EXISTS (SELECT 1 FROM matches mt WHERE mt.id = pr.match_id AND mt.archived_at IS NOT NULL)";
+    }
+
+    private static String sql(boolean all) {
+        return SQL.formatted(family(all), matchActive(all), Stats.SETTLED, Stats.WINS, Stats.LOSSES, Stats.PENDING,
+            Stats.CURRENT_RESULT_JOIN);
+    }
 
     private static final String SQL = """
         SELECT m.id, m.provider_id, p.name AS provider_name, m.name, COALESCE(m.display_name, m.name) AS display_name,
@@ -49,21 +62,26 @@ public class AiModelService {
             SELECT %3$s AS settled, %4$s AS wins, %5$s AS losses, %6$s AS pending
             FROM predictions pr JOIN prediction_picks pk ON pk.prediction_id = pr.id %7$s
             WHERE pr.ai_model_id IN %1$s%2$s) s ON true
-        """.formatted(FAMILY, MATCH_ACTIVE, Stats.SETTLED, Stats.WINS, Stats.LOSSES, Stats.PENDING, Stats.CURRENT_RESULT_JOIN);
+        """;
 
-    /** Hides merged and archived models (and those of an archived provider) unless {@code includeArchived}. */
+    /**
+     * Hides merged and archived models (and those of an archived provider) unless {@code includeArchived}; naming the
+     * provider unhides that provider, as in the reports.
+     */
     @Transactional(readOnly = true)
     public List<ModelView> list(UUID providerId, Boolean includeArchived) {
+        boolean all = Boolean.TRUE.equals(includeArchived);
         Sql.Where w = new Sql.Where().and("m.provider_id = :providerId", "providerId", providerId);
-        if (!Boolean.TRUE.equals(includeArchived)) {
-            w.and("m.merged_into_id IS NULL AND m.archived_at IS NULL AND p.archived_at IS NULL");
+        if (!all) {
+            w.and("m.merged_into_id IS NULL AND m.archived_at IS NULL");
+            if (providerId == null) w.and("p.archived_at IS NULL");
         }
-        return jdbc.query(SQL + w.sql() + " ORDER BY COALESCE(m.display_name, m.name), m.version", w.params, (rs, i) -> view(rs));
+        return jdbc.query(sql(all) + w.sql() + " ORDER BY COALESCE(m.display_name, m.name), m.version", w.params, (rs, i) -> view(rs));
     }
 
     @Transactional(readOnly = true)
     public ModelView get(UUID id) {
-        return jdbc.query(SQL + " WHERE m.id = :id", new MapSqlParameterSource("id", id), (rs, i) -> view(rs))
+        return jdbc.query(sql(false) + " WHERE m.id = :id", new MapSqlParameterSource("id", id), (rs, i) -> view(rs))
             .stream().findFirst().orElseThrow(() -> ApiException.notFound("MODEL_NOT_FOUND", "AI model not found"));
     }
 

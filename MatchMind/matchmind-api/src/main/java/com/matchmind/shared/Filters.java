@@ -44,6 +44,9 @@ public record Filters(Instant from, Instant to, String league, UUID modelId, UUI
     /** The model of prediction alias p, or the model it was merged into, is archived. */
     private static final String MODEL_ACTIVE = "NOT EXISTS (SELECT 1 FROM ai_models x WHERE x.archived_at IS NOT NULL AND x.id IN"
         + " (p.ai_model_id, (SELECT y.merged_into_id FROM ai_models y WHERE y.id = p.ai_model_id)))";
+    /** Same, except the model named by :modelId: naming a model unhides only that one, not its archived merged models. */
+    private static final String MODEL_ACTIVE_EXCEPT_NAMED = MODEL_ACTIVE.substring(0, MODEL_ACTIVE.length() - 1)
+        + " AND x.id <> :modelId)";
 
     /** Rejects {@code from >= to} with a field error; either end alone is an open range. */
     public static void checkRange(Instant from, Instant to) {
@@ -69,7 +72,7 @@ public record Filters(Instant from, Instant to, String league, UUID modelId, UUI
             .and(SEARCH, "q", search == null || search.isBlank() ? null : Paging.contains(search));
         if (!Boolean.TRUE.equals(includeArchived)) {
             if (matchId == null) w.and("m.archived_at IS NULL");
-            if (modelId == null) w.and(MODEL_ACTIVE);
+            w.and(modelId == null ? MODEL_ACTIVE : MODEL_ACTIVE_EXCEPT_NAMED);
             if (providerId == null) w.and(PROVIDER_ACTIVE.formatted("p.provider_id"));
         }
         if (pickLevel) {

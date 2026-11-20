@@ -222,6 +222,50 @@ class ArchiveMergeIT extends IntegrationTestBase {
     }
 
     @Test
+    void namedTargetKeepsArchivedMergedChildOut() throws Exception {
+        Integration in = newIntegration("target-a");
+        Seed a = seed(in.provider(), "target-a", WIN_2_0);
+        Seed b = seed(in.provider(), "target-b", LOSS_0_2);
+        mergeInto(b.modelId(), a.modelId());
+        archive("ai_models", b.modelId());
+        String q = "?providerId=" + providerId(in);
+
+        // Archived child B is bad data: A's numbers must not change when A is named explicitly.
+        JsonNode viaProvider = byId(performance(q), "modelId", a.modelId());
+        JsonNode viaModel = byId(performance("?modelId=" + a.modelId()), "modelId", a.modelId());
+        assertThat(viaProvider.get("predictions").asInt()).isEqualTo(1);
+        assertThat(viaModel.get("predictions").asInt()).isEqualTo(1);
+        assertThat(viaModel.get("wins").asInt()).isEqualTo(viaProvider.get("wins").asInt()).isEqualTo(2);
+        assertThat(viaModel.get("losses").asInt()).isEqualTo(viaProvider.get("losses").asInt()).isZero();
+        assertThat(adminGet("/api/v1/predictions?modelId=" + a.modelId()).get("meta").get("totalElements").asInt()).isEqualTo(1);
+        // /models agrees with the reports, and includeArchived brings the child's predictions back everywhere.
+        JsonNode model = byId(adminGet("/api/v1/models" + q), "id", a.modelId());
+        assertThat(model.get("totalPredictions").asInt()).isEqualTo(1);
+        assertThat(model.get("losses").asInt()).isZero();
+        JsonNode all = byId(adminGet("/api/v1/models" + q + "&includeArchived=true"), "id", a.modelId());
+        assertThat(all.get("totalPredictions").asInt()).isEqualTo(2);
+        assertThat(byId(performance("?modelId=" + a.modelId() + "&includeArchived=true"), "modelId", a.modelId())
+            .get("predictions").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    void modelsListFollowsReportRulesForArchivedMatchesAndProviders() throws Exception {
+        Integration in = newIntegration("rules-a");
+        Seed good = seed(in.provider(), "rules-a", WIN_2_0);
+        Seed bad = seed(in.provider(), "rules-a", LOSS_0_2);
+        archive("matches", bad.matchId());
+        String q = "?providerId=" + providerId(in);
+
+        assertThat(adminGet("/api/v1/models" + q).get(0).get("totalPredictions").asInt()).isEqualTo(1);
+        assertThat(adminGet("/api/v1/models" + q + "&includeArchived=true").get(0).get("totalPredictions").asInt()).isEqualTo(2);
+
+        // Naming an archived provider unhides it (like the reports); its models are then listed.
+        archive("providers", providerId(in));
+        assertThat(adminGet("/api/v1/models" + q)).hasSize(1);
+        assertThat(byId(adminGet("/api/v1/models"), "id", good.modelId())).isNull();
+    }
+
+    @Test
     void unmergeRestores() throws Exception {
         Integration in = newIntegration("unmerge-a");
         Seed a = seed(in.provider(), "unmerge-a", WIN_2_0);
