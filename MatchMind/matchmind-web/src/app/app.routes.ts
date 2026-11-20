@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, Routes } from '@angular/router';
-import { AuthService } from './core/auth.service';
+import { AuthService, passwordChangeGuard } from './core/auth.service';
 import { authGuard, guestGuard } from './core/http';
 import { NotFoundPage } from './layout/not-found';
 
@@ -12,6 +12,7 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
+    canActivateChild: [passwordChangeGuard],
     loadComponent: () => import('./layout/shell').then(m => m.Shell),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },

@@ -2,7 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ConfirmService } from '../shared/kit';
 import { MatchesPage } from './matches';
 import { ModelBreakdown, ReportsPage } from './reports';
 import { SettingsPage } from './settings';
@@ -119,7 +120,8 @@ describe('SettingsPage', () => {
     const select = f.nativeElement.querySelector('select[aria-label="Role of bob"]') as HTMLSelectElement;
     select.value = 'ADMIN';
     select.dispatchEvent(new Event('change'));
-    http.expectOne('/api/v1/users/u2').flush({ status: 403, code: 'FORBIDDEN', message: 'no' }, { status: 403, statusText: 'Forbidden' });
+    TestBed.inject(ConfirmService).answer(true); // UX-044: a role change is confirmed first
+    (await vi.waitFor(() => http.expectOne('/api/v1/users/u2'))).flush({ status: 403, code: 'FORBIDDEN', message: 'no' }, { status: 403, statusText: 'Forbidden' });
     TestBed.tick();
     http.match('/api/v1/users').forEach(r => r.flush([admin, bob]));
     await f.whenStable();

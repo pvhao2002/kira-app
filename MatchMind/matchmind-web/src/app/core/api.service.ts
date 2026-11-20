@@ -7,6 +7,7 @@ import {
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
   Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
   AdminResultRequest, AgentPrompt, PromptVersion, PromptVersionSummary, ResultResponse, SettlementPromptInput,
+  PredictionIngestResponse,
 } from './models';
 
 export const API = '/api/v1';
@@ -149,7 +150,7 @@ export class ApiService {
 
   /** Admin only: the JSON body an agent printed because it could not reach the API, sent as is. */
   importPrediction(json: string, provider: string, model: string, modelVersion: string) {
-    return this.http.post<{ predictionId: string; matchId: string; duplicate: boolean }>(`${API}/predictions/import`, json, {
+    return this.http.post<PredictionIngestResponse>(`${API}/predictions/import`, json, {
       params: toParams({ provider, model, modelVersion }), headers: { 'Content-Type': 'application/json' },
     });
   }

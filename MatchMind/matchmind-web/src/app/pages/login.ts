@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
-import { apiError } from '../core/http';
+import { apiError, safeReturnUrl } from '../core/http';
 
 @Component({
   selector: 'mm-login',
@@ -77,10 +77,10 @@ export class LoginPage {
     this.error.set(null);
     const { username, password } = this.form.getRawValue();
     this.auth.login(username.trim(), password).subscribe({
-      next: () => {
-        const target = this.route.snapshot.queryParamMap.get('returnUrl');
-        // Only same-app paths: never redirect to an absolute/external URL taken from the query string.
-        this.router.navigateByUrl(target && target.startsWith('/') && !target.startsWith('//') ? target : '/dashboard')
+      next: res => {
+        // A temporary password must be changed first (every other call is 403 PASSWORD_CHANGE_REQUIRED).
+        const target = res.user.mustChangePassword ? '/settings' : safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
+        this.router.navigateByUrl(target)
           .then(ok => { if (!ok) this.busy.set(false); }, () => this.busy.set(false));
       },
       error: err => {

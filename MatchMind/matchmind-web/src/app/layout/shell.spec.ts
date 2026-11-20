@@ -10,12 +10,12 @@ import { LiveService } from '../core/live.service';
 import { PageTitle } from '../core/page-title';
 
 const user = (role: 'ADMIN' | 'VIEWER') => ({ id: 'u1', username: 'kim', role, status: 'ACTIVE', lastLoginAt: null, createdAt: '', updatedAt: '' });
-const signIn = (role: 'ADMIN' | 'VIEWER') => sessionStorage.setItem('matchmind.session',
-  JSON.stringify({ token: 't', expiresAt: new Date(Date.now() + 3_600_000).toISOString(), user: user(role) }));
+const signIn = (role: 'ADMIN' | 'VIEWER', extra: object = {}) => sessionStorage.setItem('matchmind.session',
+  JSON.stringify({ token: 't', expiresAt: new Date(Date.now() + 3_600_000).toISOString(), user: { ...user(role), ...extra } }));
 
-async function start(role: 'ADMIN' | 'VIEWER', url: string) {
+async function start(role: 'ADMIN' | 'VIEWER', url: string, extra: object = {}) {
   sessionStorage.clear();
-  signIn(role);
+  signIn(role, extra);
   TestBed.configureTestingModule({
     providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting(),
       { provide: LiveService, useValue: { refresh: new Subject<void>(), predictions: new Subject() } }],
@@ -48,6 +48,13 @@ describe('routing', () => {
   it('admins see API Logs', async () => {
     const h = await start('ADMIN', '/no-such-page');
     expect(navLabels(h)).toContain('API Logs');
+  });
+
+  it('keeps a user who must change the password on Settings (UX-059)', async () => {
+    await start('VIEWER', '/dashboard', { mustChangePassword: true });
+    expect(TestBed.inject(Router).url).toBe('/settings');
+    await TestBed.inject(Router).navigateByUrl('/predictions');
+    expect(TestBed.inject(Router).url).toBe('/settings');
   });
 });
 
