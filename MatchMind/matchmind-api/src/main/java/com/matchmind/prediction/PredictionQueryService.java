@@ -54,6 +54,19 @@ public class PredictionQueryService {
         LEFT JOIN prediction_pick_results r ON r.pick_id = pk.id AND r.is_current
         """;
 
+    /** Current result of every pick of the prediction (alias pc), mutually exclusive counts summing to pickCount. */
+    private static final String PICK_COUNTS = """
+        LEFT JOIN LATERAL (SELECT count(*) FILTER (WHERE yr.result = 'WIN') AS wins,
+                                  count(*) FILTER (WHERE yr.result = 'HALF_WIN') AS half_wins,
+                                  count(*) FILTER (WHERE yr.result = 'LOSS') AS losses,
+                                  count(*) FILTER (WHERE yr.result = 'HALF_LOSS') AS half_losses,
+                                  count(*) FILTER (WHERE yr.result IN ('PUSH','VOID')) AS push_void,
+                                  count(*) FILTER (WHERE yr.result IS NULL OR yr.result = 'PENDING') AS pending
+                           FROM prediction_picks y
+                           LEFT JOIN prediction_pick_results yr ON yr.pick_id = y.id AND yr.is_current
+                           WHERE y.prediction_id = p.id) pc ON true
+        """;
+
     static final String COLUMNS = """
         SELECT p.id AS "id", p.predicted_at AS "predictedAt", p.prediction_type AS "predictionType",
                p.match_minute AS "matchMinute", p.current_home_score AS "currentHomeScore",
@@ -67,7 +80,9 @@ public class PredictionQueryService {
                pk.id AS "topPickId", pk.market AS "topPickMarket", pk.pick AS "topPick", pk.probability AS "topPickProbability",
                o.line AS "topPickLine", o.line_display AS "topPickLineDisplay", o.odds_stage AS "topPickStage",
                %s AS "topPickPrice", COALESCE(r.result, 'PENDING') AS "settlementStatus",
-               (SELECT count(*) FROM prediction_picks y WHERE y.prediction_id = p.id) AS "pickCount"
+               (SELECT count(*) FROM prediction_picks y WHERE y.prediction_id = p.id) AS "pickCount",
+               pc.wins AS "pickWins", pc.half_wins AS "pickHalfWins", pc.losses AS "pickLosses",
+               pc.half_losses AS "pickHalfLosses", pc.push_void AS "pickPushOrVoid", pc.pending AS "pickPending"
         """.formatted(Sql.PRICE);
 
     private static final Map<String, String> SORT = Map.of(
@@ -75,18 +90,40 @@ public class PredictionQueryService {
         "minute", "p.match_minute", "probability", "pk.probability", "startTime", "m.start_time");
 
     @Transactional(readOnly = true)
-    public PageResponse<Map<String, Object>> list(Filters f, Integer page, Integer size, String sort) {
+    /**
+     * {@code result} matches the top-ranked pick ({@code resultScope=TOP}, default) or any pick of the prediction
+     * ({@code ANY}); with ANY and {@code market}, the same pick must have both.
+     */
+    public PageResponse<Map<String, Object>> list(Filters f, String resultScope, Integer page, Integer size, String sort) {
         int pg = Paging.page(page), sz = Paging.size(size);
+        boolean any = scopeIsAny(resultScope);
         Sql.Where w = f.where(false);
         if (f.result() != null && !f.result().isBlank()) {
-            if ("PENDING".equals(f.result())) w.and("(r.result IS NULL OR r.result = 'PENDING')");
-            else w.and("r.result = :topResult", "topResult", f.result());
+            String pending = "(%1$s.result IS NULL OR %1$s.result = 'PENDING')";
+            if (!any) {
+                if ("PENDING".equals(f.result())) w.and(pending.formatted("r"));
+                else w.and("r.result = :topResult", "topResult", f.result());
+            } else {
+                boolean isPending = "PENDING".equals(f.result());
+                String market = f.market() == null || f.market().isBlank() ? "" : " AND a.market = :market";
+                String exists = "EXISTS (SELECT 1 FROM prediction_picks a LEFT JOIN prediction_pick_results ar"
+                    + " ON ar.pick_id = a.id AND ar.is_current WHERE a.prediction_id = p.id" + market + " AND "
+                    + (isPending ? pending.formatted("ar") : "ar.result = :anyResult") + ")";
+                if (isPending) w.and(exists);
+                else w.and(exists, "anyResult", f.result());
+            }
         }
         long total = jdbc.queryForObject("SELECT count(*) " + FROM + w.sql(), w.params, Long.class);
         Paging.limit(w.params, pg, sz);
-        List<Map<String, Object>> rows = jdbc.query(COLUMNS + FROM + w.sql() + " ORDER BY "
+        List<Map<String, Object>> rows = jdbc.query(COLUMNS + FROM + PICK_COUNTS + w.sql() + " ORDER BY "
             + Paging.orderBy(sort, SORT, "p.predicted_at DESC") + ", p.id LIMIT :limit OFFSET :offset", w.params, Sql.ROW);
         return Paging.response(rows, pg, sz, total);
+    }
+
+    private static boolean scopeIsAny(String resultScope) {
+        if (resultScope == null || resultScope.isBlank() || "TOP".equals(resultScope)) return false;
+        if ("ANY".equals(resultScope)) return true;
+        throw ApiException.badRequest("INVALID_RESULT_SCOPE", "resultScope must be TOP or ANY");
     }
 
     public record OddsView(UUID id, String ref, String market, String stage, int snapshotOrder, BigDecimal line,
