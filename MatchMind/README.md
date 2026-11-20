@@ -46,10 +46,20 @@ users. There is no public sign-up: the admin creates other users in **Settings**
    - `POST /api/v1/external/predictions/settle` asks for settlement and may include advisory AI calculations.
 
 See [API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) for every field and rule, plus a curl walkthrough using
-[`docs/samples`](docs/samples). Every call appears on the **API Logs** page.
+[`docs/samples`](docs/samples). Every call appears on the **API Logs** page, except `GET /api/v1/external/ping`: a
+public reachability check that needs no key and stores nothing.
 
 The **Prompt Notes** page holds the "AI Football Prediction Prompt" and "AI Settlement Calculation Prompt" that
-providers should use. Edits are versioned.
+providers should use. Edits are versioned. When an agent's sandbox cannot reach the API, the prompts tell it to:
+1. Append the request as a row of your Google Sheet, if it can write to Google Sheets (e.g. Meta AI). Set the sheet up
+   once with [`docs/google-sheet/MatchMind.gs`](docs/google-sheet/MatchMind.gs) and put its link in
+   `MATCHMIND_SHEET_URL`: the admin **Copy** fills it in, and the script sends new rows every 5 minutes. Keep the sheet
+   private: anyone who can edit it can read the API key. Agents write to it through their Google account connection,
+   signed in as you. Never share it by link: the link is in every prompt you paste into a chat.
+2. Otherwise keep the request in a "MatchMind" artifact built from the "MatchMind Artifact Prompt" (give that prompt to
+   the agent in the same conversation). You send the requests from the browser with **Send** or **Send all**. The
+   artifact holds the API key, so do not publish or share it.
+3. Only if neither works, reply `CANNOT_CALL_API` with the JSON body for **Import prediction**.
 
 ## Develop locally
 
@@ -90,7 +100,8 @@ All configuration comes from environment variables; see [`.env.example`](.env.ex
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | PostgreSQL connection |
 | `JWT_SECRET`, `JWT_TTL` | Token signing secret (≥ 32 bytes) and lifetime (ISO-8601, default `PT8H`) |
 | `MATCHMIND_ADMIN_USERNAME`, `MATCHMIND_ADMIN_PASSWORD` | First admin. Used only while the users table is empty |
-| `CORS_ALLOWED_ORIGINS` | Extra browser origins for direct API calls |
+| `MATCHMIND_SHEET_URL` | Optional Google Sheet that agents append unsent requests to. The admin copy of the prompts names it |
+| `CORS_ALLOWED_ORIGINS` | Extra browser origins for direct dashboard API calls. `/api/v1/external/**` accepts any origin |
 | `TRUSTED_PROXIES` | CIDRs whose `X-Forwarded-For` is trusted |
 | `LOGIN_MAX_ATTEMPTS_PER_IP`, `LOGIN_MAX_FAILURES_PER_USER` | Login rate limits (defaults 20 per 5 min and 5 per 15 min) |
 | `SWAGGER_ENABLED` | Swagger UI and OpenAPI JSON |

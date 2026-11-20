@@ -3,7 +3,9 @@ package com.matchmind.it;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -13,6 +15,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 /** One shared API key; the caller names its provider and model in headers and both are created on first use. */
@@ -35,6 +39,14 @@ class ExternalHeadersIT extends IntegrationTestBase {
     private List<String> modelsOf(String code) {
         return db.queryForList("SELECT m.name || '@' || m.version FROM ai_models m JOIN providers p ON p.id = m.provider_id "
             + "WHERE p.code = ? ORDER BY 1", String.class, code);
+    }
+
+    /** A page outside MatchMind, such as a chat artifact. */
+    private static final String FOREIGN = "https://artifact.example";
+
+    private MvcResult preflight(String path, String origin, String method, String requestHeaders) throws Exception {
+        return mvc.perform(options(path).header("Origin", origin).header("Access-Control-Request-Method", method)
+            .header("Access-Control-Request-Headers", requestHeaders)).andReturn();
     }
 
     @Test
@@ -121,5 +133,62 @@ class ExternalHeadersIT extends IntegrationTestBase {
             .content("{\"code\":\"x\",\"name\":\"x\"}")).andReturn().getResponse().getStatus()).isEqualTo(405);
         assertThat(mvc.perform(asAdmin(post("/api/v1/models")).contentType("application/json")
             .content("{}")).andReturn().getResponse().getStatus()).isEqualTo(405);
+    }
+
+    @Test
+    void pingIsPublicAndWritesNothing() throws Exception {
+        MvcResult ping = mvc.perform(get("/api/v1/external/ping")).andReturn();
+        assertThat(ping.getResponse().getStatus()).isEqualTo(200);
+        assertThat(read(ping).get("status").asText()).isEqualTo("ok");
+        assertThat(Instant.parse(read(ping).get("serverTime").asText())).isNotNull(); // ISO-8601 UTC
+        // The key is not checked at all, and nothing is audited.
+        assertThat(mvc.perform(get("/api/v1/external/ping").header("X-Api-Key", "wrong")).andReturn()
+            .getResponse().getStatus()).isEqualTo(200);
+        assertThat(db.queryForObject("SELECT count(*) FROM external_api_requests WHERE endpoint = '/api/v1/external/ping' "
+            + "AND http_method = 'GET'", Integer.class)).isZero();
+    }
+
+    @Test
+    void otherMethodsOnPingStillNeedTheKey() throws Exception {
+        MvcResult noKey = mvc.perform(post("/api/v1/external/ping")).andReturn();
+        assertThat(noKey.getResponse().getStatus()).isEqualTo(401);
+        assertThat(read(noKey).get("code").asText()).isEqualTo("INVALID_API_KEY");
+        // With a valid key the caller learns the method is wrong, not that the key is.
+        assertThat(externalWith(Map.of("X-Api-Key", EXTERNAL_KEY, "X-Provider", "pinger"), "ping", "{}")
+            .getResponse().getStatus()).isEqualTo(405);
+    }
+
+    @Test
+    void browserPagesOnAnyOriginMayCallTheExternalApi() throws Exception {
+        for (String origin : List.of(FOREIGN, "null")) { // "null": sandboxed iframes such as chat artifacts
+            MvcResult pre = preflight("/api/v1/external/predictions", origin, "POST",
+                "content-type,x-api-key,x-provider,x-model-name,x-model-version,x-request-id");
+            assertThat(pre.getResponse().getStatus()).as(origin).isEqualTo(200);
+            assertThat(pre.getResponse().getHeader("Access-Control-Allow-Origin")).isEqualTo("*");
+            assertThat(pre.getResponse().getHeader("Access-Control-Allow-Headers").toLowerCase().split(",\\s*"))
+                .containsExactlyInAnyOrder("content-type", "x-api-key", "x-provider", "x-model-name", "x-model-version", "x-request-id");
+            assertThat(pre.getResponse().getHeader("Access-Control-Allow-Credentials")).isNull();
+        }
+        // Real calls carry the header too, a rejected one included, so the page can show the answer.
+        Map<String, String> h = new HashMap<>(headers(id("artifact"), "artifact-model"));
+        h.put("Origin", FOREIGN);
+        MvcResult sent = externalWith(h, "predictions", Payloads.livePrediction(id("e"), id("m"), "ignored"));
+        assertThat(sent.getResponse().getStatus()).isEqualTo(201);
+        assertThat(sent.getResponse().getHeader("Access-Control-Allow-Origin")).isEqualTo("*");
+        MvcResult badKey = externalWith(Map.of("Origin", FOREIGN, "X-Api-Key", "wrong", "X-Provider", "artifact"), "predictions", "{}");
+        assertThat(badKey.getResponse().getStatus()).isEqualTo(401);
+        assertThat(badKey.getResponse().getHeader("Access-Control-Allow-Origin")).isEqualTo("*");
+        MvcResult ping = mvc.perform(get("/api/v1/external/ping").header("Origin", FOREIGN)).andReturn();
+        assertThat(ping.getResponse().getHeader("Access-Control-Allow-Origin")).isEqualTo("*");
+    }
+
+    @Test
+    void dashboardApiStillAnswersOnlyItsOwnOrigins() throws Exception {
+        MvcResult foreign = preflight("/api/v1/predictions", FOREIGN, "GET", "authorization");
+        assertThat(foreign.getResponse().getStatus()).isEqualTo(403);
+        assertThat(foreign.getResponse().getHeader("Access-Control-Allow-Origin")).isNull();
+        MvcResult own = preflight("/api/v1/predictions", "http://localhost:4200", "GET", "authorization"); // default list
+        assertThat(own.getResponse().getStatus()).isEqualTo(200);
+        assertThat(own.getResponse().getHeader("Access-Control-Allow-Origin")).isEqualTo("http://localhost:4200");
     }
 }

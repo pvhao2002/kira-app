@@ -2,11 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ChartOptions } from 'chart.js';
-import { Subscription } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { LiveService } from '../core/live.service';
-import { apiError } from '../core/http';
-import { Dashboard, Filters, PredictionRow, ReviewItem } from '../core/models';
+import { Filters } from '../core/models';
+import { errorMessage, safeValue, viewState } from '../core/resource';
 import { FilterBar } from '../shared/filter-bar';
 import { fmtShort, humanize, pct, pickLabel } from '../shared/format';
 import { ChartView } from '../shared/chart';
@@ -17,7 +16,7 @@ const RESULT_COLORS: Record<string, string> = {
   WIN: '#157a47', HALF_WIN: '#5fb98a', PUSH: '#8a96a8', VOID: '#c3cad5', HALF_LOSS: '#e59393', LOSS: '#c53a3a', PENDING: '#e0a43a',
 };
 const SERIES = ['#0e7c66', '#2f6db5', '#c98a00', '#7b4bb3', '#d1603d', '#3a9fb0', '#5b6779', '#a3476f'];
-const GRID = { color: '#e3e8ee' };
+const GRID = {};   // grid colour comes from the chart defaults (light/dark aware)
 
 @Component({
   selector: 'mm-dashboard',
@@ -72,51 +71,51 @@ const GRID = { color: '#e3e8ee' };
           </div>
         </section>
         <section class="kpis" aria-label="Key figures">
-          <div class="kpi"><span>Predictions</span><strong>{{ d.totals.totalPredictions }}</strong></div>
-          <div class="kpi"><span>Today</span><strong>{{ d.totals.predictionsToday }}</strong></div>
-          <div class="kpi"><span>Matches</span><strong>{{ d.totals.totalMatches }}</strong></div>
-          <div class="kpi"><span>Active models</span><strong>{{ d.totals.activeModels }}<small> / {{ d.totals.totalModels }}</small></strong></div>
+          <div class="kpi"><span>Predictions</span><strong>{{ d.totals.totalPredictions }}</strong><i class="pi pi-bolt" aria-hidden="true"></i></div>
+          <div class="kpi"><span>Today</span><strong>{{ d.totals.predictionsToday }}</strong><i class="pi pi-clock" aria-hidden="true"></i></div>
+          <div class="kpi"><span>Matches</span><strong>{{ d.totals.totalMatches }}</strong><i class="pi pi-calendar" aria-hidden="true"></i></div>
+          <div class="kpi" title="Models with predictions in this range / all known models"><span>Active models</span><strong>{{ d.totals.activeModels }}<small> / {{ d.totals.totalModels }}</small></strong><i class="pi pi-microchip-ai" aria-hidden="true"></i></div>
         </section>
-        <div class="grid-2">
-          <section class="panel">
+        <div class="dash-grid">
+          <section class="panel span-4">
             <header><h2>Win rate over time</h2></header>
             @if (d.winRateOverTime.length) { <mm-chart type="line" [data]="winRateChart()" [options]="pctOptions" label="Win rate over time chart" /> }
-            @else { <p class="muted-text">No settled picks in this range.</p> }
+            @else { <div class="empty-state"><i class="pi pi-chart-line" aria-hidden="true"></i><span>No settled picks in this range.</span></div> }
           </section>
-          <section class="panel">
+          <section class="panel span-2">
             <header><h2>Results</h2></header>
             @if (d.resultDistribution.length) { <mm-chart type="doughnut" [data]="resultChart()" [options]="doughnutOptions" label="Result distribution chart" /> }
-            @else { <p class="muted-text">No picks in this range.</p> }
+            @else { <div class="empty-state"><i class="pi pi-chart-pie" aria-hidden="true"></i><span>No picks in this range.</span></div> }
           </section>
-          <section class="panel">
+          <section class="panel span-2">
             <header><h2>Win rate by model</h2></header>
-            @if (d.modelPerformance.length) { <mm-chart type="bar" [data]="modelRateChart()" [options]="pctBarOptions" label="Win rate by model chart" /> }
-            @else { <p class="muted-text">No model has settled picks yet.</p> }
+            @if (d.modelPerformance.length) { <mm-chart type="bar" [data]="modelRateChart()" [options]="pctOptions" label="Win rate by model chart" /> }
+            @else { <div class="empty-state"><i class="pi pi-chart-bar" aria-hidden="true"></i><span>No model has settled picks yet.</span></div> }
           </section>
-          <section class="panel">
+          <section class="panel span-2">
             <header><h2>Predictions by model</h2></header>
             @if (d.predictionsByModel.length) { <mm-chart type="bar" [data]="byModelChart()" [options]="countOptions" label="Predictions by model chart" /> }
-            @else { <p class="muted-text">No predictions in this range.</p> }
+            @else { <div class="empty-state"><i class="pi pi-chart-bar" aria-hidden="true"></i><span>No predictions in this range.</span></div> }
           </section>
-          <section class="panel">
+          <section class="panel span-2">
             <header><h2>Picks by market</h2></header>
-            @if (d.predictionsByMarket.length) { <mm-chart type="bar" [data]="byMarketChart()" [options]="countOptions" label="Picks by market chart" /> }
-            @else { <p class="muted-text">No picks in this range.</p> }
+            @if (d.predictionsByMarket.length) { <mm-chart type="bar" [data]="byMarketChart()" [options]="marketOptions" label="Picks by market chart" /> }
+            @else { <div class="empty-state"><i class="pi pi-chart-pie" aria-hidden="true"></i><span>No picks in this range.</span></div> }
           </section>
-          <section class="panel flush">
+          <section class="panel flush span-6">
             <header><h2>Latest predictions</h2><a routerLink="/predictions">All predictions</a></header>
             <div class="table-wrap short">
-              <table class="dt">
-                <thead><tr><th>Match</th><th>Model</th><th>Pick</th><th>Result</th></tr></thead>
+              <table class="dt compact-sm">
+                <thead><tr><th>Match</th><th class="hide-sm">Model</th><th>Pick</th><th>Result</th></tr></thead>
                 <tbody>
                   @for (p of recent(); track p.id) {
                     <tr class="clickable" [routerLink]="['/predictions', p.id]">
                       <td><a class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam" [routerLink]="['/predictions', p.id]">{{ p.homeTeam }} – {{ p.awayTeam }}</a><span class="cell-sub">{{ fmtShort(p.predictedAt) }} · {{ humanize(p.predictionType) }}</span></td>
-                      <td>{{ p.modelName }}</td>
+                      <td class="hide-sm">{{ p.modelName }}</td>
                       <td class="nowrap">{{ pickLabel(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}</td>
                       <td><mm-result [value]="p.settlementStatus" /></td>
                     </tr>
-                  } @empty { <tr><td colspan="4" class="empty">No predictions yet.</td></tr> }
+                  } @empty { <tr><td colspan="4" class="empty"><div class="empty-state"><i class="pi pi-bolt" aria-hidden="true"></i><span>No predictions yet.</span></div></td></tr> }
                 </tbody>
               </table>
             </div>
@@ -127,15 +126,21 @@ const GRID = { color: '#e3e8ee' };
 })
 export class DashboardPage {
   private readonly api = inject(ApiService);
-  readonly state = signal<'loading' | 'error' | 'ready'>('loading');
-  readonly error = signal('');
-  readonly data = signal<Dashboard | null>(null);
-  readonly recent = signal<PredictionRow[]>([]);
-  readonly review = signal<ReviewItem[]>([]);
+  /** Filters as last applied by the filter bar; null until it reports them, so nothing loads before that. */
+  private readonly range = signal<Filters | null>(null);
+  private readonly tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  private readonly dashboard = this.api.dashboardResource(() => this.range() ?? undefined, this.tz);
+  private readonly recentPage = this.api.recentPredictionsResource(() => this.range() ?? undefined);
+  private readonly reviewItems = this.api.needsReviewResource();
+  readonly state = viewState(this.dashboard);
+  readonly error = errorMessage(this.dashboard);
+  readonly data = safeValue(this.dashboard);
+  readonly recent = computed(() => (this.recentPage.hasValue() ? this.recentPage.value().data : []));
+  readonly review = safeValue(this.reviewItems, []);
 
   constructor() {
-    this.api.needsReview().subscribe({ next: r => this.review.set(r), error: () => undefined });
-    inject(LiveService).predictions.pipe(takeUntilDestroyed()).subscribe(() => this.load(this.range(), true));
+    // A live update reloads in place: reload() keeps the current figures on screen until the new ones arrive.
+    inject(LiveService).refresh.pipe(takeUntilDestroyed()).subscribe(() => { this.dashboard.reload(); this.recentPage.reload(); });
   }
   readonly pct = pct;
   readonly fmtShort = fmtShort;
@@ -145,8 +150,6 @@ export class DashboardPage {
   readonly FORM: Record<string, string> = { WIN: 'W', HALF_WIN: '½W', LOSS: 'L', HALF_LOSS: '½L', PUSH: 'P', VOID: 'V', PENDING: '–' };
   readonly form = computed(() => [...this.recent()].reverse());
 
-  private subs: Subscription[] = [];
-  private readonly tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   readonly winRateChart = computed(() => {
     const rows = this.data()?.winRateOverTime ?? [];
@@ -176,21 +179,21 @@ export class DashboardPage {
   });
   readonly byMarketChart = computed(() => {
     const rows = this.data()?.predictionsByMarket ?? [];
-    return { labels: rows.map(r => r.market), datasets: [{ label: 'Picks', data: rows.map(r => r.picks), backgroundColor: rows.map((_, i) => SERIES[i % SERIES.length]), borderRadius: 4 }] };
+    return { labels: rows.map(r => humanize(r.market)), datasets: [{ label: 'Picks', data: rows.map(r => r.picks), backgroundColor: rows.map((_, i) => SERIES[i % SERIES.length]), borderRadius: 4 }] };
   });
 
   readonly countOptions: ChartOptions = { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: GRID, ticks: { precision: 0 } } } };
+  /** Horizontal bars: market names are long, so they read better on the left axis. */
+  readonly marketOptions: ChartOptions = { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { y: { grid: { display: false } }, x: { beginAtZero: true, grid: GRID, ticks: { precision: 0 } } } };
   readonly pctOptions: ChartOptions = {
     maintainAspectRatio: false, plugins: { legend: { display: false } },
     scales: { x: { grid: { display: false } }, y: { min: 0, max: 100, grid: GRID, ticks: { callback: v => `${v}%` } } },
   };
-  readonly pctBarOptions: ChartOptions = this.pctOptions;
   readonly doughnutOptions: ChartOptions = { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 14 } } } }; // cutout lives on the dataset
 
-  private readonly range = signal<Filters>({});
   /** "Nov 1 – Nov 19, 2026" for the applied dates; `to` is an exclusive day end, so show the day before it. */
   readonly rangeLabel = computed(() => {
-    const { from, to } = this.range();
+    const { from, to } = this.range() ?? {};
     if (!from && !to) return 'all time';
     const day = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     const start = from ? day.format(new Date(from)) : 'start';
@@ -198,16 +201,5 @@ export class DashboardPage {
     return start === end ? start : `${start} – ${end}`;
   });
 
-  /** `quiet` keeps the current figures on screen while a live update reloads them. */
-  load(f: Filters, quiet = false): void {
-    this.range.set(f);
-    if (!quiet) this.state.set('loading');
-    this.subs.forEach(s => s.unsubscribe()); // a newer filter wins over a slower older response
-    this.subs = [this.api.dashboard(f, this.tz).subscribe({
-      next: d => { this.data.set(d); this.state.set('ready'); },
-      error: e => { this.data.set(null); this.error.set(apiError(e).message); this.state.set('error'); },
-    }), this.api.predictions(f, { page: 0, size: 10, sort: 'predictedAt,desc' }).subscribe({
-      next: p => this.recent.set(p.data), error: () => this.recent.set([]),
-    })];
-  }
+  load(f: Filters): void { this.range.set(f); }
 }

@@ -7,6 +7,7 @@ import com.matchmind.match.Match;
 import com.matchmind.match.MatchRepository;
 import com.matchmind.prediction.PredictionOdds;
 import com.matchmind.prediction.PredictionOddsRepository;
+import com.matchmind.prediction.Prediction;
 import com.matchmind.prediction.PredictionPick;
 import com.matchmind.prediction.PredictionPickRepository;
 import com.matchmind.prediction.PredictionRepository;
@@ -24,11 +25,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -180,7 +183,7 @@ public class SettlementService {
         return new PickSettlement(pickId, pick.getMarket(), pick.getPick(), created.getResult(), "OVERRIDDEN", null, null, null);
     }
 
-    private PickResult replace(Optional<PickResult> current, java.util.function.Supplier<PickResult> create) {
+    private PickResult replace(Optional<PickResult> current, Supplier<PickResult> create) {
         current.ifPresent(old -> {
             old.setCurrent(false);
             old.setSupersededAt(Instant.now());
@@ -207,13 +210,13 @@ public class SettlementService {
             ORDER BY r.settled_at DESC LIMIT 500
             """, Map.of(), (rs, i) -> rs.getObject(1, UUID.class));
         if (ids.isEmpty()) return List.of();
-        List<PickResult> candidates = new ArrayList<>(results.findAllById(ids));
-        candidates.sort(java.util.Comparator.comparing(PickResult::getSettledAt).reversed());
+        List<PickResult> candidates = results.findAllById(ids).stream()
+            .sorted(Comparator.comparing(PickResult::getSettledAt).reversed()).toList();
 
         Map<UUID, PredictionPick> pickById = byId(picks.findAllById(candidates.stream().map(PickResult::getPickId).toList()), PredictionPick::getId);
         Map<UUID, PredictionOdds> oddsById = byId(odds.findAllById(pickById.values().stream().map(PredictionPick::getOddsId).toList()), PredictionOdds::getId);
         Map<UUID, UUID> matchOfPrediction = predictions.findAllById(pickById.values().stream().map(PredictionPick::getPredictionId).toList())
-            .stream().collect(Collectors.toMap(p -> p.getId(), p -> p.getMatchId()));
+            .stream().collect(Collectors.toMap(Prediction::getId, Prediction::getMatchId));
         Map<UUID, Match> matchById = byId(matches.findAllById(matchOfPrediction.values()), Match::getId);
 
         List<ReviewItem> out = new ArrayList<>();

@@ -30,7 +30,7 @@ export function readAgentOutput(text: string): { json: string | null; model: str
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="panel import-panel">
-      <p class="muted-text" style="margin-top:0">When an agent replies <code>CANNOT_CALL_API</code>, paste its whole reply below. The JSON is checked
+      <p class="page-note">When an agent replies <code>CANNOT_CALL_API</code>, paste its whole reply below. The JSON is checked
         exactly like a call to the API, and the provider and model are created if they are new.</p>
       @if (!auth.isAdmin()) {
         <div class="alert alert-warn" role="status">Only an admin can import predictions.</div>
@@ -64,8 +64,15 @@ export function readAgentOutput(text: string): { json: string | null; model: str
               <a [routerLink]="['/predictions', r.predictionId]">Open prediction</a>
             </div>
           }
-          <div><button type="submit" class="btn btn-primary" [disabled]="busy() || !parsed().json || !provider.trim() || !model().trim()">
-            <i class="pi" [class.pi-upload]="!busy()" [class.pi-spinner]="busy()" [class.pi-spin]="busy()"></i> Send prediction</button></div>
+          <div class="row">
+            <button type="submit" class="btn btn-primary" aria-describedby="imp-hint" [disabled]="busy() || !parsed().json || !provider().trim() || !model().trim()">
+              <i class="pi" [class.pi-upload]="!busy()" [class.pi-spinner]="busy()" [class.pi-spin]="busy()"></i> Send prediction</button>
+            <small id="imp-hint" class="muted-text">
+              @if (!provider().trim()) { Enter the provider to send. }
+              @else if (!model().trim()) { Enter the model name to send. }
+              @else if (!parsed().json) { Paste the agent reply that contains the JSON to send. }
+            </small>
+          </div>
         </form>
       }
     </section>`,
@@ -73,8 +80,8 @@ export function readAgentOutput(text: string): { json: string | null; model: str
 export class ImportPage {
   private readonly api = inject(ApiService);
   readonly auth = inject(AuthService);
-  provider = ImportPage.storedProvider();
-  version = '';
+  readonly provider = signal(ImportPage.storedProvider());
+  readonly version = signal('');
   readonly model = signal('');
   readonly text = signal('');
   readonly parsed = computed(() => readAgentOutput(this.text()));
@@ -97,8 +104,8 @@ export class ImportPage {
     this.busy.set(true);
     this.error.set(null);
     this.result.set(null);
-    try { localStorage.setItem(PROVIDER_KEY, this.provider.trim()); } catch { /* optional convenience */ }
-    this.api.importPrediction(json, this.provider.trim(), this.model().trim(), this.version.trim()).subscribe({
+    try { localStorage.setItem(PROVIDER_KEY, this.provider().trim()); } catch { /* optional convenience */ }
+    this.api.importPrediction(json, this.provider().trim(), this.model().trim(), this.version().trim()).subscribe({
       next: r => { this.result.set(r); this.busy.set(false); },
       error: e => { this.error.set(apiError(e)); this.busy.set(false); },
     });

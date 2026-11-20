@@ -25,6 +25,8 @@ export class AuthService {
 
   constructor() {
     this.scheduleExpiry();
+    // Timers stall while a laptop sleeps or a tab is frozen: re-check the expiry as soon as the tab is shown again.
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) this.scheduleExpiry(); });
   }
 
   token(): string | null {

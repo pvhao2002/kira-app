@@ -88,14 +88,14 @@ public class MatchResultService {
         next.setStatus(r.status());
         boolean finished = "FINISHED".equals(r.status());
         boolean halfTimeAllowed = finished || "LIVE".equals(r.status());
-        set(r.finalScore(), next::setFinalHomeScore, next::setFinalAwayScore);
+        Pair.apply(r.finalScore(), next::setFinalHomeScore, next::setFinalAwayScore);
         if (finished) {
-            set(or(r.finalCorners(), pair(stored.getFinalHomeCorners(), stored.getFinalAwayCorners())),
+            Pair.apply(or(r.finalCorners(), pair(stored.getFinalHomeCorners(), stored.getFinalAwayCorners())),
                 next::setFinalHomeCorners, next::setFinalAwayCorners);
         }
         if (halfTimeAllowed) {
-            set(or(r.halfTimeScore(), pair(stored.getHtHomeScore(), stored.getHtAwayScore())), next::setHtHomeScore, next::setHtAwayScore);
-            set(or(r.halfTimeCorners(), pair(stored.getHtHomeCorners(), stored.getHtAwayCorners())),
+            Pair.apply(or(r.halfTimeScore(), pair(stored.getHtHomeScore(), stored.getHtAwayScore())), next::setHtHomeScore, next::setHtAwayScore);
+            Pair.apply(or(r.halfTimeCorners(), pair(stored.getHtHomeCorners(), stored.getHtAwayCorners())),
                 next::setHtHomeCorners, next::setHtAwayCorners);
         }
         Map<String, String> errors = new LinkedHashMap<>();
@@ -140,12 +140,5 @@ public class MatchResultService {
             errors.put("status", "half-time data is not allowed for status " + r.status());
         }
         if (!errors.isEmpty()) throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Result payload is invalid", errors);
-    }
-
-    private static void set(Pair p, java.util.function.Consumer<Integer> home, java.util.function.Consumer<Integer> away) {
-        if (p != null) {
-            home.accept(p.home());
-            away.accept(p.away());
-        }
     }
 }

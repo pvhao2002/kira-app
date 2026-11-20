@@ -9,7 +9,7 @@ import { apiError } from '../core/http';
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="login-page">
+    <main class="login-page">
       <section class="login-art">
         <div class="brand"><span class="brand-mark">M</span><span class="brand-text"><strong>MatchMind</strong><small>Private workspace</small></span></div>
         <div>
@@ -47,7 +47,7 @@ import { apiError } from '../core/http';
           </button>
         </form>
       </section>
-    </div>`,
+    </main>`,
 })
 export class LoginPage {
   private readonly auth = inject(AuthService);

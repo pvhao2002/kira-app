@@ -2,11 +2,13 @@ package com.matchmind.match;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.matchmind.shared.ApiException;
+import com.matchmind.shared.CacheConfig;
 import com.matchmind.shared.ApiTypes.PageResponse;
 import com.matchmind.shared.Paging;
 import com.matchmind.shared.Sql;
 import com.matchmind.shared.Stats;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -64,6 +66,7 @@ public class MatchQueryService {
         return Paging.response(rows, pg, sz, total);
     }
 
+    @Cacheable(CacheConfig.LEAGUES)
     @Transactional(readOnly = true)
     public List<String> leagues() {
         return jdbc.queryForList("SELECT DISTINCT league FROM matches ORDER BY league", Map.of(), String.class);

@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { apiError } from '../core/http';
-import { MatchDetail } from '../core/models';
-import { fmtDateTime, humanize, pct, pickLabel, statRows } from '../shared/format';
+import { errorMessage, safeValue, viewState } from '../core/resource';
+import { changedFields, fmtDateTime, humanize, pct, pickLabel, statRows } from '../shared/format';
 import { ToastService } from '../shared/kit';
 import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
 
@@ -14,14 +14,14 @@ import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stack">
-      <a routerLink="/matches"><i class="pi pi-arrow-left"></i> Matches</a>
+      <a routerLink="/matches" class="back-link"><i class="pi pi-arrow-left" aria-hidden="true"></i> Matches</a>
       <mm-state [state]="state()" [message]="error()" />
       @if (detail(); as d) {
         <section class="panel">
           <header>
             <div>
-              <h2>{{ d.match.homeTeam }} <span class="muted-text" style="display:inline">vs</span> {{ d.match.awayTeam }}</h2>
-              <p class="muted-text">{{ d.match.league }} · kick-off {{ fmt(d.match.startTime) }} · {{ d.match.providerName }} · {{ d.match.externalMatchId }}</p>
+              <h2>{{ d.match.homeTeam }} <span class="muted-text">vs</span> {{ d.match.awayTeam }}</h2>
+              <p class="muted-text sub">{{ d.match.league }} · kick-off {{ fmt(d.match.startTime) }} · {{ d.match.providerName }} · {{ d.match.externalMatchId }}</p>
             </div>
             <div class="row">
               <mm-result [value]="d.match.status" kind="status" />
@@ -30,44 +30,45 @@ import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
               }
             </div>
           </header>
-          <div class="row" style="gap:1.5rem">
-            <div><span class="cell-sub">Full time</span><mm-score [home]="d.match.finalHomeScore" [away]="d.match.finalAwayScore" /></div>
-            <div><span class="cell-sub">Half time</span><mm-score [home]="d.match.htHomeScore" [away]="d.match.htAwayScore" [muted]="true" /></div>
-            <div><span class="cell-sub">Corners</span><mm-score [home]="d.match.finalHomeCorners" [away]="d.match.finalAwayCorners" [muted]="true" /></div>
-            <div><span class="cell-sub">HT corners</span><mm-score [home]="d.match.htHomeCorners" [away]="d.match.htAwayCorners" [muted]="true" /></div>
-            <div><span class="cell-sub">Result updated</span>{{ fmt(d.match.resultUpdatedAt) }}</div>
+          <div class="facts">
+            <div class="fact"><span class="fact-label">Full time</span><mm-score [home]="d.match.finalHomeScore" [away]="d.match.finalAwayScore" /></div>
+            <div class="fact"><span class="fact-label">Half time</span><mm-score [home]="d.match.htHomeScore" [away]="d.match.htAwayScore" [muted]="true" /></div>
+            <div class="fact"><span class="fact-label">Corners</span><mm-score [home]="d.match.finalHomeCorners" [away]="d.match.finalAwayCorners" [muted]="true" /></div>
+            <div class="fact"><span class="fact-label">HT corners</span><mm-score [home]="d.match.htHomeCorners" [away]="d.match.htAwayCorners" [muted]="true" /></div>
+            <div class="fact"><span class="fact-label">Result updated</span>{{ fmt(d.match.resultUpdatedAt) }}</div>
           </div>
         </section>
 
         <section class="panel flush">
           <header><h2>Models on this match</h2></header>
-          <div class="table-wrap"><table class="dt">
-            <thead><tr><th>Model</th><th class="num">Predictions</th><th>Latest</th><th>Predicted score</th><th>Top pick</th><th class="num">Prob.</th>
-                <th class="num">Price</th><th>Result</th><th class="num">W / L</th><th class="num">Win rate</th><th class="num">Pending</th></tr></thead>
+          <div class="table-wrap"><table class="dt compact-sm">
+            <thead><tr><th>Model</th><th class="num hide-sm">Predictions</th><th class="hide-sm">Latest</th><th class="hide-sm">Predicted score</th><th>Top pick</th><th class="num hide-sm">Prob.</th>
+                <th class="num hide-sm">Price</th><th>Result</th><th class="num hide-sm">W / L</th><th class="num" title="(Win + half win) divided by settled picks. Push and void are left out.">Win rate</th><th class="num hide-sm">Pending</th></tr></thead>
             <tbody>
               @for (m of d.models; track m.modelId) {
               <tr>
-                <td><a [routerLink]="['/models', m.modelId]">{{ m.modelName }}</a> <span class="cell-sub">{{ m.modelVersion }}</span></td>
-                <td class="num">{{ m.predictions }}</td>
-                <td class="nowrap">
+                <td><a [routerLink]="['/models', m.modelId]">{{ m.modelName }}</a> <span class="cell-sub">{{ m.modelVersion }}</span>
+                  @if (m.latest) { <a class="cell-sub show-sm" [routerLink]="['/predictions', m.latest.predictionId]">{{ fmt(m.latest.predictedAt) }}</a> }</td>
+                <td class="num hide-sm">{{ m.predictions }}</td>
+                <td class="nowrap hide-sm">
                   @if (m.latest) { <a [routerLink]="['/predictions', m.latest.predictionId]">{{ fmt(m.latest.predictedAt) }}</a>
                     <span class="cell-sub">{{ humanize(m.latest.predictionType) }}{{ m.latest.matchMinute !== null ? ' · ' + m.latest.matchMinute + "'" : '' }}</span> }
                 </td>
-                <td><mm-score [home]="m.latest?.predictedHomeScore" [away]="m.latest?.predictedAwayScore" [muted]="true" /></td>
+                <td class="hide-sm"><mm-score [home]="m.latest?.predictedHomeScore" [away]="m.latest?.predictedAwayScore" [muted]="true" /></td>
                 <td class="nowrap">{{ pickLabel(m.latest?.topPickMarket, m.latest?.topPick, m.latest?.topPickLine) }}</td>
-                <td class="num">{{ pct(m.latest?.topPickProbability) }}</td>
-                <td class="num">{{ m.latest?.topPickPrice ?? '—' }}</td>
+                <td class="num hide-sm">{{ pct(m.latest?.topPickProbability) }}</td>
+                <td class="num hide-sm">{{ m.latest?.topPickPrice ?? '—' }}</td>
                 <td><mm-result [value]="m.latest?.topPickResult" /></td>
-                <td class="num"><span class="win">{{ m.wins }}</span> / <span class="loss">{{ m.losses }}</span></td>
+                <td class="num hide-sm"><span class="win">{{ m.wins }}</span> / <span class="loss">{{ m.losses }}</span></td>
                 <td class="num">{{ pct(m.winRate) }}</td>
-                <td class="num">{{ m.pending }}</td>
+                <td class="num hide-sm">{{ m.pending }}</td>
               </tr>
               } @empty { <tr><td colspan="11" class="empty">No model has predicted this match yet.</td></tr> }
             </tbody>
           </table></div>
         </section>
 
-        <div class="grid-2">
+        <div class="grid-2 align-start">
           <section class="panel">
             <header><h2>Latest live stats</h2>@if (d.latestStats) { <span class="muted-text">{{ d.latestStats.matchMinute ?? '—' }}' · {{ fmt(d.latestStats.predictedAt) }}</span> }</header>
             @if (d.latestStats; as s) {
@@ -78,9 +79,17 @@ import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
           <section class="panel">
             <header><h2>Result history</h2></header>
             @for (h of d.resultHistory; track h.id) {
-              <div style="margin-bottom:.75rem">
-                <strong>{{ fmt(h.changedAt) }}</strong> <span class="muted-text" style="display:inline">· {{ h.changeSource }}</span>
-                <mm-json [value]="{ previous: h.previousResult, new: h.newResult }" />
+              <div class="hist-item">
+                <strong>{{ fmt(h.changedAt) }}</strong> <span class="muted-text">· {{ humanize(h.changeSource) }}</span>
+                @if (changes(h.previousResult, h.newResult); as rows) {
+                  @if (rows.length) {
+                    <div class="table-wrap"><table class="dt">
+                      <thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead>
+                      <tbody>@for (c of rows; track c.field) { <tr><td>{{ c.field }}</td><td class="muted-text">{{ c.before }}</td><td><strong>{{ c.after }}</strong></td></tr> }</tbody>
+                    </table></div>
+                  } @else { <p class="muted-text">No field changed.</p> }
+                }
+                <details class="raw"><summary>Raw JSON</summary><mm-json [value]="{ previous: h.previousResult, new: h.newResult }" /></details>
               </div>
             } @empty { <p class="muted-text">No result has been reported yet.</p> }
           </section>
@@ -93,27 +102,17 @@ export class MatchDetailPage {
   private readonly api = inject(ApiService);
   private readonly messages = inject(ToastService);
   readonly auth = inject(AuthService);
-  readonly state = signal<'loading' | 'error' | 'ready'>('loading');
-  readonly error = signal('');
-  readonly detail = signal<MatchDetail | null>(null);
+  private readonly resource = this.api.matchResource(() => this.id());
+  readonly state = viewState(this.resource);
+  readonly error = errorMessage(this.resource);
+  readonly detail = safeValue(this.resource);
   readonly settling = signal(false);
   readonly fmt = fmtDateTime;
   readonly pct = pct;
   readonly humanize = humanize;
   readonly statRows = statRows;
+  readonly changes = changedFields;
   readonly pickLabel = pickLabel;
-
-  constructor() {
-    effect(() => this.load(this.id()));
-  }
-
-  load(id: string): void {
-    this.state.set('loading');
-    this.api.match(id).subscribe({
-      next: d => { this.detail.set(d); this.state.set('ready'); },
-      error: e => { this.detail.set(null); this.error.set(apiError(e).message); this.state.set('error'); },
-    });
-  }
 
   settle(): void {
     this.settling.set(true);
@@ -121,7 +120,7 @@ export class MatchDetailPage {
       next: r => {
         this.settling.set(false);
         this.messages.add({ severity: 'success', summary: 'Settled', detail: `${r.settled} settled, ${r.alreadySettled} already settled, ${r.pending} pending.` });
-        this.load(this.id());
+        this.resource.reload();
       },
       error: e => { this.settling.set(false); this.messages.add({ severity: 'error', summary: 'Settlement failed', detail: apiError(e).message }); },
     });

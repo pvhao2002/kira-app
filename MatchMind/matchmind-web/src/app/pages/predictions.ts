@@ -19,36 +19,37 @@ import { ResultTag, ScoreChip } from '../shared/ui';
       <mm-filter-bar [fields]="['search', 'dates', 'league', 'model', 'type', 'market', 'result']" (changed)="onFilters($event)" />
       <section class="panel flush">
         <div class="table-wrap tall">
-        <table class="dt" [class.loading]="list.loading()" [attr.aria-busy]="list.loading()">
+        <table class="dt compact-sm" [class.loading]="list.loading()" [attr.aria-busy]="list.loading()">
           <thead>
             <tr>
-              <th mmSort="predictedAt" [sort]="list.sort()" (sortChange)="list.setSort($event)">Predicted</th>
+              <th class="hide-sm" mmSort="predictedAt" [sort]="list.sort()" (sortChange)="list.setSort($event)">Predicted</th>
               <th mmSort="startTime" [sort]="list.sort()" (sortChange)="list.setSort($event)">Match</th>
-              <th mmSort="model" [sort]="list.sort()" (sortChange)="list.setSort($event)">Model</th>
-              <th mmSort="type" [sort]="list.sort()" (sortChange)="list.setSort($event)">Type</th>
-              <th mmSort="minute" class="num" [sort]="list.sort()" (sortChange)="list.setSort($event)">Min</th>
-              <th>At capture</th><th>Predicted</th><th class="num">CS prob.</th><th>Top pick</th>
-              <th mmSort="probability" class="num" [sort]="list.sort()" (sortChange)="list.setSort($event)">Prob.</th>
-              <th class="num">Price</th><th>Final</th><th>Result</th><th class="num">Picks</th>
+              <th class="hide-sm" mmSort="model" [sort]="list.sort()" (sortChange)="list.setSort($event)">Model</th>
+              <th>Top pick</th>
+              <th class="num hide-sm" mmSort="probability" [sort]="list.sort()" (sortChange)="list.setSort($event)">Prob.</th>
+              <th class="num hide-sm">Price</th><th class="hide-sm">Pred. score</th><th class="hide-sm">Final</th><th class="sticky-end" title="Result of the top-ranked pick. Open a prediction to see every pick.">Top result</th>
+              <th class="hide-sm" mmSort="type" [sort]="list.sort()" (sortChange)="list.setSort($event)">Type</th>
+              <th class="num hide-sm" mmSort="minute" [sort]="list.sort()" (sortChange)="list.setSort($event)">Min</th>
+              <th class="hide-sm">At capture</th><th class="num hide-sm">CS prob.</th><th class="num hide-sm">Picks</th>
             </tr>
           </thead>
           <tbody>
             @for (p of list.rows(); track p.id) {
             <tr class="clickable" [routerLink]="['/predictions', p.id]">
-              <td class="nowrap"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
-              <td><span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }}</span></td>
-              <td class="nowrap">{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td>
-              <td>{{ humanize(p.predictionType) }}</td>
-              <td class="num">{{ p.matchMinute ?? '—' }}</td>
-              <td><mm-score [home]="p.currentHomeScore" [away]="p.currentAwayScore" [muted]="true" /></td>
-              <td><mm-score [home]="p.predictedHomeScore" [away]="p.predictedAwayScore" /></td>
-              <td class="num">{{ pct(p.correctScoreProbability) }}</td>
+              <td class="nowrap hide-sm"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
+              <td><span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }}</span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
+              <td class="nowrap hide-sm">{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td>
               <td class="nowrap">{{ pickLabel(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}<span class="cell-sub">{{ humanize(p.topPickStage) }}</span></td>
-              <td class="num">{{ pct(p.topPickProbability) }}</td>
-              <td class="num">{{ num(p.topPickPrice) }}</td>
-              <td><mm-score [home]="p.finalHomeScore" [away]="p.finalAwayScore" [muted]="p.matchStatus !== 'FINISHED'" /></td>
-              <td><mm-result [value]="p.settlementStatus" /></td>
-              <td class="num">{{ p.pickCount }}</td>
+              <td class="num hide-sm">{{ pct(p.topPickProbability) }}</td>
+              <td class="num hide-sm">{{ num(p.topPickPrice) }}</td>
+              <td class="hide-sm"><mm-score [home]="p.predictedHomeScore" [away]="p.predictedAwayScore" /></td>
+              <td class="hide-sm"><mm-score [home]="p.finalHomeScore" [away]="p.finalAwayScore" [muted]="p.matchStatus !== 'FINISHED'" /></td>
+              <td class="sticky-end"><mm-result [value]="p.settlementStatus" /></td>
+              <td class="hide-sm">{{ humanize(p.predictionType) }}</td>
+              <td class="num hide-sm">{{ p.matchMinute ?? '—' }}</td>
+              <td class="hide-sm"><mm-score [home]="p.currentHomeScore" [away]="p.currentAwayScore" [muted]="true" /></td>
+              <td class="num hide-sm">{{ pct(p.correctScoreProbability) }}</td>
+              <td class="num hide-sm">{{ p.pickCount }}</td>
             </tr>
             } @empty {
               <tr><td colspan="14" class="empty">{{ list.loading() ? 'Loading…' : list.error() || 'No predictions match these filters.' }}</td></tr>
@@ -73,8 +74,14 @@ export class PredictionsPage {
 
   constructor() {
     // Stay on the current page and sort; a new prediction may land on it.
-    inject(LiveService).predictions.pipe(takeUntilDestroyed()).subscribe(() => this.list.load());
+    inject(LiveService).refresh.pipe(takeUntilDestroyed()).subscribe(() => this.list.load());
   }
 
-  onFilters(f: Filters): void { this.filters = f; this.list.reload(); }
+  private first = true;
+
+  onFilters(f: Filters): void {
+    this.filters = f;
+    // The filter bar reports once on init: keep the page and sort from the URL then, start over on later changes.
+    if (this.first) { this.first = false; this.list.load(); } else this.list.reload();
+  }
 }

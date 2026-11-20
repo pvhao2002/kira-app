@@ -3,6 +3,7 @@ package com.matchmind.external;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -12,6 +13,7 @@ import com.matchmind.external.ExternalDtos.PredictionRequest;
 import com.matchmind.external.ExternalDtos.PredictionResponse;
 import com.matchmind.external.ExternalDtos.ResultRequest;
 import com.matchmind.external.ExternalDtos.SettleRequest;
+import com.matchmind.match.Match;
 import com.matchmind.match.MatchRepository;
 import com.matchmind.match.MatchResultService;
 import com.matchmind.match.MatchResultService.ResultResponse;
@@ -27,6 +29,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -44,6 +47,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -157,8 +161,8 @@ public class ExternalController {
         return ref;
     }
 
-    private java.util.UUID resolveMatch(ProviderPrincipal caller, String externalMatchId) {
-        return matches.findByProviderIdAndExternalMatchId(caller.providerId(), externalMatchId).map(m -> m.getId())
+    private UUID resolveMatch(ProviderPrincipal caller, String externalMatchId) {
+        return matches.findByProviderIdAndExternalMatchId(caller.providerId(), externalMatchId).map(Match::getId)
             .orElseThrow(() -> ApiException.notFound("MATCH_NOT_FOUND", "No match with this externalMatchId exists for your provider"));
     }
 
@@ -186,7 +190,7 @@ public class ExternalController {
     /** Same status GlobalExceptionHandler answers with, so the API log shows what the provider saw. */
     private static int statusOf(RuntimeException e) {
         if (e instanceof DataIntegrityViolationException || e instanceof OptimisticLockingFailureException) return 409;
-        if (e instanceof IllegalArgumentException || e instanceof jakarta.validation.ConstraintViolationException) return 400;
+        if (e instanceof IllegalArgumentException || e instanceof ConstraintViolationException) return 400;
         return 500;
     }
 
@@ -222,7 +226,7 @@ public class ExternalController {
         } catch (UnrecognizedPropertyException e) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "UNKNOWN_FIELD", "Unknown field '" + e.getPropertyName() + "'",
                 Map.of(path(e), "unknown field"));
-        } catch (com.fasterxml.jackson.databind.JsonMappingException e) {
+        } catch (JsonMappingException e) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_FIELD_TYPE", "A field has the wrong type or format",
                 Map.of(path(e), "wrong type or format"));
         } catch (JsonProcessingException e) {
@@ -237,7 +241,7 @@ public class ExternalController {
         return value;
     }
 
-    private static String path(com.fasterxml.jackson.databind.JsonMappingException e) {
+    private static String path(JsonMappingException e) {
         StringBuilder b = new StringBuilder();
         for (var ref : e.getPath()) {
             if (ref.getFieldName() != null) b.append(b.isEmpty() ? "" : ".").append(ref.getFieldName());

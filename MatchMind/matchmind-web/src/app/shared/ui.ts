@@ -7,7 +7,7 @@ import { ToastService } from './kit';
   selector: 'mm-score',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<span class="score-chip" role="img" [class.muted]="muted()" [attr.aria-label]="label()">
-    <span>{{ home() ?? '–' }}</span><span class="sep">:</span><span>{{ away() ?? '–' }}</span></span>`,
+    <span>{{ home() ?? '—' }}</span><span class="sep">:</span><span>{{ away() ?? '—' }}</span></span>`,
 })
 export class ScoreChip {
   readonly home = input<number | null | undefined>(null);

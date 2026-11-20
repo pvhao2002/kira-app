@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { apiError } from '../core/http';
+import { errorMessage, safeValue, viewState } from '../core/resource';
 import { PickDetail, PredictionDetail } from '../core/models';
 import { fmtDateTime, humanize, line, num, pct, statRows } from '../shared/format';
 import { Dialog, Expansion, Tabs, ToastService } from '../shared/kit';
@@ -17,26 +18,26 @@ type Action = { kind: 'recalculate' | 'override'; pick: PickDetail };
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stack">
-      <a routerLink="/predictions"><i class="pi pi-arrow-left"></i> Predictions</a>
+      <a routerLink="/predictions" class="back-link"><i class="pi pi-arrow-left" aria-hidden="true"></i> Predictions</a>
       <mm-state [state]="state()" [message]="error()" />
       @if (detail(); as d) {
         <section class="panel">
           <header>
             <div>
               <h2><a [routerLink]="['/matches', d.match.id]">{{ d.match.homeTeam }} – {{ d.match.awayTeam }}</a></h2>
-              <p class="muted-text">{{ d.match.league }} · {{ d.model.name }} {{ d.model.version }} · predicted {{ fmt(d.predictedAt) }} · event {{ d.eventId }}</p>
+              <p class="muted-text sub">{{ d.match.league }} · {{ d.model.name }} {{ d.model.version }} · predicted {{ fmt(d.predictedAt) }} · event {{ d.eventId }}</p>
             </div>
             <mm-result [value]="d.match.status" kind="status" />
           </header>
-          <div class="row" style="gap:1.5rem">
-            <div><span class="cell-sub">Type</span>{{ humanize(d.predictionType) }}{{ d.matchMinute !== null ? ' · ' + d.matchMinute + "'" : '' }}</div>
+          <div class="facts">
+            <div class="fact"><span class="fact-label">Type</span>{{ humanize(d.predictionType) }}{{ d.matchMinute !== null ? ' · ' + d.matchMinute + "'" : '' }}</div>
             @if (d.predictionType === 'LIVE') {
-              <div><span class="cell-sub">Score at prediction</span><mm-score [home]="d.currentHomeScore" [away]="d.currentAwayScore" [muted]="true" /></div>
-              <div><span class="cell-sub">Corners at prediction</span>{{ d.currentHomeCorners ?? '–' }} : {{ d.currentAwayCorners ?? '–' }}</div>
+              <div class="fact"><span class="fact-label">Score at prediction</span><mm-score [home]="d.currentHomeScore" [away]="d.currentAwayScore" [muted]="true" /></div>
+              <div class="fact"><span class="fact-label">Corners at prediction</span>{{ d.currentHomeCorners ?? '—' }} : {{ d.currentAwayCorners ?? '—' }}</div>
             }
-            <div><span class="cell-sub">Most likely score</span><mm-score [home]="d.correctScores[0]?.home" [away]="d.correctScores[0]?.away" /> {{ pct(d.correctScores[0]?.probability) }}</div>
-            <div><span class="cell-sub">Final</span><mm-score [home]="d.match.finalHomeScore" [away]="d.match.finalAwayScore" [muted]="d.match.status !== 'FINISHED'" /></div>
-            <div><span class="cell-sub">Final corners</span>{{ d.match.finalHomeCorners ?? '–' }} : {{ d.match.finalAwayCorners ?? '–' }}</div>
+            <div class="fact"><span class="fact-label">Most likely score</span><span class="row"><mm-score [home]="d.correctScores[0]?.home" [away]="d.correctScores[0]?.away" /> {{ pct(d.correctScores[0]?.probability) }}</span></div>
+            <div class="fact"><span class="fact-label">Final</span><mm-score [home]="d.match.finalHomeScore" [away]="d.match.finalAwayScore" [muted]="d.match.status !== 'FINISHED'" /></div>
+            <div class="fact"><span class="fact-label">Final corners</span>{{ d.match.finalHomeCorners ?? '—' }} : {{ d.match.finalAwayCorners ?? '—' }}</div>
           </div>
         </section>
 
@@ -45,39 +46,39 @@ type Action = { kind: 'recalculate' | 'override'; pick: PickDetail };
         <div class="tabpanel" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
           @switch (tab()) {
             @case ('picks') {
-              <div class="table-wrap"><table class="dt">
+              <div class="table-wrap"><table class="dt compact-sm">
                 <thead>
-                  <tr><th style="width:2.5rem"></th><th class="num">#</th><th>Market</th><th>Pick</th><th class="num">Line</th><th>Stage</th>
-                    <th class="num">Prob.</th><th class="num">Price</th><th>Result</th><th>Settled by</th>@if (auth.isAdmin()) { <th></th> }</tr>
+                  <tr><th class="th-icon"><span class="sr-only">Details</span></th><th class="num hide-sm">#</th><th>Market</th><th>Pick</th><th class="num">Line</th><th class="hide-sm">Stage</th>
+                    <th class="num hide-sm">Prob.</th><th class="num hide-sm">Price</th><th>Result</th><th class="hide-sm">Settled by</th>@if (auth.isAdmin()) { <th></th> }</tr>
                 </thead>
                 <tbody>
                   @for (p of d.picks; track p.id) {
                   <tr>
-                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="expanded.has(p.id)" (click)="expanded.toggle(p.id)"
+                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="expanded.has(p.id)" [attr.aria-controls]="'pick-hist-' + p.id" (click)="expanded.toggle(p.id)"
                       [attr.aria-label]="expanded.has(p.id) ? 'Hide settlement history' : 'Show settlement history'">
                       <i class="pi" [class.pi-chevron-down]="expanded.has(p.id)" [class.pi-chevron-right]="!expanded.has(p.id)"></i></button></td>
-                    <td class="num">{{ p.rank }}</td>
+                    <td class="num hide-sm">{{ p.rank }}</td>
                     <td>{{ p.market }}</td>
                     <td>{{ p.pick }}</td>
                     <td class="num">{{ line(p.market, p.line) }}</td>
-                    <td>{{ humanize(p.stage) }}</td>
-                    <td class="num">{{ pct(p.probability) }}</td>
-                    <td class="num">{{ num(p.price) }}</td>
+                    <td class="hide-sm">{{ humanize(p.stage) }}</td>
+                    <td class="num hide-sm">{{ pct(p.probability) }}</td>
+                    <td class="num hide-sm">{{ num(p.price) }}</td>
                     <td><mm-result [value]="p.settlementStatus" /></td>
-                    <td>{{ currentSource(p) }}</td>
+                    <td class="hide-sm">{{ currentSource(p) }}</td>
                     @if (auth.isAdmin()) {
                       <td class="nowrap">
                         <button type="button" class="btn btn-text btn-sm" (click)="open('recalculate', p)" [disabled]="d.match.status !== 'FINISHED' && d.match.status !== 'CANCELLED' && p.settlementStatus === 'PENDING'">Recalculate</button>
-                        <button type="button" class="btn btn-text btn-sm" style="color:var(--mm-ink-2)" (click)="open('override', p)">Override</button>
+                        <button type="button" class="btn btn-text btn-sm quiet" (click)="open('override', p)">Override</button>
                       </td>
                     }
                   </tr>
                   @if (expanded.has(p.id)) {
-                  <tr class="expanded"><td [attr.colspan]="auth.isAdmin() ? 11 : 10">
+                  <tr class="expanded" [id]="'pick-hist-' + p.id"><td [attr.colspan]="auth.isAdmin() ? 11 : 10">
                     @for (r of p.results; track r.id) {
-                      <div style="padding:.35rem 0;border-bottom:1px solid var(--mm-line)">
+                      <div class="hist-item">
                         <mm-result [value]="r.result" /> <strong>{{ humanize(r.source) }}</strong> · {{ fmt(r.settledAt) }} · {{ r.calculationVersion }}
-                        @if (!r.current) { <span class="muted-text" style="display:inline"> · superseded {{ fmt(r.supersededAt) }}</span> }
+                        @if (!r.current) { <span class="muted-text"> · superseded {{ fmt(r.supersededAt) }}</span> }
                         @if (r.reason) { <div class="muted-text">Reason: {{ r.reason }}</div> }
                         <mm-json [value]="r.details" />
                       </div>
@@ -99,7 +100,7 @@ type Action = { kind: 'recalculate' | 'override'; pick: PickDetail };
                     <tr><td colspan="11" class="group-cell">{{ g.market }}</td></tr>
                     @for (o of g.rows; track $index) {
                     <tr>
-                      <td>{{ o.ref }}</td><td>{{ humanize(o.stage) }} {{ o.snapshotOrder }}</td><td class="num">{{ line(o.market, o.line, o.lineDisplay) }}</td>
+                      <td>{{ o.ref }}</td><td>{{ humanize(o.stage) }} <span class="muted-text" title="Snapshot number">#{{ o.snapshotOrder }}</span></td><td class="num">{{ line(o.market, o.line, o.lineDisplay) }}</td>
                       <td class="num">{{ num(o.homeOdds) }}</td><td class="num">{{ num(o.drawOdds) }}</td><td class="num">{{ num(o.awayOdds) }}</td>
                       <td class="num">{{ num(o.overOdds) }}</td><td class="num">{{ num(o.underOdds) }}</td>
                       <td>{{ humanize(o.settlementBasis) }}</td>
@@ -126,7 +127,7 @@ type Action = { kind: 'recalculate' | 'override'; pick: PickDetail };
                   <thead><tr><th>Stat</th><th class="num">{{ d.match.homeTeam }}</th><th class="num">{{ d.match.awayTeam }}</th></tr></thead>
                   <tbody>@for (r of statRows(); track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody>
                 </table>
-                @if (s.extra) { <h3 style="margin:1rem 0 .5rem">Other stats</h3><mm-json [value]="s.extra" /> }
+                @if (s.extra) { <h3 class="sub-h">Other stats</h3><mm-json [value]="s.extra" /> }
               } @else { <p class="muted-text">No stats were sent with this prediction.</p> }
             }
             @case ('sim') {
@@ -143,18 +144,18 @@ type Action = { kind: 'recalculate' | 'override'; pick: PickDetail };
                   <div><h3 class="mb-2">Probabilities</h3><mm-json [value]="s.probabilities" /></div>
                 </div>
                 @if (s.correctScoreDistribution?.length) {
-                  <h3 style="margin:1rem 0 .5rem">Score distribution</h3>
+                  <h3 class="sub-h">Score distribution</h3>
                   <div class="table-wrap short"><table class="dt">
                     <thead><tr><th>Score</th><th class="num">Probability</th></tr></thead>
                     <tbody>@for (c of s.correctScoreDistribution!; track $index) { <tr><td><mm-score [home]="c.home" [away]="c.away" [muted]="true" /></td><td class="num">{{ pct(c.probability) }}</td></tr> }</tbody>
                   </table></div>
                 }
-                <h3 style="margin:1rem 0 .5rem">Parameters</h3><mm-json [value]="s.parameters" />
+                <h3 class="sub-h">Parameters</h3><mm-json [value]="s.parameters" />
               } @else { <p class="muted-text">No simulation was sent with this prediction.</p> }
             }
             @case ('raw') {
               <h3 class="mb-2">Request payload</h3><mm-json [value]="d.payload" />
-              <h3 style="margin:1rem 0 .5rem">Metadata</h3><mm-json [value]="d.metadata" />
+              <h3 class="sub-h">Metadata</h3><mm-json [value]="d.metadata" />
             }
           }
         </div>
@@ -191,9 +192,10 @@ export class PredictionDetailPage {
   private readonly api = inject(ApiService);
   private readonly messages = inject(ToastService);
   readonly auth = inject(AuthService);
-  readonly state = signal<'loading' | 'error' | 'ready'>('loading');
-  readonly error = signal('');
-  readonly detail = signal<PredictionDetail | null>(null);
+  private readonly resource = this.api.predictionResource(() => this.id());
+  readonly state = viewState(this.resource);
+  readonly error = errorMessage(this.resource);
+  readonly detail = safeValue(this.resource);
   readonly action = signal<Action | null>(null);
   readonly saving = signal(false);
   readonly tab = signal('picks');
@@ -228,16 +230,7 @@ export class PredictionDetailPage {
   });
 
   constructor() {
-    effect(() => this.load(this.id()));
-  }
-
-  load(id: string): void {
-    this.state.set('loading');
-    this.expanded.clear();
-    this.api.prediction(id).subscribe({
-      next: d => { this.detail.set(d); this.state.set('ready'); },
-      error: e => { this.detail.set(null); this.error.set(apiError(e).message); this.state.set('error'); },
-    });
+    effect(() => { this.id(); this.expanded.clear(); }); // another prediction: collapse the opened rows
   }
 
   currentSource(p: PickDetail): string {
@@ -264,7 +257,8 @@ export class PredictionDetailPage {
         this.saving.set(false);
         if (this.action() === a) this.action.set(null);
         this.messages.add({ severity: 'success', summary: a.kind === 'override' ? 'Override saved' : r.status === 'UNSETTLED' ? 'Back to pending' : 'Recalculated', detail: `${r.market} ${r.pick}: ${humanize(r.result)}` });
-        this.load(this.id());
+        this.expanded.clear();
+        this.resource.reload();
       },
       error: e => { this.saving.set(false); this.actionError.set(apiError(e).message); },
     });

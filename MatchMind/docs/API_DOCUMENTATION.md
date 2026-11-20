@@ -12,6 +12,7 @@ which is the compose default.
 |---|---|---|
 | Dashboard users | `Authorization: Bearer <JWT>` from `POST /auth/login` | `/api/v1/**` except `/external/**` |
 | AI agents (machine-to-machine) | `X-Api-Key: <EXTERNAL_API_KEY>` (one shared key) + `X-Provider: <code>` | `/api/v1/external/**` only |
+| Anyone (connectivity test) | nothing | `GET /api/v1/external/ping` only |
 
 Roles:
 - `VIEWER` can call every `GET` plus `/auth/**`.
@@ -85,12 +86,34 @@ Each call is audited in `external_api_requests` and shown on the API Logs page. 
 (≤ 128 characters) to correlate retries. The body must be a JSON object of at most 1 MB. Unknown fields are rejected
 with `UNKNOWN_FIELD`, so typos are not silently dropped.
 
+Browser pages on any origin may call these endpoints: CORS answers `Access-Control-Allow-Origin: *` for `GET` and
+`POST` with the headers above plus `Content-Type` and `X-Request-Id`, and never allows credentials. This is how the
+MatchMind artifact sends the requests a sandboxed agent could not. The key stays a header, so a page only gets what it
+already holds. The dashboard API keeps the exact origins in `CORS_ALLOWED_ORIGINS`.
+
+### `GET /api/v1/external/ping` (public)
+
+A connectivity test for integrators: no headers needed. The key is not checked, even when sent. Nothing is stored or
+audited, so a ping does not appear on the API Logs page. Only `GET` is public; any other method on this path needs the
+key.
+
+```json
+{ "status": "ok", "serverTime": "2026-11-19T13:05:00Z" }
+```
+
 ### 1. `POST /api/v1/external/predictions`
 
 Agents that cannot set custom headers (e.g. a ChatGPT Custom GPT Action, see [`chatgpt-action.yaml`](chatgpt-action.yaml))
 may send `?provider=…&model=…&modelVersion=…` in the URL instead of `X-Provider` / `X-Model-Name` / `X-Model-Version`;
-`X-Api-Key` stays a header. Agents without internet (chat code sandboxes) reply `CANNOT_CALL_API` with the JSON body,
-which an admin pastes into **Import prediction**: `POST /api/v1/predictions/import?provider=…&model=…&modelVersion=…`
+`X-Api-Key` stays a header. Agents without internet (chat code sandboxes) that can write to Google Sheets append the
+request as one row of the sheet named in `MATCHMIND_SHEET_URL`. The Apps Script
+[`google-sheet/MatchMind.gs`](google-sheet/MatchMind.gs) in that sheet sends new rows every 5 minutes. The sheet holds
+the agent key, so keep it private and never share it by link: the link is in every prompt. Other agents
+keep the request in the MatchMind artifact, a page in the chat built from the **MatchMind Artifact Prompt** (Prompt
+Notes). The user sends it from the browser
+with **Send** or **Send all** (see the CORS rule above). If the page cannot reach the server, **Copy JSON** copies the
+request's header lines and body for **Import prediction**. Agents that cannot create artifacts reply `CANNOT_CALL_API`
+with the JSON body, which an admin pastes into **Import prediction**: `POST /api/v1/predictions/import?provider=…&model=…&modelVersion=…`
 (ADMIN JWT, body = the prediction JSON), with the same validation, audit log and live event as this endpoint.
 
 Stores one immutable prediction snapshot, creates or updates the match, and returns the generated ids.
@@ -258,7 +281,8 @@ Both are created by external calls (`X-Provider`, `X-Model-Name`); there are no 
 `PUT /prompts/{id}` `{content, description, active, expectedVersion}`. A stale `expectedVersion` returns
 `409 PROMPT_VERSION_CONFLICT`.
 `GET /prompts/{id}/for-agent` (ADMIN only) returns `{content}` with `{{EXTERNAL_API_KEY}}` replaced by the shared
-agent key; the web "Copy" button uses it for admins. Stored prompts keep the placeholder, so the key never enters the
+agent key and `{{MATCHMIND_SHEET_URL}}` by the `MATCHMIND_SHEET_URL` link (empty when unset); the web "Copy" button
+uses it for admins. Stored prompts keep the placeholder, so the key never enters the
 database, the prompt history or a viewer's screen.
 
 ### API logs
@@ -284,6 +308,7 @@ in the `Authorization` header (fetch, not `EventSource`), so the token never app
 
 ```bash
 API=http://localhost:8088/api/v1        # via the web container (or :8090 for the API directly)
+curl -s $API/external/ping              # reachability check, no key needed
 TOKEN=$(curl -s $API/auth/login -H 'Content-Type: application/json' \
   -d '{"username":"admin","password":"<password>"}' | jq -r .accessToken)
 

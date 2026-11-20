@@ -40,7 +40,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 };
 
 /** Normalizes any HTTP failure to the backend's ErrorResponse shape. */
-export function apiError(err: unknown): ApiError {
+export function apiError(raw: unknown): ApiError {
+  // A resource may hand the HttpErrorResponse back wrapped in an Error (`cause`).
+  const err = raw instanceof HttpErrorResponse ? raw : raw instanceof Error && raw.cause instanceof HttpErrorResponse ? raw.cause : raw;
   if (err instanceof HttpErrorResponse && err.error && typeof err.error === 'object' && 'code' in err.error) {
     return err.error as ApiError;
   }

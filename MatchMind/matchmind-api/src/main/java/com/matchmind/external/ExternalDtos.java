@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /** Request/response contracts of the three external callback APIs (see docs/API_DOCUMENTATION.md). */
 public final class ExternalDtos {
@@ -31,6 +32,12 @@ public final class ExternalDtos {
     }
 
     public record Pair(@NotNull @Min(0) @Max(99) Integer home, @NotNull @Min(0) @Max(99) Integer away) {
+        /** Hands both sides to the setters; an absent pair leaves them untouched. */
+        public static void apply(Pair p, Consumer<Integer> home, Consumer<Integer> away) {
+            if (p == null) return;
+            home.accept(p.home());
+            away.accept(p.away());
+        }
     }
 
     public record PossessionPair(@NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal home,

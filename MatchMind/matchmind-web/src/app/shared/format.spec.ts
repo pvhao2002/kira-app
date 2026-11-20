@@ -66,3 +66,13 @@ describe('report filters', () => {
     expect(toFilters({ from: 'not-a-date' }).from).toBeUndefined();
   });
 });
+
+describe('changedFields', () => {
+  it('lists only changed fields, with readable labels and values', async () => {
+    const { changedFields } = await import('./format');
+    expect(changedFields({ status: 'LIVE', htHomeScore: null, same: 1 }, { status: 'FINISHED', htHomeScore: 1, same: 1 })).toEqual([
+      { field: 'Status', before: 'Live', after: 'Finished' },
+      { field: 'HT home score', before: '—', after: '1' },
+    ]);
+  });
+});

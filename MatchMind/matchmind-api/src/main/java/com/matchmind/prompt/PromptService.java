@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -65,7 +66,7 @@ public class PromptService {
             throw ApiException.conflict("PROMPT_VERSION_CONFLICT",
                 "This template was saved by someone else (now version " + t.getVersion() + "). Reload before saving.");
         }
-        boolean changed = !t.getContent().equals(r.content()) || !java.util.Objects.equals(t.getDescription(), r.description())
+        boolean changed = !t.getContent().equals(r.content()) || !Objects.equals(t.getDescription(), r.description())
             || t.isActive() != r.active();
         if (!changed) return PromptView.of(t);
         t.setContent(r.content());

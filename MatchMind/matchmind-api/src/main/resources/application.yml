@@ -39,6 +39,8 @@ app:
     ttl: ${JWT_TTL:PT8H}
   # Shared key every AI agent sends in X-Api-Key (32+ characters). Required: the API does not start without it.
   external-api-key: ${EXTERNAL_API_KEY:}
+  # Google Sheet that agents append the requests they could not send to; the admin copy of the prompts names it.
+  matchmind-sheet-url: ${MATCHMIND_SHEET_URL:}
   cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   trusted-proxies: ${TRUSTED_PROXIES:127.0.0.1/32,::1/128}
   bootstrap-admin:

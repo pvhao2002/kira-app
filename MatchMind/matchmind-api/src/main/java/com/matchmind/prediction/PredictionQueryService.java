@@ -5,6 +5,7 @@ import com.matchmind.match.Match;
 import com.matchmind.match.MatchRepository;
 import com.matchmind.model.AiModel;
 import com.matchmind.model.AiModelRepository;
+import com.matchmind.provider.Provider;
 import com.matchmind.provider.ProviderRepository;
 import com.matchmind.settlement.PickResult;
 import com.matchmind.settlement.PickResultRepository;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -142,7 +144,7 @@ public class PredictionQueryService {
         Prediction p = predictions.findById(id).orElseThrow(() -> ApiException.notFound("PREDICTION_NOT_FOUND", "Prediction not found"));
         Match m = matches.findById(p.getMatchId()).orElseThrow();
         AiModel am = models.findById(p.getAiModelId()).orElseThrow();
-        String providerName = providers.findById(p.getProviderId()).map(x -> x.getName()).orElse(null);
+        String providerName = providers.findById(p.getProviderId()).map(Provider::getName).orElse(null);
 
         List<PredictionOdds> oddsRows = odds.findByPredictionIdOrderByMarketAscOddsStageAscSnapshotOrderAsc(id);
         Map<UUID, PredictionOdds> oddsById = oddsRows.stream().collect(Collectors.toMap(PredictionOdds::getId, Function.identity()));
@@ -150,26 +152,8 @@ public class PredictionQueryService {
         Map<UUID, List<PickResult>> history = results.findByPickIdInOrderBySettledAtDesc(
             pickRows.stream().map(PredictionPick::getId).toList()).stream().collect(Collectors.groupingBy(PickResult::getPickId));
 
-        List<PickView> pickViews = pickRows.stream().map(pk -> {
-            PredictionOdds o = oddsById.get(pk.getOddsId());
-            List<ResultView> rs = history.getOrDefault(pk.getId(), List.of()).stream().map(r -> new ResultView(r.getId(),
-                r.getResult(), r.getSettledAt(), r.getSource(), r.getCalculationVersion(), r.isCurrent(), r.getSupersededAt(),
-                r.getReason(), r.getDetails())).toList();
-            String status = rs.stream().filter(ResultView::current).map(ResultView::result).findFirst().orElse("PENDING");
-            return new PickView(pk.getId(), pk.getPickRank(), pk.getMarket(), pk.getPick(), pk.getProbability(), o.getId(),
-                o.getOddsRef(), o.priceOf(pk.getPick()), o.getLine(), o.getOddsStage(), status, rs);
-        }).toList();
-
-        Map<String, Object> match = new java.util.LinkedHashMap<>();
-        match.put("id", m.getId());
-        match.put("externalMatchId", m.getExternalMatchId());
-        match.put("providerId", m.getProviderId());
-        match.put("providerName", providerName);
-        match.put("league", m.getLeague());
-        match.put("homeTeam", m.getHomeTeam());
-        match.put("awayTeam", m.getAwayTeam());
-        match.put("startTime", m.getStartTime());
-        match.putAll(m.resultSnapshot());
+        List<PickView> pickViews = pickViews(pickRows, oddsById, history);
+        Map<String, Object> match = matchView(m, providerName);
         Map<String, Object> model = Map.of("id", am.getId(), "name", am.getName(), "version", am.getVersion());
 
         return new Detail(p.getId(), p.getExternalEventId(), p.getPredictionType(), p.getMatchMinute(), p.getCurrentHomeScore(),
@@ -183,5 +167,32 @@ public class PredictionQueryService {
             scores.findByPredictionIdOrderByScoreRankAsc(id).stream()
                 .map(s -> new ScoreView(s.getScoreRank(), s.getHomeScore(), s.getAwayScore(), s.getProbability())).toList(),
             p.getMetadata(), p.getPayload());
+    }
+
+    private static List<PickView> pickViews(List<PredictionPick> pickRows, Map<UUID, PredictionOdds> oddsById,
+                                            Map<UUID, List<PickResult>> history) {
+        return pickRows.stream().map(pk -> {
+            PredictionOdds o = oddsById.get(pk.getOddsId());
+            List<ResultView> rs = history.getOrDefault(pk.getId(), List.of()).stream().map(r -> new ResultView(r.getId(),
+                r.getResult(), r.getSettledAt(), r.getSource(), r.getCalculationVersion(), r.isCurrent(), r.getSupersededAt(),
+                r.getReason(), r.getDetails())).toList();
+            String status = rs.stream().filter(ResultView::current).map(ResultView::result).findFirst().orElse("PENDING");
+            return new PickView(pk.getId(), pk.getPickRank(), pk.getMarket(), pk.getPick(), pk.getProbability(), o.getId(),
+                o.getOddsRef(), o.priceOf(pk.getPick()), o.getLine(), o.getOddsStage(), status, rs);
+        }).toList();
+    }
+
+    private static Map<String, Object> matchView(Match m, String providerName) {
+        Map<String, Object> match = new LinkedHashMap<>();
+        match.put("id", m.getId());
+        match.put("externalMatchId", m.getExternalMatchId());
+        match.put("providerId", m.getProviderId());
+        match.put("providerName", providerName);
+        match.put("league", m.getLeague());
+        match.put("homeTeam", m.getHomeTeam());
+        match.put("awayTeam", m.getAwayTeam());
+        match.put("startTime", m.getStartTime());
+        match.putAll(m.resultSnapshot());
+        return match;
     }
 }

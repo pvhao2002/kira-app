@@ -1,6 +1,7 @@
 package com.matchmind.security;
 
 import com.matchmind.external.ExternalAuditService;
+import com.matchmind.external.ExternalPingController;
 import com.matchmind.provider.ProviderService;
 import com.matchmind.security.Principals.ProviderPrincipal;
 import jakarta.servlet.FilterChain;
@@ -53,7 +54,10 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith("/api/v1/external/");
+        String uri = request.getRequestURI();
+        // Only GET on the ping is public (SecurityConfig); any other method there still goes through the key check.
+        return !uri.startsWith("/api/v1/external/")
+            || ("GET".equals(request.getMethod()) && uri.equals(ExternalPingController.PATH));
     }
 
     @Override

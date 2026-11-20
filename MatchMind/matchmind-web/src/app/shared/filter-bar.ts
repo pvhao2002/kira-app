@@ -1,8 +1,13 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { Filters, MARKETS, RESULTS } from '../core/models';
+import { safeValue } from '../core/resource';
 import { dayEndExclusive, dayStart, humanize } from './format';
+import { fromQuery, toQuery } from './url-state';
+
+const QUERY_KEYS = ['from', 'to', 'league', 'modelId', 'type', 'market', 'search', 'result'] as const;
 
 export type FilterField = 'dates' | 'league' | 'model' | 'type' | 'market' | 'search' | 'result';
 
@@ -80,13 +85,15 @@ export function toFilters(v: { from?: string | null; to?: string | null; league?
             </select>
           }
           @if (has('result')) {
-            <select class="input f-select-sm" formControlName="result" aria-label="Result">
-              <option value="">Any result</option>
+            <select class="input f-select-sm" formControlName="result" aria-label="Top pick result" title="Result of the top-ranked pick of each prediction">
+              <option value="">Any top result</option>
               @for (r of results; track r.value) { <option [value]="r.value">{{ r.label }}</option> }
             </select>
           }
-          <button type="submit" class="btn btn-primary btn-sm"><i class="pi pi-check"></i> Apply</button>
-          <button type="button" class="btn btn-text btn-sm" (click)="reset()">Reset</button>
+          <span class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="pi pi-check"></i> Apply</button>
+            <button type="button" class="btn btn-text btn-sm" (click)="reset()">Reset</button>
+          </span>
         </div>
       }
     </form>`,
@@ -94,6 +101,8 @@ export function toFilters(v: { from?: string | null; to?: string | null; league?
 export class FilterBar implements OnInit {
   private readonly api = inject(ApiService);
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly fields = input<FilterField[]>(['dates', 'league', 'model', 'type', 'market']);
   /** Default date range: the last N days including today. */
@@ -101,8 +110,9 @@ export class FilterBar implements OnInit {
   readonly changed = output<Filters>();
 
   readonly collapsed = signal(typeof window !== 'undefined' && window.innerWidth < 760);
-  readonly leagues = signal<string[]>([]);
-  readonly models = signal<{ label: string; value: string }[]>([]);
+  readonly leagues = safeValue(this.api.leaguesResource(() => this.has('league')), []);
+  private readonly modelList = safeValue(this.api.modelsResource(() => this.has('model')), []);
+  readonly models = computed(() => this.modelList().map(m => ({ label: `${m.name} ${m.version}`, value: m.id })));
   readonly activeCount = signal(0);
   readonly markets = MARKETS;
   readonly results = RESULTS.map(r => ({ label: humanize(r), value: r }));
@@ -111,25 +121,32 @@ export class FilterBar implements OnInit {
   readonly form = this.fb.nonNullable.group({ from: '', to: '', league: '', modelId: '', type: '', market: '', search: '', result: '' });
 
   ngOnInit(): void {
-    this.form.patchValue(this.defaults());
-    if (this.has('league')) this.api.leagues().subscribe({ next: l => this.leagues.set(l), error: () => undefined });
-    if (this.has('model')) {
-      this.api.models().subscribe({
-        next: ms => this.models.set(ms.map(m => ({ label: `${m.name} ${m.version}`, value: m.id }))),
-        error: () => undefined,
-      });
-    }
-    this.apply(); // initial load uses the default filters
+    // The URL wins over the defaults, so a shared or refreshed link shows the same filtered view.
+    this.form.patchValue({ ...this.defaults(), ...fromQuery(this.route.snapshot.queryParamMap, QUERY_KEYS) });
+    this.apply(false);
   }
 
   has(f: FilterField): boolean { return this.fieldSet().has(f); }
 
   current(): Filters { return toFilters(this.form.getRawValue()); }
 
-  apply(): void {
+  /** `updateUrl` is false for the first load, which should not rewrite the address bar. */
+  apply(updateUrl = true): void {
     const f = this.current();
     this.activeCount.set(Object.values(f).filter(v => v !== undefined).length);
     this.changed.emit(f);
+    if (updateUrl) this.writeUrl();
+  }
+
+  private writeUrl(): void {
+    const v = this.form.getRawValue();
+    const hasDefaultDates = !!this.initialDays();
+    const values: Record<string, string | null> = {};
+    for (const k of QUERY_KEYS) {
+      const date = k === 'from' || k === 'to';
+      values[k] = !this.has(date ? 'dates' : k === 'modelId' ? 'model' : k) ? null : v[k].trim() || (date && hasDefaultDates ? '' : null);
+    }
+    toQuery(this.router, this.route, values);
   }
 
   reset(): void {

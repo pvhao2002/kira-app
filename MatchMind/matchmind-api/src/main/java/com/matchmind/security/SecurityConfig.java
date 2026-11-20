@@ -1,5 +1,7 @@
 package com.matchmind.security;
 
+import com.matchmind.external.ExternalController;
+import com.matchmind.external.ExternalPingController;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +59,7 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health/**", "/actuator/health", "/swagger-ui/**", "/swagger-ui.html",
                     "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                .requestMatchers(HttpMethod.GET, ExternalPingController.PATH).permitAll()
                 .requestMatchers("/api/v1/external/**").hasRole("PROVIDER")
                 .requestMatchers("/api/v1/auth/**").hasAnyRole("ADMIN", "VIEWER")
                 .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
@@ -95,8 +98,18 @@ public class SecurityConfig {
         c.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Correlation-ID"));
         c.setExposedHeaders(List.of("X-Correlation-ID", "Retry-After", "Content-Disposition"));
         c.setMaxAge(3600L);
+        // Agents in sandboxes cannot reach the API, so the MatchMind artifact sends their requests from the user's
+        // browser: any page may call the external callbacks. The key travels in a header, never a cookie, so a page
+        // that does not hold it gains nothing.
+        CorsConfiguration external = new CorsConfiguration();
+        external.setAllowedOrigins(List.of("*"));
+        external.setAllowedMethods(List.of("GET", "POST"));
+        external.setAllowedHeaders(List.of("Content-Type", ApiKeyAuthenticationFilter.HEADER,
+            ApiKeyAuthenticationFilter.PROVIDER_HEADER, ExternalController.MODEL_HEADER,
+            ExternalController.MODEL_VERSION_HEADER, "X-Request-Id"));
+        external.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // External callbacks are server-to-server: no browser CORS for them.
+        source.registerCorsConfiguration("/api/v1/external/**", external); // the first registered match wins
         source.registerCorsConfiguration("/api/v1/**", c);
         return source;
     }

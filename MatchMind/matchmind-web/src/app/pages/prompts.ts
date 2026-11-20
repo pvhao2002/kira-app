@@ -1,11 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { apiError } from '../core/http';
 import { PromptTemplate } from '../core/models';
+import { errorMessage, safeValue, viewState } from '../core/resource';
 import { fmtDateTime, humanize } from '../shared/format';
-import { Dialog, ToastService } from '../shared/kit';
+import { ConfirmService, Dialog, ToastService } from '../shared/kit';
 import { ResultTag, StateView } from '../shared/ui';
 
 @Component({
@@ -41,7 +42,7 @@ import { ResultTag, StateView } from '../shared/ui';
                   @if (auth.isAdmin()) { <button type="button" class="btn btn-primary btn-sm" (click)="startEdit()" data-testid="prompt-edit"><i class="pi pi-pencil"></i> Edit</button> }
                 } @else {
                   <button type="button" class="btn btn-text btn-sm" (click)="cancel()" data-testid="prompt-cancel">Cancel</button>
-                  <button type="button" class="btn btn-primary btn-sm" [disabled]="saving() || !dirty() || !draft.trim()" (click)="save()" data-testid="prompt-save">
+                  <button type="button" class="btn btn-primary btn-sm" [disabled]="saving() || !dirty() || !draft().trim()" (click)="save()" data-testid="prompt-save">
                     <i class="pi" [class.pi-check]="!saving()" [class.pi-spinner]="saving()" [class.pi-spin]="saving()"></i> Save</button>
                 }
               </div>
@@ -57,10 +58,10 @@ import { ResultTag, StateView } from '../shared/ui';
                 <div class="field"><label for="pr-desc">Description</label><input class="input w-full" id="pr-desc" [(ngModel)]="draftDescription" maxlength="2000" /></div>
                 <label class="check"><input type="checkbox" id="pr-active" [(ngModel)]="draftActive" /> Active</label>
                 <textarea class="input" [(ngModel)]="draft" aria-label="Prompt content" spellcheck="false" data-testid="prompt-content"></textarea>
-                <small class="muted-text">{{ draft.length }} characters</small>
+                <small class="muted-text">{{ draft().length }} characters</small>
               </div>
             } @else {
-              @if (p.description) { <p style="margin-top:0">{{ p.description }}</p> }
+              @if (p.description) { <p class="page-note mb-2">{{ p.description }}</p> }
               @if (p.content.includes(KEY_PLACEHOLDER)) {
                 <p class="muted-text">
                   @if (auth.isAdmin()) { Copy fills in <code ngNonBindable>{{EXTERNAL_API_KEY}}</code> with the agent API key. Paste the copy only into your agent. }
@@ -84,20 +85,26 @@ import { ResultTag, StateView } from '../shared/ui';
         @if (createError()) { <div class="field-error">{{ createError() }}</div> }
         <div class="dialog-actions">
           <button type="button" class="btn btn-text" (click)="creating.set(false)">Cancel</button>
-          <button type="submit" class="btn btn-primary" [disabled]="saving() || !newName.trim() || !typeValid() || !newContent.trim()">
+          <button type="submit" class="btn btn-primary" [disabled]="saving() || !newName().trim() || !typeValid() || !newContent().trim()">
             @if (saving()) { <i class="pi pi-spinner pi-spin" aria-hidden="true"></i> } Create template</button>
         </div>
       </form>
     </mm-dialog>`,
 })
-export class PromptsPage implements OnInit {
+export class PromptsPage {
   private readonly api = inject(ApiService);
   private readonly messages = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
   readonly auth = inject(AuthService);
-  readonly state = signal<'loading' | 'error' | 'ready'>('loading');
-  readonly error = signal('');
-  readonly prompts = signal<PromptTemplate[]>([]);
-  readonly selectedId = signal<string | null>(null);
+  private readonly promptsRes = this.api.promptsResource();
+  readonly state = viewState(this.promptsRes);
+  readonly error = errorMessage(this.promptsRes);
+  readonly prompts = safeValue(this.promptsRes, []);
+  /** The open template: kept across reloads while it still exists, else the first one. */
+  readonly selectedId = linkedSignal<PromptTemplate[], string | null>({
+    source: this.prompts,
+    computation: (list, prev) => (prev && list.some(p => p.id === prev.value) ? prev.value : list[0]?.id ?? null),
+  });
   readonly selected = computed(() => this.prompts().find(p => p.id === this.selectedId()) ?? null);
   readonly editing = signal(false);
   readonly saving = signal(false);
@@ -106,45 +113,36 @@ export class PromptsPage implements OnInit {
   readonly createError = signal('');
   readonly fmt = fmtDateTime;
   readonly humanize = humanize;
-  draft = '';
-  draftDescription = '';
-  draftActive = true;
+  readonly draft = signal('');
+  readonly draftDescription = signal('');
+  readonly draftActive = signal(true);
   /** Version the draft started from; a reload must not move it, or Save would overwrite a newer version. */
   private draftVersion = 0;
-  newName = '';
-  newType = '';
-  newDescription = '';
-  newContent = '';
-
-  ngOnInit(): void { this.load(); }
-
-  load(selectId?: string): void {
-    this.api.prompts().subscribe({
-      next: list => {
-        this.prompts.set(list);
-        this.selectedId.set(selectId ?? this.selectedId() ?? list[0]?.id ?? null);
-        this.state.set('ready');
-      },
-      error: e => { this.error.set(apiError(e).message); this.state.set('error'); },
-    });
-  }
+  readonly newName = signal('');
+  readonly newType = signal('');
+  readonly newDescription = signal('');
+  readonly newContent = signal('');
 
   /** Route guard hook (app.routes.ts): leaving with unsaved edits asks first. */
-  canLeave(): boolean {
-    return !(this.editing() && this.dirty()) || confirm('Discard your unsaved changes?');
+  canLeave(): boolean | Promise<boolean> {
+    return !(this.editing() && this.dirty()) || this.confirmDiscard();
+  }
+
+  private confirmDiscard(): Promise<boolean> {
+    return this.confirm.ask({ header: 'Discard changes?', message: 'You have unsaved changes to this prompt.', acceptLabel: 'Discard', danger: true });
   }
 
   onBeforeUnload(e: BeforeUnloadEvent): void {
     if (this.editing() && this.dirty()) e.preventDefault();
   }
 
-  dirty(): boolean {
+  readonly dirty = computed(() => {
     const p = this.selected();
-    return !!p && (this.draft !== p.content || this.draftDescription !== (p.description ?? '') || this.draftActive !== p.active);
-  }
+    return !!p && (this.draft() !== p.content || this.draftDescription() !== (p.description ?? '') || this.draftActive() !== p.active);
+  });
 
-  select(p: PromptTemplate): void {
-    if (this.editing() && this.dirty() && !confirm('Discard your unsaved changes?')) return;
+  async select(p: PromptTemplate): Promise<void> {
+    if (this.editing() && this.dirty() && !await this.confirmDiscard()) return;
     this.editing.set(false);
     this.conflict.set(false);
     this.selectedId.set(p.id);
@@ -153,16 +151,16 @@ export class PromptsPage implements OnInit {
   startEdit(): void {
     const p = this.selected();
     if (!p) return;
-    this.draft = p.content;
-    this.draftDescription = p.description ?? '';
-    this.draftActive = p.active;
+    this.draft.set(p.content);
+    this.draftDescription.set(p.description ?? '');
+    this.draftActive.set(p.active);
     this.draftVersion = p.version;
     this.conflict.set(false);
     this.editing.set(true);
   }
 
-  cancel(): void {
-    if (this.dirty() && !confirm('Discard your unsaved changes?')) return;
+  async cancel(): Promise<void> {
+    if (this.dirty() && !await this.confirmDiscard()) return;
     this.editing.set(false);
     this.conflict.set(false);
   }
@@ -171,12 +169,12 @@ export class PromptsPage implements OnInit {
     const p = this.selected();
     if (!p) return;
     this.saving.set(true);
-    this.api.updatePrompt(p.id, { content: this.draft, description: this.draftDescription.trim() || null, active: this.draftActive, expectedVersion: this.draftVersion })
+    this.api.updatePrompt(p.id, { content: this.draft(), description: this.draftDescription().trim() || null, active: this.draftActive(), expectedVersion: this.draftVersion })
       .subscribe({
         next: updated => {
           this.saving.set(false);
           this.editing.set(false);
-          this.prompts.update(list => list.map(x => x.id === updated.id ? updated : x));
+          this.promptsRes.update(list => list?.map(x => x.id === updated.id ? updated : x));
           this.messages.add({ severity: 'success', summary: 'Prompt saved', detail: `${updated.name} is now version ${updated.version}.` });
         },
         error: e => {
@@ -191,7 +189,7 @@ export class PromptsPage implements OnInit {
   /** Refreshes from the server; the open draft is kept so nothing typed is lost. */
   reloadLatest(): void {
     this.api.prompts().subscribe({
-      next: list => { this.prompts.set(list); this.conflict.set(false); },
+      next: list => { this.promptsRes.set(list); this.conflict.set(false); },
       error: e => this.messages.add({ severity: 'error', summary: 'Reload failed', detail: apiError(e).message }),
     });
   }
@@ -209,19 +207,19 @@ export class PromptsPage implements OnInit {
     });
   }
 
-  typeValid(): boolean { return /^[A-Z][A-Z0-9_]{1,63}$/.test(this.newType.trim()); }
+  readonly typeValid = computed(() => /^[A-Z][A-Z0-9_]{1,63}$/.test(this.newType().trim()));
 
   openCreate(): void {
-    this.newName = ''; this.newType = ''; this.newDescription = ''; this.newContent = '';
+    this.newName.set(''); this.newType.set(''); this.newDescription.set(''); this.newContent.set('');
     this.createError.set('');
     this.creating.set(true);
   }
 
   create(): void {
     this.saving.set(true);
-    this.api.createPrompt({ name: this.newName.trim(), templateType: this.newType.trim(), content: this.newContent, description: this.newDescription.trim() || null })
+    this.api.createPrompt({ name: this.newName().trim(), templateType: this.newType().trim(), content: this.newContent(), description: this.newDescription().trim() || null })
       .subscribe({
-        next: p => { this.saving.set(false); this.creating.set(false); this.load(p.id); this.messages.add({ severity: 'success', summary: 'Template created', detail: p.name }); },
+        next: p => { this.saving.set(false); this.creating.set(false); this.selectedId.set(p.id); this.promptsRes.reload(); this.messages.add({ severity: 'success', summary: 'Template created', detail: p.name }); },
         error: e => { this.saving.set(false); this.createError.set(apiError(e).message); },
       });
   }

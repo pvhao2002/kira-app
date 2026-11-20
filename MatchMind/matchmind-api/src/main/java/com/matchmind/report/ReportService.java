@@ -11,17 +11,25 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /** All report figures are aggregated in PostgreSQL; the browser only ever receives one page or one summary. */
 @Service
 @RequiredArgsConstructor
 public class ReportService {
     public static final int EXPORT_LIMIT = 50_000;
+    private static final int MAX_COMPARISON_PAGE_SIZE = 50;
+    private static final int DEFAULT_MIN_MODELS = 2;
+    private static final int MAX_MIN_MODELS = 20;
+    /** Count columns of {@link #AGG}; a market without picks reports zero for each. */
+    private static final List<String> COUNT_COLUMNS =
+        List.of("picks", "settled", "wins", "losses", "pushOrVoid", "pending", "halfWins", "halfLosses");
     private final NamedParameterJdbcTemplate jdbc;
 
     /** Pick-level base: every pick with its prediction, match, model, odds snapshot and current settlement. */
@@ -161,7 +169,7 @@ public class ReportService {
         jdbc.query(HISTORY_COLUMNS + HISTORY_FROM + w.sql() + historyOrder(sort), w.params, Sql.ROW)
             .forEach(row -> out.add(EXPORT_COLUMNS.stream().map(c -> {
                 Object v = row.get(c);
-                return v instanceof java.time.Instant i ? (Object) i.toString() : v;
+                return v instanceof Instant i ? (Object) i.toString() : v;
             }).toList()));
         return out;
     }
@@ -174,7 +182,7 @@ public class ReportService {
         for (String market : Filters.MARKETS) {
             Map<String, Object> empty = new LinkedHashMap<>();
             empty.put("market", market);
-            for (String k : List.of("picks", "settled", "wins", "losses", "pushOrVoid", "pending", "halfWins", "halfLosses")) empty.put(k, 0L);
+            COUNT_COLUMNS.forEach(k -> empty.put(k, 0L));
             empty.put("avgProbability", null);
             byMarket.put(market, empty);
         }
@@ -188,8 +196,8 @@ public class ReportService {
     // ------------------------------------------------------------------ Report 4: model comparison on the same matches
     @Transactional(readOnly = true)
     public PageResponse<Map<String, Object>> modelComparison(Filters f, Integer minModels, Integer page, Integer size) {
-        int pg = Paging.page(page), sz = Math.min(Paging.size(size), 50);
-        int min = minModels == null ? 2 : Math.max(1, Math.min(minModels, 20));
+        int pg = Paging.page(page), sz = Math.min(Paging.size(size), MAX_COMPARISON_PAGE_SIZE);
+        int min = minModels == null ? DEFAULT_MIN_MODELS : Math.max(1, Math.min(minModels, MAX_MIN_MODELS));
         Sql.Where w = f.where(false);
         w.params.addValue("minModels", min);
         String matchIds = "SELECT p.match_id FROM predictions p JOIN matches m ON m.id = p.match_id " + w.sql()
@@ -336,8 +344,8 @@ public class ReportService {
     static String zone(String timezone) {
         if (timezone == null || timezone.isBlank()) return "UTC";
         try {
-            return java.time.ZoneId.of(timezone).getId();
-        } catch (java.time.DateTimeException e) {
+            return ZoneId.of(timezone).getId();
+        } catch (DateTimeException e) {
             throw ApiException.badRequest("INVALID_TIMEZONE", "Unknown time zone");
         }
     }

@@ -59,8 +59,9 @@ export function statusSeverity(s: string | null | undefined): Severity {
   }
 }
 
+const ACRONYMS = /\b(ah|ou|ai|api|ht|ft|cs|id|ip|1x2)\b/g;   // market codes and terms that read wrong as "Ah", "Ai"
 export function humanize(v: string | null | undefined): string {
-  return v ? v.replaceAll('_', ' ').toLowerCase().replace(/^\w/, c => c.toUpperCase()) : '—';
+  return v ? v.replaceAll('_', ' ').toLowerCase().replace(ACRONYMS, m => m.toUpperCase()).replace(/^\w/, c => c.toUpperCase()) : '—';
 }
 
 /** Local calendar day -> ISO instant of its start; `endExclusive` returns the next day's start. */
@@ -114,4 +115,20 @@ export function statRows(s: Omit<PredictionStatsView, 'extra'>): StatRow[] {
     ['On target', s.shotsOnTargetHome, s.shotsOnTargetAway], ['Off target', s.shotsOffTargetHome, s.shotsOffTargetAway],
     ['Corners', s.cornersHome, s.cornersAway], ['Yellow cards', s.yellowCardsHome, s.yellowCardsAway], ['Red cards', s.redCardsHome, s.redCardsAway],
   ];
+}
+
+export interface FieldChange { field: string; before: string; after: string; }
+
+/** Fields whose value differs between two JSON snapshots, formatted for reading (result history, audit). */
+export function changedFields(before: Record<string, unknown> | null | undefined, after: Record<string, unknown> | null | undefined): FieldChange[] {
+  const show = (v: unknown): string => {
+    if (v === null || v === undefined || v === '') return '—';
+    if (typeof v === 'string') return /^\d{4}-\d\d-\d\dT/.test(v) ? fmtDateTime(v) : /^[A-Z][A-Z_]+$/.test(v) ? humanize(v) : v;
+    return typeof v === 'object' ? JSON.stringify(v) : String(v);
+  };
+  const label = (k: string) => humanize(k.replace(/([a-z\d])([A-Z])/g, '$1_$2'));
+  const keys = [...new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})])];
+  return keys
+    .filter(k => JSON.stringify(before?.[k] ?? null) !== JSON.stringify(after?.[k] ?? null))
+    .map(k => ({ field: label(k), before: show(before?.[k]), after: show(after?.[k]) }));
 }

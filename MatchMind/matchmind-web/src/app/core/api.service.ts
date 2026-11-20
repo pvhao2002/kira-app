@@ -1,6 +1,7 @@
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse, httpResource } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { Observable, forkJoin } from 'rxjs';
 import {
   AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
@@ -27,6 +28,50 @@ export interface Paging { page?: number; size?: number; sort?: string; }
 export class ApiService {
   private readonly http = inject(HttpClient);
 
+  // Reactive reads (httpResource). Call from an injection context (field initializer). They run again when the
+  // signals they read change, cancel the superseded request and expose status()/error(); view with core/resource.ts.
+  leaguesResource(enabled: () => boolean = () => true) { return httpResource<string[]>(() => (enabled() ? `${API}/matches/leagues` : undefined)); }
+  providersResource() { return httpResource<Provider[]>(() => `${API}/providers`); }
+  apiLogEndpointsResource() { return httpResource<string[]>(() => `${API}/api-logs/endpoints`); }
+  modelsResource(enabled: () => boolean = () => true) { return httpResource<AiModel[]>(() => (enabled() ? `${API}/models` : undefined)); }
+  matchResource(id: () => string) { return httpResource<MatchDetail>(() => `${API}/matches/${encodeURIComponent(id())}`); }
+  /** A model with its breakdowns and latest predictions, loaded together; any failure fails the whole view. */
+  modelOverviewResource(id: () => string) {
+    return rxResource({
+      params: id,
+      stream: ({ params: modelId }) => {
+        const f = { modelId };
+        return forkJoin({
+          model: this.http.get<AiModel>(`${API}/models/${encodeURIComponent(modelId)}`),
+          market: this.breakdown(f, 'market'),
+          type: this.breakdown(f, 'type'),
+          recent: this.predictions(f, { page: 0, size: 15, sort: 'predictedAt,desc' }),
+        });
+      },
+    });
+  }
+  /** One model's results by market and by league under the given filters (modelId included). */
+  modelBreakdownResource(f: () => Filters) {
+    return rxResource({
+      params: f,
+      stream: ({ params }) => forkJoin({ market: this.breakdown(params, 'market'), league: this.breakdown(params, 'league') }),
+    });
+  }
+  /** Idle (no request) while `f` returns undefined, e.g. until the filter bar has reported its first filters. */
+  dashboardResource(f: () => Filters | undefined, tz: string) {
+    return httpResource<Dashboard>(() => { const x = f(); return x ? { url: `${API}/dashboard`, params: toParams({ ...x, tz }) } : undefined; });
+  }
+  recentPredictionsResource(f: () => Filters | undefined, size = 10) {
+    return httpResource<Page<PredictionRow>>(() => {
+      const x = f();
+      return x ? { url: `${API}/predictions`, params: toParams({ ...x, page: 0, size, sort: 'predictedAt,desc' }) } : undefined;
+    });
+  }
+  usersResource(enabled: () => boolean = () => true) { return httpResource<User[]>(() => (enabled() ? `${API}/users` : undefined)); }
+  promptsResource() { return httpResource<PromptTemplate[]>(() => `${API}/prompts`); }
+  needsReviewResource() { return httpResource<ReviewItem[]>(() => `${API}/settlements/needs-review`); }
+  predictionResource(id: () => string) { return httpResource<PredictionDetail>(() => `${API}/predictions/${encodeURIComponent(id())}`); }
+
   // Auth & users
   login(username: string, password: string) {
     return this.http.post<LoginResponse>(`${API}/auth/login`, { username, password });
@@ -36,7 +81,6 @@ export class ApiService {
   changePassword(currentPassword: string, newPassword: string) {
     return this.http.post<void>(`${API}/auth/change-password`, { currentPassword, newPassword });
   }
-  users() { return this.http.get<User[]>(`${API}/users`); }
   createUser(body: { username: string; password: string; role: string }) { return this.http.post<User>(`${API}/users`, body); }
   updateUser(id: string, body: { role?: string; status?: string }) { return this.http.patch<User>(`${API}/users/${id}`, body); }
   resetPassword(id: string, newPassword: string) {
@@ -44,9 +88,6 @@ export class ApiService {
   }
 
   // Dashboard & reports
-  dashboard(f: Filters, tz: string) {
-    return this.http.get<Dashboard>(`${API}/dashboard`, { params: toParams({ ...f, tz }) });
-  }
   modelPerformance(f: Filters) {
     return this.http.get<ModelPerformanceRow[]>(`${API}/reports/model-performance`, { params: toParams({ ...f }) });
   }
@@ -75,15 +116,11 @@ export class ApiService {
   matches(q: { search?: string; status?: string; league?: string; providerId?: string; from?: string; to?: string } & Paging) {
     return this.http.get<Page<MatchRow>>(`${API}/matches`, { params: toParams(q) });
   }
-  leagues() { return this.http.get<string[]>(`${API}/matches/leagues`); }
-  match(id: string) { return this.http.get<MatchDetail>(`${API}/matches/${id}`); }
   predictions(f: Filters, p: Paging) {
     return this.http.get<Page<PredictionRow>>(`${API}/predictions`, { params: toParams({ ...f, ...p }) });
   }
-  prediction(id: string) { return this.http.get<PredictionDetail>(`${API}/predictions/${id}`); }
 
   // Settlement (admin)
-  needsReview() { return this.http.get<ReviewItem[]>(`${API}/settlements/needs-review`); }
   settleMatch(matchId: string) { return this.http.post<MatchSettlement>(`${API}/settlements/matches/${matchId}`, {}); }
   recalculatePick(pickId: string, reason: string) {
     return this.http.post<PickSettlement>(`${API}/settlements/picks/${pickId}/recalculate`, { reason });
@@ -91,11 +128,6 @@ export class ApiService {
   overridePick(pickId: string, result: string, reason: string) {
     return this.http.post<PickSettlement>(`${API}/settlements/picks/${pickId}/override`, { result, reason });
   }
-
-  // AI models & providers
-  models(providerId?: string) { return this.http.get<AiModel[]>(`${API}/models`, { params: toParams({ providerId }) }); }
-  model(id: string) { return this.http.get<AiModel>(`${API}/models/${id}`); }
-  providers() { return this.http.get<Provider[]>(`${API}/providers`); }
 
   /** Admin only: the JSON body an agent printed because it could not reach the API, sent as is. */
   importPrediction(json: string, provider: string, model: string, modelVersion: string) {
@@ -119,6 +151,5 @@ export class ApiService {
   apiLogs(q: { providerId?: string; status?: string; endpoint?: string; search?: string; from?: string; to?: string } & Paging) {
     return this.http.get<Page<ApiLogRow>>(`${API}/api-logs`, { params: toParams(q) });
   }
-  apiLogEndpoints() { return this.http.get<string[]>(`${API}/api-logs/endpoints`); }
   apiLog(id: string) { return this.http.get<ApiLogDetail>(`${API}/api-logs/${id}`); }
 }

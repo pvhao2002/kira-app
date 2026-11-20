@@ -1,6 +1,8 @@
 package com.matchmind.provider;
 
+import com.matchmind.shared.CacheConfig;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +42,7 @@ public class ProviderService {
      * The provider id for a code, creating the provider on first use. Runs outside any transaction so the insert is
      * visible at once; ON CONFLICT absorbs a concurrent first call with the same code.
      */
+    @Cacheable(CacheConfig.PROVIDER_IDS)
     public UUID resolve(String code) {
         return find(code).orElseGet(() -> {
             jdbc.update("INSERT INTO providers (code, name) VALUES (:code, :code) ON CONFLICT (code) DO NOTHING", Map.of("code", code));

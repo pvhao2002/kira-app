@@ -16,7 +16,7 @@ them against real results with a deterministic engine, and reports how each AI m
 | `matchmind-api` | Java 25, Spring Boot 3.5, Spring Security, Spring Data JPA, JDBC, Flyway, Actuator, springdoc | Auth, callback ingestion, settlement, reporting, admin CRUD |
 | `matchmind-web` | Angular 22 (standalone, zoneless, signals), native HTML + in-house kit, Chart.js, PrimeIcons | Dashboard UI |
 | PostgreSQL 17 | UUID, TIMESTAMPTZ, JSONB, NUMERIC | Source of truth, with integrity enforced by constraints |
-| nginx (in the web image) | | Serves the SPA and proxies `/api/` to the API (same origin, so no CORS in production) |
+| nginx (in the web image) | | Serves the SPA and proxies `/api/` to the API (same origin, so the UI needs no CORS; only `/api/v1/external/**` answers other origins, for the MatchMind artifact) |
 
 ## Backend layout (`com.matchmind`)
 

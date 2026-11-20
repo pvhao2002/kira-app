@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, map, startWith } from 'rxjs';
 import { AuthService } from '../core/auth.service';
 import { LiveService } from '../core/live.service';
 
@@ -25,7 +25,8 @@ const NAV: NavItem[] = [
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="shell" [class.nav-collapsed]="collapsed()" [class.nav-open]="mobileOpen()">
+    <div class="shell" [class.nav-collapsed]="collapsed()" [class.nav-open]="mobileOpen()" (keydown.escape)="mobileOpen.set(false)">
+      <button type="button" class="skip-link" (click)="mainEl.focus()">Skip to content</button>
       <aside class="sidebar" aria-label="Main navigation">
         <a routerLink="/dashboard" class="brand">
           <span class="brand-mark" aria-hidden="true">M</span>
@@ -34,7 +35,7 @@ const NAV: NavItem[] = [
         <nav>
           @for (item of nav; track item.path) {
             @if (!item.adminOnly || auth.isAdmin()) {
-            <a [routerLink]="item.path" routerLinkActive="active" class="nav-link"
+            <a [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-link"
                [attr.title]="collapsed() ? item.label : null" [attr.aria-label]="collapsed() ? item.label : null" (click)="mobileOpen.set(false)">
               <i class="pi {{ item.icon }}" aria-hidden="true"></i>
               @if (!collapsed()) { <span>{{ item.label }}</span> }
@@ -49,14 +50,14 @@ const NAV: NavItem[] = [
       <div class="scrim" (click)="mobileOpen.set(false)"></div>
       <div class="main">
         <header class="topbar">
-          <button type="button" class="btn btn-text btn-icon menu-btn" aria-label="Open navigation" (click)="mobileOpen.set(true)"><i class="pi pi-bars"></i></button>
+          <button type="button" class="btn btn-text btn-icon menu-btn" aria-label="Open navigation" [attr.aria-expanded]="mobileOpen()" (click)="mobileOpen.set(true)"><i class="pi pi-bars"></i></button>
           <h1 class="page-title">{{ title() }}</h1>
           <div class="topbar-right">
-            <span class="user-chip"><i class="pi pi-user"></i>{{ auth.user()?.username }}<small>{{ auth.user()?.role === 'ADMIN' ? 'Admin' : 'Viewer' }}</small></span>
+            <span class="user-chip"><span class="avatar" aria-hidden="true">{{ auth.user()?.username?.charAt(0) }}</span>{{ auth.user()?.username }}<small>{{ auth.user()?.role === 'ADMIN' ? 'Admin' : 'Viewer' }}</small></span>
             <button type="button" class="btn btn-text btn-sm" (click)="auth.logout()"><i class="pi pi-sign-out"></i><span class="label">Sign out</span></button>
           </div>
         </header>
-        <main class="content"><router-outlet /></main>
+        <main class="content" #mainEl tabindex="-1"><router-outlet /></main>
       </div>
     </div>`,
 })
@@ -68,22 +69,20 @@ export class Shell {
   readonly nav = NAV;
   readonly collapsed = signal(Shell.storedCollapsed());
   readonly mobileOpen = signal(false);
-  readonly title = signal('');
-
-  constructor() {
-    this.updateTitle();
-    this.router.events.pipe(filter(e => e instanceof NavigationEnd), takeUntilDestroyed()).subscribe(() => this.updateTitle());
-  }
+  readonly title = toSignal(
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd), map(() => this.routeTitle()), startWith(this.routeTitle())),
+    { requireSync: true });
 
   toggle(): void {
     this.collapsed.update(v => !v);
     try { localStorage.setItem('matchmind.nav-collapsed', String(this.collapsed())); } catch { /* optional */ }
   }
 
-  private updateTitle(): void {
+  /** The deepest active route's title. */
+  private routeTitle(): string {
     let r = this.route.snapshot;
     while (r.firstChild) r = r.firstChild;
-    this.title.set((r.title ?? '').split(' · ')[0]);
+    return r.title ?? '';
   }
 
   private static storedCollapsed(): boolean {

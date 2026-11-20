@@ -31,9 +31,13 @@ import java.util.UUID;
 public class PromptController {
     /** Stored prompts name the agent key only by this placeholder; the key itself never reaches the database. */
     static final String API_KEY_PLACEHOLDER = "{{EXTERNAL_API_KEY}}";
+    /** The Google Sheet that agents append unsent requests to; empty when none is set up. */
+    static final String SHEET_URL_PLACEHOLDER = "{{MATCHMIND_SHEET_URL}}";
     private final PromptService service;
     @Value("${app.external-api-key:}")
     private String externalApiKey;
+    @Value("${app.matchmind-sheet-url:}")
+    private String sheetUrl;
 
     public record AgentPrompt(String content) {
     }
@@ -48,12 +52,16 @@ public class PromptController {
         return service.get(id);
     }
 
-    /** What an admin pastes into an agent: the prompt with the shared agent key filled in. Viewers never see the key. */
+    /**
+     * What an admin pastes into an agent: the prompt with the shared agent key and the Google Sheet link filled in.
+     * Viewers never see the key.
+     */
     @GetMapping("/{id}/for-agent")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Prompt text with the agent API key filled in (admin only)")
+    @Operation(summary = "Prompt text with the agent API key and the Google Sheet link filled in (admin only)")
     public AgentPrompt forAgent(@PathVariable UUID id) {
-        return new AgentPrompt(service.get(id).content().replace(API_KEY_PLACEHOLDER, externalApiKey));
+        return new AgentPrompt(service.get(id).content().replace(API_KEY_PLACEHOLDER, externalApiKey)
+            .replace(SHEET_URL_PLACEHOLDER, sheetUrl));
     }
 
     @PostMapping
