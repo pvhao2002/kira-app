@@ -22,10 +22,15 @@ const TABS: { value: Tab; label: string }[] = [
   { value: 'montecarlo', label: 'Monte Carlo' },
 ];
 
+/** Matches the API definition (API_DOCUMENTATION.md, "Win rate"); shown on every Win rate header. */
+export const WIN_RATE_DEF = 'Win rate = (W + ½W) / (W + ½W + L + ½L): a half win counts as a win, a half loss as a loss. Push, void and pending picks are left out.';
+
+// Exclusive counts (fullWins/fullLosses, not wins/losses which include the halves): Wins + Half wins + Losses + Half
+// losses + Push / void = Settled.
 const PERF_COLS: Col[] = [
   { field: 'predictions', header: 'Predictions', kind: 'int' }, { field: 'picks', header: 'Picks', kind: 'int' },
-  { field: 'settled', header: 'Settled', kind: 'int' }, { field: 'wins', header: 'Wins incl. half', kind: 'int' },
-  { field: 'halfWins', header: 'Half wins', kind: 'int' }, { field: 'losses', header: 'Losses incl. half', kind: 'int' },
+  { field: 'settled', header: 'Settled', kind: 'int' }, { field: 'fullWins', header: 'Wins', kind: 'int' },
+  { field: 'halfWins', header: 'Half wins', kind: 'int' }, { field: 'fullLosses', header: 'Losses', kind: 'int' },
   { field: 'halfLosses', header: 'Half losses', kind: 'int' }, { field: 'pushOrVoid', header: 'Push / void', kind: 'int' },
   { field: 'pending', header: 'Pending', kind: 'int' }, { field: 'winRate', header: 'Win rate', kind: 'pct' },
   { field: 'avgProbability', header: 'Avg prob.', kind: 'pct' },
@@ -80,8 +85,8 @@ const hideSm = (c: Col) => !SM_KEEP.has(c.field);
       <div class="grid-2">
         @for (part of [{ t: 'By market', rows: b.market }, { t: 'By league', rows: b.league }]; track part.t) {
           <div><h3 class="mb-2">{{ part.t }}</h3>
-            <div class="table-wrap short"><table class="dt">
-              <thead><tr>@for (c of cols; track c.field) { <th [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ c.header }}</th> }</tr></thead>
+            <div class="table-wrap short"><table class="dt" [attr.aria-label]="part.t">
+              <thead><tr>@for (c of cols; track c.field) { <th [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="c.field === 'winRate' ? winRateDef : null">{{ c.header }}</th> }</tr></thead>
               <tbody>
                 @for (x of part.rows; track x.key) { <tr>@for (c of cols; track c.field) { <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ cell(x, c) }}</td> }</tr> }
                 @empty { <tr><td [attr.colspan]="cols.length" class="empty">No picks.</td></tr> }
@@ -99,6 +104,7 @@ export class ModelBreakdown {
   readonly state = viewState(this.res);
   readonly error = errorMessage(this.res);
   readonly cols = BREAKDOWN_COLS;
+  readonly winRateDef = WIN_RATE_DEF;
   readonly isNum = isNum;
   readonly hideSm = hideSm;
   readonly cell = (r: unknown, c: Col) => cell(r as Record<string, unknown>, c);
@@ -112,30 +118,31 @@ export class ModelBreakdown {
     :host { display: block; }
     .toolbar { display: flex; gap: .5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: .6rem .75rem; }
     .toolbar .row { gap: .35rem; }
+    .kpi .kpi-sub { font-size: var(--fs-xs); font-weight: 400; }
   `],
   template: `
     <div class="stack">
       <mm-filter-bar [fields]="['search', 'dates', 'league', 'model', 'type', 'market', 'result']" (changed)="onFilters($event)" />
-      <mm-tabs [tabs]="tabs" [value]="tab()" (valueChange)="selectTab($event)" />
+      <mm-tabs controls="reports-panel" [tabs]="tabs" [value]="tab()" (valueChange)="selectTab($event)" />
 
-      <div class="stack" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
+      <div class="stack" id="reports-panel" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
       @switch (tab()) {
         @case ('models') {
           <section class="panel flush">
             <div class="toolbar">
-              <span class="muted-text">Expand a model for its results by market and by league. Half wins and half losses count toward the win rate.</span>
+              <span class="muted-text">Expand a model for its results by market and by league. {{ winRateDef }}</span>
               <button type="button" class="btn btn-outline btn-sm" (click)="csv('model-performance', modelCols, sortedModels())" [disabled]="!modelRows().length"><i class="pi pi-download"></i> CSV</button>
             </div>
             <mm-state [state]="state()" [message]="error()" />
             @if (state() === 'ready') {
-              <div class="table-wrap tall"><table class="dt">
+              <div class="table-wrap tall"><table class="dt" aria-label="AI model performance">
                 <thead><tr><th class="th-icon"><span class="sr-only">Details</span></th>
-                  @for (c of modelCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="modelSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ c.header }}</th> }
+                  @for (c of modelCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="modelSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="c.field === 'winRate' ? winRateDef : null">{{ c.header }}</th> }
                 </tr></thead>
                 <tbody>
                   @for (r of sortedModels(); track r.modelId) {
                     <tr>
-                      <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="modelOpen.has(r.modelId)" aria-label="Toggle breakdown" (click)="modelOpen.toggle(r.modelId)">
+                      <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="modelOpen.has(r.modelId)" [attr.aria-controls]="'breakdown-' + r.modelId" aria-label="Toggle breakdown" (click)="modelOpen.toggle(r.modelId)">
                         <i class="pi" [class.pi-chevron-down]="modelOpen.has(r.modelId)" [class.pi-chevron-right]="!modelOpen.has(r.modelId)"></i></button></td>
                       @for (c of modelCols; track c.field) {
                         <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">
@@ -144,7 +151,7 @@ export class ModelBreakdown {
                       }
                     </tr>
                     @if (modelOpen.has(r.modelId)) {
-                      <tr class="expanded"><td [attr.colspan]="modelCols.length + 1">
+                      <tr class="expanded" [id]="'breakdown-' + r.modelId"><td [attr.colspan]="modelCols.length + 1">
                         <mm-model-breakdown [modelId]="r.modelId" [filters]="filters() ?? {}" />
                       </td></tr>
                     }
@@ -173,7 +180,7 @@ export class ModelBreakdown {
                   <i class="pi" [class.pi-file-excel]="exporting() !== 'xlsx'" [class.pi-spinner]="exporting() === 'xlsx'" [class.pi-spin]="exporting() === 'xlsx'"></i> Excel</button>
               </div>
             </div>
-            <div class="table-wrap tall"><table class="dt" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
+            <div class="table-wrap tall"><table class="dt" aria-label="Prediction history" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
               <thead><tr><th class="th-icon"><span class="sr-only">Details</span></th>
                 @for (c of shownHistoryCols(); track c.field) {
                   @if (c.sort) { <th mmResize [mmSort]="c.sort" [sort]="historySort()" (sortChange)="setHistorySort($event)" [class.num]="isNum(c)" [class.sticky-end]="c.field === 'result'">{{ c.header }}</th> }
@@ -183,7 +190,7 @@ export class ModelBreakdown {
               <tbody>
                 @for (r of historyRows(); track r.pickId) {
                   <tr>
-                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="historyOpen.has(r.pickId)" aria-label="Toggle details" (click)="historyOpen.toggle(r.pickId)">
+                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="historyOpen.has(r.pickId)" [attr.aria-controls]="'pick-' + r.pickId" aria-label="Toggle details" (click)="historyOpen.toggle(r.pickId)">
                       <i class="pi" [class.pi-chevron-down]="historyOpen.has(r.pickId)" [class.pi-chevron-right]="!historyOpen.has(r.pickId)"></i></button></td>
                     @for (c of shownHistoryCols(); track c.field) {
                       <td [class.num]="isNum(c)" [class.sticky-end]="c.field === 'result'" class="nowrap">
@@ -205,7 +212,7 @@ export class ModelBreakdown {
                     }
                   </tr>
                   @if (historyOpen.has(r.pickId)) {
-                    <tr class="expanded"><td [attr.colspan]="shownHistoryCols().length + 1">
+                    <tr class="expanded" [id]="'pick-' + r.pickId"><td [attr.colspan]="shownHistoryCols().length + 1">
                       <div class="grid-3">
                         <dl class="dl">
                           <dt>Match</dt><dd>{{ r.homeTeam }} – {{ r.awayTeam }} ({{ r.league }})</dd>
@@ -247,10 +254,10 @@ export class ModelBreakdown {
                 <mm-chart type="bar" [data]="marketStack()" [options]="stackOptions" label="Outcomes by market chart" /></section>
             </div>
             <section class="panel flush">
-              <div class="toolbar"><span class="muted-text">All five markets are always listed, including ones without picks.</span>
+              <div class="toolbar"><span class="muted-text">All five markets are always listed, including ones without picks. {{ winRateDef }}</span>
                 <button type="button" class="btn btn-outline btn-sm" (click)="csv('market-performance', marketCols, sortedMarkets())"><i class="pi pi-download"></i> CSV</button></div>
-              <div class="table-wrap"><table class="dt">
-                <thead><tr>@for (c of marketCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="marketSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ c.header }}</th> }</tr></thead>
+              <div class="table-wrap"><table class="dt" aria-label="Market performance">
+                <thead><tr>@for (c of marketCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="marketSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="c.field === 'winRate' ? winRateDef : null">{{ c.header }}</th> }</tr></thead>
                 <tbody>@for (r of sortedMarkets(); track r.market) { <tr>@for (c of marketCols; track c.field) { <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ cell(r, c) }}</td> }</tr> }</tbody>
               </table></div>
             </section>
@@ -262,14 +269,15 @@ export class ModelBreakdown {
             <div class="toolbar">
               <div class="row"><label for="min-models">Matches with at least</label>
                 <select class="input input-sm" id="min-models" [value]="minModels()" (change)="setMinModels($event)">
-                  @for (n of [1, 2, 3, 4, 5]; track n) { <option [value]="n" [selected]="n === minModels()">{{ n }}</option> }
+                  @for (o of minModelOptions(); track o.n) { <option [value]="o.n" [selected]="o.n === minModels()">{{ o.label }}</option> }
                 </select>
                 <span>models</span></div>
-              <span class="muted-text">Latest prediction of each model per match, with its top pick.</span>
+              <span class="muted-text">@if (state() === 'ready') { <b>{{ comparisonTotal() }} {{ comparisonTotal() === 1 ? 'match' : 'matches' }} with ≥ {{ minModels() }} {{ minModels() === 1 ? 'model' : 'models' }}.</b> }
+                Latest prediction of each model per match, with its top pick.</span>
             </div>
             <mm-state [state]="state()" [message]="error()" />
             @if (state() === 'ready') {
-              <div class="table-wrap tall"><table class="dt">
+              <div class="table-wrap tall"><table class="dt" aria-label="Model comparison">
                 <thead>
                   <tr><th>Match</th><th>Final</th><th>AI model</th><th>Predicted</th><th class="num">Type / min</th><th>Predicted score</th><th class="num">CS prob.</th>
                     <th>CS hit</th><th>Top pick</th><th class="num">Prob.</th><th class="num">Odds</th><th>Outcome</th><th class="num">Predictions</th></tr>
@@ -311,13 +319,17 @@ export class ModelBreakdown {
               <div class="kpi"><span>Simulated predictions</span><strong>{{ mc.summary.simulatedPredictions }}</strong></div>
               <div class="kpi"><span>Avg iterations</span><strong>{{ num(mc.summary.avgSimulationCount, 0) }}</strong></div>
               <div class="kpi"><span>Avg expected remaining goals</span><strong>{{ num(mc.summary.avgExpectedRemainingGoals) }}</strong></div>
-              <div class="kpi"><span>Avg actual remaining goals</span><strong>{{ num(mc.summary.avgActualRemainingGoals) }}</strong></div>
-              <div class="kpi"><span>Mean abs. goal error</span><strong>{{ num(mc.summary.meanAbsGoalError) }}</strong></div>
-              <div class="kpi accent"><span>Correct score accuracy</span><strong>{{ pct(mc.summary.correctScoreAccuracy) }}</strong></div>
+              <div class="kpi"><span>Avg actual remaining goals</span><strong>{{ num(mc.summary.avgActualRemainingGoals) }}</strong>
+                <span class="kpi-sub">{{ mc.summary.finishedPredictions }} finished</span></div>
+              <div class="kpi"><span>Mean abs. goal error</span><strong>{{ num(mc.summary.meanAbsGoalError) }}</strong>
+                <span class="kpi-sub">{{ mc.summary.finishedPredictions }} finished</span></div>
+              <!-- Accuracy over finished predictions only; with none finished it is unknown, not 0%. -->
+              <div class="kpi accent"><span>Correct score accuracy</span><strong>{{ mc.summary.finishedPredictions ? pct(mc.summary.correctScoreAccuracy) : '—' }}</strong>
+                <span class="kpi-sub">{{ mc.summary.correctScoreHits }} / {{ mc.summary.finishedPredictions }} finished</span></div>
             </section>
           }
           <section class="panel flush">
-            <div class="table-wrap tall"><table class="dt" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
+            <div class="table-wrap tall"><table class="dt" aria-label="Monte Carlo simulations" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
               <thead>
                 <tr><th class="th-icon"><span class="sr-only">Details</span></th><th>Predicted</th><th>Match</th><th>AI model</th><th>Type / min</th><th>At prediction</th><th>Method</th>
                   <th class="num">Iterations</th><th class="num">xG home</th><th class="num">xG away</th><th class="num">xCorners home</th><th class="num">xCorners away</th>
@@ -326,7 +338,7 @@ export class ModelBreakdown {
               <tbody>
                 @for (r of monteCarlo()?.page?.data ?? []; track r.predictionId) {
                   <tr>
-                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="mcOpen.has(r.predictionId)" aria-label="Toggle distribution" (click)="mcOpen.toggle(r.predictionId)">
+                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="mcOpen.has(r.predictionId)" [attr.aria-controls]="'sim-' + r.predictionId" aria-label="Toggle distribution" (click)="mcOpen.toggle(r.predictionId)">
                       <i class="pi" [class.pi-chevron-down]="mcOpen.has(r.predictionId)" [class.pi-chevron-right]="!mcOpen.has(r.predictionId)"></i></button></td>
                     <td class="nowrap"><a [routerLink]="['/predictions', r.predictionId]">{{ fmt(r.predictedAt) }}</a></td>
                     <td class="nowrap">{{ r.homeTeam }} – {{ r.awayTeam }}<span class="cell-sub">{{ r.league }}</span></td>
@@ -344,7 +356,7 @@ export class ModelBreakdown {
                     <td><mm-result [value]="r.topPickResult" /></td>
                   </tr>
                   @if (mcOpen.has(r.predictionId)) {
-                    <tr class="expanded"><td colspan="17">
+                    <tr class="expanded" [id]="'sim-' + r.predictionId"><td colspan="17">
                       <div class="grid-3">
                         <div><h3 class="mb-2">Predicted probabilities</h3><mm-json [value]="r.probabilitiesJson" /></div>
                         <div><h3 class="mb-2">Scoreline distribution</h3><mm-json [value]="r.distributionJson" /></div>
@@ -381,6 +393,7 @@ export class ReportsPage {
   readonly marketCols = MARKET_COLS;
   readonly breakdownCols = BREAKDOWN_COLS;
   readonly historyCols = HISTORY_COLS;
+  readonly winRateDef = WIN_RATE_DEF;
   readonly isNum = isNum;
   readonly hideSm = hideSm;
   readonly cell = (r: unknown, c: Col) => cell(r as Record<string, unknown>, c);
@@ -401,7 +414,8 @@ export class ReportsPage {
   readonly visibleFields = signal<string[]>(this.restoreVisible());
   readonly exporting = signal<'csv' | 'xlsx' | null>(null);
   readonly marketSort = signal<Sort>({ field: 'market', dir: 'asc' });
-  readonly minModels = signal(2);
+  /** What the user picked in "at least N models"; null = the default from coverage. Reset when filters change. */
+  private readonly minModelsChoice = signal<number | null>(null);
   readonly comparisonPage = signal(0);
   readonly mcPage = signal(0);
   readonly mcOpen = new Expansion();
@@ -421,10 +435,26 @@ export class ReportsPage {
     params: () => (this.tab() === 'markets' ? this.filters() : undefined),
     stream: ({ params }) => this.api.marketPerformance(params),
   });
+  private readonly coverageRes = rxResource({
+    params: () => (this.tab() === 'comparison' ? this.filters() : undefined),
+    stream: ({ params }) => this.api.modelComparisonCoverage(params),
+  });
+  private readonly coverage = safeValue(this.coverageRes, []);
+  /** The user's choice, else the largest N that still has matches (1 when nothing matches or coverage failed). */
+  readonly minModels = computed(() =>
+    this.minModelsChoice() ?? Math.max(1, ...this.coverage().filter(c => c.matches > 0).map(c => c.minModels)));
+  readonly minModelOptions = computed(() => {
+    const c = this.coverage();
+    return c.length
+      ? c.map(x => ({ n: x.minModels, label: `${x.minModels} (${x.matches} ${x.matches === 1 ? 'match' : 'matches'})` }))
+      : [1, 2, 3, 4, 5].map(n => ({ n, label: `${n}` }));
+  });
   private readonly comparisonRes = rxResource({
     params: () => {
       const f = this.filters();
-      return f && this.tab() === 'comparison' ? { f, minModels: this.minModels(), page: this.comparisonPage() } : undefined;
+      // Without a choice, wait for coverage so the first request already uses the default (no request for 2 then N).
+      const waiting = this.minModelsChoice() === null && (this.coverageRes.status() === 'idle' || this.coverageRes.isLoading());
+      return f && this.tab() === 'comparison' && !waiting ? { f, minModels: this.minModels(), page: this.comparisonPage() } : undefined;
     },
     stream: ({ params: { f, minModels, page } }) => this.api.modelComparison(f, minModels, { page, size: 20 }),
   });
@@ -460,8 +490,8 @@ export class ReportsPage {
   readonly marketStack = computed(() => ({
     labels: this.marketRows().map(r => r.market),
     datasets: [
-      { label: 'Wins', data: this.marketRows().map(r => r.wins), backgroundColor: '#1a8f55' },
-      { label: 'Losses', data: this.marketRows().map(r => r.losses), backgroundColor: '#d14343' },
+      { label: 'Wins incl. ½', data: this.marketRows().map(r => r.wins), backgroundColor: '#1a8f55' },
+      { label: 'Losses incl. ½', data: this.marketRows().map(r => r.losses), backgroundColor: '#d14343' },
       { label: 'Push / void', data: this.marketRows().map(r => r.pushOrVoid), backgroundColor: '#8a96a8' },
       { label: 'Pending', data: this.marketRows().map(r => r.pending), backgroundColor: '#c98a00' },
     ],
@@ -478,6 +508,7 @@ export class ReportsPage {
   onFilters(f: Filters): void {
     this.historyPage.set(0);
     this.comparisonPage.set(0);
+    this.minModelsChoice.set(null);
     this.mcPage.set(0);
     this.modelOpen.clear();
     this.historyOpen.clear();
@@ -501,7 +532,7 @@ export class ReportsPage {
   setHistoryPage(e: { page: number; size: number }): void { this.historySize.set(e.size); this.historyPage.set(e.page); this.historyOpen.clear(); }
   setComparisonPage(page: number): void { this.comparisonPage.set(page); }
   setMcPage(page: number): void { this.mcPage.set(page); this.mcOpen.clear(); }
-  setMinModels(e: Event): void { this.minModels.set(Number((e.target as HTMLSelectElement).value)); this.comparisonPage.set(0); }
+  setMinModels(e: Event): void { this.minModelsChoice.set(Number((e.target as HTMLSelectElement).value)); this.comparisonPage.set(0); }
 
   isVisible(field: string): boolean { return this.visibleFields().includes(field); }
 

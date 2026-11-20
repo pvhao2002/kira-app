@@ -4,9 +4,25 @@ import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
 Chart.register(...registerables);
 Chart.defaults.font.family = "'IBM Plex Sans', system-ui, sans-serif";
-const dark = globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;   // read once; follows the OS setting like styles.scss
-Chart.defaults.color = dark ? '#a6b4cc' : '#536074';
-Chart.defaults.elements.arc.borderColor = dark ? '#111b2f' : '#fff';   // slice gaps match the card
+
+const darkQuery = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
+/** The theme's CSS token, or the fallback where styles are not loaded (tests). */
+function token(name: string, fallback: string): string {
+  return globalThis.getComputedStyle?.(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+/** Text, grid and slice-gap colours from the current theme (styles.scss follows the OS setting). */
+function applyTheme(): void {
+  const dark = darkQuery?.matches ?? false;
+  Chart.defaults.color = token('--mm-ink-2', dark ? '#a6b4cc' : '#536074');
+  Chart.defaults.borderColor = token('--mm-line', dark ? '#22304a' : '#e6eaf0');   // quiet grid: faint rules only
+  Chart.defaults.elements.arc.borderColor = token('--mm-card', dark ? '#111b2f' : '#fff');   // slice gaps match the card
+}
+applyTheme();
+// The OS can switch light/dark mid-session (phones do at dusk): recolour every chart on screen.
+darkQuery?.addEventListener?.('change', () => {
+  applyTheme();
+  for (const c of Object.values(Chart.instances)) c.update();
+});
 Chart.defaults.font.size = 12;
 Chart.defaults.plugins.tooltip.backgroundColor = '#0f1b33';
 Chart.defaults.plugins.tooltip.padding = 10;
@@ -17,8 +33,7 @@ Chart.defaults.plugins.legend.labels.pointStyle = 'rectRounded';
 Chart.defaults.elements.bar.borderRadius = 4;
 // Slanted labels are hard to scan: let Chart.js skip ticks instead.
 Chart.defaults.set('scale', { ticks: { maxRotation: 0, autoSkipPadding: 12 } });
-// Quiet grid: faint horizontal rules only; category (x) axes get none.
-Chart.defaults.borderColor = dark ? '#22304a' : '#e6eaf0';
+// Category axes get no grid.
 Chart.defaults.set('scales.category', { grid: { display: false } });
 // People who ask for less motion get no draw-in animation.
 if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) Chart.defaults.animation = false;
