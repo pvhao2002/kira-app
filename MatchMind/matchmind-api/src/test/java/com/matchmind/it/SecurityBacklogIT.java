@@ -124,7 +124,7 @@ class SecurityBacklogIT extends IntegrationTestBase {
         JsonNode fields = read(external(provider, "predictions", json.writeValueAsString(longName))).get("fieldErrors");
         assertThat(fields.get("model.name").asText()).isEqualTo("must be at most 128 characters");
 
-        String noOffset = Payloads.livePrediction(unique("e"), unique("m"), "m1").replace("2026-11-20T19:45:00Z", "2026-12-05T20:00:00");
+        String noOffset = Payloads.livePrediction(unique("e"), unique("m"), "m1").replace("2026-11-10T19:45:00Z", "2026-12-05T20:00:00");
         MvcResult res = external(provider, "predictions", noOffset);
         assertThat(res.getResponse().getStatus()).isEqualTo(400);
         assertThat(read(res).get("fieldErrors").get("match.startTime").asText())

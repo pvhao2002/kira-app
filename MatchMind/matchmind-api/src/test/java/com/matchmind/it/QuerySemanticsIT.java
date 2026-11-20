@@ -106,7 +106,7 @@ class QuerySemanticsIT extends IntegrationTestBase {
         String matchId = "rs-" + suffix;
         external(in.provider(), "predictions", Payloads.livePrediction("e-" + suffix, matchId, in.modelName()));
         // Final 2-1 -> top pick AH LOSS, second pick OU WIN.
-        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-20T21:40:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-10T21:40:00Z"));
         String q = "/api/v1/predictions?providerId=" + providerId(in);
 
         assertThat(adminGet(q + "&result=WIN").get("meta").get("totalElements").asInt()).isZero();
@@ -133,7 +133,7 @@ class QuerySemanticsIT extends IntegrationTestBase {
         external(in.provider(), "predictions", Payloads.livePrediction("ea-" + suffix, matchId, "ex-a"));
         external(in.provider(), "predictions", Payloads.livePrediction("eb-" + suffix, matchId, "ex-b"));
         external(in.provider(), "predictions", Payloads.livePrediction("ec-" + suffix, "ex-solo-" + suffix, "ex-a"));
-        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-20T21:40:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-10T21:40:00Z"));
         String q = "?providerId=" + providerId(in);
 
         for (JsonNode row : adminGet("/api/v1/reports/model-performance" + q)) assertExclusive(row);
@@ -147,8 +147,8 @@ class QuerySemanticsIT extends IntegrationTestBase {
         assertThat(period.get("from").asText()).isEqualTo("2026-11-01T00:00:00Z");
         assertThat(period.get("to").isNull()).isTrue();
         assertThat(period.get("basis").asText()).isEqualTo("predictedAt");
-        assertThat(period.get("firstPredictedAt").asText()).isEqualTo("2026-11-20T20:40:00Z");
-        assertThat(period.get("lastPredictedAt").asText()).isEqualTo("2026-11-20T20:40:00Z");
+        assertThat(period.get("firstPredictedAt").asText()).isEqualTo("2026-11-10T20:40:00Z");
+        assertThat(period.get("lastPredictedAt").asText()).isEqualTo("2026-11-10T20:40:00Z");
 
         JsonNode coverage = adminGet("/api/v1/reports/model-comparison/coverage" + q);
         assertThat(coverage).hasSize(2);
