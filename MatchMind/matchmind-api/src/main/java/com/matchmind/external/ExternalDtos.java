@@ -133,7 +133,13 @@ public final class ExternalDtos {
                                      List<PickRef> picks, Map<String, UUID> odds) {
     }
 
-    public record ResultRequest(@NotBlank @Pattern(regexp = ID) String externalMatchId,
+    /**
+     * Names the match by exactly one of {@code externalMatchId}, {@code matchId} or {@code predictionId}: agents that
+     * let the server generate the external id ({@code auto-...}) only know the ids of the prediction response.
+     */
+    public record ResultRequest(@Pattern(regexp = ID) String externalMatchId,
+                                UUID matchId,
+                                UUID predictionId,
                                 @NotBlank @Pattern(regexp = "SCHEDULED|LIVE|FINISHED|CANCELLED|POSTPONED") String status,
                                 @Valid Pair finalScore,
                                 @Valid Pair finalCorners,
@@ -146,7 +152,10 @@ public final class ExternalDtos {
                                 @Size(max = 4000) String explanation) {
     }
 
-    public record SettleRequest(@NotBlank @Pattern(regexp = ID) String externalMatchId,
+    /** Names the match like {@link ResultRequest}: exactly one of externalMatchId, matchId or predictionId. */
+    public record SettleRequest(@Pattern(regexp = ID) String externalMatchId,
+                                UUID matchId,
+                                UUID predictionId,
                                 @Size(max = 200) List<@NotNull @Valid AiCalculation> aiCalculations) {
     }
 }
