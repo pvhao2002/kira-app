@@ -28,8 +28,40 @@ docker compose up -d --build
 - The web port is bound to `127.0.0.1` and serves plain HTTP. To reach it from other machines, put a TLS reverse
   proxy (for example Caddy or nginx with a certificate) in front of it. Never publish port 8088 directly: logins,
   JWTs and the agent API key would cross the network unencrypted.
-- The API is at http://localhost:8090, bound to localhost only.
+- The API is at http://localhost:8090, bound to localhost only. Swagger (`/swagger-ui.html`, `/v3/api-docs`) exists only on
+  this port and only when `SWAGGER_ENABLED=true`; the web container answers 404 for those paths.
 - PostgreSQL is at localhost:5433.
+
+### Client IP behind a reverse proxy
+
+nginx in the web container never trusts a client-supplied `X-Forwarded-For`: it forwards its own TCP peer as the client
+IP, so rate limits and the API log cannot be spoofed. Behind a TLS reverse proxy that peer is the proxy, so every user
+would share one IP. To get real client IPs, mount a file that names **only that proxy's exact IP** (as the web container
+sees it, for example the Docker network gateway) into `/etc/nginx/real-ip.d/`:
+
+```
+# real-ip.conf
+set_real_ip_from 172.18.0.1;
+real_ip_header X-Forwarded-For;
+```
+
+```yaml
+# docker-compose override for the web service
+volumes:
+  - ./real-ip.conf:/etc/nginx/real-ip.d/real-ip.conf:ro
+```
+
+Never use a range such as `172.16.0.0/12` or `192.168.0.0/16`: it makes every LAN machine a trusted proxy. Check it:
+`curl -s -X POST localhost:8088/api/v1/external/predictions -H "X-Forwarded-For: 203.0.113.77" -H "X-Api-Key: x" -d '{}'`
+must log the real peer, not `203.0.113.77`. The API itself trusts `X-Forwarded-For` only from `TRUSTED_PROXIES`
+(default `172.16.0.0/12`, the Docker network nginx sits on, in compose).
+
+### Security headers and compression
+
+One owner per path: for `/api/*` the API sets `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options` and
+`Referrer-Policy`; for the SPA and static files nginx sets them. nginx adds `Strict-Transport-Security` (to both) only
+when the request carries `X-Forwarded-Proto: https`, so local HTTP runs never send HSTS. Make your TLS proxy set that
+header. nginx gzips JS, CSS, JSON and SVG, except `/api/v1/auth/*` (credentials) and the event stream.
 
 The first start creates the admin from `MATCHMIND_ADMIN_USERNAME` / `MATCHMIND_ADMIN_PASSWORD`, only while there are no
 users. There is no public sign-up: the admin creates other users in **Settings**.

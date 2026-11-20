@@ -3,8 +3,8 @@
 Base path: `/api/v1`. JSON only. Timestamps are ISO-8601 UTC instants (`2026-11-20T19:45:00Z`). Decimals such as odds,
 lines and probabilities are JSON numbers backed by `BigDecimal`.
 
-Interactive docs: `/swagger-ui.html` and `/v3/api-docs`. They are on in local runs and off when `SWAGGER_ENABLED=false`,
-which is the compose default.
+Interactive docs: `/swagger-ui.html` and `/v3/api-docs`, on the API port (8090) only. They are on in local runs and off
+when `SWAGGER_ENABLED=false`, which is the compose default. The web container (8088) answers 404 for both paths.
 
 ## Authentication
 
