@@ -85,7 +85,7 @@ const hideSm = (c: Col) => !SM_KEEP.has(c.field);
       <div class="grid-2">
         @for (part of [{ t: 'By market', rows: b.market }, { t: 'By league', rows: b.league }]; track part.t) {
           <div><h3 class="mb-2">{{ part.t }}</h3>
-            <div class="table-wrap short"><table class="dt">
+            <div class="table-wrap short"><table class="dt" [attr.aria-label]="part.t">
               <thead><tr>@for (c of cols; track c.field) { <th [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="c.field === 'winRate' ? winRateDef : null">{{ c.header }}</th> }</tr></thead>
               <tbody>
                 @for (x of part.rows; track x.key) { <tr>@for (c of cols; track c.field) { <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ cell(x, c) }}</td> }</tr> }
@@ -123,9 +123,9 @@ export class ModelBreakdown {
   template: `
     <div class="stack">
       <mm-filter-bar [fields]="['search', 'dates', 'league', 'model', 'type', 'market', 'result']" (changed)="onFilters($event)" />
-      <mm-tabs [tabs]="tabs" [value]="tab()" (valueChange)="selectTab($event)" />
+      <mm-tabs controls="reports-panel" [tabs]="tabs" [value]="tab()" (valueChange)="selectTab($event)" />
 
-      <div class="stack" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
+      <div class="stack" id="reports-panel" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
       @switch (tab()) {
         @case ('models') {
           <section class="panel flush">
@@ -135,14 +135,14 @@ export class ModelBreakdown {
             </div>
             <mm-state [state]="state()" [message]="error()" />
             @if (state() === 'ready') {
-              <div class="table-wrap tall"><table class="dt">
+              <div class="table-wrap tall"><table class="dt" aria-label="AI model performance">
                 <thead><tr><th class="th-icon"><span class="sr-only">Details</span></th>
                   @for (c of modelCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="modelSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="c.field === 'winRate' ? winRateDef : null">{{ c.header }}</th> }
                 </tr></thead>
                 <tbody>
                   @for (r of sortedModels(); track r.modelId) {
                     <tr>
-                      <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="modelOpen.has(r.modelId)" aria-label="Toggle breakdown" (click)="modelOpen.toggle(r.modelId)">
+                      <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="modelOpen.has(r.modelId)" [attr.aria-controls]="'breakdown-' + r.modelId" aria-label="Toggle breakdown" (click)="modelOpen.toggle(r.modelId)">
                         <i class="pi" [class.pi-chevron-down]="modelOpen.has(r.modelId)" [class.pi-chevron-right]="!modelOpen.has(r.modelId)"></i></button></td>
                       @for (c of modelCols; track c.field) {
                         <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">
@@ -151,7 +151,7 @@ export class ModelBreakdown {
                       }
                     </tr>
                     @if (modelOpen.has(r.modelId)) {
-                      <tr class="expanded"><td [attr.colspan]="modelCols.length + 1">
+                      <tr class="expanded" [id]="'breakdown-' + r.modelId"><td [attr.colspan]="modelCols.length + 1">
                         <mm-model-breakdown [modelId]="r.modelId" [filters]="filters() ?? {}" />
                       </td></tr>
                     }
@@ -180,7 +180,7 @@ export class ModelBreakdown {
                   <i class="pi" [class.pi-file-excel]="exporting() !== 'xlsx'" [class.pi-spinner]="exporting() === 'xlsx'" [class.pi-spin]="exporting() === 'xlsx'"></i> Excel</button>
               </div>
             </div>
-            <div class="table-wrap tall"><table class="dt" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
+            <div class="table-wrap tall"><table class="dt" aria-label="Prediction history" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
               <thead><tr><th class="th-icon"><span class="sr-only">Details</span></th>
                 @for (c of shownHistoryCols(); track c.field) {
                   @if (c.sort) { <th mmResize [mmSort]="c.sort" [sort]="historySort()" (sortChange)="setHistorySort($event)" [class.num]="isNum(c)" [class.sticky-end]="c.field === 'result'">{{ c.header }}</th> }
@@ -190,7 +190,7 @@ export class ModelBreakdown {
               <tbody>
                 @for (r of historyRows(); track r.pickId) {
                   <tr>
-                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="historyOpen.has(r.pickId)" aria-label="Toggle details" (click)="historyOpen.toggle(r.pickId)">
+                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="historyOpen.has(r.pickId)" [attr.aria-controls]="'pick-' + r.pickId" aria-label="Toggle details" (click)="historyOpen.toggle(r.pickId)">
                       <i class="pi" [class.pi-chevron-down]="historyOpen.has(r.pickId)" [class.pi-chevron-right]="!historyOpen.has(r.pickId)"></i></button></td>
                     @for (c of shownHistoryCols(); track c.field) {
                       <td [class.num]="isNum(c)" [class.sticky-end]="c.field === 'result'" class="nowrap">
@@ -212,7 +212,7 @@ export class ModelBreakdown {
                     }
                   </tr>
                   @if (historyOpen.has(r.pickId)) {
-                    <tr class="expanded"><td [attr.colspan]="shownHistoryCols().length + 1">
+                    <tr class="expanded" [id]="'pick-' + r.pickId"><td [attr.colspan]="shownHistoryCols().length + 1">
                       <div class="grid-3">
                         <dl class="dl">
                           <dt>Match</dt><dd>{{ r.homeTeam }} – {{ r.awayTeam }} ({{ r.league }})</dd>
@@ -256,7 +256,7 @@ export class ModelBreakdown {
             <section class="panel flush">
               <div class="toolbar"><span class="muted-text">All five markets are always listed, including ones without picks. {{ winRateDef }}</span>
                 <button type="button" class="btn btn-outline btn-sm" (click)="csv('market-performance', marketCols, sortedMarkets())"><i class="pi pi-download"></i> CSV</button></div>
-              <div class="table-wrap"><table class="dt">
+              <div class="table-wrap"><table class="dt" aria-label="Market performance">
                 <thead><tr>@for (c of marketCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="marketSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="c.field === 'winRate' ? winRateDef : null">{{ c.header }}</th> }</tr></thead>
                 <tbody>@for (r of sortedMarkets(); track r.market) { <tr>@for (c of marketCols; track c.field) { <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ cell(r, c) }}</td> }</tr> }</tbody>
               </table></div>
@@ -277,7 +277,7 @@ export class ModelBreakdown {
             </div>
             <mm-state [state]="state()" [message]="error()" />
             @if (state() === 'ready') {
-              <div class="table-wrap tall"><table class="dt">
+              <div class="table-wrap tall"><table class="dt" aria-label="Model comparison">
                 <thead>
                   <tr><th>Match</th><th>Final</th><th>AI model</th><th>Predicted</th><th class="num">Type / min</th><th>Predicted score</th><th class="num">CS prob.</th>
                     <th>CS hit</th><th>Top pick</th><th class="num">Prob.</th><th class="num">Odds</th><th>Outcome</th><th class="num">Predictions</th></tr>
@@ -329,7 +329,7 @@ export class ModelBreakdown {
             </section>
           }
           <section class="panel flush">
-            <div class="table-wrap tall"><table class="dt" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
+            <div class="table-wrap tall"><table class="dt" aria-label="Monte Carlo simulations" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
               <thead>
                 <tr><th class="th-icon"><span class="sr-only">Details</span></th><th>Predicted</th><th>Match</th><th>AI model</th><th>Type / min</th><th>At prediction</th><th>Method</th>
                   <th class="num">Iterations</th><th class="num">xG home</th><th class="num">xG away</th><th class="num">xCorners home</th><th class="num">xCorners away</th>
@@ -338,7 +338,7 @@ export class ModelBreakdown {
               <tbody>
                 @for (r of monteCarlo()?.page?.data ?? []; track r.predictionId) {
                   <tr>
-                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="mcOpen.has(r.predictionId)" aria-label="Toggle distribution" (click)="mcOpen.toggle(r.predictionId)">
+                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="mcOpen.has(r.predictionId)" [attr.aria-controls]="'sim-' + r.predictionId" aria-label="Toggle distribution" (click)="mcOpen.toggle(r.predictionId)">
                       <i class="pi" [class.pi-chevron-down]="mcOpen.has(r.predictionId)" [class.pi-chevron-right]="!mcOpen.has(r.predictionId)"></i></button></td>
                     <td class="nowrap"><a [routerLink]="['/predictions', r.predictionId]">{{ fmt(r.predictedAt) }}</a></td>
                     <td class="nowrap">{{ r.homeTeam }} – {{ r.awayTeam }}<span class="cell-sub">{{ r.league }}</span></td>
@@ -356,7 +356,7 @@ export class ModelBreakdown {
                     <td><mm-result [value]="r.topPickResult" /></td>
                   </tr>
                   @if (mcOpen.has(r.predictionId)) {
-                    <tr class="expanded"><td colspan="17">
+                    <tr class="expanded" [id]="'sim-' + r.predictionId"><td colspan="17">
                       <div class="grid-3">
                         <div><h3 class="mb-2">Predicted probabilities</h3><mm-json [value]="r.probabilitiesJson" /></div>
                         <div><h3 class="mb-2">Scoreline distribution</h3><mm-json [value]="r.distributionJson" /></div>

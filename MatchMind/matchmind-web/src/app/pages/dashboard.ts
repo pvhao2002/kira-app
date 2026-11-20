@@ -50,11 +50,11 @@ const MODEL_TICKS = {
           <p class="muted-text review-note">The match result changed after these picks were settled, and they would now settle
             differently. Open each prediction and recalculate or override the pick.</p>
           <div class="table-wrap short">
-            <table class="dt">
+            <table class="dt" aria-label="Picks to review">
               <thead><tr><th>Match</th><th>Pick</th><th>Stored</th><th>Now</th></tr></thead>
               <tbody>
                 @for (r of review(); track r.pickId) {
-                  <tr class="clickable" [routerLink]="['/predictions', r.predictionId]">
+                  <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', r.predictionId]">
                     <td><a [routerLink]="['/predictions', r.predictionId]">{{ r.homeTeam }} – {{ r.awayTeam }}</a><span class="cell-sub">{{ humanize(r.matchStatus) }}</span></td>
                     <td class="nowrap">{{ humanize(r.market) }} · {{ humanize(r.pick) }}</td>
                     <td><mm-result [value]="r.currentResult" /></td>
@@ -149,11 +149,11 @@ const MODEL_TICKS = {
           <section class="panel flush span-6">
             <header><h2>Latest predictions</h2><a routerLink="/predictions">All predictions</a></header>
             <div class="table-wrap short">
-              <table class="dt compact-sm">
+              <table class="dt compact-sm" aria-label="Latest predictions">
                 <thead><tr><th>Match</th><th class="hide-sm">Model</th><th>Pick</th><th>Result</th></tr></thead>
                 <tbody>
                   @for (p of recent(); track p.id) {
-                    <tr class="clickable" [routerLink]="['/predictions', p.id]">
+                    <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]">
                       <td><a class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam" [routerLink]="['/predictions', p.id]">{{ p.homeTeam }} – {{ p.awayTeam }}</a><span class="cell-sub">{{ when(p.predictedAt) }} · {{ humanize(p.predictionType) }}</span></td>
                       <td class="hide-sm">{{ p.modelName }}</td>
                       <td class="nowrap">{{ pickLabel(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}</td>
