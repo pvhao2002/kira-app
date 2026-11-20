@@ -20,6 +20,10 @@ export interface ApiError {
 export interface User {
   id: string; username: string; role: Role; status: 'ACTIVE' | 'DISABLED';
   lastLoginAt: string | null; createdAt: string; updatedAt: string;
+  /** UX-059: the next sign-in must change the password first (every other call is 403 PASSWORD_CHANGE_REQUIRED). */
+  mustChangePassword?: boolean;
+  /** UX-043: the user has too many failed sign-ins from some IP; an admin can unlock (`POST /users/{id}/unlock`). */
+  loginLocked?: boolean;
 }
 export interface LoginResponse { accessToken: string; expiresAt: string; user: User; }
 
@@ -203,8 +207,10 @@ export interface ApiLogRow {
   httpMethod: string; requestId: string; eventId: string | null; httpStatus: number;
   requestStatus: 'SUCCESS' | 'DUPLICATE' | 'REJECTED' | 'FAILED'; durationMs: number; errorMessage: string | null;
   clientIp: string | null;
+  /** UX-052: the signed-in admin behind an import, settle or override; null for agent calls. */
+  actor?: string | null;
 }
-export interface ApiLogDetail extends Omit<ApiLogRow, 'providerName'> { apiKeyId: string | null; processingResult: unknown; }
+export interface ApiLogDetail extends ApiLogRow { apiKeyId: string | null; processingResult: unknown; }
 
 export interface PickSettlement {
   pickId: string; market: Market; pick: string; result: SettlementResult; status: string; reason: string | null;
@@ -218,4 +224,11 @@ export interface ReviewItem {
   pickId: string; predictionId: string; matchId: string; homeTeam: string; awayTeam: string; matchStatus: string;
   market: Market; pick: string; currentResult: SettlementResult; newResult: SettlementResult; reason: string | null;
   settledAt: string;
+}
+
+/** UX-044: one row of the account audit (`GET /users/audit`). `oldValue`/`newValue` hold role or status changes. */
+export interface UserAuditRow {
+  id: string; at: string; actor: string | null; targetId: string; target: string;
+  action: 'USER_CREATED' | 'ROLE_CHANGED' | 'STATUS_CHANGED' | 'PASSWORD_RESET' | 'PASSWORD_CHANGED' | 'LOGIN_UNLOCKED';
+  oldValue: string | null; newValue: string | null; clientIp: string | null;
 }
