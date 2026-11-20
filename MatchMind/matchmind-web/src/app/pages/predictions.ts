@@ -5,7 +5,7 @@ import { ApiService } from '../core/api.service';
 import { LiveService } from '../core/live.service';
 import { Filters, PredictionRow } from '../core/models';
 import { BarFilters, FilterBar } from '../shared/filter-bar';
-import { fmtDateTime, humanize, num, pct, pickLabel } from '../shared/format';
+import { fmtDateTime, humanize, lineSplit, num, pct, pickText } from '../shared/format';
 import { Paginator, SortHeader } from '../shared/kit';
 import { PagedList } from '../shared/paged-list';
 import { ResultTag, ScoreChip } from '../shared/ui';
@@ -76,7 +76,7 @@ export function pickSummary(p: PredictionRow): string {
               <td class="nowrap hide-sm"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
               <td><span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }}</span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">{{ p.modelName }} · {{ fmt(p.predictedAt) }}</a></td>
               <td class="nowrap hide-sm">{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td>
-              <td class="nowrap">{{ pickLabel(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}<span class="cell-sub">{{ humanize(p.topPickStage) }}</span></td>
+              <td class="nowrap" data-testid="top-pick" [title]="lineSplit(p.topPickMarket, p.topPickLine)">{{ pickText(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}<span class="cell-sub">{{ humanize(p.topPickStage) }}</span></td>
               @if (show('probability')) { <td class="num hide-sm">{{ pct(p.topPickProbability) }}</td> }
               @if (show('price')) { <td class="num hide-sm">{{ num(p.topPickPrice) }}</td> }
               @if (show('predictedScore')) { <td class="hide-sm"><mm-score [home]="p.predictedHomeScore" [away]="p.predictedAwayScore" /></td> }
@@ -125,7 +125,8 @@ export class PredictionsPage {
   readonly humanize = humanize;
   readonly pct = pct;
   readonly num = num;
-  readonly pickLabel = pickLabel;
+  readonly pickText = pickText;
+  readonly lineSplit = lineSplit;
   readonly summary = pickSummary;
   readonly cols = OPTIONAL_COLS;
   private filters: Filters = {};

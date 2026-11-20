@@ -85,6 +85,22 @@ describe('ReportsPage model comparison (UX-009)', () => {
     expect(http.expectOne(r => r.url.endsWith('/reports/model-comparison')).request.params.get('minModels')).toBe('1');
   });
 
+  it('quotes the top pick AH line one way, with the split as its tooltip (UX-008)', async () => {
+    const f = await open('comparison');
+    http.expectOne(r => r.url.endsWith('/reports/model-comparison/coverage')).flush([{ minModels: 1, matches: 1 }]);
+    await settle();
+    http.expectOne(r => r.url.endsWith('/reports/model-comparison')).flush({ data: [{
+      matchId: 'x', homeTeam: 'A', awayTeam: 'B', league: 'L', startTime: null, status: 'FINISHED', finalHomeScore: 1, finalAwayScore: 0,
+      models: [{ predictionId: 'p1', modelName: 'gpt', modelVersion: '5', predictedAt: null, predictionType: 'PRE_MATCH', matchMinute: null,
+        predictedHomeScore: null, predictedAwayScore: null, correctScoreProbability: null, correctScoreHit: null, market: 'AH', pick: 'HOME',
+        line: -0.25, lineDisplay: '0/-0.5', probability: 0.5, price: 1.9, result: 'WIN', predictionCount: 1 }],
+    }], meta: { totalElements: 1 } });
+    await f.whenStable();
+    const cell = [...(f.nativeElement as HTMLElement).querySelectorAll('tbody td')].find(td => td.textContent?.includes('AH HOME')) as HTMLElement;
+    expect(text(cell).trim()).toBe('AH HOME -0.25');
+    expect(cell.title).toBe('0/-0.5');
+  });
+
   it('falls back to 1 when nothing matches', async () => {
     await open('comparison');
     http.expectOne(r => r.url.endsWith('/reports/model-comparison/coverage')).flush([]);

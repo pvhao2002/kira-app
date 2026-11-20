@@ -8,7 +8,7 @@ import { apiError } from '../core/http';
 import { errorMessage, keepPrevious, safeValue, statusToView, viewState } from '../core/resource';
 import { Filters } from '../core/models';
 import { FilterBar } from '../shared/filter-bar';
-import { Col, cell, downloadCsv, fmtDateTime, humanize, line, num, pct, saveBlob } from '../shared/format';
+import { Col, cell, downloadCsv, fmtDateTime, humanize, lineSplit, lineText, num, pct, pickText, saveBlob } from '../shared/format';
 import {
   Expansion, Paginator, ResizableColumn, Sort, SortHeader, sortParam, sortRows, Tabs, ToastService,
 } from '../shared/kit';
@@ -193,7 +193,8 @@ export class ModelBreakdown {
                     <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="historyOpen.has(r.pickId)" [attr.aria-controls]="'pick-' + r.pickId" aria-label="Toggle details" (click)="historyOpen.toggle(r.pickId)">
                       <i class="pi" [class.pi-chevron-down]="historyOpen.has(r.pickId)" [class.pi-chevron-right]="!historyOpen.has(r.pickId)"></i></button></td>
                     @for (c of shownHistoryCols(); track c.field) {
-                      <td [class.num]="isNum(c)" [class.sticky-end]="c.field === 'result'" class="nowrap">
+                      <td [class.num]="isNum(c)" [class.sticky-end]="c.field === 'result'" class="nowrap"
+                        [attr.title]="c.field === 'line' ? lineSplit(r.market, r.line) || null : null">
                         @switch (c.field) {
                           @case ('match') { <a [routerLink]="['/matches', r.matchId]" [title]="r.homeTeam + ' – ' + r.awayTeam">{{ r.homeTeam }} – {{ r.awayTeam }}</a> }
                           @case ('modelName') { {{ r.modelName }} <span class="muted-text">{{ r.modelVersion }}</span> }
@@ -201,7 +202,7 @@ export class ModelBreakdown {
                           @case ('predicted') { <mm-score [home]="r.predictedHomeScore" [away]="r.predictedAwayScore" /> }
                           @case ('final') { <mm-score [home]="r.finalHomeScore" [away]="r.finalAwayScore" [muted]="r.matchStatus !== 'FINISHED'" /> }
                           @case ('corners') { {{ r.finalHomeCorners ?? '—' }} : {{ r.finalAwayCorners ?? '—' }} }
-                          @case ('line') { {{ line(r.market, r.line, r.lineDisplay) }} }
+                          @case ('line') { {{ lineText(r.market, r.line, r.lineDisplay) }} }
                           @case ('result') { <mm-result [value]="r.result" /> }
                           @case ('predictionType') { {{ humanize(r.predictionType) }} }
                           @case ('oddsStage') { {{ humanize(r.oddsStage) }} }
@@ -227,7 +228,7 @@ export class ModelBreakdown {
                           <dt>Pick rank</dt><dd>{{ r.pickRank }}</dd>
                         </dl>
                         <dl class="dl">
-                          <dt>Market / pick</dt><dd>{{ r.market }} {{ r.pick }} {{ line(r.market, r.line, r.lineDisplay) }} &#64; {{ num(r.price) }}</dd>
+                          <dt>Market / pick</dt><dd [title]="lineSplit(r.market, r.line)">{{ pickText(r.market, r.pick, r.line, r.lineDisplay) }} &#64; {{ num(r.price) }}</dd>
                           <dt>Settlement basis</dt><dd>{{ humanize(r.settlementBasis) }}{{ r.homeScoreAtCapture !== null ? ' from ' + r.homeScoreAtCapture + ':' + r.awayScoreAtCapture : '' }}</dd>
                           <dt>Result</dt><dd>{{ humanize(r.result) }}{{ r.settledAt ? ' · ' + fmt(r.settledAt) + ' by ' + humanize(r.settlementSource) : '' }}</dd>
                           <dt>Full record</dt><dd><a [routerLink]="['/predictions', r.predictionId]">Odds, stats, settlement history and raw payload</a></dd>
@@ -298,7 +299,7 @@ export class ModelBreakdown {
                         <td><mm-score [home]="r.predictedHomeScore" [away]="r.predictedAwayScore" /></td>
                         <td class="num">{{ pct(r.correctScoreProbability) }}</td>
                         <td>@if (r.correctScoreHit === null) { — } @else if (r.correctScoreHit) { <span class="win">Hit</span> } @else { <span class="loss">Miss</span> }</td>
-                        <td class="nowrap">{{ r.market ? r.market + ' ' + r.pick + ' ' + line(r.market, r.line, r.lineDisplay) : '—' }}</td>
+                        <td class="nowrap" [title]="lineSplit(r.market, r.line)">{{ pickText(r.market, r.pick, r.line, r.lineDisplay) }}</td>
                         <td class="num">{{ pct(r.probability) }}</td>
                         <td class="num">{{ num(r.price) }}</td>
                         <td><mm-result [value]="r.result" /></td>
@@ -401,7 +402,9 @@ export class ReportsPage {
   readonly humanize = humanize;
   readonly pct = pct;
   readonly num = num;
-  readonly line = line;
+  readonly lineText = lineText;
+  readonly lineSplit = lineSplit;
+  readonly pickText = pickText;
 
   // Paging, sorting and column state. Each report below is a resource that only runs while its tab is the active one,
   // so a request for another tab or older filters is cancelled and can never land.

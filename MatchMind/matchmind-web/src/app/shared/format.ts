@@ -55,12 +55,6 @@ export function line(market: string | null | undefined, v: number | null | undef
   return market && market.endsWith('AH') && n > 0 ? `+${n}` : `${n}`;
 }
 
-export function pickLabel(market: string | null | undefined, pick: string | null | undefined, l?: number | null, display?: string | null): string {
-  if (!market || !pick) return '—';
-  if (market === '1X2') return `1X2 · ${pick}`;
-  return `${market.replace('_', ' ')} ${pick} ${line(market, l, display)}`;
-}
-
 export type Severity = 'success' | 'danger' | 'warn' | 'info' | 'secondary' | 'contrast';
 
 export function resultSeverity(r: SettlementResult | string | null | undefined): Severity {
@@ -172,7 +166,7 @@ export function lineSplit(market: string | null | undefined, v: number | null | 
   return `${line(market, (q - s) / 4)}/${line(market, (q + s) / 4)}`;
 }
 
-/** `pickLabel` with the UX-008 line convention. */
+/** "AH HOME -0.25", "1X2 · HOME": a pick with the UX-008 line convention; pair it with `lineSplit` as the tooltip. */
 export function pickText(market: string | null | undefined, pick: string | null | undefined, l?: number | null, display?: string | null): string {
   if (!market || !pick) return '—';
   return market === '1X2' ? `1X2 · ${pick}` : `${market.replace('_', ' ')} ${pick} ${lineText(market, l, display)}`;

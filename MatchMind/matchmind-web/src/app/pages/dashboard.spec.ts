@@ -143,6 +143,14 @@ describe('DashboardPage', () => {
     expect(text(g.nativeElement.querySelector('.form-guide'))).toContain('None of the latest 2 predictions is settled yet');
   });
 
+  it('quotes AH lines on latest predictions one way, with the split as its tooltip (UX-008)', async () => {
+    const r = { ...row('p1', 'WIN'), topPickLine: -0.25, topPickLineDisplay: '0/-0.5' } as PredictionRow;
+    const f = await open(dashboard(), [r]);
+    const cell = (f.nativeElement as HTMLElement).querySelector('[data-testid="recent-pick"]') as HTMLElement;
+    expect(text(cell).trim()).toBe('AH HOME -0.25');
+    expect(cell.title).toBe('0/-0.5');
+  });
+
   it('lists every model on the win-rate chart: horizontal bars, no skipped labels (UX-101)', async () => {
     const f = await open();
     const o = f.componentInstance.modelBarOptions as { indexAxis?: string; scales?: { y?: { ticks?: { autoSkip?: boolean } } } };

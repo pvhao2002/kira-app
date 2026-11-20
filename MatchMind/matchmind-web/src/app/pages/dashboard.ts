@@ -7,7 +7,7 @@ import { LiveService } from '../core/live.service';
 import { Filters } from '../core/models';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { FilterBar, isoDay } from '../shared/filter-bar';
-import { fmtShort, humanize, pct, pickLabel } from '../shared/format';
+import { fmtShort, humanize, lineSplit, pct, pickText } from '../shared/format';
 import { ChartView } from '../shared/chart';
 import { ResultTag, StateView } from '../shared/ui';
 
@@ -156,7 +156,7 @@ const MODEL_TICKS = {
                     <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]">
                       <td><a class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam" [routerLink]="['/predictions', p.id]">{{ p.homeTeam }} – {{ p.awayTeam }}</a><span class="cell-sub">{{ when(p.predictedAt) }} · {{ humanize(p.predictionType) }}</span></td>
                       <td class="hide-sm">{{ p.modelName }}</td>
-                      <td class="nowrap">{{ pickLabel(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}</td>
+                      <td class="nowrap" data-testid="recent-pick" [title]="lineSplit(p.topPickMarket, p.topPickLine)">{{ pickText(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}</td>
                       <td><mm-result [value]="p.settlementStatus" /></td>
                     </tr>
                   } @empty { <tr><td colspan="4" class="empty"><div class="empty-state"><i class="pi pi-bolt" aria-hidden="true"></i><span>No predictions in this range.</span></div></td></tr> }
@@ -189,7 +189,8 @@ export class DashboardPage {
   readonly pct = pct;
   readonly fmtShort = fmtShort;
   readonly humanize = humanize;
-  readonly pickLabel = pickLabel;
+  readonly pickText = pickText;
+  readonly lineSplit = lineSplit;
   /** Football form-guide letters; oldest first so the newest result sits on the right. */
   readonly FORM: Record<string, string> = { WIN: 'W', HALF_WIN: '½W', LOSS: 'L', HALF_LOSS: '½L', PUSH: 'P', VOID: 'V', PENDING: '–' };
   /** Settled ones among the latest predictions: a row of pending dashes says nothing about form. */

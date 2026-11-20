@@ -124,6 +124,15 @@ describe('PredictionsPage', () => {
     expect(text(t.el().querySelector('tbody')!)).toContain('2 Win · 1 Loss');
   });
 
+  it('quotes the top pick AH line one way, with the split as its tooltip (UX-008)', async () => {
+    const t = await open('/predictions', PredictionsPage);
+    await t.answer({ '/api/v1/predictions': page([prediction({ topPickMarket: 'AH', topPickLine: -0.25, topPickLineDisplay: '0/-0.5' })]) });
+    const cell = t.el().querySelector('[data-testid="top-pick"]') as HTMLElement;
+    expect(text(cell)).toContain('AH HOME -0.25');
+    expect(text(cell)).not.toContain('0/-0.5');
+    expect(cell.title).toBe('0/-0.5');
+  });
+
   it('sends the result scope from the link (UX-075)', async () => {
     const t = await open('/predictions?result=WIN&resultScope=ANY', PredictionsPage);
     await t.answer();

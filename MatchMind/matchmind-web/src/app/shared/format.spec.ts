@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dayRange, toFilters } from './filter-bar';
-import { cell, line, pct, pickLabel, resultSeverity } from './format';
+import { cell, line, pct, pickText, resultSeverity } from './format';
 import { sortParam, sortRows } from './kit';
 
 describe('format helpers', () => {
@@ -16,8 +16,9 @@ describe('format helpers', () => {
     expect(line('CORNER_AH', 1)).toBe('+1');
     expect(line('OU', 2.5)).toBe('2.5');
     expect(line('AH', 0.25, '0/0.5')).toBe('0/0.5');
-    expect(pickLabel('OU', 'OVER', 2.25)).toBe('OU OVER 2.25');
-    expect(pickLabel('1X2', 'HOME')).toBe('1X2 · HOME');
+    expect(pickText('OU', 'OVER', 2.25)).toBe('OU OVER 2.25');
+    expect(pickText('1X2', 'HOME')).toBe('1X2 · HOME');
+    expect(pickText('AH', 'HOME', -0.25, '0/-0.5')).toBe('AH HOME -0.25');   // UX-008: the decimal line wins
   });
 
   it('maps half results to the same colour family as full results', () => {
