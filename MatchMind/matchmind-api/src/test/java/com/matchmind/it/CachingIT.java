@@ -23,6 +23,7 @@ class CachingIT extends IntegrationTestBase {
         String code = newIntegration("m").provider();
         UUID first = providers.resolve(code);
         assertThat(caches.getCache(CacheConfig.PROVIDER_IDS).get(code)).isNotNull();
+        providers.ensureExists(first, code); // resolve writes nothing; the first accepted prediction creates the row
 
         db.update("UPDATE providers SET name = 'Renamed' WHERE code = ?", code);
         assertThat(providers.resolve(code)).isEqualTo(first);

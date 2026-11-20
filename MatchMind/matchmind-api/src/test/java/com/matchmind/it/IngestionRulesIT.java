@@ -194,6 +194,25 @@ class IngestionRulesIT extends IntegrationTestBase {
     }
 
     @Test
+    void aRejectedRequestDoesNotCreateTheProvider() throws Exception { // UX-077
+        String provider = newIntegration("rules-model").provider();
+        ObjectNode bad = live();
+        ((ObjectNode) bad.get("model")).put("name", "x".repeat(300));
+        assertRejected(send(provider, bad), 400, "VALIDATION_ERROR", "model.name");
+        assertRejected(external(provider, "matches/results", Payloads.result(id("m"), "FINISHED", "{\"home\":1,\"away\":0}",
+            null, "2025-11-20T21:40:00Z")), 404, "MATCH_NOT_FOUND", null);
+        assertRejected(external(provider, "predictions", "not json"), 400, "MALFORMED_REQUEST", null);
+        assertThat(db.queryForObject("SELECT count(*) FROM providers WHERE code = ?", Integer.class, provider)).isZero();
+
+        // Still audited, without a provider row to point at.
+        assertThat(db.queryForObject("SELECT count(*) FROM external_api_requests WHERE request_status = 'REJECTED' "
+            + "AND provider_id IS NULL AND event_id = ?", Integer.class, bad.get("eventId").asText())).isEqualTo(1);
+
+        assertThat(send(provider, live()).getResponse().getStatus()).isEqualTo(201);
+        assertThat(db.queryForObject("SELECT count(*) FROM providers WHERE code = ?", Integer.class, provider)).isEqualTo(1);
+    }
+
+    @Test
     void atMostTwoPicks() throws Exception { // UX-097
         ObjectNode p = live();
         com.fasterxml.jackson.databind.node.ArrayNode picks = (com.fasterxml.jackson.databind.node.ArrayNode) p.get("picks");

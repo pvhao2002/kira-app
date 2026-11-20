@@ -86,7 +86,8 @@ class ExternalCallbackIT extends IntegrationTestBase {
         assertThat(lowerFinal.getResponse().getStatus()).isEqualTo(400);
 
         assertThat(external(in.provider(), "predictions", "not json").getResponse().getStatus()).isEqualTo(400);
-        assertThat(db.queryForObject("SELECT count(*) FROM predictions WHERE provider_id = ?", Integer.class, providerId(in))).isZero();
+        // Nothing stored, not even the provider: only an accepted prediction creates it (UX-077).
+        assertThat(db.queryForObject("SELECT count(*) FROM providers WHERE code = ?", Integer.class, in.provider())).isZero();
     }
 
     @Test

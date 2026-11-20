@@ -21,6 +21,7 @@ import com.matchmind.match.Match;
 import com.matchmind.match.MatchRepository;
 import com.matchmind.model.AiModel;
 import com.matchmind.model.AiModelRepository;
+import com.matchmind.provider.ProviderService;
 import com.matchmind.shared.ApiException;
 import com.matchmind.shared.CacheConfig;
 import com.matchmind.shared.TextRules;
@@ -80,12 +81,14 @@ public class PredictionIngestionService {
     private final PredictionCorrectScoreRepository scoreRepo;
     private final MatchRepository matches;
     private final AiModelRepository models;
+    private final ProviderService providers;
     private final NamedParameterJdbcTemplate jdbc;
     private final ObjectMapper json;
 
     @CacheEvict(value = CacheConfig.LEAGUES, allEntries = true)
     @Transactional
-    public PredictionResponse ingest(UUID providerId, ModelRef modelRef, PredictionRequest r, JsonNode rawPayload) {
+    public PredictionResponse ingest(UUID providerId, String providerCode, ModelRef modelRef, PredictionRequest r,
+                                     JsonNode rawPayload) {
         PredictionValidator.validateText(rawPayload);
         PredictionValidator.validate(r);
         String hash = payloadHash(rawPayload);
@@ -93,6 +96,7 @@ public class PredictionIngestionService {
         Optional<Prediction> existing = predictions.findByProviderIdAndExternalEventId(providerId, eventId);
         if (existing.isPresent()) return duplicate(existing.get(), hash, legacyPayloadHash(rawPayload));
 
+        providers.ensureExists(providerId, providerCode); // rolled back with the prediction if anything below rejects it
         AiModel model = model(providerId, modelRef);
         Instant predictedAt = r.predictedAt() != null ? r.predictedAt() : Instant.now();
         Match match = upsertMatch(providerId, r, predictedAt);
