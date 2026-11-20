@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.matchmind.external.ExternalDtos.CorrectScoreInput;
 import com.matchmind.external.ExternalDtos.OddsInput;
 import com.matchmind.external.ExternalDtos.Pair;
@@ -37,6 +40,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HexFormat;
@@ -65,6 +69,8 @@ public class PredictionIngestionService {
     private static final Set<String> FINAL_STATUSES = Set.of("FINISHED", "CANCELLED");
     /** The match will not change by itself any more: a prediction must not overwrite its status. */
     private static final Set<String> RESULT_STATUSES = Set.of("FINISHED", "CANCELLED", "POSTPONED");
+    /** Payload fields holding an instant; their text is compared as the instant for idempotency. */
+    private static final Set<String> TIME_FIELDS = Set.of("predictedAt", "startTime", "capturedAt");
 
     private final PredictionRepository predictions;
     private final PredictionOddsRepository oddsRepo;
@@ -85,7 +91,7 @@ public class PredictionIngestionService {
         String hash = payloadHash(rawPayload);
         String eventId = eventIdOf(r, hash);
         Optional<Prediction> existing = predictions.findByProviderIdAndExternalEventId(providerId, eventId);
-        if (existing.isPresent()) return duplicate(existing.get(), hash);
+        if (existing.isPresent()) return duplicate(existing.get(), hash, legacyPayloadHash(rawPayload));
 
         AiModel model = model(providerId, modelRef);
         Instant predictedAt = r.predictedAt() != null ? r.predictedAt() : Instant.now();
@@ -132,11 +138,12 @@ public class PredictionIngestionService {
     @Transactional(readOnly = true)
     public Optional<PredictionResponse> findDuplicate(UUID providerId, PredictionRequest r, JsonNode rawPayload) {
         String hash = payloadHash(rawPayload);
-        return predictions.findByProviderIdAndExternalEventId(providerId, eventIdOf(r, hash)).map(p -> duplicate(p, hash));
+        return predictions.findByProviderIdAndExternalEventId(providerId, eventIdOf(r, hash))
+            .map(p -> duplicate(p, hash, legacyPayloadHash(rawPayload)));
     }
 
-    private PredictionResponse duplicate(Prediction p, String hash) {
-        if (!p.getPayloadHash().equals(hash)) {
+    private PredictionResponse duplicate(Prediction p, String hash, String legacyHash) {
+        if (!p.getPayloadHash().equals(hash) && !p.getPayloadHash().equals(legacyHash)) {
             throw new ApiException(HttpStatus.CONFLICT, "EVENT_ID_REUSED",
                 "eventId was already used for a different prediction payload; send a new eventId");
         }
@@ -358,8 +365,37 @@ public class PredictionIngestionService {
         return s;
     }
 
-    /** Hash of the canonical (key-sorted) JSON, so a retry with reordered keys or whitespace is still a duplicate. */
+    /**
+     * Hash of the canonical JSON, so a retry that an agent re-generated is still a duplicate: keys sorted, text values
+     * cleaned ({@link TextRules#clean}) and instants in one form ("…+07:00" and "….000Z" of the same instant agree).
+     */
     String payloadHash(JsonNode payload) {
+        return keySortedHash(canonical(payload.deepCopy(), null));
+    }
+
+    /** The hash stored before UX-106; a retry of such a prediction must still be recognised. */
+    private String legacyPayloadHash(JsonNode payload) {
+        return keySortedHash(payload);
+    }
+
+    private static JsonNode canonical(JsonNode node, String field) {
+        if (node.isTextual()) {
+            String text = TextRules.clean(node.textValue());
+            if (field != null && TIME_FIELDS.contains(field)) { // Set.of rejects contains(null)
+                try {
+                    text = Instant.parse(text).toString();
+                } catch (DateTimeParseException notATime) {
+                    // left as text; binding has already rejected it if it was a real time field
+                }
+            }
+            return TextNode.valueOf(text);
+        }
+        if (node instanceof ArrayNode a) for (int i = 0; i < a.size(); i++) a.set(i, canonical(a.get(i), null));
+        if (node instanceof ObjectNode o) o.properties().forEach(e -> e.setValue(canonical(e.getValue(), e.getKey())));
+        return node;
+    }
+
+    private String keySortedHash(JsonNode payload) {
         try {
             Object plain = json.treeToValue(payload, Object.class);
             return sha256Hex(json.writer().with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writeValueAsBytes(plain));

@@ -155,6 +155,25 @@ class IngestionRulesIT extends IntegrationTestBase {
     }
 
     @Test
+    void retryWithTheSameInstantWrittenDifferentlyIsADuplicate() throws Exception { // UX-106
+        String provider = newIntegration("rules-model").provider();
+        ObjectNode p = live();
+        MvcResult first = send(provider, p);
+        assertThat(first.getResponse().getStatus()).isEqualTo(201);
+
+        ObjectNode retry = p.deepCopy();
+        ((ObjectNode) retry.get("match")).put("startTime", "2025-11-21T02:45:00.000+07:00").put("homeTeam", "Arsenal ");
+        retry.put("predictedAt", "2025-11-20T20:40:00.000Z");
+        MvcResult again = send(provider, retry);
+        assertThat(again.getResponse().getStatus()).as(again.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(read(again).get("predictionId")).isEqualTo(read(first).get("predictionId"));
+
+        ObjectNode changed = p.deepCopy();
+        changed.put("predictedAt", "2025-11-20T20:41:00Z");
+        assertRejected(send(provider, changed), 409, "EVENT_ID_REUSED", null);
+    }
+
+    @Test
     void atMostTwoPicks() throws Exception { // UX-097
         ObjectNode p = live();
         com.fasterxml.jackson.databind.node.ArrayNode picks = (com.fasterxml.jackson.databind.node.ArrayNode) p.get("picks");
