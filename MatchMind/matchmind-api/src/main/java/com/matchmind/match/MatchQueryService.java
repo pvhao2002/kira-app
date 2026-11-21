@@ -30,6 +30,7 @@ public class MatchQueryService {
     private final NamedParameterJdbcTemplate jdbc;
     private final MatchResultHistoryRepository history;
     private final AdminActions admin;
+    private final FixtureService fixtures;
 
     /**
      * Kick-off was more than 3 hours ago and the match is still SCHEDULED or LIVE: a result is due but missing.
@@ -46,7 +47,7 @@ public class MatchQueryService {
                m.ht_home_score AS "htHomeScore", m.ht_away_score AS "htAwayScore",
                m.ht_home_corners AS "htHomeCorners", m.ht_away_corners AS "htAwayCorners",
                m.result_updated_at AS "resultUpdatedAt", m.created_at AS "createdAt", m.updated_at AS "updatedAt",
-               m.archived_at AS "archivedAt", %s AS "overdue",
+               m.archived_at AS "archivedAt", m.fixture_id AS "fixtureId", %s AS "overdue",
                (SELECT count(*) FROM predictions p WHERE p.match_id = m.id) AS "predictionCount",
                (SELECT count(DISTINCT COALESCE(a.merged_into_id, a.id)) FROM predictions p
                 JOIN ai_models a ON a.id = p.ai_model_id WHERE p.match_id = m.id) AS "modelCount"
@@ -82,13 +83,16 @@ public class MatchQueryService {
         return Paging.response(rows, pg, sz, total);
     }
 
-    /** Leagues of the visible matches; cached, so a later archive must evict {@link CacheConfig#LEAGUES}. */
+    /**
+     * Canonical leagues (aliases resolved, V28) of the visible matches; cached, so a later archive or alias change must
+     * evict {@link CacheConfig#LEAGUES}.
+     */
     @Cacheable(CacheConfig.LEAGUES)
     @Transactional(readOnly = true)
     public List<String> leagues() {
         Sql.Where w = new Sql.Where();
         Filters.activeMatches(w, false, false);
-        return jdbc.queryForList("SELECT DISTINCT league FROM matches m" + w.sql() + " ORDER BY league", w.params, String.class);
+        return jdbc.queryForList("SELECT DISTINCT mm_league(league) FROM matches m" + w.sql() + " ORDER BY 1", w.params, String.class);
     }
 
     /** Admin: hides a match from every aggregate and list, or brings it back; logged with the reason. Idempotent. */
@@ -102,30 +106,38 @@ public class MatchQueryService {
     /** Every league, archived matches included (uncached: only an admin looking at archived data asks). */
     @Transactional(readOnly = true)
     public List<String> leaguesIncludingArchived() {
-        return jdbc.queryForList("SELECT DISTINCT league FROM matches ORDER BY league", Map.of(), String.class);
+        return jdbc.queryForList("SELECT DISTINCT mm_league(league) FROM matches ORDER BY 1", Map.of(), String.class);
     }
 
     public record HistoryView(UUID id, JsonNode previousResult, JsonNode newResult, String changeSource, Instant changedAt) {
     }
 
-    /** Match + result audit trail + per-model comparison + latest available live statistics. */
+    /** Match + result audit trail + per-model comparison + latest available live statistics + its fixture. */
     @Transactional(readOnly = true)
     public Map<String, Object> detail(UUID id) {
+        return detail(id, null);
+    }
+
+    /** {@code countPolicy}: as in {@code Filters}; {@code all} counts the picks of superseded predictions too. */
+    @Transactional(readOnly = true)
+    public Map<String, Object> detail(UUID id, String countPolicy) {
+        boolean counted = Filters.countsLatest(countPolicy);
         MapSqlParameterSource p = new MapSqlParameterSource("id", id);
         Map<String, Object> match = jdbc.query(COLUMNS + " WHERE m.id = :id", p, Sql.ROW).stream().findFirst()
             .orElseThrow(() -> ApiException.notFound("MATCH_NOT_FOUND", "Match not found"));
 
+        // "predictions" counts every stored row; picks and results only those of counted predictions (UX-046 latest, default).
         List<Map<String, Object>> models = jdbc.query("""
             SELECT am.id AS "modelId", %1$s AS "modelName", am.name AS "modelKey", am.version AS "modelVersion",
                    count(DISTINCT p.id) AS "predictions", count(pk.id) AS "picks",
                    %2$s AS "wins", %3$s AS "losses", %4$s AS "pushOrVoid", %5$s AS "pending",
                    max(p.predicted_at) AS "lastPredictedAt"
             FROM predictions p %6$s
-            LEFT JOIN prediction_picks pk ON pk.prediction_id = p.id %7$s
+            LEFT JOIN prediction_picks pk ON pk.prediction_id = p.id AND %8$s %7$s
             WHERE p.match_id = :id
             GROUP BY am.id, am.display_name, am.name, am.version ORDER BY %1$s
             """.formatted(Sql.MODEL_NAME, Stats.WINS, Stats.LOSSES, Stats.PUSH_VOID, Stats.PENDING, Sql.EFFECTIVE_MODEL_JOIN,
-            Stats.CURRENT_RESULT_JOIN), p, Sql.ROW);
+            Stats.CURRENT_RESULT_JOIN, counted ? Stats.COUNTED : "true"), p, Sql.ROW);
         models.forEach(row -> row.put("winRate", Stats.winRate(((Number) row.get("wins")).longValue(),
             ((Number) row.get("losses")).longValue())));
 
@@ -164,6 +176,7 @@ public class MatchQueryService {
         out.put("match", match);
         out.put("models", models);
         out.put("latestStats", stats.isEmpty() ? null : stats.getFirst());
+        out.put("fixture", match.get("fixtureId") == null ? null : fixtures.view((UUID) match.get("fixtureId")));
         out.put("resultHistory", history.findByMatchIdOrderByChangedAtDesc(id).stream()
             .map(h -> new HistoryView(h.getId(), h.getPreviousResult(), h.getNewResult(), h.getChangeSource(), h.getChangedAt()))
             .toList());

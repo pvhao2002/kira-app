@@ -18,6 +18,7 @@ import com.matchmind.match.MatchResultService.ResultResponse;
 import com.matchmind.prediction.PredictionEvents;
 import com.matchmind.prediction.PredictionEvents.NewPrediction;
 import com.matchmind.prediction.PredictionIngestionService;
+import com.matchmind.provider.ProviderKeyService;
 import com.matchmind.provider.ProviderService;
 import com.matchmind.security.Principals.ProviderPrincipal;
 import com.matchmind.settlement.SettlementService;
@@ -51,7 +52,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * Machine-to-machine callbacks for AI agents (shared X-Api-Key + X-Provider). The body is read raw so the original payload can be
+ * Machine-to-machine callbacks for AI agents (per-provider X-Api-Key, or the legacy shared key + X-Provider). The body is read raw so the original payload can be
  * stored verbatim, then bound strictly: unknown fields are rejected, never silently dropped. Every call is audited.
  */
 @RestController
@@ -104,6 +105,8 @@ public class ExternalController {
         JsonNode raw = parse(body, caller, http, received, null);
         String eventId = raw.path("eventId").isTextual() ? raw.path("eventId").asText() : null;
         return audited(caller, http, received, eventId, () -> {
+            requireScope(caller, ProviderKeyService.PREDICTIONS);
+            providers.requireEnabled(caller.providerId()); // the admin import does not pass the key filter
             PredictionRequest r = bind(raw, PredictionRequest.class);
             ModelRef model = modelOf(modelName, modelVersion, r);
             PredictionResponse response;
@@ -130,8 +133,11 @@ public class ExternalController {
         Instant received = Instant.now();
         JsonNode raw = parse(body, caller, http, received, null);
         return audited(caller, http, received, matchRef(raw), () -> {
+            requireScope(caller, ProviderKeyService.RESULTS);
             ResultRequest r = bind(raw, ResultRequest.class);
-            return ResponseEntity.ok(resultService.apply(caller.providerId(), r, ExternalAuditService.requestId(http)));
+            // Only a per-provider key (it holds RESULTS here) is trusted to share across providers; the legacy key is not.
+            return ResponseEntity.ok(resultService.apply(caller.providerId(), r, ExternalAuditService.requestId(http),
+                caller.apiKeyId() != null));
         });
     }
 
@@ -143,10 +149,19 @@ public class ExternalController {
         Instant received = Instant.now();
         JsonNode raw = parse(body, caller, http, received, null);
         return audited(caller, http, received, matchRef(raw), () -> {
+            requireScope(caller, ProviderKeyService.SETTLE_REQUEST);
             SettleRequest r = bind(raw, SettleRequest.class);
             UUID matchId = resultService.matchIdOf(caller.providerId(), r.externalMatchId(), r.matchId(), r.predictionId());
             return ResponseEntity.ok(settlement.settleMatch(matchId, "EXTERNAL_REQUEST", null, r.aiCalculations()));
         });
+    }
+
+    /** A per-provider key calls only what its scopes allow (RESULTS is granted by an admin to trusted feeders). */
+    private static void requireScope(ProviderPrincipal caller, String scope) {
+        if (!caller.scopes().contains(scope)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "SCOPE_REQUIRED",
+                "This API key may not call this endpoint: it needs the " + scope + " scope");
+        }
     }
 
     /** The id the API log shows for a results or settle call: whichever of the three match ids was sent. */

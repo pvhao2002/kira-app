@@ -103,11 +103,11 @@ fixture logic in a new `match/FixtureService`.
 
 ---
 
-### Task 1: Migration `V<next>__fixtures.sql`
+### Task 1: Migration `V<next>__fixtures.sql` (done: `V26__fixtures.sql`)
 
-**Files:** Create `matchmind-api/src/main/resources/db/migration/V<next>__fixtures.sql`.
+**Files:** Create `matchmind-api/src/main/resources/db/migration/V26__fixtures.sql`.
 
-- [ ] Create the fixtures table:
+- [x] Create the fixtures table:
   ```sql
   CREATE TABLE fixtures (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -124,8 +124,8 @@ fixture logic in a new `match/FixtureService`.
       reason TEXT, changed_by UUID REFERENCES users (id), changed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       CONSTRAINT ck_fixture_link_admin_reason CHECK (source NOT LIKE 'ADMIN%' OR (reason IS NOT NULL AND changed_by IS NOT NULL)));
   ```
-- [ ] No SQL backfill. Normalisation lives in Java (Task 2), so the backfill is a one-off admin action (Task 4).
-- [ ] If UX-088 has landed, add `fixture_link_history` to its append-only trigger list.
+- [x] No SQL backfill. Normalisation lives in Java (Task 2), so the backfill is a one-off admin action (Task 4).
+- [x] If UX-088 has landed, add `fixture_link_history` to its append-only trigger list.
 
 ### Task 2: Normaliser
 
@@ -133,10 +133,10 @@ fixture logic in a new `match/FixtureService`.
 - Create `shared/TeamNames.java`. If the UX-104 normalisation lane already added a helper, **reuse it instead**.
 - Test: `shared/TeamNamesTest.java`.
 
-- [ ] Write `static String normalize(String team)` following decision 5.
-- [ ] Table test. These inputs all normalise to the same value: `Atlético Madrid`, `Atletico Madrid`, `Atlético Madrid FC`,
+- [x] Write `static String normalize(String team)` following decision 5.
+- [x] Table test. These inputs all normalise to the same value: `Atlético Madrid`, `Atletico Madrid`, `Atlético Madrid FC`,
   `Atletico  Madrid`, `ATLÉTICO MADRID`.
-- [ ] These stay distinct: `Arsenal W` ≠ `Arsenal`, and `Real Madrid II` ≠ `Real Madrid`.
+- [x] These stay distinct: `Arsenal W` ≠ `Arsenal`, and `Real Madrid II` ≠ `Real Madrid`.
 
 ### Task 3: Auto-link on ingest
 
@@ -152,10 +152,10 @@ fixture logic in a new `match/FixtureService`.
 - Home/away swapped is **not** linked. The teams are reported in the fixture's order, and a swap is a real data error.
 
 ITs:
-- [ ] `twoProvidersSameFixtureShareOneFixture`
-- [ ] `concurrentFirstCallbacksCreateOneFixture` (two threads)
-- [ ] `sameTeamsThreeDaysLaterIsNewFixture`
-- [ ] `spellingVariantsLink`
+- [x] `twoProvidersSameFixtureShareOneFixture`
+- [x] `concurrentFirstCallbacksCreateOneFixture` (two threads)
+- [x] `sameTeamsThreeDaysLaterIsNewFixture`
+- [x] `spellingVariantsLink`
 
 ### Task 4: Admin merge / unlink / suggestions
 
@@ -168,12 +168,12 @@ ITs:
 | POST | `/api/v1/matches/{id}/unlink` | `{reason}` | Gives the match a fresh fixture of its own. History `ADMIN_UNLINK` |
 | POST | `/api/v1/fixtures/backfill` | | One-off: runs `linkOnIngest` for every match with `fixture_id IS NULL`. Idempotent. History `BACKFILL` |
 
-- [ ] ITs:
+- [x] ITs:
   - Viewer gets 403.
   - Merge leaves `predictions`/`prediction_pick_results` row counts and `payload_hash` unchanged.
   - Unlink restores separation.
   - The reason is required (400 `VALIDATION_ERROR`).
-- [ ] Decision 4: in `MatchResultService.apply`, after applying, copy the result to same-provider fixture siblings in the
+- [x] Decision 4: in `MatchResultService.apply`, after applying, copy the result to same-provider fixture siblings in the
   same transaction. Add the IT `sameProviderSiblingsShareResult`.
 
 ### Task 5: Reports and match detail by fixture
@@ -181,21 +181,21 @@ ITs:
 **Files:** Modify `report/ReportService.java` (`modelComparison`) and `match/MatchQueryService.java` (detail adds
 `fixture: {id, members:[{matchId, provider, externalMatchId, status, finalScore}], resultMismatch}`).
 
-- [ ] Model comparison groups by `COALESCE(m.fixture_id, m.id)` as `"fixtureId"`:
+- [x] Model comparison groups by `COALESCE(m.fixture_id, m.id)` as `"fixtureId"`:
   - `HAVING count(DISTINCT p.ai_model_id) >= :minModels`.
   - The `DISTINCT ON` becomes `(fixture key, p.ai_model_id)`.
   - Each entry keeps `matchId` and gets `providerName`.
   - `resultMismatch` is `count(DISTINCT (m.final_home_score, m.final_away_score)) FILTER (WHERE m.status='FINISHED') > 1`.
-- [ ] Response contract: rows gain `fixtureId` and `resultMismatch`, and `matchId` stays (the first member). This is an
+- [x] Response contract: rows gain `fixtureId` and `resultMismatch`, and `matchId` stays (the first member). This is an
   additive change. Update `docs/API_DOCUMENTATION.md`, `core/models.ts` and samples.
-- [ ] IT in `ReportsIT`: two providers, one fixture, `minModels=2` gives 1 row with 2 models.
+- [x] IT in `ReportsIT`: two providers, one fixture, `minModels=2` gives 1 row with 2 models.
 
 ### Task 6: UI
 
 **Files:** `pages/match-detail.ts` (Fixture panel: members, mismatch badge, Unlink for admin),
 `pages/matches.ts` (admin multi-select + "Merge matches" dialog with reason), new tab "Suggested merges" in `pages/matches.ts`.
 
-- [ ] Spec: the merge dialog needs a reason and 2 or more rows; a viewer sees no buttons.
+- [x] Spec: the merge dialog needs a reason and 2 or more rows; a viewer sees no buttons.
 
 ### Rollout / rollback
 
@@ -207,4 +207,37 @@ Rollback:
 - Code: model comparison falls back to `m.id`.
 - Data: `fixture_id` can stay, because nothing else reads it. History is kept.
 
+## Implementation notes (2026-11-21)
+
+- Done: Tasks 1-6 including decision 3 phase 2. Migration `V26__fixtures.sql`; `fixture_link_history` has the V23
+  `mm_forbid_change` triggers (append-only, no truncate); the admin-reason check also rejects a blank reason.
+- Normaliser: new `shared/TeamNames.normalize`. `PredictionValidator.teamKey` (UX-104) was not reused or changed: it
+  names a provider's own `auto-…` match ids, so changing it would split future screenshots from existing rows.
+- Phase 1 vs phase 2: `POST /external/matches/results` requires the `RESULTS` scope, and the admin result is trusted
+  too, so every result is shared with every differing fixture member (decision 4 is the same-provider case of it).
+  Skipped members keep their own result and the mismatch badge shows: a member whose provider result has a newer
+  `resultAt` (provider source only; an admin result always wins), and for a provider `FINISHED` a member whose kick-off
+  is still ahead. Merging never copies results (Review Focus 4). Result calls lock every fixture member in id order.
+- Responses: `ResultResponse.propagatedTo`, `match.fixtureId`, detail `fixture`, comparison `fixtureId`,
+  `resultMismatch` and per-entry `providerName`. Fixture members are flat rows (`finalHomeScore/finalAwayScore`,
+  `providerName`) like the other match rows, not the nested `finalScore`/`provider` sketched above.
+- Suggestions scan the latest 2000 fixtures in memory (trigram similarity in Java, no extension); a pair separated by
+  an admin unlink is not suggested again. `GET /fixtures/suggestions` is readable by viewers like every GET; the UI
+  tab is admin-only.
+- Not done (not in the task list): backfill button in the UI (call `POST /fixtures/backfill`), provider names in the
+  Reports comparison table.
+
 Effort: **L** (about 5 days: schema+link 1.5, admin API 1.5, reports 1, UI 1).
+
+## Implementation notes (2026-11-21, follow-up)
+
+- Decision 3 phase 2 tightened: only an admin result or a **per-provider** key holding `RESULTS` propagates to other
+  providers' fixture members. The legacy shared `EXTERNAL_API_KEY` (all scopes until the cut-over) still posts results
+  for its own matches, but `MatchResultService.apply(..., trusted=false)` shares them only with same-provider siblings
+  (decision 4); other providers' members keep their own result and the fixture shows `resultMismatch` once both are
+  `FINISHED` with different scores. `ExternalController` passes `trusted = caller.apiKeyId() != null`. ITs:
+  `FixtureAdminIT.legacyKeyResultStaysWithItsOwnProvider`; `trustedResultPropagatesToEveryMember` now uses a
+  per-provider `RESULTS` key.
+- Backfill button done: admin "Link existing matches" in the Matches "Suggested merges" tab calls
+  `POST /fixtures/backfill` and shows how many matches were linked (spec in `pages/lists.spec.ts`).
+- Still not done: provider names in the Reports comparison table.

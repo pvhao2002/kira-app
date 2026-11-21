@@ -1,7 +1,7 @@
 # Per-provider API keys, provider disable, results permission (UX-027 + UX-061)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use superpowers:subagent-driven-development or superpowers:executing-plans.
-> Steps use checkbox (`- [ ]`) syntax. Migration numbers are `V<next>`: check the highest `V*.sql` first (V13 when written).
+> Steps use checkbox (`- [x]`) syntax. Migration numbers are `V<next>`: check the highest `V*.sql` first (V13 when written).
 
 ## Problem
 
@@ -99,15 +99,15 @@ which substitutes `{{EXTERNAL_API_KEY}}`.
 
 **Files:** Create `matchmind-api/src/main/resources/db/migration/V<next>__provider_api_key_scopes.sql`.
 
-- [ ] Add the scopes column:
+- [x] Add the scopes column:
   `ALTER TABLE provider_api_keys ADD COLUMN scopes VARCHAR(16)[] NOT NULL DEFAULT '{PREDICTIONS,SETTLE_REQUEST}'`
   with `CHECK (scopes <@ ARRAY['PREDICTIONS','SETTLE_REQUEST','RESULTS']::varchar[] AND cardinality(scopes) > 0)`.
-- [ ] Add the index `ix_provider_api_keys_active` on `(provider_id) WHERE status = 'ACTIVE'`.
-- [ ] Add `providers.disabled_at TIMESTAMPTZ` and `providers.disabled_reason TEXT`, with
+- [x] Add the index `ix_provider_api_keys_active` on `(provider_id) WHERE status = 'ACTIVE'`.
+- [x] Add `providers.disabled_at TIMESTAMPTZ` and `providers.disabled_reason TEXT`, with
   `CHECK ((status = 'DISABLED') = (disabled_at IS NOT NULL))`. The backfill is a no-op because every row is ACTIVE.
-- [ ] Optional DB guard: a trigger that forbids `UPDATE` of `secret_hash`, `key_id` and `provider_id`. Do it here or let
+- [x] Optional DB guard: a trigger that forbids `UPDATE` of `secret_hash`, `key_id` and `provider_id`. Do it here or let
   UX-088 own it.
-- [ ] Verify with `mvn -q compile`, then an IT start (Flyway applies).
+- [x] Verify with `mvn -q compile`, then an IT start (Flyway applies).
 
 ### Task 2: Key service + authentication
 
@@ -138,15 +138,15 @@ Filter order:
    `UPDATE provider_api_keys SET last_used_at = now() WHERE id = :id AND (last_used_at IS NULL OR last_used_at < now() - interval '1 minute')`.
 7. Add `apiKeyId` to `ExternalAuditService.Entry` so `external_api_requests.api_key_id` is filled.
 
-- [ ] Write the failing ITs:
+- [x] Write the failing ITs:
   - `issuedKeyAuthenticatesWithoutXProvider`
   - `revokedKeyIs401`
   - `disabledProviderIs403ProviderDisabled`
   - `xProviderMismatchIs403`
   - `legacyKeyStillWorksWhenConfigured`
   - `auditRowCarriesApiKeyIdAndNeverTheSecret` (assert that no column of the audit row contains the secret)
-- [ ] Implement, then run `mvn -B verify -Dit.test=ProviderKeysIT`.
-- [ ] Make `EXTERNAL_API_KEY` optional:
+- [x] Implement, then run `mvn -B verify -Dit.test=ProviderKeysIT`.
+- [x] Make `EXTERNAL_API_KEY` optional:
   - The constructor no longer throws when the variable is empty. It throws only when the variable is set and shorter than
     32 characters.
   - Update `.env.example` and `docker-compose.yml`. `:?` becomes `:-`.
@@ -155,14 +155,14 @@ Filter order:
 
 **Files:** Modify `external/ExternalController.java`. Test: extend `ProviderKeysIT`.
 
-- [ ] Write the failing tests:
+- [x] Write the failing tests:
   - `resultsWithoutResultsScopeIs403ScopeRequired`
   - `resultsWithScopeApplies`
   - `predictionsWithoutPredictionsScopeIs403`
-- [ ] Add `requireScope(caller, "RESULTS")` at the top of `results(...)`. Also add `"PREDICTIONS"` in `submitPrediction`
+- [x] Add `requireScope(caller, "RESULTS")` at the top of `results(...)`. Also add `"PREDICTIONS"` in `submitPrediction`
   (the admin import principal has all scopes) and `"SETTLE_REQUEST"` in `settle`. The check is inside `audited(...)`, so
   the rejection is audited.
-- [ ] Decide how the legacy key is treated. Recommended: all scopes, because that is today's behaviour, until cut-over.
+- [x] Decide how the legacy key is treated. Recommended: all scopes, because that is today's behaviour, until cut-over.
 
 ### Task 4: Provider admin API
 
@@ -179,10 +179,10 @@ Endpoints. The `ADMIN` role is already enforced by `SecurityConfig` for non-GET 
 | POST | `/api/v1/providers/{id}/keys/{keyId}/revoke` | `{reason}` | 204 |
 | POST | `/api/v1/providers/{id}/keys/{keyId}/rotate` | `{label?}` | 201 new `IssuedKey`. Old key stays ACTIVE until revoked (decision 6) |
 
-- [ ] Add `status`, `disabledAt` and `activeKeys` to `ProviderView`. `lastCallbackAt` exists already.
-- [ ] A `PATCH` to `DISABLED` must evict nothing. The filter reads status uncached (Task 2).
-- [ ] Write the ITs: viewer gets 403 on every write; create/disable/enable round trip; list keys never contains `secret`.
-- [ ] Update `docs/API_DOCUMENTATION.md` ("Providers and AI models" stops being read-only), `docs/samples/*.json` and
+- [x] Add `status`, `disabledAt` and `activeKeys` to `ProviderView`. `lastCallbackAt` exists already.
+- [x] A `PATCH` to `DISABLED` must evict nothing. The filter reads status uncached (Task 2).
+- [x] Write the ITs: viewer gets 403 on every write; create/disable/enable round trip; list keys never contains `secret`.
+- [x] Update `docs/API_DOCUMENTATION.md` ("Providers and AI models" stops being read-only), `docs/samples/*.json` and
   `core/models.ts` together, as AGENTS.override requires.
 
 ### Task 5 (if decision 5 = yes): Admin result entry — DROPPED (already exists as `POST /matches/{id}/result`)
@@ -199,16 +199,16 @@ Endpoints. The `ADMIN` role is already enforced by `SecurityConfig` for non-GET 
 - Modify `app.routes.ts` (`providers`, admin write actions hidden for VIEWER), `core/api.service.ts`, `core/models.ts`,
   `layout/shell.ts` (nav), `pages/prompts.ts`.
 
-- [ ] Table columns: code, name, status, models, predictions, active keys, last callback (`—` when null). Row actions:
+- [x] Table columns: code, name, status, models, predictions, active keys, last callback (`—` when null). Row actions:
   Edit, Enable/Disable (confirm + reason), Keys.
-- [ ] Keys dialog (`shared/kit.ts` dialog):
+- [x] Keys dialog (`shared/kit.ts` dialog):
   - It lists keys and offers Issue/Rotate/Revoke.
   - Issue shows the key once in a read-only input with Copy and the warning "You will not see this key again".
   - It offers "Copy prompt with this key". That button replaces `{{EXTERNAL_API_KEY}}` client-side and never sends the key back.
-- [ ] `PromptController.forAgent` substitutes the shared key only while legacy mode is on. Otherwise it leaves the
+- [x] `PromptController.forAgent` substitutes the shared key only while legacy mode is on. Otherwise it leaves the
   placeholder and the UI explains why.
-- [ ] Write the unit spec `providers.spec.ts`: secret shown once and cleared on dialog close; viewer sees no actions.
-- [ ] Verify with `npx ng test --watch=false && npx ng build`.
+- [x] Write the unit spec `providers.spec.ts`: secret shown once and cleared on dialog close; viewer sees no actions.
+- [x] Verify with `npx ng test --watch=false && npx ng build`.
 
 ### Rollout / rollback
 

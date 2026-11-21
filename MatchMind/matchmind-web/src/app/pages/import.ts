@@ -245,7 +245,7 @@ const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
                   <a [routerLink]="['/predictions', r.predictionId]">Open prediction</a>
                   @if (r.possibleDuplicateOf) {
                     <div class="warn-text">Looks like a retry of <a [routerLink]="['/predictions', r.possibleDuplicateOf]">an earlier prediction</a>
-                      (same model, match, type, minute and picks). Both are stored and both count in reports.</div>
+                      (same model, match, type, minute and picks). Both are stored; reports count only the latest of them.</div>
                   }
                 }
               </div>

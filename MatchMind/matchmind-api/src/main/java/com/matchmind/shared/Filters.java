@@ -14,10 +14,15 @@ import java.util.UUID;
  * Expects SQL aliases p (predictions), m (matches) and, for pick-level queries, pk (prediction_picks).
  * Archived providers, models and matches (V24) are left out unless {@code includeArchived=true}; naming one explicitly
  * ({@code modelId}, {@code providerId}, {@code matchId}) shows only that one, never the other archived rows.
+ * {@code countPolicy} (UX-046): {@code latest} (default, null) counts only {@link Stats#COUNTED} predictions in
+ * aggregates; {@code all} counts every row as before. Lists ignore it and show every row.
  */
 public record Filters(Instant from, Instant to, String league, UUID modelId, UUID providerId, String type,
                       String market, UUID matchId, String search, String result,
-                      Boolean includeArchived) {
+                      Boolean includeArchived, String countPolicy) {
+    /** Rollback switch for UX-046: the policy used when the request names none. */
+    public static final String DEFAULT_COUNT_POLICY = "latest";
+    private static final Set<String> COUNT_POLICIES = Set.of("latest", "all");
     private static final Set<String> TYPES = Set.of("PRE_MATCH", "LIVE");
     /** Every supported market, in display order. */
     public static final List<String> MARKETS = List.of("1X2", "AH", "OU", "CORNER_AH", "CORNER_OU");
@@ -29,8 +34,11 @@ public record Filters(Instant from, Instant to, String league, UUID modelId, UUI
      */
     public static final String SEARCH = "(mm_fold(m.home_team) LIKE mm_fold(:q) OR mm_fold(m.away_team) LIKE mm_fold(:q)"
         + " OR mm_fold(m.league) LIKE mm_fold(:q) OR mm_fold(m.external_match_id) LIKE mm_fold(:q))";
-    /** League filter on match alias m, bound as :league: exact name after trimming and folding case and accents. */
-    public static final String LEAGUE = "mm_fold(btrim(m.league)) = mm_fold(btrim(:league))";
+    /**
+     * League filter on match alias m, bound as :league: exact name after resolving league aliases (V28 mm_league), trimming
+     * and folding case and accents.
+     */
+    public static final String LEAGUE = "mm_fold(mm_league(m.league)) = mm_fold(mm_league(:league))";
 
     /** Match alias m, left out when archived or when its provider is archived (the provider is skipped when named). */
     public static void activeMatches(Sql.Where w, Boolean includeArchived, boolean providerNamed) {
@@ -56,7 +64,14 @@ public record Filters(Instant from, Instant to, String league, UUID modelId, UUI
         }
     }
 
+    /** Aggregate filters: the count policy applies. */
     public Sql.Where where(boolean pickLevel) {
+        return where(pickLevel, true);
+    }
+
+    /** {@code aggregate=false} for lists, which show every row whatever the count policy. */
+    public Sql.Where where(boolean pickLevel, boolean aggregate) {
+        boolean latest = countsLatest(countPolicy);
         if (type != null && !type.isBlank() && !TYPES.contains(type)) throw ApiException.badRequest("INVALID_TYPE", "Unknown prediction type");
         if (market != null && !market.isBlank() && !MARKETS.contains(market)) throw ApiException.badRequest("INVALID_MARKET", "Unknown market");
         if (result != null && !result.isBlank() && !RESULTS.contains(result)) throw ApiException.badRequest("INVALID_RESULT", "Unknown result");
@@ -75,6 +90,7 @@ public record Filters(Instant from, Instant to, String league, UUID modelId, UUI
             w.and(modelId == null ? MODEL_ACTIVE : MODEL_ACTIVE_EXCEPT_NAMED);
             if (providerId == null) w.and(PROVIDER_ACTIVE.formatted("p.provider_id"));
         }
+        if (aggregate && latest) w.and(Stats.COUNTED);
         if (pickLevel) {
             w.and("pk.market = :market", "market", market);
             if ("PENDING".equals(result)) w.and("(r.result IS NULL OR r.result = 'PENDING')");
@@ -83,5 +99,19 @@ public record Filters(Instant from, Instant to, String league, UUID modelId, UUI
             w.and("EXISTS (SELECT 1 FROM prediction_picks x WHERE x.prediction_id = p.id AND x.market = :market)", "market", market);
         }
         return w;
+    }
+
+    /** True when aggregates count only the latest prediction per moment. */
+    public boolean countsLatest() {
+        return countsLatest(countPolicy);
+    }
+
+    /** For endpoints without {@code Filters}: validates the policy (400 INVALID_COUNT_POLICY), null or blank = default. */
+    public static boolean countsLatest(String countPolicy) {
+        if (countPolicy != null && !countPolicy.isBlank() && !COUNT_POLICIES.contains(countPolicy)) {
+            throw ApiException.badRequest("INVALID_COUNT_POLICY", "countPolicy must be latest or all");
+        }
+        String policy = countPolicy == null || countPolicy.isBlank() ? DEFAULT_COUNT_POLICY : countPolicy;
+        return "latest".equals(policy);
     }
 }

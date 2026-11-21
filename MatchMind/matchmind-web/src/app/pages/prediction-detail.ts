@@ -67,6 +67,27 @@ const MIN_REASON = 5;
           </section>
         }
 
+        @if (d.counted === false) {
+          <div class="alert alert-info" role="status" data-testid="not-counted">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            <span>Not counted in reports: superseded by
+              @if (supersededBy(d); as s) { <a [routerLink]="['/predictions', s.predictionId]">the prediction of {{ fmt(s.predictedAt) }}</a> }
+              @else { a later prediction } of the same match, model, type and minute.</span>
+          </div>
+        }
+        @if (d.similar?.length) {
+          <section class="panel" aria-label="Similar predictions" data-testid="similar">
+            <header><h2>Similar predictions</h2><span class="muted-text">Same match, model, type and minute; reports count only the latest.</span></header>
+            <ul>
+              @for (s of d.similar; track s.predictionId) {
+                <li><a [routerLink]="['/predictions', s.predictionId]">{{ fmt(s.predictedAt) }}</a>
+                  @if (s.exact) { <span class="tag tag-warn" title="Same content apart from eventId, predictedAt and metadata">same content</span> }
+                  @if (s.counted) { <span class="tag tag-success">counted</span> } @else { <span class="tag tag-secondary">not counted</span> }</li>
+              }
+            </ul>
+          </section>
+        }
+
         <section class="panel">
         <mm-tabs controls="prediction-panel" [tabs]="tabList()" [(value)]="tab" />
         <div class="tabpanel" id="prediction-panel" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
@@ -254,6 +275,8 @@ export class PredictionDetailPage {
   private readonly resource = this.api.predictionResource(() => this.id());
   readonly state = viewState(this.resource);
   readonly error = errorMessage(this.resource);
+  /** The counted prediction of the same key, i.e. the one that supersedes this one (UX-046). */
+  supersededBy(d: PredictionDetail) { return d.similar?.find(x => x.counted); }
   readonly detail = safeValue(this.resource);
   readonly action = signal<Action | null>(null);
   readonly saving = signal(false);

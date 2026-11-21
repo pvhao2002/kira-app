@@ -3,6 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { By } from '@angular/platform-browser';
+import { FilterBar } from '../shared/filter-bar';
 import { ReportsPage } from './reports';
 
 let http: HttpTestingController;
@@ -132,5 +134,85 @@ describe('ReportsPage Monte Carlo (UX-092)', () => {
     const kpi = [...(f.nativeElement as HTMLElement).querySelectorAll('.kpi')].find(k => text(k as HTMLElement).includes('Correct score accuracy'))!;
     expect(text(kpi as HTMLElement)).toContain('—');
     expect(text(kpi as HTMLElement)).not.toContain('0.0%');
+  });
+});
+
+describe('ReportsPage count policy (UX-046)', () => {
+  it('sends countPolicy=all once "Count: all" is applied, and footnotes predictions not counted', async () => {
+    const f = await open('models');
+    http.expectOne(r => r.url.endsWith('/reports/model-performance') && !r.params.has('countPolicy'))
+      .flush([{ ...model, notCountedPredictions: 2 }]);
+    await f.whenStable();
+    expect(text(f.nativeElement)).toContain('2 predictions not counted');
+
+    const bar = f.debugElement.query(By.directive(FilterBar)).componentInstance as FilterBar;
+    bar.form.patchValue({ count: 'all' });
+    bar.apply(false);
+    TestBed.tick();
+    http.expectOne(r => r.url.endsWith('/reports/model-performance') && r.params.get('countPolicy') === 'all')
+      .flush([{ ...model, notCountedPredictions: 0 }]);
+    await f.whenStable();
+    expect(text(f.nativeElement)).not.toContain('not counted');
+  });
+});
+
+describe('ReportsPage ROI, small sample and calibration (UX-018)', () => {
+  const cellOf = (el: HTMLElement, header: string) => {
+    const headers = [...el.querySelectorAll('thead th')].map(th => text(th as HTMLElement).trim());
+    return el.querySelectorAll('tbody tr:first-child td')[headers.indexOf(header)] as HTMLElement;
+  };
+
+  it('shows units and ROI, and a dash for a null ROI (nothing staked)', async () => {
+    const f = await open('models');
+    http.expectOne(r => r.url.endsWith('/reports/model-performance'))
+      .flush([{ ...model, modelId: 'a', units: -0.05, staked: 5, roi: -0.01 }, { ...model, modelId: 'b', modelName: 'zz', units: null, staked: 0, roi: null, winRate: null }]);
+    await f.whenStable();
+    const el = f.nativeElement as HTMLElement;
+    const rows = [...el.querySelectorAll('tbody tr')].map(r => text(r as HTMLElement));
+    expect(rows.find(r => r.includes('gpt'))).toContain('−0.050');
+    expect(rows.find(r => r.includes('gpt'))).toContain('-1.0%');
+    const headers = [...el.querySelectorAll('thead th')].map(th => text(th as HTMLElement).trim());
+    const nullRow = [...el.querySelectorAll('tbody tr')].find(r => text(r as HTMLElement).includes('zz'))!;
+    const tds = nullRow.querySelectorAll('td');
+    expect(text(tds[headers.indexOf('ROI')] as HTMLElement).trim()).toBe('—');
+    expect(text(tds[headers.indexOf('Units')] as HTMLElement).trim()).toBe('—');
+  });
+
+  it('badges the win rate at n = 29 (wins + losses) and not at n = 30; ROI on staked', async () => {
+    const f = await open('models');
+    http.expectOne(r => r.url.endsWith('/reports/model-performance'))
+      .flush([{ ...model, wins: 15, losses: 14, units: 1, staked: 30, roi: 0.0333 }]);
+    await f.whenStable();
+    const el = f.nativeElement as HTMLElement;
+    expect(text(cellOf(el, 'Win rate'))).toContain('small sample (n = 29)');
+    expect(cellOf(el, 'ROI').querySelector('[data-testid="small-sample"]')).toBeNull();
+
+    const g = await open('models');
+    http.expectOne(r => r.url.endsWith('/reports/model-performance'))
+      .flush([{ ...model, wins: 15, losses: 15, units: 1, staked: 29, roi: 0.0345 }]);
+    await g.whenStable();
+    const el2 = g.nativeElement as HTMLElement;
+    expect(cellOf(el2, 'Win rate').querySelector('[data-testid="small-sample"]')).toBeNull();
+    expect(text(cellOf(el2, 'ROI'))).toContain('small sample (n = 29)');
+  });
+
+  it('renders the calibration tab with all 10 bins, greys thin bins and counts the excluded picks', async () => {
+    const f = await open('calibration');
+    const bins = Array.from({ length: 10 }, (_, i) => ({
+      bin: i + 1, from: i / 10, to: (i + 1) / 10, picks: i === 5 ? 12 : i === 6 ? 3 : 0,
+      avgProbability: i === 5 ? 0.55 : i === 6 ? 0.64 : null, hitRate: i === 5 ? 0.5833 : i === 6 ? 0.3333 : null,
+    }));
+    http.expectOne(r => r.url.endsWith('/reports/calibration')).flush({ bins, evaluated: 15, excluded: 4 });
+    await f.whenStable();
+    const el = f.nativeElement as HTMLElement;
+    const rows = el.querySelectorAll('[data-testid="calibration-bin"]');
+    expect(rows.length).toBe(10);
+    expect(rows[5].classList.contains('muted-text')).toBe(false);
+    expect(rows[6].classList.contains('muted-text')).toBe(true);
+    expect(text(rows[0] as HTMLElement)).toContain('—');
+    expect(text(el)).toContain('excluded: 4');
+    const chart = f.componentInstance.calibrationChart();
+    expect(chart.datasets[0].data).toHaveLength(2);   // only non-empty bins are plotted
+    expect(chart.datasets[0].backgroundColor).toEqual(['rgba(14,124,102,.7)', 'rgba(138,150,168,.55)']);
   });
 });

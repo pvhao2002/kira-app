@@ -1,0 +1,12 @@
+{
+  "merge": {
+    "matchIds": ["8d3c1a52-5b0e-4b61-9a43-0c1f6f4e2a10", "1f0b7e9c-3a6d-4c25-8e47-6d2b9a5c7e31"],
+    "reason": "Same game: Man Utd vs Manchester United"
+  },
+  "unlink": {
+    "reason": "Second leg, not the same game"
+  },
+  "backfillResponse": {
+    "linked": 42
+  }
+}

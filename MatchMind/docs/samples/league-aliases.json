@@ -1,0 +1,16 @@
+{
+  "add": {
+    "alias": "EPL",
+    "canonical": "English Premier League",
+    "reason": "Agents send both names for one league"
+  },
+  "addResponse": {
+    "id": "5b8e2f41-7c3a-4d19-9e62-1a0f3c7d8b25",
+    "alias": "EPL",
+    "canonical": "English Premier League",
+    "createdAt": "2026-11-21T09:00:00Z"
+  },
+  "remove": {
+    "reason": "EPL here meant a different league"
+  }
+}

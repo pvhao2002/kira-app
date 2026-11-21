@@ -55,7 +55,7 @@ import { fromQuery, toQuery } from '../shared/url-state';
             <tbody>
               @for (l of list.rows(); track l.id) {
                 <tr class="clickable" (click)="open(l)" tabindex="0" (keydown.enter)="open(l)">
-                  <td class="nowrap">{{ fmt(l.receivedAt) }}</td><td class="hide-sm">{{ l.providerName ?? '—' }}@if (l.actor) { <span class="cell-sub">by {{ l.actor }}</span> }</td><td class="hide-sm"><code>{{ l.httpMethod }} {{ l.endpoint }}</code></td>
+                  <td class="nowrap">{{ fmt(l.receivedAt) }}</td><td class="hide-sm">{{ l.providerName ?? '—' }}@if (l.legacyKey) { <span class="tag tag-warn" title="Sent with the shared EXTERNAL_API_KEY">Legacy key</span> }@if (l.actor) { <span class="cell-sub">by {{ l.actor }}</span> }</td><td class="hide-sm"><code>{{ l.httpMethod }} {{ l.endpoint }}</code></td>
                   <td class="num">{{ l.httpStatus }}</td><td><mm-result [value]="l.requestStatus" kind="status" /></td><td><span class="clamp" [title]="l.errorMessage ?? ''">{{ l.errorMessage ?? '' }}</span></td>
                   <td class="hide-sm"><span class="truncate" [title]="l.eventId ?? ''">{{ l.eventId ?? '—' }}</span></td><td class="num hide-sm">{{ l.durationMs }}</td><td class="hide-sm">{{ l.clientIp ?? '—' }}</td>
                 </tr>

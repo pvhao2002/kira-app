@@ -152,6 +152,17 @@ describe('PromptsPage (W5)', () => {
     expect(sessionStorage.getItem('matchmind.prompt-draft')).toBeNull();
   });
 
+  it('an admin copy without a shared key points to the Providers screen (per-provider keys)', async () => {
+    setup(admin);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const toast = vi.spyOn(TestBed.inject(ToastService), 'add');
+    const f = await open();
+    (f.nativeElement.querySelector('[data-testid="prompt-copy"]') as HTMLElement).click();
+    http.expectOne('/api/v1/prompts/p1/for-agent').flush({ content: 'key {{EXTERNAL_API_KEY}}', keyRendered: false });
+    await vi.waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ severity: 'warn', detail: expect.stringContaining('Providers') })));
+  });
+
   it('a viewer copy says the key placeholder is still in the text (UX-060)', async () => {
     setup(viewer);
     const writeText = vi.fn().mockResolvedValue(undefined);

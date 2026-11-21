@@ -509,7 +509,7 @@ fieldset.dialog-body { border: 0; margin: 0; min-width: 0; }   /* a fieldset so 
 .dialog-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1rem; position: sticky; bottom: 0; background: var(--mm-card); padding: .7rem 0 1.1rem; margin-bottom: -1.1rem; }
 @keyframes mm-pop { from { opacity: 0; transform: translateY(8px) scale(.98); } }
 @keyframes mm-slide-in { from { opacity: 0; transform: translateX(16px); } }
-.toasts { position: fixed; top: 1rem; right: 1rem; z-index: 1000; display: flex; flex-direction: column; gap: .5rem; width: min(360px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow-y: auto; }
+.toasts { position: fixed; bottom: 1rem; right: 1rem; /* bottom: never over the header actions (Edit, Save) */ z-index: 1000; display: flex; flex-direction: column; gap: .5rem; width: min(360px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow-y: auto; }
 .toast {
   display: flex; justify-content: space-between; gap: .5rem; background: var(--mm-card); border: 1px solid var(--mm-line); border-left: 4px solid var(--mm-green);
   border-radius: 8px; padding: .65rem .5rem .65rem .85rem; box-shadow: var(--mm-shadow-md); animation: mm-slide-in .22s var(--mm-ease);

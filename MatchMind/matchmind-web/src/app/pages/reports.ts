@@ -6,24 +6,33 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { apiError } from '../core/http';
 import { errorMessage, keepPrevious, safeValue, statusToView, viewState } from '../core/resource';
-import { Filters } from '../core/models';
+import { CalibrationBin, Filters } from '../core/models';
 import { FilterBar } from '../shared/filter-bar';
-import { Col, cell, downloadCsv, fmtDateTime, humanize, lineSplit, lineText, num, pct, pickText, saveBlob } from '../shared/format';
+import { Col, ROI_DEF, cell, downloadCsv, fmtDateTime, humanize, lineSplit, lineText, num, pct, pickText, saveBlob } from '../shared/format';
 import {
   Expansion, Paginator, ResizableColumn, Sort, SortHeader, sortParam, sortRows, Tabs, ToastService,
 } from '../shared/kit';
 import { ChartView } from '../shared/chart';
-import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
+import { JsonView, ResultTag, ScoreChip, SmallSample, StateView } from '../shared/ui';
 
-type Tab = 'models' | 'history' | 'markets' | 'comparison' | 'montecarlo';
+type Tab = 'models' | 'history' | 'markets' | 'calibration' | 'comparison' | 'montecarlo';
 const TABS: { value: Tab; label: string }[] = [
   { value: 'models', label: 'AI model performance' }, { value: 'history', label: 'Prediction history' },
-  { value: 'markets', label: 'Market performance' }, { value: 'comparison', label: 'Model comparison' },
-  { value: 'montecarlo', label: 'Monte Carlo' },
+  { value: 'markets', label: 'Market performance' }, { value: 'calibration', label: 'Calibration' },
+  { value: 'comparison', label: 'Model comparison' }, { value: 'montecarlo', label: 'Monte Carlo' },
 ];
+/** Calibration bins with fewer picks than this are greyed out (owner decision, UX-018). */
+const CALIBRATION_MIN_PICKS = 5;
 
 /** Matches the API definition (API_DOCUMENTATION.md, "Win rate"); shown on every Win rate header. */
 export const WIN_RATE_DEF = 'Win rate = (W + ½W) / (W + ½W + L + ½L): a half win counts as a win, a half loss as a loss. Push, void and pending picks are left out.';
+const headerTitle = (c: Col) => c.field === 'winRate' ? WIN_RATE_DEF : c.field === 'units' || c.field === 'roi' ? ROI_DEF : null;
+/** The denominator a small-sample badge is judged on: wins + losses for the win rate, staked for ROI; null elsewhere. */
+export function sampleSize(r: { wins?: number; losses?: number; staked?: number }, field: string): number | null {
+  if (field === 'winRate') return (r.wins ?? 0) + (r.losses ?? 0);
+  if (field === 'roi') return r.staked ?? 0;
+  return null;
+}
 
 // Exclusive counts (fullWins/fullLosses, not wins/losses which include the halves): Wins + Half wins + Losses + Half
 // losses + Push / void = Settled.
@@ -33,6 +42,7 @@ const PERF_COLS: Col[] = [
   { field: 'halfWins', header: 'Half wins', kind: 'int' }, { field: 'fullLosses', header: 'Losses', kind: 'int' },
   { field: 'halfLosses', header: 'Half losses', kind: 'int' }, { field: 'pushOrVoid', header: 'Push / void', kind: 'int' },
   { field: 'pending', header: 'Pending', kind: 'int' }, { field: 'winRate', header: 'Win rate', kind: 'pct' },
+  { field: 'units', header: 'Units', kind: 'units' }, { field: 'roi', header: 'ROI', kind: 'pct' },
   { field: 'avgProbability', header: 'Avg prob.', kind: 'pct' },
 ];
 const MODEL_COLS: Col[] = [
@@ -64,13 +74,14 @@ const HISTORY_COLS: HistCol[] = [
   { field: 'oddsStage', header: 'Odds stage' },
   { field: 'probability', header: 'Probability', kind: 'pct', sort: 'probability' },
   { field: 'result', header: 'Result', sort: 'result' },
+  { field: 'units', header: 'Units', kind: 'units' },
   { field: 'settledAt', header: 'Settled', kind: 'date' },
   { field: 'settlementSource', header: 'Settled by' },
 ];
 const HISTORY_DEFAULT_HIDDEN = new Set(['corners', 'oddsStage', 'settledAt', 'settlementSource']);
 const HIDDEN_KEY = 'matchmind.history.hidden';
 
-const isNum = (c: Col) => c.kind === 'int' || c.kind === 'num' || c.kind === 'pct';
+const isNum = (c: Col) => c.kind === 'int' || c.kind === 'num' || c.kind === 'pct' || c.kind === 'units';
 /** Performance tables keep these columns on a phone; the rest stay on wider screens. */
 const SM_KEEP = new Set(['modelName', 'market', 'key', 'predictions', 'settled', 'winRate']);
 const hideSm = (c: Col) => !SM_KEEP.has(c.field);
@@ -78,7 +89,7 @@ const hideSm = (c: Col) => !SM_KEEP.has(c.field);
 /** One expanded model row: its results by market and by league, fetched only while the row is open. */
 @Component({
   selector: 'mm-model-breakdown',
-  imports: [StateView],
+  imports: [StateView, SmallSample],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (data(); as b) {
@@ -86,9 +97,9 @@ const hideSm = (c: Col) => !SM_KEEP.has(c.field);
         @for (part of [{ t: 'By market', rows: b.market }, { t: 'By league', rows: b.league }]; track part.t) {
           <div><h3 class="mb-2">{{ part.t }}</h3>
             <div class="table-wrap short"><table class="dt" [attr.aria-label]="part.t">
-              <thead><tr>@for (c of cols; track c.field) { <th [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="c.field === 'winRate' ? winRateDef : null">{{ c.header }}</th> }</tr></thead>
+              <thead><tr>@for (c of cols; track c.field) { <th [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="headerTitle(c)">{{ c.header }}</th> }</tr></thead>
               <tbody>
-                @for (x of part.rows; track x.key) { <tr>@for (c of cols; track c.field) { <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ cell(x, c) }}</td> }</tr> }
+                @for (x of part.rows; track x.key) { <tr>@for (c of cols; track c.field) { <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ cell(x, c) }} @if (sampleSize(x, c.field) !== null) { <mm-small-sample [n]="sampleSize(x, c.field)!" /> }</td> }</tr> }
                 @empty { <tr><td [attr.colspan]="cols.length" class="empty">No picks.</td></tr> }
               </tbody>
             </table></div></div>
@@ -104,7 +115,8 @@ export class ModelBreakdown {
   readonly state = viewState(this.res);
   readonly error = errorMessage(this.res);
   readonly cols = BREAKDOWN_COLS;
-  readonly winRateDef = WIN_RATE_DEF;
+  readonly headerTitle = headerTitle;
+  readonly sampleSize = sampleSize;
   readonly isNum = isNum;
   readonly hideSm = hideSm;
   readonly cell = (r: unknown, c: Col) => cell(r as Record<string, unknown>, c);
@@ -112,7 +124,7 @@ export class ModelBreakdown {
 
 @Component({
   selector: 'mm-reports',
-  imports: [RouterLink, FilterBar, ModelBreakdown, Tabs, SortHeader, ResizableColumn, Paginator, ChartView, JsonView, ResultTag, ScoreChip, StateView],
+  imports: [RouterLink, FilterBar, ModelBreakdown, Tabs, SortHeader, ResizableColumn, Paginator, ChartView, JsonView, ResultTag, ScoreChip, SmallSample, StateView],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     :host { display: block; }
@@ -122,7 +134,7 @@ export class ModelBreakdown {
   `],
   template: `
     <div class="stack">
-      <mm-filter-bar [fields]="['search', 'dates', 'league', 'model', 'type', 'market', 'result']" (changed)="onFilters($event)" />
+      <mm-filter-bar [fields]="['search', 'dates', 'league', 'model', 'type', 'market', 'result', 'count']" (changed)="onFilters($event)" />
       <mm-tabs controls="reports-panel" [tabs]="tabs" [value]="tab()" (valueChange)="selectTab($event)" />
 
       <div class="stack" id="reports-panel" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
@@ -130,14 +142,15 @@ export class ModelBreakdown {
         @case ('models') {
           <section class="panel flush">
             <div class="toolbar">
-              <span class="muted-text">Expand a model for its results by market and by league. {{ winRateDef }}</span>
+              <span class="muted-text">Expand a model for its results by market and by league. {{ winRateDef }}
+                @if (notCounted()) { <b class="count-note">{{ notCounted() }} {{ notCounted() === 1 ? 'prediction' : 'predictions' }} not counted</b> (superseded by a later one of the same match, model, type and minute; "Count: all" includes them). }</span>
               <button type="button" class="btn btn-outline btn-sm" (click)="csv('model-performance', modelCols, sortedModels())" [disabled]="!modelRows().length"><i class="pi pi-download"></i> CSV</button>
             </div>
             <mm-state [state]="state()" [message]="error()" />
             @if (state() === 'ready') {
               <div class="table-wrap tall"><table class="dt" aria-label="AI model performance">
                 <thead><tr><th class="th-icon"><span class="sr-only">Details</span></th>
-                  @for (c of modelCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="modelSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="c.field === 'winRate' ? winRateDef : null">{{ c.header }}</th> }
+                  @for (c of modelCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="modelSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="headerTitle(c)">{{ c.header }}</th> }
                 </tr></thead>
                 <tbody>
                   @for (r of sortedModels(); track r.modelId) {
@@ -147,6 +160,7 @@ export class ModelBreakdown {
                       @for (c of modelCols; track c.field) {
                         <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">
                           @if (c.field === 'modelName') { <a [routerLink]="['/models', r.modelId]">{{ r.modelName }}</a> } @else { {{ cell(r, c) }} }
+                          @if (sampleSize(r, c.field) !== null) { <mm-small-sample [n]="sampleSize(r, c.field)!" /> }
                         </td>
                       }
                     </tr>
@@ -197,7 +211,7 @@ export class ModelBreakdown {
                         [attr.title]="c.field === 'line' ? lineSplit(r.market, r.line) || null : null">
                         @switch (c.field) {
                           @case ('match') { <a [routerLink]="['/matches', r.matchId]" [title]="r.homeTeam + ' – ' + r.awayTeam">{{ r.homeTeam }} – {{ r.awayTeam }}</a> }
-                          @case ('modelName') { {{ r.modelName }} <span class="muted-text">{{ r.modelVersion }}</span> }
+                          @case ('modelName') { {{ r.modelName }} <span class="muted-text">{{ r.modelVersion }}</span> @if (r.counted === false) { <span class="tag tag-secondary" title="A later prediction of the same match, model, type and minute replaces it in reports">not counted</span> } }
                           @case ('current') { @if (r.predictionType === 'LIVE') { <mm-score [home]="r.currentHomeScore" [away]="r.currentAwayScore" [muted]="true" /> } @else { — } }
                           @case ('predicted') { <mm-score [home]="r.predictedHomeScore" [away]="r.predictedAwayScore" /> }
                           @case ('final') { <mm-score [home]="r.finalHomeScore" [away]="r.finalAwayScore" [muted]="r.matchStatus !== 'FINISHED'" /> }
@@ -258,8 +272,31 @@ export class ModelBreakdown {
               <div class="toolbar"><span class="muted-text">All five markets are always listed, including ones without picks. {{ winRateDef }}</span>
                 <button type="button" class="btn btn-outline btn-sm" (click)="csv('market-performance', marketCols, sortedMarkets())"><i class="pi pi-download"></i> CSV</button></div>
               <div class="table-wrap"><table class="dt" aria-label="Market performance">
-                <thead><tr>@for (c of marketCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="marketSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="c.field === 'winRate' ? winRateDef : null">{{ c.header }}</th> }</tr></thead>
-                <tbody>@for (r of sortedMarkets(); track r.market) { <tr>@for (c of marketCols; track c.field) { <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ cell(r, c) }}</td> }</tr> }</tbody>
+                <thead><tr>@for (c of marketCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="marketSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="headerTitle(c)">{{ c.header }}</th> }</tr></thead>
+                <tbody>@for (r of sortedMarkets(); track r.market) { <tr>@for (c of marketCols; track c.field) { <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ cell(r, c) }} @if (sampleSize(r, c.field) !== null) { <mm-small-sample [n]="sampleSize(r, c.field)!" /> }</td> }</tr> }</tbody>
+              </table></div>
+            </section>
+          }
+        }
+
+        @case ('calibration') {
+          <mm-state [state]="state()" [message]="error()" />
+          @if (calibration(); as cal) {
+            <section class="panel"><header><h2>Stated probability vs hit rate</h2></header>
+              <mm-chart type="scatter" [data]="calibrationChart()" [options]="calibrationOptions" label="Calibration chart: average stated probability against hit rate per bin" />
+              <p class="muted-text">Every pick of every rank. On the dashed line a model's stated probability matches how often it wins.
+                Point size follows the number of picks; bins with fewer than {{ minPicks }} picks are grey.</p>
+            </section>
+            <section class="panel flush">
+              <div class="toolbar"><span class="muted-text"><b>Evaluated: {{ cal.evaluated }}</b> (wins and losses) · <b>excluded: {{ cal.excluded }}</b> (half wins, half losses, push and void: a quarter-line probability is not a plain win probability)</span></div>
+              <div class="table-wrap"><table class="dt" aria-label="Calibration bins">
+                <thead><tr><th>Stated probability</th><th class="num">Picks</th><th class="num">Avg stated</th><th class="num">Hit rate</th></tr></thead>
+                <tbody>@for (b of cal.bins; track b.bin) {
+                  <tr [class.muted-text]="b.picks < minPicks" data-testid="calibration-bin">
+                    <td>{{ pct(b.from, 0) }} – {{ pct(b.to, 0) }}</td><td class="num">{{ b.picks }}</td>
+                    <td class="num">{{ pct(b.avgProbability) }}</td><td class="num">{{ pct(b.hitRate) }}</td>
+                  </tr>
+                }</tbody>
               </table></div>
             </section>
           }
@@ -395,6 +432,9 @@ export class ReportsPage {
   readonly breakdownCols = BREAKDOWN_COLS;
   readonly historyCols = HISTORY_COLS;
   readonly winRateDef = WIN_RATE_DEF;
+  readonly headerTitle = headerTitle;
+  readonly sampleSize = sampleSize;
+  readonly minPicks = CALIBRATION_MIN_PICKS;
   readonly isNum = isNum;
   readonly hideSm = hideSm;
   readonly cell = (r: unknown, c: Col) => cell(r as Record<string, unknown>, c);
@@ -438,6 +478,10 @@ export class ReportsPage {
     params: () => (this.tab() === 'markets' ? this.filters() : undefined),
     stream: ({ params }) => this.api.marketPerformance(params),
   });
+  private readonly calibrationRes = rxResource({
+    params: () => (this.tab() === 'calibration' ? this.filters() : undefined),
+    stream: ({ params }) => this.api.calibration(params),
+  });
   private readonly coverageRes = rxResource({
     params: () => (this.tab() === 'comparison' ? this.filters() : undefined),
     stream: ({ params }) => this.api.modelComparisonCoverage(params),
@@ -470,13 +514,16 @@ export class ReportsPage {
   });
 
   private readonly active = computed(() => ({
-    models: this.modelsRes, history: this.historyRes, markets: this.marketsRes, comparison: this.comparisonRes, montecarlo: this.monteCarloRes,
+    models: this.modelsRes, history: this.historyRes, markets: this.marketsRes, calibration: this.calibrationRes,
+    comparison: this.comparisonRes, montecarlo: this.monteCarloRes,
   })[this.tab()]);
   readonly state = computed(() => statusToView(this.active().status()));
   readonly error = computed(() => { const e = this.active().error(); return e ? apiError(e).message : ''; });
 
   // Report 1
   readonly modelRows = safeValue(this.modelsRes, []);
+  /** UX-046 footnote: predictions the count policy left out, over all models shown. */
+  readonly notCounted = computed(() => this.modelRows().reduce((n, r) => n + (r.notCountedPredictions ?? 0), 0));
   readonly sortedModels = computed(() => sortRows(this.modelRows(), this.modelSort()));
   // Report 2: the table renders in every state, so keep the last rows while loading and never show a failed filter's rows.
   private readonly historyData = keepPrevious(this.historyRes);
@@ -501,6 +548,38 @@ export class ReportsPage {
   }));
   readonly marketChartOptions: ChartOptions = { plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { callback: v => `${v}%` } } } };
   readonly stackOptions: ChartOptions = { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } };
+  // Calibration (UX-018): one point per non-empty bin, sized by picks, thin bins grey; percent axes like the win rate.
+  readonly calibration = safeValue(this.calibrationRes);
+  private readonly plottedBins = computed(() => (this.calibration()?.bins ?? [])
+    .filter((b): b is CalibrationBin & { avgProbability: number; hitRate: number } => b.avgProbability !== null && b.hitRate !== null));
+  readonly calibrationChart = computed(() => {
+    const bins = this.plottedBins();
+    const most = Math.max(1, ...bins.map(b => b.picks));
+    const thin = (b: CalibrationBin) => b.picks < CALIBRATION_MIN_PICKS;
+    return {
+      datasets: [
+        { label: 'Bins', data: bins.map(b => ({ x: b.avgProbability * 100, y: b.hitRate * 100 })),
+          pointRadius: bins.map(b => 4 + 12 * Math.sqrt(b.picks / most)),
+          backgroundColor: bins.map(b => thin(b) ? 'rgba(138,150,168,.55)' : 'rgba(14,124,102,.7)'),
+          borderColor: bins.map(b => thin(b) ? '#8a96a8' : '#0e7c66') },
+        { label: 'Perfect calibration', data: [{ x: 0, y: 0 }, { x: 100, y: 100 }], showLine: true, pointRadius: 0,
+          borderColor: '#8a96a8', borderDash: [6, 4], borderWidth: 1.5 },
+      ],
+    };
+  });
+  readonly calibrationOptions: ChartOptions = {
+    plugins: {
+      legend: { display: false },
+      tooltip: { filter: i => i.datasetIndex === 0, callbacks: { label: ctx => {
+        const b = this.plottedBins()[ctx.dataIndex];
+        return b ? `${pct(b.from, 0)}–${pct(b.to, 0)}: stated ${pct(b.avgProbability)}, hit ${pct(b.hitRate)} (${b.picks} picks)` : '';
+      } } },
+    },
+    scales: {
+      x: { min: 0, max: 100, title: { display: true, text: 'Average stated probability' }, ticks: { callback: v => `${v}%` } },
+      y: { min: 0, max: 100, title: { display: true, text: 'Hit rate' }, ticks: { callback: v => `${v}%` } },
+    },
+  };
   // Report 4
   private readonly comparisonData = safeValue(this.comparisonRes);
   readonly comparison = computed(() => this.comparisonData()?.data ?? []);

@@ -11,7 +11,8 @@ when `SWAGGER_ENABLED=false`, which is the compose default. The web container (8
 | Caller | How | Scope |
 |---|---|---|
 | Dashboard users | `Authorization: Bearer <JWT>` from `POST /auth/login` | `/api/v1/**` except `/external/**` |
-| AI agents (machine-to-machine) | `X-Api-Key: <EXTERNAL_API_KEY>` (one shared key) + `X-Provider: <code>` | `/api/v1/external/**` only |
+| AI agents (machine-to-machine) | `X-Api-Key: mmk_<keyId>_<secret>` (per-provider key) | `/api/v1/external/**` only, limited by the key's scopes |
+| AI agents, legacy (until 2026-12-31) | `X-Api-Key: <EXTERNAL_API_KEY>` (one shared key) + `X-Provider: <code>` | `/api/v1/external/**` only, all scopes |
 | Anyone (connectivity test) | nothing | `GET /api/v1/external/ping` only |
 
 Roles:
@@ -51,11 +52,11 @@ A wrong `Content-Type` is `415 UNSUPPORTED_MEDIA_TYPE` ("Content-Type must be ap
 
 | Status | Codes |
 |---|---|
-| 400 | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `UNKNOWN_FIELD` (callbacks reject unknown fields), `INVALID_FIELD_TYPE`, `INVALID_PARAMETER`, `INVALID_DATE_RANGE` (`from` not before `to`; `fieldErrors.from` is set), `INVALID_RESULT_SCOPE`, `INVALID_MARKET`, `INVALID_TYPE`, `INVALID_RESULT`, `INVALID_STATUS`, `INVALID_TIMEZONE`, `INVALID_GROUP`, `EXPORT_TOO_LARGE`, `BAD_CURRENT_PASSWORD`, `PASSWORD_UNCHANGED`, `WEAK_PASSWORD` |
+| 400 | `VALIDATION_ERROR`, `MALFORMED_REQUEST`, `UNKNOWN_FIELD` (callbacks reject unknown fields), `INVALID_FIELD_TYPE`, `INVALID_PARAMETER`, `INVALID_DATE_RANGE` (`from` not before `to`; `fieldErrors.from` is set), `INVALID_RESULT_SCOPE`, `INVALID_MARKET`, `INVALID_TYPE`, `INVALID_RESULT`, `INVALID_STATUS`, `INVALID_TIMEZONE`, `INVALID_GROUP`, `EXPORT_TOO_LARGE`, `BAD_CURRENT_PASSWORD`, `PASSWORD_UNCHANGED`, `WEAK_PASSWORD`, `LEAGUE_ALIAS_SELF` |
 | 401 | `UNAUTHORIZED`, `BAD_CREDENTIALS`, `INVALID_API_KEY` |
 | 403 | `FORBIDDEN`, `PASSWORD_CHANGE_REQUIRED` |
-| 404 | `NOT_FOUND` (bad id in path), `MATCH_NOT_FOUND`, `PREDICTION_NOT_FOUND`, `PICK_NOT_FOUND`, `MODEL_NOT_FOUND`, `PROMPT_NOT_FOUND`, `USER_NOT_FOUND`, `LOG_NOT_FOUND` |
-| 409 | `EVENT_ID_REUSED`, `MATCH_ALREADY_FINAL`, `MATCH_MISMATCH`, `STALE_RESULT`, `MATCH_NOT_STARTED`, `MATCH_NOT_FINAL`, `PROMPT_VERSION_CONFLICT`, `CONCURRENT_UPDATE`, `DATA_CONFLICT`, `USERNAME_EXISTS`, `PROMPT_NAME_EXISTS`, `SELF_LOCKOUT` |
+| 404 | `NOT_FOUND` (bad id in path), `MATCH_NOT_FOUND`, `PREDICTION_NOT_FOUND`, `PICK_NOT_FOUND`, `MODEL_NOT_FOUND`, `PROMPT_NOT_FOUND`, `USER_NOT_FOUND`, `LOG_NOT_FOUND`, `LEAGUE_ALIAS_NOT_FOUND` |
+| 409 | `EVENT_ID_REUSED`, `MATCH_ALREADY_FINAL`, `MATCH_MISMATCH`, `STALE_RESULT`, `MATCH_NOT_STARTED`, `MATCH_NOT_FINAL`, `PROMPT_VERSION_CONFLICT`, `CONCURRENT_UPDATE`, `DATA_CONFLICT`, `USERNAME_EXISTS`, `PROMPT_NAME_EXISTS`, `SELF_LOCKOUT`, `LEAGUE_ALIAS_CONFLICT`, `KEY_REVOKED` |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` |
 | 422 | `PICK_NOT_IN_MATCH` |
 | 429 | `LOGIN_RATE_LIMITED` (login and change-password, `Retry-After`), `RATE_LIMITED` (too many rejected API keys from one IP, `Retry-After: 60`), `TOO_MANY_STREAMS` |
@@ -75,31 +76,61 @@ The dashboard, predictions and reports share these filters:
 | Param | Meaning |
 |---|---|
 | `from`, `to` | Instants. `from` is inclusive, `to` is exclusive. They filter on `predicted_at`. Either may be sent alone (open range). `from` must be before `to` |
-| `league` | Exact league name, ignoring surrounding spaces, case and accents (`liga nandu` = `Liga Ñandú`) |
+| `league` | Exact league name, ignoring surrounding spaces, case and accents (`liga nandu` = `Liga Ñandú`). [League aliases](#league-aliases) are resolved first, so an alias and its canonical name select the same matches |
 | `modelId`, `providerId`, `matchId` | UUIDs |
 | `type` | `PRE_MATCH` or `LIVE` |
 | `market` | `1X2`, `AH`, `OU`, `CORNER_AH`, `CORNER_OU` (pick level) |
 | `result` | Current settlement result of the pick, `PENDING` included |
 | `search` | Substring of teams, league or external match id, ignoring case, accents and Unicode form (`atletico` finds `Atlético`, `munchen` finds `München`). No transliteration: `muenchen`/`munich` do not match |
 | `includeArchived` | `true` also counts archived providers, models and matches. Default: archived rows are left out of every figure, list and dropdown. A model is hidden when it, its merge target or its provider is archived. Naming one explicitly shows only that one: `modelId` shows that archived model (its provider must not be archived, and its archived merged models stay hidden), `providerId` that archived provider, `matchId` that archived match. Archived matches stay out of aggregates even with `modelId` |
+| `countPolicy` | `latest` (default) or `all`; anything else is `400 INVALID_COUNT_POLICY`. See *Counting policy* below |
 
 **Model names.** Reports group on the *effective model*: a model merged into another (same provider) counts as its target,
 and `modelId` = the target also covers the merged models. `modelName` is the display name (the admin's rename, else the
 provider-supplied name); `modelKey` is always the provider-supplied name. Merged models are not deleted: they are only
 hidden from model lists and dropdowns, and `includeArchived=true` shows them again.
 
+**Counting policy (UX-046).** Agents often re-send a prediction under a new `eventId`; both rows are stored (idempotency
+is unchanged). With `countPolicy=latest` (default) every **aggregate** counts only the latest prediction per
+*(fixture, effective model, `predictionType`, `matchMinute`)*: the fixture is the match's fixture (the match itself while
+unlinked), `matchMinute` compares exactly (`null` = `null` for `PRE_MATCH`), and the latest is the greatest
+`(predictedAt, createdAt, id)`. The latest is chosen over **all** rows of that key and only then filtered, so a date
+range never brings an older duplicate back. A prediction on an archived sibling match or of an archived merged model never
+supersedes a visible one. `countPolicy=all` counts every row (the figures before this change).
+- Follow the policy: dashboard totals, `predictionsToday`, charts and win rate; model performance, breakdown, market
+  performance, calibration, model comparison and its coverage, Monte Carlo (summary and page); `GET /models` stats
+  (units and ROI included); the per-model
+  picks and results of `GET /matches/{id}`. `GET /models`, `GET /models/{id}` and `GET /matches/{id}` take
+  `countPolicy` too (same values and `400 INVALID_COUNT_POLICY`).
+- Lists show every row and mark it: `GET /predictions` and `GET /reports/prediction-history` rows carry
+  `counted` (boolean), `GET /predictions/{id}` carries `counted` and `similar`. `predictionCount` of `GET /matches` and
+  `models[].predictions` of `GET /matches/{id}` count every row.
+
 ---
 
 ## External callback APIs (X-Api-Key)
 
-Every agent uses the same key (`EXTERNAL_API_KEY` in the server's `.env`) and names itself and its model in headers.
-There is nothing to register first: an unknown provider or model is created by its first **accepted** prediction. A
-rejected request creates nothing; its API log row then has no provider.
+**Per-provider keys.** An admin creates the provider and issues its key on the Providers screen
+(`POST /providers/{id}/keys`). The key is `mmk_<keyId>_<secret>`, shown once; the server keeps only the SHA-256 of the
+secret. The provider comes from the key, so `X-Provider` is optional; when sent it must name the key's own provider. An
+unknown model is still created by its first **accepted** prediction. Each key has scopes:
+
+| Scope | Endpoint | Default |
+|---|---|---|
+| `PREDICTIONS` | `POST /external/predictions` | yes |
+| `SETTLE_REQUEST` | `POST /external/predictions/settle` | yes |
+| `RESULTS` | `POST /external/matches/results` | no: an admin grants it to a trusted results feeder only |
+
+**Legacy shared key.** While `EXTERNAL_API_KEY` is set (optional; planned cut-over 2026-12-31), that one key still works
+for every provider with all scopes (a result it posts is not shared with other providers' matches, see
+[results](#2-post-apiv1externalmatchesresults)): the agent names itself in `X-Provider`, and an unknown provider or model is created by
+its first **accepted** prediction. A rejected request creates nothing; its API log row then has no provider. These calls
+are marked `legacyKey: true` in API Logs. With `EXTERNAL_API_KEY` unset, the shared key gets `401` and the API still starts.
 
 | Header | Required | Rules |
 |---|---|---|
-| `X-Api-Key` | yes | The shared key. Missing or wrong: `401 INVALID_API_KEY` |
-| `X-Provider` | yes | Who is calling, e.g. `openclaw`. Lower-cased, then `^[a-z0-9][a-z0-9_-]{1,63}$`. Missing: `400 PROVIDER_REQUIRED`; invalid: `400 INVALID_PROVIDER`. Matches and event ids are scoped per provider |
+| `X-Api-Key` | yes | A per-provider key, or the legacy shared key. Missing, wrong or revoked: `401 INVALID_API_KEY` |
+| `X-Provider` | legacy key only | Who is calling, e.g. `openclaw`. Lower-cased, then `^[a-z0-9][a-z0-9_-]{1,63}$`. Missing: `400 PROVIDER_REQUIRED`; invalid: `400 INVALID_PROVIDER`. With a per-provider key it is optional and must match the key's provider (`403 PROVIDER_MISMATCH`). Matches and event ids are scoped per provider |
 | `X-Model-Name` | predictions | The model, e.g. `gpt-5.1` (≤ 128 characters). Wins over `model` in the body. Matched like `X-Provider`: spaces trimmed and collapsed, case ignored (`GPT-5.1` = `gpt-5.1`); the first spelling stored is the display name |
 | `X-Model-Version` | no | ≤ 64 characters, default `1`. Trailing `.0` groups are ignored when matching (`1` = `1.0` = `1.00`) |
 
@@ -109,8 +140,11 @@ matches still accept callbacks; ingest never unarchives anything. After an unmer
 again; predictions stored in between are immutable snapshots and stay on the target. The response and the API log carry
 ids only (no model name), so they already point at the stored prediction.
 
-Anyone holding the key can write as any provider name, so treat it like a password and rotate it by changing
-`EXTERNAL_API_KEY` and restarting the API.
+Other rejections: `403 PROVIDER_DISABLED` (an admin disabled the provider; checked on every request, never cached) and
+`403 SCOPE_REQUIRED` (the key lacks the endpoint's scope). Every rejection is audited with the provider and key id when
+known. A revoked key fails on its very next request. Rotate a per-provider key with
+`POST /providers/{id}/keys/{keyRowId}/rotate` (both keys work until the old one is revoked). Anyone holding the legacy
+shared key can write as any provider name; rotate it by changing `EXTERNAL_API_KEY` and restarting the API.
 
 Each call is audited in `external_api_requests` and shown on the API Logs page. Send an optional `X-Request-Id` header
 (≤ 128 characters) to correlate retries. The body must be a JSON object of at most 1 MB. Unknown fields are rejected
@@ -187,15 +221,18 @@ Responses:
 - `200 OK` with `"duplicate": true` when the same `eventId` is retried with an identical body (canonical JSON hash).
   The hash compares instants as instants (`…20:00:00.000Z` = `…T03:00:00+07:00`) and text after whitespace cleaning.
 - `409 EVENT_ID_REUSED` when the same `eventId` arrives with a different body.
-- `possibleDuplicateOf` on a `201`: the id of an earlier prediction of the same model, match, type and minute with the
-  same picks (typically an agent retry under a new `eventId`). The new prediction is still stored; `null` otherwise.
+- `possibleDuplicateOf`: the id of the earliest other prediction of the same effective model, fixture, type and minute
+  with the same picks (typically an agent retry under a new `eventId`); `null` otherwise. On a `201` the new prediction
+  is still stored, and reports count only the latest of such rows (see *Counting policy*). Also set on a `200`
+  duplicate. Additive field: agents that ignore unknown fields are unaffected.
 - `409 MATCH_MISMATCH` when `match.externalMatchId` already names a match between other teams; `fieldErrors` show
   the stored and sent names.
 - `400 INVALID_FIELD_TYPE` for a number where a time is expected (epoch seconds or milliseconds are not accepted),
   `400 VALIDATION_ERROR` for a time outside its window, and for NUL characters, unpaired surrogates or Unicode
   direction controls (U+202A–U+202E, U+2066–U+2069) in any text of the payload.
 - `externalMatchId` in the response is the id to send results and settlement requests with.
-- `409 MATCH_ALREADY_FINAL` when the match already has a FINISHED or CANCELLED result.
+- `409 MATCH_ALREADY_FINAL` when the match already has a FINISHED or CANCELLED result, or when another member of the
+  fixture it links to (the same game under another `externalMatchId`, any provider) has one. Nothing is stored.
 - `400` on `odds[i].settlementBasis` when a 1X2 odds entry uses `REMAINING_MATCH`: 1X2 is always settled on the full match.
 - `429` from the proxy when one client IP sends more than about 10 callbacks per second (burst of 50).
 
@@ -222,8 +259,18 @@ Re-sending the same result is idempotent: it returns `"changed": false`. Each re
 result history. When the status becomes `FINISHED` or `CANCELLED`, pending picks settle automatically. Already-settled
 picks are not touched; an admin recalculates them explicitly.
 
+**Shared across the fixture.** This endpoint needs the `RESULTS` scope. A per-provider key holding `RESULTS` is a
+trusted source: its result is copied, in the same transaction, to every other match of the same
+[fixture](#fixtures-cross-provider-match-identity) whose result differs (other providers' rows and same-provider
+spelling variants), with one result-history row each (`newResult.propagatedFrom` = this match id) and settlement of
+their pending picks. The legacy shared key may still post results for its own matches, but it is not a trusted source:
+its result reaches only the caller's own match and its same-provider siblings, never other providers' members (they
+keep their own result and the fixture shows `resultMismatch` once they differ). A member whose own result has a newer
+`resultAt`, or whose kick-off is still ahead for `FINISHED`, keeps its result too. `propagatedTo` lists the members
+that changed (`[]` when none).
+
 ```json
-{ "matchId": "…", "status": "FINISHED", "changed": true,
+{ "matchId": "…", "status": "FINISHED", "changed": true, "propagatedTo": ["…"],
   "settlement": { "matchId": "…", "matchStatus": "FINISHED", "settled": 3, "alreadySettled": 0, "pending": 0, "needsReview": 0,
                   "picks": [ { "pickId": "…", "market": "AH", "pick": "HOME", "result": "HALF_LOSS", "status": "SETTLED",
                                "reason": null, "aiResult": null, "aiAgrees": null } ] } }
@@ -287,13 +334,28 @@ after a corrected score. An admin resolves them with recalculate or override; th
 | GET | `/users/audit` | admin | `userId?, page, size` → `{data:[{id, at, actor, targetId, target, action, oldValue, newValue, clientIp}], meta}`. Actions: `USER_CREATED`, `ROLE_CHANGED`, `STATUS_CHANGED`, `PASSWORD_RESET`, `PASSWORD_CHANGED`, `LOGIN_UNLOCKED` |
 
 ### Providers and AI models
-Both are created by external calls (`X-Provider`, `X-Model-Name`).
-- `GET /providers?includeArchived=`: `{id, code, name, models, predictions, lastCallbackAt, createdAt, archivedAt}` for
-  filters. Archived providers are hidden unless `includeArchived=true`; `models` counts the models in use (no merged or
-  archived ones unless `includeArchived=true`).
-- `GET /models?providerId=&includeArchived=`, `GET /models/{id}`: `name` (provider-supplied key), `displayName` (the
-  rename, else `name`), `archivedAt`, `mergedIntoId`, prediction count, settled, wins, losses, pending, win rate and the
-  last prediction time. The figures cover the model and every model merged into it, and, like the reports, leave out
+Providers are created by an admin (below); the legacy shared key still creates them from `X-Provider` until the
+cut-over. Models are created by external calls (`X-Model-Name`).
+- `GET /providers?includeArchived=`: `{id, code, name, description, status, disabledAt, disabledReason, activeKeys,
+  models, predictions, lastCallbackAt, createdAt, archivedAt}`. Archived providers are hidden unless
+  `includeArchived=true`; `models` counts the models in use (no merged or archived ones unless `includeArchived=true`).
+
+Provider admin (ADMIN; viewers get 403, including on the key list). See [examples](samples/provider-keys.json).
+
+| Method and path | Body and response |
+|---|---|
+| `POST /providers` | `{code, name, description?}`. 201 provider. `400 INVALID_PROVIDER` (code rule as `X-Provider`), `409 PROVIDER_EXISTS` |
+| `PATCH /providers/{id}` | `{name?, description?, status?, reason?}`. `status` is `ACTIVE` or `DISABLED`; a status change needs `reason` (`400 REASON_REQUIRED`) and is logged (`DISABLE`/`ENABLE`). The code never changes. Returns the provider |
+| `GET /providers/{id}/keys` | `[{id, keyId, label, scopes, status, createdAt, lastUsedAt, revokedAt}]`, newest first. Never the secret or its hash |
+| `POST /providers/{id}/keys` | `{label?, scopes?}` (default `["PREDICTIONS","SETTLE_REQUEST"]`). 201 `{id, keyId, label, apiKey, scopes, createdAt}` with `Cache-Control: no-store`. `apiKey` is shown only here. `400 INVALID_SCOPES` |
+| `POST /providers/{id}/keys/{keyRowId}/rotate` | `{label?}`. 201, a new key with the old key's scopes. The old key stays `ACTIVE` until revoked. `409 KEY_REVOKED` for a revoked key |
+| `POST /providers/{id}/keys/{keyRowId}/revoke` | `{reason}`. 204; idempotent; logged (`KEY_REVOKE`). `404 KEY_NOT_FOUND` |
+| `PUT /providers/{id}/keys/{keyRowId}/scopes` | `{scopes, reason}`. Returns the key; logged (`KEY_SCOPES`). `409 KEY_REVOKED` for a revoked key |
+
+`POST /predictions/import` for a disabled provider is `403 PROVIDER_DISABLED`.
+- `GET /models?providerId=&includeArchived=&countPolicy=`, `GET /models/{id}?countPolicy=`: `name` (provider-supplied key), `displayName` (the
+  rename, else `name`), `archivedAt`, `mergedIntoId`, prediction count, settled, wins, losses, pending, win rate,
+  `units`, `staked`, `roi` (see ROI below) and the last prediction time. The figures cover the model and every model merged into it, and, like the reports, leave out
   archived merged models and predictions on archived matches unless `includeArchived=true`. The list hides merged and
   archived models (and those of an archived provider, unless `providerId` names it) unless `includeArchived=true`.
 
@@ -311,15 +373,55 @@ Missing or blank reasons return `400 VALIDATION_ERROR`. Changes are recorded in 
 
 See [admin request examples](samples/admin-archive-merge.json).
 
+### Fixtures (cross-provider match identity)
+
+A fixture groups the `matches` rows of one real game: rows of different providers, and spelling variants of one
+provider. Each provider still owns its match row; predictions and settlement never move.
+
+- **Auto-link on ingest.** A new match joins the fixture whose normalised teams are equal and whose kick-off is within
+  ±6 h (nearest first; the same league is only a tie-breaker, `Unknown league` still links), else a new fixture.
+  Normalisation: lower case, accents and punctuation removed, one space, one club token (`fc cf sc afc ac`) dropped at
+  the start and at the end; `W`, `U19`, `U21`, `II`, `B` stay. Home and away swapped do not link.
+- **Results** are shared across members (see the results API). Merging never changes a result: members that disagree
+  show `resultMismatch`.
+- Every link change is stored in the append-only `fixture_link_history` (source `AUTO`, `ADMIN_MERGE`, `ADMIN_UNLINK`,
+  `BACKFILL`; admin sources need a reason).
+
+| Method and path | Body and response |
+|---|---|
+| `GET /fixtures/suggestions?page&size` | Pairs of different fixtures (an unlinked match is its own) within ±24 h whose normalised teams are equal (`reason: SAME_TEAMS`, `score: 1`) or similar by trigrams (`SIMILAR_NAMES`, `score` 0.5–1), best first. Row: `{a, b, reason, score}`; `a`/`b` = `{fixtureId, matchId, providerName, externalMatchId, league, homeTeam, awayTeam, startTime, status}` of the fixture's first member. A pair an admin separated with unlink is not suggested. Scans the latest 2000 fixtures |
+| `POST /fixtures/merge` (admin) | `{matchIds: [uuid] (2–20 different), reason}`. Moves the listed matches and every sibling of their fixtures into the oldest of those fixtures. Returns the fixture view `{id, members, resultMismatch}`. `404 MATCH_NOT_FOUND` |
+| `POST /fixtures/backfill` (admin) | One-off: links every match without a fixture, oldest first. Idempotent. Returns `{linked}` |
+| `POST /matches/{id}/unlink` (admin) | See matches below |
+
+See [fixture request examples](samples/fixtures.json).
+
+### League aliases
+
+Agents name leagues freely (`EPL`, `English Premier League`). An admin maps a variant name (alias) to a canonical name.
+The `league` filter, `GET /matches/leagues` and `GET /reports/breakdown?by=league` then treat both as the canonical
+league. Stored match rows keep the name the agent sent. Names compare like the league filter (trimmed, case-, accent-
+and Unicode-form-insensitive). No chains: an alias cannot be a canonical name, and a canonical name cannot be an alias.
+Every change is logged in `admin_actions` (entity `LEAGUE_ALIAS`, action `MERGE` when added, `UNMERGE` when removed).
+
+| Method and path | Body and response |
+|---|---|
+| `GET /leagues/aliases` | `[{id, alias, canonical, createdAt}]`, ordered by canonical name |
+| `POST /leagues/aliases` (admin) | `{alias (≤ 160), canonical (≤ 160), reason (≤ 500)}`. `201` with the alias. `400 LEAGUE_ALIAS_SELF` when both names are the same league; `409 LEAGUE_ALIAS_CONFLICT` when the alias already exists, the alias is a canonical name, or the canonical name is an alias |
+| `POST /leagues/aliases/{id}/remove` (admin) | `{reason}`. `204`. `404 LEAGUE_ALIAS_NOT_FOUND` |
+
+See [league alias examples](samples/league-aliases.json).
+
 ### Matches and predictions
 | Path | Notes |
 |---|---|
 | `GET /matches` | `search, status, league, providerId, from, to` (on start time), `overdue=true` (only overdue), `includeArchived=true` (archived matches and those of an archived provider; naming `providerId` shows that provider's). Rows carry `overdue`: kick-off more than 3 h ago and still `SCHEDULED`/`LIVE`. Sort: `startTime, league, homeTeam, awayTeam, status, predictionCount` |
-| `GET /matches/leagues` | Distinct leagues of the visible matches; `?includeArchived=true` adds those of archived matches |
-| `GET /matches/{id}` | `{match, models[] (per-model summary + latest prediction), latestStats, resultHistory[]}` |
-| `GET /predictions` | Shared filters plus `resultScope=TOP\|ANY` (default `TOP`): `result` matches the top-ranked pick, or any pick with `ANY` (with `market`, the same pick). Sort: `predictedAt, league, model, type, minute, probability, startTime`. One row per prediction with its top-ranked pick, `pickCount` and exclusive per-pick counts `pickWins, pickHalfWins, pickLosses, pickHalfLosses, pickPushOrVoid, pickPending` |
-| `POST /matches/{id}/result` (admin) | Enter or correct the result: `{status, finalScore?, finalCorners?, halfTimeScore?, halfTimeCorners?, reason? (≤ 2000)}`. Same field rules as the external results API, applied as of now: never `STALE_RESULT`, `FINISHED` allowed before `startTime`. A change is stored in the result history with source `ADMIN`, `changedBy` (the admin's id; the username and `reason` are in `newResult`). Returns `ResultResponse` like the external API; `FINISHED`/`CANCELLED` settles pending picks and `settlement.needsReview` counts settled picks that now differ |
-| `GET /predictions/{id}` | Full record: match, model, odds snapshots, stats, simulation, picks with full settlement history, correct scores, metadata and the original **payload** |
+| `GET /matches/leagues` | Distinct canonical leagues of the visible matches (an alias is listed as its canonical name); `?includeArchived=true` adds those of archived matches |
+| `GET /matches/{id}` | `{match, models[] (per-model summary + latest prediction), latestStats, resultHistory[], fixture}`. `match.fixtureId` (also on list rows) is the match's fixture or null. `fixture` is null or `{id, members[{matchId, providerId, providerName, externalMatchId, league, homeTeam, awayTeam, startTime, status, finalHomeScore, finalAwayScore, archivedAt}], resultMismatch}`; `resultMismatch` is true when non-archived `FINISHED` members have different final scores |
+| `GET /predictions` | Shared filters plus `resultScope=TOP\|ANY` (default `TOP`): `result` matches the top-ranked pick, or any pick with `ANY` (with `market`, the same pick). Sort: `predictedAt, league, model, type, minute, probability, startTime`. One row per prediction with its top-ranked pick, `pickCount` and exclusive per-pick counts `pickWins, pickHalfWins, pickLosses, pickHalfLosses, pickPushOrVoid, pickPending`, and `counted` (false = superseded, left out of aggregates under `latest`). Every row is listed whatever `countPolicy` says |
+| `POST /matches/{id}/result` (admin) | Enter or correct the result: `{status, finalScore?, finalCorners?, halfTimeScore?, halfTimeCorners?, reason? (≤ 2000)}`. Same field rules as the external results API, applied as of now: never `STALE_RESULT`, `FINISHED` allowed before `startTime`. A change is stored in the result history with source `ADMIN`, `changedBy` (the admin's id; the username and `reason` are in `newResult`). Returns `ResultResponse` like the external API; `FINISHED`/`CANCELLED` settles pending picks and `settlement.needsReview` counts settled picks that now differ. The result is copied to every other fixture member that differs (an admin result always wins), listed in `propagatedTo` |
+| `POST /matches/{id}/unlink` (admin) | `{reason}`. Takes the match out of its fixture into a fresh fixture of its own (no-op when it is already alone). Returns the match detail |
+| `GET /predictions/{id}` | Full record: match, model, odds snapshots, stats, simulation, picks with full settlement history, correct scores, metadata and the original **payload**. `counted`: whether reports count it under `latest`. `similar`: `[{predictionId, predictedAt, exact, counted}]`, the other predictions of the same counting key, oldest first (max 50); `exact` = same content apart from `eventId`, `predictedAt` and `metadata` |
 
 ### Settlement (admin)
 | Path | Body | Notes |
@@ -335,16 +437,24 @@ The `reason` of a `PickSettlement` returned by recalculate or override is the ad
 store the admin's username in `details.actedBy`.
 
 ### Dashboard and reports
+**ROI / units (UX-018).** Fixed stake of 1 per pick at the pick's stored price: `WIN` = price − 1, `HALF_WIN` =
+(price − 1) / 2, `PUSH` = 0, `HALF_LOSS` = −0.5, `LOSS` = −1; `VOID` and pending are left out. `units` (scale 3) is the
+sum, `staked` counts `WIN, HALF_WIN, PUSH, HALF_LOSS, LOSS` (PUSH in, VOID out), `roi = units / staked` (scale 4).
+`units` and `roi` are null when `staked = 0`. They are on every aggregate row that has `winRate` and the counters
+(dashboard `totals`, model performance, breakdown, market performance, `GET /models`); `winRateOverTime` rows carry the
+day's `units`.
+
 | Path | Notes |
 |---|---|
-| `GET /dashboard?tz=Europe/London` | `period`, `totals`, `winRateOverTime` (daily, in `tz`), `predictionsByModel`, `predictionsByMarket`, `resultDistribution` (one row per result, `PENDING` its own row), `modelPerformance`. `period` = `{from, to, basis: "predictedAt", firstPredictedAt, lastPredictedAt}`: the requested bounds (`null` = open) and the predictions actually counted. `totals.overdueMatches` uses only `league`/`providerId`, like `GET /matches?overdue=true` |
-| `GET /reports/model-performance` | Per model: predictions, picks, settled, wins/half wins, losses/half losses, push/void, pending, win rate, average probability, correct-score evaluated, hits and accuracy. `wins`/`losses` include the halves; `fullWins + halfWins + fullLosses + halfLosses + pushOrVoid = settled` is the exclusive split (also in breakdown, market performance and dashboard totals) |
-| `GET /reports/breakdown?by=market\|league\|type\|stage\|model` | The same counters grouped by the chosen key |
-| `GET /reports/prediction-history` | One row per pick, paginated. Sort: `predictedAt, league, model, market, probability, price, line, result, minute, type, homeTeam` |
+| `GET /dashboard?tz=Europe/London` | `period`, `totals`, `winRateOverTime` (daily, in `tz`), `predictionsByModel`, `predictionsByMarket`, `resultDistribution` (one row per result, `PENDING` its own row), `modelPerformance`. `period` = `{from, to, basis: "predictedAt", firstPredictedAt, lastPredictedAt}`: the requested bounds (`null` = open) and the predictions actually counted. `totals.overdueMatches` uses only `league`/`providerId`, like `GET /matches?overdue=true`. `totals.notCountedPredictions`: predictions inside the filters left out by `countPolicy=latest` (0 under `all`) |
+| `GET /reports/model-performance` | Per model: predictions, picks, settled, wins/half wins, losses/half losses, push/void, pending, win rate, average probability, correct-score evaluated, hits and accuracy, `notCountedPredictions` (as on the dashboard). `wins`/`losses` include the halves; `fullWins + halfWins + fullLosses + halfLosses + pushOrVoid = settled` is the exclusive split (also in breakdown, market performance and dashboard totals) |
+| `GET /reports/breakdown?by=market\|league\|type\|stage\|model` | The same counters grouped by the chosen key; `league` groups by the canonical name (aliases resolved) |
+| `GET /reports/calibration` | `{bins: [{bin, from, to, picks, avgProbability, hitRate}] (always 10, width 0.1; probability 1 is in bin 10), evaluated, excluded}`. Every pick (all ranks). Only `WIN` (1) and `LOSS` (0) are evaluated; other settled results (halves, `PUSH`, `VOID`) are counted in `excluded`. Empty bins have `picks = 0` and null `avgProbability`/`hitRate`. Same filters and `countPolicy` as the win rate |
+| `GET /reports/prediction-history` | One row per pick, paginated, every row whatever `countPolicy` says; `counted` marks picks of superseded predictions (false). `units`: the pick's profit at stake 1 (null when VOID or pending); also in the export, after `result`. Sort: `predictedAt, league, model, market, probability, price, line, result, minute, type, homeTeam` |
 | `GET /reports/prediction-history/export?format=csv\|xlsx` | Same filters and sort. At most 50 000 rows (`EXPORT_TOO_LARGE`). Cells starting with `= + - @` are neutralised |
 | `GET /reports/market-performance` | All five markets, always listed |
-| `GET /reports/model-comparison?minModels=2` | Paginated matches predicted by at least N models, with each model's latest prediction and top pick |
-| `GET /reports/model-comparison/coverage` | Same filters. `[{minModels, matches}]` for 1..the largest model count (max 20); empty when nothing matches. Use it to default `minModels` to a value with data |
+| `GET /reports/model-comparison?minModels=2` | Paginated **fixtures** predicted by at least N models, so models of different providers compare on one real game. Row: `fixtureId` (the match id while unlinked), `matchId` and the match fields of the first member with a matching prediction, `resultMismatch`, and `models[]` with each model's latest prediction and top pick; every entry carries its own `matchId` and `providerName` |
+| `GET /reports/model-comparison/coverage` | Same filters. `[{minModels, matches}]` for 1..the largest model count (max 20), counted per fixture like the comparison rows; empty when nothing matches. Use it to default `minModels` to a value with data |
 | `GET /reports/monte-carlo` | `{summary, page}`: simulation inputs and outputs next to actual outcomes. `summary.finishedPredictions` is the sample of the accuracy figures (`correctScoreHits / finishedPredictions`) |
 
 ### Prompt templates
@@ -357,9 +467,11 @@ store the admin's username in `details.actedBy`.
 - `{{API_BASE_URL}}` becomes `PUBLIC_BASE_URL`, or when unset the origin of the request (`Host`, and
   `X-Forwarded-Proto` from nginx), e.g. `https://match.example.org`.
 - `{{MATCHMIND_SHEET_URL}}` becomes the `MATCHMIND_SHEET_URL` link (empty when unset).
-- `{{EXTERNAL_API_KEY}}` becomes the shared agent key for ADMIN callers only. `keyRendered` is `false` for viewers
-  (and when no key is configured): the placeholder is still in the text, so the UI must say so instead of reporting a
-  ready-to-use copy.
+- `{{EXTERNAL_API_KEY}}` becomes the legacy shared agent key for ADMIN callers only, and only while `EXTERNAL_API_KEY`
+  is set. `keyRendered` is `false` for viewers and when no shared key is configured: the placeholder is still in the
+  text, so the UI must say so instead of reporting a ready-to-use copy. A per-provider key is put in by the browser
+  only (Providers screen, "Copy prompt with this key" right after issuing it); it is never sent back to the API. That
+  copy calls `GET /prompts/{id}/for-agent?sharedKey=false`, which always leaves the placeholder (`keyRendered: false`).
 Stored prompts keep the placeholders, so the key never enters the database, the prompt history or a viewer's screen.
 
 Prompt history: every saved version (API saves, restores and migrations that bump `version`) is kept append-only.
@@ -373,10 +485,12 @@ Default templates: `AI_PREDICTION`, `AI_SETTLEMENT`, `AI_ARTIFACT` and `AI_MATCH
 
 ### API logs (admin only)
 VIEWER gets `403` on every `/api-logs` path; the web client hides the menu entry for viewers.
-- `GET /api-logs`: filters `providerId, status, endpoint, httpStatus, search, from, to`. Sort:
-  `receivedAt, durationMs, httpStatus, endpoint`. Rows carry `providerName` and `actor`.
+- `GET /api-logs`: filters `providerId, status, endpoint, httpStatus, search, from, to`. `search` is a substring of the
+  event id, request id or error message, ignoring case, accents and Unicode form (like the other searches). Sort:
+  `receivedAt, durationMs, httpStatus, endpoint`. Rows carry `providerName`, `actor` and `legacyKey` (true for a call
+  made with the legacy shared key: watch these reach zero before unsetting `EXTERNAL_API_KEY`).
 - `GET /api-logs/endpoints`
-- `GET /api-logs/{id}`: includes `providerName`, `actor` and the `processingResult` summary. Request bodies and keys are
+- `GET /api-logs/{id}`: includes `providerName`, `apiKeyId`, `legacyKey`, `actor` and the `processingResult` summary. Request bodies and keys are
   never logged.
 - `actor` is the signed-in admin behind an import, settle, recalculate or override done from the dashboard (those
   calls leave a row too); it is `null` for agent calls.

@@ -106,4 +106,165 @@ class ReportsIT extends IntegrationTestBase {
         for (JsonNode n : array) if (value.equals(n.get(field).asText())) return n;
         throw new AssertionError(field + "=" + value + " not found");
     }
+
+    @Test
+    void modelComparisonComparesModelsOfDifferentProvidersOnOneFixture() throws Exception {
+        String t = UUID.randomUUID().toString().substring(0, 8);
+        java.time.Instant kickOff = java.time.Instant.parse("2026-11-09T18:00:00Z");
+        for (String p : new String[]{"ra" + t, "rb" + t}) {
+            external(p, "predictions", Payloads.livePrediction("e-" + UUID.randomUUID(), "rc-" + UUID.randomUUID(),
+                "model-" + p, "Pumas " + t, "Jaguars " + t, "League", kickOff));
+        }
+        JsonNode cmp = adminGet("/api/v1/reports/model-comparison?minModels=2&search=" + t);
+        assertThat(cmp.get("data")).hasSize(1);
+        JsonNode row = cmp.get("data").get(0);
+        assertThat(row.get("fixtureId").asText()).isNotBlank();
+        assertThat(row.get("resultMismatch").asBoolean()).isFalse();
+        assertThat(row.get("models")).hasSize(2);
+        assertThat(row.get("models").get(0).get("providerName").asText()).isNotBlank();
+        assertThat(row.get("models").get(0).get("matchId").asText()).isNotEqualTo(row.get("models").get(1).get("matchId").asText());
+    }
+
+    // ---------------------------------------------------------------- UX-018 ROI / units / calibration
+
+    /**
+     * One PRE_MATCH prediction per price, each on its own match (so the latest-counts policy keeps all of them) with a
+     * single OU 2.5 OVER pick, settled 2-1 and then overridden to the given result. Filter on the returned provider.
+     */
+    private Integration seedPicks(String[] prices, String[] probabilities, String[] results) throws Exception {
+        Integration in = newIntegration("roi-model");
+        for (int i = 0; i < prices.length; i++) {
+            String matchId = "roi-" + UUID.randomUUID().toString().substring(0, 8);
+            String body = """
+                {"eventId": "e-%1$s", "model": {"name": "%2$s", "version": "1.0"},
+                 "match": {"externalMatchId": "%1$s", "league": "ROI League", "homeTeam": "Home %1$s", "awayTeam": "Away %1$s",
+                           "startTime": "2026-11-11T20:00:00Z"},
+                 "predictionType": "PRE_MATCH", "predictedAt": "2026-11-11T18:00:00Z",
+                 "odds": [{"ref": "ou", "market": "OU", "stage": "PRE_MATCH", "line": 2.5, "overOdds": %3$s, "underOdds": 1.90}],
+                 "picks": [{"oddsRef": "ou", "market": "OU", "pick": "OVER", "probability": %4$s, "rank": 1}],
+                 "correctScore": {"home": 2, "away": 1, "probability": 0.1}}
+                """.formatted(matchId, in.modelName(), prices[i], probabilities[i]);
+            MvcResult res = external(in.provider(), "predictions", body);
+            assertThat(res.getResponse().getStatus()).as(res.getResponse().getContentAsString()).isLessThan(300);
+            String pickId = read(res).get("picks").get(0).get("pickId").asText();
+            external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-11T21:55:00Z"));
+            adminPost("/api/v1/settlements/picks/" + pickId + "/override", Map.of("result", results[i], "reason", "roi test"));
+        }
+        return in;
+    }
+
+    private static final String[] SIX_PRICES = {"1.90", "2.10", "1.80", "1.95", "2.00", "1.85"};
+    private static final String[] SIX_PROBABILITIES = {"0.55", "0.52", "0.61", "0.48", "0.50", "0.53"};
+    private static final String[] SIX_RESULTS = {"WIN", "HALF_WIN", "LOSS", "HALF_LOSS", "PUSH", "VOID"};
+
+    @Test
+    void roiAndUnitsFollowFixedStake() throws Exception {
+        // WIN 1.90 -> +0.90, HALF_WIN 2.10 -> +0.55, LOSS -> -1, HALF_LOSS -> -0.5, PUSH -> 0, VOID excluded: -0.050 / 5.
+        Integration in = seedPicks(SIX_PRICES, SIX_PROBABILITIES, SIX_RESULTS);
+        String q = "?providerId=" + providerId(in);
+
+        JsonNode row = adminGet("/api/v1/reports/model-performance" + q).get(0);
+        assertThat(row.get("units").decimalValue()).isEqualByComparingTo("-0.050");
+        assertThat(row.get("staked").asInt()).isEqualTo(5);
+        assertThat(row.get("roi").decimalValue()).isEqualByComparingTo("-0.0100");
+        assertThat(row.get("winRate").decimalValue()).isEqualByComparingTo("0.5");
+
+        JsonNode model = adminGet("/api/v1/models/" + row.get("modelId").asText());
+        assertThat(model.get("units").decimalValue()).isEqualByComparingTo("-0.050");
+        assertThat(model.get("staked").asInt()).isEqualTo(5);
+        assertThat(model.get("roi").decimalValue()).isEqualByComparingTo("-0.0100");
+
+        JsonNode dashboard = adminGet("/api/v1/dashboard" + q);
+        JsonNode totals = dashboard.get("totals");
+        assertThat(totals.get("units").decimalValue()).isEqualByComparingTo("-0.050");
+        assertThat(totals.get("staked").asInt()).isEqualTo(5);
+        assertThat(totals.get("roi").decimalValue()).isEqualByComparingTo("-0.0100");
+        assertThat(dashboard.get("winRateOverTime").get(0).get("units").decimalValue()).isEqualByComparingTo("-0.050");
+
+        JsonNode markets = adminGet("/api/v1/reports/market-performance" + q);
+        assertThat(find(markets, "market", "OU").get("roi").decimalValue()).isEqualByComparingTo("-0.0100");
+        JsonNode ah = find(markets, "market", "AH");
+        assertThat(ah.get("units").isNull()).isTrue();
+        assertThat(ah.get("staked").asInt()).isZero();
+        assertThat(ah.get("roi").isNull()).isTrue();
+        assertThat(adminGet("/api/v1/reports/breakdown" + q + "&by=market").get(0).get("units").decimalValue())
+            .isEqualByComparingTo("-0.050");
+
+        JsonNode history = adminGet("/api/v1/reports/prediction-history" + q + "&sort=price,asc&size=10").get("data");
+        assertThat(history.get(0).get("units").decimalValue()).isEqualByComparingTo("-1"); // 1.80 LOSS
+        assertThat(history.get(1).get("units").isNull()).isTrue(); // 1.85 VOID
+        assertThat(history.get(5).get("units").decimalValue()).isEqualByComparingTo("0.550"); // 2.10 HALF_WIN
+    }
+
+    @Test
+    void pendingOnlyModelHasNullUnitsAndRoi() throws Exception {
+        Integration in = newIntegration("pending-model");
+        String matchId = "pend-" + UUID.randomUUID().toString().substring(0, 8);
+        external(in.provider(), "predictions", Payloads.livePrediction("e-" + matchId, matchId, in.modelName()));
+        JsonNode row = adminGet("/api/v1/reports/model-performance?providerId=" + providerId(in)).get(0);
+        assertThat(row.get("units").isNull()).isTrue();
+        assertThat(row.get("staked").asInt()).isZero();
+        assertThat(row.get("roi").isNull()).isTrue();
+        JsonNode model = adminGet("/api/v1/models/" + row.get("modelId").asText());
+        assertThat(model.get("units").isNull()).isTrue();
+        assertThat(model.get("roi").isNull()).isTrue();
+    }
+
+    @Test
+    void minimumPriceWinIsExact() throws Exception {
+        Integration in = seedPicks(new String[]{"1.01"}, new String[]{"0.9"}, new String[]{"WIN"});
+        // Raw JSON: exact NUMERIC text, no float artefact such as 0.0099999.
+        String body = mvc.perform(asAdmin(get("/api/v1/reports/model-performance?providerId=" + providerId(in))))
+            .andReturn().getResponse().getContentAsString();
+        assertThat(body).contains("\"units\":0.010,").contains("\"roi\":0.0100");
+    }
+
+    @Test
+    void calibrationAlwaysReturnsTenBins() throws Exception {
+        Integration in = newIntegration("calib-empty");
+        external(in.provider(), "predictions", Payloads.livePrediction("e-" + UUID.randomUUID(), "c-" + UUID.randomUUID(), in.modelName()));
+        JsonNode cal = adminGet("/api/v1/reports/calibration?providerId=" + providerId(in));
+        assertThat(cal.get("bins")).hasSize(10);
+        assertThat(cal.get("evaluated").asInt()).isZero();
+        assertThat(cal.get("excluded").asInt()).isZero();
+        JsonNode first = cal.get("bins").get(0);
+        assertThat(first.get("bin").asInt()).isEqualTo(1);
+        assertThat(first.get("from").decimalValue()).isEqualByComparingTo("0");
+        assertThat(first.get("to").decimalValue()).isEqualByComparingTo("0.1");
+        assertThat(first.get("picks").asInt()).isZero();
+        assertThat(first.get("hitRate").isNull()).isTrue();
+        assertThat(first.get("avgProbability").isNull()).isTrue();
+        assertThat(cal.get("bins").get(9).get("to").decimalValue()).isEqualByComparingTo("1");
+    }
+
+    @Test
+    void probabilityOneLandsInBinTen() throws Exception {
+        Integration in = seedPicks(new String[]{"1.50", "1.60"}, new String[]{"1", "0"}, new String[]{"WIN", "LOSS"});
+        JsonNode bins = adminGet("/api/v1/reports/calibration?providerId=" + providerId(in)).get("bins");
+        assertThat(bins).hasSize(10);
+        assertThat(bins.get(9).get("picks").asInt()).isEqualTo(1);
+        assertThat(bins.get(9).get("hitRate").decimalValue()).isEqualByComparingTo("1");
+        assertThat(bins.get(9).get("avgProbability").decimalValue()).isEqualByComparingTo("1");
+        assertThat(bins.get(0).get("picks").asInt()).isEqualTo(1);
+        assertThat(bins.get(0).get("hitRate").decimalValue()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void halfResultsAreExcludedAndCounted() throws Exception {
+        Integration in = seedPicks(SIX_PRICES, SIX_PROBABILITIES, SIX_RESULTS);
+        String q = "?providerId=" + providerId(in);
+        JsonNode cal = adminGet("/api/v1/reports/calibration" + q);
+        assertThat(cal.get("evaluated").asInt()).isEqualTo(2);
+        assertThat(cal.get("excluded").asInt()).isEqualTo(4);
+        JsonNode bins = cal.get("bins");
+        assertThat(bins.get(5).get("picks").asInt()).isEqualTo(1); // 0.55 WIN
+        assertThat(bins.get(5).get("hitRate").decimalValue()).isEqualByComparingTo("1");
+        assertThat(bins.get(6).get("picks").asInt()).isEqualTo(1); // 0.61 LOSS
+        assertThat(bins.get(6).get("hitRate").decimalValue()).isEqualByComparingTo("0");
+        assertThat(bins.get(6).get("avgProbability").decimalValue()).isEqualByComparingTo("0.61");
+        // Filters narrow calibration exactly as they narrow the win rate.
+        JsonNode ah = adminGet("/api/v1/reports/calibration" + q + "&market=AH");
+        assertThat(ah.get("evaluated").asInt()).isZero();
+        assertThat(ah.get("excluded").asInt()).isZero();
+    }
 }

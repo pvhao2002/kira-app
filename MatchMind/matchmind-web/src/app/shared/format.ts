@@ -43,6 +43,19 @@ export function num(v: number | null | undefined, digits = 2): string {
   return v === null || v === undefined ? '—' : Number(v).toFixed(digits);
 }
 
+/** UX-018: a win rate (n = wins + losses) or ROI (n = staked) over fewer picks than this gets a "small sample" badge. */
+export const SMALL_SAMPLE = 30;
+
+/** Matches API_DOCUMENTATION.md, "ROI / units"; shown on the Units and ROI headers and tiles. */
+export const ROI_DEF = 'Stake 1 per pick at its stored odds: win = odds − 1, half win = (odds − 1) / 2, push = 0, half loss = −0.5, loss = −1; void and pending are left out. ROI = units / staked (push counts as staked).';
+
+/** Profit at a stake of 1, signed with 3 decimals: "+0.900", "−1.000" (a real minus sign); null stays a dash. */
+export function units(v: number | null | undefined): string {
+  if (v === null || v === undefined) return '—';
+  const n = Number(v);
+  return `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(3)}`;
+}
+
 export function score(h: number | null | undefined, a: number | null | undefined): string {
   return h === null || h === undefined || a === null || a === undefined ? '—' : `${h}–${a}`;
 }
@@ -98,13 +111,14 @@ export function saveBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export interface Col { field: string; header: string; kind?: 'pct' | 'num' | 'int' | 'date' | 'text'; }
+export interface Col { field: string; header: string; kind?: 'pct' | 'num' | 'int' | 'date' | 'text' | 'units'; }
 
 export function cell(row: Record<string, unknown>, c: Col): string {
   const v = row[c.field] as number | string | null | undefined;
   switch (c.kind) {
     case 'pct': return pct(v as number | null);
     case 'num': return num(v as number | null);
+    case 'units': return units(v as number | null);
     case 'date': return fmtDateTime(v as string | null);
     case 'int': return v === null || v === undefined ? '—' : String(v);
     default: return bidiSafe(v === null || v === undefined ? v : String(v));

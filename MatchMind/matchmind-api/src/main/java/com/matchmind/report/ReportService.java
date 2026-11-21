@@ -12,6 +12,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -30,7 +31,8 @@ public class ReportService {
     private static final int MAX_MIN_MODELS = 20;
     /** Count columns of {@link #AGG}; a market without picks reports zero for each. */
     private static final List<String> COUNT_COLUMNS =
-        List.of("picks", "settled", "wins", "losses", "pushOrVoid", "pending", "halfWins", "halfLosses", "fullWins", "fullLosses");
+        List.of("picks", "settled", "wins", "losses", "pushOrVoid", "pending", "halfWins", "halfLosses", "fullWins", "fullLosses",
+            "staked");
     private final NamedParameterJdbcTemplate jdbc;
 
     /** Pick-level base: every pick with its prediction, match, model, odds snapshot and current settlement. */
@@ -44,17 +46,19 @@ public class ReportService {
 
     /**
      * wins/losses include the halves (win-rate basis). fullWins + halfWins + fullLosses + halfLosses + pushOrVoid
-     * = settled, so those five are the mutually exclusive split.
+     * = settled, so those five are the mutually exclusive split. units/staked: fixed stake of 1 per pick (UX-018).
      */
     static final String AGG = """
         count(pk.id) AS "picks", %s AS "settled", %s AS "wins", %s AS "losses", %s AS "pushOrVoid", %s AS "pending",
         count(*) FILTER (WHERE r.result = 'HALF_WIN') AS "halfWins", count(*) FILTER (WHERE r.result = 'HALF_LOSS') AS "halfLosses",
         count(*) FILTER (WHERE r.result = 'WIN') AS "fullWins", count(*) FILTER (WHERE r.result = 'LOSS') AS "fullLosses",
-        round(avg(pk.probability), 4) AS "avgProbability"
-        """.formatted(Stats.SETTLED, Stats.WINS, Stats.LOSSES, Stats.PUSH_VOID, Stats.PENDING);
+        round(avg(pk.probability), 4) AS "avgProbability", %s AS "units", %s AS "staked"
+        """.formatted(Stats.SETTLED, Stats.WINS, Stats.LOSSES, Stats.PUSH_VOID, Stats.PENDING, Stats.UNITS, Stats.STAKED);
 
-    static void addWinRate(Map<String, Object> row) {
+    /** winRate, and roi when the row has units/staked. */
+    static void addRates(Map<String, Object> row) {
         row.put("winRate", Stats.winRate(num(row.get("wins")), num(row.get("losses"))));
+        if (row.containsKey("staked")) row.put("roi", Stats.roi((BigDecimal) row.get("units"), num(row.get("staked"))));
     }
 
     static long num(Object o) {
@@ -83,15 +87,30 @@ public class ReportService {
             JOIN prediction_correct_scores cs ON cs.prediction_id = p.id AND cs.score_rank = 1
             %s GROUP BY am.id
             """.formatted(Sql.EFFECTIVE_MODEL_JOIN, predWhere.sql()), predWhere.params, Sql.ROW).forEach(r -> cs.put(r.get("modelId"), r));
+        Map<Object, Object> notCounted = notCountedByModel(f);
         for (Map<String, Object> row : rows) {
-            addWinRate(row);
+            addRates(row);
             Map<String, Object> c = cs.getOrDefault(row.get("modelId"), Map.of());
             long evaluated = num(c.get("correctScoreEvaluated")), hits = num(c.get("correctScoreHits"));
             row.put("correctScoreEvaluated", evaluated);
             row.put("correctScoreHits", hits);
             row.put("correctScoreAccuracy", Stats.ratio(hits, evaluated));
+            row.put("notCountedPredictions", num(notCounted.get(row.get("modelId"))));
         }
         return rows;
+    }
+
+    /**
+     * UX-046: predictions inside the filters that the count policy leaves out, by effective model (empty under
+     * {@code all}). The footnote "N predictions not counted" of the dashboard and the reports.
+     */
+    private Map<Object, Object> notCountedByModel(Filters f) {
+        Map<Object, Object> out = new LinkedHashMap<>();
+        if (!f.countsLatest()) return out;
+        Sql.Where w = f.where(false, false).and("NOT " + Stats.COUNTED);
+        jdbc.query("SELECT am.id AS \"modelId\", count(*) AS \"n\" FROM predictions p JOIN matches m ON m.id = p.match_id"
+            + Sql.EFFECTIVE_MODEL_JOIN + w.sql() + " GROUP BY am.id", w.params, Sql.ROW).forEach(r -> out.put(r.get("modelId"), r.get("n")));
+        return out;
     }
 
     /** Drill-down of one model (or all models when modelId is null) by market, league, prediction type or odds stage. */
@@ -99,7 +118,7 @@ public class ReportService {
     public List<Map<String, Object>> breakdown(Filters f, String by) {
         String key = switch (by == null ? "market" : by) {
             case "market" -> "pk.market";
-            case "league" -> "m.league";
+            case "league" -> "mm_league(m.league)";
             case "type" -> "p.prediction_type";
             case "stage" -> "o.odds_stage";
             case "model" -> Sql.MODEL_NAME + " || ' ' || am.version";
@@ -108,8 +127,52 @@ public class ReportService {
         Sql.Where w = f.where(true);
         List<Map<String, Object>> rows = jdbc.query("SELECT " + key + " AS \"key\", " + AGG + PICKS_FROM + w.sql()
             + " GROUP BY 1 ORDER BY count(pk.id) DESC, 1", w.params, Sql.ROW);
-        rows.forEach(ReportService::addWinRate);
+        rows.forEach(ReportService::addRates);
         return rows;
+    }
+
+    // ------------------------------------------------------------------ Calibration (UX-018)
+    private static final int CALIBRATION_BINS = 10;
+
+    /**
+     * Stated probability vs hit rate in 10 fixed bins of width 0.1 (probability 1 lands in bin 10). Only WIN (1) and
+     * LOSS (0) are evaluated; other settled results (halves, PUSH, VOID) are counted as {@code excluded}. Every pick of
+     * every rank; same filters and count policy as the win rate. Always 10 bins: empty ones have nulls.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> calibration(Filters f) {
+        Sql.Where w = f.where(true);
+        Map<Integer, Map<String, Object>> found = new LinkedHashMap<>();
+        jdbc.query("""
+            SELECT LEAST(width_bucket(pk.probability, 0, 1, %d), %1$d) AS "bin",
+                   count(*) FILTER (WHERE r.result IN ('WIN','LOSS')) AS "picks",
+                   count(*) FILTER (WHERE r.result = 'WIN') AS "wins",
+                   round(avg(pk.probability) FILTER (WHERE r.result IN ('WIN','LOSS')), 4) AS "avgProbability",
+                   count(*) FILTER (WHERE r.result IN ('HALF_WIN','HALF_LOSS','PUSH','VOID')) AS "excluded"
+            %s %s GROUP BY 1
+            """.formatted(CALIBRATION_BINS, PICKS_FROM, w.sql()), w.params, Sql.ROW)
+            .forEach(r -> found.put(((Number) r.get("bin")).intValue(), r));
+        List<Map<String, Object>> bins = new ArrayList<>();
+        long evaluated = 0, excluded = 0;
+        for (int i = 1; i <= CALIBRATION_BINS; i++) {
+            Map<String, Object> r = found.getOrDefault(i, Map.of());
+            long picks = num(r.get("picks"));
+            evaluated += picks;
+            excluded += num(r.get("excluded"));
+            Map<String, Object> bin = new LinkedHashMap<>();
+            bin.put("bin", i);
+            bin.put("from", BigDecimal.valueOf(i - 1, 1));
+            bin.put("to", BigDecimal.valueOf(i, 1));
+            bin.put("picks", picks);
+            bin.put("avgProbability", r.get("avgProbability"));
+            bin.put("hitRate", Stats.ratio(num(r.get("wins")), picks));
+            bins.add(bin);
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("bins", bins);
+        out.put("evaluated", evaluated);
+        out.put("excluded", excluded);
+        return out;
     }
 
     // ------------------------------------------------------------------ Report 2: prediction history (pick level)
@@ -126,8 +189,9 @@ public class ReportService {
                o.odds_stage AS "oddsStage", o.line AS "line", o.line_display AS "lineDisplay", %s AS "price",
                o.settlement_basis AS "settlementBasis", o.home_score_at_capture AS "homeScoreAtCapture",
                o.away_score_at_capture AS "awayScoreAtCapture",
-               COALESCE(r.result, 'PENDING') AS "result", r.settled_at AS "settledAt", r.source AS "settlementSource"
-        """.formatted(Sql.MODEL_NAME, Sql.PRICE);
+               COALESCE(r.result, 'PENDING') AS "result", round(%s, 3) AS "units", r.settled_at AS "settledAt",
+               r.source AS "settlementSource", %s AS "counted"
+        """.formatted(Sql.MODEL_NAME, Sql.PRICE, Stats.PICK_UNITS, Stats.COUNTED);
 
     static final String HISTORY_FROM = PICKS_FROM
         + " LEFT JOIN prediction_correct_scores cs ON cs.prediction_id = p.id AND cs.score_rank = 1 ";
@@ -141,7 +205,7 @@ public class ReportService {
     @Transactional(readOnly = true)
     public PageResponse<Map<String, Object>> predictionHistory(Filters f, Integer page, Integer size, String sort) {
         int pg = Paging.page(page), sz = Paging.size(size);
-        Sql.Where w = f.where(true);
+        Sql.Where w = f.where(true, false); // a list: every row, marked counted or not
         long total = countPicks(w);
         Paging.limit(w.params, pg, sz);
         List<Map<String, Object>> rows = jdbc.query(HISTORY_COLUMNS + HISTORY_FROM + w.sql() + historyOrder(sort)
@@ -161,11 +225,11 @@ public class ReportService {
     public static final List<String> EXPORT_COLUMNS = List.of("predictedAt", "league", "homeTeam", "awayTeam", "modelName",
         "modelVersion", "predictionType", "matchMinute", "currentHomeScore", "currentAwayScore", "predictedHomeScore",
         "predictedAwayScore", "finalHomeScore", "finalAwayScore", "market", "oddsStage", "pick", "pickRank", "lineDisplay",
-        "line", "price", "probability", "settlementBasis", "result", "settledAt");
+        "line", "price", "probability", "settlementBasis", "result", "units", "settledAt");
 
     @Transactional(readOnly = true)
     public List<List<Object>> predictionHistoryExport(Filters f, String sort) {
-        Sql.Where w = f.where(true);
+        Sql.Where w = f.where(true, false);
         long total = countPicks(w);
         if (total > EXPORT_LIMIT) {
             throw ApiException.badRequest("EXPORT_TOO_LARGE", "Export is limited to " + EXPORT_LIMIT
@@ -190,12 +254,13 @@ public class ReportService {
             empty.put("market", market);
             COUNT_COLUMNS.forEach(k -> empty.put(k, 0L));
             empty.put("avgProbability", null);
+            empty.put("units", null);
             byMarket.put(market, empty);
         }
         jdbc.query("SELECT pk.market AS \"market\", " + AGG + PICKS_FROM + w.sql() + " GROUP BY pk.market", w.params, Sql.ROW)
             .forEach(row -> byMarket.put((String) row.get("market"), row));
         List<Map<String, Object>> rows = new ArrayList<>(byMarket.values());
-        rows.forEach(ReportService::addWinRate);
+        rows.forEach(ReportService::addRates);
         return rows;
     }
 
@@ -206,48 +271,60 @@ public class ReportService {
         int min = minModels == null ? DEFAULT_MIN_MODELS : Math.max(1, Math.min(minModels, MAX_MIN_MODELS));
         Sql.Where w = f.where(false);
         w.params.addValue("minModels", min);
-        String matchIds = "SELECT p.match_id FROM predictions p JOIN matches m ON m.id = p.match_id" + Sql.EFFECTIVE_MODEL_JOIN
-            + w.sql() + " GROUP BY p.match_id HAVING count(DISTINCT am.id) >= :minModels";
-        long total = jdbc.queryForObject("SELECT count(*) FROM (" + matchIds + ") x", w.params, Long.class);
+        // One row per fixture (UX-047): linked matches of different providers compare together; an unlinked match is
+        // its own fixture. The row shows the first-created member that has a matching prediction.
+        String keys = "WITH f AS (SELECT " + FIXTURE_KEY + " AS k, m.id AS mid, m.created_at AS mc, am.id AS model"
+            + " FROM predictions p JOIN matches m ON m.id = p.match_id" + Sql.EFFECTIVE_MODEL_JOIN + w.sql() + "),"
+            + " keys AS (SELECT k FROM f GROUP BY k HAVING count(DISTINCT model) >= :minModels) ";
+        long total = jdbc.queryForObject(keys + "SELECT count(*) FROM keys", w.params, Long.class);
         Paging.limit(w.params, pg, sz);
-        List<Map<String, Object>> matches = jdbc.query("""
-            SELECT m.id AS "matchId", m.league AS "league", m.home_team AS "homeTeam", m.away_team AS "awayTeam",
-                   m.start_time AS "startTime", m.status AS "status", m.final_home_score AS "finalHomeScore",
-                   m.final_away_score AS "finalAwayScore", m.final_home_corners AS "finalHomeCorners",
-                   m.final_away_corners AS "finalAwayCorners"
-            FROM matches m WHERE m.id IN (%s) ORDER BY m.start_time DESC, m.id LIMIT :limit OFFSET :offset
-            """.formatted(matchIds), w.params, Sql.ROW);
+        List<Map<String, Object>> matches = jdbc.query(keys + """
+            , rep AS (SELECT DISTINCT ON (f.k) f.k, f.mid FROM f JOIN keys ON keys.k = f.k ORDER BY f.k, f.mc, f.mid)
+            SELECT rep.k AS "fixtureId", m.id AS "matchId", m.league AS "league", m.home_team AS "homeTeam",
+                   m.away_team AS "awayTeam", m.start_time AS "startTime", m.status AS "status",
+                   m.final_home_score AS "finalHomeScore", m.final_away_score AS "finalAwayScore",
+                   m.final_home_corners AS "finalHomeCorners", m.final_away_corners AS "finalAwayCorners",
+                   (SELECT count(DISTINCT (x.final_home_score, x.final_away_score)) FROM matches x
+                    WHERE COALESCE(x.fixture_id, x.id) = rep.k AND x.status = 'FINISHED' AND x.archived_at IS NULL) > 1
+                       AS "resultMismatch"
+            FROM rep JOIN matches m ON m.id = rep.mid ORDER BY m.start_time DESC, m.id LIMIT :limit OFFSET :offset
+            """, w.params, Sql.ROW);
         if (matches.isEmpty()) return Paging.response(matches, pg, sz, total);
 
         Sql.Where inner = f.where(false);
-        inner.params.addValue("ids", matches.stream().map(r -> r.get("matchId")).toList());
+        inner.params.addValue("ids", matches.stream().map(r -> r.get("fixtureId")).toList());
         List<Map<String, Object>> entries = jdbc.query("""
-            SELECT DISTINCT ON (p.match_id, am.id)
-                   p.match_id AS "matchId", p.id AS "predictionId", am.id AS "modelId", %s AS "modelName",
+            SELECT DISTINCT ON (%1$s, am.id)
+                   %1$s AS "fixtureId", p.match_id AS "matchId", pv.name AS "providerName",
+                   p.id AS "predictionId", am.id AS "modelId", %2$s AS "modelName",
                    am.name AS "modelKey", am.version AS "modelVersion", p.predicted_at AS "predictedAt", p.prediction_type AS "predictionType",
                    p.match_minute AS "matchMinute", cs.home_score AS "predictedHomeScore", cs.away_score AS "predictedAwayScore",
                    cs.probability AS "correctScoreProbability",
                    (cs.home_score = m.final_home_score AND cs.away_score = m.final_away_score) AS "correctScoreHit",
                    pk.market AS "market", pk.pick AS "pick", pk.probability AS "probability", o.line AS "line",
-                   o.line_display AS "lineDisplay", %s AS "price", COALESCE(r.result, 'PENDING') AS "result",
-                   (SELECT count(*) FROM predictions q WHERE q.match_id = p.match_id AND q.ai_model_id IN
+                   o.line_display AS "lineDisplay", %3$s AS "price", COALESCE(r.result, 'PENDING') AS "result",
+                   (SELECT count(*) FROM predictions q JOIN matches qm ON qm.id = q.match_id
+                    WHERE COALESCE(qm.fixture_id, qm.id) = %1$s AND q.ai_model_id IN
                        (SELECT c.id FROM ai_models c WHERE c.id = am.id OR c.merged_into_id = am.id)) AS "predictionCount"
-            FROM predictions p JOIN matches m ON m.id = p.match_id %s
+            FROM predictions p JOIN matches m ON m.id = p.match_id JOIN providers pv ON pv.id = p.provider_id %4$s
             LEFT JOIN prediction_correct_scores cs ON cs.prediction_id = p.id AND cs.score_rank = 1
             LEFT JOIN LATERAL (SELECT x.* FROM prediction_picks x WHERE x.prediction_id = p.id ORDER BY x.pick_rank LIMIT 1) pk ON true
             LEFT JOIN prediction_odds o ON o.id = pk.odds_id
             LEFT JOIN prediction_pick_results r ON r.pick_id = pk.id AND r.is_current
-            WHERE p.match_id IN (:ids) %s
-            ORDER BY p.match_id, am.id, p.predicted_at DESC
-            """.formatted(Sql.MODEL_NAME, Sql.PRICE, Sql.EFFECTIVE_MODEL_JOIN, inner.andSql()), inner.params, Sql.ROW);
-        Map<Object, List<Map<String, Object>>> byMatch = new LinkedHashMap<>();
-        entries.forEach(e -> byMatch.computeIfAbsent(e.get("matchId"), k -> new ArrayList<>()).add(e));
-        matches.forEach(mt -> mt.put("models", byMatch.getOrDefault(mt.get("matchId"), List.of())));
+            WHERE %1$s IN (:ids) %5$s
+            ORDER BY %1$s, am.id, p.predicted_at DESC
+            """.formatted(FIXTURE_KEY, Sql.MODEL_NAME, Sql.PRICE, Sql.EFFECTIVE_MODEL_JOIN, inner.andSql()), inner.params, Sql.ROW);
+        Map<Object, List<Map<String, Object>>> byFixture = new LinkedHashMap<>();
+        entries.forEach(e -> byFixture.computeIfAbsent(e.get("fixtureId"), k -> new ArrayList<>()).add(e));
+        matches.forEach(mt -> mt.put("models", byFixture.getOrDefault(mt.get("fixtureId"), List.of())));
         return Paging.response(matches, pg, sz, total);
     }
 
+    /** Match alias m -> the fixture it is compared under: its fixture, or itself while unlinked. */
+    private static final String FIXTURE_KEY = "COALESCE(m.fixture_id, m.id)";
+
     /**
-     * How many matches each minModels value would return (same filters), from 1 up to the largest model count
+     * How many fixtures (rows of the model comparison) each minModels value would return (same filters), from 1 up to the largest model count
      * present, so the UI can default to a value that has data. Empty when nothing matches.
      */
     @Transactional(readOnly = true)
@@ -256,7 +333,7 @@ public class ReportService {
         w.params.addValue("maxModels", MAX_MIN_MODELS);
         return jdbc.query("""
             WITH c AS (SELECT count(DISTINCT am.id) AS k FROM predictions p JOIN matches m ON m.id = p.match_id %s
-                       %s GROUP BY p.match_id)
+                       %s GROUP BY COALESCE(m.fixture_id, m.id))
             SELECT n AS "minModels", (SELECT count(*) FROM c WHERE c.k >= n) AS "matches"
             FROM generate_series(1, LEAST((SELECT max(k) FROM c), :maxModels)) AS n ORDER BY n
             """.formatted(Sql.EFFECTIVE_MODEL_JOIN, w.sql()), w.params, Sql.ROW);
@@ -349,7 +426,7 @@ public class ReportService {
         totals.put("overdueMatches", jdbc.queryForObject("SELECT count(*) FROM matches m" + ow.sql(), ow.params, Long.class));
 
         Filters today = new Filters(null, null, f.league(), f.modelId(), f.providerId(), f.type(), f.market(), null, null, null,
-            f.includeArchived());
+            f.includeArchived(), f.countPolicy());
         // [start of today, start of tomorrow) in the viewer's time zone; future-dated snapshots are not "today".
         Sql.Where tw = today.where(false).and("p.predicted_at >= date_trunc('day', now() AT TIME ZONE :tz) AT TIME ZONE :tz"
             + " AND p.predicted_at < (date_trunc('day', now() AT TIME ZONE :tz) + interval '1 day') AT TIME ZONE :tz", "tz", tz);
@@ -358,8 +435,9 @@ public class ReportService {
 
         Sql.Where pw = f.where(true);
         Map<String, Object> picks = jdbc.query("SELECT " + AGG + PICKS_FROM + pw.sql(), pw.params, Sql.ROW).getFirst();
-        addWinRate(picks);
+        addRates(picks);
         totals.putAll(picks);
+        totals.put("notCountedPredictions", notCountedByModel(f).values().stream().mapToLong(ReportService::num).sum());
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("period", period);
@@ -367,10 +445,10 @@ public class ReportService {
         pw.params.addValue("tz", tz);
         List<Map<String, Object>> daily = jdbc.query("""
             SELECT to_char(date_trunc('day', p.predicted_at AT TIME ZONE :tz), 'YYYY-MM-DD') AS "day",
-                   %s AS "wins", %s AS "losses", %s AS "settled"
+                   %s AS "wins", %s AS "losses", %s AS "settled", %s AS "units"
             %s %s GROUP BY 1 ORDER BY 1
-            """.formatted(Stats.WINS, Stats.LOSSES, Stats.SETTLED, PICKS_FROM, pw.sql()), pw.params, Sql.ROW);
-        daily.forEach(ReportService::addWinRate);
+            """.formatted(Stats.WINS, Stats.LOSSES, Stats.SETTLED, Stats.UNITS, PICKS_FROM, pw.sql()), pw.params, Sql.ROW);
+        daily.forEach(ReportService::addRates);
         out.put("winRateOverTime", daily);
         out.put("predictionsByModel", jdbc.query("""
             SELECT %s || ' ' || am.version AS "model", count(*) AS "predictions"

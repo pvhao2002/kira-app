@@ -62,6 +62,12 @@ public class ReportController {
         return reports.marketPerformance(filters);
     }
 
+    @GetMapping("/reports/calibration")
+    @Operation(summary = "Stated probability vs hit rate in 10 bins (WIN/LOSS only; other settled results are counted as excluded)")
+    public Map<String, Object> calibration(Filters filters) {
+        return reports.calibration(filters);
+    }
+
     @GetMapping("/reports/model-comparison")
     public PageResponse<Map<String, Object>> modelComparison(Filters filters,
                                                              @RequestParam(required = false) Integer minModels,

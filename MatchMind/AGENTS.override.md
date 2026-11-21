@@ -28,7 +28,9 @@ Scope: `MatchMind/` only ("AI Football Intelligence Platform"). Naming follows `
   `TIMESTAMPTZ`/`Instant`.
 - Schema changes are new `V<n>__*.sql` files. Never edit an applied migration. Check the highest number first.
 - External callbacks bind strictly (unknown field → 400) and every call is audited. Never log or store request bodies
-  in the audit, API keys, JWTs or passwords. The shared agent key lives only in `EXTERNAL_API_KEY`; providers and models are created by external calls, never by hand.
+  in the audit, API keys, JWTs or passwords. Per-provider keys (`mmk_<keyId>_<secret>`) are stored as SHA-256 only and shown once. Providers are created only by
+  an admin (Providers screen); a per-provider key may still auto-create models. The legacy shared key lives only in the
+  optional `EXTERNAL_API_KEY` and keeps auto-creating providers until the cut-over (unset on 2026-12-31).
 - Read endpoints aggregate in SQL with whitelisted sort keys (`Paging.orderBy`) and bound parameters. Never
   concatenate user input into SQL. Never ship a whole dataset to the browser.
 - Secrets come from env (`.env` is gitignored; `.env.example` is the shape). No defaults for `JWT_SECRET` or
@@ -36,11 +38,14 @@ Scope: `MatchMind/` only ("AI Football Intelligence Platform"). Naming follows `
 - UI: missing numbers render as `—`, never `0`. Errors show the API `message`. Reports stay full-width and dense.
 
 ## Verify (Windows)
-- API: `cd MatchMind/matchmind-api && mvn -B verify`. This runs 58 engine unit tests plus Testcontainers ITs and needs
+- API: `cd MatchMind/matchmind-api && mvn -B verify`. This runs the unit tests (settlement engine and shared helpers) plus Testcontainers ITs and needs
   Docker running. Compile only: `mvn -q compile`.
 - Web: use a Node version Angular CLI 22 accepts. 22.20 is rejected; v26.0.0 is used locally via
   `export PATH="/c/Users/<you>/AppData/Roaming/nvm/v26.0.0:$PATH"`. Then run
   `cd MatchMind/matchmind-web && npx ng test --watch=false && npx ng build`.
-- E2E (needs the compose stack and an admin account):
-  `cd MatchMind/matchmind-web && E2E_BASE_URL=http://localhost:8088 E2E_ADMIN_USER=... E2E_ADMIN_PASSWORD=... npx playwright test`.
+- E2E runs against its own throw-away stack by default (`docker-compose.e2e.yml`: project `matchmind-e2e`, DB on tmpfs,
+  web on `:8188`, test-only admin and agent key that the spec uses as defaults):
+  `cd MatchMind/matchmind-web && npm run e2e:stack && npx playwright test`, then `docker compose -p matchmind-e2e down`.
+  Against a shared stack set `E2E_BASE_URL`, `E2E_ADMIN_USER`, `E2E_ADMIN_PASSWORD` and `E2E_EXTERNAL_API_KEY`; the
+  suite then archives its `e2e-<run>` provider and disables its `viewer-<run>` in `afterAll`.
 - Full stack: `cd MatchMind && docker compose up -d --build`. The web UI is on `http://localhost:8088`.

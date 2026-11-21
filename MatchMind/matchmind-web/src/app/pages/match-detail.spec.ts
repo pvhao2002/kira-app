@@ -204,4 +204,41 @@ describe('MatchDetailPage', () => {
     expect(q(f, 'review-recalc')).toBeNull();
     expect(q(f, 'review-badge')).not.toBeNull();
   });
+
+  const member = (matchId: string, providerName: string, home: number) => ({
+    matchId, providerId: 'p-' + matchId, providerName, externalMatchId: 'x-' + matchId, league: 'League', homeTeam: 'Home FC',
+    awayTeam: 'Away FC', startTime: '2026-11-01T19:00:00Z', status: 'FINISHED', finalHomeScore: home, finalAwayScore: 1, archivedAt: null,
+  });
+  const linked = { ...detail, fixture: { id: 'fx1', resultMismatch: true, members: [member('m1', 'Prov', 1), member('m2', 'Other agent', 2)] } } as unknown as MatchDetail;
+
+  it('shows the other providers\' rows of the game with a result-mismatch badge, and an admin unlinks with a reason (UX-047)', async () => {
+    const f = await open([], linked);
+    const panel = q(f, 'fixture-panel')!;
+    expect(text(panel)).toContain('Other agent');
+    expect(panel.querySelector('a[href="/matches/m2"]')).not.toBeNull();
+    expect(q(f, 'result-mismatch')).not.toBeNull();
+
+    q(f, 'fixture-unlink')!.click();
+    f.detectChanges();
+    const submit = q(f, 'reason-submit') as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);                 // a reason is required
+    const reason = q(f, 'reason') as HTMLTextAreaElement;
+    reason.value = 'Second leg';
+    reason.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    submit.click();
+    const req = http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/matches/m1/unlink');
+    expect(req.request.body).toEqual({ reason: 'Second leg' });
+    req.flush(detail);
+    await flushLoads(f, [], detail);
+    expect(q(f, 'fixture-panel')).toBeNull();
+  });
+
+  it('hides Unlink from a viewer but still shows the game panel', async () => {
+    sessionStorage.clear();
+    signIn('VIEWER');
+    const f = await open([], linked);
+    expect(q(f, 'fixture-panel')).not.toBeNull();
+    expect(q(f, 'fixture-unlink')).toBeNull();
+  });
 });

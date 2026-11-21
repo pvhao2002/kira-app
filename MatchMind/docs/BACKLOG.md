@@ -1072,36 +1072,57 @@ Góc nhìn: bàn phím và trợ năng thật trên stack `:8088`, header HTTP, 
 
 ---
 
-# Trạng thái triển khai (Dev lanes, 2026-11-20, nhánh `matchmind/backlog`)
+# Trạng thái triển khai (cập nhật 2026-11-21, nhánh `matchmind/finish`)
 
-Làm song song theo 9 lane (API: A ingestion, B security/ops, C results/settle/prompts, E read side; Web: W1 shell/kit/a11y,
-W2 list, W3 detail, W4 dashboard/reports, W5 import/prompts/settings/session) cộng 1 lane design (D) và 1 lượt tích hợp.
-Verify: API `mvn -B clean verify` 89 unit + 100 IT xanh; Web `ng test` 210/210 + `ng build` xanh. Chưa QA trên trình duyệt
-thật (không chạy dev server/Playwright). Migration mới: V14–V22.
+Vòng 1 (2026-11-20, nhánh `matchmind/backlog`): 9 lane song song (API: A ingestion, B security/ops, C results/settle/prompts,
+E read side; Web: W1 shell/kit/a11y, W2 list, W3 detail, W4 dashboard/reports, W5 import/prompts/settings/session) cộng
+1 lane design (D) và 1 lượt tích hợp. Vòng 2 (2026-11-21): làm 6 plan `docs/plans/2026-11-20-*.md` (mỗi plan có ghi chú
+triển khai ở cuối), alias giải đấu, tìm kiếm API Logs, kết quả từ key legacy, nút backfill fixture, QA trình duyệt.
+Verify (chạy thật 2026-11-21): API `mvn -B verify` 104 unit + 181 IT xanh; Web `ng test` 235/235 (26 file) + `ng build`
+xanh. QA trình duyệt trên stack e2e (`:8188`, Playwright): 11 trang + tab Suggested merges / League aliases + model detail và hộp thoại merge, ở 320x640 và 844x390: không trang nào cuộn ngang (`scrollWidth <= innerWidth`), ô search/nút Apply nằm trong màn hình, ở 844x390 Filters thu gọn và dòng đầu của Predictions ở y = 227, Matches y = 334; 0 lỗi console. `npx playwright test` 10/10 xanh sau khi sửa 5 kỳ vọng cũ của journey (sample chỉ còn 2 pick, admin e2e là `e2e-admin`, hộp thoại "Discard changes?" thay `confirm()`) và chuyển toast xuống góc dưới phải (toast ở góc trên che nút Edit của Prompt Notes, rê chuột vào thì toast dừng đếm nên không bao giờ tắt).
+Migration mới: V14–V22 (vòng 1), V23–V28 (vòng 2):
+- V23 `immutable_snapshots`: trigger chặn sửa/xoá snapshot, kết quả settlement append-only (UX-088).
+- V24 `archive_and_model_merge`: archive provider/model/match, rename/merge model, bảng `admin_actions` (UX-002, UX-108).
+- V25 `provider_api_key_scopes`: key theo provider (`mmk_…`, chỉ lưu SHA-256) và scope (UX-019, UX-027, UX-061).
+- V26 `fixtures`: định danh trận xuyên provider, `fixture_link_history` (UX-047, UX-104).
+- V27 `prediction_content_hash`: cột generated `predictions.content_hash` cho chính sách đếm (UX-046).
+- V28 `league_aliases`: alias giải đấu do admin quản lý, hàm `mm_league()`, `admin_actions` thêm entity `LEAGUE_ALIAS` (UX-086).
 
 ## Đã sửa
-001 003 004 005 006 007 008 009 010 011 013 015 016 017 020 021 022 023 024 025 026 028 029 030 031 032 033 034 035 036
-037 038 039 040 042 043 044 045 046(tín hiệu `possibleDuplicateOf`) 048 049 050 051 052 053 055 056 057 058 059 060 062
-063 064 065 066 067 068 069 070 071 072 073 074 075 076 077 078 079 080 081 082 083 084 085 087 089 090 091 092 093 094
-095 096 097 098 101 102 103 105 106 107 109 110 111 112 113 114 115 116 117 119 120 121 122 123 124 125
+001 002 003 004 005 006 007 008 009 010 011 013 015 016 017 018 019 020 021 022 023 024 025 026 027 028 029 030 031 032
+033 034 035 036 037 038 039 040 041 042 043 044 045 046 047 048 049 050 051 052 053 055 056 057 058 059 060 061 062 063
+064 065 066 067 068 069 070 071 072 073 074 075 076 077 078 079 080 081 082 083 084 085 086 087 088 089 090 091 092 093
+094 095 096 097 098 099 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123
+124 125
+
+Ghi chú các mục mới chuyển sang "Đã sửa" ở vòng 2:
+- UX-002 + UX-108: archive provider/model/match có lý do, rename (tên hiển thị) và merge/unmerge model, ẩn khỏi mọi
+  aggregate (V24, `archive-rename-merge-hygiene.md`).
+- UX-018: units/ROI ở stake 1, badge mẫu nhỏ, tab Calibration trong Reports (`roi-units-calibration.md`).
+- UX-019, UX-027, UX-061: key theo provider, màn Providers (tạo provider, phát/xoay/thu hồi key, scope), provider chỉ do
+  admin tạo (V25, `per-provider-api-keys.md`).
+- UX-041, UX-100: đo trên trình duyệt thật ở 320x640 và 844x390 (xem dòng QA ở trên; ảnh `backlog-screenshots/UX-041-320.png`,
+  `UX-041-320-api-logs.png`, `UX-100-landscape-after.png`, `UX-100-landscape-matches-after.png`).
+- UX-046: chính sách đếm `latest` mặc định, `?count=all` để xem số cũ (V27, `duplicate-prediction-counting.md`).
+- UX-047 + UX-104: fixture xuyên provider, tự liên kết theo tên đội chuẩn hoá ±6 giờ, tab "Suggested merges", merge/unlink
+  có lý do, nút "Link existing matches" (backfill) (V26, `cross-provider-match-identity.md`).
+- UX-086: alias giải đấu (tab "League aliases" ở Matches, chỉ admin, thêm/xoá có lý do): filter league, dropdown league
+  và Reports "by league" gộp tên biến thể về tên chuẩn; cache `LEAGUES` bị xoá khi alias đổi (V28).
+- UX-088: trigger ở DB (V23); tách role DB không làm theo quyết định owner (`db-level-integrity.md`).
+- UX-099: ô search của API Logs bỏ dấu/hoa thường/dạng Unicode như các trang khác (dùng `mm_fold` của V22).
+- UX-118: provider có tên hiển thị riêng (admin sửa ở Providers); model khớp không phân biệt hoa thường và có
+  rename/merge, nên hai quy tắc tên không còn để lại dữ liệu bẩn vĩnh viễn.
 
 ## Đã đúng từ trước (chỉ thêm test)
 012 014 054 (CORS preflight; thêm expose headers)
 
 ## Làm một phần
-- UX-041, UX-100: chỉ sửa CSS, chưa đo ở 320px / điện thoại ngang trên trình duyệt.
-- UX-086: lọc league bỏ hoa thường/dấu/khoảng trắng; chưa có alias/gộp tên giải.
-- UX-099: tìm kiếm bỏ dấu ở matches/predictions/dashboard/reports; ô search của API Logs chưa.
-- UX-104: chuẩn hoá tên đội khi tự nhận diện trận; công cụ gộp trận → plan.
-- UX-108, UX-118: tên model/provider khớp không phân biệt hoa thường; tên hiển thị provider vẫn là code viết thường; rename/gộp → plan.
+- (không còn mục nào)
 
-## Chỉ có plan (`docs/plans/2026-11-20-*.md`); owner đã chốt quyết định ngày 2026-11-20
-- UX-027 + UX-061 + UX-019: API key theo provider, màn Providers → `per-provider-api-keys.md`
-- UX-047 + UX-104 (gộp): định danh trận xuyên provider → `cross-provider-match-identity.md`
-- UX-088: **đã làm** (V23, chỉ trigger; tách role DB không làm theo quyết định owner) → `db-level-integrity.md`
-- UX-018: ROI/units, cảnh báo mẫu nhỏ, calibration → `roi-units-calibration.md`
-- UX-002 + UX-108 (gộp): archive, rename, merge, dữ liệu E2E → `archive-rename-merge-hygiene.md`
-- UX-046 (cách tính report): đếm prediction trùng → `duplicate-prediction-counting.md`
+## Còn lại (thao tác tay, không phải code)
+- Dữ liệu E2E cũ trên stack dùng chung: admin archive các provider `e2e-*` (lọc theo tên) và disable các user `viewer-*`
+  trên UI. Không viết migration chứa dữ liệu riêng môi trường.
+- Chưa làm (ngoài phạm vi): tên provider trong bảng Model comparison của Reports.
 
 ## Thay đổi hành vi cần biết khi deploy
 - `POST /auth/logout` chỉ đăng xuất phiên hiện tại; `POST /auth/logout-all` đăng xuất mọi nơi. Token có `jti`, bảng `revoked_tokens`.
@@ -1110,3 +1131,25 @@ thật (không chạy dev server/Playwright). Migration mới: V14–V22.
 - Env mới: `JWT_MAX_SESSION` (24h), `EXTERNAL_MAX_REJECTED_PER_IP` (30); `LOGIN_MAX_ATTEMPTS_PER_IP` 20 → 30.
 - Agent API: tối đa 2 pick; thời gian phải ISO-8601 có offset; `predictedAt`/`capturedAt` ≤ now + 5 phút; `resultAt` ≤ now + 5 phút.
 - `/api-logs` và `/import` chỉ cho ADMIN. User bị đặt `mustChangePassword` chỉ vào được Settings cho tới khi đổi mật khẩu.
+- **Key theo provider (V25).** Admin tạo provider và phát key `mmk_<keyId>_<secret>` ở màn Providers (key chỉ hiện một
+  lần, server chỉ lưu SHA-256). Scope mặc định `PREDICTIONS` + `SETTLE_REQUEST`; `RESULTS` (gửi kết quả trận) chỉ admin
+  cấp cho nguồn kết quả tin cậy. Key theo provider vẫn tự tạo model, nhưng **provider chỉ do admin tạo**.
+- **Key dùng chung legacy (`EXTERNAL_API_KEY`)** vẫn chạy với mọi scope tới khi cắt (dự kiến **2026-12-31**): agent gửi
+  `X-Provider`, provider mới vẫn được tự tạo. Lời gọi bằng key legacy có `legacyKey: true` trong API Logs: chuyển từng agent
+  sang key riêng, chờ số này về 0 rồi bỏ `EXTERNAL_API_KEY` và restart.
+- **Kết quả lan theo fixture (V26).** Kết quả do admin nhập hoặc do key theo provider có scope `RESULTS` được chép sang mọi
+  trận cùng fixture (mọi provider), mỗi trận một dòng lịch sử và settlement. Kết quả từ key legacy chỉ áp vào trận của
+  chính nó và các trận cùng provider trong fixture; trận của provider khác giữ kết quả riêng, fixture hiện badge
+  "result mismatch" khi hai bên khác nhau. Trận có kết quả provider mới hơn (`resultAt`) thì giữ kết quả của nó.
+- **Pick gửi muộn cho trận đã kết thúc bị từ chối cả khi dùng `externalMatchId` khác.** Prediction mà trận của nó được gắn
+  vào một fixture có trận khác (bất kỳ provider nào) đã FINISHED/CANCELLED với kết quả giờ trả `409 MATCH_ALREADY_FINAL`
+  và không lưu gì (trước đây được nhận rồi bị settle khi kết quả lan sang). Agent đang gửi bù pick sau trận sẽ thấy lỗi này.
+- Rủi ro / giới hạn đã biết: key dùng chung legacy vẫn gửi được kết quả dưới danh nghĩa bất kỳ provider nào cho tới khi cắt
+  2026-12-31; kết quả đó chỉ lan sang các trận của chính provider đó.
+- UX-046 (V27): report mặc định `countPolicy=latest` — mỗi (fixture, model hiệu lực, loại, phút) chỉ tính prediction mới nhất. **Win rate, số pick, units/ROI, số prediction trên dashboard và report sẽ thay đổi một lần** so với trước (prediction gửi lại không còn bị tính nhiều lần). Chọn "Count: all" (`?count=all`, API `countPolicy=all`) để xem số cũ; rollback = đổi `Filters.DEFAULT_COUNT_POLICY` sang `all`. V27 thêm cột generated `predictions.content_hash` (**rewrite cả bảng predictions, chạy ngoài giờ cao điểm**).
+- V28: filter league, dropdown league và Reports "by league" đi qua alias; chưa có alias nào thì kết quả như cũ.
+- Sau deploy, admin bấm "Link existing matches" (Matches → Suggested merges) một lần để gắn fixture cho các trận cũ (idempotent).
+- E2E chạy trên stack riêng (`docker-compose.e2e.yml`: project `matchmind-e2e`, DB trên tmpfs, web `:8188`, admin và agent key
+  chỉ dùng cho test): `docker compose -p matchmind-e2e -f docker-compose.yml -f docker-compose.e2e.yml up -d --build`, rồi
+  `npx playwright test`, rồi `... down -v`. Chạy với stack dùng chung thì đặt `E2E_BASE_URL` và các biến `E2E_*`; suite tự
+  archive provider `e2e-<run>` và disable `viewer-<run>` sau khi chạy.

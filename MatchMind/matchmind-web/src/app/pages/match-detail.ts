@@ -10,7 +10,7 @@ import { PageTitle } from '../core/page-title';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { bidiSafe, fmtDateTime, humanize, lineSplit, pct, pickText, resultChanges, statRows } from '../shared/format';
 import { Dialog, ToastService } from '../shared/kit';
-import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
+import { JsonView, ReasonAction, ReasonDialog, ResultTag, ScoreChip, StateView } from '../shared/ui';
 
 interface ResultForm {
   status: MatchStatus; finalHome: number | null; finalAway: number | null; htHome: number | null; htAway: number | null;
@@ -27,7 +27,7 @@ const MIN_REASON = 5;
 
 @Component({
   selector: 'mm-match-detail',
-  imports: [FormsModule, RouterLink, Dialog, ScoreChip, ResultTag, StateView, JsonView],
+  imports: [FormsModule, RouterLink, Dialog, ScoreChip, ResultTag, StateView, JsonView, ReasonDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     h2, .sub, .hist-item { overflow-wrap: anywhere; min-width: 0; }
@@ -82,6 +82,36 @@ const MIN_REASON = 5;
             }
           </section>
         }
+
+        @if (d.fixture; as fx) { @if (fx.members.length > 1) {
+          <section class="panel flush" data-testid="fixture-panel">
+            <header><h2>Same game, {{ fx.members.length }} match rows</h2>
+              <div class="row head-actions">
+                @if (fx.resultMismatch) {
+                  <span class="tag tag-warn" data-testid="result-mismatch" title="Finished rows of this game have different final scores">Result mismatch</span>
+                }
+                @if (auth.isAdmin()) {
+                  <button type="button" class="btn btn-outline btn-sm" data-testid="fixture-unlink" (click)="unlink()"><i class="pi pi-link" aria-hidden="true"></i> Unlink this match</button>
+                }
+              </div></header>
+            <div class="table-wrap"><table class="dt compact-sm" aria-label="Match rows of this game">
+              <thead><tr><th>Provider</th><th>Match</th><th class="hide-sm">Kick-off</th><th>Status</th><th>Score</th></tr></thead>
+              <tbody>
+                @for (m of fx.members; track m.matchId) {
+                <tr>
+                  <td>{{ bidi(m.providerName) }}</td>
+                  <td>@if (m.matchId === d.match.id) { {{ bidi(m.homeTeam) }} – {{ bidi(m.awayTeam) }} <span class="tag tag-info">This row</span> }
+                    @else { <a [routerLink]="['/matches', m.matchId]">{{ bidi(m.homeTeam) }} – {{ bidi(m.awayTeam) }}</a> }
+                    <span class="cell-sub">{{ bidi(m.externalMatchId) }}</span></td>
+                  <td class="nowrap hide-sm">{{ fmt(m.startTime) }}</td>
+                  <td class="nowrap"><mm-result [value]="m.status" kind="status" />@if (m.archivedAt) { <span class="tag tag-secondary">Archived</span> }</td>
+                  <td><mm-score [home]="m.finalHomeScore" [away]="m.finalAwayScore" [muted]="m.status !== 'FINISHED'" /></td>
+                </tr>
+                }
+              </tbody>
+            </table></div>
+          </section>
+        } }
 
         <section class="panel flush">
           <header><h2>Models on this match</h2></header>
@@ -216,7 +246,8 @@ const MIN_REASON = 5;
           </div>
         </form>
       }
-    </mm-dialog>`,
+    </mm-dialog>
+    <mm-reason-dialog [action]="action()" (closed)="action.set(null)" />`,
 })
 export class MatchDetailPage {
   readonly id = input.required<string>();
@@ -244,6 +275,7 @@ export class MatchDetailPage {
   readonly recalcOpen = signal(false);
   readonly recalcPending = signal(false);
   readonly recalcError = signal('');
+  readonly action = signal<ReasonAction | null>(null);
   resultForm: ResultForm = MatchDetailPage.emptyForm();
   recalcReason = '';
   readonly statuses = MATCH_STATUSES;
@@ -329,9 +361,10 @@ export class MatchDetailPage {
         this.savingResult.set(false);
         this.resultOpen.set(false);
         const s = r.settlement;
-        this.outcome.set(!r.changed ? 'Nothing changed: this result was already stored.'
+        const shared = r.propagatedTo?.length ? ` Also applied to ${r.propagatedTo.length} linked match ${r.propagatedTo.length === 1 ? 'row' : 'rows'} of this game.` : '';
+        this.outcome.set((!r.changed ? 'Nothing changed: this result was already stored.'
           : s ? `Result saved. Settlement: ${s.settled} settled, ${s.alreadySettled} already settled, ${s.pending} pending, ${s.needsReview} need review.`
-          : 'Result saved. Picks settle when the match is Finished or Cancelled.');
+          : 'Result saved. Picks settle when the match is Finished or Cancelled.') + shared);
         this.reload();
       },
       error: e => {
@@ -339,6 +372,16 @@ export class MatchDetailPage {
         const err = apiError(e);
         this.resultError.set([err.message, ...Object.entries(err.fieldErrors ?? {}).map(([k, v]) => `${k}: ${v}`)].join(' '));
       },
+    });
+  }
+
+  /** Admin: takes this row out of its fixture; predictions, results and settlement stay as they are. */
+  unlink(): void {
+    this.action.set({
+      header: 'Unlink this match from the game', label: 'Unlink',
+      message: 'This row gets a fixture of its own, so model comparison shows it alone again. Predictions, results and settlement do not change.',
+      run: reason => this.api.unlinkMatch(this.id(), reason),
+      done: () => this.reload(),
     });
   }
 

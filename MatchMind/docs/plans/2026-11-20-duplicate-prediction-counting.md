@@ -94,20 +94,20 @@ generated column**
 
 ---
 
-### Task 1: Migration `V<next>__prediction_content_hash.sql`
+### Task 1: Migration `V<next>__prediction_content_hash.sql` (done: V27)
 
 **Files:** Create `matchmind-api/src/main/resources/db/migration/V<next>__prediction_content_hash.sql`.
 
-- [ ] Add the column and indexes:
+- [x] Add the column and indexes:
   ```sql
   ALTER TABLE predictions ADD COLUMN content_hash CHAR(32)
       GENERATED ALWAYS AS (md5((payload - 'eventId' - 'predictedAt' - 'metadata')::text)) STORED;
   CREATE INDEX ix_predictions_dedupe ON predictions (match_id, ai_model_id, prediction_type, match_minute, predicted_at DESC);
   CREATE INDEX ix_predictions_content ON predictions (match_id, ai_model_id, content_hash);
   ```
-- [ ] `Prediction.java`: map nothing, or map `contentHash` as `insertable=false, updatable=false`. The entity is `@Immutable`
+- [x] `Prediction.java`: map nothing, or map `contentHash` as `insertable=false, updatable=false`. The entity is `@Immutable`
   already.
-- [ ] If UX-088's triggers already exist, confirm the IT still passes. `ADD COLUMN … STORED` does not fire row triggers.
+- [x] If UX-088's triggers already exist, confirm the IT still passes. `ADD COLUMN … STORED` does not fire row triggers.
 
 ### Task 2: Counted fragment + policy parameter
 
@@ -128,13 +128,13 @@ generated column**
   with `aggregate=true`. List callers (`predictionHistory`, `predictionHistoryExport`, `PredictionQueryService.list`) pass
   `false`.
 
-- [ ] ITs:
+- [x] ITs:
   - `latestPolicyCountsExactResendOnce`
   - `allPolicyKeepsOldNumbers`
   - `liveSnapshotsAtDifferentMinutesBothCount`
   - `dateFilterDoesNotResurrectOlderDuplicate`
   - `invalidCountPolicyIs400`
-- [ ] Apply the policy in `ReportService` (all aggregate methods, dashboard `totals`/`predictionsToday`/charts),
+- [x] Apply the policy in `ReportService` (all aggregate methods, dashboard `totals`/`predictionsToday`/charts),
   `AiModelService` (its own SQL: add `AND <COUNTED>` with `p` aliasing `pr`) and `MatchQueryService` model summaries.
 
 ### Task 3: Warnings at ingest and in detail views
@@ -150,7 +150,7 @@ generated column**
 - Tests: `it/PredictionImportIT.java` (`resendWithNewEventIdReturnsPossibleDuplicateOf`) and `it/ExternalCallbackIT.java`
   (first send has a null field).
 
-- [ ] Update `docs/API_DOCUMENTATION.md` (both the external response and the detail), `docs/samples/*.json`,
+- [x] Update `docs/API_DOCUMENTATION.md` (both the external response and the detail), `docs/samples/*.json`,
   `core/models.ts` and `docs/chatgpt-action.yaml` (response schema).
 
 ### Task 4: UI
@@ -163,7 +163,7 @@ generated column**
 - `pages/reports.ts` and `pages/dashboard.ts`: a "Count: latest per moment / all" select, kept in `?count=`, with a
   footnote "N predictions not counted".
 
-- [ ] Specs: the banner shows when `possibleDuplicateOf` is set; the select sends `countPolicy`.
+- [x] Specs: the banner shows when `possibleDuplicateOf` is set; the select sends `countPolicy`.
 
 ### Rollout / rollback
 
@@ -174,3 +174,17 @@ generated column**
 
 Effort: **L** (about 3 days: migration+fragment 1, wiring all aggregates 1, warnings+UI 1). Effort is **M** if decision 1
 is `exact` only.
+
+## Implementation notes (2026-11-21)
+
+- Migration **V27**; `Prediction.java` maps nothing (the column is DB-generated). Triggers stay enabled (`DbIntegrityIT` green).
+- `Stats.COUNTED` / `Stats.counted(alias)` already key on the fixture and the effective model; an archived sibling match
+  or archived merged model never supersedes. `Filters.DEFAULT_COUNT_POLICY` is the rollback switch.
+- `ArchiveMergeIT`/`AdminArchiveMergeIT` seeds now use their own teams: identical teams auto-link into one fixture, where
+  the policy rightly counts one prediction per merged model.
+- ITs live in `it/DuplicateCountingIT.java` (not `ReportsIT`) to keep the ROI plan's diff apart. The ingest signal tests
+  stay in `IngestionRulesIT.sameContentUnderANewEventIdNamesTheEarlierPrediction` (now also checks the 200 path).
+- `possibleDuplicateOf` keeps the UX-046 lane's pick-signature rule (same picks/lines/stages), now on the fixture and
+  effective model; `content_hash` drives `similar[].exact` in the detail.
+- Model comparison and coverage follow the policy (aggregate filters); its "latest per model" row was already latest.
+- `docs/samples/*.json` are request bodies only, so they did not change.

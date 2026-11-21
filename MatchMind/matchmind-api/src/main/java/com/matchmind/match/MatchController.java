@@ -30,6 +30,7 @@ import java.util.UUID;
 public class MatchController {
     private final MatchQueryService service;
     private final MatchResultService results;
+    private final FixtureService fixtures;
 
     @GetMapping
     public PageResponse<Map<String, Object>> list(@RequestParam(required = false) String search,
@@ -52,8 +53,8 @@ public class MatchController {
     }
 
     @GetMapping("/{id}")
-    public Map<String, Object> detail(@PathVariable UUID id) {
-        return service.detail(id);
+    public Map<String, Object> detail(@PathVariable UUID id, @RequestParam(required = false) String countPolicy) {
+        return service.detail(id, countPolicy);
     }
 
     /** POST under /api/v1 requires ADMIN in SecurityConfig (there is no write API for matches besides archive and result). */
@@ -66,6 +67,13 @@ public class MatchController {
     @PostMapping("/{id}/unarchive")
     public Map<String, Object> unarchive(@PathVariable UUID id, @Valid @RequestBody ReasonRequest r, @AuthenticationPrincipal UserPrincipal me) {
         return service.setArchived(id, false, r.reason(), me.id());
+    }
+
+    @PostMapping("/{id}/unlink")
+    @Operation(summary = "Take a match out of its fixture into a fresh one of its own (admin); returns the match detail")
+    public Map<String, Object> unlink(@PathVariable UUID id, @Valid @RequestBody ReasonRequest r, @AuthenticationPrincipal UserPrincipal me) {
+        fixtures.unlink(id, r.reason(), me.id());
+        return service.detail(id);
     }
 
     @PostMapping("/{id}/result")

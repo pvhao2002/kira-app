@@ -14,6 +14,7 @@ import com.matchmind.shared.ApiTypes.PageResponse;
 import com.matchmind.shared.Filters;
 import com.matchmind.shared.Paging;
 import com.matchmind.shared.Sql;
+import com.matchmind.shared.Stats;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -82,8 +83,9 @@ public class PredictionQueryService {
                %s AS "topPickPrice", COALESCE(r.result, 'PENDING') AS "settlementStatus",
                (SELECT count(*) FROM prediction_picks y WHERE y.prediction_id = p.id) AS "pickCount",
                pc.wins AS "pickWins", pc.half_wins AS "pickHalfWins", pc.losses AS "pickLosses",
-               pc.half_losses AS "pickHalfLosses", pc.push_void AS "pickPushOrVoid", pc.pending AS "pickPending"
-        """.formatted(Sql.MODEL_NAME, Sql.PRICE);
+               pc.half_losses AS "pickHalfLosses", pc.push_void AS "pickPushOrVoid", pc.pending AS "pickPending",
+               %s AS "counted"
+        """.formatted(Sql.MODEL_NAME, Sql.PRICE, Stats.COUNTED);
 
     private static final Map<String, String> SORT = Map.of(
         "predictedAt", "p.predicted_at", "league", "m.league", "model", Sql.MODEL_NAME, "type", "p.prediction_type",
@@ -97,7 +99,7 @@ public class PredictionQueryService {
     public PageResponse<Map<String, Object>> list(Filters f, String resultScope, Integer page, Integer size, String sort) {
         int pg = Paging.page(page), sz = Paging.size(size);
         boolean any = scopeIsAny(resultScope);
-        Sql.Where w = f.where(false);
+        Sql.Where w = f.where(false, false); // a list: every row, marked counted or not
         if (f.result() != null && !f.result().isBlank()) {
             String pending = "(%1$s.result IS NULL OR %1$s.result = 'PENDING')";
             if (!any) {
@@ -173,8 +175,25 @@ public class PredictionQueryService {
                          Integer currentAwayScore, Integer currentHomeCorners, Integer currentAwayCorners,
                          Instant predictedAt, Instant createdAt, Map<String, Object> match, Map<String, Object> model,
                          List<OddsView> odds, StatsView stats, SimulationView simulation,
-                         List<PickView> picks, List<ScoreView> correctScores, JsonNode metadata, JsonNode payload) {
+                         List<PickView> picks, List<ScoreView> correctScores, JsonNode metadata, JsonNode payload,
+                         boolean counted, List<Map<String, Object>> similar) {
     }
+
+    /**
+     * UX-046: the other predictions of the same counting key (fixture, effective model, type, minute), oldest first;
+     * {@code exact} = same content_hash (a pure re-send), {@code counted} = the one the reports count.
+     */
+    private static final String SIMILAR = """
+        SELECT q.id AS "predictionId", q.predicted_at AS "predictedAt", q.content_hash = p.content_hash AS "exact",
+               %s AS "counted"
+        FROM predictions p JOIN matches pm ON pm.id = p.match_id JOIN ai_models pa ON pa.id = p.ai_model_id
+        JOIN predictions q ON q.id <> p.id AND q.prediction_type = p.prediction_type
+             AND q.match_minute IS NOT DISTINCT FROM p.match_minute
+        JOIN matches qm ON qm.id = q.match_id AND COALESCE(qm.fixture_id, qm.id) = COALESCE(pm.fixture_id, pm.id)
+        JOIN ai_models qa ON qa.id = q.ai_model_id
+             AND COALESCE(qa.merged_into_id, qa.id) = COALESCE(pa.merged_into_id, pa.id)
+        WHERE p.id = :id ORDER BY q.predicted_at, q.created_at, q.id LIMIT 50
+        """.formatted(Stats.counted("q"));
 
     @Transactional(readOnly = true)
     public Detail detail(UUID id) {
@@ -206,7 +225,10 @@ public class PredictionQueryService {
             simulations.findByPredictionId(id).map(SimulationView::of).orElse(null), pickViews,
             scores.findByPredictionIdOrderByScoreRankAsc(id).stream()
                 .map(s -> new ScoreView(s.getScoreRank(), s.getHomeScore(), s.getAwayScore(), s.getProbability())).toList(),
-            p.getMetadata(), p.getPayload());
+            p.getMetadata(), p.getPayload(),
+            Boolean.TRUE.equals(jdbc.queryForObject("SELECT " + Stats.COUNTED + " FROM predictions p WHERE p.id = :id",
+                Map.of("id", id), Boolean.class)),
+            jdbc.query(SIMILAR, Map.of("id", id), Sql.ROW));
     }
 
     private static List<PickView> pickViews(List<PredictionPick> pickRows, Map<UUID, PredictionOdds> oddsById,

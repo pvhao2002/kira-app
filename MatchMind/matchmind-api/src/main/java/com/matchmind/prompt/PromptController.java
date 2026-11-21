@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,7 +47,7 @@ public class PromptController {
     @Value("${app.public-base-url:}")
     private String publicBaseUrl;
 
-    /** {@code keyRendered} is false when the agent key placeholder is still in the text (viewers, or no key set). */
+    /** {@code keyRendered} is false when the agent key placeholder is still in the text (viewers, no shared key, or sharedKey=false). */
     public record AgentPrompt(String content, boolean keyRendered) {
     }
 
@@ -62,13 +63,16 @@ public class PromptController {
 
     /**
      * What a user pastes into an agent: the prompt with the API base URL and the Google Sheet link filled in, and for
-     * admins the shared agent key. Viewers never see the key; {@code keyRendered} tells the UI the placeholder is left.
+     * admins the legacy shared agent key while EXTERNAL_API_KEY is set. Viewers never see the key; {@code keyRendered}
+     * tells the UI the placeholder is left. {@code sharedKey=false} always leaves it: the Providers screen puts a
+     * per-provider key in client-side, and that copy must never carry the shared key.
      */
     @GetMapping("/{id}/for-agent")
     @Operation(summary = "Prompt text with the API base URL, the Google Sheet link and (admins only) the agent key filled in")
-    public AgentPrompt forAgent(@PathVariable UUID id, @AuthenticationPrincipal UserPrincipal me, HttpServletRequest http) {
+    public AgentPrompt forAgent(@PathVariable UUID id, @RequestParam(defaultValue = "true") boolean sharedKey,
+                                @AuthenticationPrincipal UserPrincipal me, HttpServletRequest http) {
         String content = service.get(id).content();
-        boolean keyRendered = "ADMIN".equals(me.role()) && !externalApiKey.isBlank();
+        boolean keyRendered = sharedKey && "ADMIN".equals(me.role()) && !externalApiKey.isBlank();
         // The key goes in first, so a placeholder inside a request header value is never expanded into it.
         if (keyRendered) content = content.replace(API_KEY_PLACEHOLDER, externalApiKey);
         return new AgentPrompt(content.replace(SHEET_URL_PLACEHOLDER, sheetUrl).replace(BASE_URL_PLACEHOLDER, baseUrl(http)),

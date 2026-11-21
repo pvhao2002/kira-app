@@ -23,7 +23,10 @@ class ArchiveMergeIT extends IntegrationTestBase {
     /** One settled prediction by {@code model} (created on first use) on a fresh match of {@code provider}. */
     private Seed seed(String provider, String model, String finalScore) throws Exception {
         String match = "am-" + UUID.randomUUID().toString().substring(0, 8);
-        external(provider, "predictions", Payloads.livePrediction("e-" + UUID.randomUUID(), match, model));
+        // Own teams per seed: same-provider matches of one game share a fixture, and the count policy (UX-046) then
+        // counts one prediction per effective model there. Seeds stand for different games.
+        external(provider, "predictions", Payloads.livePrediction("e-" + UUID.randomUUID(), match, model, "Home " + match,
+            "Away " + match, "Premier League", java.time.Instant.parse("2026-11-10T19:45:00Z")));
         external(provider, "matches/results", Payloads.result(match, "FINISHED", finalScore, null, "2026-11-10T21:40:00Z"));
         return new Seed(
             db.queryForObject("""
@@ -211,8 +214,10 @@ class ArchiveMergeIT extends IntegrationTestBase {
 
         // Two models on one match count as one model once merged.
         String match = "am-" + UUID.randomUUID().toString().substring(0, 8);
-        external(in.provider(), "predictions", Payloads.livePrediction("e-" + UUID.randomUUID(), match, "merge-a"));
-        external(in.provider(), "predictions", Payloads.livePrediction("e-" + UUID.randomUUID(), match, "merge-b"));
+        // Other teams than the seeds: same-provider rows of one game would share one fixture (one comparison row).
+        java.time.Instant kickOff = java.time.Instant.parse("2026-11-10T19:45:00Z");
+        external(in.provider(), "predictions", Payloads.livePrediction("e-" + UUID.randomUUID(), match, "merge-a", "Everton", "Fulham", "Premier League", kickOff));
+        external(in.provider(), "predictions", Payloads.livePrediction("e-" + UUID.randomUUID(), match, "merge-b", "Everton", "Fulham", "Premier League", kickOff));
         JsonNode comparison = adminGet("/api/v1/reports/model-comparison" + q + "&minModels=2");
         assertThat(comparison.get("data")).isEmpty();
         JsonNode single = adminGet("/api/v1/reports/model-comparison" + q + "&minModels=1&size=50");

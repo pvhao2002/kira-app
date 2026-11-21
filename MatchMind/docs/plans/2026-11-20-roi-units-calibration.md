@@ -97,27 +97,27 @@ All as recommended:
 - `static BigDecimal roi(BigDecimal units, long staked)`: null when `staked == 0` or `units == null`; otherwise
   `units.divide(BigDecimal.valueOf(staked), 4, HALF_UP)`.
 
-- [ ] Write the tests: `roi(new BigDecimal("-0.050"), 5)` equals `new BigDecimal("-0.0100")`; `roi(null, 0)` is null;
+- [x] Write the tests: `roi(new BigDecimal("-0.050"), 5)` equals `new BigDecimal("-0.0100")`; `roi(null, 0)` is null;
   `roi(BigDecimal.ONE, 0)` is null.
-- [ ] Implement the fragments and `roi`.
+- [x] Implement the fragments and `roi`.
 
 ### Task 2: Reports + dashboard + models
 
 **Files:** Modify `report/ReportService.java` and `model/AiModelService.java`. Test: `it/ReportsIT.java`.
 
-- [ ] Report changes:
+- [x] Report changes:
   - Append `, %s AS "units", %s AS "staked"` (`Stats.UNITS`, `Stats.STAKED`) to `ReportService.AGG`.
   - Rename `addWinRate` to `addRates`, which also puts `roi`. Its callers are `modelPerformance`, `breakdown`,
     `marketPerformance` and `dashboard`.
   - Add `"staked"` to `COUNT_COLUMNS`. For an empty market, `units` stays null.
-- [ ] Dashboard: `winRateOverTime` gains `units` per day. The UI draws the cumulative sum.
-- [ ] History rows (`HISTORY_COLUMNS`) gain `"units"`, the per-pick value (the same `CASE` without `sum`). Add it to the
+- [x] Dashboard: `winRateOverTime` gains `units` per day. The UI draws the cumulative sum.
+- [x] History rows (`HISTORY_COLUMNS`) gain `"units"`, the per-pick value (the same `CASE` without `sum`). Add it to the
   export columns after `result`.
-- [ ] `AiModelService.SQL`:
+- [x] `AiModelService.SQL`:
   - Add `JOIN prediction_odds o ON o.id = pk.odds_id` to the LATERAL.
   - Select `UNITS`/`STAKED`.
   - `ModelView` gains `BigDecimal units, long staked, BigDecimal roi`.
-- [ ] IT `roiAndUnitsFollowFixedStake`:
+- [x] IT `roiAndUnitsFollowFixedStake`:
   - Seed one prediction with picks priced 1.90, 2.10, 1.80, 1.95, 2.00 and 1.85.
   - Set the results through the admin override (`POST /api/v1/settlements/picks/{id}/override`) to WIN, HALF_WIN, LOSS,
     HALF_LOSS, PUSH and VOID.
@@ -129,19 +129,19 @@ All as recommended:
 **Files:** Modify `report/ReportService.java` (new `calibration(Filters f)`) and `report/ReportController.java`. Test:
 `it/ReportsIT.java`.
 
-- [ ] Add `GET /api/v1/reports/calibration?<standard filters>`. It returns:
+- [x] Add `GET /api/v1/reports/calibration?<standard filters>`. It returns:
   ```json
   {"bins":[{"bin":1,"from":0.0,"to":0.1,"picks":0,"avgProbability":null,"hitRate":null}, …10],
    "evaluated": 0, "excluded": 0}
   ```
-- [ ] SQL:
+- [x] SQL:
   - `LEAST(width_bucket(pk.probability, 0, 1, 10), 10)` grouped.
   - Rows are filtered to `r.result IN ('WIN','LOSS')` (decision 3).
   - `hitRate = count(WIN)/count(*)` using `Stats.ratio`.
   - `avgProbability = round(avg(pk.probability), 4)`.
   - Java fills empty bins, so there are always 10.
   - `excluded` = settled picks not in WIN/LOSS.
-- [ ] ITs:
+- [x] ITs:
   - `calibrationAlwaysReturnsTenBins`
   - `probabilityOneLandsInBinTen`
   - `halfResultsAreExcludedAndCounted`
@@ -158,16 +158,24 @@ All as recommended:
 - `pages/dashboard.ts`: Units and ROI tiles, and a cumulative-units line
 - `pages/models.ts` and `pages/model-detail.ts`
 
-- [ ] Badge: an `mm-badge` "small sample (n = 12)" next to the win rate when `wins + losses < 30`, and next to ROI when
+- [x] Badge: an `mm-badge` "small sample (n = 12)" next to the win rate when `wins + losses < 30`, and next to ROI when
   `staked < 30`. It has a tooltip explaining why.
-- [ ] Spec `pages.spec.ts`:
+- [x] Spec `pages.spec.ts`:
   - Null ROI renders `—`.
   - The badge shows at n = 29 and hides at n = 30.
   - The calibration tab renders 10 bins.
-- [ ] Verify with `npx ng test --watch=false && npx ng build`.
+- [x] Verify with `npx ng test --watch=false && npx ng build`.
 
 ### Rollout / rollback
 
 The changes are read-side and additive. Rollback is a code revert, with no data touched.
 
 Effort: **L** (about 3–4 days: SQL+API 1.5, calibration 0.5, UI 1.5).
+
+### Implementation notes (2026-11-21)
+
+- `Stats.PICK_UNITS` (per pick) backs both `Stats.UNITS` and the history/export `units` column (rounded to 3).
+- The badge is `mm-small-sample` (`shared/ui.ts`); `SMALL_SAMPLE` and `ROI_DEF` live in `shared/format.ts`. The model
+  detail page's earlier badge (n = settled picks) now follows decision 2 (n = wins + losses).
+- UI specs are in `pages/reports.spec.ts` (with the other report specs), not `pages.spec.ts`.
+- `docs/samples/*.json` hold callback payloads only, so no sample changed.

@@ -68,14 +68,24 @@ users. There is no public sign-up: the admin creates other users in **Settings**
 
 ## Connect an AI provider
 
-1. Set `EXTERNAL_API_KEY` in `.env` (32+ random characters) and give it to the agent. All agents share it.
-2. The agent calls the three callback APIs with headers `X-Api-Key`, `X-Provider` (who it is, e.g. `openclaw`) and,
-   for predictions, `X-Model-Name` (+ optional `X-Model-Version`). A new provider or model is created on its first
-   call; there is nothing to register by hand:
-   - `POST /api/v1/external/predictions` sends a prediction snapshot. It is idempotent per `eventId`.
-   - `POST /api/v1/external/matches/results` sends the final score and corners. FINISHED or CANCELLED settles pending
-     picks automatically.
-   - `POST /api/v1/external/predictions/settle` asks for settlement and may include advisory AI calculations.
+1. As an admin, open **Providers**, create the provider (e.g. `openclaw`) and issue it a key. The key
+   (`mmk_<keyId>_<secret>`) is shown once; give it to that agent only. Each provider has its own keys, so one leaked key
+   can be revoked (or rotated) without touching the other agents. Only an admin creates providers.
+2. Each key has scopes. New keys get `PREDICTIONS` and `SETTLE_REQUEST`. Grant `RESULTS` (on the Providers screen) only
+   to a trusted results feeder: a result from a `RESULTS` key is copied to the same game's matches of every provider.
+3. The agent calls the three callback APIs with header `X-Api-Key` and, for predictions, `X-Model-Name` (+ optional
+   `X-Model-Version`). The provider comes from the key; a new model is created by its first accepted prediction:
+   - `POST /api/v1/external/predictions` (`PREDICTIONS`) sends a prediction snapshot. It is idempotent per `eventId`.
+   - `POST /api/v1/external/matches/results` (`RESULTS`) sends the final score and corners. FINISHED or CANCELLED
+     settles pending picks automatically.
+   - `POST /api/v1/external/predictions/settle` (`SETTLE_REQUEST`) asks for settlement and may include advisory AI
+     calculations.
+
+**Legacy shared key (until 2026-12-31).** While `EXTERNAL_API_KEY` is set in `.env`, that one key still works for every
+agent with all scopes: the agent sends `X-Provider` (who it is), and an unknown provider is created by its first
+accepted prediction. Its results apply to that provider's own matches only, never to other providers'. These calls are
+marked "legacy key" in API Logs: move every agent to its own key, wait for that count to reach zero, then unset
+`EXTERNAL_API_KEY` (planned 2026-12-31).
 
 See [API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) for every field and rule, plus a curl walkthrough using
 [`docs/samples`](docs/samples). Every call appears on the **API Logs** page, except `GET /api/v1/external/ping`: a
@@ -118,7 +128,7 @@ Angular CLI 22 needs a recent Node. 22.20 is rejected; development used Node 26.
 |---|---|---|
 | API unit + integration | `cd matchmind-api && mvn -B verify` | 58 settlement-engine cases. Testcontainers ITs on real PostgreSQL: auth and revocation, callbacks (idempotency, validation, cross-provider isolation, stale results, settlement), reports. Needs Docker |
 | Web unit/component | `cd matchmind-web && npx ng test --watch=false` | Formatting and filters, API service params, auth/interceptor flow, login form, prompt edit/save/conflict/copy |
-| End-to-end | `cd matchmind-web && npx playwright install chromium && E2E_BASE_URL=http://localhost:8088 E2E_ADMIN_USER=... E2E_ADMIN_PASSWORD=... npx playwright test` | Real stack: login, provider and key onboarding, callbacks to settlement, prediction drill-down, report export, prompt editing, viewer permissions |
+| End-to-end | `cd matchmind-web && npx playwright install chromium && npm run e2e:stack && npx playwright test` (own stack on `:8188`, see `docker-compose.e2e.yml`; set `E2E_BASE_URL`, `E2E_ADMIN_USER`, `E2E_ADMIN_PASSWORD`, `E2E_EXTERNAL_API_KEY` for another stack) | Real stack: login, provider and key onboarding, callbacks to settlement, prediction drill-down, report export, prompt editing, viewer permissions |
 
 The e2e suite creates uniquely named data on each run, so it can be repeated against the same database. It signs in through
 the UI once and reuses that session, so it stays well under the login rate limit (20 attempts per IP per 5 minutes).

@@ -24,13 +24,13 @@ const text = (el: Element) => el.textContent?.replace(/\s+/g, ' ') ?? '';
 // 3 settled (1 win, 1 half win, 1 loss), 5 pending.
 const counts = {
   picks: 8, settled: 3, wins: 2, halfWins: 1, fullWins: 1, losses: 1, halfLosses: 0, fullLosses: 1, pushOrVoid: 0,
-  pending: 5, avgProbability: null, winRate: 0.6667,
+  pending: 5, avgProbability: null, winRate: 0.6667, units: 0.4, staked: 3, roi: 0.1333,
 };
 function dashboard(over: Partial<Dashboard> = {}, totals: Partial<Dashboard['totals']> = {}): Dashboard {
   return {
     period: { from: '2026-10-22T00:00:00Z', to: '2026-11-21T00:00:00Z', basis: 'predictedAt', firstPredictedAt: null, lastPredictedAt: null },
-    totals: { ...counts, totalPredictions: 4, totalMatches: 3, activeModels: 2, totalModels: 5, predictionsToday: 1, overdueMatches: 2, ...totals },
-    winRateOverTime: [{ day: '2026-11-19', wins: 2, losses: 1, settled: 3, winRate: 0.6667 }],
+    totals: { ...counts, totalPredictions: 4, totalMatches: 3, activeModels: 2, totalModels: 5, predictionsToday: 1, overdueMatches: 2, notCountedPredictions: 0, ...totals },
+    winRateOverTime: [{ day: '2026-11-19', wins: 2, losses: 1, settled: 3, winRate: 0.6667, units: 0.4 }],
     predictionsByModel: [{ model: 'gpt', predictions: 4 }],
     predictionsByMarket: [{ market: 'AH', picks: 8 }],
     resultDistribution: [{ result: 'WIN', picks: 1 }, { result: 'HALF_WIN', picks: 1 }, { result: 'LOSS', picks: 1 }, { result: 'PENDING', picks: 5 }],
@@ -67,7 +67,7 @@ describe('DashboardPage', () => {
 
   it('says "No settled picks in this range" for win-rate charts with only pending picks (UX-022)', async () => {
     const d = dashboard({
-      winRateOverTime: [{ day: '2026-11-19', wins: 0, losses: 0, settled: 0, winRate: null }],
+      winRateOverTime: [{ day: '2026-11-19', wins: 0, losses: 0, settled: 0, winRate: null, units: null }],
       modelPerformance: [{ ...counts, key: 'gpt', winRate: null }],
       resultDistribution: [{ result: 'PENDING', picks: 5 }],
     });
@@ -119,7 +119,7 @@ describe('DashboardPage', () => {
 
   it('shows getting-started steps on a fresh install instead of only "No predictions yet." (UX-039)', async () => {
     const empty = dashboard({ resultDistribution: [], winRateOverTime: [], predictionsByModel: [], predictionsByMarket: [], modelPerformance: [] },
-      { ...counts, picks: 0, settled: 0, pending: 0, totalPredictions: 0, totalMatches: 0, activeModels: 0, totalModels: 0, overdueMatches: 0 });
+      { ...counts, picks: 0, settled: 0, pending: 0, totalPredictions: 0, totalMatches: 0, activeModels: 0, totalModels: 0, overdueMatches: 0, notCountedPredictions: 0 });
     const f = await open(empty, []);
     const hrefs = links(f.nativeElement).map(x => x.href);
     expect(hrefs).toContain('/prompts');
@@ -156,5 +156,17 @@ describe('DashboardPage', () => {
     const o = f.componentInstance.modelBarOptions as { indexAxis?: string; scales?: { y?: { ticks?: { autoSkip?: boolean } } } };
     expect(o.indexAxis).toBe('y');
     expect(o.scales?.y?.ticks?.autoSkip).toBe(false);
+  });
+});
+
+describe('DashboardPage count policy (UX-046)', () => {
+  it('says how many predictions the latest-per-moment policy left out, and nothing when none', async () => {
+    const f = await open(dashboard({}, { notCountedPredictions: 3 }));
+    expect(text(f.nativeElement)).toContain('3 predictions not counted');
+  });
+
+  it('shows no footnote when every prediction is counted', async () => {
+    const f = await open();
+    expect(text(f.nativeElement)).not.toContain('not counted');
   });
 });

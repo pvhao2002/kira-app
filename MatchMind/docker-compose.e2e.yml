@@ -1,0 +1,35 @@
+# E2E stack: a throw-away copy of the MatchMind stack for matchmind-web/e2e (Playwright).
+# Project matchmind-e2e, DB on tmpfs (every `up` starts empty), web on http://localhost:8188, no other host ports, so it
+# runs next to the normal stack. Test-only values below: never reuse them anywhere else.
+#   cd MatchMind/matchmind-web && npm run e2e:stack      (build and start, waits until healthy)
+#   npx playwright test                                   (defaults match the values below)
+#   docker compose -p matchmind-e2e down                  (stop; the data is gone)
+# The base file still reads .env for its ${...:?} checks; the values that matter are fixed here.
+name: matchmind-e2e
+
+services:
+  db:
+    environment:
+      POSTGRES_USER: matchmind
+      POSTGRES_PASSWORD: e2e-db-password-not-a-secret
+    volumes: !reset []
+    tmpfs:
+      - /var/lib/postgresql/data
+    ports: !reset []
+
+  api:
+    environment:
+      DB_USERNAME: matchmind
+      DB_PASSWORD: e2e-db-password-not-a-secret
+      JWT_SECRET: e2e-jwt-secret-not-a-secret-0123456789abcdef
+      EXTERNAL_API_KEY: e2e-agent-key-not-a-secret-0123456789
+      MATCHMIND_ADMIN_USERNAME: e2e-admin
+      MATCHMIND_ADMIN_PASSWORD: Journey-check-7341
+      MATCHMIND_SHEET_URL: ""
+      PUBLIC_BASE_URL: ""
+      SWAGGER_ENABLED: "false"
+    ports: !reset []
+
+  web:
+    ports: !override
+      - "127.0.0.1:8188:80"

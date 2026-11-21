@@ -18,6 +18,7 @@ import com.matchmind.external.ExternalDtos.PredictionResponse;
 import com.matchmind.external.ExternalDtos.SimulationInput;
 import com.matchmind.external.ExternalDtos.StatsInput;
 import com.matchmind.match.Match;
+import com.matchmind.match.FixtureService;
 import com.matchmind.match.MatchRepository;
 import com.matchmind.model.AiModel;
 import com.matchmind.model.AiModelRepository;
@@ -81,6 +82,7 @@ public class PredictionIngestionService {
     private final PredictionPickRepository pickRepo;
     private final PredictionCorrectScoreRepository scoreRepo;
     private final MatchRepository matches;
+    private final FixtureService fixtures;
     private final AiModelRepository models;
     private final ProviderService providers;
     private final NamedParameterJdbcTemplate jdbc;
@@ -130,18 +132,25 @@ public class PredictionIngestionService {
      */
     private UUID sameContentAs(Prediction p) {
         List<UUID> twin = jdbc.queryForList("""
-            WITH sig AS (
+            WITH
+            -- Same counting key as Stats.COUNTED: the fixture and the effective model (merged models included).
+            key_matches AS (SELECT x.id FROM matches x WHERE x.id = :match
+                            OR x.fixture_id = (SELECT y.fixture_id FROM matches y WHERE y.id = :match)),
+            key_models AS (SELECT c.id FROM ai_models c WHERE COALESCE(c.merged_into_id, c.id) =
+                           (SELECT COALESCE(d.merged_into_id, d.id) FROM ai_models d WHERE d.id = :model)),
+            sig AS (
                 SELECT k.prediction_id,
                        string_agg(k.market || '|' || k.pick || '|' || coalesce(o.line::text, '') || '|' || o.odds_stage, ','
                                   ORDER BY k.market, k.pick, o.line, o.odds_stage) AS s
                 FROM prediction_picks k JOIN prediction_odds o ON o.id = k.odds_id
-                WHERE k.prediction_id IN (SELECT id FROM predictions WHERE match_id = :match AND ai_model_id = :model)
+                WHERE k.prediction_id IN (SELECT id FROM predictions WHERE match_id IN (SELECT id FROM key_matches)
+                                          AND ai_model_id IN (SELECT id FROM key_models))
                 GROUP BY k.prediction_id)
             SELECT p.id FROM predictions p
             JOIN sig a ON a.prediction_id = p.id
             JOIN sig b ON b.prediction_id = :self AND b.s = a.s
-            WHERE p.match_id = :match AND p.ai_model_id = :model AND p.prediction_type = :type
-              AND coalesce(p.match_minute, -1) = :minute AND p.id <> :self
+            WHERE p.match_id IN (SELECT id FROM key_matches) AND p.ai_model_id IN (SELECT id FROM key_models)
+              AND p.prediction_type = :type AND coalesce(p.match_minute, -1) = :minute AND p.id <> :self
             ORDER BY p.predicted_at, p.id LIMIT 1
             """, new MapSqlParameterSource().addValue("match", p.getMatchId()).addValue("model", p.getAiModelId())
             .addValue("self", p.getId()).addValue("type", p.getPredictionType())
@@ -197,7 +206,7 @@ public class PredictionIngestionService {
         oddsRepo.findByPredictionIdOrderByMarketAscOddsStageAscSnapshotOrderAsc(p.getId())
             .forEach(o -> oddsIds.put(o.getOddsRef(), o.getId()));
         String externalMatchId = matches.findById(p.getMatchId()).map(Match::getExternalMatchId).orElse(null);
-        return new PredictionResponse(p.getId(), p.getMatchId(), externalMatchId, true, refs, oddsIds, null);
+        return new PredictionResponse(p.getId(), p.getMatchId(), externalMatchId, true, refs, oddsIds, sameContentAs(p));
     }
 
     /**
@@ -245,7 +254,19 @@ public class PredictionIngestionService {
             match.setStartTime(newStart);
         }
         match.setStatus(newStatus);
-        return matches.saveAndFlush(match);
+        Match saved = matches.saveAndFlush(match);
+        UUID fixture = fixtures.linkOnIngest(saved);
+        // Same game, another provider's id: a final result there would later be shared to this row and settle these picks.
+        String finalStatus = jdbc.queryForList("""
+            SELECT status FROM matches WHERE fixture_id = :f AND id <> :id
+              AND result_updated_at IS NOT NULL AND status IN ('FINISHED', 'CANCELLED') LIMIT 1
+            """, new MapSqlParameterSource("f", fixture).addValue("id", saved.getId()), String.class)
+            .stream().findFirst().orElse(null);
+        if (finalStatus != null) {
+            throw ApiException.conflict("MATCH_ALREADY_FINAL",
+                "This match is already " + finalStatus + "; predictions are no longer accepted for it");
+        }
+        return saved;
     }
 
     /** {@code externalMatchId} names one game: a payload with other teams for it is an agent mistake, not an update. */

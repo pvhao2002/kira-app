@@ -3,14 +3,16 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /*
- * Critical journeys against a real stack. Requires an existing admin and the shared agent key:
- *   E2E_ADMIN_USER / E2E_ADMIN_PASSWORD, E2E_EXTERNAL_API_KEY (= EXTERNAL_API_KEY of the stack)
- *   and E2E_BASE_URL, default http://localhost:8088.
- * Each run uses unique provider/match/event ids, so it can be repeated on the same database.
+ * Critical journeys against a real stack. By default the throw-away e2e stack (`npm run e2e:stack`, see
+ * docker-compose.e2e.yml), whose test-only admin and agent key are the defaults below. Against another stack set
+ * E2E_BASE_URL, E2E_ADMIN_USER / E2E_ADMIN_PASSWORD and E2E_EXTERNAL_API_KEY (= EXTERNAL_API_KEY of that stack).
+ * Each run uses unique provider/match/event ids, so it can be repeated on the same database; afterAll archives the
+ * run's provider and disables its viewer, so a shared stack's lists stay clean.
  */
-const ADMIN = process.env['E2E_ADMIN_USER'] ?? '';
-const PASSWORD = process.env['E2E_ADMIN_PASSWORD'] ?? '';
-const EXTERNAL_KEY = process.env['E2E_EXTERNAL_API_KEY'] ?? '';
+const BASE_URL = process.env['E2E_BASE_URL'] ?? 'http://localhost:8188';
+const ADMIN = process.env['E2E_ADMIN_USER'] ?? 'e2e-admin';
+const PASSWORD = process.env['E2E_ADMIN_PASSWORD'] ?? 'Journey-check-7341';
+const EXTERNAL_KEY = process.env['E2E_EXTERNAL_API_KEY'] ?? 'e2e-agent-key-not-a-secret-0123456789';
 const RUN = Date.now().toString(36);
 const PROVIDER_CODE = `e2e-${RUN}`;
 const MATCH_ID = `e2e-match-${RUN}`;
@@ -21,6 +23,25 @@ test.skip(!ADMIN || !PASSWORD || !EXTERNAL_KEY, 'Set E2E_ADMIN_USER, E2E_ADMIN_P
 test.describe.configure({ mode: 'serial' });
 
 let adminSession: string | null = null;
+
+/** Hide this run's data: archive its provider (its models and matches follow) and disable its viewer. Nothing is deleted. */
+test.afterAll(async ({ playwright }) => {
+  if (!ADMIN || !PASSWORD) return;
+  const api = await playwright.request.newContext({ baseURL: BASE_URL });
+  try {
+    const login = await api.post('/api/v1/auth/login', { data: { username: ADMIN, password: PASSWORD } });
+    if (!login.ok()) return;
+    const headers = { Authorization: `Bearer ${(await login.json()).accessToken}` };
+    const providers: { id: string; code: string }[] = await (await api.get('/api/v1/providers?includeArchived=true', { headers })).json();
+    const provider = providers.find(p => p.code === PROVIDER_CODE);
+    if (provider) await api.post(`/api/v1/providers/${provider.id}/archive`, { headers, data: { reason: 'e2e cleanup' } });
+    const users: { id: string; username: string }[] = await (await api.get('/api/v1/users?status=ACTIVE', { headers })).json();
+    const viewer = users.find(u => u.username === `viewer-${RUN}`);
+    if (viewer) await api.patch(`/api/v1/users/${viewer.id}`, { headers, data: { status: 'DISABLED' } });
+  } finally {
+    await api.dispose();
+  }
+});
 
 /** Signs in through the UI once per user; later tests reuse the admin session (keeps under the login rate limit). */
 async function login(page: Page, user = ADMIN, password = PASSWORD) {
@@ -85,7 +106,7 @@ test('callbacks: prediction is idempotent, result settles picks, settle stays ad
   const res = await callback(request, 'matches/results', result);
   expect(res.status()).toBe(200);
   const applied = await res.json();
-  expect(applied.settlement.settled).toBe(3);
+  expect(applied.settlement.settled).toBe(2); // the sample has 2 picks (agent API maximum)
   // AH HOME -0.25 on the remaining match from 1-0, final 2-1 => remaining 1-1 => HALF_LOSS.
   const ah = applied.settlement.picks.find((p: { market: string }) => p.market === 'AH');
   expect(ah.result).toBe('HALF_LOSS');
@@ -109,7 +130,7 @@ test('prediction detail shows odds, settlement history and the raw payload', asy
   await expect(row).toContainText('Half loss');
   await row.click();
 
-  await expect(page.getByRole('tab', { name: /Picks \(3\)/ })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Picks \(2\)/ })).toBeVisible();
   await page.getByRole('button', { name: 'Show settlement history' }).first().click();
   await expect(page.getByText('Auto').first()).toBeVisible();
   await page.getByRole('tab', { name: /Odds/ }).click();
@@ -123,7 +144,7 @@ test('reports: history lists the picks and exports CSV', async ({ page }) => {
   await page.goto('/reports?tab=history');
   await page.getByLabel('Search').fill(MATCH_ID);
   await page.getByRole('button', { name: 'Apply' }).click();
-  await expect(page.getByText('of 3 picks')).toBeVisible();
+  await expect(page.getByText('of 2 picks')).toBeVisible();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'CSV' }).click();
   const file = await download;
@@ -139,13 +160,13 @@ test('reports: all five reports render with export, column visibility and drill-
   await page.getByLabel('Search').fill(MATCH_ID);
   await page.getByRole('button', { name: 'Apply' }).click();
   const modelRow = page.getByRole('row', { name: new RegExp(MODEL.name) });
-  await expect(modelRow).toContainText('33.3%');
+  await expect(modelRow).toContainText('50.0%'); // 2 picks (agent API maximum): OU win, AH half loss
   await modelRow.getByRole('button', { name: 'Toggle breakdown' }).click();
   await expect(page.getByRole('heading', { name: 'By market' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Premier League', exact: true })).toBeVisible();
 
   await page.getByRole('tab', { name: 'Prediction history' }).click();
-  await expect(page.getByText('of 3 picks')).toBeVisible();
+  await expect(page.getByText('of 2 picks')).toBeVisible();
   const header = page.locator('thead th', { hasText: 'Probability' });
   await expect(header).toBeVisible();
   await page.locator('summary', { hasText: 'Columns' }).click();
@@ -177,11 +198,13 @@ test('detail pages: match result and corners, odds by stage, stats, Monte Carlo;
   await page.getByRole('link', { name: `Home ${RUN} – Chelsea` }).click();
   await expect(page.getByRole('img', { name: '2 to 1' }).first()).toBeVisible();   // full time
   await expect(page.getByRole('img', { name: '7 to 4' })).toBeVisible();           // corners
-  await expect(page.getByRole('row', { name: new RegExp(MODEL.name) })).toContainText('Half loss');
+  // The model summary row comes first; the prediction history below names the model too.
+  const modelRow = page.getByRole('row', { name: new RegExp(MODEL.name) }).first();
+  await expect(modelRow).toContainText('Half loss');
   await expect(page.getByRole('cell', { name: 'Possession %' })).toBeVisible();
 
-  await page.getByRole('row', { name: new RegExp(MODEL.name) }).getByRole('link').nth(1).click();
-  await expect(page.getByRole('tab', { name: /Picks \(3\)/ })).toBeVisible();
+  await modelRow.getByRole('link').nth(1).click();
+  await expect(page.getByRole('tab', { name: /Picks \(2\)/ })).toBeVisible();
   await page.getByRole('tab', { name: /Odds/ }).click();
   for (const stage of ['Opening', 'Pre match', 'Live']) await expect(page.getByRole('cell', { name: new RegExp(`^${stage}`) }).first()).toBeVisible();
   await page.getByRole('tab', { name: 'Stats' }).click();
@@ -192,7 +215,7 @@ test('detail pages: match result and corners, odds by stage, stats, Monte Carlo;
 
   await page.locator('aside nav').getByRole('link', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Change password' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: /^admin/ }).first()).toBeVisible();
+  await expect(page.getByRole('cell', { name: new RegExp(`^${ADMIN}`) }).first()).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
   for (const url of ['/dashboard', '/reports?tab=history', '/predictions', '/prompts']) {
@@ -227,8 +250,8 @@ test('prompt notes: edit, save a new version, and cancel discards', async ({ pag
   await expect(header).toContainText(`version ${before + 2}`);
   await page.getByTestId('prompt-edit').click();
   await page.getByTestId('prompt-content').fill('throw this away');
-  page.once('dialog', d => d.accept());
   await page.getByTestId('prompt-cancel').click();
+  await page.getByRole('dialog', { name: 'Discard changes?' }).getByRole('button', { name: 'Discard' }).click();
   await expect(page.getByTestId('prompt-view')).not.toContainText('throw this away');
 });
 

@@ -158,4 +158,15 @@ describe('SettingsPage (W5)', () => {
     for (const h of ['X-Api-Key', 'X-Provider', 'X-Model-Name', 'X-Model-Version']) expect(card).toContain(h);
     expect(card).toContain('EXTERNAL_API_KEY');
   });
+
+  it('the status filter sends ?status= (archive plan Task 5)', async () => {
+    const f = await open();
+    const sel = q<HTMLSelectElement>(f, '[data-testid="user-status"]');
+    sel.value = 'DISABLED';
+    sel.dispatchEvent(new Event('change'));
+    TestBed.tick();
+    const r = http.expectOne(x => x.url === '/api/v1/users');
+    expect(r.request.params.get('status')).toBe('DISABLED');
+    r.flush([{ ...kim, status: 'DISABLED' }]);
+  });
 });

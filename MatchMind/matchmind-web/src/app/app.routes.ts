@@ -23,6 +23,8 @@ export const routes: Routes = [
       { path: 'predictions/:id', title: 'Prediction', loadComponent: () => import('./pages/prediction-detail').then(m => m.PredictionDetailPage) },
       { path: 'models', title: 'AI Models', loadComponent: () => import('./pages/models').then(m => m.ModelsPage) },
       { path: 'models/:id', title: 'AI Model', loadComponent: () => import('./pages/model-detail').then(m => m.ModelDetailPage) },
+      // Viewers see the list; the admin actions are hidden for them (and refused by the API).
+      { path: 'providers', title: 'Providers', loadComponent: () => import('./pages/providers').then(m => m.ProvidersPage) },
       { path: 'reports', title: 'Reports', loadComponent: () => import('./pages/reports').then(m => m.ReportsPage) },
       { path: 'prompts', title: 'Prompt Notes', loadComponent: () => import('./pages/prompts').then(m => m.PromptsPage),
         canDeactivate: [(page: { canLeave(): boolean | Promise<boolean> }) => page.canLeave()] },

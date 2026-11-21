@@ -34,13 +34,14 @@ public class AiModelController {
 
     @GetMapping
     public List<ModelView> list(@RequestParam(required = false) UUID providerId,
-                                @RequestParam(required = false) Boolean includeArchived) {
-        return service.list(providerId, includeArchived);
+                                @RequestParam(required = false) Boolean includeArchived,
+                                @RequestParam(required = false) String countPolicy) {
+        return service.list(providerId, includeArchived, countPolicy);
     }
 
     @GetMapping("/{id}")
-    public ModelView get(@PathVariable UUID id) {
-        return service.get(id);
+    public ModelView get(@PathVariable UUID id, @RequestParam(required = false) String countPolicy) {
+        return service.get(id, countPolicy);
     }
 
     @PostMapping("/{id}/archive")

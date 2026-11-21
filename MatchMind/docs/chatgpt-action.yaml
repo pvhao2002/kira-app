@@ -138,3 +138,4 @@ components:
         matchId: { type: string }
         externalMatchId: { type: string }
         duplicate: { type: boolean }
+        possibleDuplicateOf: { type: [string, "null"], description: "Earlier prediction with the same picks for this match and moment (an agent retry under a new eventId). Stored anyway; reports count only the latest." }

@@ -132,9 +132,8 @@ class ExternalHeadersIT extends IntegrationTestBase {
     }
 
     @Test
-    void providersAndModelsCannotBeCreatedByHand() throws Exception {
-        assertThat(mvc.perform(asAdmin(post("/api/v1/providers")).contentType("application/json")
-            .content("{\"code\":\"x\",\"name\":\"x\"}")).andReturn().getResponse().getStatus()).isEqualTo(405);
+    void modelsCannotBeCreatedByHand() throws Exception {
+        // Providers are created by an admin now (ProvidersAdminIT); models only by external calls.
         assertThat(mvc.perform(asAdmin(post("/api/v1/models")).contentType("application/json")
             .content("{}")).andReturn().getResponse().getStatus()).isEqualTo(405);
     }

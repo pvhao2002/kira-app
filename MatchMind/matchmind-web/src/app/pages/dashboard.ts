@@ -7,9 +7,9 @@ import { LiveService } from '../core/live.service';
 import { Filters } from '../core/models';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { FilterBar, isoDay } from '../shared/filter-bar';
-import { fmtShort, humanize, lineSplit, pct, pickText } from '../shared/format';
+import { ROI_DEF, fmtShort, humanize, lineSplit, pct, pickText, units } from '../shared/format';
 import { ChartView } from '../shared/chart';
-import { ResultTag, StateView } from '../shared/ui';
+import { ResultTag, SmallSample, StateView } from '../shared/ui';
 
 // Same hues as the result tags and the form guide.
 const RESULT_COLORS: Record<string, string> = {
@@ -29,7 +29,7 @@ const MODEL_TICKS = {
 
 @Component({
   selector: 'mm-dashboard',
-  imports: [RouterLink, ChartView, FilterBar, StateView, ResultTag],
+  imports: [RouterLink, ChartView, FilterBar, StateView, ResultTag, SmallSample],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     a.kpi { color: inherit; text-decoration: none; transition: border-color var(--mm-t) var(--mm-ease); }
@@ -43,7 +43,7 @@ const MODEL_TICKS = {
   `],
   template: `
     <div class="stack">
-      <mm-filter-bar [fields]="['dates', 'league', 'model', 'type', 'market']" [initialDays]="30" (changed)="load($event)" />
+      <mm-filter-bar [fields]="['dates', 'league', 'model', 'type', 'market', 'count']" [initialDays]="30" (changed)="load($event)" />
       @if (review().length) {
         <section class="panel flush" aria-label="Picks to review">
           <header><h2>Needs review ({{ review().length }})</h2></header>
@@ -83,6 +83,7 @@ const MODEL_TICKS = {
           <div class="hero-main">
             <span class="hero-label">Win rate for {{ periodLabel() }}</span>
             <strong class="hero-value">{{ pct(d.totals.winRate) }}</strong>
+            <mm-small-sample [n]="d.totals.wins + d.totals.losses" />
             <span class="hero-note">Win rate = (W + ½W) / (W + ½W + L + ½L): a half win counts as a win, a half loss as a loss. Push, void and pending picks are left out.</span>
           </div>
           <div class="form-guide">
@@ -118,7 +119,15 @@ const MODEL_TICKS = {
             <span class="kpi-sub">With predictions in {{ periodLabel() }}</span></a>
           <a class="kpi" routerLink="/models"><span>Active models</span><strong>{{ d.totals.activeModels }}<small> / {{ d.totals.totalModels }}</small></strong><i class="pi pi-microchip-ai" aria-hidden="true"></i>
             <span class="kpi-sub">{{ d.totals.activeModels }} with predictions in range, of {{ d.totals.totalModels }} known</span></a>
+          <div class="kpi" [title]="roiDef"><span>Units</span><strong data-testid="kpi-units">{{ units(d.totals.units) }}</strong><i class="pi pi-wallet" aria-hidden="true"></i>
+            <span class="kpi-sub">Profit at stake 1 over {{ d.totals.staked }} staked picks</span></div>
+          <div class="kpi" [title]="roiDef"><span>ROI</span><strong data-testid="kpi-roi">{{ pct(d.totals.roi) }}</strong><i class="pi pi-percentage" aria-hidden="true"></i>
+            <span class="kpi-sub">Units / staked <mm-small-sample [n]="d.totals.staked" /></span></div>
         </section>
+        @if (d.totals.notCountedPredictions) {
+          <p class="muted-text count-note">{{ d.totals.notCountedPredictions }} {{ d.totals.notCountedPredictions === 1 ? 'prediction' : 'predictions' }} not counted:
+            a later prediction of the same match, model, type and minute replaces each. Choose "Count: all" to include them.</p>
+        }
         <div class="dash-grid">
           <section class="panel span-4">
             <header><h2>Win rate over time</h2></header>
@@ -145,6 +154,11 @@ const MODEL_TICKS = {
             <header><h2>Picks by market</h2></header>
             @if (d.predictionsByMarket.length) { <mm-chart type="bar" [data]="byMarketChart()" [options]="marketOptions" label="Picks by market chart" /> }
             @else { <div class="empty-state"><i class="pi pi-chart-pie" aria-hidden="true"></i><span>No picks in this range.</span></div> }
+          </section>
+          <section class="panel span-6">
+            <header><h2>Cumulative units</h2></header>
+            @if (hasUnits(d.winRateOverTime)) { <mm-chart type="line" [data]="unitsChart()" [options]="unitsOptions" label="Cumulative units at stake 1 per pick chart" /> }
+            @else { <div class="empty-state"><i class="pi pi-chart-line" aria-hidden="true"></i><span>No staked picks in this range.</span></div> }
           </section>
           <section class="panel flush span-6">
             <header><h2>Latest predictions</h2><a routerLink="/predictions">All predictions</a></header>
@@ -187,6 +201,8 @@ export class DashboardPage {
     inject(LiveService).refresh.pipe(takeUntilDestroyed()).subscribe(() => { this.dashboard.reload(); this.recentPage.reload(); });
   }
   readonly pct = pct;
+  readonly units = units;
+  readonly roiDef = ROI_DEF;
   readonly fmtShort = fmtShort;
   readonly humanize = humanize;
   readonly pickText = pickText;
@@ -196,6 +212,7 @@ export class DashboardPage {
   /** Settled ones among the latest predictions: a row of pending dashes says nothing about form. */
   readonly form = computed(() => this.recent().filter(p => p.settlementStatus !== 'PENDING').reverse());
   readonly hasRate = (rows: { winRate: number | null }[]) => rows.some(r => r.winRate !== null);
+  readonly hasUnits = (rows: { units: number | null }[]) => rows.some(r => r.units !== null);
 
   /** Short date and time; with the year when it is not this year (a 2036 typo must not look like today). */
   when(iso: string): string {
@@ -227,6 +244,22 @@ export class DashboardPage {
         backgroundColor: 'rgba(11,122,94,.12)', fill: true, tension: .25, spanGaps: true, pointRadius: rows.length < 3 ? 5 : 2 }],
     };
   });
+  /** Running total of the daily units; a day without staked picks keeps the total (UX-018). */
+  readonly unitsChart = computed(() => {
+    const rows = this.data()?.winRateOverTime ?? [];
+    let total = 0;
+    const data = rows.map(r => (total += Number(r.units ?? 0)));
+    return {
+      labels: rows.map(r => r.day),
+      datasets: [{ label: 'Cumulative units', data, borderColor: SERIES[1], backgroundColor: 'rgba(47,109,181,.12)', fill: 'origin',
+        tension: .2, pointRadius: rows.length < 3 ? 5 : 2 }],
+    };
+  });
+  readonly unitsOptions: ChartOptions = {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${units(ctx.parsed.y)} units` } } },
+    scales: { x: { grid: { display: false } }, y: { grid: GRID, ticks: { callback: v => units(Number(v)) } } },
+  };
   readonly resultChart = computed(() => {
     // Win/loss distribution of settled picks; pending ones would swamp it and are counted under the chart instead.
     const rows = (this.data()?.resultDistribution ?? []).filter(r => r.result !== 'PENDING' && r.picks > 0);

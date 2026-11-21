@@ -10,6 +10,7 @@ const admin = { id: 'u1', username: 'admin', role: 'ADMIN', status: 'ACTIVE', la
 const model = {
   id: 'md1', providerId: 'p1', providerName: 'Prov', name: 'GPT', version: 'v1', description: null, status: 'ACTIVE',
   totalPredictions: 301, settledPicks: 1, wins: 1, losses: 0, pendingPicks: 3, winRate: 1, lastPredictionAt: null, createdAt: '', updatedAt: '',
+  units: 0.9, staked: 1, roi: 0.9,
 };
 const recent = [{ id: 'pr1', predictedAt: '2026-11-01T18:00:00Z', predictionType: 'PRE_MATCH', homeTeam: 'Home FC', awayTeam: 'Away FC',
   league: 'L', topPickMarket: 'AH', topPick: 'HOME', topPickLine: -0.25, topPickLineDisplay: '0/-0.5', topPickProbability: 0.5,
@@ -27,7 +28,7 @@ beforeEach(() => {
 });
 afterEach(() => sessionStorage.clear());
 
-async function open(trend = [day('2026-11-01', 1, 1)], m = model) {
+async function open(trend = [day('2026-11-01', 1, 1)], m: Record<string, unknown> = model, siblings: unknown[] = []) {
   const f = TestBed.createComponent(ModelDetailPage);
   f.componentRef.setInput('id', 'md1');
   f.detectChanges();
@@ -38,6 +39,10 @@ async function open(trend = [day('2026-11-01', 1, 1)], m = model) {
   const dash = http.expectOne(r => r.url === '/api/v1/dashboard');
   expect(dash.request.params.get('modelId')).toBe('md1');
   dash.flush({ winRateOverTime: trend });
+  // Admin: same-provider models for Merge into… (archived and merged included), asked once the model is known.
+  await new Promise(res => setTimeout(res));
+  TestBed.tick();
+  http.expectOne(r => r.url === '/api/v1/models').flush(siblings);
   await f.whenStable();
   f.detectChanges();
   return f;
@@ -64,8 +69,9 @@ describe('ModelDetailPage', () => {
     expect(q(f, 'trend-empty')).not.toBeNull();   // one settled day is no trend
   });
 
-  it('has no small-sample warning from 30 settled picks, and charts the win rate over time (UX-081)', async () => {
-    const f = await open([day('2026-11-01', 0.5, 10), day('2026-11-02', null, 0), day('2026-11-03', 0.75, 20)], { ...model, settledPicks: 30 });
+  it('has no small-sample warning from 30 wins + losses and 30 staked, and charts the win rate over time (UX-081, UX-018)', async () => {
+    const f = await open([day('2026-11-01', 0.5, 10), day('2026-11-02', null, 0), day('2026-11-03', 0.75, 20)],
+      { ...model, settledPicks: 32, wins: 20, losses: 10, staked: 30 });
     expect(q(f, 'small-sample')).toBeNull();
     const c = f.componentInstance;
     expect(c.trend()!.labels).toEqual(['2026-11-01', '2026-11-03']);
@@ -78,5 +84,22 @@ describe('ModelDetailPage', () => {
     const pick = q(f, 'recent-pick')!;
     expect(pick.textContent!.trim()).toBe('AH HOME -0.25');
     expect(pick.title).toBe('0/-0.5');
+  });
+
+  it('a merged model shows "merged into X"; Merge into… sends the target and the reason (archive plan Task 5)', async () => {
+    const target = { ...model, id: 'md2', name: 'gpt-5.1', displayName: 'GPT 5.1', version: '1' };
+    const merged = await open(undefined, { ...model, mergedIntoId: 'md2' }, [target]);
+    expect(q(merged, 'merged-into')!.textContent).toContain('Merged into GPT 5.1 1');
+    expect(q(merged, 'merge')).toBeNull();
+    merged.destroy();
+
+    const f = await open(undefined, model, [target]);
+    q(f, 'merge')!.click();
+    f.detectChanges();
+    f.componentInstance.target.set('md2');
+    f.componentInstance.action()!.run('duplicate spelling').subscribe();
+    const req = http.expectOne('/api/v1/models/md1/merge');
+    expect(req.request.body).toEqual({ targetModelId: 'md2', reason: 'duplicate spelling' });
+    req.flush({ ...model, mergedIntoId: 'md2' });
   });
 });

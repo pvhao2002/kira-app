@@ -110,14 +110,14 @@ Context: some providers are external agents the owner does not control.
 
 **Files:** Create `matchmind-api/src/main/resources/db/migration/V<next>__archive_and_model_merge.sql`.
 
-- [ ] Add `archived_at TIMESTAMPTZ` to `providers`, `ai_models` and `matches`, each with a partial index
+- [x] Add `archived_at TIMESTAMPTZ` to `providers`, `ai_models` and `matches`, each with a partial index
   `WHERE archived_at IS NULL`.
-- [ ] Add `ai_models.display_name VARCHAR(128)` and `ai_models.merged_into_id UUID`, with:
+- [x] Add `ai_models.display_name VARCHAR(128)` and `ai_models.merged_into_id UUID`, with:
   - `CONSTRAINT fk_ai_models_merged_into FOREIGN KEY (merged_into_id, provider_id) REFERENCES ai_models (id, provider_id)`
   - `CHECK (merged_into_id <> id)`
-- [ ] Trigger `mm_ai_models_no_chain` `BEFORE INSERT OR UPDATE OF merged_into_id`. It raises when the target has its own
+- [x] Trigger `mm_ai_models_no_chain` `BEFORE INSERT OR UPDATE OF merged_into_id`. It raises when the target has its own
   `merged_into_id`, or when another row already merges into `NEW.id` while `NEW.merged_into_id` is set.
-- [ ] Optional `admin_actions` table (see the global constraints).
+- [x] Optional `admin_actions` table (see the global constraints).
 
 ### Task 2: Effective model + archive filter
 
@@ -140,7 +140,7 @@ Context: some providers are external agents the owner does not control.
 - The same default applies to `ProviderService.list`, `MatchQueryService` list and leagues (evict the `LEAGUES` cache on
   archive).
 
-- [ ] ITs:
+- [x] ITs:
   - `archivedProviderHiddenFromReportsAndDropdowns`
   - `explicitModelIdShowsArchived`
   - `mergeSumsWinRate`
@@ -153,8 +153,8 @@ Context: some providers are external agents the owner does not control.
 **Files:** Modify `prediction/PredictionIngestionService.java` (`model(...)`) and `model/AiModel.java` (`mergedIntoId`,
 `displayName`, `archivedAt`).
 
-- [ ] Write the IT `ingestOfMergedSourceLandsOnTarget`.
-- [ ] When the found model has `mergedIntoId`, use the target's id. The composite FK still holds, because the target is
+- [x] Write the IT `ingestOfMergedSourceLandsOnTarget`.
+- [x] When the found model has `mergedIntoId`, use the target's id. The composite FK still holds, because the target is
   the same provider.
 
 ### Task 4: Admin API
@@ -172,9 +172,9 @@ Context: some providers are external agents the owner does not control.
 | GET | `/api/v1/users?status=ACTIVE\|DISABLED` | |
 | GET | list endpoints | `?includeArchived=true` |
 
-- [ ] ITs: viewer gets 403 on each write; a missing reason is 400; `GET /users?status=DISABLED` returns only disabled
+- [x] ITs: viewer gets 403 on each write; a missing reason is 400; `GET /users?status=DISABLED` returns only disabled
   users.
-- [ ] Update `docs/API_DOCUMENTATION.md`, `core/models.ts` and samples.
+- [x] Update `docs/API_DOCUMENTATION.md`, `core/models.ts` and samples.
 
 ### Task 5: UI
 
@@ -183,7 +183,7 @@ Archive; a "Show archived" toggle), the Providers screen (Archive, from the per-
 add an Archive action on the provider column of `models.ts`), `pages/matches.ts` (Archive), `pages/settings.ts` (status
 filter `<select>` All/Active/Disabled), `shared/filter-bar` (dropdowns call the default lists, so archived entries vanish).
 
-- [ ] Specs: a merged model shows "merged into X"; the archive toggle refetches with `includeArchived=true`; the status
+- [x] Specs: a merged model shows "merged into X"; the archive toggle refetches with `includeArchived=true`; the status
   filter sends `?status=`.
 
 ### Task 6: E2E hygiene
@@ -193,11 +193,12 @@ filter `<select>` All/Active/Disabled), `shared/filter-bar` (dropdowns call the 
 - Modify `matchmind-web/e2e/journeys.spec.ts` (`test.afterAll`: archive provider `e2e-<run>` with reason
   `"e2e cleanup"` and disable `viewer-<run>`) and `matchmind-web/package.json` (`e2e:stack` script).
 
-- [ ] The compose override sets `tmpfs` for `/var/lib/postgresql/data`, fixed test env values, and project name
+- [x] The compose override sets `tmpfs` for `/var/lib/postgresql/data`, fixed test env values, and project name
   `matchmind-e2e`.
-- [ ] Update the E2E section of `AGENTS.override.md` (owner-approved doc change) to run against the e2e stack by default.
+- [x] Update the E2E section of `AGENTS.override.md` (owner-approved doc change) to run against the e2e stack by default.
 - [ ] One-off for today's junk: the admin archives the `e2e-*` providers in the UI (cascade by filter) and filters users by
   Active to disable `viewer-*`. No migration with environment-specific data.
+  _Manual ops step, still open: done by the admin in the UI, not in code._
 
 ### Rollout / rollback
 

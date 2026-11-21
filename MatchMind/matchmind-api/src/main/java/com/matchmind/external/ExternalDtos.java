@@ -132,8 +132,9 @@ public final class ExternalDtos {
 
     /**
      * {@code externalMatchId} is the id to send match results with, generated when the prediction had none.
-     * {@code possibleDuplicateOf}: on a new (201) prediction, the earliest stored prediction of the same model, match,
-     * type and minute with the same picks (an agent retry under a new eventId); null otherwise. Advisory only.
+     * {@code possibleDuplicateOf}: the earliest other stored prediction of the same effective model, fixture, type and
+     * minute with the same picks (an agent retry under a new eventId); null otherwise. Also set on a 200 duplicate.
+     * Advisory only: the row is stored either way, and reports count only the latest of such rows (UX-046).
      */
     public record PredictionResponse(UUID predictionId, UUID matchId, String externalMatchId, boolean duplicate,
                                      List<PickRef> picks, Map<String, UUID> odds, UUID possibleDuplicateOf) {

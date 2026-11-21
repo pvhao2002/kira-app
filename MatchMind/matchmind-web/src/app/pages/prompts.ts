@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, linkedSignal, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { apiError, apiErrorText } from '../core/http';
@@ -50,7 +51,7 @@ export function lineDiff(before: string, after: string): DiffLine[] {
 @Component({
   selector: 'mm-prompts',
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
-  imports: [FormsModule, Dialog, ResultTag, StateView, CopyFallback],
+  imports: [FormsModule, RouterLink, Dialog, ResultTag, StateView, CopyFallback],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mm-state [state]="state()" [message]="error()" />
@@ -108,7 +109,7 @@ export function lineDiff(before: string, after: string): DiffLine[] {
               @if (p.description) { <p class="page-note mb-2">{{ p.description }}</p> }
               @if (p.content.includes(KEY_PLACEHOLDER)) {
                 <p class="muted-text">
-                  @if (auth.isAdmin()) { Copy fills in <code ngNonBindable>{{EXTERNAL_API_KEY}}</code> with the agent API key. Paste the copy only into your agent. }
+                  @if (auth.isAdmin()) { Copy fills in <code ngNonBindable>{{EXTERNAL_API_KEY}}</code> with the legacy shared key while the server has one. For a provider's own key, issue it on <a routerLink="/providers">Providers</a> and use "Copy prompt with this key" there. Paste the copy only into your agent. }
                   @else { <code ngNonBindable>{{EXTERNAL_API_KEY}}</code> stands for the agent API key and stays in your copy. Ask an admin to copy this prompt for an agent. }
                 </p>
               }
@@ -327,7 +328,9 @@ export class PromptsPage {
         const keyLeft = !r.keyRendered && r.content.includes(this.KEY_PLACEHOLDER);
         void this.clipboard.copy(r.content, keyLeft ? 'Prompt' : 'Prompt for the agent', keyLeft ? {
           severity: 'warn', summary: 'Copied without the API key',
-          detail: `${this.KEY_PLACEHOLDER} is still in the text: the agent cannot call the API until an admin copies the prompt or fills in the key.`,
+          detail: this.auth.isAdmin()
+            ? `${this.KEY_PLACEHOLDER} is still in the text: no shared key is set. Issue a key on Providers and use "Copy prompt with this key" there.`
+            : `${this.KEY_PLACEHOLDER} is still in the text: the agent cannot call the API until an admin copies the prompt or fills in the key.`,
         } : undefined);
       },
       error: e => this.messages.add({ severity: 'error', summary: 'Copy failed', detail: apiError(e).message }),

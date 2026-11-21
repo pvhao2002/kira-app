@@ -39,4 +39,12 @@ class SharedHelpersTest {
         assertThat(lines[1]).isEqualTo("\"'=1+1\",\"say \"\"hi\"\"\",\"-3\"");
         assertThat(lines[2]).isEqualTo("\"'@cmd\",,\"'-x\"");
     }
+
+    @Test
+    void roiIsUnitsPerStakedWithFourDecimalsAndNullWithoutStake() {
+        assertThat(Stats.roi(new java.math.BigDecimal("-0.050"), 5)).isEqualTo(new java.math.BigDecimal("-0.0100"));
+        assertThat(Stats.roi(null, 0)).isNull();
+        assertThat(Stats.roi(java.math.BigDecimal.ONE, 0)).isNull();
+        assertThat(Stats.roi(null, 3)).isNull();
+    }
 }

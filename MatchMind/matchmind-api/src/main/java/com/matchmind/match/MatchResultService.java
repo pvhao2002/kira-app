@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,12 @@ import java.util.stream.Stream;
  * owns the match); admins enter or correct them through POST /api/v1/matches/{id}/result. Every change is written to
  * match_result_history; identical re-sends are no-ops; out-of-order (older) provider results are rejected. A FINISHED
  * or CANCELLED result immediately settles the still-pending picks of the match.
+ * <p>
+ * A trusted source (an admin, or a per-provider key with the RESULTS scope, which the results endpoint requires) shares
+ * the result with every other member of the match's fixture in the same transaction, one history row each (owner
+ * decision 3 phase 2). The legacy shared key is not trusted: its result reaches only same-provider siblings (decision
+ * 4), and other providers' members keep their own result. A member whose own provider result is newer keeps it too;
+ * the fixture then shows {@code resultMismatch}.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,7 +49,9 @@ public class MatchResultService {
     private final SettlementService settlement;
     private final ObjectMapper json;
 
-    public record ResultResponse(UUID matchId, String status, boolean changed, MatchSettlement settlement) {
+    /** {@code propagatedTo}: the other fixture members whose result changed with this one. */
+    public record ResultResponse(UUID matchId, String status, boolean changed, MatchSettlement settlement,
+                                 List<UUID> propagatedTo) {
     }
 
     /** An admin result. It is applied as of now, so it also replaces a provider result with a later resultAt. */
@@ -54,10 +63,13 @@ public class MatchResultService {
                                      @Size(max = 2000) String reason) {
     }
 
+    /** {@code trusted}: a per-provider key with RESULTS; false for the legacy shared key (same-provider siblings only). */
     @Transactional
-    public ResultResponse apply(UUID providerId, ResultRequest r, String requestId) {
+    public ResultResponse apply(UUID providerId, ResultRequest r, String requestId, boolean trusted) {
         validate(r);
-        Match m = matches.lockById(matchIdOf(providerId, r.externalMatchId(), r.matchId(), r.predictionId())).orElseThrow();
+        UUID id = matchIdOf(providerId, r.externalMatchId(), r.matchId(), r.predictionId());
+        List<Match> members = lockFixture(id);
+        Match m = matches.lockById(id).orElseThrow();
         Instant now = Instant.now();
         if ("FINISHED".equals(r.status()) && m.getStartTime().isAfter(now)) {
             throw ApiException.conflict("MATCH_NOT_STARTED",
@@ -65,7 +77,8 @@ public class MatchResultService {
         }
         ObjectNode audit = json.createObjectNode();
         if (requestId != null) audit.put("requestId", requestId);
-        return record(m, r, "PROVIDER", null, audit, "AUTO", now);
+        return share(record(m, r, "PROVIDER", null, audit, "AUTO", now), m, members, r.resultAt(), "PROVIDER", null, audit,
+            "AUTO", now, trusted ? null : m.getProviderId());
     }
 
     /** Admin entry or correction: never STALE_RESULT, history source ADMIN with the admin's id and username. */
@@ -75,11 +88,13 @@ public class MatchResultService {
         ResultRequest r = new ResultRequest(null, matchId, null, a.status(), a.finalScore(), a.finalCorners(),
             a.halfTimeScore(), a.halfTimeCorners(), now);
         validate(r);
+        List<Match> members = lockFixture(matchId);
         Match m = matches.lockById(matchId).orElseThrow(() -> ApiException.notFound("MATCH_NOT_FOUND", "Match not found"));
         ObjectNode audit = json.createObjectNode();
         audit.put("changedBy", adminUsername);
         if (a.reason() != null && !a.reason().isBlank()) audit.put("reason", a.reason().trim());
-        return record(m, r, "ADMIN", adminId, audit, "ADMIN_SETTLEMENT", now);
+        return share(record(m, r, "ADMIN", adminId, audit, "ADMIN_SETTLEMENT", now), m, members, now, "ADMIN", adminId, audit,
+            "ADMIN_SETTLEMENT", now, null);
     }
 
     /**
@@ -113,33 +128,78 @@ public class MatchResultService {
             throw new ApiException(HttpStatus.CONFLICT, "STALE_RESULT",
                 "A newer result (" + stored + ") is already stored for this match");
         }
-        if (changed) {
-            MatchResultHistory h = new MatchResultHistory();
-            h.setMatchId(m.getId());
-            h.setPreviousResult(json.valueToTree(before));
-            ObjectNode newResult = json.valueToTree(after);
-            newResult.put("resultAt", r.resultAt().toString());
-            newResult.setAll(audit);
-            h.setNewResult(newResult);
-            h.setChangeSource(source);
-            h.setChangedBy(actor);
-            history.save(h);
-
-            m.setStatus(next.getStatus());
-            m.setFinalHomeScore(next.getFinalHomeScore());
-            m.setFinalAwayScore(next.getFinalAwayScore());
-            m.setFinalHomeCorners(next.getFinalHomeCorners());
-            m.setFinalAwayCorners(next.getFinalAwayCorners());
-            m.setHtHomeScore(next.getHtHomeScore());
-            m.setHtAwayScore(next.getHtAwayScore());
-            m.setHtHomeCorners(next.getHtHomeCorners());
-            m.setHtAwayCorners(next.getHtAwayCorners());
-            m.setResultUpdatedAt(r.resultAt());
-            matches.saveAndFlush(m);
-        }
-        MatchSettlement s = List.of("FINISHED", "CANCELLED").contains(m.getStatus())
+        if (changed) write(m, next, r.resultAt(), source, actor, audit);
+        MatchSettlement s = FINAL.contains(m.getStatus())
             ? settlement.settleMatch(m.getId(), settlementSource, actor, null) : null;
-        return new ResultResponse(m.getId(), m.getStatus(), changed, s);
+        return new ResultResponse(m.getId(), m.getStatus(), changed, s, List.of());
+    }
+
+    private static final List<String> FINAL = List.of("FINISHED", "CANCELLED");
+
+    /**
+     * Every fixture member, locked in id order like {@code FixtureService.merge}. A lock statement that waited on a
+     * concurrent merge read the origin's fixture on its old snapshot and misses rows moved in, so it repeats until the
+     * locked set is stable: that last run waited on nothing, so it saw every committed move. A merge touching this
+     * fixture must lock the members held here, so none can commit afterwards.
+     */
+    private List<Match> lockFixture(UUID id) {
+        List<Match> members = matches.lockFixtureMembers(id);
+        while (true) {
+            List<Match> again = matches.lockFixtureMembers(id);
+            if (again.stream().map(Match::getId).toList().equals(members.stream().map(Match::getId).toList())) return again;
+            members = again;
+        }
+    }
+
+    /**
+     * Copies the origin's result to every other fixture member that differs, with a history row and settlement each.
+     * Skipped: a member whose provider result is newer (provider source only; an admin result always wins) and, for
+     * FINISHED, a member whose kick-off is still ahead. {@code onlyProvider} (null = every provider) limits the copy to
+     * that provider's members.
+     */
+    private ResultResponse share(ResultResponse res, Match origin, List<Match> members, Instant resultAt, String source,
+                                 UUID actor, ObjectNode audit, String settlementSource, Instant now, UUID onlyProvider) {
+        List<UUID> updated = new ArrayList<>();
+        for (Match x : members) {
+            if (x.getId().equals(origin.getId()) || Objects.equals(x.resultSnapshot(), origin.resultSnapshot())) continue;
+            if (onlyProvider != null && !onlyProvider.equals(x.getProviderId())) continue;
+            Instant stored = x.getResultUpdatedAt();
+            boolean newer = stored != null && !stored.isAfter(now.plus(MAX_CLOCK_SKEW)) && resultAt.isBefore(stored);
+            boolean notStarted = "FINISHED".equals(origin.getStatus()) && x.getStartTime().isAfter(now);
+            if ("PROVIDER".equals(source) && (newer || notStarted)) continue;
+            ObjectNode a = audit.deepCopy();
+            a.put("propagatedFrom", origin.getId().toString());
+            write(x, origin, resultAt, source, actor, a);
+            if (FINAL.contains(x.getStatus())) settlement.settleMatch(x.getId(), settlementSource, actor, null);
+            updated.add(x.getId());
+        }
+        return new ResultResponse(res.matchId(), res.status(), res.changed(), res.settlement(), List.copyOf(updated));
+    }
+
+    /** Stores {@code next}'s result on {@code m} with one match_result_history row. */
+    private void write(Match m, Match next, Instant resultAt, String source, UUID actor, ObjectNode audit) {
+        MatchResultHistory h = new MatchResultHistory();
+        h.setMatchId(m.getId());
+        h.setPreviousResult(json.valueToTree(m.resultSnapshot()));
+        ObjectNode newResult = json.valueToTree(next.resultSnapshot());
+        newResult.put("resultAt", resultAt.toString());
+        newResult.setAll(audit);
+        h.setNewResult(newResult);
+        h.setChangeSource(source);
+        h.setChangedBy(actor);
+        history.save(h);
+
+        m.setStatus(next.getStatus());
+        m.setFinalHomeScore(next.getFinalHomeScore());
+        m.setFinalAwayScore(next.getFinalAwayScore());
+        m.setFinalHomeCorners(next.getFinalHomeCorners());
+        m.setFinalAwayCorners(next.getFinalAwayCorners());
+        m.setHtHomeScore(next.getHtHomeScore());
+        m.setHtAwayScore(next.getHtAwayScore());
+        m.setHtHomeCorners(next.getHtHomeCorners());
+        m.setHtAwayCorners(next.getHtAwayCorners());
+        m.setResultUpdatedAt(resultAt);
+        matches.saveAndFlush(m);
     }
 
     /**

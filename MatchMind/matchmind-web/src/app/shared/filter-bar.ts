@@ -8,10 +8,13 @@ import { safeValue } from '../core/resource';
 import { dayEndExclusive, dayStart, humanize } from './format';
 import { fromQuery, toQuery } from './url-state';
 
-const QUERY_KEYS = ['from', 'to', 'league', 'modelId', 'type', 'market', 'search', 'result', 'resultScope'] as const;
+const QUERY_KEYS = ['from', 'to', 'league', 'modelId', 'type', 'market', 'search', 'result', 'resultScope', 'count'] as const;
 
-/** `resultScope` (Predictions only): the result filter matches the top pick (default) or any pick. */
-export type FilterField = 'dates' | 'league' | 'model' | 'type' | 'market' | 'search' | 'result' | 'resultScope';
+/**
+ * `resultScope` (Predictions only): the result filter matches the top pick (default) or any pick.
+ * `count` (aggregate pages only, UX-046): `?count=all` sends `countPolicy=all`; the default counts the latest per moment.
+ */
+export type FilterField = 'dates' | 'league' | 'model' | 'type' | 'market' | 'search' | 'result' | 'resultScope' | 'count';
 
 /** What the bar emits: the shared filters, plus `resultScope` when the page offers it. */
 export type BarFilters = Filters & { resultScope?: 'TOP' | 'ANY' };
@@ -113,6 +116,12 @@ export function toFilters(v: { from?: string | null; to?: string | null; league?
               <option value="">Top pick</option><option value="ANY">Any pick</option>
             </select>
           }
+          @if (has('count')) {
+            <select class="input f-select-sm" formControlName="count" aria-label="Count"
+              title="Latest per moment: a re-sent prediction counts once (the latest per match, model, type and minute). All: every stored row">
+              <option value="">Count: latest per moment</option><option value="all">Count: all</option>
+            </select>
+          }
           @if (dateError()) { <span class="field-error" role="alert">{{ dateError() }}</span> }
           <span class="filter-actions">
             <button type="submit" class="btn btn-primary btn-sm" [disabled]="!!dateError()"><i class="pi pi-check"></i> Apply</button>
@@ -139,13 +148,13 @@ export class FilterBar implements OnInit {
   readonly collapsed = signal(typeof window !== 'undefined' && (window.innerWidth < 760 || window.innerHeight <= 500));
   readonly leagues = safeValue(this.api.leaguesResource(() => this.has('league')), []);
   private readonly modelList = safeValue(this.api.modelsResource(() => this.has('model')), []);
-  readonly models = computed(() => this.modelList().map(m => ({ label: `${m.name} ${m.version}`, value: m.id })));
+  readonly models = computed(() => this.modelList().map(m => ({ label: `${m.displayName ?? m.name} ${m.version}`, value: m.id })));
   readonly activeCount = signal(0);
   readonly markets = MARKETS;
   readonly results = RESULTS.map(r => ({ label: humanize(r), value: r }));
   private readonly fieldSet = computed(() => new Set(this.fields()));
 
-  readonly form = this.fb.nonNullable.group({ from: '', to: '', league: '', modelId: '', type: '', market: '', search: '', result: '', resultScope: '' });
+  readonly form = this.fb.nonNullable.group({ from: '', to: '', league: '', modelId: '', type: '', market: '', search: '', result: '', resultScope: '', count: '' });
   private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   /** The form as of the last Apply; edits since then are shown as not applied. */
   private readonly applied = signal(JSON.stringify(this.form.getRawValue()));
@@ -167,6 +176,7 @@ export class FilterBar implements OnInit {
     const v = this.form.getRawValue();
     const f: BarFilters = toFilters(v);
     if (this.has('resultScope') && v.resultScope === 'ANY') f.resultScope = 'ANY';
+    if (this.has('count') && v.count === 'all') f.countPolicy = 'all';
     return f;
   }
 
@@ -193,6 +203,7 @@ export class FilterBar implements OnInit {
       const date = k === 'from' || k === 'to';
       values[k] = !this.has(date ? 'dates' : k === 'modelId' ? 'model' : k) ? null : v[k].trim() || (date && hasDefaultDates ? '' : null);
       if (k === 'resultScope') values[k] = this.has(k) && v[k] === 'ANY' ? 'ANY' : null;
+      if (k === 'count') values[k] = this.has(k) && v[k] === 'all' ? 'all' : null;
     }
     toQuery(this.router, this.route, values);
   }

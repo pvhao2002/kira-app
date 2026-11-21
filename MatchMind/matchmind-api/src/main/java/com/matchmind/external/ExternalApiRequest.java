@@ -50,6 +50,9 @@ public class ExternalApiRequest {
     /** The signed-in user behind an admin-initiated call (import, settle, override); null for provider calls. */
     @Column(name = "actor")
     private String actor;
+    /** Authenticated with the shared EXTERNAL_API_KEY (legacy path until the cut-over). */
+    @Column(name = "legacy_key", nullable = false)
+    private boolean legacyKey;
     @Column(name = "received_at", nullable = false)
     private Instant receivedAt;
     @Column(name = "duration_ms", nullable = false)

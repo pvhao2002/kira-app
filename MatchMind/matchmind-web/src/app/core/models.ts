@@ -31,17 +31,36 @@ export interface LoginResponse { accessToken: string; expiresAt: string; user: U
 export interface Filters {
   from?: string; to?: string; league?: string; modelId?: string; providerId?: string;
   type?: PredictionType | ''; market?: Market | ''; matchId?: string; search?: string; result?: SettlementResult | '';
+  /** `true` also counts archived providers, models and matches. */
+  includeArchived?: boolean;
+  /** Aggregates only (UX-046): `latest` (default) counts the latest prediction per fixture, model, type and minute. */
+  countPolicy?: CountPolicy;
 }
+export type CountPolicy = 'latest' | 'all';
 
 export interface Provider {
   id: string; code: string; name: string; models: number; predictions: number; lastCallbackAt: string | null; createdAt: string;
   archivedAt?: string | null;
+  description?: string | null; status?: 'ACTIVE' | 'DISABLED'; disabledAt?: string | null; disabledReason?: string | null;
+  /** Per-provider API keys not revoked. */
+  activeKeys?: number;
 }
+
+export type KeyScope = 'PREDICTIONS' | 'SETTLE_REQUEST' | 'RESULTS';
+/** A provider API key as listed: never the secret or its hash. */
+export interface ProviderKey {
+  id: string; keyId: string; label: string | null; scopes: KeyScope[]; status: 'ACTIVE' | 'REVOKED';
+  createdAt: string; lastUsedAt: string | null; revokedAt: string | null;
+}
+/** Issue / rotate response: `apiKey` (mmk_...) is returned this once only. */
+export interface IssuedKey { id: string; keyId: string; label: string | null; apiKey: string; scopes: KeyScope[]; createdAt: string; }
 
 export interface AiModel {
   id: string; providerId: string; providerName: string; name: string; version: string; description: string | null;
   status: 'ACTIVE' | 'DISABLED'; totalPredictions: number; settledPicks: number; wins: number; losses: number;
   pendingPicks: number; winRate: number | null; lastPredictionAt: string | null; createdAt: string; updatedAt: string;
+  /** UX-018 fixed stake of 1 per pick; units and roi are null when staked = 0. */
+  units: number | null; staked: number; roi: number | null;
   /** What to show: the admin's rename, else `name` (the provider-supplied key). */
   displayName?: string; archivedAt?: string | null; mergedIntoId?: string | null;
 }
@@ -55,7 +74,39 @@ export interface MatchRow {
   predictionCount: number; modelCount: number; createdAt: string; updatedAt: string;
   /** Kick-off more than 3 h ago and still SCHEDULED or LIVE: the result is due. */
   overdue: boolean;
+  /** The fixture (one real game across providers) this match is linked to; null before the backfill. */
+  fixtureId?: string | null;
 }
+
+/** One match row of a fixture. */
+export interface FixtureMember {
+  matchId: string; providerId: string; providerName: string; externalMatchId: string; league: string; homeTeam: string;
+  awayTeam: string; startTime: string; status: MatchStatus; finalHomeScore: number | null; finalAwayScore: number | null;
+  archivedAt: string | null;
+}
+/** GET /matches/{id} `fixture` and the POST /fixtures/merge response. */
+export interface FixtureView {
+  id: string; members: FixtureMember[];
+  /** Non-archived FINISHED members disagree on the final score. */
+  resultMismatch: boolean;
+}
+/** One side of a suggested merge: the first member of a fixture (an unlinked match is its own fixture). */
+export interface FixtureSuggestionSide {
+  fixtureId: string; matchId: string; providerName: string; externalMatchId: string; league: string; homeTeam: string;
+  awayTeam: string; startTime: string; status: MatchStatus;
+}
+export interface FixtureSuggestion {
+  a: FixtureSuggestionSide; b: FixtureSuggestionSide; reason: 'SAME_TEAMS' | 'SIMILAR_NAMES';
+  /** 1 for the same normalised teams, else the trigram similarity of the team names (0.5–1). */
+  score: number;
+}
+export interface FixtureMergeRequest extends AdminReasonRequest { matchIds: string[]; }
+/** POST /fixtures/backfill: how many matches without a fixture were linked. */
+export interface FixtureBackfillResult { linked: number; }
+
+/** A variant league name an admin mapped to a canonical one (UX-086); filters, dropdown and reports use the canonical. */
+export interface LeagueAlias { id: string; alias: string; canonical: string; createdAt: string; }
+export interface LeagueAliasRequest extends AdminReasonRequest { alias: string; canonical: string; }
 
 export interface AdminReasonRequest { reason: string; }
 export interface ModelRenameRequest extends AdminReasonRequest { displayName: string; }
@@ -93,6 +144,8 @@ export interface ResultHistory {
 }
 export interface MatchDetail {
   match: MatchRow; models: MatchModelSummary[]; latestStats: MatchStats | null; resultHistory: ResultHistory[];
+  /** Null while the match is not linked to a fixture. */
+  fixture?: FixtureView | null;
 }
 
 export interface PredictionRow {
@@ -107,6 +160,8 @@ export interface PredictionRow {
   /** Current results of all picks; mutually exclusive, they sum to pickCount. */
   pickWins: number; pickHalfWins: number; pickLosses: number; pickHalfLosses: number; pickPushOrVoid: number;
   pickPending: number;
+  /** False when a later prediction of the same fixture, model, type and minute supersedes it in aggregates. */
+  counted: boolean;
 }
 
 export interface OddsSnapshot {
@@ -150,18 +205,27 @@ export interface PredictionDetail {
   odds: OddsSnapshot[]; stats: PredictionStatsView | null; simulation: SimulationView | null; picks: PickDetail[];
   correctScores: { rank: number; home: number; away: number; probability: number | null }[];
   metadata: unknown; payload: unknown;
+  /** Whether reports count it (countPolicy=latest). */
+  counted: boolean;
+  /** Other predictions of the same counting key, oldest first; `exact` = same content apart from eventId/predictedAt/metadata. */
+  similar: SimilarPrediction[];
 }
+export interface SimilarPrediction { predictionId: string; predictedAt: string; exact: boolean; counted: boolean; }
 
 export interface PerformanceCounts {
   picks: number; settled: number; wins: number; losses: number; pushOrVoid: number; pending: number;
   halfWins: number; halfLosses: number; avgProbability: number | null; winRate: number | null;
   /** WIN / LOSS only. fullWins + halfWins + fullLosses + halfLosses + pushOrVoid = settled (wins/losses include halves). */
   fullWins: number; fullLosses: number;
+  /** UX-018 profit at stake 1 (scale 3), stakes placed (PUSH in, VOID out) and units / staked; null when staked = 0. */
+  units: number | null; staked: number; roi: number | null;
 }
 export interface DashboardTotals extends PerformanceCounts {
   totalPredictions: number; totalMatches: number; activeModels: number; totalModels: number; predictionsToday: number;
   /** Matches overdue for a result; same scope as GET /matches?overdue=true&league=&providerId= (no date/model filter). */
   overdueMatches: number;
+  /** Predictions inside the filters that countPolicy=latest leaves out (0 under `all`). */
+  notCountedPredictions: number;
 }
 /** What the dashboard counted: requested bounds (null = open) on predictedAt and the first/last prediction inside them. */
 export interface DashboardPeriod {
@@ -170,7 +234,7 @@ export interface DashboardPeriod {
 export interface Dashboard {
   period: DashboardPeriod;
   totals: DashboardTotals;
-  winRateOverTime: { day: string; wins: number; losses: number; settled: number; winRate: number | null }[];
+  winRateOverTime: { day: string; wins: number; losses: number; settled: number; winRate: number | null; units: number | null }[];
   predictionsByModel: { model: string; predictions: number }[];
   predictionsByMarket: { market: Market; picks: number }[];
   resultDistribution: { result: SettlementResult; picks: number }[];
@@ -180,6 +244,7 @@ export interface Dashboard {
 export interface ModelPerformanceRow extends PerformanceCounts {
   modelId: string; modelName: string; modelKey?: string; modelVersion: string; providerName: string; predictions: number;
   correctScoreEvaluated: number; correctScoreHits: number; correctScoreAccuracy: number | null;
+  notCountedPredictions: number;
 }
 export interface BreakdownRow extends PerformanceCounts { key: string; }
 export interface MarketPerformanceRow extends PerformanceCounts { market: Market; }
@@ -193,16 +258,29 @@ export interface HistoryRow {
   market: Market; pick: string; pickRank: number; probability: number; oddsStage: string; line: number | null;
   lineDisplay: string | null; price: number | null; settlementBasis: string; homeScoreAtCapture: number | null;
   awayScoreAtCapture: number | null; result: SettlementResult; settledAt: string | null; settlementSource: string | null;
+  counted: boolean;
+  /** The pick's profit at stake 1; null when VOID or pending. */
+  units: number | null;
 }
 
+/** GET /reports/calibration: always 10 bins of width 0.1; WIN/LOSS evaluated, other settled results excluded. */
+export interface CalibrationBin {
+  bin: number; from: number; to: number; picks: number; avgProbability: number | null; hitRate: number | null;
+}
+export interface CalibrationReport { bins: CalibrationBin[]; evaluated: number; excluded: number; }
+
 export interface ComparisonEntry {
-  matchId: string; predictionId: string; modelId: string; modelName: string; modelKey?: string; modelVersion: string; predictedAt: string;
+  /** The entry's own match: models of different providers predict different match rows of one fixture. */
+  matchId: string; providerName?: string; predictionId: string; modelId: string; modelName: string; modelKey?: string; modelVersion: string; predictedAt: string;
   predictionType: PredictionType; matchMinute: number | null; predictedHomeScore: number | null; predictedAwayScore: number | null;
   correctScoreProbability: number | null; correctScoreHit: boolean | null; market: Market | null; pick: string | null;
   probability: number | null; line: number | null; lineDisplay: string | null; price: number | null;
   result: SettlementResult; predictionCount: number;
 }
+/** One fixture of the model comparison; the match fields are its first member's. */
 export interface ComparisonMatch {
+  /** The fixture id, or the match id while the match is not linked. */
+  fixtureId?: string; resultMismatch?: boolean;
   matchId: string; league: string; homeTeam: string; awayTeam: string; startTime: string; status: MatchStatus;
   finalHomeScore: number | null; finalAwayScore: number | null; finalHomeCorners: number | null; finalAwayCorners: number | null;
   models: ComparisonEntry[];
@@ -243,6 +321,8 @@ export interface ApiLogRow {
   clientIp: string | null;
   /** UX-052: the signed-in admin behind an import, settle or override; null for agent calls. */
   actor?: string | null;
+  /** Made with the legacy shared EXTERNAL_API_KEY (watch these reach zero before the cut-over). */
+  legacyKey?: boolean;
 }
 export interface ApiLogDetail extends ApiLogRow { apiKeyId: string | null; processingResult: unknown; }
 
@@ -272,7 +352,11 @@ export interface AdminResultRequest {
   status: MatchStatus; finalScore?: ScorePair | null; finalCorners?: ScorePair | null; halfTimeScore?: ScorePair | null;
   halfTimeCorners?: ScorePair | null; reason?: string | null;
 }
-export interface ResultResponse { matchId: string; status: MatchStatus; changed: boolean; settlement: MatchSettlement | null; }
+export interface ResultResponse {
+  matchId: string; status: MatchStatus; changed: boolean; settlement: MatchSettlement | null;
+  /** Other members of the match's fixture that took this result. */
+  propagatedTo?: string[];
+}
 /** GET /settlements/matches/{id}/prompt-input: what the settlement prompt needs, with the pick ids. */
 export interface SettlementPromptInput {
   matchId: string; externalMatchId: string; league: string; homeTeam: string; awayTeam: string; startTime: string;

@@ -3,6 +3,7 @@ package com.matchmind.model;
 import com.matchmind.shared.AdminActions;
 import com.matchmind.shared.AdminActions.Kind;
 import com.matchmind.shared.ApiException;
+import com.matchmind.shared.Filters;
 import com.matchmind.shared.Sql;
 import com.matchmind.shared.Stats;
 import com.matchmind.shared.TextRules;
@@ -45,7 +46,8 @@ public class AiModelService {
      */
     public record ModelView(UUID id, UUID providerId, String providerName, String name, String displayName, String version,
                             String description, String status, long totalPredictions, long settledPicks, long wins,
-                            long losses, long pendingPicks, BigDecimal winRate, Instant lastPredictionAt,
+                            long losses, long pendingPicks, BigDecimal winRate, BigDecimal units, long staked,
+                            BigDecimal roi, Instant lastPredictionAt,
                             Instant createdAt, Instant updatedAt, Instant archivedAt, UUID mergedIntoId) {
     }
 
@@ -58,13 +60,15 @@ public class AiModelService {
             + (all ? "" : " AND c.archived_at IS NULL") + "))";
     }
 
-    private static String matchActive(boolean all) {
-        return all ? "" : " AND NOT EXISTS (SELECT 1 FROM matches mt WHERE mt.id = pr.match_id AND mt.archived_at IS NOT NULL)";
+    /** Also the UX-046 count policy ({@code latest} by default): a superseded re-send is not counted twice. */
+    private static String matchActive(boolean all, boolean latest) {
+        return (all ? "" : " AND NOT EXISTS (SELECT 1 FROM matches mt WHERE mt.id = pr.match_id AND mt.archived_at IS NOT NULL)")
+            + (latest ? " AND " + Stats.counted("pr") : "");
     }
 
-    private static String sql(boolean all) {
-        return SQL.formatted(family(all), matchActive(all), Stats.SETTLED, Stats.WINS, Stats.LOSSES, Stats.PENDING,
-            Stats.CURRENT_RESULT_JOIN);
+    private static String sql(boolean all, String countPolicy) {
+        return SQL.formatted(family(all), matchActive(all, Filters.countsLatest(countPolicy)), Stats.SETTLED, Stats.WINS, Stats.LOSSES, Stats.PENDING,
+            Stats.CURRENT_RESULT_JOIN, Stats.UNITS, Stats.STAKED);
     }
 
     private static final String SQL = """
@@ -72,12 +76,13 @@ public class AiModelService {
                m.version, m.description, m.status, m.created_at, m.updated_at, m.archived_at, m.merged_into_id,
                (SELECT count(*) FROM predictions pr WHERE pr.ai_model_id IN %1$s%2$s) AS total_predictions,
                (SELECT max(pr.predicted_at) FROM predictions pr WHERE pr.ai_model_id IN %1$s%2$s) AS last_prediction_at,
-               s.settled, s.wins, s.losses, s.pending
+               s.settled, s.wins, s.losses, s.pending, s.units, s.staked
         FROM ai_models m
         JOIN providers p ON p.id = m.provider_id
         LEFT JOIN LATERAL (
-            SELECT %3$s AS settled, %4$s AS wins, %5$s AS losses, %6$s AS pending
-            FROM predictions pr JOIN prediction_picks pk ON pk.prediction_id = pr.id %7$s
+            SELECT %3$s AS settled, %4$s AS wins, %5$s AS losses, %6$s AS pending, %8$s AS units, %9$s AS staked
+            FROM predictions pr JOIN prediction_picks pk ON pk.prediction_id = pr.id
+            JOIN prediction_odds o ON o.id = pk.odds_id %7$s
             WHERE pr.ai_model_id IN %1$s%2$s) s ON true
         """;
 
@@ -86,19 +91,24 @@ public class AiModelService {
      * provider unhides that provider, as in the reports.
      */
     @Transactional(readOnly = true)
-    public List<ModelView> list(UUID providerId, Boolean includeArchived) {
+    public List<ModelView> list(UUID providerId, Boolean includeArchived, String countPolicy) {
         boolean all = Boolean.TRUE.equals(includeArchived);
         Sql.Where w = new Sql.Where().and("m.provider_id = :providerId", "providerId", providerId);
         if (!all) {
             w.and("m.merged_into_id IS NULL AND m.archived_at IS NULL");
             if (providerId == null) w.and("p.archived_at IS NULL");
         }
-        return jdbc.query(sql(all) + w.sql() + " ORDER BY COALESCE(m.display_name, m.name), m.version", w.params, (rs, i) -> view(rs));
+        return jdbc.query(sql(all, countPolicy) + w.sql() + " ORDER BY COALESCE(m.display_name, m.name), m.version", w.params, (rs, i) -> view(rs));
     }
 
     @Transactional(readOnly = true)
     public ModelView get(UUID id) {
-        return jdbc.query(sql(false) + " WHERE m.id = :id", new MapSqlParameterSource("id", id), (rs, i) -> view(rs))
+        return get(id, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ModelView get(UUID id, String countPolicy) {
+        return jdbc.query(sql(false, countPolicy) + " WHERE m.id = :id", new MapSqlParameterSource("id", id), (rs, i) -> view(rs))
             .stream().findFirst().orElseThrow(() -> ApiException.notFound("MODEL_NOT_FOUND", "AI model not found"));
     }
 
@@ -207,12 +217,14 @@ public class AiModelService {
     }
 
     private static ModelView view(ResultSet rs) throws SQLException {
-        long wins = rs.getLong("wins"), losses = rs.getLong("losses");
+        long wins = rs.getLong("wins"), losses = rs.getLong("losses"), staked = rs.getLong("staked");
+        BigDecimal units = rs.getBigDecimal("units");
         Timestamp last = rs.getTimestamp("last_prediction_at"), archived = rs.getTimestamp("archived_at");
         return new ModelView(rs.getObject("id", UUID.class), rs.getObject("provider_id", UUID.class),
             rs.getString("provider_name"), rs.getString("name"), rs.getString("display_name"), rs.getString("version"),
             rs.getString("description"), rs.getString("status"), rs.getLong("total_predictions"), rs.getLong("settled"),
-            wins, losses, rs.getLong("pending"), Stats.winRate(wins, losses), last == null ? null : last.toInstant(),
+            wins, losses, rs.getLong("pending"), Stats.winRate(wins, losses), units, staked, Stats.roi(units, staked),
+            last == null ? null : last.toInstant(),
             rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(),
             archived == null ? null : archived.toInstant(), rs.getObject("merged_into_id", UUID.class));
     }

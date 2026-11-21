@@ -11,11 +11,14 @@ import { FilterBar } from './filter-bar';
 @Component({ imports: [FilterBar], template: `<mm-filter-bar [fields]="['result', 'resultScope']" />` })
 class ScopedHost {}
 
+@Component({ selector: 'mm-count-host', imports: [FilterBar], template: `<mm-filter-bar [fields]="['count']" />` })
+class CountHost {}
+
 describe('FilterBar and the URL', () => {
   let harnessBar: () => FilterBar;
   async function open(url: string) {
     TestBed.configureTestingModule({
-      providers: [provideRouter([{ path: 'page', component: FilterBar }, { path: 'scoped', component: ScopedHost }]),
+      providers: [provideRouter([{ path: 'page', component: FilterBar }, { path: 'scoped', component: ScopedHost }, { path: 'count', component: CountHost }]),
         provideHttpClient(), provideHttpClientTesting()],
     });
     const harness = await RouterTestingHarness.create();
@@ -99,5 +102,32 @@ describe('FilterBar badge and layout', () => {
 
   it('starts collapsed on a short viewport (UX-100)', () => {
     expect(create(null, 390).collapsed()).toBe(true);
+  });
+});
+
+describe('FilterBar count policy (UX-046)', () => {
+  async function open(url: string) {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([{ path: 'count', component: CountHost }]), provideHttpClient(), provideHttpClientTesting()],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url);
+    const bar = harness.fixture.debugElement.query(By.directive(FilterBar)).componentInstance as FilterBar;
+    const settle = async () => { TestBed.inject(HttpTestingController).match(() => true).forEach(r => r.flush([])); await harness.fixture.whenStable(); };
+    await settle();
+    return { bar, router: TestBed.inject(Router), settle, el: harness.fixture.nativeElement as HTMLElement };
+  }
+
+  it('reads ?count=all as countPolicy=all and writes it back only when not the default', async () => {
+    const { bar, router, settle, el } = await open('/count?count=all');
+    expect(bar.current().countPolicy).toBe('all');
+    bar.collapsed.set(false);
+    await settle();
+    expect(el.querySelector('select[aria-label="Count"]')).not.toBeNull();
+    bar.form.patchValue({ count: '' });
+    bar.apply();
+    await settle();
+    expect(bar.current().countPolicy).toBeUndefined();
+    expect(router.url).not.toContain('count=');
   });
 });

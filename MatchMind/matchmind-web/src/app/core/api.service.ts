@@ -3,11 +3,12 @@ import { Injectable, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Observable, forkJoin } from 'rxjs';
 import {
-  AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
+  AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, CalibrationReport, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
   Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
   AdminResultRequest, AgentPrompt, PromptVersion, PromptVersionSummary, ResultResponse, SettlementPromptInput,
-  PredictionIngestResponse,
+  PredictionIngestResponse, IssuedKey, KeyScope, ProviderKey, FixtureMergeRequest, FixtureBackfillResult, LeagueAlias, LeagueAliasRequest, AdminReasonRequest,
+  FixtureSuggestion, FixtureView,
 } from './models';
 
 export const API = '/api/v1';
@@ -33,9 +34,15 @@ export class ApiService {
   // Reactive reads (httpResource). Call from an injection context (field initializer). They run again when the
   // signals they read change, cancel the superseded request and expose status()/error(); view with core/resource.ts.
   leaguesResource(enabled: () => boolean = () => true) { return httpResource<string[]>(() => (enabled() ? `${API}/matches/leagues` : undefined)); }
-  providersResource() { return httpResource<Provider[]>(() => `${API}/providers`); }
+  /** `includeArchived` also lists archived providers; `enabled` false sends nothing. */
+  providersResource(includeArchived = false, enabled: () => boolean = () => true) {
+    return httpResource<Provider[]>(() => (enabled() ? { url: `${API}/providers`, params: toParams({ includeArchived: includeArchived || undefined }) } : undefined));
+  }
   apiLogEndpointsResource() { return httpResource<string[]>(() => `${API}/api-logs/endpoints`); }
-  modelsResource(enabled: () => boolean = () => true) { return httpResource<AiModel[]>(() => (enabled() ? `${API}/models` : undefined)); }
+  /** Default list hides archived and merged models; `includeArchived` shows them too. */
+  modelsResource(enabled: () => boolean = () => true, includeArchived: () => boolean = () => false) {
+    return httpResource<AiModel[]>(() => (enabled() ? { url: `${API}/models`, params: toParams({ includeArchived: includeArchived() || undefined }) } : undefined));
+  }
   matchResource(id: () => string) { return httpResource<MatchDetail>(() => `${API}/matches/${encodeURIComponent(id())}`); }
   /** A model with its breakdowns and latest predictions, loaded together; any failure fails the whole view. */
   modelOverviewResource(id: () => string) {
@@ -69,7 +76,10 @@ export class ApiService {
       return x ? { url: `${API}/predictions`, params: toParams({ ...x, page: 0, size, sort: 'predictedAt,desc' }) } : undefined;
     });
   }
-  usersResource(enabled: () => boolean = () => true) { return httpResource<User[]>(() => (enabled() ? `${API}/users` : undefined)); }
+  /** `status` '' lists everyone, else only ACTIVE or DISABLED accounts. */
+  usersResource(enabled: () => boolean = () => true, status: () => string = () => '') {
+    return httpResource<User[]>(() => (enabled() ? { url: `${API}/users`, params: toParams({ status: status() }) } : undefined));
+  }
   promptsResource() { return httpResource<PromptTemplate[]>(() => `${API}/prompts`); }
   needsReviewResource() { return httpResource<ReviewItem[]>(() => `${API}/settlements/needs-review`); }
   predictionResource(id: () => string) { return httpResource<PredictionDetail>(() => `${API}/predictions/${encodeURIComponent(id())}`); }
@@ -119,6 +129,9 @@ export class ApiService {
   marketPerformance(f: Filters) {
     return this.http.get<MarketPerformanceRow[]>(`${API}/reports/market-performance`, { params: toParams({ ...f }) });
   }
+  calibration(f: Filters) {
+    return this.http.get<CalibrationReport>(`${API}/reports/calibration`, { params: toParams({ ...f }) });
+  }
   modelComparison(f: Filters, minModels: number, p: Paging) {
     return this.http.get<Page<ComparisonMatch>>(`${API}/reports/model-comparison`, { params: toParams({ ...f, minModels, ...p }) });
   }
@@ -131,12 +144,66 @@ export class ApiService {
 
   // Matches & predictions
   matches(q: { search?: string; status?: string; league?: string; providerId?: string; from?: string; to?: string;
-    overdue?: boolean } & Paging) {
+    overdue?: boolean; includeArchived?: boolean } & Paging) {
     return this.http.get<Page<MatchRow>>(`${API}/matches`, { params: toParams(q) });
   }
   /** resultScope: `result` applies to the top pick (TOP, default) or to any pick (ANY). */
   predictions(f: Filters, p: Paging, resultScope?: 'TOP' | 'ANY') {
     return this.http.get<Page<PredictionRow>>(`${API}/predictions`, { params: toParams({ ...f, ...p, resultScope }) });
+  }
+
+  // Archive, rename and merge (admin; every write needs a reason)
+  models(q: { providerId?: string; includeArchived?: boolean }) { return this.http.get<AiModel[]>(`${API}/models`, { params: toParams(q) }); }
+  /** Archived rows stay stored but leave every list, dropdown and figure unless `includeArchived=true`. */
+  setArchived(kind: 'providers' | 'models' | 'matches', id: string, archived: boolean, reason: string) {
+    return this.http.post<unknown>(`${API}/${kind}/${encodeURIComponent(id)}/${archived ? 'archive' : 'unarchive'}`, { reason });
+  }
+  /** Blank `displayName` restores the provider-supplied name. */
+  renameModel(id: string, displayName: string, reason: string) {
+    return this.http.patch<AiModel>(`${API}/models/${encodeURIComponent(id)}`, { displayName, reason });
+  }
+  mergeModel(id: string, targetModelId: string, reason: string) {
+    return this.http.post<AiModel>(`${API}/models/${encodeURIComponent(id)}/merge`, { targetModelId, reason });
+  }
+  unmergeModel(id: string, reason: string) { return this.http.post<AiModel>(`${API}/models/${encodeURIComponent(id)}/unmerge`, { reason }); }
+
+  // Fixtures: one real game across providers (admin writes need a reason)
+  fixtureSuggestions(p: Paging) { return this.http.get<Page<FixtureSuggestion>>(`${API}/fixtures/suggestions`, { params: toParams({ ...p }) }); }
+  /** Moves the matches and their fixture siblings into one fixture; results are not touched. */
+  mergeMatches(matchIds: string[], reason: string) {
+    return this.http.post<FixtureView>(`${API}/fixtures/merge`, { matchIds, reason } satisfies FixtureMergeRequest);
+  }
+  /** Links every match without a fixture (one-off, idempotent). */
+  backfillFixtures() { return this.http.post<FixtureBackfillResult>(`${API}/fixtures/backfill`, {}); }
+  /** Takes the match out of its fixture; returns the match detail. */
+  unlinkMatch(id: string, reason: string) { return this.http.post<MatchDetail>(`${API}/matches/${encodeURIComponent(id)}/unlink`, { reason }); }
+
+  // League aliases (UX-086): admin writes need a reason
+  leagueAliases() { return this.http.get<LeagueAlias[]>(`${API}/leagues/aliases`); }
+  addLeagueAlias(body: LeagueAliasRequest) { return this.http.post<LeagueAlias>(`${API}/leagues/aliases`, body); }
+  removeLeagueAlias(id: string, reason: string) {
+    return this.http.post<void>(`${API}/leagues/aliases/${encodeURIComponent(id)}/remove`, { reason } satisfies AdminReasonRequest);
+  }
+
+  // Providers and their API keys (admin)
+  createProvider(body: { code: string; name: string; description?: string | null }) { return this.http.post<Provider>(`${API}/providers`, body); }
+  /** A status change needs `reason`; the code never changes. */
+  updateProvider(id: string, body: { name?: string; description?: string | null; status?: 'ACTIVE' | 'DISABLED'; reason?: string }) {
+    return this.http.patch<Provider>(`${API}/providers/${encodeURIComponent(id)}`, body);
+  }
+  providerKeys(id: string) { return this.http.get<ProviderKey[]>(`${API}/providers/${encodeURIComponent(id)}/keys`); }
+  issueKey(id: string, label: string, scopes: KeyScope[]) {
+    return this.http.post<IssuedKey>(`${API}/providers/${encodeURIComponent(id)}/keys`, { label: label || null, scopes });
+  }
+  /** A new key with the same scopes; the old one keeps working until revoked. */
+  rotateKey(id: string, keyRowId: string) {
+    return this.http.post<IssuedKey>(`${API}/providers/${encodeURIComponent(id)}/keys/${encodeURIComponent(keyRowId)}/rotate`, {});
+  }
+  revokeKey(id: string, keyRowId: string, reason: string) {
+    return this.http.post<void>(`${API}/providers/${encodeURIComponent(id)}/keys/${encodeURIComponent(keyRowId)}/revoke`, { reason });
+  }
+  setKeyScopes(id: string, keyRowId: string, scopes: KeyScope[], reason: string) {
+    return this.http.put<ProviderKey>(`${API}/providers/${encodeURIComponent(id)}/keys/${encodeURIComponent(keyRowId)}/scopes`, { scopes, reason });
   }
 
   // Settlement (admin)
@@ -157,8 +224,13 @@ export class ApiService {
 
   // Prompts
   prompts() { return this.http.get<PromptTemplate[]>(`${API}/prompts`); }
-  /** The prompt with the API URL and sheet link filled in, and for admins the agent key. Never stored or shown, only copied. */
-  promptForAgent(id: string) { return this.http.get<AgentPrompt>(`${API}/prompts/${id}/for-agent`); }
+  /**
+   * The prompt with the API URL and sheet link filled in, and for admins the legacy shared key while one is set. Never
+   * stored or shown, only copied. `sharedKey` false always leaves the key placeholder (for a per-provider key).
+   */
+  promptForAgent(id: string, sharedKey = true) {
+    return this.http.get<AgentPrompt>(`${API}/prompts/${id}/for-agent`, { params: toParams({ sharedKey: sharedKey ? undefined : false }) });
+  }
   updatePrompt(id: string, body: { content: string; description: string | null; active: boolean; expectedVersion: number }) {
     return this.http.put<PromptTemplate>(`${API}/prompts/${id}`, body);
   }

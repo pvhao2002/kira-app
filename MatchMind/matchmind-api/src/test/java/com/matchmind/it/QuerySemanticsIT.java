@@ -42,6 +42,18 @@ class QuerySemanticsIT extends IntegrationTestBase {
     }
 
     @Test
+    void apiLogSearchIgnoresAccentsAndCase() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Integration in = newIntegration("log-model");
+        // The audit keeps the eventId as sent even when the body is rejected.
+        external(in.provider(), "predictions", Payloads.livePrediction("Ñandú-" + suffix, "log-" + suffix, in.modelName()));
+        for (String q : new String[]{"nandu-" + suffix, "ÑANDÚ-" + suffix, "Ñandú-" + suffix}) {
+            assertThat(adminGet("/api/v1/api-logs?search=" + enc(q))
+                .get("meta").get("totalElements").asInt()).as("api-logs search=" + q).isEqualTo(1);
+        }
+    }
+
+    @Test
     void leagueFilterIsTrimmedCaseAndAccentInsensitive() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         UUID provider = seedAccentedMatch(suffix, "Liga Ñandú " + suffix);
@@ -132,7 +144,9 @@ class QuerySemanticsIT extends IntegrationTestBase {
         String matchId = "ex-" + suffix;
         external(in.provider(), "predictions", Payloads.livePrediction("ea-" + suffix, matchId, "ex-a"));
         external(in.provider(), "predictions", Payloads.livePrediction("eb-" + suffix, matchId, "ex-b"));
-        external(in.provider(), "predictions", Payloads.livePrediction("ec-" + suffix, "ex-solo-" + suffix, "ex-a"));
+        // Another game (other teams): same-provider rows of one game share a fixture and its result.
+        external(in.provider(), "predictions", Payloads.livePrediction("ec-" + suffix, "ex-solo-" + suffix, "ex-a",
+            "Everton", "Fulham", "Premier League", java.time.Instant.parse("2026-11-10T19:45:00Z")));
         external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-10T21:40:00Z"));
         String q = "?providerId=" + providerId(in);
 

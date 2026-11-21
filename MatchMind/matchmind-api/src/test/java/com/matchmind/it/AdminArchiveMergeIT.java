@@ -27,7 +27,10 @@ class AdminArchiveMergeIT extends IntegrationTestBase {
 
     private Seed seed(String provider, String model, String finalScore, String league) throws Exception {
         String match = "aa-" + UUID.randomUUID().toString().substring(0, 8);
-        String body = Payloads.livePrediction("e-" + UUID.randomUUID(), match, model);
+        // Own teams per seed: same-provider matches of one game share a fixture, and the count policy (UX-046) then
+        // counts one prediction per effective model there. Seeds stand for different games.
+        String body = Payloads.livePrediction("e-" + UUID.randomUUID(), match, model, "Home " + match, "Away " + match,
+            "Premier League", java.time.Instant.parse("2026-11-10T19:45:00Z"));
         external(provider, "predictions", league == null ? body : body.replace("Premier League", league));
         external(provider, "matches/results", Payloads.result(match, "FINISHED", finalScore, null, "2026-11-10T21:40:00Z"));
         return new Seed(

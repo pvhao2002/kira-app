@@ -1,0 +1,37 @@
+{
+  "createProvider": {
+    "code": "openclaw",
+    "name": "OpenClaw",
+    "description": "Live odds agent"
+  },
+  "disableProvider": {
+    "status": "DISABLED",
+    "reason": "Sends malformed predictions"
+  },
+  "enableProvider": {
+    "status": "ACTIVE",
+    "reason": "Agent fixed"
+  },
+  "issueKey": {
+    "label": "openclaw prod",
+    "scopes": ["PREDICTIONS", "SETTLE_REQUEST"]
+  },
+  "issuedKeyResponse": {
+    "id": "0b6f5a52-8c55-4a43-9d1e-3f1d6a8f2c11",
+    "keyId": "q7k2m4x9c3ta",
+    "label": "openclaw prod",
+    "apiKey": "mmk_q7k2m4x9c3ta_<43-character secret, shown once>",
+    "scopes": ["PREDICTIONS", "SETTLE_REQUEST"],
+    "createdAt": "2026-11-20T10:00:00Z"
+  },
+  "rotateKey": {
+    "label": "openclaw prod 2"
+  },
+  "revokeKey": {
+    "reason": "Replaced by the rotated key"
+  },
+  "grantResultsScope": {
+    "scopes": ["PREDICTIONS", "SETTLE_REQUEST", "RESULTS"],
+    "reason": "Trusted results feeder"
+  }
+}

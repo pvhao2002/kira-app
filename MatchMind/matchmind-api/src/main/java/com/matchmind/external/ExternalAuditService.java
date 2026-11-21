@@ -1,6 +1,7 @@
 package com.matchmind.external;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.matchmind.security.Principals.ProviderPrincipal;
 import com.matchmind.security.Principals.UserPrincipal;
 import com.matchmind.shared.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,14 +28,27 @@ public class ExternalAuditService {
     private final ExternalApiRequestRepository requests;
     private final ClientIpResolver ips;
 
+    /**
+     * {@code apiKeyId} and {@code legacyKey} are for rejections made before the caller is authenticated; once it is,
+     * both come from the provider principal of the request.
+     */
     public record Entry(UUID providerId, String eventId, int httpStatus, String requestStatus,
-                        JsonNode result, String error) {
+                        JsonNode result, String error, UUID apiKeyId, boolean legacyKey) {
+        public Entry(UUID providerId, String eventId, int httpStatus, String requestStatus, JsonNode result, String error) {
+            this(providerId, eventId, httpStatus, requestStatus, result, error, null, false);
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public UUID record(HttpServletRequest http, Instant receivedAt, Entry e) {
         ExternalApiRequest row = new ExternalApiRequest();
         row.setProviderId(e.providerId());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        ProviderPrincipal caller = auth != null && auth.getPrincipal() instanceof ProviderPrincipal p ? p : null;
+        // The key belongs to a provider that exists, so it is recorded only together with that provider (composite FK).
+        UUID keyId = e.apiKeyId() != null ? e.apiKeyId() : caller == null ? null : caller.apiKeyId();
+        row.setApiKeyId(e.providerId() == null ? null : keyId);
+        row.setLegacyKey(e.legacyKey() || (caller != null && caller.apiKeyId() == null));
         row.setRequestId(requestId(http));
         row.setEventId(truncate(e.eventId(), 128));
         row.setEndpoint(truncate(http.getRequestURI(), 160));
@@ -48,8 +62,9 @@ public class ExternalAuditService {
         row.setReceivedAt(receivedAt);
         row.setDurationMs((int) Math.max(0, Duration.between(receivedAt, Instant.now()).toMillis()));
         requests.save(row);
-        log.info("External callback endpoint={} provider={} event={} status={} result={} durationMs={}",
-            row.getEndpoint(), e.providerId(), row.getEventId(), e.httpStatus(), e.requestStatus(), row.getDurationMs());
+        log.info("External callback endpoint={} provider={} apiKey={} legacyKey={} event={} status={} result={} durationMs={}",
+            row.getEndpoint(), e.providerId(), row.getApiKeyId(), row.isLegacyKey(), row.getEventId(), e.httpStatus(),
+            e.requestStatus(), row.getDurationMs());
         return row.getId();
     }
 

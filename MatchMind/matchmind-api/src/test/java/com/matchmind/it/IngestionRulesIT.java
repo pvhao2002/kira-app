@@ -62,7 +62,9 @@ class IngestionRulesIT extends IntegrationTestBase {
         ((ObjectNode) bidi.get("match")).put("awayTeam", "\u202EaeslehC");
         assertRejected(send(provider, bidi), 400, "VALIDATION_ERROR", "match.awayTeam");
 
-        String surrogate = Payloads.livePrediction(id("e"), id("m"), "rules-model").replace("\"Chelsea\"", "\"\\ud800\"");
+        String surrogateId = id("m");
+        String surrogate = Payloads.livePrediction(id("e"), surrogateId, "rules-model")
+            .replace("\"Chelsea" + Payloads.tag(surrogateId) + "\"", "\"\\ud800\"");
         assertRejected(external(provider, "predictions", surrogate), 400, "VALIDATION_ERROR", "match.awayTeam");
 
         ObjectNode invisible = live();
@@ -127,7 +129,7 @@ class IngestionRulesIT extends IntegrationTestBase {
         ObjectNode late = (ObjectNode) json.readTree(Payloads.preMatchWithCorners(id("e"), ext, "rules-model", "HOME"));
         ObjectNode lateMatch = (ObjectNode) late.get("match");
         lateMatch.remove("startTime");
-        lateMatch.put("homeTeam", "Arsenal").put("awayTeam", "Chelsea");
+        lateMatch.put("homeTeam", "Arsenal").put("awayTeam", "Chelsea" + Payloads.tag(ext));
         late.put("predictedAt", "2026-11-10T21:00:00Z");
         assertRejected(send(provider, late), 400, "VALIDATION_ERROR", "predictedAt");
     }
@@ -223,6 +225,9 @@ class IngestionRulesIT extends IntegrationTestBase {
         MvcResult second = send(provider, again);
         assertThat(second.getResponse().getStatus()).isEqualTo(201); // idempotency rules unchanged: stored as new
         assertThat(read(second).get("possibleDuplicateOf").asText()).isEqualTo(read(first).get("predictionId").asText());
+        MvcResult retry = send(provider, again); // same eventId and body: 200 duplicate, still names the twin
+        assertThat(retry.getResponse().getStatus()).isEqualTo(200);
+        assertThat(read(retry).get("possibleDuplicateOf").asText()).isEqualTo(read(first).get("predictionId").asText());
 
         ObjectNode otherPick = p.deepCopy().put("eventId", id("e"));
         ((ObjectNode) otherPick.get("picks").get(0)).put("pick", "AWAY");

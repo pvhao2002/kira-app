@@ -56,6 +56,9 @@ public class Match {
     private Integer htAwayCorners;
     @Column(name = "result_updated_at")
     private Instant resultUpdatedAt;
+    /** Read-only here: only {@link FixtureService} moves it (JDBC + fixture_link_history), so a save never clobbers it. */
+    @Column(name = "fixture_id", insertable = false, updatable = false)
+    private UUID fixtureId;
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)

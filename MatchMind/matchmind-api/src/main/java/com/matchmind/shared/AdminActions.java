@@ -31,7 +31,9 @@ public class AdminActions {
     public enum Kind {
         PROVIDER("providers", "PROVIDER_NOT_FOUND", "Provider not found"),
         MODEL("ai_models", "MODEL_NOT_FOUND", "AI model not found"),
-        MATCH("matches", "MATCH_NOT_FOUND", "Match not found");
+        MATCH("matches", "MATCH_NOT_FOUND", "Match not found"),
+        /** Not archivable: aliases are added and removed (MERGE / UNMERGE), see {@code LeagueAliasService}. */
+        LEAGUE_ALIAS("league_aliases", "LEAGUE_ALIAS_NOT_FOUND", "League alias not found");
 
         private final String table, code, message;
 

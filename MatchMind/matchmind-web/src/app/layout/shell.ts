@@ -15,6 +15,7 @@ const NAV: NavItem[] = [
   { path: '/matches', label: 'Matches', icon: 'pi-calendar' },
   { path: '/predictions', label: 'Predictions', icon: 'pi-bolt' },
   { path: '/models', label: 'AI Models', icon: 'pi-microchip-ai' },
+  { path: '/providers', label: 'Providers', icon: 'pi-server' },
   { path: '/reports', label: 'Reports', icon: 'pi-chart-bar' },
   { path: '/prompts', label: 'Prompt Notes', icon: 'pi-file-edit' },
   { path: '/import', label: 'Import', icon: 'pi-upload', adminOnly: true },

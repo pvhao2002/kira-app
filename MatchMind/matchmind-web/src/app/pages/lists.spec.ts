@@ -5,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Subject } from 'rxjs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { LiveService } from '../core/live.service';
 import { AiModel, ApiLogRow, MatchRow, PredictionRow } from '../core/models';
 import { ApiLogsPage } from './api-logs';
@@ -89,6 +89,118 @@ describe('MatchesPage', () => {
     expect(t.page.pending()).toBe(false);
   });
 
+  describe('merge matches (UX-047)', () => {
+    const signIn = (role: string) => sessionStorage.setItem('matchmind.session', JSON.stringify({ token: 't',
+      expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+      user: { id: 'u1', username: 'u', role, status: 'ACTIVE', lastLoginAt: null, createdAt: '', updatedAt: '' } }));
+    afterEach(() => sessionStorage.clear());
+    const q = (el: Element, id: string) => el.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+
+    it('an admin merges 2 or more selected rows, with a reason', async () => {
+      signIn('ADMIN');
+      const t = await open('/matches', MatchesPage);
+      await t.answer({ '/api/v1/matches': page([match(), match({ id: 'm2', providerName: 'Agent Two' })]) });
+      (q(t.el(), 'select-m1') as HTMLInputElement).click();
+      t.harness.fixture.detectChanges();
+      expect((q(t.el(), 'merge-open') as HTMLButtonElement).disabled).toBe(true);      // one row is not enough
+      (q(t.el(), 'select-m2') as HTMLInputElement).click();
+      t.harness.fixture.detectChanges();
+      (q(t.el(), 'merge-open') as HTMLButtonElement).click();
+      t.harness.fixture.detectChanges();
+      const submit = q(t.el(), 'reason-submit') as HTMLButtonElement;
+      expect(submit.disabled).toBe(true);                                             // the reason is required
+      const reason = q(t.el(), 'reason') as HTMLTextAreaElement;
+      reason.value = 'Same game';
+      reason.dispatchEvent(new Event('input'));
+      t.harness.fixture.detectChanges();
+      submit.click();
+      const req = t.http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/fixtures/merge');
+      expect(req.request.body).toEqual({ matchIds: ['m1', 'm2'], reason: 'Same game' });
+      req.flush({ id: 'fx1', members: [], resultMismatch: false });
+      await t.answer();
+      expect(q(t.el(), 'selection-bar')).toBeNull();
+    });
+
+    it('lists suggested merges in their own tab', async () => {
+      signIn('ADMIN');
+      const t = await open('/matches', MatchesPage);
+      await t.answer();
+      t.page.tab.set('suggestions');
+      const side = (id: string, home: string) => ({ fixtureId: 'f' + id, matchId: id, providerName: 'P' + id, externalMatchId: 'x' + id,
+        league: 'L', homeTeam: home, awayTeam: 'Leeds', startTime: '2026-11-19T10:00:00Z', status: 'SCHEDULED' });
+      await t.answer({ '/api/v1/fixtures/suggestions': page([{ a: side('m1', 'Man Utd'), b: side('m2', 'Manchester United'), reason: 'SIMILAR_NAMES', score: 0.7 }]) });
+      expect(text(q(t.el(), 'suggestions')!)).toContain('Manchester United');
+      expect(q(t.el(), 'suggestion-merge')).not.toBeNull();
+    });
+
+    it('an admin links existing matches from the Suggested merges tab', async () => {
+      signIn('ADMIN');
+      const t = await open('/matches', MatchesPage);
+      await t.answer();
+      t.page.tab.set('suggestions');
+      const sug = { '/api/v1/fixtures/suggestions': page([]) };
+      await t.answer(sug);
+      const before = t.requests('/api/v1/fixtures/suggestions').length;
+      (q(t.el(), 'fixture-backfill') as HTMLButtonElement).click();
+      t.harness.fixture.detectChanges();
+      expect((q(t.el(), 'fixture-backfill') as HTMLButtonElement).disabled).toBe(true);   // busy: one call at a time
+      const req = t.http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/fixtures/backfill');
+      expect(req.request.body).toEqual({});
+      req.flush({ linked: 3 });
+      await t.answer(sug);
+      expect(text(t.el())).toContain('Linked 3 matches');
+      expect(t.requests('/api/v1/fixtures/suggestions').length).toBeGreaterThan(before); // suggestions reload
+    });
+
+    it('an admin adds and removes a league alias with a reason (UX-086)', async () => {
+      signIn('ADMIN');
+      const t = await open('/matches', MatchesPage);
+      await t.answer();
+      t.page.tab.set('leagues');
+      const aliases = { '/api/v1/leagues/aliases': [{ id: 'a1', alias: 'EPL', canonical: 'Premier League', createdAt: '2026-11-20T10:00:00Z' }] };
+      await t.answer(aliases);
+      expect(text(q(t.el(), 'league-aliases')!)).toContain('EPL');
+
+      (q(t.el(), 'alias-add') as HTMLButtonElement).click();
+      t.harness.fixture.detectChanges();
+      const submit = q(t.el(), 'reason-submit') as HTMLButtonElement;
+      const type = (id: string, v: string) => {
+        const el = q(t.el(), id) as HTMLInputElement | HTMLTextAreaElement;
+        el.value = v; el.dispatchEvent(new Event('input'));
+        t.harness.fixture.detectChanges();
+      };
+      type('reason', 'Same league');
+      expect(submit.disabled).toBe(true);                                             // both names are required
+      type('alias-name', ' English Premier League ');
+      type('alias-canonical', 'Premier League');
+      expect(submit.disabled).toBe(false);
+      submit.click();
+      const add = t.http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/leagues/aliases');
+      expect(add.request.body).toEqual({ alias: 'English Premier League', canonical: 'Premier League', reason: 'Same league' });
+      add.flush({ id: 'a2', alias: 'English Premier League', canonical: 'Premier League', createdAt: '2026-11-21T10:00:00Z' });
+      await t.answer(aliases);
+      expect(t.requests('/api/v1/matches/leagues').length).toBeGreaterThan(1);        // the league list reloads
+
+      (q(t.el(), 'alias-remove-a1') as HTMLButtonElement).click();
+      t.harness.fixture.detectChanges();
+      type('reason', 'Different league');
+      (q(t.el(), 'reason-submit') as HTMLButtonElement).click();
+      const rm = t.http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/leagues/aliases/a1/remove');
+      expect(rm.request.body).toEqual({ reason: 'Different league' });
+      rm.flush(null);
+      await t.answer();
+    });
+
+    it('shows a viewer no selection, merge or suggestions', async () => {
+      signIn('VIEWER');
+      const t = await open('/matches', MatchesPage);
+      await t.answer({ '/api/v1/matches': page([match()]) });
+      expect(q(t.el(), 'select-m1')).toBeNull();
+      expect(t.el().querySelector('mm-tabs')).toBeNull();
+      expect(t.requests('/api/v1/fixtures/suggestions')).toHaveLength(0);
+    });
+  });
+
   it('shows the API message with a Retry button instead of an empty pager (UX-037)', async () => {
     const t = await open('/matches', MatchesPage);
     await t.answer({ '/api/v1/matches': new Error('Database unavailable') });
@@ -160,7 +272,7 @@ describe('PredictionsPage', () => {
 const model = (i: number): AiModel => ({
   id: `m${i}`, providerId: 'p', providerName: i % 2 ? 'OpenAI' : 'Anthropic', name: i === 7 ? 'Gémini' : `Model ${String(i).padStart(2, '0')}`,
   version: '1', description: null, status: 'ACTIVE', totalPredictions: i, settledPicks: 0, wins: 0, losses: 0, pendingPicks: 0,
-  winRate: null, lastPredictionAt: null, createdAt: '', updatedAt: '',
+  winRate: null, lastPredictionAt: null, createdAt: '', updatedAt: '', units: null, staked: 0, roi: null,
 });
 
 describe('ModelsPage', () => {
@@ -182,6 +294,19 @@ describe('ModelsPage', () => {
     const rows = t.el().querySelectorAll('tbody tr.clickable');
     expect(rows).toHaveLength(1);
     expect(text(rows[0])).toContain('Gémini');
+  });
+
+  it('Show archived refetches with includeArchived=true; a merged model shows "merged into X" (archive plan Task 5)', async () => {
+    const t = await open('/models', ModelsPage);
+    const few = models.slice(0, 3);
+    await t.answer({ '/api/v1/models': few });
+    expect(t.requests('/api/v1/models')[0].request.params.has('includeArchived')).toBe(false);
+    (t.el().querySelector('[data-testid="show-archived"]') as HTMLInputElement).click();
+    const merged: AiModel = { ...model(9), id: 'src', name: 'gpt-5.1-', mergedIntoId: 'm2' };
+    await t.answer({ '/api/v1/models': [...few, merged] });
+    expect(t.requests('/api/v1/models').at(-1)!.request.params.get('includeArchived')).toBe('true');
+    const row = [...t.el().querySelectorAll('tbody tr.clickable')].find(r => text(r).includes('gpt-5.1-'))!;
+    expect(text(row)).toContain('merged into Model 02');
   });
 
   it('offers Retry when the list fails (UX-037)', async () => {

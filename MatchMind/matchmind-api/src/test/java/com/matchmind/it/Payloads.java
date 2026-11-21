@@ -40,7 +40,27 @@ final class Payloads {
               "correctScore": {"home": 2, "away": 1, "probability": 0.14},
               "metadata": {"notes": "test"}
             }
-            """.formatted(eventId, model, matchId);
+            """.formatted(eventId, model, matchId).replace("\"awayTeam\": \"Chelsea\"", "\"awayTeam\": \"Chelsea" + tag(matchId) + "\"");
+    }
+
+    /**
+     * Per-match suffix of the default away team. Every test shares the default teams and kick-off, so without it all
+     * their matches would join one fixture, and one test's final result would close that game for the others.
+     */
+    static String tag(String matchId) {
+        return " " + Integer.toHexString(String.valueOf(matchId).hashCode());
+    }
+
+    /** {@link #livePrediction} for other teams and kick-off (predictedAt is kick-off + 55'), e.g. to test fixture links. */
+    static String livePrediction(String eventId, String matchId, String model, String home, String away, String league,
+                                 java.time.Instant startTime) {
+        return livePrediction(eventId, matchId, model)
+            .replace("\"homeTeam\": \"Arsenal\"", "\"homeTeam\": \"" + home + "\"")
+            .replace("\"awayTeam\": \"Chelsea" + tag(matchId) + "\"", "\"awayTeam\": \"" + away + "\"")
+            .replace("\"league\": \"Premier League\"", "\"league\": \"" + league + "\"")
+            .replace("2026-11-10T19:45:00Z", startTime.toString())
+            .replace("2026-11-10T20:40:00Z", startTime.plusSeconds(55 * 60).toString())
+            .replace("2026-11-10T20:39:30Z", startTime.plusSeconds(54 * 60).toString());
     }
 
     /** PRE_MATCH prediction with optional corner markets; two picks (1X2, corner AH), the cap the prompts promise. */
@@ -50,7 +70,7 @@ final class Payloads {
               "eventId": "%s",
               "model": {"name": "%s", "version": "1.0"},
               "match": {"externalMatchId": "%s", "league": "La Liga", "homeTeam": "Real Madrid",
-                        "awayTeam": "Barcelona", "startTime": "2026-11-11T20:00:00Z"},
+                        "awayTeam": "Barcelona%s", "startTime": "2026-11-11T20:00:00Z"},
               "predictionType": "PRE_MATCH",
               "predictedAt": "2026-11-11T18:00:00Z",
               "odds": [
@@ -64,7 +84,7 @@ final class Payloads {
               ],
               "correctScore": {"home": 2, "away": 1, "probability": 0.11}
             }
-            """.formatted(eventId, model, matchId, homePick);
+            """.formatted(eventId, model, matchId, tag(matchId), homePick);
     }
 
     static String result(String matchId, String status, String finalScore, String corners, String at) {

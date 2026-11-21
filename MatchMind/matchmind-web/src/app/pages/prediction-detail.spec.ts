@@ -188,3 +188,23 @@ describe('PredictionDetailPage', () => {
     expect(rows(f)).toContain('Home | 50.0%');
   });
 });
+
+describe('PredictionDetailPage counting (UX-046)', () => {
+  it('flags a superseded prediction and lists its similar predictions', async () => {
+    const f = await open({ ...base, counted: false, similar: [
+      { predictionId: 'p2', predictedAt: '2026-11-01T20:05:00Z', exact: true, counted: true },
+    ] } as PredictionDetail);
+    const banner = q(f, 'not-counted');
+    expect(text(banner)).toContain('Not counted in reports');
+    expect(banner!.querySelector('a[href="/predictions/p2"]')).not.toBeNull();
+    const similar = text(q(f, 'similar'));
+    expect(similar).toContain('same content');
+    expect(similar).toContain('counted');
+  });
+
+  it('shows neither for a counted prediction without twins', async () => {
+    const f = await open({ ...base, counted: true, similar: [] } as PredictionDetail);
+    expect(q(f, 'not-counted')).toBeNull();
+    expect(q(f, 'similar')).toBeNull();
+  });
+});

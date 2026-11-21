@@ -1,9 +1,12 @@
 package com.matchmind.security;
 
+import com.matchmind.provider.ProviderKeyService;
+
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
-/** Authentication principals: humans (JWT) and machine callers (shared API key + X-Provider). */
+/** Authentication principals: humans (JWT) and machine callers (per-provider key, or the legacy shared key + X-Provider). */
 public final class Principals {
     private Principals() {
     }
@@ -19,6 +22,13 @@ public final class Principals {
         }
     }
 
-    public record ProviderPrincipal(UUID providerId, String providerCode) {
+    /**
+     * A machine caller. {@code apiKeyId} is the per-provider key it used; null for the legacy shared key and the admin
+     * import, which may call every endpoint (all scopes) until the cut-over.
+     */
+    public record ProviderPrincipal(UUID providerId, String providerCode, UUID apiKeyId, Set<String> scopes) {
+        public ProviderPrincipal(UUID providerId, String providerCode) {
+            this(providerId, providerCode, null, ProviderKeyService.ALL_SCOPES);
+        }
     }
 }

@@ -81,3 +81,13 @@ describe('changedFields', () => {
     ]);
   });
 });
+
+describe('units (UX-018)', () => {
+  it('signs profit with 3 decimals and keeps null a dash', async () => {
+    const { units } = await import('./format');
+    expect(units(0.9)).toBe('+0.900');
+    expect(units(-1)).toBe('−1.000');
+    expect(units(0)).toBe('0.000');
+    expect(units(null)).toBe('—');
+  });
+});

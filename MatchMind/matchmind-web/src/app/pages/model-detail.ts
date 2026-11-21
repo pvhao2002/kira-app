@@ -1,24 +1,24 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ChartOptions } from 'chart.js';
 import { ApiService } from '../core/api.service';
+import { AuthService } from '../core/auth.service';
+import { AiModel } from '../core/models';
 import { PageTitle } from '../core/page-title';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { ChartView } from '../shared/chart';
-import { bidiSafe, fmtDateTime, humanize, lineSplit, pct, pickText } from '../shared/format';
-import { ResultTag, ScoreChip, StateView } from '../shared/ui';
-
-/** Below this many settled picks a win rate says little (UX-018/UX-081). */
-const SMALL_SAMPLE = 30;
+import { ROI_DEF, bidiSafe, fmtDateTime, humanize, lineSplit, pct, pickText, units } from '../shared/format';
+import { ReasonAction, ReasonDialog, ResultTag, ScoreChip, SmallSample, StateView } from '../shared/ui';
 
 @Component({
   selector: 'mm-model-detail',
-  imports: [RouterLink, ChartView, ResultTag, ScoreChip, StateView],
+  imports: [RouterLink, ChartView, ResultTag, ScoreChip, SmallSample, StateView, ReasonDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     h2, .sub { overflow-wrap: anywhere; min-width: 0; }
     .panel > header > div:first-child { min-width: 0; }
-    .kpi small { display: block; margin-top: .25rem; width: fit-content; }
+    .kpi mm-small-sample { display: block; margin-top: .25rem; width: fit-content; }
   `],
   template: `
     <div class="stack">
@@ -26,15 +26,26 @@ const SMALL_SAMPLE = 30;
       <mm-state [state]="state()" [message]="error()" />
       @if (model(); as m) {
         <section class="panel">
-          <header><div><h2>{{ bidi(m.name) }} <span class="muted-text">{{ m.version }}</span></h2>
-            <p class="muted-text sub">{{ bidi(m.providerName) }}, first seen {{ fmt(m.createdAt) }}</p></div>
-            <a class="btn btn-outline btn-sm" data-testid="view-all" routerLink="/predictions" [queryParams]="{ modelId: m.id }">View all {{ m.totalPredictions }} predictions</a></header>
+          <header><div><h2>{{ bidi(label(m)) }} <span class="muted-text">{{ m.version }}</span>
+              @if (m.archivedAt) { <span class="tag tag-secondary">Archived</span> }</h2>
+            <p class="muted-text sub">{{ bidi(m.providerName) }}, first seen {{ fmt(m.createdAt) }}@if (label(m) !== m.name) { · key <code>{{ bidi(m.name) }}</code> }</p>
+            @if (m.mergedIntoId) { <p class="sub" data-testid="merged-into">Merged into <a [routerLink]="['/models', m.mergedIntoId]">{{ nameOf(m.mergedIntoId) }}</a>: its predictions count there.</p> }</div>
+            <div class="row">
+              @if (auth.isAdmin()) {
+                <button type="button" class="btn btn-text btn-sm" data-testid="rename" (click)="openRename(m)">Rename</button>
+                @if (m.mergedIntoId) { <button type="button" class="btn btn-text btn-sm" data-testid="unmerge" (click)="openUnmerge(m)">Unmerge</button> }
+                @else { <button type="button" class="btn btn-text btn-sm" data-testid="merge" (click)="openMerge(m)">Merge into…</button> }
+                <button type="button" class="btn btn-text btn-sm" data-testid="archive" [class.danger]="!m.archivedAt" (click)="openArchive(m)">{{ m.archivedAt ? 'Unarchive' : 'Archive' }}</button>
+              }
+              <a class="btn btn-outline btn-sm" data-testid="view-all" routerLink="/predictions" [queryParams]="{ modelId: m.id }">View all {{ m.totalPredictions }} predictions</a>
+            </div></header>
           @if (m.description) { <p class="page-note mb-2">{{ m.description }}</p> }
           <div class="kpis">
             <div class="kpi accent"><span>Win rate</span><strong>{{ pct(m.winRate) }}</strong>
-              @if (m.settledPicks < smallSample) {
-                <small class="tag tag-warn" data-testid="small-sample" [title]="'Fewer than ' + smallSample + ' settled picks: the win rate can swing a lot'">Small sample (n = {{ m.settledPicks }})</small>
-              }</div>
+              <mm-small-sample [n]="m.wins + m.losses" /></div>
+            <div class="kpi" [title]="roiDef"><span>Units</span><strong data-testid="model-units">{{ units(m.units) }}</strong></div>
+            <div class="kpi" [title]="roiDef"><span>ROI</span><strong data-testid="model-roi">{{ pct(m.roi) }}</strong>
+              <mm-small-sample [n]="m.staked" /></div>
             <div class="kpi"><span>Predictions</span><strong>{{ m.totalPredictions }}</strong></div>
             <div class="kpi"><span>Settled picks</span><strong>{{ m.settledPicks }}</strong></div>
             <div class="kpi"><span>Wins / losses</span><strong><span class="win">{{ m.wins }}</span> / <span class="loss">{{ m.losses }}</span></strong></div>
@@ -77,7 +88,20 @@ const SMALL_SAMPLE = 30;
           </table></div>
         </section>
       }
-    </div>`,
+    </div>
+    <mm-reason-dialog [action]="action()" [ready]="kind() !== 'merge' || !!target()" (closed)="action.set(null)">
+      @if (kind() === 'rename') {
+        <div class="field"><label for="md-name">Display name</label>
+          <input class="input" id="md-name" maxlength="128" [value]="newName()" (input)="newName.set($any($event.target).value)" aria-describedby="md-name-hint" />
+          <small id="md-name-hint" class="muted-text">Leave empty to show the name the agent sends.</small></div>
+      } @else if (kind() === 'merge') {
+        <div class="field"><label for="md-target">Merge into</label>
+          <select class="input" id="md-target" data-testid="merge-target" [value]="target()" (change)="target.set($any($event.target).value)">
+            <option value="">Choose a model of this provider</option>
+            @for (o of mergeTargets(); track o.id) { <option [value]="o.id">{{ label(o) }} {{ o.version }}</option> }
+          </select></div>
+      }
+    </mm-reason-dialog>`,
 })
 export class ModelDetailPage {
   readonly id = input.required<string>();
@@ -89,6 +113,19 @@ export class ModelDetailPage {
   readonly state = viewState(this.resource);
   readonly error = errorMessage(this.resource);
   readonly model = computed(() => this.overview()?.model);
+  readonly auth = inject(AuthService);
+  /** Same-provider models (archived and merged too): merge targets and the merge target's name. */
+  private readonly siblingsRes = rxResource({
+    params: () => { const m = this.model(); return m && (this.auth.isAdmin() || m.mergedIntoId) ? m.providerId : undefined; },
+    stream: ({ params }) => this.api.models({ providerId: params, includeArchived: true }),
+  });
+  private readonly siblings = safeValue(this.siblingsRes, []);
+  /** A merge target must not itself be merged (the database rejects chains). */
+  readonly mergeTargets = computed(() => this.siblings().filter(o => o.id !== this.id() && !o.mergedIntoId));
+  readonly action = signal<ReasonAction | null>(null);
+  readonly kind = signal<'rename' | 'merge' | null>(null);
+  readonly newName = signal('');
+  readonly target = signal('');
   readonly breakdowns = computed(() => {
     const o = this.overview();
     return o ? [{ title: 'market', rows: o.market }, { title: 'prediction type', rows: o.type }] : [];
@@ -107,16 +144,56 @@ export class ModelDetailPage {
     maintainAspectRatio: false, plugins: { legend: { display: false } },
     scales: { x: { grid: { display: false } }, y: { min: 0, max: 100, ticks: { callback: v => `${v}%` } } },
   };
-  readonly smallSample = SMALL_SAMPLE;
+  readonly units = units;
+  readonly roiDef = ROI_DEF;
   readonly fmt = fmtDateTime;
   readonly pct = pct;
   readonly humanize = humanize;
   readonly pickText = pickText;
   readonly lineSplit = lineSplit;
   readonly bidi = bidiSafe;
+  readonly label = (m: AiModel) => m.displayName ?? m.name;
 
   constructor() {
     const title = inject(PageTitle);
-    effect(() => { const m = this.model(); if (m) title.set(`${bidiSafe(m.name)} ${bidiSafe(m.version)}`); });
+    effect(() => { const m = this.model(); if (m) title.set(`${bidiSafe(this.label(m))} ${bidiSafe(m.version)}`); });
+  }
+
+  nameOf(id: string): string {
+    const t = this.siblings().find(o => o.id === id);
+    return t ? `${this.label(t)} ${t.version}` : 'another model';
+  }
+
+  private open(kind: 'rename' | 'merge' | null, a: Omit<ReasonAction, 'done'>): void {
+    this.kind.set(kind);
+    this.action.set({ ...a, done: () => { this.resource.reload(); this.siblingsRes.reload(); } });
+  }
+
+  openRename(m: AiModel): void {
+    this.newName.set(m.displayName && m.displayName !== m.name ? m.displayName : '');
+    this.open('rename', { header: 'Rename model', label: 'Save', run: reason => this.api.renameModel(m.id, this.newName().trim(), reason) });
+  }
+
+  openMerge(m: AiModel): void {
+    this.target.set('');
+    this.open('merge', {
+      header: `Merge ${this.label(m)} into…`, label: 'Merge',
+      message: 'Its predictions count for the target, and new predictions under this name go there too. Nothing is rewritten; Unmerge undoes it, but predictions received while merged stay on the target.',
+      run: reason => this.api.mergeModel(m.id, this.target(), reason),
+    });
+  }
+
+  openUnmerge(m: AiModel): void {
+    this.open(null, { header: `Unmerge ${this.label(m)}`, label: 'Unmerge', message: 'Its own predictions count for it again.',
+      run: reason => this.api.unmergeModel(m.id, reason) });
+  }
+
+  openArchive(m: AiModel): void {
+    const archived = !m.archivedAt;
+    this.open(null, {
+      header: `${archived ? 'Archive' : 'Unarchive'} ${this.label(m)}`, label: archived ? 'Archive' : 'Unarchive', danger: archived,
+      message: archived ? 'It leaves every list, dropdown and figure. Nothing is deleted, and its callbacks are still accepted.' : 'It counts again.',
+      run: reason => this.api.setArchived('models', m.id, archived, reason),
+    });
   }
 }

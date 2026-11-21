@@ -74,9 +74,9 @@ const AUDIT_SIZE = 10;
           <dd><code>POST {{ endpoint }}</code>
             <button type="button" class="btn btn-text btn-sm" (click)="clipboard.copy(endpoint, 'Endpoint')"><i class="pi pi-copy" aria-hidden="true"></i> Copy</button></dd>
           <dt>Test</dt><dd><code>GET {{ ping }}</code> (no key needed)</dd>
-          <dt><code>X-Api-Key</code></dt><dd>The shared agent key: <code>EXTERNAL_API_KEY</code> in the server's <code>.env</code>. It is never shown here;
-            rotate it there and restart the API.</dd>
-          <dt><code>X-Provider</code></dt><dd>Who is calling, e.g. <code>chatgpt</code>: 2–64 of a-z, 0-9, - and _. Use the same name every time.</dd>
+          <dt><code>X-Api-Key</code></dt><dd>The provider's own key (<code>mmk_…</code>), issued once on <a routerLink="/providers">Providers</a>.
+            The legacy shared key (<code>EXTERNAL_API_KEY</code> in the server's <code>.env</code>) still works until the cut-over.</dd>
+          <dt><code>X-Provider</code></dt><dd>Who is calling, e.g. <code>chatgpt</code>: 2–64 of a-z, 0-9, - and _. Needed only with the shared key; a provider key already names its provider.</dd>
           <dt><code>X-Model-Name</code></dt><dd>The model, e.g. <code>gpt-5.1</code>. Wins over <code>model</code> in the JSON.</dd>
           <dt><code>X-Model-Version</code></dt><dd>Optional, default <code>1</code>.</dd>
         </dl>
@@ -89,6 +89,9 @@ const AUDIT_SIZE = 10;
           <header><h2>Users</h2>
             <div class="row">
               <input class="input input-sm" type="search" placeholder="Search users" aria-label="Search users" [ngModel]="userSearch()" (ngModelChange)="userSearch.set($event)" />
+              <select class="input input-sm" data-testid="user-status" aria-label="Status" [value]="userStatus()" (change)="userStatus.set($any($event.target).value)">
+                <option value="">All</option><option value="ACTIVE">Active</option><option value="DISABLED">Disabled</option>
+              </select>
               <button type="button" class="btn btn-primary btn-sm" (click)="openCreate()"><i class="pi pi-user-plus"></i> Add user</button>
             </div>
           </header>
@@ -114,7 +117,7 @@ const AUDIT_SIZE = 10;
                   }
                 </td>
               </tr>
-              } @empty { <tr><td colspan="6" class="muted-text">No user matches "{{ userSearch() }}".</td></tr> }
+              } @empty { <tr><td colspan="6" class="muted-text">No user matches these filters.</td></tr> }
             </tbody>
           </table></div>
         </section>
@@ -188,7 +191,9 @@ export class SettingsPage {
   private readonly confirm = inject(ConfirmService);
   readonly clipboard = inject(CopyService);
   readonly auth = inject(AuthService);
-  private readonly usersRes = this.api.usersResource(() => this.auth.isAdmin());
+  /** '' = everyone; ACTIVE or DISABLED is filtered by the API (`?status=`). */
+  readonly userStatus = signal('');
+  private readonly usersRes = this.api.usersResource(() => this.auth.isAdmin(), () => this.userStatus());
   readonly users = safeValue(this.usersRes, []);
   readonly userSearch = signal('');
   /** GET /users is not paged: the search filters the loaded list. */

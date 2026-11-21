@@ -115,6 +115,7 @@ describe('ImportPage', () => {
     expect(c.results().map(r => r.status)).toEqual(['stored', 'stored']);
     const page = text(f.nativeElement);
     expect(page).toContain('Looks like a retry');
+    expect(page).toContain('reports count only the latest');
     expect(f.nativeElement.querySelector('a[href="/predictions/pr1"]')).not.toBeNull();
   });
 
