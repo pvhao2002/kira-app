@@ -75,6 +75,8 @@ describe('PromptsPage', () => {
     const f = TestBed.createComponent(PromptsPage);
     f.detectChanges();
     http.expectOne('/api/v1/prompts').flush([prompt]);
+    TestBed.tick();
+    http.match('/api/v1/providers').forEach(r => r.flush([]));   // admins load the provider picker
     await f.whenStable();
     return f;
   }

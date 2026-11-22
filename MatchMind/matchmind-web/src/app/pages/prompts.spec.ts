@@ -19,6 +19,15 @@ const prompt: PromptTemplate = {
   version: 3, active: true, updatedBy: null, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-02T00:00:00Z',
 };
 const other: PromptTemplate = { ...prompt, id: 'p2', name: 'Settlement', templateType: 'AI_SETTLEMENT', content: 'settle' };
+const providers = [
+  { id: 'pv1', code: 'openclaw', name: 'OpenClaw', status: 'ACTIVE', activeKeys: 2, models: 0, predictions: 0, lastCallbackAt: null, createdAt: '' },
+  { id: 'pv2', code: 'newbie', name: 'Newbie', status: 'ACTIVE', activeKeys: 0, models: 0, predictions: 0, lastCallbackAt: null, createdAt: '' },
+];
+const key = (id: string, keyId: string, lastUsedAt: string | null) =>
+  ({ id, keyId, label: null, scopes: ['PREDICTIONS'], status: 'ACTIVE', createdAt: '2026-11-01T00:00:00Z', lastUsedAt, revokedAt: null });
+const issued = (id: string) => ({ id, keyId: 'k-new', label: null, apiKey: 'mmk_new_secret', scopes: ['PREDICTIONS'], createdAt: '' });
+const forAgentNoShared = (r: { url: string; params: { get(k: string): string | null } }) =>
+  r.url === '/api/v1/prompts/p1/for-agent' && r.params.get('sharedKey') === 'false';
 const text = (el: HTMLElement) => el.textContent?.replace(/\s+/g, ' ') ?? '';
 
 describe('lineDiff', () => {
@@ -47,6 +56,8 @@ describe('PromptsPage (W5)', () => {
     const f = TestBed.createComponent(PromptsPage);
     f.detectChanges();
     http.expectOne('/api/v1/prompts').flush(list);
+    TestBed.tick();
+    http.match('/api/v1/providers').forEach(r => r.flush(providers));   // admins load the provider picker
     await f.whenStable();
     return f;
   }
@@ -134,6 +145,8 @@ describe('PromptsPage (W5)', () => {
       const g = TestBed.createComponent(PromptsPage);
       g.detectChanges();
       http.expectOne('/api/v1/prompts').flush([prompt, other]);
+      TestBed.tick();
+      http.match('/api/v1/providers').forEach(r => r.flush(providers));
       await g.whenStable();
       expect(g.componentInstance.editing()).toBe(true);
       expect(g.componentInstance.draft()).toBe('half-written prompt');
@@ -174,5 +187,66 @@ describe('PromptsPage (W5)', () => {
     await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith('key {{EXTERNAL_API_KEY}}'));
     await vi.waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ severity: 'warn', detail: expect.stringContaining('{{EXTERNAL_API_KEY}}') })));
     expect(TestBed.inject(CopyService).manual()).toBeNull();
+  });
+
+  describe('copy for a provider (admin)', () => {
+    const withProvider = 'key {{EXTERNAL_API_KEY}} X-Provider: <your provider name>';
+    let writeText: ReturnType<typeof vi.fn>;
+    beforeEach(() => {
+      setup(admin);
+      writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    });
+    const copyFor = async (providerId: string) => {
+      const f = await open();
+      f.componentInstance.providerId.set(providerId);
+      f.componentInstance.copy();
+      return f;
+    };
+
+    it('rotates the most recently used active key after a confirm, and fills the new key and the provider code', async () => {
+      await copyFor('pv1');
+      http.expectOne('/api/v1/providers/pv1/keys').flush([key('r1', 'k-old', '2026-11-01T00:00:00Z'), key('r2', 'k-recent', '2026-11-20T00:00:00Z')]);
+      const confirm = TestBed.inject(ConfirmService);
+      await vi.waitFor(() => expect(confirm.current()?.message).toContain('k-recent'));
+      confirm.answer(true);
+      await vi.waitFor(() => http.expectOne(forAgentNoShared).flush({ content: withProvider, keyRendered: false }));
+      await vi.waitFor(() => http.expectOne('/api/v1/providers/pv1/keys/r2/rotate').flush(issued('r3')));
+      await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith('key mmk_new_secret X-Provider: openclaw'));
+    });
+
+    it('declining the rotation confirm rotates and copies nothing', async () => {
+      await copyFor('pv1');
+      http.expectOne('/api/v1/providers/pv1/keys').flush([key('r1', 'k-old', null)]);
+      const confirm = TestBed.inject(ConfirmService);
+      await vi.waitFor(() => expect(confirm.current()).not.toBeNull());
+      confirm.answer(false);
+      await Promise.resolve();
+      http.expectNone(r => r.url.includes('/rotate'));
+      expect(writeText).not.toHaveBeenCalled();
+    });
+
+    it('a provider without keys uses the shared key and names the provider in X-Provider', async () => {
+      await copyFor('pv2');
+      http.expectOne('/api/v1/providers/pv2/keys').flush([key('r9', 'k-gone', null), { ...key('r8', 'k-x', null), status: 'REVOKED' }].slice(1));
+      await vi.waitFor(() => http.expectOne(r => r.url === '/api/v1/prompts/p1/for-agent' && r.params.get('sharedKey') === null)
+        .flush({ content: 'key shared-secret X-Provider: <your provider name>', keyRendered: true }));
+      await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith('key shared-secret X-Provider: newbie'));
+      http.expectNone('/api/v1/providers/pv2/keys');
+    });
+
+    it('a provider without keys, on a server without a shared key, gets a new key issued and filled in', async () => {
+      await copyFor('pv2');
+      http.expectOne('/api/v1/providers/pv2/keys').flush([]);
+      await vi.waitFor(() => http.expectOne(r => r.url === '/api/v1/prompts/p1/for-agent' && r.params.get('sharedKey') === null)
+        .flush({ content: withProvider, keyRendered: false }));
+      await vi.waitFor(() => http.expectOne(forAgentNoShared).flush({ content: withProvider, keyRendered: false }));
+      await vi.waitFor(() => {
+        const r = http.expectOne(x => x.method === 'POST' && x.url === '/api/v1/providers/pv2/keys');
+        expect(r.request.body.scopes).toEqual(['PREDICTIONS', 'SETTLE_REQUEST']);
+        r.flush(issued('r10'));
+      });
+      await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith('key mmk_new_secret X-Provider: newbie'));
+    });
   });
 });

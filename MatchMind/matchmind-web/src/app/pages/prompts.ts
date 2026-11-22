@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, linkedSignal, signal } from '@angular/core';
+import { Observable, firstValueFrom } from 'rxjs';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { apiError, apiErrorText } from '../core/http';
-import { PromptTemplate, PromptVersion, PromptVersionSummary } from '../core/models';
+import { AgentPrompt, IssuedKey, Provider, PromptTemplate, PromptVersion, PromptVersionSummary } from '../core/models';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { CopyFallback, CopyService } from '../shared/copy';
 import { fmtDateTime, humanize } from '../shared/format';
@@ -14,6 +14,9 @@ import { ResultTag, StateView } from '../shared/ui';
 /** API limit of `content` (`@Size(max = 200_000)`). */
 export const PROMPT_MAX = 200_000;
 const DRAFT_KEY = 'matchmind.prompt-draft';
+/** The "who is calling" slots the stock prompts leave for X-Provider. */
+// ponytail: matches the wording of the shipped templates only; a template that words the slot differently keeps it.
+const PROVIDER_SLOT = /<(?:your agent name[^>]*|your provider name|the same provider name that sent the prediction)>/g;
 interface Draft { user: string; promptId: string; content: string; description: string; active: boolean; version: number; }
 
 export type DiffLine = { op: ' ' | '-' | '+'; text: string };
@@ -51,7 +54,7 @@ export function lineDiff(before: string, after: string): DiffLine[] {
 @Component({
   selector: 'mm-prompts',
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
-  imports: [FormsModule, RouterLink, Dialog, ResultTag, StateView, CopyFallback],
+  imports: [FormsModule, Dialog, ResultTag, StateView, CopyFallback],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mm-state [state]="state()" [message]="error()" />
@@ -78,7 +81,14 @@ export function lineDiff(before: string, after: string): DiffLine[] {
                 <mm-result [value]="p.active ? 'ACTIVE' : 'DISABLED'" kind="status" />
                 @if (!editing()) {
                   <button type="button" class="btn btn-text btn-sm" (click)="openHistory()" data-testid="prompt-history"><i class="pi pi-history"></i> History</button>
-                  <button type="button" class="btn btn-outline btn-sm" (click)="copy()" data-testid="prompt-copy"><i class="pi pi-copy"></i> Copy</button>
+                  @if (auth.isAdmin()) {
+                    <select class="input input-sm" aria-label="Copy for provider" data-testid="prompt-provider"
+                      [ngModel]="providerId()" (ngModelChange)="providerId.set($event)">
+                      <option value="">Any agent (shared key)</option>
+                      @for (pv of providers(); track pv.id) { <option [value]="pv.id">{{ pv.name }}</option> }
+                    </select>
+                  }
+                  <button type="button" class="btn btn-outline btn-sm" (click)="copy()" [disabled]="copying()" data-testid="prompt-copy"><i class="pi pi-copy"></i> Copy</button>
                   @if (auth.isAdmin()) { <button type="button" class="btn btn-primary btn-sm" (click)="startEdit()" data-testid="prompt-edit"><i class="pi pi-pencil"></i> Edit</button> }
                 } @else {
                   <button type="button" class="btn btn-text btn-sm" (click)="cancel()" data-testid="prompt-cancel">Cancel</button>
@@ -109,7 +119,9 @@ export function lineDiff(before: string, after: string): DiffLine[] {
               @if (p.description) { <p class="page-note mb-2">{{ p.description }}</p> }
               @if (p.content.includes(KEY_PLACEHOLDER)) {
                 <p class="muted-text">
-                  @if (auth.isAdmin()) { Copy fills in <code ngNonBindable>{{EXTERNAL_API_KEY}}</code> with the legacy shared key while the server has one. For a provider's own key, issue it on <a routerLink="/providers">Providers</a> and use "Copy prompt with this key" there. Paste the copy only into your agent. }
+                  @if (auth.isAdmin()) { Pick a provider, then Copy: its key is rotated (the old one stops working) and the new key goes into
+                    <code ngNonBindable>{{EXTERNAL_API_KEY}}</code>. A provider without a key gets the legacy shared key, or a new key when the
+                    server has none. Without a provider, Copy uses the shared key. Paste the copy only into that provider's agent. }
                   @else { <code ngNonBindable>{{EXTERNAL_API_KEY}}</code> stands for the agent API key and stays in your copy. Ask an admin to copy this prompt for an agent. }
                 </p>
               }
@@ -318,11 +330,19 @@ export class PromptsPage {
   }
 
   readonly KEY_PLACEHOLDER = '{{EXTERNAL_API_KEY}}';
+  /** Admins copy for one provider; viewers never load the list. */
+  private readonly providersRes = this.api.providersResource(false, () => this.auth.isAdmin());
+  private readonly providerList = safeValue(this.providersRes, []);
+  readonly providers = computed(() => this.providerList().filter(p => p.status !== 'DISABLED'));
+  readonly providerId = signal('');
+  readonly copying = signal(false);
 
   /** Copies what an agent needs: the server fills in the URLs, and the key for admins (`keyRendered`). */
   copy(): void {
     const p = this.selected();
     if (!p) return;
+    const provider = this.providers().find(x => x.id === this.providerId());
+    if (provider) { void this.copyForProvider(p, provider); return; }
     this.api.promptForAgent(p.id).subscribe({
       next: r => {
         const keyLeft = !r.keyRendered && r.content.includes(this.KEY_PLACEHOLDER);
@@ -335,6 +355,47 @@ export class PromptsPage {
       },
       error: e => this.messages.add({ severity: 'error', summary: 'Copy failed', detail: apiError(e).message }),
     });
+  }
+
+  /**
+   * Provider keys are stored hashed, so the one in use cannot be read back: rotate it (after a confirm), or, when the
+   * provider has none, use the shared key, or issue a first key when the server has no shared key either. A new key is
+   * put into the text here in the browser and never sent back to the API.
+   */
+  private async copyForProvider(p: PromptTemplate, provider: Provider): Promise<void> {
+    this.copying.set(true);
+    try {
+      const active = (await firstValueFrom(this.api.providerKeys(provider.id))).filter(k => k.status === 'ACTIVE');
+      let content: string;
+      if (active.length) {
+        const k = [...active].sort((a, b) => (b.lastUsedAt ?? b.createdAt).localeCompare(a.lastUsedAt ?? a.createdAt))[0];
+        const ok = await this.confirm.ask({
+          header: `Rotate key ${k.keyId}?`, acceptLabel: 'Rotate and copy', danger: true,
+          message: `${provider.name}'s key ${k.keyId} stops working now. Its agent is refused until you paste this new prompt into it.`,
+        });
+        if (!ok) return;
+        content = await this.withKey(p, this.api.rotateKey(provider.id, k.id));
+      } else {
+        const r = await firstValueFrom(this.api.promptForAgent(p.id));
+        content = r.keyRendered ? r.content
+          : await this.withKey(p, this.api.issueKey(provider.id, 'Prompt Notes copy', ['PREDICTIONS', 'SETTLE_REQUEST']));
+      }
+      void this.clipboard.copy(content.replace(PROVIDER_SLOT, provider.code), `Prompt for ${provider.name}`);
+    } catch (e) {
+      this.messages.add({ severity: 'error', summary: 'Copy failed', detail: apiErrorText(e) });
+    } finally {
+      this.copying.set(false);
+    }
+  }
+
+  /**
+   * The prompt without the shared key, with the key just issued or rotated put in its place. The text is fetched first:
+   * once the key exists, only the clipboard (with its manual fallback) stands between it and the admin.
+   */
+  private async withKey(p: PromptTemplate, issue: Observable<IssuedKey>): Promise<string> {
+    const r: AgentPrompt = await firstValueFrom(this.api.promptForAgent(p.id, false));
+    const k = await firstValueFrom(issue);
+    return r.content.split(this.KEY_PLACEHOLDER).join(k.apiKey);
   }
 
   openHistory(): void {
