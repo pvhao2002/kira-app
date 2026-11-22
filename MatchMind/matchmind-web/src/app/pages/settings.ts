@@ -65,6 +65,7 @@ const AUDIT_SIZE = 10;
         </section>
       </div>
 
+      @if (auth.isAdmin()) {   <!-- provider keys and Import are admin-only: nothing here a viewer can act on -->
       <section class="panel" data-testid="connect-agent">
         <header><h2>Connect an agent</h2></header>
         <p class="muted-text">An agent that can make HTTP calls sends each prediction itself. Agents without internet reply
@@ -81,8 +82,9 @@ const AUDIT_SIZE = 10;
           <dt><code>X-Model-Version</code></dt><dd>Optional, default <code>1</code>.</dd>
         </dl>
         <p class="muted-text mt-2">The prompts in <a routerLink="/prompts">Prompt Notes</a> already contain all of this: their Copy button
-          fills in the URL{{ auth.isAdmin() ? ' and the key' : '' }}. Field rules: <code>docs/API_DOCUMENTATION.md</code>.</p>
+          fills in the URL and the key. Field rules: <code>docs/API_DOCUMENTATION.md</code>.</p>
       </section>
+      }
 
       @if (auth.isAdmin()) {
         <section class="panel flush">

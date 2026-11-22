@@ -159,6 +159,11 @@ describe('SettingsPage (W5)', () => {
     expect(card).toContain('EXTERNAL_API_KEY');
   });
 
+  it('hides Connect an agent from viewers: its keys and Import are admin-only', async () => {
+    const f = await open({ ...me, role: 'VIEWER' });
+    expect(q(f, '[data-testid="connect-agent"]')).toBeNull();
+  });
+
   it('the status filter sends ?status= (archive plan Task 5)', async () => {
     const f = await open();
     const sel = q<HTMLSelectElement>(f, '[data-testid="user-status"]');
