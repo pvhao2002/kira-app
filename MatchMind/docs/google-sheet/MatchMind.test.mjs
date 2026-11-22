@@ -125,7 +125,7 @@ test('refuses to run without the key', () => {
   assert.throws(() => load([prediction], [], null).sendPending(), /MATCHMIND_API_KEY/);
 });
 
-test('setup makes a plain-text MatchMind tab and one 5-minute trigger, for this spreadsheet only', () => {
+test('setup makes a plain-text MatchMind tab and one 1-minute trigger, for this spreadsheet only', () => {
   assert.match(SOURCE, /^\/\*\* @OnlyCurrentDoc \*\//); // the owner's trigger may open no other spreadsheet
   const log = [];
   const range = at => ({ setValues: v => log.push(['values', at, v]), setNumberFormat: f => log.push(['format', at, f]) });
@@ -146,6 +146,6 @@ test('setup makes a plain-text MatchMind tab and one 5-minute trigger, for this 
     ['format', 'A:G', '@'], // plain text: Sheets would turn a version such as 2024-08-06 or 4.10 into a date or a number
     ['frozen', 1],
     ['delete', 'sendPending'],
-    ['trigger', 'sendPending', 5],
+    ['trigger', 'sendPending', 1],
   ]);
 });

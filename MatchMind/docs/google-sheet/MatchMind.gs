@@ -3,13 +3,13 @@
  * MatchMind sheet sender.
  *
  * AI agents that cannot reach the MatchMind API from their sandbox append each request as one row of the "MatchMind"
- * tab. This script sends new rows to the API every 5 minutes and writes the outcome into the status column.
+ * tab. This script sends new rows to the API every minute (the shortest Apps Script trigger) and writes the outcome into the status column.
  *
  * Setup, once:
  * 1. Create a Google Sheet that only you can open. Extensions > Apps Script: replace the code with this file, save.
  * 2. Project Settings > Script Properties > Add script property: MATCHMIND_API_KEY = the server's EXTERNAL_API_KEY.
  * 3. Choose the function "setup" and click Run, then allow the access Google asks for. setup() adds the MatchMind tab
- *    with its header row and sends new rows every 5 minutes. Reload the sheet to get the MatchMind menu.
+ *    with its header row and sends new rows every minute. Reload the sheet to get the MatchMind menu.
  * 4. Put the sheet's link in MATCHMIND_SHEET_URL in the server's .env: the admin copy of the prompts then names it.
  *
  * Status column: rows marked "sent ..." or "rejected ..." are never sent again (clear the cell to resend one, or write
@@ -43,7 +43,7 @@ function setup() {
   ScriptApp.getProjectTriggers()
     .filter(t => t.getHandlerFunction() === 'sendPending')
     .forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('sendPending').timeBased().everyMinutes(5).create();
+  ScriptApp.newTrigger('sendPending').timeBased().everyMinutes(1).create();
 }
 
 function sendPending() {

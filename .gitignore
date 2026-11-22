@@ -101,3 +101,9 @@ build/
 logs/*.log
 /logs
 app.env
+
+# Local deploy scratch (release bundles, server scripts)
+/work/
+
+# Python bytecode
+__pycache__/

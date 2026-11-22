@@ -95,7 +95,7 @@ The **Prompt Notes** page holds the "AI Football Prediction Prompt" and "AI Sett
 providers should use. Edits are versioned. When an agent's sandbox cannot reach the API, the prompts tell it to:
 1. Append the request as a row of your Google Sheet, if it can write to Google Sheets (e.g. Meta AI). Set the sheet up
    once with [`docs/google-sheet/MatchMind.gs`](docs/google-sheet/MatchMind.gs) and put its link in
-   `MATCHMIND_SHEET_URL`: the admin **Copy** fills it in, and the script sends new rows every 5 minutes. Keep the sheet
+   `MATCHMIND_SHEET_URL`: the admin **Copy** fills it in, and the script sends new rows every minute. Keep the sheet
    private: anyone who can edit it can read the API key. Agents write to it through their Google account connection,
    signed in as you. Never share it by link: the link is in every prompt you paste into a chat.
 2. Otherwise keep the request in a "MatchMind" artifact built from the "MatchMind Artifact Prompt" (give that prompt to
