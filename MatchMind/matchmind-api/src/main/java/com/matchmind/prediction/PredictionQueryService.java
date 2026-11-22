@@ -94,12 +94,17 @@ public class PredictionQueryService {
     @Transactional(readOnly = true)
     /**
      * {@code result} matches the top-ranked pick ({@code resultScope=TOP}, default) or any pick of the prediction
-     * ({@code ANY}); with ANY and {@code market}, the same pick must have both.
+     * ({@code ANY}); with ANY and {@code market}, the same pick must have both. {@code kickoffFrom}/{@code kickoffTo}
+     * bound the match kick-off time ({@code to} exclusive), where {@code from}/{@code to} bound when it was predicted.
      */
-    public PageResponse<Map<String, Object>> list(Filters f, String resultScope, Integer page, Integer size, String sort) {
+    public PageResponse<Map<String, Object>> list(Filters f, String resultScope, Instant kickoffFrom, Instant kickoffTo,
+                                                  Integer page, Integer size, String sort) {
         int pg = Paging.page(page), sz = Paging.size(size);
         boolean any = scopeIsAny(resultScope);
-        Sql.Where w = f.where(false, false); // a list: every row, marked counted or not
+        Filters.checkRange(kickoffFrom, kickoffTo);
+        Sql.Where w = f.where(false, false) // a list: every row, marked counted or not
+            .and("m.start_time >= :kickoffFrom", "kickoffFrom", kickoffFrom)
+            .and("m.start_time < :kickoffTo", "kickoffTo", kickoffTo);
         if (f.result() != null && !f.result().isBlank()) {
             String pending = "(%1$s.result IS NULL OR %1$s.result = 'PENDING')";
             if (!any) {

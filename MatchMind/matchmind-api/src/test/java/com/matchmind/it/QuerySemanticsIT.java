@@ -112,6 +112,23 @@ class QuerySemanticsIT extends IntegrationTestBase {
     }
 
     @Test
+    void predictionsFilterByKickOffTimeNotPredictionTime() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Integration in = newIntegration("ko-model");
+        // Kick-off 2026-11-10T19:45Z; the prediction itself is received now.
+        external(in.provider(), "predictions", Payloads.livePrediction("e-" + suffix, "ko-" + suffix, in.modelName()));
+        String q = "/api/v1/predictions?providerId=" + providerId(in);
+
+        assertThat(adminGet(q + "&kickoffFrom=2026-11-10T19:00:00Z&kickoffTo=2026-11-10T20:00:00Z")
+            .get("meta").get("totalElements").asInt()).isEqualTo(1);
+        assertThat(adminGet(q + "&kickoffFrom=2026-11-10T19:46:00Z").get("meta").get("totalElements").asInt()).isZero();
+        assertThat(adminGet(q + "&kickoffTo=2026-11-10T19:45:00Z").get("meta").get("totalElements").asInt()).isZero();
+        MvcResult reversed = mvc.perform(asAdmin(get(q + "&kickoffFrom=2026-11-11T00:00:00Z&kickoffTo=2026-11-10T00:00:00Z"))).andReturn();
+        assertThat(reversed.getResponse().getStatus()).isEqualTo(400);
+        assertThat(read(reversed).get("code").asText()).isEqualTo("INVALID_DATE_RANGE");
+    }
+
+    @Test
     void predictionResultFilterCanMatchAnyPickAndRowsCarryPickCounts() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         Integration in = newIntegration("rs-model");

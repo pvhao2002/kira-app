@@ -245,6 +245,28 @@ describe('PredictionsPage', () => {
     expect(cell.title).toBe('0/-0.5');
   });
 
+  it('opens on matches kicking off from 2 hours ago (still live) to the end of tomorrow, 100 per page', async () => {
+    const before = Date.now();
+    const t = await open('/predictions', PredictionsPage);
+    await t.answer();
+    const p = t.requests('/api/v1/predictions')[0].request.params;
+    const from = Date.parse(p.get('kickoffFrom')!);
+    expect(from).toBeGreaterThanOrEqual(before - 2 * 3_600_000 - 1000);
+    expect(from).toBeLessThanOrEqual(Date.now() - 2 * 3_600_000);
+    const today = new Date();
+    expect(p.get('kickoffTo')).toBe(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2).toISOString());
+    expect([p.get('from'), p.get('to'), p.get('size')]).toEqual([null, null, '100']);
+  });
+
+  it('picked days bound the kick-off time, from the start of the From day', async () => {
+    const t = await open('/predictions?from=2026-11-20&to=2026-11-21', PredictionsPage);
+    await t.answer();
+    const p = t.requests('/api/v1/predictions')[0].request.params;
+    expect(p.get('kickoffFrom')).toBe(new Date(2026, 10, 20).toISOString());
+    expect(p.get('kickoffTo')).toBe(new Date(2026, 10, 22).toISOString());
+    expect(p.get('from')).toBeNull();
+  });
+
   it('sends the result scope from the link (UX-075)', async () => {
     const t = await open('/predictions?result=WIN&resultScope=ANY', PredictionsPage);
     await t.answer();

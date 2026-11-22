@@ -36,6 +36,14 @@ class PromptTemplatesIT extends IntegrationTestBase {
     }
 
     @Test
+    void predictionPromptMakesTheAgentWorkOutTheKickOffTimeInGmtPlus7() {
+        String prompt = predictionPrompt();
+        assertThat(prompt).contains("KICK-OFF TIME (match.startTime)", "GMT+7", "status bar",
+                "minus 7 hours", "add 15 minutes for the half-time break")
+            .doesNotContain("Leave out \"match.startTime\" when the kick-off time is not shown");
+    }
+
+    @Test
     void preMatchSectionExplainsWhatIsMissingBeforeKickOff() {
         String prompt = predictionPrompt();
         assertThat(prompt).contains("QUY TẮC RIÊNG CHO LIVE", "QUY TẮC RIÊNG CHO PRE_MATCH", "\"predictionType\": \"PRE_MATCH\"",

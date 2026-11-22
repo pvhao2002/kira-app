@@ -142,6 +142,8 @@ export class FilterBar implements OnInit {
   readonly fields = input<FilterField[]>(['dates', 'league', 'model', 'type', 'market']);
   /** Default date range: the last N days including today. */
   readonly initialDays = input<number | null>(null);
+  /** Extends the default range past today by this many days (e.g. 1 = up to tomorrow, for kick-off times). */
+  readonly daysAhead = input(0);
   readonly changed = output<BarFilters>();
 
   /** Starts collapsed on phones and on short (landscape) screens, where an open panel would hide the table. */
@@ -217,8 +219,9 @@ export class FilterBar implements OnInit {
   private defaults(): { from: string; to: string } {
     const days = this.initialDays();
     if (!days) return { from: '', to: '' };
-    const end = new Date();
-    const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - (days - 1));
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (days - 1));
+    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + this.daysAhead());
     return { from: isoDay(start), to: isoDay(end) };
   }
 }

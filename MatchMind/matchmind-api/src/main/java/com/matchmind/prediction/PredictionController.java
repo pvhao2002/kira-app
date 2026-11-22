@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,10 +24,12 @@ public class PredictionController {
     /** Shared filters; {@code result} applies to the top pick, or to any pick with {@code resultScope=ANY}. */
     @GetMapping
     public PageResponse<Map<String, Object>> list(Filters filters, @RequestParam(required = false) String resultScope,
+                                                  @RequestParam(required = false) Instant kickoffFrom,
+                                                  @RequestParam(required = false) Instant kickoffTo,
                                                   @RequestParam(required = false) Integer page,
                                                   @RequestParam(required = false) Integer size,
                                                   @RequestParam(required = false) String sort) {
-        return service.list(filters, resultScope, page, size, sort);
+        return service.list(filters, resultScope, kickoffFrom, kickoffTo, page, size, sort);
     }
 
     /** Everything stored for one prediction: odds, stats, simulation, picks with settlement history, raw payload. */

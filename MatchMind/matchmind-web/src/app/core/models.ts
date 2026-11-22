@@ -29,7 +29,9 @@ export interface LoginResponse { accessToken: string; expiresAt: string; user: U
 
 /** Shared query filters of predictions, dashboard and reports (`to` is exclusive). */
 export interface Filters {
-  from?: string; to?: string; league?: string; modelId?: string; providerId?: string;
+  from?: string; to?: string;
+  /** Predictions list only: bounds on the match kick-off time (`to` exclusive), where from/to bound the prediction time. */
+  kickoffFrom?: string; kickoffTo?: string; league?: string; modelId?: string; providerId?: string;
   type?: PredictionType | ''; market?: Market | ''; matchId?: string; search?: string; result?: SettlementResult | '';
   /** `true` also counts archived providers, models and matches. */
   includeArchived?: boolean;

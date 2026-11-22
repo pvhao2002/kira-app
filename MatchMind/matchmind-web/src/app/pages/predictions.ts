@@ -5,7 +5,7 @@ import { ApiService } from '../core/api.service';
 import { LiveService } from '../core/live.service';
 import { Filters, PredictionRow } from '../core/models';
 import { BarFilters, FilterBar } from '../shared/filter-bar';
-import { fmtDateTime, humanize, lineSplit, num, pct, pickText } from '../shared/format';
+import { dayEndExclusive, dayStart, fmtDateTime, humanize, lineSplit, num, pct, pickText } from '../shared/format';
 import { Paginator, SortHeader } from '../shared/kit';
 import { PagedList } from '../shared/paged-list';
 import { ResultTag, ScoreChip } from '../shared/ui';
@@ -20,6 +20,9 @@ const OPTIONAL_COLS = [
 const HIDDEN_BY_DEFAULT = ['minute', 'atCapture', 'csProb'];
 const COLS_KEY = 'matchmind.predictions.columns';
 
+/** A match kicked off this long ago may still be on: the default list keeps it. */
+const LIVE_WINDOW_MS = 2 * 3_600_000;
+
 /** "2 Win · 1 Loss · 1 Pending": every pick of the prediction, not just the top one. */
 export function pickSummary(p: PredictionRow): string {
   return ([[p.pickWins, 'Win'], [p.pickHalfWins, 'Half win'], [p.pickLosses, 'Loss'], [p.pickHalfLosses, 'Half loss'],
@@ -33,7 +36,7 @@ export function pickSummary(p: PredictionRow): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stack">
-      <mm-filter-bar [fields]="['search', 'dates', 'league', 'model', 'type', 'market', 'result', 'resultScope']" (changed)="onFilters($event)" />
+      <mm-filter-bar [fields]="['search', 'dates', 'league', 'model', 'type', 'market', 'result', 'resultScope']" [initialDays]="1" [daysAhead]="1" (changed)="onFilters($event)" />
       <section class="panel flush">
         <div class="toolbar">
           <details class="menu">
@@ -133,7 +136,7 @@ export class PredictionsPage {
   private filters: Filters = {};
   private resultScope: 'TOP' | 'ANY' | undefined;
 
-  readonly list = new PagedList<PredictionRow>(paging => this.api.predictions(this.filters, paging, this.resultScope), { field: 'predictedAt', dir: 'desc' });
+  readonly list = new PagedList<PredictionRow>(paging => this.api.predictions(this.filters, paging, this.resultScope), { field: 'predictedAt', dir: 'desc' }, 100);
 
   private readonly visible = signal<string[]>(this.restoreVisible());
   readonly shownCount = computed(() => this.visible().length);
@@ -159,8 +162,15 @@ export class PredictionsPage {
 
   private first = true;
 
-  onFilters({ resultScope, ...f }: BarFilters): void {
-    this.filters = f;
+  /**
+   * The picked days bound the kick-off time, not the prediction time. On the default range (today to tomorrow) the
+   * list starts 2 hours ago, not at midnight, so matches still being played stay in and finished ones drop out.
+   */
+  onFilters({ resultScope, from, to, ...f }: BarFilters): void {
+    const now = new Date();
+    const live = new Date(now.getTime() - LIVE_WINDOW_MS);
+    const isDefault = from === dayStart(now) && to === dayEndExclusive(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+    this.filters = { ...f, kickoffFrom: isDefault ? live.toISOString() : from, kickoffTo: to };
     this.resultScope = resultScope;
     this.newCount.set(0);
     // The filter bar reports once on init: keep the page and sort from the URL then, start over on later changes.
