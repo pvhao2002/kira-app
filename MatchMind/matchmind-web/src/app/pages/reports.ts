@@ -535,13 +535,13 @@ export class ReportsPage {
   readonly sortedMarkets = computed(() => sortRows(this.marketRows(), this.marketSort()));
   readonly marketChart = computed(() => ({
     labels: this.marketRows().map(r => r.market),
-    datasets: [{ label: 'Win rate', data: this.marketRows().map(r => r.winRate === null ? null : r.winRate * 100), backgroundColor: '#0e7c66', borderRadius: 4 }],
+    datasets: [{ label: 'Win rate', data: this.marketRows().map(r => r.winRate === null ? null : r.winRate * 100), backgroundColor: '#4f46e5', borderRadius: 4 }],
   }));
   readonly marketStack = computed(() => ({
     labels: this.marketRows().map(r => r.market),
     datasets: [
-      { label: 'Wins incl. ½', data: this.marketRows().map(r => r.wins), backgroundColor: '#1a8f55' },
-      { label: 'Losses incl. ½', data: this.marketRows().map(r => r.losses), backgroundColor: '#d14343' },
+      { label: 'Wins incl. ½', data: this.marketRows().map(r => r.wins), backgroundColor: '#059669' },
+      { label: 'Losses incl. ½', data: this.marketRows().map(r => r.losses), backgroundColor: '#e11d48' },
       { label: 'Push / void', data: this.marketRows().map(r => r.pushOrVoid), backgroundColor: '#8a96a8' },
       { label: 'Pending', data: this.marketRows().map(r => r.pending), backgroundColor: '#c98a00' },
     ],
@@ -560,8 +560,8 @@ export class ReportsPage {
       datasets: [
         { label: 'Bins', data: bins.map(b => ({ x: b.avgProbability * 100, y: b.hitRate * 100 })),
           pointRadius: bins.map(b => 4 + 12 * Math.sqrt(b.picks / most)),
-          backgroundColor: bins.map(b => thin(b) ? 'rgba(138,150,168,.55)' : 'rgba(14,124,102,.7)'),
-          borderColor: bins.map(b => thin(b) ? '#8a96a8' : '#0e7c66') },
+          backgroundColor: bins.map(b => thin(b) ? 'rgba(138,150,168,.55)' : 'rgba(79,70,229,.7)'),
+          borderColor: bins.map(b => thin(b) ? '#8a96a8' : '#4f46e5') },
         { label: 'Perfect calibration', data: [{ x: 0, y: 0 }, { x: 100, y: 100 }], showLine: true, pointRadius: 0,
           borderColor: '#8a96a8', borderDash: [6, 4], borderWidth: 1.5 },
       ],

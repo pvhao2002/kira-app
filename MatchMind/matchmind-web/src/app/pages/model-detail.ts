@@ -136,8 +136,8 @@ export class ModelDetailPage {
     const days = (this.dashboard()?.winRateOverTime ?? []).filter(d => d.settled > 0 && d.winRate !== null);
     return days.length < 2 ? null : {
       labels: days.map(d => d.day),
-      datasets: [{ label: 'Win rate', data: days.map(d => Math.round(d.winRate! * 1000) / 10), borderColor: '#0b7a5e',
-        backgroundColor: 'rgba(11,122,94,.12)', fill: true, tension: .25, pointRadius: days.length < 3 ? 5 : 2 }],
+      datasets: [{ label: 'Win rate', data: days.map(d => Math.round(d.winRate! * 1000) / 10), borderColor: '#4f46e5',
+        backgroundColor: 'rgba(79,70,229,.12)', fill: true, tension: .25, pointRadius: days.length < 3 ? 5 : 2 }],
     };
   });
   readonly pctOptions: ChartOptions = {

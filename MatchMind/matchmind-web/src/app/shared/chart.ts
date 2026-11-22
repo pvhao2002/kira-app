@@ -13,9 +13,9 @@ function token(name: string, fallback: string): string {
 /** Text, grid and slice-gap colours from the current theme (styles.scss follows the OS setting). */
 function applyTheme(): void {
   const dark = darkQuery?.matches ?? false;
-  Chart.defaults.color = token('--mm-ink-2', dark ? '#a6b4cc' : '#536074');
-  Chart.defaults.borderColor = token('--mm-line', dark ? '#22304a' : '#e6eaf0');   // quiet grid: faint rules only
-  Chart.defaults.elements.arc.borderColor = token('--mm-card', dark ? '#111b2f' : '#fff');   // slice gaps match the card
+  Chart.defaults.color = token('--mm-ink-2', dark ? '#aab2d0' : '#475569');
+  Chart.defaults.borderColor = token('--mm-line', dark ? 'rgba(255, 255, 255, .08)' : 'rgba(30, 27, 75, .1)');   // quiet grid: faint rules only
+  Chart.defaults.elements.arc.borderColor = token('--mm-card-solid', dark ? '#161b3a' : '#fff');   // slice gaps match the card
 }
 applyTheme();
 // The OS can switch light/dark mid-session (phones do at dusk): recolour every chart on screen.
@@ -24,7 +24,7 @@ darkQuery?.addEventListener?.('change', () => {
   for (const c of Object.values(Chart.instances)) c.update();
 });
 Chart.defaults.font.size = 12;
-Chart.defaults.plugins.tooltip.backgroundColor = '#0f1b33';
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(30, 27, 75, .92)';
 Chart.defaults.plugins.tooltip.padding = 10;
 Chart.defaults.plugins.tooltip.cornerRadius = 8;
 Chart.defaults.plugins.tooltip.boxPadding = 4;

@@ -140,7 +140,7 @@ describe('DashboardPage', () => {
 
     const g = await open(dashboard(), [row('p1', 'PENDING'), row('p2', 'PENDING')]);
     expect(g.nativeElement.querySelectorAll('.fchip')).toHaveLength(0);
-    expect(text(g.nativeElement.querySelector('.form-guide'))).toContain('None of the latest 2 predictions is settled yet');
+    expect(text(g.nativeElement.querySelector('.form-guide'))).toContain('none of the latest 2 predictions is settled yet');
   });
 
   it('quotes AH lines on latest predictions one way, with the split as its tooltip (UX-008)', async () => {

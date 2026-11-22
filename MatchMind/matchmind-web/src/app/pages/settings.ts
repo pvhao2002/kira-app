@@ -178,7 +178,7 @@ const AUDIT_SIZE = 10;
     .pass-row { display: flex; gap: .25rem; align-items: center; }
     .mono { font-family: var(--mm-mono); }
     .scroll-hint { display: none; padding: 0 1rem .5rem; font-size: var(--fs-xs); }
-    .users-table th.actions, .users-table td.actions { position: sticky; right: 0; background: var(--mm-card); box-shadow: -8px 0 8px -8px rgba(15, 27, 51, .25); }
+    .users-table th.actions, .users-table td.actions { position: sticky; right: 0; background: var(--mm-card-solid); box-shadow: -8px 0 8px -8px rgba(30, 27, 75, .25); }
     @media (max-width: 640px) {
       .scroll-hint { display: block; }
       .users-table td.actions .btn { min-height: 40px; }

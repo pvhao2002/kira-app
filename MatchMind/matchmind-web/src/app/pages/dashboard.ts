@@ -13,9 +13,9 @@ import { ResultTag, SmallSample, StateView } from '../shared/ui';
 
 // Same hues as the result tags and the form guide.
 const RESULT_COLORS: Record<string, string> = {
-  WIN: '#157a47', HALF_WIN: '#5fb98a', PUSH: '#8a96a8', VOID: '#c3cad5', HALF_LOSS: '#e59393', LOSS: '#c53a3a', PENDING: '#e0a43a',
+  WIN: '#059669', HALF_WIN: '#6ee7b7', PUSH: '#8a96a8', VOID: '#c3cad5', HALF_LOSS: '#fda4af', LOSS: '#e11d48', PENDING: '#f59e0b',
 };
-const SERIES = ['#0e7c66', '#2f6db5', '#c98a00', '#7b4bb3', '#d1603d', '#3a9fb0', '#5b6779', '#a3476f'];
+const SERIES = ['#4f46e5', '#0891b2', '#c98a00', '#7b4bb3', '#d1603d', '#3a9fb0', '#5b6779', '#a3476f'];
 const GRID = {};   // grid colour comes from the chart defaults (light/dark aware)
 const WITH_YEAR = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 /**
@@ -88,7 +88,7 @@ const MODEL_TICKS = {
           </div>
           <div class="form-guide">
             @if (form().length) {
-              <span class="hero-label">Form: last {{ form().length }} settled of the latest {{ recent().length }} predictions, newest on the right</span>
+              <span class="hero-label">Recent outcomes: last {{ form().length }} settled of the latest {{ recent().length }} predictions, newest on the right</span>
               <ol class="form-chips">
                 @for (p of form(); track p.id) {
                   <li><a class="fchip" [attr.data-r]="p.settlementStatus" [routerLink]="['/predictions', p.id]"
@@ -97,7 +97,7 @@ const MODEL_TICKS = {
                 }
               </ol>
             } @else if (recent().length) {
-              <span class="hero-label">Form: None of the latest {{ recent().length }} predictions is settled yet.</span>
+              <span class="hero-label">Recent outcomes: none of the latest {{ recent().length }} predictions is settled yet.</span>
             }
             <span class="hero-tally"><b class="w">{{ d.totals.fullWins }}</b> won <b class="w">{{ d.totals.halfWins }}</b> half won
               <b class="l">{{ d.totals.fullLosses }}</b> lost <b class="l">{{ d.totals.halfLosses }}</b> half lost
@@ -240,8 +240,8 @@ export class DashboardPage {
     const rows = this.data()?.winRateOverTime ?? [];
     return {
       labels: rows.map(r => r.day),
-      datasets: [{ label: 'Win rate', data: rows.map(r => r.winRate === null ? null : r.winRate * 100), borderColor: '#0b7a5e',
-        backgroundColor: 'rgba(11,122,94,.12)', fill: true, tension: .25, spanGaps: true, pointRadius: rows.length < 3 ? 5 : 2 }],
+      datasets: [{ label: 'Win rate', data: rows.map(r => r.winRate === null ? null : r.winRate * 100), borderColor: '#4f46e5',
+        backgroundColor: 'rgba(79,70,229,.12)', fill: true, tension: .25, spanGaps: true, pointRadius: rows.length < 3 ? 5 : 2 }],
     };
   });
   /** Running total of the daily units; a day without staked picks keeps the total (UX-018). */
@@ -251,7 +251,7 @@ export class DashboardPage {
     const data = rows.map(r => (total += Number(r.units ?? 0)));
     return {
       labels: rows.map(r => r.day),
-      datasets: [{ label: 'Cumulative units', data, borderColor: SERIES[1], backgroundColor: 'rgba(47,109,181,.12)', fill: 'origin',
+      datasets: [{ label: 'Cumulative units', data, borderColor: SERIES[1], backgroundColor: 'rgba(8,145,178,.12)', fill: 'origin',
         tension: .2, pointRadius: rows.length < 3 ? 5 : 2 }],
     };
   });
@@ -272,7 +272,7 @@ export class DashboardPage {
     const rows = this.data()?.modelPerformance ?? [];
     return {
       labels: rows.map(r => r.key),
-      datasets: [{ label: 'Win rate', data: rows.map(r => r.winRate === null ? null : r.winRate * 100), backgroundColor: '#0b7a5e', borderRadius: 4 }],
+      datasets: [{ label: 'Win rate', data: rows.map(r => r.winRate === null ? null : r.winRate * 100), backgroundColor: '#4f46e5', borderRadius: 4 }],
     };
   });
   readonly byModelChart = computed(() => {

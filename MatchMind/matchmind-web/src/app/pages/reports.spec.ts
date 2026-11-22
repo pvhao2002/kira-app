@@ -213,6 +213,6 @@ describe('ReportsPage ROI, small sample and calibration (UX-018)', () => {
     expect(text(el)).toContain('excluded: 4');
     const chart = f.componentInstance.calibrationChart();
     expect(chart.datasets[0].data).toHaveLength(2);   // only non-empty bins are plotted
-    expect(chart.datasets[0].backgroundColor).toEqual(['rgba(14,124,102,.7)', 'rgba(138,150,168,.55)']);
+    expect(chart.datasets[0].backgroundColor).toEqual(['rgba(79,70,229,.7)', 'rgba(138,150,168,.55)']);
   });
 });
