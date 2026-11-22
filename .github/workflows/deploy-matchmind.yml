@@ -1,0 +1,143 @@
+name: CI/CD MatchMind
+
+# Push to master touching MatchMind/** -> test API + web -> ship MatchMind/ to the VPS -> docker compose up --build.
+# Pull requests run the tests only. The VPS keeps its own ~/matchmind/.env; it is never shipped or overwritten.
+#
+# Required secrets (Settings -> Secrets and variables -> Actions, on the "production" environment or the repo):
+#   MATCHMIND_VPS_HOST         e.g. 129.152.4.85
+#   MATCHMIND_VPS_USER         e.g. ubuntu
+#   MATCHMIND_VPS_SSH_KEY      private key whose public half is in the VPS user's ~/.ssh/authorized_keys
+#   MATCHMIND_VPS_KNOWN_HOSTS  output of `ssh-keyscan -t ed25519 <host>` (verified), pins the host key
+
+on:
+  push:
+    branches: [master]
+    paths: ['MatchMind/**', '.github/workflows/deploy-matchmind.yml']
+  pull_request:
+    branches: [master]
+    paths: ['MatchMind/**', '.github/workflows/deploy-matchmind.yml']
+  workflow_dispatch:
+
+# One deploy at a time; never cancel a deploy half way through.
+concurrency:
+  group: deploy-matchmind-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MatchMind/matchmind-api
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: MatchMind/matchmind-api/pom.xml
+      # Unit tests + Testcontainers integration tests (Docker is available on the runner).
+      - run: mvn -B verify
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MatchMind/matchmind-web
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: MatchMind/matchmind-web/package-lock.json
+      - run: npm ci
+      - run: npx ng test --watch=false
+      - run: npx ng build
+
+  deploy:
+    needs: [api, web]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VPS_HOST: ${{ secrets.MATCHMIND_VPS_HOST }}
+      VPS_USER: ${{ secrets.MATCHMIND_VPS_USER }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Package MatchMind
+        run: |
+          tar czf "$RUNNER_TEMP/matchmind.tgz" \
+            --exclude='.env' --exclude='node_modules' --exclude='dist' --exclude='.angular' --exclude='target' \
+            --exclude='test-results' --exclude='playwright-report' \
+            MatchMind
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.MATCHMIND_VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.MATCHMIND_VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host vps\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking yes\n' "$VPS_HOST" "$VPS_USER" > ~/.ssh/config
+
+      - name: Upload
+        run: scp "$RUNNER_TEMP/matchmind.tgz" vps:/tmp/matchmind-${{ github.sha }}.tgz
+
+      - name: Deploy
+        run: |
+          ssh vps "SHA=${{ github.sha }} bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd ~
+          PKG=/tmp/matchmind-$SHA.tgz
+          BAK=~/matchmind.bak-ci-$(date -u +%Y%m%d%H%M%S)-${SHA:0:7}
+
+          # New tree beside the live one; the live .env comes along, nothing else from the server does.
+          rm -rf matchmind.new && mkdir matchmind.new
+          tar xzf "$PKG" -C matchmind.new --strip-components=1
+          cp -p matchmind/.env matchmind.new/.env
+
+          # Swap: the live tree becomes the backup (same compose project name "matchmind", so containers carry over).
+          mv matchmind "$BAK" && mv matchmind.new matchmind
+          rm -f "$PKG"
+
+          cd ~/matchmind
+          docker compose up -d --build --remove-orphans
+
+          for svc in api web; do
+            for i in $(seq 1 40); do
+              s=$(docker inspect -f '{{.State.Health.Status}}' "matchmind-$svc-1" 2>/dev/null || echo missing)
+              [ "$s" = healthy ] && break
+              sleep 5
+            done
+            echo "$svc: $s"
+            if [ "$s" != healthy ]; then
+              docker compose logs --tail 80 "$svc"
+              echo "Deploy FAILED. Previous tree: $BAK"
+              echo "Rollback: cd ~ && mv matchmind matchmind.failed && mv $BAK matchmind && cd matchmind && docker compose up -d --build"
+              exit 1
+            fi
+          done
+          curl -fsS -o /dev/null http://127.0.0.1:8088/ && echo "web: HTTP ok"
+
+          # Keep the 3 newest CI backups and drop dangling images from the rebuild.
+          ls -1dt ~/matchmind.bak-ci-* 2>/dev/null | tail -n +4 | xargs -r rm -rf
+          docker image prune -f >/dev/null
+          echo "Deployed $SHA (backup: $BAK)"
+          REMOTE
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
