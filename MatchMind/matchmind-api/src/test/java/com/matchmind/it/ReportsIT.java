@@ -90,16 +90,25 @@ class ReportsIT extends IntegrationTestBase {
         String id = prediction.get("id").asText();
         int version = prediction.get("version").asInt();
 
-        String body = "{\"content\":\"line 1\\nline 2\",\"description\":\"d\",\"active\":true,\"expectedVersion\":" + version + "}";
-        MvcResult saved = mvc.perform(asAdmin(put("/api/v1/prompts/" + id)).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn();
-        assertThat(saved.getResponse().getStatus()).isEqualTo(200);
-        assertThat(read(saved).get("content").asText()).isEqualTo("line 1\nline 2");
-        assertThat(read(saved).get("version").asInt()).isEqualTo(version + 1);
+        try {
+            String body = "{\"content\":\"line 1\\nline 2\",\"description\":\"d\",\"active\":true,\"expectedVersion\":" + version + "}";
+            MvcResult saved = mvc.perform(asAdmin(put("/api/v1/prompts/" + id)).contentType(MediaType.APPLICATION_JSON).content(body)).andReturn();
+            assertThat(saved.getResponse().getStatus()).isEqualTo(200);
+            assertThat(read(saved).get("content").asText()).isEqualTo("line 1\nline 2");
+            assertThat(read(saved).get("version").asInt()).isEqualTo(version + 1);
 
-        // Saving on top of a stale version is rejected instead of silently overwriting.
-        MvcResult stale = mvc.perform(asAdmin(put("/api/v1/prompts/" + id)).contentType(MediaType.APPLICATION_JSON)
-            .content(body.replace("line 2", "line 3"))).andReturn();
-        assertThat(stale.getResponse().getStatus()).isEqualTo(409);
+            // Saving on top of a stale version is rejected instead of silently overwriting.
+            MvcResult stale = mvc.perform(asAdmin(put("/api/v1/prompts/" + id)).contentType(MediaType.APPLICATION_JSON)
+                .content(body.replace("line 2", "line 3"))).andReturn();
+            assertThat(stale.getResponse().getStatus()).isEqualTo(409);
+        } finally {
+            // The database is shared by every IT class: put the seeded prompt back, or the prompt ITs that run after
+            // this one read "line 1\nline 2" (the class order differs between machines). History is append-only, so the
+            // original text comes back as a new version, as a restore does.
+            db.update("UPDATE prompt_templates t SET content = v.content, description = v.description, active = v.active, "
+                + "version = t.version + 1, updated_by = v.updated_by FROM prompt_template_versions v "
+                + "WHERE t.id = ?::uuid AND v.template_id = t.id AND v.version = ?", id, version);
+        }
     }
 
     private static JsonNode find(JsonNode array, String field, String value) {
