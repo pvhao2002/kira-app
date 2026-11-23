@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IssuedKey, Provider, User } from '../core/models';
+import { CopyService } from '../shared/copy';
 import { ConfirmService } from '../shared/kit';
 import { ProvidersPage } from './providers';
 
@@ -76,11 +77,14 @@ describe('ProvidersPage (UX-019)', () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     f.componentInstance.promptId.set('t1');
-    f.componentInstance.copyPrompt({ id: 'k1', keyId: 'abcdefghijkl', label: null, apiKey: SECRET, scopes: ['PREDICTIONS'], createdAt: '' });
+    f.componentInstance.issued.set(ISSUED);
+    const copying = f.componentInstance.copyPrompt(ISSUED);
     const req = http.expectOne(r => r.url === '/api/v1/prompts/t1/for-agent');
     expect(req.request.params.get('sharedKey')).toBe('false');
     req.flush({ content: 'X-Api-Key: {{EXTERNAL_API_KEY}}', keyRendered: false });
-    await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith(`X-Api-Key: ${SECRET}`));
+    await copying;
+    expect(writeText).toHaveBeenCalledWith(`X-Api-Key: ${SECRET}`);
+    expect(f.componentInstance.keyCopied()).toBe(true);
     Reflect.deleteProperty(navigator, 'clipboard');
   });
 
@@ -149,9 +153,18 @@ describe('ProvidersPage (UX-019)', () => {
     await closing;
     expect(f.componentInstance.issued()).not.toBeNull();
 
+    // Automatic copy failed. Dismissing the fallback keeps the key uncopied.
+    writeText.mockRejectedValueOnce(new Error('Clipboard blocked'));
+    await f.componentInstance.copyKey(f.componentInstance.issued()!);
+    const clipboard = TestBed.inject(CopyService);
+    expect(clipboard.manual()?.what).toBe('API key');
+    clipboard.close();
+    expect(f.componentInstance.keyCopied()).toBe(false);
+
     // Copied: closing is silent.
     q<HTMLButtonElement>(f, '[data-testid="copy-key"]').click();
-    await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith(SECRET));
+    await vi.waitFor(() => expect(f.componentInstance.keyCopied()).toBe(true));
+    expect(writeText).toHaveBeenCalledWith(SECRET);
     await f.componentInstance.askCloseKeys();
     TestBed.tick();
     http.expectOne(r => r.url === '/api/v1/providers').flush([acme]);

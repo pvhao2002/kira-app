@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -116,8 +116,6 @@ export function toFilters(v: { from?: string | null; to?: string | null; league?
         </div>
       }
     </form>`,
-  // Wide screens: a select fills its grid cell like the .input fields do (styles.scss).
-  styles: `@media (min-width: 761px) { mm-select { width: 100%; } }`,
 })
 export class FilterBar implements OnInit {
   private readonly api = inject(ApiService);
@@ -153,7 +151,8 @@ export class FilterBar implements OnInit {
   /** The form as of the last Apply; edits since then are shown as not applied. */
   private readonly applied = signal(JSON.stringify(this.form.getRawValue()));
   readonly pending = computed(() => JSON.stringify({ ...this.form.getRawValue(), ...this.value() }) !== this.applied());
-  readonly dateError = computed(() => dayRange(this.value().from, this.value().to).error ?? '');
+  private readonly dateRange = viewChild(DateRange);
+  readonly dateError = computed(() => this.dateRange()?.error() || dayRange(this.value().from, this.value().to).error || '');
   private readonly scope = computed(() => this.has('resultScope') ? (this.value().resultScope === 'ANY' ? 'ANY' : 'TOP') : null);
   readonly resultLabel = computed(() => this.scope() === 'TOP' ? 'Top pick result' : 'Pick result');
 

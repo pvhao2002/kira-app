@@ -206,6 +206,24 @@ describe('ImportPage', () => {
     expect(f.nativeElement.querySelector('#imp-json-error')).toBeNull();
   });
 
+  it('holds the malformed JSON hint until blur while preventing a partial import', async () => {
+    const f = await open();
+    const c = f.componentInstance;
+    const el = f.nativeElement as HTMLElement;
+    c.provider.set('chatgpt');
+    c.onPaste(SAMPLE_PREDICTION + '\n{"broken":');
+    f.detectChanges();
+    expect(c.parsed().items).toHaveLength(1);
+    expect(text(el.querySelector('#imp-hint')!)).toBe('');
+    expect(el.querySelector<HTMLButtonElement>('button[aria-describedby="imp-hint"]')!.disabled).toBe(true);
+    await c.send();
+    http.expectNone('/api/v1/predictions/import');
+
+    el.querySelector('#imp-json')!.dispatchEvent(new Event('blur'));
+    f.detectChanges();
+    expect(text(el.querySelector('#imp-hint')!)).toContain('Fix the JSON to send.');
+  });
+
   it('locks the fields and shows progress while several predictions send (IMP-2, IMP-3)', async () => {
     const f = await open();
     const c = f.componentInstance;

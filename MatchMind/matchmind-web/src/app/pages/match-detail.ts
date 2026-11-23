@@ -155,7 +155,7 @@ const MIN_REASON = 5;
           <header><h2>Prediction history ({{ predPage() ? predTotal() : '—' }})</h2>
             @if (predTotal() > predictions().length) {
               <span class="muted-text">Showing the latest {{ predictions().length }}
-                · <a [routerLink]="['/predictions']" [queryParams]="{ search: d.match.externalMatchId }">See all in Predictions</a></span>
+                · <a [routerLink]="['/predictions']" [queryParams]="{ matchId: id(), from: '', to: '' }">See all in Predictions</a></span>
             }</header>
           <div class="table-wrap"><table class="dt compact-sm" aria-label="Prediction history" [attr.aria-busy]="predResource.isLoading()">
             <thead><tr><th>Predicted</th><th>Model</th><th class="hide-sm">Type</th><th class="hide-sm">Score then</th><th>Top pick</th><th class="num hide-sm">Prob.</th><th>Result</th></tr></thead>
@@ -226,10 +226,10 @@ const MIN_REASON = 5;
             @for (p of pairs; track p.field) {
               <fieldset class="field"><legend>{{ p.label }} (home : away)</legend>
                 <span class="pair">
-                  <input class="input" type="number" min="0" step="1" [name]="p.home" [(ngModel)]="resultForm[p.home]" [attr.aria-label]="p.label + ' home'"
+                  <input class="input" type="number" min="0" max="99" step="1" [name]="p.home" [(ngModel)]="resultForm[p.home]" [attr.aria-label]="p.label + ' home'"
                     [attr.aria-invalid]="resultErrorField() === p.field || null" [attr.aria-describedby]="resultErrorField() === p.field ? 'res-error' : null">
                   <span aria-hidden="true">:</span>
-                  <input class="input" type="number" min="0" step="1" [name]="p.away" [(ngModel)]="resultForm[p.away]" [attr.aria-label]="p.label + ' away'"
+                  <input class="input" type="number" min="0" max="99" step="1" [name]="p.away" [(ngModel)]="resultForm[p.away]" [attr.aria-label]="p.label + ' away'"
                     [attr.aria-invalid]="resultErrorField() === p.field || null" [attr.aria-describedby]="resultErrorField() === p.field ? 'res-error' : null">
                 </span></fieldset>
             }
@@ -374,8 +374,8 @@ export class MatchDetailPage {
     for (const p of PAIRS) {
       const home = f[p.home], away = f[p.away];
       if (home === null && away === null) continue;
-      if (home === null || away === null || !Number.isInteger(home) || !Number.isInteger(away) || home < 0 || away < 0) {
-        this.resultError.set(`${p.label}: enter whole numbers of 0 or more for both sides, or leave both empty.`);
+      if (home === null || away === null || !Number.isInteger(home) || !Number.isInteger(away) || home < 0 || home > 99 || away < 0 || away > 99) {
+        this.resultError.set(`${p.label}: enter whole numbers from 0 to 99 for both sides, or leave both empty.`);
         this.resultErrorField.set(p.field);
         return;
       }

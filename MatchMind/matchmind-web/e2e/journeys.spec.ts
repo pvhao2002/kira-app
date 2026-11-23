@@ -123,6 +123,8 @@ test('callbacks: prediction is idempotent, result settles picks, settle stays ad
 test('prediction detail shows odds, settlement history and the raw payload', async ({ page }) => {
   await login(page);
   await page.locator('aside nav').getByRole('link', { name: 'Predictions', exact: true }).click();
+  await page.getByRole('button', { name: 'Clear from', exact: true }).click();
+  await page.getByRole('button', { name: 'Clear to', exact: true }).click();
   await page.getByLabel('Search').fill(`Home ${RUN}`);
   await page.getByRole('button', { name: 'Apply' }).click();
   const row = page.getByRole('row', { name: new RegExp(`Home ${RUN}`) });
@@ -161,7 +163,7 @@ test('reports: all five reports render with export, column visibility and drill-
   await page.getByRole('button', { name: 'Apply' }).click();
   const modelRow = page.getByRole('row', { name: new RegExp(MODEL.name) });
   await expect(modelRow).toContainText('50.0%'); // 2 picks (agent API maximum): OU win, AH half loss
-  await modelRow.getByRole('button', { name: 'Toggle breakdown' }).click();
+  await modelRow.getByRole('button', { name: `Breakdown for ${MODEL.name}` }).click();
   await expect(page.getByRole('heading', { name: 'By market' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Premier League', exact: true })).toBeVisible();
 
@@ -174,7 +176,7 @@ test('reports: all five reports render with export, column visibility and drill-
   await expect(header).toHaveCount(0);
   await page.getByRole('group', { name: 'Visible columns' }).getByLabel('Probability').check();
   await page.locator('summary', { hasText: 'Columns' }).click();
-  await page.getByRole('button', { name: 'Toggle details' }).first().click();
+  await page.getByRole('button', { name: `Details of Home ${RUN} – Chelsea, ${MODEL.name}` }).first().click();
   await expect(page.getByText('Odds, stats, settlement history and raw payload')).toBeVisible();
   const xlsx = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Excel' }).click();
@@ -188,7 +190,7 @@ test('reports: all five reports render with export, column visibility and drill-
 
   await page.getByRole('tab', { name: 'Monte Carlo' }).click();
   await expect(page.getByText('Simulated predictions')).toBeVisible();
-  await page.getByRole('button', { name: 'Toggle distribution' }).first().click();
+  await page.getByRole('button', { name: `Distribution of Home ${RUN} – Chelsea, ${MODEL.name}` }).first().click();
   await expect(page.getByRole('heading', { name: 'Scoreline distribution' })).toBeVisible();
 });
 
@@ -212,7 +214,7 @@ test('detail pages: match result and corners, odds by stage, stats, Monte Carlo;
   await page.getByRole('tab', { name: 'Stats' }).click();
   await expect(page.getByRole('cell', { name: 'Shots', exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Monte Carlo' }).click();
-  await expect(page.getByText('1000', { exact: true })).toBeVisible();
+  await expect(page.getByText('1,000', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Score distribution' })).toBeVisible();
 
   await page.locator('aside nav').getByRole('link', { name: 'Settings', exact: true }).click();
@@ -286,7 +288,8 @@ test('a new prediction shows up live on the predictions page, without a reload',
   const home = `Live ${RUN}`;
   await page.getByLabel('Search').fill(home);
   await page.getByLabel('Search').press('Enter'); // the live reload keeps the page's filters
-  await expect(page.locator('table.dt tbody')).toContainText('No predictions match these filters.');
+  await expect(page).toHaveURL(url => url.searchParams.get('search') === home);
+  await expect(page.locator('table.dt tbody')).toContainText('No predictions match these filters');
   let navigations = 0;
   page.on('framenavigated', f => { if (f === page.mainFrame()) navigations++; });
 
@@ -294,6 +297,8 @@ test('a new prediction shows up live on the predictions page, without a reload',
   body.eventId = `e2e-live-evt-${RUN}`;
   body.match.externalMatchId = `e2e-live-${RUN}`;
   body.match.homeTeam = home;
+  body.match.startTime = new Date(Date.now() - 55 * 60_000).toISOString();
+  body.predictedAt = new Date().toISOString();
   expect((await callback(request, 'predictions', body)).status()).toBe(201);
 
   await expect(page.locator('.toast')).toContainText(`${home} – ${body.match.awayTeam}, by ${MODEL.name}`);

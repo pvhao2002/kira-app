@@ -89,6 +89,8 @@ const MODEL_TICKS = {
           <div class="form-guide">
             @if (recentLoading()) {
               <span class="hero-label" role="status">Recent form: loading…</span>
+            } @else if (recentError()) {
+              <span class="hero-label" role="status">Recent form unavailable. Retry in Latest predictions.</span>
             } @else if (form().length) {
               <span class="hero-label">Recent form (newest on the right)</span>
               <ol class="form-chips">
@@ -180,6 +182,7 @@ const MODEL_TICKS = {
                   } @empty {
                     <tr><td colspan="4" class="empty">
                       @if (recentLoading()) { <mm-state state="loading" [rows]="3" /> }
+                      @else if (recentError(); as message) { <mm-state state="error" [message]="message" retryable (retry)="retryRecent()" /> }
                       @else { <div class="empty-state"><i class="pi pi-bolt" aria-hidden="true"></i><span>No predictions in this range.</span></div> }
                     </td></tr>
                   }
@@ -207,6 +210,7 @@ export class DashboardPage {
   /** First load of the latest predictions: no "empty" message and no missing form guide until they arrive (DASH-3). */
   readonly recentLoading = computed(() => this.recentPage.isLoading() && !this.recentPage.hasValue());
   readonly recentBusy = this.recentPage.isLoading;
+  readonly recentError = errorMessage(this.recentPage);
   readonly modelChartHeight = computed(() => barsHeight(this.data()?.modelPerformance.length ?? 0));
   readonly byModelChartHeight = computed(() => barsHeight(this.data()?.predictionsByModel.length ?? 0));
 
@@ -227,6 +231,8 @@ export class DashboardPage {
   readonly form = computed(() => this.recent().filter(p => p.settlementStatus !== 'PENDING').reverse());
   readonly hasRate = (rows: { winRate: number | null }[]) => rows.some(r => r.winRate !== null);
   readonly hasUnits = (rows: { units: number | null }[]) => rows.some(r => r.units !== null);
+
+  retryRecent(): void { this.recentPage.reload(); }
 
   /** Short date and time; with the year when it is not this year (a 2036 typo must not look like today). */
   when(iso: string): string {

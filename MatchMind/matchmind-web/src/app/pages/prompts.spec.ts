@@ -178,6 +178,63 @@ describe('PromptsPage (W5)', () => {
       expect(f.componentInstance.loadingVersion()).toBe(false);
     });
 
+    it('ignores a history list from the previous template while the new list loads', async () => {
+      const { componentInstance: page } = await open();
+      page.openHistory();
+      const old = http.expectOne('/api/v1/prompts/p1/versions');
+      await page.select(other);
+      page.openHistory();
+      old.flush([{ version: 2 }]);
+      expect(page.history()).toBeNull();
+      expect(page.loadingHistory()).toBe(true);
+      http.expectOne('/api/v1/prompts/p2/versions').flush([{ version: 1 }]);
+      expect(page.history()?.map(v => v.version)).toEqual([1]);
+    });
+
+    it('ignores an older request for the same version after reopening history or clicking again', async () => {
+      const { componentInstance: page } = await open();
+      const historyUrl = '/api/v1/prompts/p1/versions';
+      page.openHistory();
+      http.expectOne(historyUrl).flush([{ version: 2 }]);
+      page.viewVersion(2);
+      const fromClosedDialog = http.expectOne(historyUrl + '/2');
+      page.closeHistory();
+      page.openHistory();
+      http.expectOne(historyUrl).flush([{ version: 2 }]);
+      page.viewVersion(2);
+      const fromPreviousClick = http.expectOne(historyUrl + '/2');
+      page.viewVersion(2);
+      const latest = http.expectOne(historyUrl + '/2');
+      fromClosedDialog.flush({ version: 2, content: 'closed' });
+      expect(page.version()).toBeNull();
+      expect(page.loadingVersion()).toBe(true);
+      latest.flush({ version: 2, content: 'latest' });
+      fromPreviousClick.flush('stale error', { status: 500, statusText: 'Server Error' });
+      expect(page.version()?.content).toBe('latest');
+      expect(page.historyError()).toBe('');
+    });
+
+    it('keeps the new history open when a restore from a closed history finishes', async () => {
+      const { componentInstance: page } = await open();
+      page.openHistory();
+      http.expectOne('/api/v1/prompts/p1/versions').flush([{ version: 2 }]);
+      page.viewVersion(2);
+      http.expectOne('/api/v1/prompts/p1/versions/2').flush({ version: 2, content: 'old' });
+      const restoring = page.restore();
+      TestBed.inject(ConfirmService).answer(true);
+      await restoring;
+      const req = http.expectOne('/api/v1/prompts/p1/versions/2/restore');
+
+      page.closeHistory();
+      await page.select(other);
+      page.openHistory();
+      http.expectOne('/api/v1/prompts/p2/versions').flush([{ version: 1 }]);
+      req.flush({ ...prompt, version: 4 });
+      expect(page.selected()?.id).toBe(other.id);
+      expect(page.history()?.map(v => v.version)).toEqual([1]);
+      expect(page.prompts().find(p => p.id === prompt.id)?.version).toBe(4);
+    });
+
     it('closing the create dialog with typed text asks first; an empty one closes at once (PROMPT-2)', async () => {
       const f = await open();
       f.componentInstance.openCreate();

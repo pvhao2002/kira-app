@@ -32,7 +32,7 @@ describe('FilterBar and the URL', () => {
     /** Answers the league/model lookups, then waits for the router. */
     const settle = async () => { http.match(() => true).forEach(r => r.flush([])); await harness.fixture.whenStable(); };
     await settle();
-    return { bar, router: TestBed.inject(Router), settle };
+    return { bar, router: TestBed.inject(Router), settle, harness };
   }
 
   it('starts from the filters in the link and leaves the address bar alone', async () => {
@@ -71,6 +71,24 @@ describe('FilterBar and the URL', () => {
     expect(bar.pending()).toBe(true);
     bar.apply();
     expect(bar.pending()).toBe(false);
+  });
+
+  it('blocks a filter submission with invalid date text while allowing Reset', async () => {
+    const { bar, harness } = await open('/page?from=2026-12-01');
+    bar.collapsed.set(false);
+    harness.detectChanges();
+    const form = harness.routeNativeElement!.querySelector('form')!;
+    const from = form.querySelector('mm-date-input input') as HTMLInputElement;
+    const emitted: unknown[] = [];
+    bar.changed.subscribe(filters => emitted.push(filters));
+    from.value = 'bad date';
+    from.dispatchEvent(new Event('input'));
+    from.dispatchEvent(new Event('blur'));
+    harness.detectChanges();
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    expect(emitted).toHaveLength(0);
+    bar.reset();
+    expect(emitted).toHaveLength(1);
   });
 
   it('carries the result scope in the filters and the URL when the page offers it (UX-075)', async () => {

@@ -259,4 +259,38 @@ describe('SettingsPage (W5)', () => {
     await f.whenStable();
     expect(text(panel())).toContain('No account changes yet.');
   });
+
+  it('retains audit rows, retries the failed page, and supersedes older requests', async () => {
+    const f = await open(me, false);
+    http.expectOne('/api/v1/auth/me').flush(me);
+    http.expectOne('/api/v1/users').flush([me, kim]);
+    const auditAt = (page: number) => http.expectOne(r =>
+      r.url === '/api/v1/users/audit' && r.params.get('page') === String(page));
+    const auditRow = { id: 'a1', at: '2026-11-20T02:00:00Z', actor: 'admin', targetId: 'u2', target: 'kim', action: 'ROLE_CHANGED' };
+    const meta = { page: 0, size: 10, totalElements: 12, totalPages: 2 };
+    auditAt(0).flush({ data: [auditRow], meta });
+    await f.whenStable();
+
+    const panel = q(f, '[data-testid="user-audit"]');
+    const next = panel.querySelector<HTMLButtonElement>('[aria-label="Next page"]')!;
+    next.click();
+    auditAt(1).flush({ code: 'DOWN', message: 'Audit is down' }, { status: 500, statusText: 'Server Error' });
+    await f.whenStable();
+    expect(text(panel.querySelector('tbody')!)).toContain('kim');
+    expect(text(panel)).toContain('Could not load page 2');
+    expect(text(panel)).toContain('Audit is down');
+    panel.querySelector<HTMLButtonElement>('[data-testid="state-retry"]')!.click();
+    const retry = auditAt(1);
+    f.componentInstance.loadAudit(0);
+    expect(retry.cancelled).toBe(true);
+    auditAt(0).flush({ data: [auditRow], meta });
+    await f.whenStable();
+    expect(panel.querySelector('[data-testid="state-retry"]')).toBeNull();
+
+    next.click();
+    auditAt(1).flush({ data: [{ ...auditRow, id: 'a2', target: 'lee' }], meta: { ...meta, page: 1 } });
+    await f.whenStable();
+    expect(text(panel.querySelector('tbody')!)).toContain('lee');
+    expect(text(panel.querySelector('tbody')!)).not.toContain('kim');
+  });
 });

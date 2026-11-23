@@ -316,6 +316,14 @@ describe('PredictionsPage', () => {
     expect([p.get('result'), p.get('resultScope')]).toEqual(['WIN', 'ANY']);
   });
 
+  it('loads the linked match history, including archived entries and without a kick-off date limit', async () => {
+    const t = await open('/predictions?matchId=m1&from=&to=', PredictionsPage);
+    await t.answer();
+    const p = t.requests('/api/v1/predictions')[0].request.params;
+    expect([p.get('matchId'), p.get('includeArchived'), p.get('search'), p.get('kickoffFrom'), p.get('kickoffTo')])
+      .toEqual(['m1', 'true', null, null, null]);
+  });
+
   it('reloads page 1 on a live event, but only offers a refresh on later pages (UX-071)', async () => {
     const t = await open('/predictions?page=2', PredictionsPage);
     await t.answer();

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -197,7 +197,6 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip, StateView } from '../
     .tag-warn { margin-left: .3rem; }
     .selection-bar { gap: .75rem; align-items: center; flex-wrap: wrap; padding: var(--sp-2) var(--sp-3); }
     mm-date-range { min-width: 0; }
-    @media (min-width: 761px) { mm-date-range { grid-column: span 2; } }
     th.select, td.select { width: 2rem; }
     .backfill, .alias-add { margin-left: auto; }
     .backfill { gap: .5rem; align-items: center; flex-wrap: wrap; }`,
@@ -233,7 +232,8 @@ export class MatchesPage {
   private readonly appliedKey = signal('');
   private readonly key = computed(() => JSON.stringify([this.search(), this.league(), this.from(), this.to(), this.status(), this.overdue(), this.archived()]));
   readonly pending = computed(() => this.key() !== this.appliedKey());
-  readonly rangeError = computed(() => dayRange(this.from(), this.to()).error ?? '');
+  private readonly dateRange = viewChild(DateRange);
+  readonly rangeError = computed(() => this.dateRange()?.error() || dayRange(this.from(), this.to()).error || '');
   /** The server's date error only: the range shows the From-after-To error itself. */
   readonly dateError = computed(() => this.list.fieldErrors()['from'] ?? '');
 
@@ -252,6 +252,7 @@ export class MatchesPage {
 
   reset(): void {
     for (const f of [this.search, this.league, this.status, this.from, this.to]) f.set('');
+    this.dateRange()?.setRange('', '');
     this.overdue.set(false);
     this.archived.set(false);
     this.apply();

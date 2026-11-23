@@ -58,7 +58,7 @@
   --mm-green-line: #c7d2fe; --mm-loss-line: #fecdd3; --mm-warn-line: #f1d58b; --mm-blue-line: #a5f3fc;
   --mm-win-soft: #ecfdf5; --mm-win-ink: #065f46; --mm-win-line: #a7f3d0;   /* WIN / success: emerald, one colour everywhere */
   /* Chart colours (read by shared/chart.ts): result outcomes and an 8-step series palette. */
-  --mm-half-win: #10b981; --mm-half-loss: #fb7185; --mm-void: #8a96a8;
+  --mm-half-win: #059669; --mm-half-loss: #fb7185; --mm-void: #8a96a8;
   --mm-series-1: #4f46e5; --mm-series-2: #0891b2; --mm-series-3: #c98a00; --mm-series-4: #7b4bb3;
   --mm-series-5: #d1603d; --mm-series-6: #3a9fb0; --mm-series-7: #5b6779; --mm-series-8: #a3476f;
   /* Overlay chrome, tokenised so prefers-reduced-transparency can solidify it. */
@@ -385,11 +385,15 @@ details.raw[open] > summary { margin-bottom: .4rem; }
 .f-select { width: 170px; }
 .f-select-sm { width: 145px; }
 .date-range .input { width: 140px; }
+.filter-fields mm-date-input { flex: 1 1 0; }
+.filter-fields .mm-dp-field > .input { width: 100%; }
 /* Wide screens: fields share each row evenly, so a wrapped second row looks deliberate, not left over. */
 @media (min-width: 761px) {
   .filter-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.25rem, 1fr)); gap: .45rem; align-items: center; }
-  .filter-fields > .input { width: auto; min-width: 0; }
-  .filter-fields > .input.f-search, .filter-fields > .date-range, .filter-fields > mm-date-range { grid-column: span 2; }
+  .filter-fields > .input, .filter-fields > mm-select { width: auto; min-width: 0; }
+  .filter-fields > mm-select { display: block; }
+  .filter-fields > .input.f-search, .filter-fields > .date-range { grid-column: span 2; }
+  .filter-fields > mm-date-range { grid-column: span 3; }
   .filter-fields > .date-range { display: flex; min-width: 0; }
   .filter-fields > .date-range .input { flex: 1; width: auto; min-width: 0; }
   .filter-fields > .filter-actions { grid-column: span 2; justify-self: start; }
@@ -411,6 +415,9 @@ details.raw[open] > summary { margin-bottom: .4rem; }
   .filter-bar { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }   /* nowrap: a wrapping column sizes to its widest child, not to the card */
   .f-search, .f-select, .f-select-sm, .f-date { width: 100%; }
   .filter-fields > * { flex: 1 1 100%; min-width: 0; }
+  .filter-fields > mm-select { display: block; width: 100%; }
+  .filter-fields mm-date-input { flex-basis: 100%; }
+  .filter-fields .mm-dp-label { min-width: 2.25rem; }
   .filter-fields > .date-range { display: flex; align-items: center; gap: .35rem; }
   .filter-fields > .date-range .input { flex: 1; width: auto; min-width: 0; }
   .filter-actions { display: flex; }   /* Apply + Reset share one row */

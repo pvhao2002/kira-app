@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
@@ -146,7 +146,8 @@ export class ApiLogsPage {
   private readonly key = computed(() =>
     JSON.stringify([this.search(), this.providerId(), this.endpoint(), this.status(), this.from(), this.to()]));
   readonly pending = computed(() => this.key() !== this.appliedKey());
-  readonly rangeError = computed(() => dayRange(this.from(), this.to()).error ?? '');
+  private readonly dateRange = viewChild(DateRange);
+  readonly rangeError = computed(() => this.dateRange()?.error() || dayRange(this.from(), this.to()).error || '');
   /** From-after-To is shown by the date range itself; this is only the server's own message. */
   readonly dateError = computed(() => this.list.fieldErrors()['from'] ?? '');
 
@@ -172,6 +173,7 @@ export class ApiLogsPage {
   }
 
   reset(): void {
+    this.dateRange()?.setRange('', '');
     for (const f of [this.search, this.providerId, this.endpoint, this.status, this.from, this.to]) f.set('');
     this.apply();
   }

@@ -177,6 +177,31 @@ describe('DashboardPage review fixes (DASH-1..9)', () => {
     expect(text(el)).toContain('No predictions in this range');
   });
 
+  it('retries a failed latest predictions request without reloading the dashboard', async () => {
+    const f = TestBed.createComponent(DashboardPage);
+    f.detectChanges();
+    TestBed.tick();
+    http.expectOne(r => r.url.endsWith('/dashboard')).flush(dashboard());
+    http.expectOne(r => r.url.endsWith('/predictions')).flush(
+      { code: 'DOWN', message: 'Predictions unavailable' }, { status: 503, statusText: 'Unavailable' });
+    http.match(() => true).forEach(r => r.flush([]));
+    await f.whenStable();
+
+    const el = f.nativeElement as HTMLElement;
+    const table = el.querySelector('table[aria-label="Latest predictions"]')!;
+    expect(text(table)).toContain('Predictions unavailable');
+    expect(text(table)).not.toContain('No predictions in this range');
+    expect(text(el.querySelector('.form-guide')!)).toContain('Recent form unavailable');
+    table.querySelector<HTMLButtonElement>('[data-testid="state-retry"]')!.click();
+    TestBed.tick();
+    http.expectOne(r => r.url.endsWith('/predictions')).flush({
+      data: [row('p1', 'WIN')], meta: { page: 0, size: 10, totalElements: 1, totalPages: 1 },
+    });
+    await f.whenStable();
+    expect(text(el.querySelector('.form-guide')!)).toContain('Last 1 settled');
+    expect(table.querySelector('[data-testid="state-retry"]')).toBeNull();
+  });
+
   it('links every KPI, including Units and ROI, and shows the Units/ROI definition as text (DASH-5, DASH-6)', async () => {
     const f = await open();
     const el = f.nativeElement as HTMLElement;
