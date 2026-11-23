@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
-import { safeValue, viewState } from '../core/resource';
+import { keepPrevious, viewState } from '../core/resource';
 import { ROI_DEF, fmtDateTime, pct, units } from '../shared/format';
 import { Paginator, Sort, SortHeader, sortParam, sortRows } from '../shared/kit';
 import { listError } from '../shared/paged-list';
@@ -23,18 +23,17 @@ const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCas
     <div class="stack">
       <p class="page-note">Models are added automatically the first time an agent sends a prediction with them
         (<code>X-Model-Name</code> header). Providers and their keys are managed on <a routerLink="/providers">Providers</a>.</p>
+      <p class="page-note" data-testid="definitions">Win rate: (win + half win) divided by settled picks; push and void are left out. {{ roiDef }}</p>
       <div class="filter-bar">
         <input class="input f-search" type="search" [value]="search()" (input)="setSearch($any($event.target).value)"
           placeholder="Model, version or provider" aria-label="Search models" />
         <label class="check"><input type="checkbox" data-testid="show-archived" [checked]="showArchived()" (change)="setShowArchived($any($event.target).checked)" /> Show archived and merged</label>
       </div>
-      <mm-state [state]="state()" [message]="error()" />
-      @if (state() === 'error') {
-        <button type="button" class="btn btn-outline btn-sm retry" data-testid="retry" (click)="resource.reload()"><i class="pi pi-refresh"></i> Retry</button>
-      }
-      @if (state() === 'ready') {
+      @if (!loaded()) {
+        <mm-state [state]="state()" [message]="error()" retryable (retry)="resource.reload()" />
+      } @else {
         <section class="panel flush">
-          <div class="table-wrap tall"><table class="dt compact-sm" aria-label="AI models">
+          <div class="table-wrap tall"><table class="dt compact-sm" aria-label="AI models" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
             <thead>
               <tr><th mmSort="name" [sort]="sort()" (sortChange)="setSort($event)">Model</th><th class="hide-sm" mmSort="providerName" [sort]="sort()" (sortChange)="setSort($event)">Provider</th>
                 <th mmSort="totalPredictions" class="num hide-sm" [sort]="sort()" (sortChange)="setSort($event)">Predictions</th>
@@ -67,11 +66,18 @@ const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCas
               }
             </tbody>
           </table></div>
-          <mm-paginator [page]="page()" [size]="size" [total]="filtered().length" [sizes]="[]" unit="models" (pageChange)="setPage($event)" />
+          @if (filtered().length) {
+            <mm-paginator [page]="page()" [size]="size" [total]="filtered().length" [sizes]="[]" unit="models" (pageChange)="setPage($event)" />
+          }
         </section>
       }
     </div>`,
-  styles: `.retry { align-self: flex-start; }`,
+  styles: `
+    /* MOD-2: at phone width the "small sample" tag drops under the figure and wraps, so the table keeps fitting. */
+    @media (max-width: 640px) {
+      td.num mm-small-sample { display: block; }
+      :host ::ng-deep td.num mm-small-sample .tag { white-space: normal; text-align: right; }
+    }`,
 })
 export class ModelsPage {
   private readonly api = inject(ApiService);
@@ -80,7 +86,10 @@ export class ModelsPage {
   readonly resource = this.api.modelsResource(undefined, () => this.showArchived());
   readonly state = viewState(this.resource);
   readonly error = computed(() => (this.resource.error() ? listError(this.resource.error()) : ''));
-  readonly models = safeValue(this.resource, []);
+  /** Last good list: kept while a toggle reloads, so the table dims instead of being swapped for the skeleton. */
+  private readonly data = keepPrevious(this.resource);
+  readonly loaded = computed(() => this.data() !== undefined);
+  readonly models = computed(() => this.data() ?? []);
   readonly size = PAGE_SIZE;
   readonly pct = pct;
   readonly units = units;

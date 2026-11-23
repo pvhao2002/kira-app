@@ -89,6 +89,36 @@ describe('MatchesPage', () => {
     expect(t.page.pending()).toBe(false);
   });
 
+  it('status chips and Show archived wait for Apply like the text fields (MATCH-11)', async () => {
+    const t = await open('/matches', MatchesPage);
+    await t.answer();
+    const before = t.requests('/api/v1/matches').length;
+    (t.el().querySelector('[data-testid="show-archived"]') as HTMLInputElement).click();
+    t.page.setStatus('FINISHED');
+    t.harness.fixture.detectChanges();
+    expect(t.page.pending()).toBe(true);
+    expect(t.requests('/api/v1/matches')).toHaveLength(before);
+    t.page.apply();
+    await t.answer();
+    const last = t.requests('/api/v1/matches').at(-1)!.request.params;
+    expect(last.get('status')).toBe('FINISHED');
+    expect(last.get('includeArchived')).toBe('true');
+    expect(t.page.pending()).toBe(false);
+    expect(t.page.activeCount()).toBe(2);
+  });
+
+  it('collapses the filter fields behind a toggle (MATCH-1)', async () => {
+    const t = await open('/matches', MatchesPage);
+    await t.answer();
+    const toggle = t.el().querySelector('.filter-toggle') as HTMLButtonElement;
+    expect(t.el().querySelector('.filter-fields')).not.toBeNull();
+    toggle.click();
+    t.harness.fixture.detectChanges();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(t.el().querySelector('.filter-fields')).toBeNull();
+    expect(t.el().querySelector('.chips')).toBeNull();
+  });
+
   describe('merge matches (UX-047)', () => {
     const signIn = (role: string) => sessionStorage.setItem('matchmind.session', JSON.stringify({ token: 't',
       expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
@@ -230,10 +260,22 @@ describe('PredictionsPage', () => {
     expect(heads).toContain('Predicted at');
     expect(heads).toContain('Predicted score');
     expect(heads).toContain('Top pick result');
+    expect(heads.at(-1)).toBe('Top pick result');   // PRED-3: the pinned answer column is last
     expect(heads).not.toContain('At capture');
     expect(heads).not.toContain('CS prob.');
     expect(new Set(heads).size).toBe(heads.length);
     expect(text(t.el().querySelector('tbody')!)).toContain('2 Win · 1 Loss');
+  });
+
+  it('shows the loading skeleton on first load and an empty state with a hint after (PRED-1, PRED-2)', async () => {
+    const t = await open('/predictions', PredictionsPage);
+    TestBed.tick();
+    t.harness.fixture.detectChanges();
+    expect(t.el().querySelector('tbody mm-state .state-loading')).not.toBeNull();
+    expect(text(t.el().querySelector('tbody')!)).not.toContain('No predictions match');
+    await t.answer({ '/api/v1/predictions': page([]) });
+    expect(text(t.el().querySelector('tbody')!)).toContain('No predictions match these filters');
+    expect(t.el().querySelector('tbody .empty-state')).not.toBeNull();
   });
 
   it('quotes the top pick AH line one way, with the split as its tooltip (UX-008)', async () => {
@@ -300,6 +342,20 @@ const model = (i: number): AiModel => ({
 describe('ModelsPage', () => {
   const models = Array.from({ length: 30 }, (_, i) => model(i + 1));
 
+  it('keeps the table (dimmed) while Show archived reloads, and hides the pager on an empty list (MOD-1, MOD-4)', async () => {
+    const t = await open('/models', ModelsPage);
+    await t.answer({ '/api/v1/models': models.slice(0, 3) });
+    (t.el().querySelector('[data-testid="show-archived"]') as HTMLInputElement).click();
+    TestBed.tick();
+    t.harness.fixture.detectChanges();
+    const table = t.el().querySelector('table.dt')!;
+    expect(table.getAttribute('aria-busy')).toBe('true');
+    expect(table.querySelectorAll('tbody tr.clickable')).toHaveLength(3);
+    await t.answer({ '/api/v1/models': [] });
+    expect(t.el().querySelector('mm-paginator')).toBeNull();
+    expect(text(t.el())).toContain('No models yet');
+  });
+
   it('pages the list and keeps the page in the URL (UX-016, UX-010)', async () => {
     const t = await open('/models', ModelsPage);
     await t.answer({ '/api/v1/models': models });
@@ -334,7 +390,7 @@ describe('ModelsPage', () => {
   it('offers Retry when the list fails (UX-037)', async () => {
     const t = await open('/models', ModelsPage);
     await t.answer({ '/api/v1/models': new Error('Database unavailable') });
-    (t.el().querySelector('[data-testid="retry"]') as HTMLButtonElement).click();
+    (t.el().querySelector('[data-testid="state-retry"]') as HTMLButtonElement).click();
     await t.answer({ '/api/v1/models': models });
     expect(t.el().querySelectorAll('tbody tr.clickable')).toHaveLength(25);
   });
@@ -390,13 +446,48 @@ describe('ApiLogsPage', () => {
     expect(dl).not.toContain('0fb8f294');
   });
 
-  it('opens a call from one keyboard stop per row, the row itself, and names the table (UX-040)', async () => {
+  it('opens a call from one keyboard stop per row, the Received button, and names the table (UX-040, LOGS-2)', async () => {
     const t = await open('/api-logs', ApiLogsPage);
     await t.answer({ '/api/v1/api-logs': page([log]) });
     expect(t.el().querySelector('table')!.getAttribute('aria-label')).toBeTruthy();
     const tr = t.el().querySelector('tbody tr') as HTMLElement;
-    expect(tr.getAttribute('tabindex')).toBe('0');
-    expect(tr.querySelectorAll('a[href], button, [tabindex]')).toHaveLength(0);
+    expect(tr.getAttribute('tabindex')).toBe('-1');
+    const stops = tr.querySelectorAll('a[href], button, [tabindex]');
+    expect(stops).toHaveLength(1);
+    expect(stops[0].getAttribute('aria-label')).toContain('Open call from');
+    (stops[0] as HTMLButtonElement).click();   // Enter and Space on a button both click it
+    await t.answer({ '/api/v1/api-logs/l1': { ...log, apiKeyId: null, processingResult: null } });
+    expect(text(t.el().querySelector('dl')!)).toContain('Agent One');
+  });
+
+  it('ignores repeat clicks while a call opens and shows a spinner in its row (LOGS-3)', async () => {
+    const t = await open('/api-logs', ApiLogsPage);
+    await t.answer({ '/api/v1/api-logs': page([log]) });
+    const btn = t.el().querySelector('tbody tr button') as HTMLButtonElement;
+    btn.click();
+    btn.click();
+    (t.el().querySelector('tbody tr') as HTMLElement).click();
+    t.harness.fixture.detectChanges();
+    const calls = t.http.match('/api/v1/api-logs/l1');
+    expect(calls).toHaveLength(1);
+    expect(btn.querySelector('.pi-spinner')).not.toBeNull();
+    calls[0].flush({ ...log, apiKeyId: null, processingResult: null });
+    await t.answer();
+    expect(t.page.opening()).toBeNull();
+  });
+
+  it('shows a loading state instead of "No API calls match" on the first load, and has a Received label and Reset (LOGS-1, LOGS-4, LOGS-8)', async () => {
+    const t = await open('/api-logs', ApiLogsPage);
+    t.harness.fixture.detectChanges();
+    expect(t.el().querySelector('tbody mm-state[state="loading"]')).not.toBeNull();
+    expect(text(t.el())).not.toContain('No API calls match');
+    await t.answer({ '/api/v1/api-logs': page([]) });
+    expect(text(t.el())).toContain('No API calls match these filters.');
+    expect(text(t.el().querySelector('mm-date-range')!)).toContain('Received');
+    expect(t.el().querySelector('select, input[type=date]')).toBeNull();
+    t.page.search.set('boom');
+    t.page.reset();
+    expect(t.page.search()).toBe('');
   });
 
   it('shows the From-after-To error and sends nothing (UX-110)', async () => {

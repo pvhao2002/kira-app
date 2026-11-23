@@ -12,6 +12,7 @@ import {
   basisNote, bidiSafe, extraStatRows, fmtDateTime, humanize, lineSplit, lineText, num, pct, probabilityTables, score, settlementSentence, statRows,
 } from '../shared/format';
 import { Dialog, Expansion, Tabs, ToastService } from '../shared/kit';
+import { Select, SelectOption } from '../shared/select';
 import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
 
 type Action = { kind: 'recalculate' | 'override'; pick: PickDetail };
@@ -19,7 +20,7 @@ const MIN_REASON = 5;
 
 @Component({
   selector: 'mm-prediction-detail',
-  imports: [FormsModule, RouterLink, Dialog, Tabs, JsonView, ResultTag, ScoreChip, StateView],
+  imports: [FormsModule, RouterLink, Dialog, Tabs, JsonView, ResultTag, ScoreChip, StateView, Select],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     h2, .sub, .hist-item { overflow-wrap: anywhere; min-width: 0; }
@@ -32,12 +33,17 @@ const MIN_REASON = 5;
       .actions .btn { display: block; padding-inline: .25rem; }
     }
     .prob-tables { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .prob-tables > .table-wrap { flex: 1 1 14rem; }
     .sentence { margin: .35rem 0 0; }
+    .sentence, .reason { max-width: 80ch; }
+    .similar { list-style: none; margin: 0; padding: 0; }
+    .similar li { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .6rem; }
+    .sub-h.first { margin-top: 0; }
   `],
   template: `
     <div class="stack">
       <a routerLink="/predictions" class="back-link"><i class="pi pi-arrow-left" aria-hidden="true"></i> Predictions</a>
-      <mm-state [state]="state()" [message]="error()" />
+      <mm-state [state]="state()" [message]="error()" retryable (retry)="resource.reload()" />
       @if (detail(); as d) {
         <section class="panel">
           <header>
@@ -59,6 +65,13 @@ const MIN_REASON = 5;
           </div>
         </section>
 
+        @if (reviewFailed()) {
+          <div class="alert alert-warn" role="alert" data-testid="review-failed">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            <span>Couldn't check whether picks need review, so review flags may be missing.</span>
+            <button type="button" class="btn btn-outline btn-sm" (click)="reviewResource.reload()">Retry</button>
+          </div>
+        }
         @if (review().length) {
           <section class="panel review-banner" role="status" data-testid="review-badge">
             <span class="tag tag-warn">{{ review().length }} {{ review().length === 1 ? 'pick needs' : 'picks need' }} review</span>
@@ -78,9 +91,9 @@ const MIN_REASON = 5;
         @if (d.similar?.length) {
           <section class="panel" aria-label="Similar predictions" data-testid="similar">
             <header><h2>Similar predictions</h2><span class="muted-text">Same match, model, type and minute; reports count only the latest.</span></header>
-            <ul>
+            <ul class="similar">
               @for (s of d.similar; track s.predictionId) {
-                <li><a [routerLink]="['/predictions', s.predictionId]">{{ fmt(s.predictedAt) }}</a>
+                <li class="hist-item"><a [routerLink]="['/predictions', s.predictionId]">{{ fmt(s.predictedAt) }}</a>
                   @if (s.exact) { <span class="tag tag-warn" title="Same content apart from eventId, predictedAt and metadata">same content</span> }
                   @if (s.counted) { <span class="tag tag-success">counted</span> } @else { <span class="tag tag-secondary">not counted</span> }</li>
               }
@@ -93,6 +106,9 @@ const MIN_REASON = 5;
         <div class="tabpanel" id="prediction-panel" role="tabpanel" [attr.aria-labelledby]="'tab-' + tab()">
           @switch (tab()) {
             @case ('picks') {
+              @if (auth.isAdmin() && !isFinal()) {
+                <p class="page-note mb-2" id="pick-actions-note" data-testid="actions-note">Override needs a Finished or Cancelled match: enter the final result first. Recalculate waits for it too while a pick is pending.</p>
+              }
               <div class="table-wrap"><table class="dt compact-sm" aria-label="Picks">
                 <thead>
                   <tr><th class="th-icon"><span class="sr-only">Details</span></th><th class="num hide-sm">#</th><th class="hide-sm">Market</th><th>Pick</th><th class="num">Line</th><th class="hide-sm">Stage</th>
@@ -121,8 +137,8 @@ const MIN_REASON = 5;
                     <td class="hide-sm">{{ currentSource(p) }}</td>
                     @if (auth.isAdmin()) {
                       <td class="actions">
-                        <button type="button" class="btn btn-text btn-sm" data-testid="recalculate" (click)="open('recalculate', p)" [disabled]="!isFinal() && p.settlementStatus === 'PENDING'">Recalculate</button>
-                        <button type="button" class="btn btn-text btn-sm quiet" data-testid="override" (click)="open('override', p)" [disabled]="!isFinal()"
+                        <button type="button" class="btn btn-text btn-sm" data-testid="recalculate" [attr.aria-describedby]="isFinal() ? null : 'pick-actions-note'" (click)="open('recalculate', p)" [disabled]="!isFinal() && p.settlementStatus === 'PENDING'">Recalculate</button>
+                        <button type="button" class="btn btn-text btn-sm quiet" data-testid="override" [attr.aria-describedby]="isFinal() ? null : 'pick-actions-note'" (click)="open('override', p)" [disabled]="!isFinal()"
                           [title]="isFinal() ? 'Set the result by hand, with a reason' : 'Enter the final result of the match first: overrides need a Finished or Cancelled match'">Override</button>
                       </td>
                     }
@@ -135,34 +151,34 @@ const MIN_REASON = 5;
                         @if (unchanged(p.results, i)) { <span class="tag tag-secondary" title="Recalculated with the same result; the reason is recorded">Unchanged</span> }
                         @if (!r.current) { <span class="muted-text"> · superseded {{ fmt(r.supersededAt) }}</span> }
                         <p class="sentence">{{ sentence(r.details, r.result) }}</p>
-                        @if (r.reason) { <div class="muted-text">Reason: {{ r.reason }}</div> }
+                        @if (r.reason) { <div class="muted-text reason">Reason: {{ r.reason }}</div> }
                         <details class="raw"><summary>View JSON</summary><mm-json [value]="r.details" /></details>
                       </div>
                     } @empty { <p class="muted-text">Not settled yet. It settles automatically when the match result arrives.</p> }
                   </td></tr>
                   }
-                  } @empty { <tr><td colspan="11" class="empty">No picks.</td></tr> }
+                  } @empty { <tr><td [attr.colspan]="auth.isAdmin() ? 11 : 10" class="empty">No picks.</td></tr> }
                 </tbody>
               </table></div>
             }
             @case ('odds') {
-              <div class="table-wrap"><table class="dt" aria-label="Odds">
+              <div class="table-wrap"><table class="dt compact-sm" aria-label="Odds">
                 <thead>
-                  <tr><th>Ref</th><th>Stage</th><th class="num" title="Snapshot number within the stage">#</th><th class="num">Line</th><th class="num">Home</th><th class="num">Draw</th><th class="num">Away</th>
-                    <th class="num">Over</th><th class="num">Under</th><th>Basis</th><th>At capture</th><th>Captured</th></tr>
+                  <tr><th class="hide-sm">Ref</th><th>Stage</th><th class="num hide-sm" title="Snapshot number within the stage">#</th><th class="num">Line</th><th class="num">Home</th><th class="num">Draw</th><th class="num">Away</th>
+                    <th class="num">Over</th><th class="num">Under</th><th class="hide-sm">Basis</th><th>At capture</th><th class="hide-sm">Captured</th></tr>
                 </thead>
                 <tbody>
                   @for (g of oddsGroups(); track g.market) {
                     <tr><td colspan="12" class="group-cell">{{ g.market }}</td></tr>
                     @for (o of g.rows; track $index) {
                     <tr>
-                      <td>{{ o.ref }}</td><td>{{ humanize(o.stage) }}</td><td class="num">{{ o.snapshotOrder }}</td>
+                      <td class="hide-sm">{{ o.ref }}</td><td>{{ humanize(o.stage) }}</td><td class="num hide-sm">{{ o.snapshotOrder }}</td>
                       <td class="num" [title]="lineSplit(o.market, o.line) || o.lineDisplay || ''">{{ lineText(o.market, o.line, o.lineDisplay) }}</td>
                       <td class="num">{{ num(o.homeOdds) }}</td><td class="num">{{ num(o.drawOdds) }}</td><td class="num">{{ num(o.awayOdds) }}</td>
                       <td class="num">{{ num(o.overOdds) }}</td><td class="num">{{ num(o.underOdds) }}</td>
-                      <td>{{ humanize(o.settlementBasis) }}</td>
+                      <td class="hide-sm">{{ humanize(o.settlementBasis) }}</td>
                       <td>@if (o.homeScoreAtCapture !== null) { <mm-score [home]="o.homeScoreAtCapture" [away]="o.awayScoreAtCapture" [muted]="true" /> } @else { — }</td>
-                      <td class="nowrap">{{ fmt(o.capturedAt) }}</td>
+                      <td class="nowrap hide-sm">{{ fmt(o.capturedAt) }}</td>
                     </tr>
                     }
                   } @empty { <tr><td colspan="12" class="empty">No odds were sent with this prediction.</td></tr> }
@@ -170,27 +186,27 @@ const MIN_REASON = 5;
               </table></div>
             }
             @case ('scores') {
-              <table class="dt" aria-label="Correct scores">
+              <div class="table-wrap"><table class="dt" aria-label="Correct scores">
                 <thead><tr><th class="num">Rank</th><th>Score</th><th class="num">Probability</th></tr></thead>
                 <tbody>
                   @for (c of d.correctScores; track c.rank) { <tr><td class="num">{{ c.rank }}</td><td><mm-score [home]="c.home" [away]="c.away" /></td><td class="num">{{ pct(c.probability) }}</td></tr> }
                   @empty { <tr><td colspan="3" class="empty">No correct-score prediction.</td></tr> }
                 </tbody>
-              </table>
+              </table></div>
             }
             @case ('stats') {
               @if (d.stats; as s) {
-                <table class="dt" aria-label="Stats">
+                <div class="table-wrap"><table class="dt" aria-label="Stats">
                   <thead><tr><th>Stat</th><th class="num">{{ bidi(d.match.homeTeam) }}</th><th class="num">{{ bidi(d.match.awayTeam) }}</th></tr></thead>
                   <tbody>@for (r of statRows(); track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody>
-                </table>
+                </table></div>
                 @if (extraStats(); as x) {
                   @if (x.rows.length) {
                     <h3 class="sub-h">Other stats</h3>
-                    <table class="dt" aria-label="Other stats">
+                    <div class="table-wrap"><table class="dt" aria-label="Other stats">
                       <thead><tr><th>Stat</th><th class="num">{{ bidi(d.match.homeTeam) }}</th><th class="num">{{ bidi(d.match.awayTeam) }}</th></tr></thead>
                       <tbody>@for (r of x.rows; track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody>
-                    </table>
+                    </table></div>
                   }
                   @if (x.rest) { <h3 class="sub-h">More stats</h3><mm-json [value]="x.rest" /> }
                 }
@@ -201,19 +217,19 @@ const MIN_REASON = 5;
                 <div class="grid-2">
                   <dl class="dl">
                     <dt>Method</dt><dd>{{ s.method }}</dd>
-                    <dt>Iterations</dt><dd>{{ s.simulationCount }}</dd>
+                    <dt>Iterations</dt><dd>{{ int(s.simulationCount) }}</dd>
                     <dt>Seed</dt><dd>{{ s.randomSeed ?? '—' }}</dd>
                     <dt>Algorithm</dt><dd>{{ s.algorithmVersion ?? '—' }}</dd>
                     <dt>Expected remaining goals</dt><dd>{{ num(s.expectedRemainingHomeGoals) }} – {{ num(s.expectedRemainingAwayGoals) }}</dd>
                     <dt>Expected remaining corners</dt><dd>{{ num(s.expectedRemainingHomeCorners) }} – {{ num(s.expectedRemainingAwayCorners) }}</dd>
                   </dl>
-                  <div><h3 class="mb-2">Probabilities</h3>
+                  <div><h3 class="sub-h first">Probabilities</h3>
                     <div class="prob-tables">
                       @for (t of probTables(); track t.market) {
-                        <table class="dt" [attr.aria-label]="(t.market || 'Outcome') + ' probabilities'">
+                        <div class="table-wrap"><table class="dt" [attr.aria-label]="(t.market || 'Outcome') + ' probabilities'">
                           <thead><tr><th>{{ t.market || 'Outcome' }}</th><th class="num">Probability</th></tr></thead>
                           <tbody>@for (r of t.rows; track r.outcome) { <tr><td>{{ r.outcome }}</td><td class="num">{{ pct(r.probability) }}</td></tr> }</tbody>
-                        </table>
+                        </table></div>
                       } @empty { @if (!s.probabilities) { <p class="muted-text">Not provided</p> } }
                     </div>
                     @if (s.probabilities) { <details class="raw"><summary>View JSON</summary><mm-json [value]="s.probabilities" /></details> }
@@ -230,7 +246,7 @@ const MIN_REASON = 5;
               } @else { <p class="muted-text">No simulation was sent with this prediction.</p> }
             }
             @case ('raw') {
-              <h3 class="mb-2">Request payload</h3><mm-json [value]="d.payload" />
+              <h3 class="sub-h first">Request payload</h3><mm-json [value]="d.payload" />
               <h3 class="sub-h">Metadata</h3><mm-json [value]="d.metadata" />
             }
           }
@@ -247,16 +263,13 @@ const MIN_REASON = 5;
           <p class="page-note" data-testid="impact">{{ impact(a) }}</p>
           @if (a.kind === 'override') {
             <div class="field"><label for="ov-result">New result</label>
-              <select class="input w-full" id="ov-result" name="result" [(ngModel)]="overrideResult" required autofocus>
-                <option [ngValue]="null" disabled>Choose a result</option>
-                @for (o of overrideOptions; track o.value) { <option [ngValue]="o.value">{{ o.label }}</option> }
-              </select></div>
+              <mm-select class="w-full" id="ov-result" name="result" [(ngModel)]="overrideResult" required autofocus placeholder="Choose a result" [options]="overrideOptions" /></div>
           }
           <!-- UX-032: the dialog opens on its first field, not on Close. -->
           <div class="field"><label for="ov-reason">Reason</label>
             <textarea class="input" id="ov-reason" name="reason" [(ngModel)]="reason" rows="3" maxlength="2000" required [attr.minlength]="minReason"
-              aria-describedby="ov-hint" [attr.autofocus]="a.kind === 'recalculate' ? '' : null"></textarea></div>
-          @if (submitBlocker(a); as why) { <small id="ov-hint" class="muted-text">{{ why }}</small> }
+              aria-describedby="ov-hint" [attr.autofocus]="a.kind === 'recalculate' ? '' : null"></textarea>
+            @if (submitBlocker(a); as why) { <small id="ov-hint" class="muted-text">{{ why }}</small> }</div>
           @if (actionError()) { <div class="field-error" role="alert">{{ actionError() }}</div> }
           <div class="dialog-actions">
             <button type="button" class="btn btn-text" (click)="action.set(null)">Cancel</button>
@@ -272,7 +285,7 @@ export class PredictionDetailPage {
   private readonly api = inject(ApiService);
   private readonly messages = inject(ToastService);
   readonly auth = inject(AuthService);
-  private readonly resource = this.api.predictionResource(() => this.id());
+  protected readonly resource = this.api.predictionResource(() => this.id());
   readonly state = viewState(this.resource);
   readonly error = errorMessage(this.resource);
   /** The counted prediction of the same key, i.e. the one that supersedes this one (UX-046). */
@@ -297,21 +310,24 @@ export class PredictionDetailPage {
     return [...groups].map(([market, rows]) => ({ market, rows }));
   });
   readonly actionError = signal('');
-  readonly overrideOptions = ['WIN', 'HALF_WIN', 'PUSH', 'HALF_LOSS', 'LOSS', 'VOID'].map(r => ({ label: humanize(r), value: r }));
+  readonly overrideOptions: SelectOption[] = ['WIN', 'HALF_WIN', 'PUSH', 'HALF_LOSS', 'LOSS', 'VOID'].map(r => ({ label: humanize(r), value: r }));
   reason = '';
   overrideResult: string | null = null;
   readonly fmt = fmtDateTime;
   readonly humanize = humanize;
   readonly pct = pct;
   readonly num = num;
+  /** A count with thousands separators (100000 becomes 100,000). */
+  readonly int = (n: number): string => n.toLocaleString();
   readonly lineText = lineText;
   readonly score = score;
   readonly lineSplit = lineSplit;
   readonly bidi = bidiSafe;
   readonly sentence = settlementSentence;
   readonly minReason = MIN_REASON;
-  private readonly reviewResource = rxResource({ params: () => this.id(), stream: ({ params }) => this.api.needsReview({ predictionId: params }) });
+  protected readonly reviewResource = rxResource({ params: () => this.id(), stream: ({ params }) => this.api.needsReview({ predictionId: params }) });
   readonly review = safeValue(this.reviewResource, []);
+  readonly reviewFailed = computed(() => !!this.reviewResource.error());
   readonly isFinal = computed(() => ['FINISHED', 'CANCELLED'].includes(this.detail()?.match.status ?? ''));
 
   readonly statRows = computed(() => {

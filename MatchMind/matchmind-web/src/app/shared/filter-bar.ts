@@ -5,6 +5,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { Filters, MARKETS, RESULTS } from '../core/models';
 import { safeValue } from '../core/resource';
+import { DateInput, DateRange } from './date-picker';
+import { Select, SelectOption } from './select';
 import { dayEndExclusive, dayStart, humanize } from './format';
 import { fromQuery, toQuery } from './url-state';
 
@@ -61,15 +63,15 @@ export function toFilters(v: { from?: string | null; to?: string | null; league?
 /** Compact, collapsible filter panel shared by dashboard, predictions and reports. Emits once on init. */
 @Component({
   selector: 'mm-filter-bar',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DateInput, DateRange, Select],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="filter-bar" [formGroup]="form" (ngSubmit)="apply()">
       <button type="button" class="filter-toggle" (click)="collapsed.set(!collapsed())" [attr.aria-expanded]="!collapsed()">
-        <i class="pi pi-sliders-h"></i> Filters
+        <i class="pi pi-sliders-h" aria-hidden="true"></i> Filters
         @if (activeCount()) { <span class="count">{{ activeCount() }}</span> }
         @if (pending()) { <span class="pending-note">· not applied</span> }
-        <i class="pi" [class.pi-chevron-down]="collapsed()" [class.pi-chevron-up]="!collapsed()"></i>
+        <i class="pi" [class.pi-chevron-down]="collapsed()" [class.pi-chevron-up]="!collapsed()" aria-hidden="true"></i>
       </button>
       @if (!collapsed()) {
         <div class="filter-fields">
@@ -77,61 +79,45 @@ export function toFilters(v: { from?: string | null; to?: string | null; league?
             <input class="input f-search" formControlName="search" placeholder="Team, league or match id" aria-label="Search" />
           }
           @if (has('dates')) {
-            <span class="date-range">
-              <input class="input" type="date" formControlName="from" aria-label="From date" />
-              <span aria-hidden="true">–</span>
-              <input class="input" type="date" formControlName="to" aria-label="To date" />
-            </span>
+            <mm-date-range>
+              <mm-date-input formControlName="from" />
+              <mm-date-input formControlName="to" />
+            </mm-date-range>
           }
           @if (has('league')) {
             <input class="input f-select" formControlName="league" list="mm-leagues" placeholder="All leagues" aria-label="League" />
             <datalist id="mm-leagues">@for (l of leagues(); track l) { <option [value]="l"></option> }</datalist>
           }
           @if (has('model')) {
-            <select class="input f-select" formControlName="modelId" aria-label="AI model">
-              <option value="">All AI models</option>
-              @for (m of models(); track m.value) { <option [value]="m.value">{{ m.label }}</option> }
-            </select>
+            <mm-select class="f-select" formControlName="modelId" ariaLabel="AI model" [options]="modelOptions()" />
           }
           @if (has('type')) {
-            <select class="input f-select-sm" formControlName="type" aria-label="Prediction type">
-              <option value="">Pre-match & live</option><option value="PRE_MATCH">Pre-match</option><option value="LIVE">Live</option>
-            </select>
+            <mm-select class="f-select-sm" formControlName="type" ariaLabel="Prediction type" [options]="typeOptions" />
           }
           @if (has('market')) {
-            <select class="input f-select-sm" formControlName="market" aria-label="Market">
-              <option value="">All markets</option>
-              @for (m of markets; track m) { <option [value]="m">{{ m }}</option> }
-            </select>
+            <mm-select class="f-select-sm" formControlName="market" ariaLabel="Market" [options]="marketOptions" />
           }
           @if (has('result')) {
-            <select class="input f-select-sm" formControlName="result" [attr.aria-label]="resultLabel()" [title]="resultLabel()">
-              <option value="">{{ anyResultLabel() }}</option>
-              @for (r of results; track r.value) { <option [value]="r.value">{{ r.label }}</option> }
-            </select>
+            <mm-select class="f-select-sm" formControlName="result" [ariaLabel]="resultLabel()" [options]="resultOptions" />
           }
           @if (has('resultScope')) {
-            <select class="input f-select-sm" formControlName="resultScope" aria-label="Result applies to"
-              title="Match the result of the top-ranked pick, or of any pick of the prediction">
-              <option value="">Top pick</option><option value="ANY">Any pick</option>
-            </select>
+            <mm-select class="f-select-sm" formControlName="resultScope" ariaLabel="Result applies to" aria-describedby="fb-scope-hint" [options]="scopeOptions" />
+            <span id="fb-scope-hint" class="sr-only">Match the result of the top-ranked pick, or of any pick of the prediction</span>
           }
           @if (has('count')) {
-            <select class="input f-select-sm" formControlName="count" aria-label="Count"
-              title="Latest per moment: a re-sent prediction counts once (the latest per match, model, type and minute). All: every stored row">
-              <option value="">Count: latest per moment</option><option value="all">Count: all</option>
-            </select>
+            <mm-select class="f-select" formControlName="count" ariaLabel="Count" aria-describedby="fb-count-hint" [options]="countOptions" />
+            <span id="fb-count-hint" class="sr-only">Latest per moment: a re-sent prediction counts once (the latest per match, model, type and minute). All: every stored row</span>
           }
-          @if (dateError()) { <span class="field-error" role="alert">{{ dateError() }}</span> }
           <span class="filter-actions">
-            <button type="submit" class="btn btn-primary btn-sm" [disabled]="!!dateError()"><i class="pi pi-check"></i> Apply</button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="!!dateError()"><i class="pi pi-check" aria-hidden="true"></i> Apply</button>
             <button type="button" class="btn btn-text btn-sm" (click)="reset()">Reset</button>
             @if (pending()) { <span class="pending-note" role="status">Changes not applied</span> }
           </span>
         </div>
       }
     </form>`,
-  styles: `.pending-note { color: var(--mm-pending); font-size: .8rem; font-weight: 600; }`,
+  // Wide screens: a select fills its grid cell like the .input fields do (styles.scss).
+  styles: `@media (min-width: 761px) { mm-select { width: 100%; } }`,
 })
 export class FilterBar implements OnInit {
   private readonly api = inject(ApiService);
@@ -152,8 +138,14 @@ export class FilterBar implements OnInit {
   private readonly modelList = safeValue(this.api.modelsResource(() => this.has('model')), []);
   readonly models = computed(() => this.modelList().map(m => ({ label: `${m.displayName ?? m.name} ${m.version}`, value: m.id })));
   readonly activeCount = signal(0);
-  readonly markets = MARKETS;
-  readonly results = RESULTS.map(r => ({ label: humanize(r), value: r }));
+  // mm-select options. The "All"/"Any" first option has the empty value, which the form and the URL treat as "no filter".
+  readonly modelOptions = computed<SelectOption[]>(() => [{ value: '', label: 'All AI models' }, ...this.models()]);
+  readonly typeOptions: SelectOption[] = [{ value: '', label: 'Pre-match & live' }, { value: 'PRE_MATCH', label: 'Pre-match' }, { value: 'LIVE', label: 'Live' }];
+  readonly marketOptions: SelectOption[] = [{ value: '', label: 'All markets' }, ...MARKETS.map(m => ({ value: m, label: m }))];
+  // The aria-label names the scope (top pick or any pick), so the visible text can stay short enough for the trigger (DS-8).
+  readonly resultOptions: SelectOption[] = [{ value: '', label: 'Any result' }, ...RESULTS.map(r => ({ value: r, label: humanize(r) }))];
+  readonly scopeOptions: SelectOption[] = [{ value: '', label: 'Top pick' }, { value: 'ANY', label: 'Any pick' }];
+  readonly countOptions: SelectOption[] = [{ value: '', label: 'Count: latest' }, { value: 'all', label: 'Count: all' }];
   private readonly fieldSet = computed(() => new Set(this.fields()));
 
   readonly form = this.fb.nonNullable.group({ from: '', to: '', league: '', modelId: '', type: '', market: '', search: '', result: '', resultScope: '', count: '' });
@@ -164,7 +156,6 @@ export class FilterBar implements OnInit {
   readonly dateError = computed(() => dayRange(this.value().from, this.value().to).error ?? '');
   private readonly scope = computed(() => this.has('resultScope') ? (this.value().resultScope === 'ANY' ? 'ANY' : 'TOP') : null);
   readonly resultLabel = computed(() => this.scope() === 'TOP' ? 'Top pick result' : 'Pick result');
-  readonly anyResultLabel = computed(() => this.scope() === 'TOP' ? 'Any top-pick result' : 'Any pick result');
 
   ngOnInit(): void {
     // The URL wins over the defaults, so a shared or refreshed link shows the same filtered view.

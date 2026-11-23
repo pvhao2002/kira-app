@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Dialog, Paginator, ResizableColumn, Tabs, ToastService } from './kit';
-import { JsonView, ScoreChip } from './ui';
+import { DetailsMenu, JsonView, ScoreChip, StateView } from './ui';
 
 const text = (el: Element) => el.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 
@@ -13,13 +13,20 @@ const text = (el: Element) => el.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 class PaginatorHost { readonly events: unknown[] = []; }
 
 describe('mm-paginator', () => {
-  it('emits one {page, size} on "Rows per page" (UX-080: the bubbling DOM change must not leak through)', async () => {
+  it('emits one {page, size} with a number when a "Rows per page" option is picked (UX-080)', async () => {
+    Element.prototype.scrollIntoView ??= () => {};   // jsdom lacks it; cdkOption calls it
     const f = TestBed.createComponent(PaginatorHost);
+    document.body.appendChild(f.nativeElement);
     await f.whenStable();
-    const select = f.nativeElement.querySelector('select') as HTMLSelectElement;
-    select.value = '50';
-    select.dispatchEvent(new Event('change', { bubbles: true }));
+    const trigger = f.nativeElement.querySelector('button[aria-label="Rows per page"]') as HTMLButtonElement;
+    expect(trigger.textContent).toContain('25 / page');
+    trigger.click();
+    await f.whenStable();
+    const option = [...document.querySelectorAll('[role="option"]')].find(o => text(o).startsWith('50')) as HTMLElement;
+    option.click();
+    await f.whenStable();
     expect(f.componentInstance.events).toEqual([{ page: 0, size: 50 }]);
+    document.body.innerHTML = '';
   });
 
   it('announces the result count politely (UX-102)', async () => {
@@ -44,17 +51,35 @@ const cancel = (f: { nativeElement: HTMLElement }) => {
 };
 
 describe('mm-dialog', () => {
-  it('lets one Esc close a closable dialog (UX-083, UX-120)', async () => {
+  it('Esc is one close request, like the X: the native dialog never closes on its own, so the page can veto (UX-083, UX-120)', async () => {
     const f = TestBed.createComponent(DialogHost);
     await f.whenStable();
-    expect(cancel(f).defaultPrevented).toBe(false);
+    expect(cancel(f).defaultPrevented).toBe(true);
+    expect(f.componentInstance.closed).toBe(1);
   });
 
-  it('blocks Esc on a non-closable dialog', async () => {
+  it('blocks Esc on a non-closable dialog and does not ask the page to close', async () => {
     const f = TestBed.createComponent(DialogHost);
     f.componentInstance.closable.set(false);
     await f.whenStable();
     expect(cancel(f).defaultPrevented).toBe(true);
+    expect(f.componentInstance.closed).toBe(0);
+  });
+
+  it('a native close the page has not accepted (second Esc in Chrome) re-shows the dialog and asks again', async () => {
+    const f = TestBed.createComponent(DialogHost);
+    await f.whenStable();
+    const d = f.nativeElement.querySelector('dialog') as HTMLDialogElement;
+    const show = vi.fn();
+    d.showModal = show;
+    d.dispatchEvent(new Event('close'));
+    expect(show).toHaveBeenCalledTimes(1);
+    expect(f.componentInstance.closed).toBe(1);
+    f.componentInstance.busy.set(true);
+    await f.whenStable();
+    d.dispatchEvent(new Event('close'));
+    expect(show).toHaveBeenCalledTimes(2);
+    expect(f.componentInstance.closed).toBe(1);   // busy: re-shown, no close request
   });
 
   it('busy disables the content and the close paths so a double click cannot submit twice (UX-109)', async () => {
@@ -177,5 +202,57 @@ describe('shared/ui', () => {
     const pre = text(f.nativeElement.querySelector('pre'));
     expect(pre).toContain('abc\\u202e');
     expect(pre).not.toContain('‮');
+  });
+});
+
+@Component({
+  imports: [StateView],
+  template: `<mm-state [state]="state()" message="Boom" [retryable]="retryable()" (retry)="retries = retries + 1" />`,
+})
+class StateHost { readonly state = signal<'loading' | 'error'>('loading'); readonly retryable = signal(false); retries = 0; }
+
+describe('mm-state', () => {
+  it('announces loading as a status with text, not an unnamed div (DS-11)', async () => {
+    const f = TestBed.createComponent(StateHost);
+    await f.whenStable();
+    const status = f.nativeElement.querySelector('[role="status"]') as HTMLElement;
+    expect(text(status)).toBe('Loading…');
+    expect(status.hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('error: Retry only when asked for, and it emits retry once', async () => {
+    const f = TestBed.createComponent(StateHost);
+    f.componentInstance.state.set('error');
+    await f.whenStable();
+    expect(f.nativeElement.querySelector('[data-testid="state-retry"]')).toBeNull();
+    expect(f.nativeElement.querySelector('.state-box i')!.getAttribute('aria-hidden')).toBe('true');
+    f.componentInstance.retryable.set(true);
+    await f.whenStable();
+    (f.nativeElement.querySelector('[data-testid="state-retry"]') as HTMLButtonElement).click();
+    expect(f.componentInstance.retries).toBe(1);
+  });
+});
+
+@Component({
+  imports: [DetailsMenu],
+  template: `<details class="menu" open><summary>Columns</summary><div class="menu-body"><input type="checkbox"></div></details><button id="away">x</button>`,
+})
+class MenuHost {}
+
+describe('details.menu close behaviour (DS-7)', () => {
+  it('Esc closes it and returns focus to the summary; an outside click closes it; an inside click does not', async () => {
+    const f = TestBed.createComponent(MenuHost);
+    document.body.appendChild(f.nativeElement);
+    await f.whenStable();
+    const d = f.nativeElement.querySelector('details') as HTMLDetailsElement;
+    (f.nativeElement.querySelector('input') as HTMLElement).click();
+    expect(d.open).toBe(true);
+    (f.nativeElement.querySelector('input') as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(d.open).toBe(false);
+    expect(document.activeElement).toBe(d.querySelector('summary'));
+    d.open = true;
+    (f.nativeElement.querySelector('#away') as HTMLElement).click();
+    expect(d.open).toBe(false);
+    f.nativeElement.remove();
   });
 });

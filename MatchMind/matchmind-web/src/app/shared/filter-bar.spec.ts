@@ -11,6 +11,9 @@ import { FilterBar } from './filter-bar';
 @Component({ imports: [FilterBar], template: `<mm-filter-bar [fields]="['result', 'resultScope']" />` })
 class ScopedHost {}
 
+@Component({ selector: 'mm-picks-host', imports: [FilterBar], template: `<mm-filter-bar [fields]="['dates', 'market']" />` })
+class PicksHost {}
+
 @Component({ selector: 'mm-count-host', imports: [FilterBar], template: `<mm-filter-bar [fields]="['count']" />` })
 class CountHost {}
 
@@ -123,11 +126,40 @@ describe('FilterBar count policy (UX-046)', () => {
     expect(bar.current().countPolicy).toBe('all');
     bar.collapsed.set(false);
     await settle();
-    expect(el.querySelector('select[aria-label="Count"]')).not.toBeNull();
+    expect(el.querySelector('button[role="combobox"][aria-label="Count"]')).not.toBeNull();
+    expect(el.querySelector('select, input[type=date]')).toBeNull();   // custom controls only (CUSTOM-1/2)
     bar.form.patchValue({ count: '' });
     bar.apply();
     await settle();
     expect(bar.current().countPolicy).toBeUndefined();
     expect(router.url).not.toContain('count=');
+  });
+});
+
+describe('FilterBar custom controls (CUSTOM-1/2, DS-9)', () => {
+  it('a market pick lands in the form, and From after To shows one linked error and blocks Apply', async () => {
+    Element.prototype.scrollIntoView ??= () => {};   // jsdom lacks it; cdkOption calls it
+    TestBed.configureTestingModule({ providers: [provideRouter([{ path: 'picks', component: PicksHost }]), provideHttpClient(), provideHttpClientTesting()] });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/picks');
+    const bar = harness.fixture.debugElement.query(By.directive(FilterBar)).componentInstance as FilterBar;
+    const el = harness.fixture.nativeElement as HTMLElement;
+    document.body.appendChild(el);
+    bar.collapsed.set(false);
+    await harness.fixture.whenStable();
+
+    (el.querySelector('button[aria-label="Market"]') as HTMLButtonElement).click();
+    await harness.fixture.whenStable();
+    (document.querySelectorAll('[role="option"]')[1] as HTMLElement).click();
+    await harness.fixture.whenStable();
+    expect(bar.form.getRawValue().market).toBe(bar.marketOptions[1].value);
+    expect(bar.pending()).toBe(true);
+
+    bar.form.patchValue({ from: '2026-12-31', to: '2026-12-01' });
+    await harness.fixture.whenStable();
+    const alerts = [...el.querySelectorAll('[role="alert"]')].map(a => a.textContent?.trim());
+    expect(alerts).toEqual(['From must be on or before To.']);
+    expect((el.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(true);
+    el.remove();
   });
 });

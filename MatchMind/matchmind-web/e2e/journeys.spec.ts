@@ -181,7 +181,9 @@ test('reports: all five reports render with export, column visibility and drill-
   expect((await xlsx).suggestedFilename()).toMatch(/\.xlsx$/);
 
   await page.getByRole('tab', { name: 'Model comparison' }).click();
-  await page.getByLabel('Matches with at least').selectOption('1');
+  // mm-select: open the trigger, then pick by option name ("1" or "1 (N matches)", from the coverage list).
+  await page.getByLabel('Matches with at least').click();
+  await page.getByRole('option', { name: /^1(\s|$)/ }).click();
   await expect(page.getByRole('link', { name: `Home ${RUN} – Chelsea` }).first()).toBeVisible();
 
   await page.getByRole('tab', { name: 'Monte Carlo' }).click();

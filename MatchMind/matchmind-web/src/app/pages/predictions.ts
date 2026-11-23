@@ -8,7 +8,7 @@ import { BarFilters, FilterBar } from '../shared/filter-bar';
 import { dayEndExclusive, dayStart, fmtDateTime, humanize, lineSplit, num, pct, pickText } from '../shared/format';
 import { Paginator, SortHeader } from '../shared/kit';
 import { PagedList } from '../shared/paged-list';
-import { ResultTag, ScoreChip } from '../shared/ui';
+import { DetailsMenu, ResultTag, ScoreChip, StateView } from '../shared/ui';
 
 /** Columns a user can show or hide; the rest (match, model, pick, result) always show. */
 const OPTIONAL_COLS = [
@@ -32,7 +32,7 @@ export function pickSummary(p: PredictionRow): string {
 
 @Component({
   selector: 'mm-predictions',
-  imports: [RouterLink, FilterBar, SortHeader, Paginator, ScoreChip, ResultTag],
+  imports: [RouterLink, FilterBar, SortHeader, Paginator, ScoreChip, ResultTag, StateView, DetailsMenu],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stack">
@@ -40,17 +40,17 @@ export function pickSummary(p: PredictionRow): string {
       <section class="panel flush">
         <div class="toolbar">
           <details class="menu">
-            <summary class="btn btn-sm"><i class="pi pi-table"></i> Columns ({{ shownCount() }}/{{ cols.length }})</summary>
+            <summary class="btn btn-sm"><i class="pi pi-table" aria-hidden="true"></i> Columns ({{ shownCount() }}/{{ cols.length }})</summary>
             <div class="menu-body" role="group" aria-label="Visible columns">
               @for (c of cols; track c.field) {
                 <label class="check"><input type="checkbox" [checked]="show(c.field)" (change)="toggle(c.field)" /> {{ c.header }}</label>
               }
             </div>
           </details>
-          <span class="muted-text units">One row per prediction · {{ pagePicks() }} picks on this page · Result is the top pick's</span>
+          <span class="muted-text units">One row per prediction · {{ pagePicks() }} picks on this page · Result is the top pick's; Picks counts every pick</span>
           @if (newCount() && list.page() > 0) {
             <button type="button" class="btn btn-outline btn-sm" data-testid="new-predictions" (click)="showNew()">
-              <i class="pi pi-refresh"></i> {{ newCount() }} new — refresh</button>
+              <i class="pi pi-refresh" aria-hidden="true"></i> {{ newCount() }} new — refresh</button>
           }
         </div>
         <div class="table-wrap tall">
@@ -65,19 +65,19 @@ export function pickSummary(p: PredictionRow): string {
               @if (show('price')) { <th class="num hide-sm">Price</th> }
               @if (show('predictedScore')) { <th class="hide-sm">Predicted score</th> }
               @if (show('final')) { <th class="hide-sm">Final</th> }
-              <th class="sticky-end" title="Result of the top-ranked pick. The Picks column counts every pick.">Top pick result</th>
               @if (show('type')) { <th class="hide-sm" mmSort="type" [sort]="list.sort()" (sortChange)="list.setSort($event)">Type</th> }
               @if (show('minute')) { <th class="num hide-sm" mmSort="minute" [sort]="list.sort()" (sortChange)="list.setSort($event)">Min</th> }
               @if (show('atCapture')) { <th class="hide-sm">At capture</th> }
               @if (show('csProb')) { <th class="num hide-sm">CS prob.</th> }
               @if (show('picks')) { <th class="hide-sm">Picks</th> }
+              <th class="sticky-end">Top pick result</th>
             </tr>
           </thead>
           <tbody>
             @for (p of list.rows(); track p.id) {
             <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]">
               <td class="nowrap hide-sm"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a>
-                @if (p.counted === false) { <span class="tag tag-secondary" title="A later prediction of the same match, model, type and minute replaces it in reports">not counted</span> }</td>
+                @if (p.counted === false) { <span class="tag tag-secondary" title="A later prediction of the same match, model, type and minute replaces it in reports">not counted</span><span class="sr-only"> (a later prediction of the same match, model, type and minute replaces it in reports)</span> }</td>
               <td><span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }}</span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">{{ p.modelName }} · {{ fmt(p.predictedAt) }}</a></td>
               <td class="nowrap hide-sm">{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td>
               <td class="nowrap" data-testid="top-pick" [title]="lineSplit(p.topPickMarket, p.topPickLine)">{{ pickText(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}<span class="cell-sub">{{ humanize(p.topPickStage) }}</span></td>
@@ -85,21 +85,23 @@ export function pickSummary(p: PredictionRow): string {
               @if (show('price')) { <td class="num hide-sm">{{ num(p.topPickPrice) }}</td> }
               @if (show('predictedScore')) { <td class="hide-sm"><mm-score [home]="p.predictedHomeScore" [away]="p.predictedAwayScore" /></td> }
               @if (show('final')) { <td class="hide-sm"><mm-score [home]="p.finalHomeScore" [away]="p.finalAwayScore" [muted]="p.matchStatus !== 'FINISHED'" /></td> }
-              <td class="sticky-end"><mm-result [value]="p.settlementStatus" /></td>
               @if (show('type')) { <td class="hide-sm">{{ humanize(p.predictionType) }}</td> }
               @if (show('minute')) { <td class="num hide-sm">{{ p.matchMinute ?? '—' }}</td> }
               @if (show('atCapture')) { <td class="hide-sm"><mm-score [home]="p.currentHomeScore" [away]="p.currentAwayScore" [muted]="true" /></td> }
               @if (show('csProb')) { <td class="num hide-sm">{{ pct(p.correctScoreProbability) }}</td> }
-              @if (show('picks')) { <td class="hide-sm nowrap" [title]="summary(p)">{{ p.pickCount }}<span class="cell-sub">{{ summary(p) }}</span></td> }
+              @if (show('picks')) { <td class="hide-sm nowrap">{{ p.pickCount }}<span class="cell-sub">{{ summary(p) }}</span></td> }
+              <td class="sticky-end"><mm-result [value]="p.settlementStatus" /></td>
             </tr>
             } @empty {
               <tr><td [attr.colspan]="4 + 1 + shownCount()" class="empty">
-                @if (list.loading()) { Loading… }
+                @if (list.loading()) { <mm-state state="loading" [rows]="6" /> }
                 @else if (list.error()) {
                   <div class="empty-state" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><strong>Couldn't load predictions</strong><span>{{ list.error() }}</span>
                     <button type="button" class="btn btn-outline btn-sm" data-testid="retry" (click)="list.load()"><i class="pi pi-refresh"></i> Retry</button></div>
                 }
-                @else { No predictions match these filters. }
+                @else {
+                  <div class="empty-state"><i class="pi pi-filter-slash" aria-hidden="true"></i><strong>No predictions match these filters</strong><span>Widen the dates or reset the filters.</span></div>
+                }
               </td></tr>
             }
           </tbody>
@@ -112,8 +114,7 @@ export function pickSummary(p: PredictionRow): string {
     </div>`,
   styles: `
     .toolbar { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; padding: .45rem .75rem; border-bottom: 1px solid var(--mm-line); }
-    .units { font-size: .8rem; }
-    @media (max-height: 500px) { .table-wrap.tall { max-height: none; } }
+    .units { font-size: var(--fs-sm); }
     /* UX-011: under 600px each prediction is a card (match + result, then the pick); no sideways scrolling. */
     @media (max-width: 600px) {
       table.cards thead { display: none; }

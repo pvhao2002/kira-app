@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ConfirmService } from '../shared/kit';
 import { ImportPage, SAMPLE_PREDICTION, previewOf, readAgentOutput } from './import';
 
 describe('readAgentOutput', () => {
@@ -156,5 +157,82 @@ describe('ImportPage', () => {
     f.componentInstance.useExample();
     expect(f.componentInstance.parsed().items).toHaveLength(1);
     expect(text(f.nativeElement)).toContain('CANNOT_CALL_API');
+  });
+
+  it('Use example asks before it replaces a pasted reply (IMP-8)', async () => {
+    const f = await open();
+    const c = f.componentInstance;
+    c.onPaste('my own reply');
+    const done = c.useExample();
+    expect(TestBed.inject(ConfirmService).current()?.header).toBe('Replace the pasted reply?');
+    TestBed.inject(ConfirmService).answer(false);
+    await done;
+    expect(c.text()).toBe('my own reply');
+    const again = c.useExample();
+    TestBed.inject(ConfirmService).answer(true);
+    await again;
+    expect(c.text()).toContain('CANNOT_CALL_API');
+  });
+
+  it('checks the provider pattern before sending and links the error to the field (IMP-1)', async () => {
+    const f = await open();
+    const c = f.componentInstance;
+    c.provider.set('a');
+    c.onPaste(SAMPLE_PREDICTION);
+    await f.whenStable();
+    f.detectChanges();
+    expect(c.canSend()).toBe(false);
+    expect(text(f.nativeElement.querySelector('#imp-hint'))).toContain('2–64 characters');
+    const input = f.nativeElement.querySelector('#imp-provider') as HTMLInputElement;
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(input.getAttribute('aria-describedby')).toBe('imp-provider-error');
+    expect(f.nativeElement.querySelector('#imp-provider-error')).not.toBeNull();
+    c.provider.set('chatgpt');
+    expect(c.canSend()).toBe(true);
+  });
+
+  it('shows the JSON error after the reply loses focus, not while typing (IMP-7, IMP-6)', async () => {
+    const f = await open();
+    const c = f.componentInstance;
+    c.onPaste('{"a": 1 "b"');
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('#imp-json-error')).toBeNull();
+    (f.nativeElement.querySelector('#imp-json') as HTMLTextAreaElement).dispatchEvent(new Event('blur'));
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('#imp-json-error')).not.toBeNull();
+    expect(f.nativeElement.querySelector('#imp-json').getAttribute('aria-describedby')).toBe('imp-json-error');
+    c.onPaste('{"a": 1 "b"');   // editing again hides it until the next blur
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('#imp-json-error')).toBeNull();
+  });
+
+  it('locks the fields and shows progress while several predictions send (IMP-2, IMP-3)', async () => {
+    const f = await open();
+    const c = f.componentInstance;
+    c.provider.set('chatgpt');
+    c.onPaste(`[${json('e1')}, ${json('e2')}]`);
+    const done = c.send();
+    f.detectChanges();
+    expect((f.nativeElement.querySelector('fieldset.fields') as HTMLFieldSetElement).disabled).toBe(true);
+    expect(text(f.nativeElement.querySelector('button[type="submit"]'))).toContain('Sending 1 of 2');
+    c.onPaste('');   // an edit during the send is ignored
+    expect(c.parsed().items).toHaveLength(2);
+    http.expectOne(r => r.url === '/api/v1/predictions/import').flush({ predictionId: 'pr1', matchId: 'm', duplicate: false, possibleDuplicateOf: null });
+    (await vi.waitFor(() => http.expectOne(r => r.url === '/api/v1/predictions/import'))).flush({ predictionId: 'pr2', matchId: 'm', duplicate: false, possibleDuplicateOf: null });
+    await done;
+    f.detectChanges();
+    expect((f.nativeElement.querySelector('fieldset.fields') as HTMLFieldSetElement).disabled).toBe(false);
+  });
+
+  it('announces a failed result as an alert (IMP-5)', async () => {
+    const f = await open();
+    const c = f.componentInstance;
+    c.provider.set('chatgpt');
+    c.onPaste(SAMPLE_PREDICTION);
+    const done = c.send();
+    http.expectOne(r => r.url === '/api/v1/predictions/import').flush({ status: 400, code: 'VALIDATION_ERROR', message: 'bad' }, { status: 400, statusText: 'Bad Request' });
+    await done;
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('[data-testid="import-result"]').getAttribute('role')).toBe('alert');
   });
 });

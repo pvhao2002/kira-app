@@ -9,6 +9,7 @@ import { errorMessage, safeValue, viewState } from '../core/resource';
 import { CopyFallback, CopyService } from '../shared/copy';
 import { fmtDateTime, humanize } from '../shared/format';
 import { ConfirmService, Dialog, ToastService } from '../shared/kit';
+import { Select, SelectOption } from '../shared/select';
 import { ResultTag, StateView } from '../shared/ui';
 
 /** API limit of `content` (`@Size(max = 200_000)`). */
@@ -54,7 +55,7 @@ export function lineDiff(before: string, after: string): DiffLine[] {
 @Component({
   selector: 'mm-prompts',
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
-  imports: [FormsModule, Dialog, ResultTag, StateView, CopyFallback],
+  imports: [FormsModule, Dialog, ResultTag, Select, StateView, CopyFallback],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mm-state [state]="state()" [message]="error()" />
@@ -66,7 +67,7 @@ export function lineDiff(before: string, after: string): DiffLine[] {
               <strong>{{ p.name }}</strong>
               <small>{{ humanize(p.templateType) }} · v{{ p.version }}{{ p.active ? '' : ' · inactive' }}</small>
             </button>
-          } @empty { <p class="muted-text">No prompt templates yet.</p> }
+          } @empty { <mm-state state="empty" message="No prompt templates yet." icon="pi-file" /> }
           @if (auth.isAdmin()) { <button type="button" class="btn btn-text btn-sm" (click)="openCreate()"><i class="pi pi-plus"></i> New template</button> }
         </aside>
 
@@ -80,15 +81,15 @@ export function lineDiff(before: string, after: string): DiffLine[] {
               <div class="row">
                 <mm-result [value]="p.active ? 'ACTIVE' : 'DISABLED'" kind="status" />
                 @if (!editing()) {
-                  <button type="button" class="btn btn-text btn-sm" (click)="openHistory()" data-testid="prompt-history"><i class="pi pi-history"></i> History</button>
+                  <button type="button" class="btn btn-text btn-sm" (click)="openHistory()" [disabled]="loadingHistory()" data-testid="prompt-history">
+                    <i class="pi" [class.pi-history]="!loadingHistory()" [class.pi-spinner]="loadingHistory()" [class.pi-spin]="loadingHistory()" aria-hidden="true"></i> History</button>
                   @if (auth.isAdmin()) {
-                    <select class="input input-sm" aria-label="Copy for provider" data-testid="prompt-provider"
-                      [ngModel]="providerId()" (ngModelChange)="providerId.set($event)">
-                      <option value="">Any agent (shared key)</option>
-                      @for (pv of providers(); track pv.id) { <option [value]="pv.id">{{ pv.name }}</option> }
-                    </select>
+                    <label for="prompt-provider" class="copy-for">Copy for:</label>
+                    <mm-select id="prompt-provider" size="sm" data-testid="prompt-provider" [options]="providerOptions()"
+                      [ngModel]="providerId()" (ngModelChange)="providerId.set($event)" />
                   }
-                  <button type="button" class="btn btn-outline btn-sm" (click)="copy()" [disabled]="copying()" data-testid="prompt-copy"><i class="pi pi-copy"></i> Copy</button>
+                  <button type="button" class="btn btn-outline btn-sm" (click)="copy()" [disabled]="copying()" data-testid="prompt-copy">
+                    <i class="pi" [class.pi-copy]="!copying()" [class.pi-spinner]="copying()" [class.pi-spin]="copying()" aria-hidden="true"></i> Copy</button>
                   @if (auth.isAdmin()) { <button type="button" class="btn btn-primary btn-sm" (click)="startEdit()" data-testid="prompt-edit"><i class="pi pi-pencil"></i> Edit</button> }
                 } @else {
                   <button type="button" class="btn btn-text btn-sm" (click)="cancel()" data-testid="prompt-cancel">Cancel</button>
@@ -103,7 +104,8 @@ export function lineDiff(before: string, after: string): DiffLine[] {
             @if (conflict()) {
               <div class="alert alert-warn mb-2" role="alert">
                 Someone saved a newer version while you were editing. Your text is still here: copy it, then reload to see their changes.
-                <button type="button" class="btn btn-text btn-sm" (click)="reloadLatest()">Reload latest</button>
+                <button type="button" class="btn btn-text btn-sm" [disabled]="reloading()" (click)="reloadLatest()">
+                  @if (reloading()) { <i class="pi pi-spinner pi-spin" aria-hidden="true"></i> } Reload latest</button>
               </div>
             }
             @if (saveError()) { <div class="alert alert-error mb-2" role="alert" data-testid="prompt-save-error">{{ saveError() }}</div> }
@@ -111,8 +113,9 @@ export function lineDiff(before: string, after: string): DiffLine[] {
               <div class="stack">
                 <div class="field"><label for="pr-desc">Description</label><input class="input w-full" id="pr-desc" [(ngModel)]="draftDescription" maxlength="2000" /></div>
                 <label class="check"><input type="checkbox" id="pr-active" [(ngModel)]="draftActive" /> Active</label>
-                <textarea class="input" [(ngModel)]="draft" aria-label="Prompt content" aria-describedby="pr-count" spellcheck="false" data-testid="prompt-content"></textarea>
-                <small id="pr-count" [class]="tooLong() ? 'field-error' : 'muted-text'">{{ num(draft().length) }} / {{ num(max) }} characters
+                <div class="field"><label for="pr-content">Content</label>
+                  <textarea class="input" id="pr-content" [(ngModel)]="draft" aria-describedby="pr-count" spellcheck="false" data-testid="prompt-content"></textarea></div>
+                <small id="pr-count" class="muted-text" [class.over]="tooLong()">{{ num(draft().length) }} / {{ num(max) }} characters
                   @if (tooLong()) { · shorten it by {{ num(draft().length - max) }} to save }</small>
               </div>
             } @else {
@@ -143,7 +146,8 @@ export function lineDiff(before: string, after: string): DiffLine[] {
           } @empty { <li class="muted-text">No earlier versions.</li> }
         </ul>
         <div class="stack">
-          @if (version(); as v) {
+          @if (loadingVersion()) { <mm-state state="loading" [rows]="4" /> }
+          @else if (version(); as v) {
             <div class="row">
               <label class="check"><input type="checkbox" [checked]="showFull()" (change)="showFull.set(!showFull())" /> Show full text</label>
               @if (auth.isAdmin() && v.version !== selected()?.version) {
@@ -163,17 +167,18 @@ export function lineDiff(before: string, after: string): DiffLine[] {
       </div>
     </mm-dialog>
 
-    <mm-dialog [open]="creating()" (closed)="creating.set(false)" header="New prompt template" width="min(720px, 95vw)">
+    <mm-dialog [open]="creating()" [busy]="saving()" (closed)="closeCreate()" header="New prompt template" width="min(720px, 95vw)">
       <form class="stack" (ngSubmit)="create()">
         <div class="field"><label for="np-name">Name</label><input class="input w-full" id="np-name" name="name" [(ngModel)]="newName" maxlength="128" required /></div>
-        <div class="field"><label for="np-type">Type</label><input class="input w-full" id="np-type" name="type" [(ngModel)]="newType" placeholder="AI_PREDICTION" />
-          <small class="muted-text">Upper-case letters, digits and underscores.</small></div>
+        <div class="field"><label for="np-type">Type</label><input class="input w-full" id="np-type" name="type" [(ngModel)]="newType" placeholder="AI_PREDICTION"
+            [attr.aria-invalid]="typeBad()" aria-describedby="np-type-hint" />
+          <small id="np-type-hint" class="muted-text" [class.err]="typeBad()">Upper-case letters, digits and underscores; starts with a letter, 2–64 characters.</small></div>
         <div class="field"><label for="np-desc">Description</label><input class="input w-full" id="np-desc" name="desc" [(ngModel)]="newDescription" maxlength="2000" /></div>
-        <div class="field"><label for="np-content">Content</label><textarea class="input" id="np-content" name="content" [(ngModel)]="newContent" rows="12"></textarea>
-          <small [class]="newContent().length > max ? 'field-error' : 'muted-text'">{{ num(newContent().length) }} / {{ num(max) }} characters</small></div>
-        @if (createError()) { <div class="field-error">{{ createError() }}</div> }
+        <div class="field"><label for="np-content">Content</label><textarea class="input mono" id="np-content" name="content" [(ngModel)]="newContent" rows="12"></textarea>
+          <small class="muted-text" [class.err]="newContent().length > max">{{ num(newContent().length) }} / {{ num(max) }} characters</small></div>
+        @if (createError()) { <div class="field-error" role="alert">{{ createError() }}</div> }
         <div class="dialog-actions">
-          <button type="button" class="btn btn-text" (click)="creating.set(false)">Cancel</button>
+          <button type="button" class="btn btn-text" (click)="closeCreate()">Cancel</button>
           <button type="submit" class="btn btn-primary" [disabled]="saving() || !newName().trim() || !typeValid() || !newContent().trim() || newContent().length > max">
             @if (saving()) { <i class="pi pi-spinner pi-spin" aria-hidden="true"></i> } Create template</button>
         </div>
@@ -184,8 +189,12 @@ export function lineDiff(before: string, after: string): DiffLine[] {
     .history-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 1rem; }
     .history-list { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow: auto; display: grid; gap: .25rem; }
     .d-del { background: var(--mm-loss-soft); color: var(--mm-loss-ink); }
-    .d-add { background: var(--mm-green-soft); color: var(--mm-green-ink); }
+    .d-add { background: var(--mm-win-soft); color: var(--mm-win-ink); }
+    .over { color: var(--mm-loss); }
+    .copy-for { font-size: var(--fs-sm); color: var(--mm-ink-2); }
+    .mono { font-family: var(--mm-mono); font-size: var(--fs-sm); }
     .diff span { display: block; }
+    @media (max-width: 900px) { .prompt-list { max-height: 30vh; overflow: auto; } }
     @media (max-width: 700px) { .history-layout { grid-template-columns: 1fr; } .history-list { max-height: 30vh; } }`,
 })
 export class PromptsPage {
@@ -229,6 +238,11 @@ export class PromptsPage {
   readonly version = signal<PromptVersion | null>(null);
   readonly showFull = signal(false);
   readonly restoring = signal(false);
+  readonly reloading = signal(false);
+  readonly loadingHistory = signal(false);
+  readonly loadingVersion = signal(false);
+  /** The version the user clicked last: an older response must not replace it. */
+  private wantedVersion = 0;
   readonly historyError = signal('');
   readonly diff = computed(() => {
     const v = this.version(), p = this.selected();
@@ -323,9 +337,11 @@ export class PromptsPage {
 
   /** Refreshes from the server; the open draft is kept so nothing typed is lost. */
   reloadLatest(): void {
+    if (this.reloading()) return;
+    this.reloading.set(true);
     this.api.prompts().subscribe({
-      next: list => { this.promptsRes.set(list); this.conflict.set(false); },
-      error: e => this.messages.add({ severity: 'error', summary: 'Reload failed', detail: apiError(e).message }),
+      next: list => { this.reloading.set(false); this.promptsRes.set(list); this.conflict.set(false); },
+      error: e => { this.reloading.set(false); this.messages.add({ severity: 'error', summary: 'Reload failed', detail: apiError(e).message }); },
     });
   }
 
@@ -334,17 +350,22 @@ export class PromptsPage {
   private readonly providersRes = this.api.providersResource(false, () => this.auth.isAdmin());
   private readonly providerList = safeValue(this.providersRes, []);
   readonly providers = computed(() => this.providerList().filter(p => p.status !== 'DISABLED'));
+  readonly providerOptions = computed<SelectOption[]>(() => [
+    { value: '', label: 'Any agent (shared key)' }, ...this.providers().map(pv => ({ value: pv.id, label: pv.name })),
+  ]);
   readonly providerId = signal('');
   readonly copying = signal(false);
 
   /** Copies what an agent needs: the server fills in the URLs, and the key for admins (`keyRendered`). */
   copy(): void {
     const p = this.selected();
-    if (!p) return;
+    if (!p || this.copying()) return;
     const provider = this.providers().find(x => x.id === this.providerId());
     if (provider) { void this.copyForProvider(p, provider); return; }
+    this.copying.set(true);
     this.api.promptForAgent(p.id).subscribe({
       next: r => {
+        this.copying.set(false);
         const keyLeft = !r.keyRendered && r.content.includes(this.KEY_PLACEHOLDER);
         void this.clipboard.copy(r.content, keyLeft ? 'Prompt' : 'Prompt for the agent', keyLeft ? {
           severity: 'warn', summary: 'Copied without the API key',
@@ -353,7 +374,7 @@ export class PromptsPage {
             : `${this.KEY_PLACEHOLDER} is still in the text: the agent cannot call the API until an admin copies the prompt or fills in the key.`,
         } : undefined);
       },
-      error: e => this.messages.add({ severity: 'error', summary: 'Copy failed', detail: apiError(e).message }),
+      error: e => { this.copying.set(false); this.messages.add({ severity: 'error', summary: 'Copy failed', detail: apiError(e).message }); },
     });
   }
 
@@ -400,32 +421,41 @@ export class PromptsPage {
 
   openHistory(): void {
     const p = this.selected();
-    if (!p) return;
+    if (!p || this.loadingHistory()) return;
     this.version.set(null);
     this.showFull.set(false);
     this.historyError.set('');
+    this.loadingHistory.set(true);
     this.api.promptVersions(p.id).subscribe({
-      next: list => this.history.set(list),
-      error: e => this.messages.add({ severity: 'error', summary: 'Could not load the history', detail: apiError(e).message }),
+      next: list => { this.loadingHistory.set(false); this.history.set(list); },
+      error: e => { this.loadingHistory.set(false); this.messages.add({ severity: 'error', summary: 'Could not load the history', detail: apiError(e).message }); },
     });
   }
 
-  closeHistory(): void { this.history.set(null); this.version.set(null); }
+  closeHistory(): void { this.history.set(null); this.version.set(null); this.loadingVersion.set(false); this.wantedVersion = 0; }
 
   viewVersion(v: number): void {
     const p = this.selected();
     if (!p) return;
     this.historyError.set('');
+    this.version.set(null);
+    this.loadingVersion.set(true);
+    this.wantedVersion = v;
     this.api.promptVersion(p.id, v).subscribe({
-      next: version => this.version.set(version),
-      error: e => this.historyError.set(apiError(e).message),
+      next: version => { if (this.wantedVersion !== v) return; this.loadingVersion.set(false); this.version.set(version); },
+      error: e => { if (this.wantedVersion !== v) return; this.loadingVersion.set(false); this.historyError.set(apiError(e).message); },
     });
   }
 
   /** Saves the viewed version again as the newest one, unless someone saved in between (409). */
-  restore(): void {
+  async restore(): Promise<void> {
     const p = this.selected(), v = this.version();
     if (!p || !v || this.restoring()) return;
+    const ok = await this.confirm.ask({
+      header: `Restore v${v.version}?`, acceptLabel: 'Restore',
+      message: `v${v.version} becomes the new live version of ${p.name}. Agents pick up its text from their next copy.`,
+    });
+    if (!ok) return;
     this.restoring.set(true);
     this.api.restorePromptVersion(p.id, v.version, p.version).subscribe({
       next: updated => {
@@ -446,6 +476,14 @@ export class PromptsPage {
   }
 
   readonly typeValid = computed(() => /^[A-Z][A-Z0-9_]{1,63}$/.test(this.newType().trim()));
+  readonly typeBad = computed(() => !!this.newType().trim() && !this.typeValid());
+  private readonly createDirty = computed(() => !!(this.newName().trim() || this.newType().trim() || this.newDescription().trim() || this.newContent().trim()));
+
+  /** X, Cancel and Esc: typed text is not thrown away without asking. */
+  async closeCreate(): Promise<void> {
+    if (this.createDirty() && !await this.confirmDiscard()) return;
+    this.creating.set(false);
+  }
 
   openCreate(): void {
     this.newName.set(''); this.newType.set(''); this.newDescription.set(''); this.newContent.set('');

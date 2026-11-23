@@ -117,15 +117,19 @@ describe('SettingsPage', () => {
     http.match('/api/v1/users').forEach(r => r.flush([admin, bob]));
     await f.whenStable();
 
-    const select = f.nativeElement.querySelector('select[aria-label="Role of bob"]') as HTMLSelectElement;
-    select.value = 'ADMIN';
-    select.dispatchEvent(new Event('change'));
+    document.body.appendChild(f.nativeElement);
+    Element.prototype.scrollIntoView ??= () => {};   // jsdom lacks it; cdkOption calls it
+    const trigger = f.nativeElement.querySelector('button[aria-label="Role of bob"]') as HTMLButtonElement;
+    trigger.click();
+    await f.whenStable();
+    ([...document.querySelectorAll('[role="option"]')].find(o => o.textContent?.trim() === 'Admin') as HTMLElement).click();
     TestBed.inject(ConfirmService).answer(true); // UX-044: a role change is confirmed first
     (await vi.waitFor(() => http.expectOne('/api/v1/users/u2'))).flush({ status: 403, code: 'FORBIDDEN', message: 'no' }, { status: 403, statusText: 'Forbidden' });
     TestBed.tick();
     http.match('/api/v1/users').forEach(r => r.flush([admin, bob]));
     await f.whenStable();
-    expect(select.value).toBe('VIEWER');
+    expect(trigger.textContent).toContain('Viewer');
+    document.body.innerHTML = '';
   });
 });
 

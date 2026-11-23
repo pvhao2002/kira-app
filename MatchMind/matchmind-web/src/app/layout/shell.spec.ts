@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Subject } from 'rxjs';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { routes } from '../app.routes';
 import { LiveService } from '../core/live.service';
 import { PageTitle } from '../core/page-title';
@@ -112,5 +112,29 @@ describe('shell a11y', () => {
   it('labels the time zone of all times in the header (UX-021)', async () => {
     const h = await start('ADMIN', '/x');
     expect(root(h).querySelector('.tz-chip')?.textContent?.trim()).toMatch(/^GMT/);
+  });
+});
+
+describe('shell header and rail', () => {
+  afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); });
+
+  it('Sign out keeps its accessible name when the label is hidden on phones (DS-1)', async () => {
+    const h = await start('ADMIN', '/x');
+    const out = [...root(h).querySelectorAll('button')].find(b => b.querySelector('.pi-sign-out'))!;
+    expect(out.getAttribute('aria-label')).toBe('Sign out');
+    expect(out.querySelector('i')!.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('a rail collapsed on desktop still shows labels in the mobile drawer (DS-4)', async () => {
+    localStorage.setItem('matchmind.nav-collapsed', 'true');
+    vi.stubGlobal('innerWidth', 600);
+    const phone = await start('ADMIN', '/x');
+    expect(root(phone).querySelector('.nav-link span')?.textContent).toBe('Dashboard');
+    expect(root(phone).querySelector('.shell')!.classList.contains('nav-collapsed')).toBe(false);
+    TestBed.resetTestingModule();
+    vi.stubGlobal('innerWidth', 1280);
+    const desktop = await start('ADMIN', '/x');
+    expect(root(desktop).querySelector('.nav-link span')).toBeNull();
+    expect(root(desktop).querySelector('.shell')!.classList.contains('nav-collapsed')).toBe(true);
   });
 });

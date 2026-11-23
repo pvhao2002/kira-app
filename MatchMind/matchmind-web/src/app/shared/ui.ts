@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Directive, ElementRef, booleanAttribute, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiErrorText } from '../core/http';
 import { BIDI_CONTROLS, SMALL_SAMPLE, humanize, resultSeverity, statusSeverity } from './format';
@@ -39,12 +39,13 @@ export class ResultTag {
   selector: 'mm-small-sample',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (n() > 0 && n() < limit) {
-    <span class="tag tag-warn nowrap" data-testid="small-sample" [title]="'Based on only ' + n() + ' picks. Below ' + limit + ' picks luck dominates, so treat this figure as noise.'">small sample (n = {{ n() }})</span>
+    <span class="tag tag-warn nowrap" data-testid="small-sample" [title]="note()">small sample (n = {{ n() }})<span class="sr-only">. {{ note() }}</span></span>
   }`,
 })
 export class SmallSample {
   readonly n = input.required<number>();
   readonly limit = SMALL_SAMPLE;
+  readonly note = computed(() => `Based on only ${this.n()} picks. Below ${this.limit} picks luck dominates, so treat this figure as noise.`);
 }
 
 /** Pretty JSON for JSONB fields and raw payloads, with a copy button. */
@@ -56,7 +57,7 @@ export class SmallSample {
       <p class="muted-text">Not provided</p>
     } @else {
       <div class="json-wrap">
-        <button type="button" class="btn btn-text btn-icon json-copy" aria-label="Copy JSON" (click)="copy()"><i class="pi pi-copy"></i></button>
+        <button type="button" class="btn btn-text btn-icon json-copy" aria-label="Copy JSON" (click)="copy()"><i class="pi pi-copy" aria-hidden="true"></i></button>
         <pre class="json">{{ pretty() }}</pre>
       </div>
     }`,
@@ -83,18 +84,20 @@ export class JsonView {
   template: `
     @switch (state()) {
       @case ('loading') {
-        <div class="state-loading" aria-busy="true" aria-label="Loading">
-          @for (r of rowsArr(); track $index) { <div class="skeleton"></div> }
+        <div class="state-loading" role="status">
+          <span class="sr-only">Loading…</span>
+          @for (r of rowsArr(); track $index) { <div class="skeleton" aria-hidden="true"></div> }
         </div>
       }
       @case ('error') {
         <div class="state-box error" role="alert">
-          <i class="pi pi-exclamation-circle"></i>
-          <div><strong>Couldn't load this data.</strong><p>{{ message() }}</p></div>
+          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+          <div><strong>Couldn't load this data.</strong><p>{{ message() }}</p>
+            @if (retryable()) { <button type="button" class="btn btn-outline btn-sm mt-2" data-testid="state-retry" (click)="retry.emit()">Retry</button> }</div>
         </div>
       }
       @case ('empty') {
-        <div class="state-box"><i class="pi {{ icon() }}"></i><div><strong>{{ message() }}</strong><ng-content /></div></div>
+        <div class="state-box"><i class="pi {{ icon() }}" aria-hidden="true"></i><div><strong>{{ message() }}</strong><ng-content /></div></div>
       }
     }`,
 })
@@ -103,7 +106,29 @@ export class StateView {
   readonly message = input('');
   readonly icon = input('pi-inbox');
   readonly rows = input(6);
+  /** Error state only: shows a Retry button. Usage: `<mm-state [state]="s" [message]="m" retryable (retry)="res.reload()" />`. */
+  readonly retryable = input(false, { transform: booleanAttribute });
+  readonly retry = output<void>();
   readonly rowsArr = computed(() => Array.from({ length: this.rows() }));
+}
+
+/**
+ * Esc and an outside click close a `<details class="menu">` (column picker): `details.menu` is the whole selector, so
+ * importing `DetailsMenu` in a component is enough. Esc returns focus to the summary.
+ */
+@Directive({ selector: 'details.menu', host: { '(keydown.escape)': 'esc()', '(document:click)': 'outside($event)' } })
+export class DetailsMenu {
+  private readonly el = inject<ElementRef<HTMLDetailsElement>>(ElementRef).nativeElement;
+
+  esc(): void {
+    if (!this.el.open) return;
+    this.el.open = false;
+    this.el.querySelector('summary')?.focus();
+  }
+
+  outside(e: Event): void {
+    if (this.el.open && !this.el.contains(e.target as Node)) this.el.open = false;
+  }
 }
 
 /** One admin write that needs a reason (archive, rename, merge…). `run` gets the trimmed reason; `done` runs after success. */
