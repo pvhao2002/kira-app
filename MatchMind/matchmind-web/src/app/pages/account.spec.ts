@@ -26,7 +26,7 @@ describe('Account Management', () => {
     http.verify();
   });
 
-  it('uploads the selected image and copies the prompt returned for that image', async () => {
+  it('uploads all selected screenshots in one request and copies the one prompt', async () => {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     const fixture = TestBed.createComponent(AccountPage);
     const http = TestBed.inject(HttpTestingController);
@@ -36,15 +36,17 @@ describe('Account Management', () => {
       meta: { page: 0, size: 25, totalElements: 0, totalPages: 0 },
       transactions: [], reports: { allTime: { deposits: 0, withdrawals: 0, rewards: 0, profit: 0 }, weekly: [], monthly: [] },
     });
-    const file = new File(['data'], 'ledger.png', { type: 'image/png' });
+    const files = [new File(['a'], 'a.png', { type: 'image/png' }), new File(['b'], 'b.jpg', { type: 'image/jpeg' })];
     const input: HTMLInputElement = fixture.nativeElement.querySelector('input[type=file]');
-    Object.defineProperty(input, 'files', { value: { item: () => file } });
+    expect(input.multiple).toBe(true);
+    Object.defineProperty(input, 'files', { value: files });
     input.dispatchEvent(new Event('change'));
     const upload = http.expectOne('/api/v1/account/images');
     expect(upload.request.method).toBe('POST');
-    expect(upload.request.body.get('file')).toBe(file);
+    expect(upload.request.body.getAll('file')).toEqual(files);
     upload.flush({ importId: 'abc', prompt: 'Read screenshot for abc' });
     await fixture.whenStable();
+    expect(fixture.nativeElement.textContent).toContain('attach these 2 screenshots');
     fixture.nativeElement.querySelector('[data-action="copy"]').click();
     expect(copy).toHaveBeenCalledWith('Read screenshot for abc', 'Account import prompt');
     http.verify();

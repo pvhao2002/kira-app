@@ -18,13 +18,13 @@ import { StateView } from '../shared/ui';
     <div class="stack">
       <section class="panel stack">
         <h2>Import transactions</h2>
-        <label for="account-image">Transaction screenshot (PNG or JPEG, up to 8 MiB)</label>
-        <input #image id="account-image" type="file" accept="image/png,image/jpeg" [disabled]="uploading()"
-          (change)="upload(image.files?.item(0)); image.value = ''" />
+        <label for="account-image">Transaction screenshots (1 to 10 PNG or JPEG files, up to 8 MiB each)</label>
+        <input #image id="account-image" type="file" accept="image/png,image/jpeg" multiple [disabled]="uploading()"
+          (change)="upload(image.files); image.value = ''" />
         @if (uploadError()) { <p role="alert" class="alert alert-error">{{ uploadError() }}</p> }
-        @if (uploading()) { <p role="status">Uploading screenshot…</p> }
+        @if (uploading()) { <p role="status">Uploading screenshots…</p> }
         @if (prompt(); as text) {
-          <p role="status">Paste the prompt and attach the same screenshot in your AI chat. Refresh transactions after the Sheet syncs.</p>
+          <p role="status">Paste the prompt and attach these {{ imageCount() }} screenshots in one AI chat message. Refresh transactions after the Sheet syncs.</p>
           <div><button type="button" class="btn btn-primary" data-action="copy" (click)="copy.copy(text, 'Account import prompt')">Copy prompt</button></div>
         }
       </section>
@@ -80,6 +80,7 @@ export class AccountPage {
   readonly uploading = signal(false);
   readonly uploadError = signal('');
   readonly prompt = signal('');
+  readonly imageCount = signal(0);
   readonly period = signal<keyof AccountLedger['reports']>('allTime');
   readonly periods = [{ key: 'allTime', label: 'All time' }, { key: 'weekly', label: 'Weekly' }, { key: 'monthly', label: 'Monthly' }] as const;
   readonly labels = { CREDIT: 'Deposit', DEBIT: 'Withdrawal', REWARD: 'Bonus' };
@@ -91,14 +92,16 @@ export class AccountPage {
     return period === 'allTime' ? [{ periodStart: 'All time', ...reports.allTime }] : reports[period];
   });
 
-  upload(file?: File | null): void {
-    if (!file) return;
+  upload(selected?: ArrayLike<File> | null): void {
+    const files = Array.from(selected ?? []);
+    if (!files.length) return;
     this.prompt.set('');
     this.uploadError.set('');
+    if (files.length > 10) { this.uploadError.set('Choose 1 to 10 screenshots.'); return; }
     this.uploading.set(true);
-    this.api.uploadAccountImage(file)
+    this.api.uploadAccountImages(files)
       .pipe(takeUntilDestroyed(this.destroy)).subscribe({
-        next: result => { this.uploading.set(false); this.prompt.set(result.prompt); },
+        next: result => { this.uploading.set(false); this.imageCount.set(files.length); this.prompt.set(result.prompt); },
         error: error => { this.uploading.set(false); this.uploadError.set(apiErrorText(error)); },
       });
   }

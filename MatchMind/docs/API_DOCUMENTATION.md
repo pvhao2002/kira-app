@@ -12,7 +12,7 @@ request, as for `/monitor/`. **Authorize** with a bearer token (or `X-Api-Key`) 
 
 | Method and path | Input and result |
 |---|---|
-| `POST /account/images` | Signed-in user uploads one PNG or JPEG in multipart field `file`. The response contains `importId` and a ready-to-copy `prompt` for that image. |
+| `POST /account/images` | Signed-in user uploads 1 to 10 PNG or JPEG screenshots (8 MB each, 40 MB per request) by repeating multipart field `file`. The batch is one import: the response contains one `importId` and one ready-to-copy `prompt`, and the AI writes all transactions of the batch, overlaps listed once, into one `ACCOUNT` row. More than 10 files is `400 IMAGE_COUNT`. |
 | `POST /external/account/transactions` | The Sheet sender submits one image batch. The server resolves the owner from the upload ID. See the [example request](samples/account-import.json). |
 | `GET /account/transactions?page=0&size=25` | Returns `transactions`, pagination `meta` and `reports` for the signed-in user. Reports cover all pages. |
 

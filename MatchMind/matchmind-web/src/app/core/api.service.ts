@@ -36,9 +36,10 @@ export class ApiService {
     return httpResource<AccountLedger>(() => ({ url: API + '/account/transactions', params: toParams({ page: page(), size }) }));
   }
 
-  uploadAccountImage(file: File) {
+  /** One import for the whole batch: the API returns one importId and one prompt. */
+  uploadAccountImages(files: File[]) {
     const body = new FormData();
-    body.append('file', file);
+    for (const file of files) body.append('file', file);
     return this.http.post<AccountImageImport>(API + '/account/images', body);
   }
 
