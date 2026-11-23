@@ -1,8 +1,11 @@
 import {computed, inject, Injectable, signal} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {finalize, Observable, shareReplay, tap} from 'rxjs';
+import {catchError, finalize, Observable, of, shareReplay, tap} from 'rxjs';
 import {API} from '../api/http';
 import {AuthResponse, Profile} from '../api/models';
+
+/** Marks that this browser had a session. It holds no token: it only says a refresh is worth trying on startup. */
+const SESSION_HINT = 'kira-affilate.session';
 
 /** The access token lives in memory only; the session survives reloads through the HttpOnly refresh cookie. */
 @Injectable({providedIn: 'root'})
@@ -34,6 +37,18 @@ export class AuthStore {
     return this.refreshInFlight;
   }
 
+  /**
+   * On startup, brings back the session after a reload, so public pages show the signed-in user too. Only browsers
+   * that had a session try: anonymous visitors of the public pages send no refresh request.
+   */
+  restore(): Observable<unknown> {
+    if (!hint()) return of(null);
+    return this.refresh().pipe(catchError(() => {
+      this.clear();
+      return of(null);
+    }));
+  }
+
   logout(): Observable<void> {
     return this.http.post<void>(`${API}/auth/logout`, {}, {withCredentials: true}).pipe(finalize(() => this.clear()));
   }
@@ -51,10 +66,30 @@ export class AuthStore {
   clear(): void {
     this.tokenState.set(null);
     this.userState.set(null);
+    setHint(false);
   }
 
   private accept(r: AuthResponse): void {
     this.tokenState.set(r.accessToken);
     this.userState.set(r.user);
+    setHint(true);
+  }
+}
+
+// Storage can be blocked (private mode, site data off): then a reload on a public page shows the visitor view.
+function hint(): boolean {
+  try {
+    return localStorage.getItem(SESSION_HINT) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function setHint(on: boolean): void {
+  try {
+    if (on) localStorage.setItem(SESSION_HINT, '1');
+    else localStorage.removeItem(SESSION_HINT);
+  } catch {
+    // ignore: see hint()
   }
 }
