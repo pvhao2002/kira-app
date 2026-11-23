@@ -281,3 +281,84 @@ describe('ReportsPage review fixes', () => {
     expect((f.nativeElement as HTMLElement).querySelector('button[aria-label="Breakdown for gpt"]')).not.toBeNull();
   });
 });
+
+describe('ReportsPage Pre-match vs Live', () => {
+  const side = (winRate: number, roi: number) => ({ ...model, picks: 8, winRate, roi, units: 1.6, staked: 7 });
+  const cells = (row: Element) => [...row.querySelectorAll('td')].map(td => text(td as HTMLElement).trim());
+
+  it('requests both reports without the type filter and renders both sides with deltas', async () => {
+    const f = await open('typecompare');
+    http.expectOne(r => r.url.endsWith('/reports/breakdown')).flush([]);   // first load, before the filter is set
+    http.expectOne(r => r.url.endsWith('/reports/type-comparison')).flush([]);
+    await settle();
+    const bar = f.debugElement.query(By.directive(FilterBar)).componentInstance as FilterBar;
+    bar.form.patchValue({ type: 'LIVE' });
+    bar.apply(false);
+    TestBed.tick();
+    // The type filter is part of the page filters, yet neither request may carry it: the report compares the two types.
+    const kpi = http.expectOne(r => r.url.endsWith('/reports/breakdown') && r.params.get('by') === 'type');
+    expect(kpi.request.params.has('type')).toBe(false);
+    kpi.flush([{ ...model, key: 'PRE_MATCH', picks: 12, winRate: 0.6, roi: 0.08, units: 0.8 }, { ...model, key: 'LIVE', picks: 8, winRate: 0.7143, roi: 0.2286, units: 1.6 }]);
+    const req = http.expectOne(r => r.url.endsWith('/reports/type-comparison'));
+    expect(req.request.params.get('by')).toBe('model');
+    expect(req.request.params.has('type')).toBe(false);
+    req.flush([{ key: 'gpt 5', preMatch: side(0.5, 0.1), live: side(0.6, 0.2), winRateDelta: 0.1, roiDelta: -0.0123 }]);
+    await settle();
+    const el = f.nativeElement as HTMLElement;
+    expect(text(el)).toContain('gpt 5');
+    const row = el.querySelector('table[aria-label="Pre-match vs Live"] tbody tr')!;
+    expect(cells(row)).toEqual(['gpt 5', '8', '50.0%', '+1.600', '10.0%', '8', '60.0%', '+1.600', '20.0%', '+10.0', '−1.2']);
+    expect(row.querySelectorAll('td')[9].classList.contains('win')).toBe(true);
+    expect(row.querySelectorAll('td')[10].classList.contains('loss')).toBe(true);
+    const kpis = [...el.querySelectorAll('.kpi')].map(k => text(k as HTMLElement));
+    expect(kpis.some(k => k.includes('Pre-match') && k.includes('60.0%'))).toBe(true);
+    expect(kpis.some(k => k.includes('Live') && k.includes('71.4%'))).toBe(true);
+  });
+
+  it('renders — for a missing side and missing deltas', async () => {
+    const f = await open('typecompare');
+    http.expectOne(r => r.url.endsWith('/reports/breakdown') && r.params.get('by') === 'type').flush([]);
+    http.expectOne(r => r.url.endsWith('/reports/type-comparison'))
+      .flush([{ key: 'm', preMatch: side(0.5, 0.1), live: null, winRateDelta: null, roiDelta: null }]);
+    await settle();
+    const row = (f.nativeElement as HTMLElement).querySelector('table[aria-label="Pre-match vs Live"] tbody tr')!;
+    expect(cells(row)).toEqual(['m', '8', '50.0%', '+1.600', '10.0%', '—', '—', '—', '—', '—', '—']);
+  });
+
+  it('shows a delta that rounds to zero as 0.0, with neither win nor loss colour', async () => {
+    const f = await open('typecompare');
+    http.expectOne(r => r.url.endsWith('/reports/breakdown')).flush([]);
+    http.expectOne(r => r.url.endsWith('/reports/type-comparison'))
+      .flush([{ key: 'm', preMatch: side(0.5, 0.1), live: side(0.5, 0.1), winRateDelta: -0.0004, roiDelta: 0.0004 }]);
+    await settle();
+    const row = (f.nativeElement as HTMLElement).querySelector('table[aria-label="Pre-match vs Live"] tbody tr')!;
+    const tds = row.querySelectorAll('td');
+    expect([text(tds[9] as HTMLElement).trim(), text(tds[10] as HTMLElement).trim()]).toEqual(['0.0', '0.0']);
+    for (const td of [tds[9], tds[10]]) { expect(td.classList.contains('win')).toBe(false); expect(td.classList.contains('loss')).toBe(false); }
+  });
+
+  it('shows a failed KPI request as an error and retries it', async () => {
+    const f = await open('typecompare');
+    http.expectOne(r => r.url.endsWith('/reports/breakdown')).flush({ status: 500, code: 'INTERNAL', message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    http.expectOne(r => r.url.endsWith('/reports/type-comparison')).flush([]);
+    await settle();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    expect(text(el.querySelector('.state-box.error') as HTMLElement)).toContain('boom');
+    expect(el.querySelector('.kpis')).toBeNull();
+    (el.querySelector('[data-testid="state-retry"]') as HTMLButtonElement).click();
+    await settle();
+    http.expectOne(r => r.url.endsWith('/reports/breakdown') && r.params.get('by') === 'type').flush([]);
+    http.expectOne(r => r.url.endsWith('/reports/type-comparison')).flush([]);
+  });
+
+  it('regroups by market', async () => {
+    const f = await open('typecompare');
+    http.expectOne(r => r.url.endsWith('/reports/breakdown')).flush([]);
+    http.expectOne(r => r.url.endsWith('/reports/type-comparison')).flush([]);
+    await settle();
+    f.componentInstance.typeBy.set('market');
+    TestBed.tick();
+    expect(http.expectOne(r => r.url.endsWith('/reports/type-comparison')).request.params.get('by')).toBe('market');
+  });
+});

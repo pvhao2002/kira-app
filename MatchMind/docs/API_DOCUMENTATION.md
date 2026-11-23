@@ -1,12 +1,29 @@
 # MatchMind API
 
-Base path: `/api/v1`. JSON only. Timestamps are ISO-8601 UTC instants (`2026-11-20T19:45:00Z`). Decimals such as odds,
+Base path: `/api/v1`. Requests use JSON except for multipart image uploads. Timestamps are ISO-8601 UTC instants (`2026-11-20T19:45:00Z`). Decimals such as odds,
 lines and probabilities are JSON numbers backed by `BigDecimal`.
 
 Interactive docs: `/swagger/index.html` (Swagger UI) and `/swagger/v3/api-docs` (OpenAPI JSON), on while
 `SWAGGER_ENABLED=true` (the default). Through the web container they are for admins only: the **API Docs** sidebar item
 sets the `mm_monitor` cookie (`POST /auth/monitor-session`, also scoped to `/swagger`) and nginx checks it on every
 request, as for `/monitor/`. **Authorize** with a bearer token (or `X-Api-Key`) to use "Try it out".
+
+## Account Management
+
+| Method and path | Input and result |
+|---|---|
+| `POST /account/images` | Signed-in user uploads one PNG or JPEG in multipart field `file`. The response contains `importId` and a ready-to-copy `prompt` for that image. |
+| `POST /external/account/transactions` | The Sheet sender submits one image batch. The server resolves the owner from the upload ID. See the [example request](samples/account-import.json). |
+| `GET /account/transactions?page=0&size=25` | Returns `transactions`, pagination `meta` and `reports` for the signed-in user. Reports cover all pages. |
+
+The existing spreadsheet gains an `ACCOUNT` tab when its owner installs the updated Apps Script and reruns `setup()`.
+The agent appends one row per image, copies the upload ID into `importId` and writes the JSON array into `transactions`.
+It leaves `sync` and `syncedAt` blank for the minute trigger. Spreadsheet readers can see the submitted transactions.
+For a scoped sender, issue the `sheet` provider a key with the `ACCOUNT_IMPORT` scope and save it in the
+`MATCHMIND_ACCOUNT_KEY` Script Property. The script otherwise uses its existing `MATCHMIND_API_KEY`.
+The signed-in account's cash profit is successful withdrawals minus successful deposits. Reports track rewards separately.
+The `allTime` totals contain `deposits`, `withdrawals`, `rewards` and `profit`. The `weekly` and `monthly` arrays
+use the same totals with a `periodStart` date. Weeks begin on Monday and reporting dates use GMT+7.
 
 ## Authentication
 
@@ -462,6 +479,7 @@ day's `units`.
 | `GET /dashboard?tz=Europe/London` | `period`, `totals`, `winRateOverTime` (daily, in `tz`), `predictionsByModel`, `predictionsByMarket`, `resultDistribution` (one row per result, `PENDING` its own row), `modelPerformance`. `period` = `{from, to, basis: "predictedAt", firstPredictedAt, lastPredictedAt}`: the requested bounds (`null` = open) and the predictions actually counted. `totals.overdueMatches` uses only `league`/`providerId`, like `GET /matches?overdue=true`. `totals.notCountedPredictions`: predictions inside the filters left out by `countPolicy=latest` (0 under `all`) |
 | `GET /reports/model-performance` | Per model: predictions, picks, settled, wins/half wins, losses/half losses, push/void, pending, win rate, average probability, correct-score evaluated, hits and accuracy, `notCountedPredictions` (as on the dashboard). `wins`/`losses` include the halves; `fullWins + halfWins + fullLosses + halfLosses + pushOrVoid = settled` is the exclusive split (also in breakdown, market performance and dashboard totals) |
 | `GET /reports/breakdown?by=market\|league\|type\|stage\|model` | The same counters grouped by the chosen key; `league` groups by the canonical name (aliases resolved) |
+| `GET /reports/type-comparison?by=model\|market\|league` | `PRE_MATCH` vs `LIVE` side by side (default `by=model`); the `type` filter is ignored, other filters and `countPolicy` apply. `[{key, preMatch, live, winRateDelta, roiDelta}]`: each side has the same counters as a breakdown row (without `key`), including `winRate` and `roi`. Delta = `LIVE` − `PRE_MATCH`; `null` when a side or a rate is missing. Ordered by total picks, then `key`. Sample: [report-type-comparison.json](samples/report-type-comparison.json) |
 | `GET /reports/calibration` | `{bins: [{bin, from, to, picks, avgProbability, hitRate}] (always 10, width 0.1; probability 1 is in bin 10), evaluated, excluded}`. Every pick (all ranks). Only `WIN` (1) and `LOSS` (0) are evaluated; other settled results (halves, `PUSH`, `VOID`) are counted in `excluded`. Empty bins have `picks = 0` and null `avgProbability`/`hitRate`. Same filters and `countPolicy` as the win rate |
 | `GET /reports/prediction-history` | One row per pick, paginated, every row whatever `countPolicy` says; `counted` marks picks of superseded predictions (false). `units`: the pick's profit at stake 1 (null when VOID or pending); also in the export, after `result`. Sort: `predictedAt, league, model, market, probability, price, line, result, minute, type, homeTeam` |
 | `GET /reports/prediction-history/export?format=csv\|xlsx` | Same filters and sort. At most 50 000 rows (`EXPORT_TOO_LARGE`). Cells starting with `= + - @` are neutralised |

@@ -7,9 +7,9 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { apiError } from '../core/http';
 import { errorMessage, keepPrevious, safeValue, statusToView, viewState } from '../core/resource';
-import { CalibrationBin, Filters } from '../core/models';
+import { CalibrationBin, Filters, PerformanceCounts, TypeCompareBy } from '../core/models';
 import { FilterBar } from '../shared/filter-bar';
-import { Col, ROI_DEF, cell, downloadCsv, fmtDateTime, humanize, lineSplit, lineText, num, pct, pickText, saveBlob } from '../shared/format';
+import { Col, ROI_DEF, cell, downloadCsv, fmtDateTime, humanize, lineSplit, lineText, num, pct, pickText, saveBlob, units } from '../shared/format';
 import {
   Expansion, Paginator, ResizableColumn, Sort, SortHeader, sortParam, sortRows, Tabs, ToastService,
 } from '../shared/kit';
@@ -17,12 +17,29 @@ import { ChartView, RESULT_COLORS, SERIES } from '../shared/chart';
 import { Select, SelectOption } from '../shared/select';
 import { DetailsMenu, JsonView, ResultTag, ScoreChip, SmallSample, StateView } from '../shared/ui';
 
-type Tab = 'models' | 'history' | 'markets' | 'calibration' | 'comparison' | 'montecarlo';
+type Tab = 'models' | 'history' | 'markets' | 'calibration' | 'comparison' | 'montecarlo' | 'typecompare';
 const TABS: { value: Tab; label: string }[] = [
   { value: 'models', label: 'AI model performance' }, { value: 'history', label: 'Prediction history' },
   { value: 'markets', label: 'Market performance' }, { value: 'calibration', label: 'Calibration' },
   { value: 'comparison', label: 'Model comparison' }, { value: 'montecarlo', label: 'Monte Carlo' },
+  { value: 'typecompare', label: 'Pre-match vs Live' },
 ];
+/** Pre-match vs Live: the figures shown for each side. */
+const SIDE_COLS: Col[] = [
+  { field: 'picks', header: 'Picks', kind: 'int' }, { field: 'winRate', header: 'Win rate', kind: 'pct' },
+  { field: 'units', header: 'Units', kind: 'units' }, { field: 'roi', header: 'ROI', kind: 'pct' },
+];
+const TYPE_BY_OPTIONS: SelectOption[] = [{ value: 'model', label: 'Model' }, { value: 'market', label: 'Market' }, { value: 'league', label: 'League' }];
+/** A fraction difference in percentage points, rounded to 0.1 first so sign and colour match what is shown. */
+const roundedPoints = (v: number) => Math.round(v * 1000) / 10;
+/** 0.1 -> "+10.0", -0.0123 -> "−1.2" (real minus sign, like `units`), -0.0004 -> "0.0"; null stays a dash. */
+export function deltaPoints(v: number | null | undefined): string {
+  if (v === null || v === undefined) return '—';
+  const p = roundedPoints(v);
+  return p > 0 ? `+${p.toFixed(1)}` : p < 0 ? `−${Math.abs(p).toFixed(1)}` : '0.0';
+}
+const deltaClass = (v: number | null) => v === null ? '' : roundedPoints(v) > 0 ? 'win' : roundedPoints(v) < 0 ? 'loss' : '';
+const TYPE_LABEL: Record<string, string> = { PRE_MATCH: 'Pre-match', LIVE: 'Live' };
 /** Calibration bins with fewer picks than this are greyed out (owner decision, UX-018). */
 const CALIBRATION_MIN_PICKS = 5;
 
@@ -355,6 +372,48 @@ export class ModelBreakdown {
           </section>
         }
 
+        @case ('typecompare') {
+          @if (typeKpiError()) { <mm-state state="error" [message]="typeKpiError()" retryable (retry)="retry()" /> }
+          @else {
+          <section class="kpis" aria-label="Pre-match and live totals">
+            @for (k of typeKpis(); track k.type) {
+              <div class="kpi"><span>{{ typeLabel[k.type] }}</span><strong>{{ pct(k.row?.winRate) }}</strong>
+                <span class="kpi-sub">win rate · {{ k.row ? k.row.picks : '—' }} picks · {{ units(k.row?.units) }} units · ROI {{ pct(k.row?.roi) }}</span></div>
+            }
+          </section>
+          }
+          <section class="panel flush">
+            <div class="toolbar">
+              <div class="row"><label for="type-by">Group by</label>
+                <mm-select id="type-by" size="sm" [options]="typeByOptions" [ngModel]="typeBy()" (ngModelChange)="typeBy.set($event)" /></div>
+              <span class="muted-text">The prediction type filter does not apply here. Δ = live minus pre-match, in percentage points. {{ winRateDef }} {{ roiDef }}</span>
+            </div>
+            <mm-state [state]="state()" [message]="error()" retryable (retry)="retry()" />
+            @if (state() === 'ready') {
+              <div class="table-wrap tall"><table class="dt" aria-label="Pre-match vs Live">
+                <thead>
+                  <tr><th rowspan="2">{{ humanize(typeBy()) }}</th><th colspan="4" class="num">Pre-match</th><th colspan="4" class="num">Live</th><th colspan="2" class="num">Δ (live − pre-match)</th></tr>
+                  <tr>
+                    @for (side of ['pre', 'live']; track side) { @for (c of sideCols; track c.field) { <th class="num" [attr.title]="headerTitle(c)">{{ c.header }}</th> } }
+                    <th class="num" [attr.title]="winRateDef">Δ Win rate</th><th class="num" [attr.title]="roiDef">Δ ROI</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of typeRows(); track r.key) {
+                    <tr>
+                      <td>{{ r.key }}</td>
+                      @for (c of sideCols; track c.field) { <td class="num">{{ cell(r.preMatch ?? {}, c) }}</td> }
+                      @for (c of sideCols; track c.field) { <td class="num">{{ cell(r.live ?? {}, c) }}</td> }
+                      <td class="num" [class]="deltaClass(r.winRateDelta)">{{ deltaPoints(r.winRateDelta) }}</td>
+                      <td class="num" [class]="deltaClass(r.roiDelta)">{{ deltaPoints(r.roiDelta) }}</td>
+                    </tr>
+                  } @empty { <tr><td colspan="11" class="empty">No predictions match these filters.</td></tr> }
+                </tbody>
+              </table></div>
+            }
+          </section>
+        }
+
         @case ('montecarlo') {
           @if (monteCarlo(); as mc) {
             <section class="kpis">
@@ -455,6 +514,12 @@ export class ReportsPage {
   readonly lineText = lineText;
   readonly lineSplit = lineSplit;
   readonly pickText = pickText;
+  readonly sideCols = SIDE_COLS;
+  readonly units = units;
+  readonly typeLabel = TYPE_LABEL;
+  readonly typeByOptions = TYPE_BY_OPTIONS;
+  readonly deltaPoints = deltaPoints;
+  readonly deltaClass = deltaClass;
 
   // Paging, sorting and column state. Each report below is a resource that only runs while its tab is the active one,
   // so a request for another tab or older filters is cancelled and can never land.
@@ -472,6 +537,7 @@ export class ReportsPage {
   readonly comparisonPage = signal(0);
   readonly mcPage = signal(0);
   readonly mcOpen = new Expansion();
+  readonly typeBy = signal<TypeCompareBy>('model');
 
   private readonly modelsRes = rxResource({
     params: () => (this.tab() === 'models' ? this.filters() : undefined),
@@ -523,9 +589,23 @@ export class ReportsPage {
     stream: ({ params: { f, page } }) => this.api.monteCarlo(f, { page, size: 25 }),
   });
 
+  /** Both Pre-match vs Live requests compare the two types, so the prediction type filter is left out of them. */
+  private readonly typeFilters = computed(() => { const f = this.filters(); return f && { ...f, type: undefined }; });
+  private readonly typeKpiRes = rxResource({
+    params: () => (this.tab() === 'typecompare' ? this.typeFilters() : undefined),
+    stream: ({ params }) => this.api.breakdown(params, 'type'),
+  });
+  private readonly typeCompareRes = rxResource({
+    params: () => {
+      const f = this.typeFilters();
+      return f && this.tab() === 'typecompare' ? { f, by: this.typeBy() } : undefined;
+    },
+    stream: ({ params: { f, by } }) => this.api.typeComparison(f, by),
+  });
+
   private readonly active = computed(() => ({
     models: this.modelsRes, history: this.historyRes, markets: this.marketsRes, calibration: this.calibrationRes,
-    comparison: this.comparisonRes, montecarlo: this.monteCarloRes,
+    comparison: this.comparisonRes, montecarlo: this.monteCarloRes, typecompare: this.typeCompareRes,
   })[this.tab()]);
   readonly state = computed(() => statusToView(this.active().status()));
   /** Skeleton for a first load with no rows yet, the error box on failure; a reload keeps its rows (the table dims instead). */
@@ -533,7 +613,7 @@ export class ReportsPage {
     const s = this.state();
     return s === 'loading' && rows > 0 ? 'ready' : s;
   }
-  retry(): void { this.active().reload(); }
+  retry(): void { this.active().reload(); if (this.tab() === 'typecompare') this.typeKpiRes.reload(); }
   readonly error = computed(() => { const e = this.active().error(); return e ? apiError(e).message : ''; });
 
   // Report 1
@@ -607,6 +687,12 @@ export class ReportsPage {
   readonly comparisonTotal = computed(() => this.comparisonData()?.meta.totalElements ?? 0);
   // Report 5
   readonly monteCarlo = keepPrevious(this.monteCarloRes);
+  // Report 6: pre-match vs live
+  readonly typeRows = safeValue(this.typeCompareRes, []);
+  private readonly typeKpiRows = safeValue(this.typeKpiRes, []);
+  readonly typeKpiError = computed(() => { const e = this.typeKpiRes.error(); return e ? apiError(e).message : ''; });
+  readonly typeKpis = computed<{ type: string; row: PerformanceCounts | undefined }[]>(
+    () => ['PRE_MATCH', 'LIVE'].map(type => ({ type, row: this.typeKpiRows().find(r => r.key === type) })));
 
   onFilters(f: Filters): void {
     this.historyPage.set(0);

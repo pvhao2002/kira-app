@@ -13,6 +13,18 @@ export const MATCH_STATUSES: MatchStatus[] = ['SCHEDULED', 'LIVE', 'FINISHED', '
 export interface PageMeta { page: number; size: number; totalElements: number; totalPages: number; }
 export interface Page<T> { data: T[]; meta: PageMeta; }
 
+export interface AccountTotals { deposits: number; withdrawals: number; rewards: number; profit: number; }
+export interface AccountPeriod extends AccountTotals { periodStart: string; }
+export interface AccountLedger {
+  meta: PageMeta;
+  transactions: {
+    reference: string; type: 'CREDIT' | 'DEBIT' | 'REWARD';
+    status: 'SUCCESS' | 'CANCELLED'; amount: number; occurredAt: string;
+  }[];
+  reports: { allTime: AccountTotals; weekly: AccountPeriod[]; monthly: AccountPeriod[] };
+}
+export interface AccountImageImport { importId: string; prompt: string; }
+
 export interface ApiError {
   status: number; code: string; message: string; fieldErrors?: Record<string, string>; traceId?: string;
 }
@@ -48,7 +60,7 @@ export interface Provider {
   activeKeys?: number;
 }
 
-export type KeyScope = 'PREDICTIONS' | 'SETTLE_REQUEST' | 'RESULTS';
+export type KeyScope = 'PREDICTIONS' | 'SETTLE_REQUEST' | 'RESULTS' | 'ACCOUNT_IMPORT';
 /** A provider API key as listed: never the secret or its hash. */
 export interface ProviderKey {
   id: string; keyId: string; label: string | null; scopes: KeyScope[]; status: 'ACTIVE' | 'REVOKED';
@@ -249,6 +261,11 @@ export interface ModelPerformanceRow extends PerformanceCounts {
   notCountedPredictions: number;
 }
 export interface BreakdownRow extends PerformanceCounts { key: string; }
+export type TypeCompareBy = 'model' | 'market' | 'league';
+/** One group of GET /reports/type-comparison: PRE_MATCH and LIVE side by side; a side without picks is null. Deltas are live minus pre-match. */
+export interface TypeComparisonRow {
+  key: string; preMatch: PerformanceCounts | null; live: PerformanceCounts | null; winRateDelta: number | null; roiDelta: number | null;
+}
 export interface MarketPerformanceRow extends PerformanceCounts { market: Market; }
 
 export interface HistoryRow {

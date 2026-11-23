@@ -18,6 +18,7 @@ const NAV: NavItem[] = [
   { path: '/models', label: 'AI Models', icon: 'pi-microchip-ai' },
   { path: '/providers', label: 'Providers', icon: 'pi-server' },
   { path: '/reports', label: 'Reports', icon: 'pi-chart-bar' },
+  { path: '/account', label: 'Account Management', icon: 'pi-wallet' },
   { path: '/prompts', label: 'Prompt Notes', icon: 'pi-file-edit' },
   { path: '/import', label: 'Import', icon: 'pi-upload', adminOnly: true },
   { path: '/api-logs', label: 'API Logs', icon: 'pi-list', adminOnly: true },

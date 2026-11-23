@@ -17,6 +17,7 @@ const SCOPES: { value: KeyScope; label: string; hint: string }[] = [
   { value: 'PREDICTIONS', label: 'Predictions', hint: 'POST /external/predictions' },
   { value: 'SETTLE_REQUEST', label: 'Settle request', hint: 'POST /external/predictions/settle' },
   { value: 'RESULTS', label: 'Results', hint: 'POST /external/matches/results: only for a trusted results feeder' },
+  { value: 'ACCOUNT_IMPORT', label: 'Account imports', hint: 'Import screenshot transactions from the shared spreadsheet' },
 ];
 const KEY_PLACEHOLDER = '{{EXTERNAL_API_KEY}}';
 const NO_PROMPT = `No prompt contains ${KEY_PLACEHOLDER}.`;

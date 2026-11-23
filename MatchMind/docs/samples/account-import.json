@@ -1,0 +1,12 @@
+{
+  "importId": "2024747d-6827-4771-9365-c95643211d13",
+  "transactions": [
+    {
+      "reference": "WD-2411-01",
+      "type": "DEBIT",
+      "status": "SUCCESS",
+      "amount": 150000,
+      "occurredAt": "2026-11-24T16:30:00+07:00"
+    }
+  ]
+}

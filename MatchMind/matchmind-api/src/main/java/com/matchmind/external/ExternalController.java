@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.matchmind.external.ExternalAuditService.Entry;
+import com.matchmind.account.AccountTransactions;
 import com.matchmind.external.ExternalDtos.ModelRef;
 import com.matchmind.external.ExternalDtos.PredictionRequest;
 import com.matchmind.external.ExternalDtos.PredictionResponse;
@@ -78,6 +79,22 @@ public class ExternalController {
     private final Validator validator;
     private final ObjectMapper mapper;
     private final ProviderService providers;
+    private final AccountTransactions accounts;
+
+    @PostMapping("/account/transactions")
+    @Operation(summary = "Import transactions from an account image")
+    public ResponseEntity<Map<String,Boolean>> importTransactions(@AuthenticationPrincipal ProviderPrincipal caller,
+                                                                   @RequestBody String body, HttpServletRequest http) {
+        Instant received = Instant.now();
+        JsonNode raw = parse(body, caller, http, received, null);
+        return audited(caller, http, received, null, () -> {
+            requireScope(caller, ProviderKeyService.ACCOUNT_IMPORT);
+            if (caller.apiKeyId() == null && !"sheet".equals(caller.providerCode())) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "SHEET_KEY_REQUIRED", "Use the configured sheet sender");
+            }
+            return ResponseEntity.ok(accounts.ingest(bind(raw, AccountTransactions.Batch.class)));
+        });
+    }
 
     /** A provider whose first request is rejected has no row yet (UX-077): its audit entry carries no provider. */
     private UUID auditedProvider(ProviderPrincipal caller) {

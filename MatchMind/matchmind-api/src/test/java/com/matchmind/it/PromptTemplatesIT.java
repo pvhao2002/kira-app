@@ -128,8 +128,9 @@ class PromptTemplatesIT extends IntegrationTestBase {
     void sheetSettlementPromptListsTheSettleColumnsInTheScriptsOrder() throws Exception {
         String columns = "matchId, provider, league, homeTeam, awayTeam, kickoffGmt7, status, homeScore, awayScore, "
             + "homeCorners, awayCorners, htHomeScore, htAwayScore, source, sync";
+        // syncedAt (last) is the script's own: the agent never touches it, so the prompt does not name it.
         assertThat(Files.readString(Path.of("../docs/google-sheet/MatchMind.gs")).replaceAll("\\s+", " "))
-            .contains("const SETTLE_COLUMNS = ['" + columns.replace(", ", "', '") + "'];");
+            .contains("const SETTLE_COLUMNS = ['" + columns.replace(", ", "', '") + "', 'syncedAt'];");
         String id = seededPromptId("AI_SHEET_SETTLEMENT");
         String stored = adminGet("/api/v1/prompts/" + id).get("content").asText();
         assertThat(stored.replaceAll("\\s+", " ")).contains("Columns in this order: " + columns + ".",

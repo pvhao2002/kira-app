@@ -42,6 +42,12 @@ public class ReportController {
         return reports.breakdown(filters, by);
     }
 
+    @GetMapping("/reports/type-comparison")
+    @Operation(summary = "PRE_MATCH vs LIVE pick performance side by side, grouped by model, market or league (type filter ignored)")
+    public List<Map<String, Object>> typeComparison(Filters filters, @RequestParam(defaultValue = "model") String by) {
+        return reports.typeComparison(filters, by);
+    }
+
     @GetMapping("/reports/prediction-history")
     public PageResponse<Map<String, Object>> history(Filters filters, @RequestParam(required = false) Integer page,
                                                      @RequestParam(required = false) Integer size,

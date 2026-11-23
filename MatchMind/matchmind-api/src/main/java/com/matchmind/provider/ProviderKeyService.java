@@ -35,7 +35,8 @@ import java.util.UUID;
 public class ProviderKeyService {
     public static final String PREFIX = "mmk_";
     public static final String PREDICTIONS = "PREDICTIONS", SETTLE_REQUEST = "SETTLE_REQUEST", RESULTS = "RESULTS";
-    private static final List<String> SCOPE_ORDER = List.of(PREDICTIONS, SETTLE_REQUEST, RESULTS);
+    public static final String ACCOUNT_IMPORT = "ACCOUNT_IMPORT";
+    private static final List<String> SCOPE_ORDER = List.of(PREDICTIONS, SETTLE_REQUEST, RESULTS, ACCOUNT_IMPORT);
     public static final Set<String> ALL_SCOPES = Set.copyOf(SCOPE_ORDER);
     private static final List<String> DEFAULT_SCOPES = List.of(PREDICTIONS, SETTLE_REQUEST);
     private static final int KEY_ID_LENGTH = 12;
@@ -160,7 +161,7 @@ public class ProviderKeyService {
 
     private static List<String> validScopes(List<String> scopes) {
         if (scopes == null || scopes.isEmpty() || !ALL_SCOPES.containsAll(scopes)) {
-            throw ApiException.badRequest("INVALID_SCOPES", "Scopes must be one or more of PREDICTIONS, SETTLE_REQUEST, RESULTS");
+            throw ApiException.badRequest("INVALID_SCOPES", "Choose one or more scopes from " + String.join(", ", SCOPE_ORDER));
         }
         return SCOPE_ORDER.stream().filter(scopes::contains).toList();
     }

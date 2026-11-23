@@ -3,12 +3,13 @@ import { Injectable, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Observable, forkJoin } from 'rxjs';
 import {
+  AccountImageImport, AccountLedger,
   AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, CalibrationReport, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
   Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
   AdminResultRequest, AgentPrompt, PromptVersion, PromptVersionSummary, ResultResponse, SettlementPromptInput,
   PredictionIngestResponse, IssuedKey, KeyScope, ProviderKey, FixtureMergeRequest, FixtureBackfillResult, LeagueAlias, LeagueAliasRequest, AdminReasonRequest,
-  FixtureSuggestion, FixtureView,
+  FixtureSuggestion, FixtureView, TypeCompareBy, TypeComparisonRow,
 } from './models';
 
 export const API = '/api/v1';
@@ -30,6 +31,16 @@ export interface Paging { page?: number; size?: number; sort?: string; }
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
+
+  accountTransactionsResource(page: () => number, size: number) {
+    return httpResource<AccountLedger>(() => ({ url: API + '/account/transactions', params: toParams({ page: page(), size }) }));
+  }
+
+  uploadAccountImage(file: File) {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<AccountImageImport>(API + '/account/images', body);
+  }
 
   // Reactive reads (httpResource). Call from an injection context (field initializer). They run again when the
   // signals they read change, cancel the superseded request and expose status()/error(); view with core/resource.ts.
@@ -119,6 +130,9 @@ export class ApiService {
   }
   breakdown(f: Filters, by: 'market' | 'league' | 'type' | 'stage' | 'model') {
     return this.http.get<BreakdownRow[]>(`${API}/reports/breakdown`, { params: toParams({ ...f, by }) });
+  }
+  typeComparison(f: Filters, by: TypeCompareBy) {
+    return this.http.get<TypeComparisonRow[]>(`${API}/reports/type-comparison`, { params: toParams({ ...f, by }) });
   }
   predictionHistory(f: Filters, p: Paging) {
     return this.http.get<Page<HistoryRow>>(`${API}/reports/prediction-history`, { params: toParams({ ...f, ...p }) });

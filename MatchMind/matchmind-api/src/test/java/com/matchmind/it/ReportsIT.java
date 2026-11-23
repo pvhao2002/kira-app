@@ -276,4 +276,66 @@ class ReportsIT extends IntegrationTestBase {
         assertThat(ah.get("evaluated").asInt()).isZero();
         assertThat(ah.get("excluded").asInt()).isZero();
     }
+
+    // ---------------------------------------------------------------- PRE_MATCH vs LIVE comparison
+
+    @Test
+    void typeComparisonPutsBothTypesInOneRowAndIgnoresTypeFilter() throws Exception {
+        Integration in = newIntegration("tc-model");
+        String pre = "tcp-" + UUID.randomUUID().toString().substring(0, 8), live = "tcl-" + UUID.randomUUID().toString().substring(0, 8);
+        external(in.provider(), "predictions", Payloads.preMatchWithCorners("e-" + pre, pre, in.modelName(), "HOME"));
+        external(in.provider(), "predictions", Payloads.livePrediction("e-" + live, live, in.modelName()));
+
+        JsonNode rows = adminGet("/api/v1/reports/type-comparison?providerId=" + providerId(in) + "&type=LIVE&by=model");
+        assertThat(rows).hasSize(1);
+        JsonNode row = rows.get(0);
+        assertThat(row.get("key").asText()).isEqualTo(in.modelName() + " 1.0");
+        assertThat(row.get("preMatch").get("picks").asInt()).isPositive();
+        assertThat(row.get("live").get("picks").asInt()).isPositive();
+    }
+
+    @Test
+    void typeComparisonMissingSideIsNullAndDeltasNull() throws Exception {
+        Integration in = newIntegration("tc-live-only");
+        String live = "tcl-" + UUID.randomUUID().toString().substring(0, 8);
+        external(in.provider(), "predictions", Payloads.livePrediction("e-" + live, live, in.modelName()));
+
+        JsonNode row = adminGet("/api/v1/reports/type-comparison?providerId=" + providerId(in)).get(0);
+        assertThat(row.get("preMatch").isNull()).isTrue();
+        assertThat(row.get("winRateDelta").isNull()).isTrue();
+        assertThat(row.get("roiDelta").isNull()).isTrue();
+        assertThat(row.get("live").get("winRate").isNull()).isTrue(); // all pending
+    }
+
+    @Test
+    void typeComparisonDeltaIsLiveMinusPreMatch() throws Exception {
+        Integration in = newIntegration("tc-delta");
+        String pre = "tcp-" + UUID.randomUUID().toString().substring(0, 8), live = "tcl-" + UUID.randomUUID().toString().substring(0, 8);
+        JsonNode preRes = read(external(in.provider(), "predictions", Payloads.preMatchWithCorners("e-" + pre, pre, in.modelName(), "HOME")));
+        JsonNode liveRes = read(external(in.provider(), "predictions", Payloads.livePrediction("e-" + live, live, in.modelName())));
+        external(in.provider(), "matches/results", Payloads.result(pre, "FINISHED", "{\"home\":2,\"away\":1}", "{\"home\":5,\"away\":4}", "2026-11-11T22:00:00Z"));
+        external(in.provider(), "matches/results", Payloads.result(live, "FINISHED", "{\"home\":2,\"away\":1}", null, "2026-11-10T21:40:00Z"));
+        for (JsonNode pick : preRes.get("picks")) override(pick, "LOSS");
+        for (JsonNode pick : liveRes.get("picks")) override(pick, "WIN");
+
+        JsonNode row = adminGet("/api/v1/reports/type-comparison?providerId=" + providerId(in)).get(0);
+        JsonNode p = row.get("preMatch"), l = row.get("live");
+        assertThat(p.get("winRate").decimalValue()).isEqualByComparingTo("0");
+        assertThat(l.get("winRate").decimalValue()).isEqualByComparingTo("1");
+        assertThat(row.get("winRateDelta").decimalValue())
+            .isEqualByComparingTo(l.get("winRate").decimalValue().subtract(p.get("winRate").decimalValue()));
+        assertThat(row.get("roiDelta").decimalValue())
+            .isEqualByComparingTo(l.get("roi").decimalValue().subtract(p.get("roi").decimalValue()));
+    }
+
+    private void override(JsonNode pick, String result) throws Exception {
+        adminPost("/api/v1/settlements/picks/" + pick.get("pickId").asText() + "/override", Map.of("result", result, "reason", "tc test"));
+    }
+
+    @Test
+    void typeComparisonRejectsUnknownGroup() throws Exception {
+        MvcResult res = mvc.perform(asAdmin(get("/api/v1/reports/type-comparison?by=type"))).andReturn();
+        assertThat(res.getResponse().getStatus()).isEqualTo(400);
+        assertThat(res.getResponse().getContentAsString()).contains("INVALID_GROUP");
+    }
 }

@@ -26,6 +26,7 @@ export const routes: Routes = [
       // Viewers see the list; the admin actions are hidden for them (and refused by the API).
       { path: 'providers', title: 'Providers', loadComponent: () => import('./pages/providers').then(m => m.ProvidersPage) },
       { path: 'reports', title: 'Reports', loadComponent: () => import('./pages/reports').then(m => m.ReportsPage) },
+      { path: 'account', title: 'Account Management', loadComponent: () => import('./pages/account').then(m => m.AccountPage) },
       { path: 'prompts', title: 'Prompt Notes', loadComponent: () => import('./pages/prompts').then(m => m.PromptsPage),
         canDeactivate: [(page: { canLeave(): boolean | Promise<boolean> }) => page.canLeave()] },
       { path: 'import', title: 'Import prediction', canActivate: [adminGuard], loadComponent: () => import('./pages/import').then(m => m.ImportPage) },

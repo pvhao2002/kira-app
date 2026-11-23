@@ -15,8 +15,9 @@
  * Status column: rows marked "sent ..." or "rejected ..." are never sent again (clear the cell to resend one, or write
  * "rejected" in it to skip one). Rows marked "retry ..." go out on the next run.
  *
- * Successful rows are removed after 48 hours by the hourly cleanup trigger. Existing sent rows without a timestamp
- * receive one on the first cleanup run. Pending, retry and rejected rows are retained. Run setup again after upgrading.
+ * Successful rows are removed by the hourly cleanup trigger: MatchMind tab rows 48 hours after processedAt, SETTLE tab
+ * rows 72 hours after syncedAt. Existing sent rows without a timestamp receive one on the first cleanup run. Pending,
+ * retry and rejected rows are retained. Run setup again after upgrading.
  *
  * SETTLE tab (match results):
  * 5. On the MatchMind Providers screen create a provider such as "sheet", issue it a key and grant it the RESULTS scope.
@@ -34,12 +35,13 @@ const SHEET_NAME = 'MatchMind';
 // Agents fill the columns in this order; the MatchMind prompts list the same names.
 const COLUMNS = ['label', 'path', 'provider', 'model', 'modelVersion', 'body', 'status', 'processedAt'];
 const RETENTION_MS = 48 * 60 * 60 * 1000;
+const SETTLE_RETENTION_MS = 72 * 60 * 60 * 1000;
 const TIME_BUDGET_MS = 4 * 60 * 1000; // Google stops a run after 6 minutes: end early so no status is lost
 const TIMEOUT_SECONDS = 30; // Google waits 6 minutes by default: a host that hangs would use up the day's trigger time
 const SETTLE_SHEET = 'SETTLE';
-// The AI Sheet Settlement Prompt names the same columns. The agent fills status .. source; sync is the script's.
+// The AI Sheet Settlement Prompt names the same columns. The agent fills status .. source; sync and syncedAt are the script's.
 const SETTLE_COLUMNS = ['matchId', 'provider', 'league', 'homeTeam', 'awayTeam', 'kickoffGmt7', 'status', 'homeScore', 'awayScore',
-  'homeCorners', 'awayCorners', 'htHomeScore', 'htAwayScore', 'source', 'sync'];
+  'homeCorners', 'awayCorners', 'htHomeScore', 'htAwayScore', 'source', 'sync', 'syncedAt'];
 const RESULT_STATUSES = ['FINISHED', 'CANCELLED', 'POSTPONED'];
 
 function onOpen() {
@@ -59,8 +61,12 @@ function setup() {
   sheet.setFrozenRows(1);
   const settle = book.getSheetByName(SETTLE_SHEET) || book.insertSheet(SETTLE_SHEET);
   settle.getRange(1, 1, 1, SETTLE_COLUMNS.length).setValues([SETTLE_COLUMNS]);
-  settle.getRange('A:O').setNumberFormat('@');
+  settle.getRange('A:P').setNumberFormat('@');
   settle.setFrozenRows(1);
+  const account = book.getSheetByName('ACCOUNT') || book.insertSheet('ACCOUNT');
+  account.getRange(1, 1, 1, 4).setValues([['importId', 'transactions', 'sync', 'syncedAt']]);
+  account.getRange('A:D').setNumberFormat('@');
+  account.setFrozenRows(1);
   ScriptApp.getProjectTriggers()
     .filter(t => ['sendPending', 'cleanupOldRows', 'pullUnsettled'].includes(t.getHandlerFunction()))
     .forEach(t => ScriptApp.deleteTrigger(t));
@@ -88,7 +94,7 @@ function pullUnsettled() {
     const known = new Set(sheet.getDataRange().getValues().slice(1).map(r => String(r[0])));
     const rows = JSON.parse(res.getContentText()).filter(m => !known.has(m.matchId)).map(m => [m.matchId, m.provider,
       m.league || '', m.homeTeam, m.awayTeam, Utilities.formatDate(new Date(m.startTime), 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm'),
-      '', '', '', '', '', '', '', '', '']);
+      ...Array(SETTLE_COLUMNS.length - 6).fill('')]);
     if (rows.length) sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, SETTLE_COLUMNS.length).setValues(rows);
     return rows.length;
   } finally {
@@ -116,8 +122,34 @@ function sendPending() {
       if (outcome.stop) break;
     }
     pushResults(started);
+    const accountKey = PropertiesService.getScriptProperties().getProperty('MATCHMIND_ACCOUNT_KEY') || key;
+    pushAccountTransactions(accountKey, started);
   } finally {
     lock.releaseLock();
+  }
+}
+
+function pushAccountTransactions(key, started) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName('ACCOUNT');
+  if (!sheet) return;
+  const rows = sheet.getDataRange().getValues();
+  for (let r = 1; r < rows.length && Date.now() - started < TIME_BUDGET_MS; r++) {
+    const [importId, body, sync] = rows[r];
+    if (!importId || !body || /^(sent|rejected)\b/.test(sync)) continue;
+    let outcome;
+    try {
+      const transactions = JSON.parse(body);
+      if (!Array.isArray(transactions)) throw new Error();
+      outcome = post(key, '/api/v1/external/account/transactions', key.startsWith('mmk_') ? {} : { 'X-Provider': 'sheet' },
+        JSON.stringify({ importId, transactions }));
+    } catch (e) {
+      outcome = { status: 'rejected: transactions must be a JSON array' };
+    }
+    const current = sheet.getRange(r + 1, 1, 1, 3).getValues()[0];
+    if (current[0] !== importId || current[1] !== body || current[2] !== sync) break;
+    sheet.getRange(r + 1, 3, 1, 2).setValues([[outcome.status, /^sent\b/.test(outcome.status) ? new Date().toISOString() : '']]);
+    SpreadsheetApp.flush();
+    if (outcome.stop) break;
   }
 }
 
@@ -136,7 +168,7 @@ function pushResults(started) {
       outcome = { status: 'rejected: ' + e.message };
     }
     if (String(sheet.getRange(r + 1, 1).getValue()) !== String(rows[r][0])) break; // rows moved: next run
-    sheet.getRange(r + 1, SETTLE_COLUMNS.length).setValue(outcome.status);
+    sheet.getRange(r + 1, 15, 1, 2).setValues([[outcome.status, /^sent\b/.test(outcome.status) ? new Date().toISOString() : '']]);
     SpreadsheetApp.flush();
     if (outcome.stop) break;
   }
@@ -159,33 +191,39 @@ function resultBody(row) {
   return body;
 }
 
-/** Remove only successful rows whose recorded processing time is at least 48 hours old. */
+/** Removes only successful rows: MatchMind tab rows 48 hours after processedAt, SETTLE tab rows 72 hours after syncedAt. */
 function cleanupOldRows() {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(1000)) return;
   try {
-    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
-    if (!sheet) return;
-    const rows = sheet.getDataRange().getValues();
-    const now = Date.now();
-    for (let r = rows.length - 1; r >= 1; r--) {
-      const row = rows[r];
-      if (!/^sent\b/.test(row[6])) continue;
-      // Recheck the row before changing it; the script lock does not prevent manual sheet edits.
-      const current = sheet.getRange(r + 1, 1, 1, 8).getValues()[0];
-      if (row.some((value, i) => String(value) !== String(current[i]))) continue;
-      const processedAt = row[7];
-      const timestamp = Date.parse(String(processedAt || ''));
-      if (!Number.isFinite(timestamp)) {
-        // Legacy rows have no known send time: retain them for another full 48 hours.
-        sheet.getRange(r + 1, 8).setValue(new Date(now).toISOString());
-      } else if (now - timestamp >= RETENTION_MS) {
-        sheet.deleteRows(r + 1, 1);
-      }
-    }
+    const book = SpreadsheetApp.getActive();
+    cleanupTab(book.getSheetByName(SHEET_NAME), 6, 7, RETENTION_MS);
+    cleanupTab(book.getSheetByName(SETTLE_SHEET), 14, 15, SETTLE_RETENTION_MS);
     SpreadsheetApp.flush();
   } finally {
     lock.releaseLock();
+  }
+}
+
+/** Deletes the rows whose status cell (statusCol, 0-based) starts with "sent" and whose time cell is retentionMs old. */
+function cleanupTab(sheet, statusCol, timeCol, retentionMs) {
+  if (!sheet) return;
+  const rows = sheet.getDataRange().getValues();
+  const width = timeCol + 1;
+  const now = Date.now();
+  for (let r = rows.length - 1; r >= 1; r--) {
+    const row = rows[r];
+    if (!/^sent\b/.test(row[statusCol])) continue;
+    // Recheck the row before changing it; the script lock does not prevent manual sheet edits.
+    const current = sheet.getRange(r + 1, 1, 1, width).getValues()[0];
+    if (row.slice(0, width).some((value, i) => String(value) !== String(current[i]))) continue;
+    const timestamp = Date.parse(String(row[timeCol] || ''));
+    if (!Number.isFinite(timestamp)) {
+      // Legacy rows have no known send time: retain them for another full retention period.
+      sheet.getRange(r + 1, timeCol + 1).setValue(new Date(now).toISOString());
+    } else if (now - timestamp >= retentionMs) {
+      sheet.deleteRows(r + 1, 1);
+    }
   }
 }
 

@@ -131,6 +131,64 @@ public class ReportService {
         return rows;
     }
 
+    /**
+     * PRE_MATCH and LIVE pick performance side by side per model, market or league. The type filter is ignored (both
+     * types are the point); a side with no picks is null. Deltas are LIVE minus PRE_MATCH, null when either rate is null.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> typeComparison(Filters f, String by) {
+        String key = switch (by == null ? "model" : by) {
+            case "model" -> Sql.MODEL_NAME + " || ' ' || am.version";
+            case "market" -> "pk.market";
+            case "league" -> "mm_league(m.league)";
+            default -> throw ApiException.badRequest("INVALID_GROUP", "by must be model, market or league");
+        };
+        Sql.Where w = new Filters(f.from(), f.to(), f.league(), f.modelId(), f.providerId(), null, f.market(), f.matchId(),
+            f.search(), f.result(), f.includeArchived(), f.countPolicy()).where(true);
+        Map<String, Map<String, Object>> byKey = new LinkedHashMap<>();
+        jdbc.query("SELECT " + key + " AS \"key\", p.prediction_type AS \"type\", " + AGG + PICKS_FROM + w.sql() + " GROUP BY 1, 2",
+            w.params, Sql.ROW).forEach(r -> {
+            String type = (String) r.remove("type");
+            addRates(r);
+            Map<String, Object> out = byKey.computeIfAbsent((String) r.get("key"), k -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("key", k);
+                return m;
+            });
+            r.remove("key");
+            out.put("PRE_MATCH".equals(type) ? "preMatch" : "live", r);
+        });
+        List<Map<String, Object>> rows = new ArrayList<>(byKey.values());
+        for (Map<String, Object> row : rows) {
+            row.putIfAbsent("preMatch", null);
+            row.putIfAbsent("live", null);
+            row.put("winRateDelta", delta(row, "winRate"));
+            row.put("roiDelta", delta(row, "roi"));
+        }
+        rows.sort((a, b) -> {
+            int c = Long.compare(picks(b), picks(a));
+            return c != 0 ? c : ((String) a.get("key")).compareTo((String) b.get("key"));
+        });
+        return rows;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static BigDecimal delta(Map<String, Object> row, String field) {
+        Map<String, Object> pre = (Map<String, Object>) row.get("preMatch"), live = (Map<String, Object>) row.get("live");
+        if (pre == null || live == null || pre.get(field) == null || live.get(field) == null) return null;
+        return ((BigDecimal) live.get(field)).subtract((BigDecimal) pre.get(field));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static long picks(Map<String, Object> row) {
+        long n = 0;
+        for (String side : List.of("preMatch", "live")) {
+            Map<String, Object> s = (Map<String, Object>) row.get(side);
+            if (s != null) n += num(s.get("picks"));
+        }
+        return n;
+    }
+
     // ------------------------------------------------------------------ Calibration (UX-018)
     private static final int CALIBRATION_BINS = 10;
 

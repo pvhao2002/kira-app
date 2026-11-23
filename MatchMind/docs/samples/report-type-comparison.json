@@ -1,0 +1,28 @@
+[
+  {
+    "key": "GPT-5 1.0",
+    "preMatch": {
+      "picks": 12, "settled": 10, "wins": 6, "losses": 4, "pushOrVoid": 0, "pending": 2,
+      "halfWins": 0, "halfLosses": 0, "fullWins": 6, "fullLosses": 4,
+      "avgProbability": 0.5400, "units": 0.800, "staked": 10, "winRate": 0.6, "roi": 0.0800
+    },
+    "live": {
+      "picks": 8, "settled": 8, "wins": 5, "losses": 2, "pushOrVoid": 1, "pending": 0,
+      "halfWins": 0, "halfLosses": 0, "fullWins": 5, "fullLosses": 2,
+      "avgProbability": 0.5400, "units": 1.600, "staked": 7, "winRate": 0.7143, "roi": 0.2286
+    },
+    "winRateDelta": 0.1143,
+    "roiDelta": 0.1486
+  },
+  {
+    "key": "Gemini 2.5 1.0",
+    "preMatch": {
+      "picks": 5, "settled": 5, "wins": 2, "losses": 3, "pushOrVoid": 0, "pending": 0,
+      "halfWins": 0, "halfLosses": 0, "fullWins": 2, "fullLosses": 3,
+      "avgProbability": 0.5400, "units": -0.500, "staked": 5, "winRate": 0.4, "roi": -0.1000
+    },
+    "live": null,
+    "winRateDelta": null,
+    "roiDelta": null
+  }
+]

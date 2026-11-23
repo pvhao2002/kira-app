@@ -66,6 +66,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/external/**").hasRole("PROVIDER")
                 .requestMatchers("/api/v1/auth/monitor-session", MonitorController.CHECK_PATH).hasRole("ADMIN")
                 .requestMatchers("/api/v1/auth/**").hasAnyRole("ADMIN", "VIEWER")
+                .requestMatchers(HttpMethod.POST, "/api/v1/account/images").hasAnyRole("ADMIN", "VIEWER")
                 .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
                 // Callback audit trail: client IPs, endpoints and error text are for admins only (the UI hides the menu).
                 .requestMatchers("/api/v1/api-logs", "/api/v1/api-logs/**").hasRole("ADMIN")

@@ -8,7 +8,7 @@ const SOURCE = readFileSync(new URL('./MatchMind.gs', import.meta.url), 'utf8');
 const BASE = 'https://match.kira.id.vn';
 const HEADER = ['label', 'path', 'provider', 'model', 'modelVersion', 'body', 'status', 'processedAt'];
 const SETTLE_HEADER = ['matchId', 'provider', 'league', 'homeTeam', 'awayTeam', 'kickoffGmt7', 'status', 'homeScore',
-  'awayScore', 'homeCorners', 'awayCorners', 'htHomeScore', 'htAwayScore', 'source', 'sync'];
+  'awayScore', 'homeCorners', 'awayCorners', 'htHomeScore', 'htAwayScore', 'source', 'sync', 'syncedAt'];
 
 /**
  * Loads the script over a MatchMind tab holding `rows` below the header. The server gives `answers` in order: {code,
@@ -155,8 +155,12 @@ test('setup makes a plain-text MatchMind tab and one sender and one cleanup trig
     ['format', 'A:H', '@'], // plain text: Sheets would turn a version such as 2024-08-06 or 4.10 into a date or a number
     ['frozen', 1],
     ['insert', 'SETTLE', null],
-    ['values', '1,1,1,15', [SETTLE_HEADER]],
-    ['format', 'A:O', '@'],
+    ['values', '1,1,1,16', [SETTLE_HEADER]],
+    ['format', 'A:P', '@'],
+    ['frozen', 1],
+    ['insert', 'ACCOUNT', null],
+    ['values', '1,1,1,4', [['importId', 'transactions', 'sync', 'syncedAt']]],
+    ['format', 'A:D', '@'],
     ['frozen', 1],
     ['delete', 'sendPending'],
     ['delete', 'cleanupOldRows'],
@@ -202,10 +206,14 @@ function loadSettle(rows, answers, resultsKey = 'mmk_sheet_secret') {
   const sheetOf = grid => ({
     getDataRange: () => ({ getValues: () => grid.map(r => [...r]) }),
     getLastRow: () => grid.length,
-    getRange: (row, col) => ({
+    deleteRows: (row, count) => grid.splice(row - 1, count),
+    getRange: (row, col, height = 1, width = 1) => ({
+      getValues: () => [Array.from({ length: width }, (_, i) => grid[row - 1]?.[col - 1 + i] ?? '')],
       getValue: () => grid[row - 1]?.[col - 1] ?? '',
       setValue: v => { (grid[row - 1] ??= Array(SETTLE_HEADER.length).fill(''))[col - 1] = v; },
-      setValues: values => values.forEach((v, i) => { grid[row - 1 + i] = [...v]; }),
+      setValues: values => values.forEach((v, i) => v.forEach((x, j) => {
+        (grid[row - 1 + i] ??= Array(SETTLE_HEADER.length).fill(''))[col - 1 + j] = x;
+      })),
     }),
   });
   const props = { MATCHMIND_API_KEY: 'agent-key', MATCHMIND_RESULTS_KEY: resultsKey };
@@ -223,8 +231,32 @@ function loadSettle(rows, answers, resultsKey = 'mmk_sheet_secret') {
     },
   };
   vm.runInNewContext(SOURCE, google);
-  return { google, tab: tabs.SETTLE, calls, sync: row => tabs.SETTLE[row][14] };
+  return { google, tabs, props, tab: tabs.SETTLE, calls, sync: row => tabs.SETTLE[row][14] };
 }
+
+test('ACCOUNT sends one batch per image and keeps sent rows idempotent', () => {
+  const s = loadSettle([], [{ code: 200 }]);
+  const tx = [{ reference: 'dep1', type: 'CREDIT', status: 'SUCCESS', amount: 120, occurredAt: '2026-11-24T10:00:00+07:00' }];
+  s.tabs.ACCOUNT = [['importId', 'transactions', 'sync', 'syncedAt'],
+    ['bad', '{', '', ''], ['image1', JSON.stringify(tx), '', '']];
+  s.google.sendPending();
+  s.google.sendPending();
+  assert.match(s.tabs.ACCOUNT[1][2], /^rejected/);
+  assert.equal(s.tabs.ACCOUNT[2][2], 'sent 200');
+  assert.ok(Date.parse(s.tabs.ACCOUNT[2][3]));
+  assert.equal(s.calls.length, 1);
+  assert.equal(s.calls[0].url, BASE + '/api/v1/external/account/transactions');
+  assert.deepEqual(s.calls[0].headers, { 'X-Api-Key': 'agent-key', 'X-Provider': 'sheet' });
+  assert.deepEqual(JSON.parse(s.calls[0].payload), { importId: 'image1', transactions: tx });
+});
+
+test('ACCOUNT uses its scoped key without overriding the provider identity', () => {
+  const s = loadSettle([], [{ code: 200 }]);
+  s.props.MATCHMIND_ACCOUNT_KEY = 'mmk_trusted';
+  s.tabs.ACCOUNT = [['importId', 'transactions', 'sync', 'syncedAt'], ['image2', '[{}]', '', '']];
+  s.google.sendPending();
+  assert.deepEqual(s.calls[0].headers, { 'X-Api-Key': 'mmk_trusted' });
+});
 
 const open = (id, status = '', home = '', away = '', extra = []) =>
   [id, 'meta-ai', 'Myanmar League', 'FC Chinland', 'Ayeyawady', '2026-11-23 16:30', status, home, away, ...extra];
@@ -279,4 +311,24 @@ test('SETTLE rows wait while the results key is missing', () => {
   s.google.sendPending();
   assert.equal(s.sync(1), '');
   assert.equal(s.calls.length, 0);
+});
+
+test('SETTLE rows record syncedAt only when sent, and cleanup removes them 72 hours later', () => {
+  const s = loadSettle([pad(open('m1', 'CANCELLED')), pad(open('m2', 'LIVE'))], [{ code: 200, body: {} }]);
+  s.google.sendPending();
+  assert.ok(Number.isFinite(Date.parse(s.tab[1][15])));
+  assert.equal(s.tab[2][15], '');
+
+  const hoursAgo = h => new Date(Date.now() - h * 3600000).toISOString();
+  const synced = (id, sync, at) => [...open(id, 'FINISHED', '1', '0'), '', '', '', '', '', sync, at];
+  const c = loadSettle([
+    synced('old', 'sent 200', hoursAgo(73)),
+    synced('recent', 'sent 200', hoursAgo(71)),
+    synced('rejected', 'rejected: x', hoursAgo(100)),
+    synced('legacy', 'sent 200', ''),
+    pad(open('open')),
+  ], []);
+  c.google.cleanupOldRows();
+  assert.deepEqual(c.tab.slice(1).map(r => r[0]), ['recent', 'rejected', 'legacy', 'open']);
+  assert.ok(Number.isFinite(Date.parse(c.tab[3][15]))); // legacy row: kept for another 72 hours
 });
