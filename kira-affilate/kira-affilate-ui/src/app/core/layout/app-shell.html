@@ -29,9 +29,13 @@
     </ul>
   </nav>
   <div class="shrink-0 border-t border-line p-3">
-    <p class="truncate px-1 text-[13px] font-medium" data-testid="shell-user">{{ auth.user()?.fullName }}</p>
-    <p class="truncate px-1 text-xs text-muted">{{ auth.user()?.email }}</p>
-    <button type="button" class="btn btn-sm mt-2 w-full" (click)="logout()" data-testid="shell-logout">Đăng xuất</button>
+    @if (auth.authenticated()) {
+      <p class="truncate px-1 text-[13px] font-medium" data-testid="shell-user">{{ auth.user()?.fullName }}</p>
+      <p class="truncate px-1 text-xs text-muted">{{ auth.user()?.email }}</p>
+      <button type="button" class="btn btn-sm mt-2 w-full" (click)="logout()" data-testid="shell-logout">Đăng xuất</button>
+    } @else {
+      <a class="btn btn-sm w-full" routerLink="/login" data-testid="shell-login">Đăng nhập</a>
+    }
   </div>
 </aside>
 

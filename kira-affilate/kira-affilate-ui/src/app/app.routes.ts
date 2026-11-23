@@ -2,7 +2,7 @@ import {Routes} from '@angular/router';
 import {authGuard} from './core/guards/auth.guards';
 
 export const routes: Routes = [
-  {path: '', redirectTo: 'app/dashboard', pathMatch: 'full'},
+  {path: '', redirectTo: 'app/legal', pathMatch: 'full'},
   {
     path: 'login', title: 'Đăng nhập · Kira Affiliate', data: {mode: 'login'},
     loadComponent: () => import('./features/auth/auth.page').then(m => m.AuthPage)
@@ -12,33 +12,39 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/auth.page').then(m => m.AuthPage)
   },
   {
+    // Guides, tax and legal content are public; every other page needs a session.
     path: 'app',
-    canActivate: [authGuard],
     loadComponent: () => import('./core/layout/app-shell').then(m => m.AppShell),
     children: [
       {path: '', redirectTo: 'dashboard', pathMatch: 'full'},
       {
         path: 'dashboard', title: 'Tổng quan · Kira Affiliate',
+        canActivate: [authGuard],
         loadComponent: () => import('./features/dashboard/dashboard.page').then(m => m.DashboardPage)
       },
       {
         path: 'convert', title: 'Chuyển đổi liên kết · Kira Affiliate',
+        canActivate: [authGuard],
         loadComponent: () => import('./features/converter/converter.page').then(m => m.ConverterPage)
       },
       {
         path: 'links', title: 'Quản lý liên kết · Kira Affiliate',
+        canActivate: [authGuard],
         loadComponent: () => import('./features/links/links.page').then(m => m.LinksPage)
       },
       {
         path: 'analytics', title: 'Thống kê · Kira Affiliate',
+        canActivate: [authGuard],
         loadComponent: () => import('./features/analytics/analytics.page').then(m => m.AnalyticsPage)
       },
       {
         path: 'orders', title: 'Đơn hàng & Hoa hồng · Kira Affiliate',
+        canActivate: [authGuard],
         loadComponent: () => import('./features/orders/orders.page').then(m => m.OrdersPage)
       },
       {
         path: 'offers', title: 'Sản phẩm & Chiến dịch · Kira Affiliate',
+        canActivate: [authGuard],
         loadComponent: () => import('./features/offers/offers.page').then(m => m.OffersPage)
       },
       {
@@ -55,6 +61,7 @@ export const routes: Routes = [
       },
       {
         path: 'settings', title: 'Cài đặt · Kira Affiliate',
+        canActivate: [authGuard],
         loadComponent: () => import('./features/settings/settings.page').then(m => m.SettingsPage)
       }
     ]
