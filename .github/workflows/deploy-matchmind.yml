@@ -44,6 +44,22 @@ jobs:
           cache-dependency-path: MatchMind/matchmind-api/pom.xml
       # Unit tests + Testcontainers integration tests (Docker is available on the runner).
       - run: mvn -B verify
+      # Failing tests as annotations, readable without opening the log. GitHub keeps 10 per level per step, so spill
+      # over into warning and notice.
+      - if: failure()
+        shell: python3 {0}
+        run: |
+          import glob, xml.etree.ElementTree as ET
+          levels, n = ["error", "warning", "notice"], 0
+          for f in glob.glob("target/*-reports/TEST-*.xml"):
+              for tc in ET.parse(f).getroot().iter("testcase"):
+                  for bad in list(tc.iter("failure")) + list(tc.iter("error")):
+                      trace = (bad.text or "").strip().splitlines()
+                      where = next((l.strip() for l in trace if "com.matchmind" in l), "")
+                      msg = f"{tc.get('classname')}.{tc.get('name')}: {(bad.get('message') or bad.get('type') or '')[:400]} @ {where}"
+                      print(f"::{levels[min(n // 10, 2)]} title=Test failed::" + msg.replace("%", "%25").replace("\r", "").replace("\n", "%0A"))
+                      n += 1
+          print(f"{n} failing tests")
 
   web:
     runs-on: ubuntu-latest
