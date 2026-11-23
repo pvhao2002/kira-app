@@ -36,7 +36,7 @@ jobs:
       kira-bank-service: ${{ steps.filter.outputs.kira-bank-service }}
       kira-bank-ui: ${{ steps.filter.outputs.kira-bank-ui }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -53,7 +53,7 @@ jobs:
       || (github.event_name == 'workflow_dispatch' && inputs.force_build_all)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -76,7 +76,7 @@ jobs:
       || (github.event_name == 'workflow_dispatch' && inputs.force_build_all)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:

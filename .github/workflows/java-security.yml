@@ -10,6 +10,6 @@ jobs:
   policy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: python3 -m pip install PyYAML==6.0.2
       - run: python3 -m unittest discover -s scripts -p test_java_security.py

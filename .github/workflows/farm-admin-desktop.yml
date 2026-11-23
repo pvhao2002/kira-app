@@ -34,8 +34,8 @@ jobs:
       - name: Require FARM_ADMIN_URL
         shell: bash
         run: '[[ "$FARM_ADMIN_URL" =~ ^https:// ]] || { echo "::error::vars.FARM_ADMIN_URL must be set (https)"; exit 1; }'
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
