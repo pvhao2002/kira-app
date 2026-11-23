@@ -1,0 +1,45 @@
+// Ships the stdout/stderr of every container of compose project "matchmind" to Loki.
+// Labels: service (compose service: api, web, db, ...), container, level (from Spring Boot / nginx lines when present).
+discovery.docker "matchmind" {
+  host = "unix:///var/run/docker.sock"
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=matchmind"]
+  }
+}
+
+discovery.relabel "matchmind" {
+  targets = []
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "matchmind" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.matchmind.targets
+  relabel_rules = discovery.relabel.matchmind.rules
+  forward_to    = [loki.process.level.receiver]
+}
+
+loki.process "level" {
+  stage.regex {
+    expression = `\s(?P<level>TRACE|DEBUG|INFO|WARN|ERROR)\s`
+  }
+  stage.labels {
+    values = { level = "" }
+  }
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

@@ -3,6 +3,7 @@ package com.matchmind.security;
 import com.matchmind.security.Principals.UserPrincipal;
 import com.matchmind.shared.ApiErrors;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -36,11 +38,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
         throws ServletException, IOException {
-        String header = req.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer ")) {
+        String token = bearerOrMonitorCookie(req);
+        if (token != null) {
             User user = null;
             try {
-                JwtService.Parsed parsed = jwt.parse(header.substring(7));
+                JwtService.Parsed parsed = jwt.parse(token);
                 user = users.findById(parsed.userId())
                     .filter(User::active)
                     .filter(u -> Objects.equals(u.getTokenVersion(), parsed.tokenVersion()))
@@ -63,5 +65,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         chain.doFilter(req, res);
+    }
+
+    /**
+     * The Bearer header; on the monitor check only (nginx auth_request for /monitor), the {@code mm_monitor} cookie.
+     * Every other path ignores cookies, so the API keeps no CSRF surface.
+     */
+    private static String bearerOrMonitorCookie(HttpServletRequest req) {
+        String header = req.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) return header.substring(7);
+        if (!MonitorController.CHECK_PATH.equals(req.getRequestURI()) || req.getCookies() == null) return null;
+        return Arrays.stream(req.getCookies()).filter(c -> MonitorController.COOKIE.equals(c.getName()))
+            .map(Cookie::getValue).findFirst().orElse(null);
     }
 }

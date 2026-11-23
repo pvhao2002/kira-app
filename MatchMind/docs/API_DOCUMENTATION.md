@@ -3,8 +3,10 @@
 Base path: `/api/v1`. JSON only. Timestamps are ISO-8601 UTC instants (`2026-11-20T19:45:00Z`). Decimals such as odds,
 lines and probabilities are JSON numbers backed by `BigDecimal`.
 
-Interactive docs: `/swagger-ui.html` and `/v3/api-docs`, on the API port (8090) only. They are on in local runs and off
-when `SWAGGER_ENABLED=false`, which is the compose default. The web container (8088) answers 404 for both paths.
+Interactive docs: `/swagger/index.html` (Swagger UI) and `/swagger/v3/api-docs` (OpenAPI JSON), on while
+`SWAGGER_ENABLED=true` (the default). Through the web container they are for admins only: the **API Docs** sidebar item
+sets the `mm_monitor` cookie (`POST /auth/monitor-session`, also scoped to `/swagger`) and nginx checks it on every
+request, as for `/monitor/`. **Authorize** with a bearer token (or `X-Api-Key`) to use "Try it out".
 
 ## Authentication
 
@@ -119,7 +121,7 @@ unknown model is still created by its first **accepted** prediction. Each key ha
 |---|---|---|
 | `PREDICTIONS` | `POST /external/predictions` | yes |
 | `SETTLE_REQUEST` | `POST /external/predictions/settle` | yes |
-| `RESULTS` | `POST /external/matches/results` | no: an admin grants it to a trusted results feeder only |
+| `RESULTS` | `POST /external/matches/results`, `GET /external/matches/unsettled` | no: an admin grants it to a trusted results feeder only |
 
 **Legacy shared key.** While `EXTERNAL_API_KEY` is set (optional; planned cut-over 2026-12-31), that one key still works
 for every provider with all scopes (a result it posts is not shared with other providers' matches, see
@@ -172,11 +174,7 @@ may send `?provider=…&model=…&modelVersion=…` in the URL instead of `X-Pro
 `X-Api-Key` stays a header. Agents without internet (chat code sandboxes) that can write to Google Sheets append the
 request as one row of the sheet named in `MATCHMIND_SHEET_URL`. The Apps Script
 [`google-sheet/MatchMind.gs`](google-sheet/MatchMind.gs) in that sheet sends new rows every minute. The sheet holds
-the agent key, so keep it private and never share it by link: the link is in every prompt. Other agents
-keep the request in the MatchMind artifact, a page in the chat built from the **MatchMind Artifact Prompt** (Prompt
-Notes). The user sends it from the browser
-with **Send** or **Send all** (see the CORS rule above). If the page cannot reach the server, **Copy JSON** copies the
-request's header lines and body for **Import prediction**. Agents that cannot create artifacts reply `CANNOT_CALL_API`
+the agent key, so keep it private and never share it by link: the link is in every prompt. Agents that cannot write to the sheet reply `CANNOT_CALL_API`
 with the JSON body, which an admin pastes into **Import prediction**: `POST /api/v1/predictions/import?provider=…&model=…&modelVersion=…`
 (ADMIN JWT, body = the prediction JSON), with the same validation, audit log and live event as this endpoint.
 
@@ -250,7 +248,7 @@ Examples: [`samples/match-result.json`](samples/match-result.json),
 
 | Field | Rules |
 |---|---|
-| `externalMatchId`, `matchId`, `predictionId` | Send exactly **one** (`400 VALIDATION_ERROR` otherwise). `matchId` and `predictionId` are the UUIDs of the prediction response; use them when the server generated the `externalMatchId` (`auto-…`). The match must belong to the caller's provider |
+| `externalMatchId`, `matchId`, `predictionId` | Send exactly **one** (`400 VALIDATION_ERROR` otherwise). `matchId` and `predictionId` are the UUIDs of the prediction response; use them when the server generated the `externalMatchId` (`auto-…`). The match must belong to the caller's provider, except that a per-provider `RESULTS` key may post any provider's match by `matchId` alone |
 | `status` | `SCHEDULED`, `LIVE`, `FINISHED`, `CANCELLED`, `POSTPONED`. `FINISHED` requires `finalScore` and a match whose `startTime` has passed (`409 MATCH_NOT_STARTED`) |
 | `finalScore`, `finalCorners`, `halfTimeScore`, `halfTimeCorners` | `{home, away}`. The half-time score cannot exceed the final score. If an update leaves out `finalCorners` or half-time data, the stored values are kept while the status allows them |
 | `resultAt` | Required. At most 5 minutes after the server time (`400 VALIDATION_ERROR`, field `resultAt`). A result older than the one already applied is rejected with `409 STALE_RESULT`; a stored `resultAt` that is itself more than 5 minutes ahead (accepted before this rule) never blocks a newer result |
@@ -274,6 +272,19 @@ that changed (`[]` when none).
   "settlement": { "matchId": "…", "matchStatus": "FINISHED", "settled": 3, "alreadySettled": 0, "pending": 0, "needsReview": 0,
                   "picks": [ { "pickId": "…", "market": "AH", "pick": "HOME", "result": "HALF_LOSS", "status": "SETTLED",
                                "reason": null, "aiResult": null, "aiAgrees": null } ] } }
+```
+
+### 2b. `GET /api/v1/external/matches/unsettled`
+
+Lists up to 500 matches of every provider that still have pending picks and kicked off more than 2 hours ago (not
+archived, not `CANCELLED`), oldest first. Only a per-provider key with the `RESULTS` scope (`403 SCOPE_REQUIRED`
+otherwise, the legacy shared key included). The Google Sheet script copies them into its `SETTLE` tab; an agent fills in
+the results (prompt `AI_SHEET_SETTLEMENT`) and the script posts each filled row to `/external/matches/results` by
+`matchId`.
+
+```json
+[ { "matchId": "…", "provider": "codex", "league": "…", "homeTeam": "Arsenal", "awayTeam": "Chelsea",
+    "startTime": "2026-11-10T19:45:00Z", "status": "LIVE", "pendingPicks": 3 } ]
 ```
 
 ### 3. `POST /api/v1/external/predictions/settle`
@@ -324,6 +335,8 @@ after a corrected score. An admin resolves them with recalculate or override; th
 | POST | `/auth/logout-all` | any | 204. Ends every session of the user (all devices) |
 | POST | `/auth/refresh` | any | → `{accessToken, expiresAt, user}`. New token (sliding); never later than 24 h after the password sign-in. The old token stays valid until it expires. Call it before `expiresAt`; a 401 means sign in again |
 | GET | `/auth/me` | any | Current user (`mustChangePassword`) |
+| POST | `/auth/monitor-session` | ADMIN | 204 + two `Set-Cookie: mm_monitor=<this token>; Path=/monitor` and `…; Path=/swagger` (HttpOnly; Secure; SameSite=Strict), valid until the token expires. Signs the browser in to Grafana at `/monitor/` and Swagger at `/swagger/` |
+| GET | `/auth/monitor-check` | ADMIN | For nginx `auth_request` only. Reads the token from the `mm_monitor` cookie (the only path that accepts a cookie) → 204 + `X-Monitor-User: <username>`; 401 no/expired/revoked token, 403 not an admin |
 | POST | `/auth/change-password` | any | `{currentPassword, newPassword (10–72)}` → 204. Revokes all tokens and clears `mustChangePassword`. 5 wrong current passwords in 15 min give `429`; a new password equal to the current one is `400 PASSWORD_UNCHANGED` |
 | GET | `/users` | admin | All users by default. Filter with `?status=ACTIVE` or `?status=DISABLED`. Invalid values return `400 INVALID_STATUS`. Returns `{id, username, role, status, lastLoginAt, createdAt, updatedAt, mustChangePassword, loginLocked}` |
 | POST | `/users` | admin | `{username, password, role, mustChangePassword?}` |
@@ -429,7 +442,7 @@ See [league alias examples](samples/league-aliases.json).
 | `POST /settlements/matches/{matchId}` | – | Settle pending picks now |
 | `GET /settlements/needs-review?matchId=&predictionId=` | — | Settled picks whose match result changed afterwards and would now settle differently (newest 500 checked). Both filters are optional; the list length is the badge count for a match or prediction |
 | `POST /settlements/matches/{matchId}/recalculate` | `{reason}` | Recalculates every pick of the match that `needs-review` lists, with one reason. Returns `PickSettlement[]` (empty when nothing needed review); `404 MATCH_NOT_FOUND` |
-| `GET /settlements/matches/{matchId}/prompt-input` (viewers too) | — | Input of the settlement prompt: `{matchId, externalMatchId, league, homeTeam, awayTeam, startTime, status, finalScore, finalCorners, halfTimeScore, picks[{pickId, predictionId, market, pick, line, lineDisplay, oddsStage, settlementBasis, price, scoreAtCapture, cornersAtCapture, currentResult}]}`. Pairs are `{home, away}` or `null` |
+| `GET /settlements/matches/{matchId}/prompt-input` (viewers too) | — | The match result and its picks with ids (**Copy settlement input**): `{matchId, externalMatchId, provider, league, homeTeam, awayTeam, startTime, status, finalScore, finalCorners, halfTimeScore, picks[{pickId, predictionId, market, pick, line, lineDisplay, oddsStage, settlementBasis, price, scoreAtCapture, cornersAtCapture, currentResult}]}`. Pairs are `{home, away}` or `null` |
 | `POST /settlements/picks/{pickId}/recalculate` | `{reason}` | Re-runs the engine and always writes a new row that supersedes the current one, so the reason is recorded. Status `UNCHANGED` (same result), `SUPERSEDED`, `SETTLED` or, if the match is no longer FINISHED or CANCELLED, `UNSETTLED` (back to `PENDING`). Status `PENDING`: nothing written, `reason` says why |
 | `POST /settlements/picks/{pickId}/override` | `{result, reason}` | Manual result that supersedes the current one. Only for a FINISHED or CANCELLED match (`409 MATCH_NOT_FINAL`). The same result again is `UNCHANGED` and writes nothing |
 
@@ -481,7 +494,7 @@ Prompt history: every saved version (API saves, restores and migrations that bum
 - `POST /prompts/{id}/versions/{version}/restore` (admin) `{expectedVersion}`: saves that version's content and
   description again as a new version and returns the template. A stale `expectedVersion` is `409 PROMPT_VERSION_CONFLICT`.
 
-Default templates: `AI_PREDICTION`, `AI_SETTLEMENT`, `AI_ARTIFACT` and `AI_MATCH_RESULT` (sending a match result).
+Default templates: `AI_PREDICTION`, `AI_SETTLEMENT` and `AI_SHEET_SETTLEMENT` (filling in results in the sheet's `SETTLE` tab).
 
 ### API logs (admin only)
 VIEWER gets `403` on every `/api-logs` path; the web client hides the menu entry for viewers.

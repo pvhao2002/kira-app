@@ -1,5 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -48,6 +48,42 @@ describe('routing', () => {
   it('admins see API Logs', async () => {
     const h = await start('ADMIN', '/no-such-page');
     expect(navLabels(h)).toContain('API Logs');
+  });
+
+  it('Monitor is admin only and opens /monitor/ in a new tab after the API sets its cookie', async () => {
+    const viewer = await start('VIEWER', '/no-such-page');
+    expect(navLabels(viewer)).not.toContain('Monitor');
+    TestBed.resetTestingModule();
+
+    const h = await start('ADMIN', '/no-such-page');
+    const link = root(h).querySelector<HTMLAnchorElement>('a.nav-link[href="/monitor/"]');
+    expect(link?.textContent?.trim()).toBe('Monitor');
+    expect(link?.target).toBe('_blank');
+    const tab = { opener: {}, location: { href: '' } };
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    link!.click();
+    expect(open).toHaveBeenCalledWith('', '_blank');
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/auth/monitor-session').flush(null, { status: 204, statusText: 'No Content' });
+    expect(tab.opener).toBeNull();
+    expect(tab.location.href).toBe('/monitor/');
+    open.mockRestore();
+  });
+
+  it('API Docs is admin only and opens Swagger in a new tab after the API sets its cookie', async () => {
+    const viewer = await start('VIEWER', '/no-such-page');
+    expect(navLabels(viewer)).not.toContain('API Docs');
+    TestBed.resetTestingModule();
+
+    const h = await start('ADMIN', '/no-such-page');
+    const link = root(h).querySelector<HTMLAnchorElement>('a.nav-link[href="/swagger/index.html"]');
+    expect(link?.textContent?.trim()).toBe('API Docs');
+    const tab = { opener: {}, location: { href: '' } };
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    link!.click();
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/auth/monitor-session').flush(null, { status: 204, statusText: 'No Content' });
+    expect(tab.opener).toBeNull();
+    expect(tab.location.href).toBe('/swagger/index.html');
+    open.mockRestore();
   });
 
   it('keeps a user who must change the password on Settings (UX-059)', async () => {

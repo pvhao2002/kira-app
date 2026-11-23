@@ -104,6 +104,8 @@ export class ApiService {
   logoutAll() { return this.http.post<void>(`${API}/auth/logout-all`, {}); }
   /** Sliding renewal: swap the stored token for the new one before `expiresAt`. A 401 means the session is over. */
   refreshToken() { return this.http.post<LoginResponse>(`${API}/auth/refresh`, {}); }
+  /** Admin: sets the HttpOnly cookie that signs this session in to /monitor (Grafana). */
+  monitorSession() { return this.http.post<void>(`${API}/auth/monitor-session`, {}); }
   /** Admin: a random 16-character password for the create-user and reset forms. Nothing is stored server-side. */
   generatePassword() { return this.http.post<{ password: string }>(`${API}/users/generate-password`, {}); }
   /** Admin: clear the failed-login lockout of a user. */

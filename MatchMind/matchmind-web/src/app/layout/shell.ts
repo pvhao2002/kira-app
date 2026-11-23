@@ -3,6 +3,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
+import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { LiveService } from '../core/live.service';
 import { PageTitle } from '../core/page-title';
@@ -48,6 +49,19 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
             </a>
             }
           }
+          @if (auth.isAdmin()) {
+            <!-- Grafana logs and Swagger: full pages outside the SPA, signed in by the cookie monitorSession() sets. -->
+            <a href="/monitor/" target="_blank" class="nav-link" (click)="openAdminPage($event, '/monitor/')"
+               [attr.title]="compact() ? 'Monitor' : null" [attr.aria-label]="compact() ? 'Monitor (opens a new tab)' : null">
+              <i class="pi pi-chart-line" aria-hidden="true"></i>
+              @if (!compact()) { <span>Monitor</span> }
+            </a>
+            <a href="/swagger/index.html" target="_blank" class="nav-link" (click)="openAdminPage($event, '/swagger/index.html')"
+               [attr.title]="compact() ? 'API Docs' : null" [attr.aria-label]="compact() ? 'API Docs (opens a new tab)' : null">
+              <i class="pi pi-book" aria-hidden="true"></i>
+              @if (!compact()) { <span>API Docs</span> }
+            </a>
+          }
         </nav>
         <button type="button" class="collapse-btn" (click)="toggle()" [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
           <i class="pi" aria-hidden="true" [class.pi-angle-double-left]="!collapsed()" [class.pi-angle-double-right]="collapsed()"></i>
@@ -73,6 +87,7 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
 })
 export class Shell {
   readonly auth = inject(AuthService);
+  private readonly api = inject(ApiService);
   private readonly live = inject(LiveService); // the shell exists only while signed in: listen for new predictions
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -111,6 +126,19 @@ export class Shell {
       if (first) return;
       this.announced.set(this.routeTitle());
       afterNextRender(() => this.pageTitle().nativeElement.focus({ preventScroll: true }), { injector: this.injector });
+    });
+  }
+
+  /** Opens the tab at once (inside the click, so no popup blocker), then points it at the page once the cookie is set. */
+  openAdminPage(e: Event, url: string): void {
+    e.preventDefault();
+    this.closeNav(false);
+    const tab = window.open('', '_blank');
+    if (!tab) return;
+    tab.opener = null;
+    this.api.monitorSession().subscribe({
+      next: () => { tab.location.href = url; },
+      error: () => tab.close(),   // the error interceptor already shows why
     });
   }
 

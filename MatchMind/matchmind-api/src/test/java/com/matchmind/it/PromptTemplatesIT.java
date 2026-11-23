@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.util.StringUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -78,86 +77,63 @@ class PromptTemplatesIT extends IntegrationTestBase {
     }
 
     @Test
-    void adminCopyFillsInTheAgentKeyWhileTheStoredTextKeepsAPlaceholder() throws Exception {
-        for (String type : List.of("AI_PREDICTION", "AI_SETTLEMENT")) {
-            String id = seededPromptId(type);
-            String stored = adminGet("/api/v1/prompts/" + id).get("content").asText();
-            assertThat(stored).as(type).contains("X-Api-Key: {{EXTERNAL_API_KEY}}").doesNotContain(EXTERNAL_KEY);
-            String forAgent = adminGet("/api/v1/prompts/" + id + "/for-agent").get("content").asText();
-            assertThat(forAgent).as(type).contains("X-Api-Key: " + EXTERNAL_KEY).doesNotContain("{{EXTERNAL_API_KEY}}");
+    void agentPromptsNeverCarryTheApiKey() throws Exception {
+        // The key stays in the sheet script's properties: copies pasted into third-party chats never hold it.
+        for (String type : List.of("AI_PREDICTION")) {
+            String forAgent = adminGet("/api/v1/prompts/" + seededPromptId(type) + "/for-agent").get("content").asText();
+            assertThat(forAgent).as(type).doesNotContain(EXTERNAL_KEY, "{{EXTERNAL_API_KEY}}", "X-Api-Key", "{{API_BASE_URL}}");
         }
     }
 
     @Test
-    void bothPromptsMakeTheAgentSendTheRequestItself() throws Exception {
-        for (String type : List.of("AI_PREDICTION", "AI_SETTLEMENT")) {
+    void agentPromptsMakeTheAgentAppendTheSheetRowItself() throws Exception {
+        for (String type : List.of("AI_PREDICTION")) {
             String prompt = adminGet("/api/v1/prompts/" + seededPromptId(type)).get("content").asText();
             assertThat(prompt).as(type)
-                .contains("SEND IT TO THE API YOURSELF", "Writing the JSON in the chat is not delivery", "CANNOT_CALL_API")
-                .doesNotContain("JSON only");
+                .contains("DELIVERY - MANDATORY: APPEND ONE ROW TO THE GOOGLE SHEET", "Do not call any API yourself",
+                    "Never write into row 1", "QUEUED_IN_SHEET", "CANNOT_CALL_API")
+                .doesNotContain("JSON only", "SEND IT TO THE API YOURSELF", "MatchMind artifact", "QUEUED_IN_ARTIFACT");
+            // The sheet first; CANNOT_CALL_API only when the agent cannot write to it.
+            assertThat(prompt.indexOf("QUEUED_IN_SHEET")).as(type).isLessThan(prompt.indexOf("CANNOT_CALL_API"));
         }
         String prediction = predictionPrompt();
         assertThat(prediction).contains("MISSING DATA IS NEVER A REASON NOT TO SEND").doesNotContain("\"eventId\" must be unique");
-        // Sandboxed agents print the body for MatchMind > Import prediction instead of a curl command.
+        // Step 6 (English) and step 4 (Vietnamese) both settle a live REMAINING_MATCH AH from the score at capture.
+        assertThat(prediction).contains("first subtract that snapshot's scoreAtCapture",
+            "Never apply a REMAINING_MATCH line to the full-match score counted from 0-0", "trừ tỷ số tại thời điểm odds");
+        // Agents without the sheet print the body for MatchMind > Import prediction instead of a curl command.
         assertThat(prediction).contains("Import prediction", "X-Model-Name: <your model name>").doesNotContain("ready-to-run curl command");
         assertThat(prediction.indexOf("DELIVERY - MANDATORY")).isLessThan(prediction.indexOf("INPUT YOU WILL RECEIVE"));
     }
 
     @Test
-    void artifactPromptHoldsTheWholeOutboxPage() throws Exception {
-        assertThat(db.queryForObject("SELECT count(*) FROM prompt_templates WHERE template_type = 'AI_ARTIFACT'", Integer.class)).isEqualTo(1);
-        String id = seededPromptId("AI_ARTIFACT");
-        JsonNode stored = adminGet("/api/v1/prompts/" + id);
-        assertThat(stored.get("name").asText()).isEqualTo("MatchMind Artifact Prompt");
-        String page = stored.get("content").asText();
-        assertThat(page).contains("<!DOCTYPE html>", "const QUEUE = [", "const API_BASE = \"{{API_BASE_URL}}\";",
-            "/api/v1/external/ping", "Send all", "Test connection", "Copy JSON", "QUEUED_IN_ARTIFACT", "Do not publish");
-        // Self-contained: chat sandboxes block other files and storage.
-        assertThat(page).doesNotContain("<script src", "<link", "@import", "localStorage", "sessionStorage", "http://");
-        // One placeholder only: the copy for agents replaces every occurrence, so the page must not compare against it.
-        assertThat(StringUtils.countOccurrencesOf(page, "{{EXTERNAL_API_KEY}}")).isEqualTo(1);
-        assertThat(page).contains("const API_KEY = \"{{EXTERNAL_API_KEY}}\";").doesNotContain(EXTERNAL_KEY);
-        String forAgent = adminGet("/api/v1/prompts/" + id + "/for-agent").get("content").asText();
-        assertThat(forAgent).contains("const API_KEY = \"" + EXTERNAL_KEY + "\";").doesNotContain("{{EXTERNAL_API_KEY}}");
-    }
-
-    @Test
-    void artifactCopyKeepsTheHeadersThatImportPredictionReads() throws Exception {
-        String page = adminGet("/api/v1/prompts/" + seededPromptId("AI_ARTIFACT")).get("content").asText();
-        // Import prediction reads the model from an "X-Model-Name:" line and the JSON from the first "{": Copy JSON puts
-        // each queued header on its own line before the body, so the user also sees which provider to import under.
-        assertThat(page).contains("return k + \": \" + headers[k];", ".concat(bodyText(QUEUE[i], 2)).join(\"\\n\")");
-    }
-
-    @Test
-    void bothPromptsQueueFailedRequestsInTheMatchMindArtifact() throws Exception {
-        Map<String, String> paths = Map.of("AI_PREDICTION", "\"path\": \"/api/v1/external/predictions\"",
-            "AI_SETTLEMENT", "\"path\": \"/api/v1/external/predictions/settle\"");
-        for (Map.Entry<String, String> e : paths.entrySet()) {
-            String prompt = adminGet("/api/v1/prompts/" + seededPromptId(e.getKey())).get("content").asText();
-            assertThat(prompt).as(e.getKey()).contains("MatchMind artifact", "\"MatchMind Artifact Prompt\"", e.getValue(),
-                "QUEUED_IN_ARTIFACT", "CANNOT_CALL_API");
-            // The artifact first; CANNOT_CALL_API only for agents that cannot create artifacts.
-            assertThat(prompt.indexOf("MatchMind artifact")).as(e.getKey()).isLessThan(prompt.indexOf("CANNOT_CALL_API"));
-        }
-    }
-
-    @Test
-    void bothPromptsTryTheGoogleSheetBeforeTheArtifact() throws Exception {
+    void agentPromptsListTheSheetColumnsInTheScriptsOrder() throws Exception {
         String columns = "label, path, provider, model, modelVersion, body, status";
         // The sheet script reads the columns by position, so the prompts must list them in the script's order.
         assertThat(Files.readString(Path.of("../docs/google-sheet/MatchMind.gs")))
             .contains("const COLUMNS = ['" + columns.replace(", ", "', '") + "'];");
-        Map<String, String> paths = Map.of("AI_PREDICTION", "path: /api/v1/external/predictions\n",
-            "AI_SETTLEMENT", "path: /api/v1/external/predictions/settle\n");
+        Map<String, String> paths = Map.of("AI_PREDICTION", "path: /api/v1/external/predictions\n");
         for (Map.Entry<String, String> e : paths.entrySet()) {
             String id = seededPromptId(e.getKey());
             String stored = adminGet("/api/v1/prompts/" + id).get("content").asText();
             assertThat(stored).as(e.getKey()).contains("Google Sheet: {{MATCHMIND_SHEET_URL}}",
                 "Columns in this order: " + columns + ".", e.getValue(), "QUEUED_IN_SHEET").doesNotContain(SHEET_URL);
-            assertThat(stored.indexOf("Google Sheet: ")).as(e.getKey()).isLessThan(stored.indexOf("MatchMind artifact"));
             String forAgent = adminGet("/api/v1/prompts/" + id + "/for-agent").get("content").asText();
             assertThat(forAgent).as(e.getKey()).contains("Google Sheet: " + SHEET_URL).doesNotContain("{{MATCHMIND_SHEET_URL}}");
         }
+    }
+
+    @Test
+    void sheetSettlementPromptListsTheSettleColumnsInTheScriptsOrder() throws Exception {
+        String columns = "matchId, provider, league, homeTeam, awayTeam, kickoffGmt7, status, homeScore, awayScore, "
+            + "homeCorners, awayCorners, htHomeScore, htAwayScore, source, sync";
+        assertThat(Files.readString(Path.of("../docs/google-sheet/MatchMind.gs")).replaceAll("\\s+", " "))
+            .contains("const SETTLE_COLUMNS = ['" + columns.replace(", ", "', '") + "'];");
+        String id = seededPromptId("AI_SHEET_SETTLEMENT");
+        String stored = adminGet("/api/v1/prompts/" + id).get("content").asText();
+        assertThat(stored.replaceAll("\\s+", " ")).contains("Columns in this order: " + columns + ".",
+            "tab named SETTLE", "Never write into sync", "Never invent", "FILLED_IN_SHEET");
+        String forAgent = adminGet("/api/v1/prompts/" + id + "/for-agent").get("content").asText();
+        assertThat(forAgent).contains("Google Sheet: " + SHEET_URL).doesNotContain(EXTERNAL_KEY, "X-Api-Key");
     }
 }

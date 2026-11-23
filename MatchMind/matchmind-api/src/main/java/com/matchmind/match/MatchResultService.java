@@ -67,7 +67,10 @@ public class MatchResultService {
     @Transactional
     public ResultResponse apply(UUID providerId, ResultRequest r, String requestId, boolean trusted) {
         validate(r);
-        UUID id = matchIdOf(providerId, r.externalMatchId(), r.matchId(), r.predictionId());
+        // A trusted results key (the Google Sheet SETTLE tab) may name any provider's match by its MatchMind id.
+        boolean anyProvider = trusted && r.matchId() != null && r.externalMatchId() == null && r.predictionId() == null
+            && matches.existsById(r.matchId());
+        UUID id = anyProvider ? r.matchId() : matchIdOf(providerId, r.externalMatchId(), r.matchId(), r.predictionId());
         List<Match> members = lockFixture(id);
         Match m = matches.lockById(id).orElseThrow();
         Instant now = Instant.now();

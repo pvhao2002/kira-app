@@ -69,11 +69,14 @@ management:
         enabled: true
       show-details: never
 
+# Under /swagger/: nginx passes that prefix to admins only (auth_request, as for /monitor/).
 springdoc:
   swagger-ui:
     enabled: ${SWAGGER_ENABLED:true}
+    path: /swagger/index.html
   api-docs:
     enabled: ${SWAGGER_ENABLED:true}
+    path: /swagger/v3/api-docs
 
 logging:
   pattern:

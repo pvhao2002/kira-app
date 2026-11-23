@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.matchmind.external.ExternalDtos.AiCalculation;
 import com.matchmind.external.ExternalDtos.Pair;
 import com.matchmind.match.Match;
+import com.matchmind.provider.Provider;
+import com.matchmind.provider.ProviderRepository;
 import com.matchmind.match.MatchRepository;
 import com.matchmind.prediction.PredictionOdds;
 import com.matchmind.prediction.PredictionOddsRepository;
@@ -53,6 +55,7 @@ public class SettlementService {
     private final PredictionPickRepository picks;
     private final PredictionOddsRepository odds;
     private final PickResultRepository results;
+    private final ProviderRepository providers;
     private final ObjectMapper json;
     private final NamedParameterJdbcTemplate jdbc;
 
@@ -209,7 +212,8 @@ public class SettlementService {
     }
 
     /** Everything the settlement prompt needs about one match, with the pick ids to send back. */
-    public record PromptInput(UUID matchId, String externalMatchId, String league, String homeTeam, String awayTeam,
+    /** {@code provider}: the provider code, which the settle call sends as X-Provider. */
+    public record PromptInput(UUID matchId, String externalMatchId, String provider, String league, String homeTeam, String awayTeam,
                               Instant startTime, String status, Pair finalScore, Pair finalCorners, Pair halfTimeScore,
                               List<PromptInputPick> picks) {
     }
@@ -217,6 +221,35 @@ public class SettlementService {
     public record PromptInputPick(UUID pickId, UUID predictionId, String market, String pick, BigDecimal line,
                                   String lineDisplay, String oddsStage, String settlementBasis, BigDecimal price,
                                   Pair scoreAtCapture, Pair cornersAtCapture, String currentResult) {
+    }
+
+    /** A match that still waits for its result: what the Google Sheet SETTLE tab lists for an agent to fill in. */
+    public record UnsettledMatch(UUID matchId, String provider, String league, String homeTeam, String awayTeam,
+                                 Instant startTime, String status, int pendingPicks) {
+    }
+
+    /**
+     * Matches of every provider with at least one pending pick whose kick-off was over 2 hours ago (so the game is
+     * normally over), oldest first. Cancelled and archived matches are left out.
+     */
+    @Transactional(readOnly = true)
+    public List<UnsettledMatch> unsettledMatches() {
+        // ponytail: fixed cap of 500 rows; page it if the backlog ever grows past that.
+        return jdbc.query("""
+            SELECT m.id, p.code, m.league, m.home_team, m.away_team, m.start_time, m.status, count(*) AS pending
+            FROM matches m
+            JOIN providers p ON p.id = m.provider_id
+            JOIN predictions pr ON pr.match_id = m.id
+            JOIN prediction_picks k ON k.prediction_id = pr.id
+            LEFT JOIN prediction_pick_results r ON r.pick_id = k.id AND r.is_current
+            WHERE m.archived_at IS NULL AND p.archived_at IS NULL AND m.status <> 'CANCELLED'
+              AND m.start_time < now() - interval '2 hours'
+              AND (r.id IS NULL OR r.result = 'PENDING')
+            GROUP BY m.id, p.code
+            ORDER BY m.start_time, m.id
+            LIMIT 500""", Map.of(), (rs, i) -> new UnsettledMatch(rs.getObject("id", UUID.class), rs.getString("code"),
+            rs.getString("league"), rs.getString("home_team"), rs.getString("away_team"),
+            rs.getTimestamp("start_time").toInstant(), rs.getString("status"), rs.getInt("pending")));
     }
 
     @Transactional(readOnly = true)
@@ -233,7 +266,8 @@ public class SettlementService {
                 pair(o.getHomeScoreAtCapture(), o.getAwayScoreAtCapture()), pair(o.getHomeCornersAtCapture(), o.getAwayCornersAtCapture()),
                 resultByPick.getOrDefault(pk.getId(), PENDING));
         }).toList();
-        return new PromptInput(m.getId(), m.getExternalMatchId(), m.getLeague(), m.getHomeTeam(), m.getAwayTeam(), m.getStartTime(),
+        String provider = providers.findById(m.getProviderId()).map(Provider::getCode).orElse(null);
+        return new PromptInput(m.getId(), m.getExternalMatchId(), provider, m.getLeague(), m.getHomeTeam(), m.getAwayTeam(), m.getStartTime(),
             m.getStatus(), pair(m.getFinalHomeScore(), m.getFinalAwayScore()), pair(m.getFinalHomeCorners(), m.getFinalAwayCorners()),
             pair(m.getHtHomeScore(), m.getHtAwayScore()), out);
     }

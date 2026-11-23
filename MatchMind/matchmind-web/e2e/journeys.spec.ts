@@ -234,8 +234,8 @@ test('detail pages: match result and corners, odds by stage, stats, Monte Carlo;
 test('prompt notes: edit, save a new version, and cancel discards', async ({ page }) => {
   await login(page);
   await page.locator('aside nav').getByRole('link', { name: 'Prompt Notes', exact: true }).click();
-  await page.getByRole('button', { name: /AI Settlement Calculation Prompt/ }).click();
-  await expect(page.locator('.prompt-editor h2')).toHaveText('AI Settlement Calculation Prompt');
+  await page.getByRole('button', { name: /AI Sheet Settlement Prompt/ }).click();
+  await expect(page.locator('.prompt-editor h2')).toHaveText('AI Sheet Settlement Prompt');
   const header = page.locator('.prompt-editor header p');
   const before = Number(/version (\d+)/.exec((await header.textContent()) ?? '')![1]);
 

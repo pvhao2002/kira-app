@@ -63,7 +63,7 @@ const MIN_REASON = 5;
                 }
               }
               <button type="button" class="btn btn-text btn-sm" data-testid="prompt-input-copy" [disabled]="copying()" (click)="copyPromptInput()"
-                title="Copies the match result and every pick with its id, as the settlement prompt expects"><i class="pi" [class.pi-copy]="!copying()" [class.pi-spinner]="copying()" [class.pi-spin]="copying()" aria-hidden="true"></i> Copy settlement input</button>
+                title="Copies the match result and every pick with its id, as JSON"><i class="pi" [class.pi-copy]="!copying()" [class.pi-spinner]="copying()" [class.pi-spin]="copying()" aria-hidden="true"></i> Copy settlement input</button>
             </div>
           </header>
           <div class="facts">

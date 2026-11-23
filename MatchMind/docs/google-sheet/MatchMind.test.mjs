@@ -7,6 +7,8 @@ import vm from 'node:vm';
 const SOURCE = readFileSync(new URL('./MatchMind.gs', import.meta.url), 'utf8');
 const BASE = 'https://match.kira.id.vn';
 const HEADER = ['label', 'path', 'provider', 'model', 'modelVersion', 'body', 'status'];
+const SETTLE_HEADER = ['matchId', 'provider', 'league', 'homeTeam', 'awayTeam', 'kickoffGmt7', 'status', 'homeScore',
+  'awayScore', 'homeCorners', 'awayCorners', 'htHomeScore', 'htAwayScore', 'source', 'sync'];
 
 /**
  * Loads the script over a MatchMind tab holding `rows` below the header. The server gives `answers` in order: {code,
@@ -133,9 +135,13 @@ test('setup makes a plain-text MatchMind tab and one 1-minute trigger, for this 
   const google = {
     SpreadsheetApp: { getActive: () => ({ getSheetByName: () => null, insertSheet: (n, i) => (log.push(['insert', n, i]), sheet) }) },
     ScriptApp: {
-      getProjectTriggers: () => [{ getHandlerFunction: () => 'sendPending' }, { getHandlerFunction: () => 'other' }],
+      getProjectTriggers: () => [{ getHandlerFunction: () => 'sendPending' }, { getHandlerFunction: () => 'other' },
+        { getHandlerFunction: () => 'pullUnsettled' }],
       deleteTrigger: t => log.push(['delete', t.getHandlerFunction()]),
-      newTrigger: f => ({ timeBased: () => ({ everyMinutes: m => ({ create: () => log.push(['trigger', f, m]) }) }) }),
+      newTrigger: f => ({ timeBased: () => ({
+        everyMinutes: m => ({ create: () => log.push(['trigger', f, m]) }),
+        everyHours: h => ({ create: () => log.push(['trigger', f, 'every ' + h + 'h']) }),
+      }) }),
     },
   };
   vm.runInNewContext(SOURCE, google);
@@ -145,7 +151,99 @@ test('setup makes a plain-text MatchMind tab and one 1-minute trigger, for this 
     ['values', '1,1,1,7', [HEADER]],
     ['format', 'A:G', '@'], // plain text: Sheets would turn a version such as 2024-08-06 or 4.10 into a date or a number
     ['frozen', 1],
+    ['insert', 'SETTLE', null],
+    ['values', '1,1,1,15', [SETTLE_HEADER]],
+    ['format', 'A:O', '@'],
+    ['frozen', 1],
     ['delete', 'sendPending'],
+    ['delete', 'pullUnsettled'],
     ['trigger', 'sendPending', 1],
+    ['trigger', 'pullUnsettled', 'every 1h'],
   ]);
+});
+
+/** The SETTLE tab with `rows` below its header, a results key, and the MatchMind tab empty. */
+function loadSettle(rows, answers, resultsKey = 'mmk_sheet_secret') {
+  const tabs = { MatchMind: [HEADER], SETTLE: [SETTLE_HEADER, ...rows.map(r => [...r])] };
+  const calls = [];
+  const sheetOf = grid => ({
+    getDataRange: () => ({ getValues: () => grid.map(r => [...r]) }),
+    getLastRow: () => grid.length,
+    getRange: (row, col) => ({
+      getValue: () => grid[row - 1]?.[col - 1] ?? '',
+      setValue: v => { (grid[row - 1] ??= Array(SETTLE_HEADER.length).fill(''))[col - 1] = v; },
+      setValues: values => values.forEach((v, i) => { grid[row - 1 + i] = [...v]; }),
+    }),
+  });
+  const props = { MATCHMIND_API_KEY: 'agent-key', MATCHMIND_RESULTS_KEY: resultsKey };
+  const google = {
+    SpreadsheetApp: { getActive: () => ({ getSheetByName: n => (tabs[n] ? sheetOf(tabs[n]) : null) }), flush() {} },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: n => props[n] ?? null }) },
+    LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
+    Utilities: { formatDate: (d, tz, f) => tz + '|' + f + '|' + d.toISOString() },
+    UrlFetchApp: {
+      fetch(url, options) {
+        calls.push({ url, ...JSON.parse(JSON.stringify(options)) });
+        const answer = answers.shift();
+        return { getResponseCode: () => answer.code, getContentText: () => answer.text ?? JSON.stringify(answer.body ?? {}) };
+      },
+    },
+  };
+  vm.runInNewContext(SOURCE, google);
+  return { google, tab: tabs.SETTLE, calls, sync: row => tabs.SETTLE[row][14] };
+}
+
+const open = (id, status = '', home = '', away = '', extra = []) =>
+  [id, 'meta-ai', 'Myanmar League', 'FC Chinland', 'Ayeyawady', '2026-11-23 16:30', status, home, away, ...extra];
+const pad = r => [...r, ...Array(SETTLE_HEADER.length - r.length).fill('')];
+
+test('pullUnsettled adds only the matches that are not in the SETTLE tab yet, with the kick-off in GMT+7', () => {
+  const s = loadSettle([pad(open('m1'))], [{ code: 200, body: [
+    { matchId: 'm1', provider: 'meta-ai', homeTeam: 'FC Chinland', awayTeam: 'Ayeyawady', startTime: '2026-11-23T09:30:00Z' },
+    { matchId: 'm2', provider: 'codex', league: null, homeTeam: 'Arsenal', awayTeam: 'Chelsea', startTime: '2026-11-22T19:45:00Z' },
+  ] }]);
+  assert.equal(s.google.pullUnsettled(), 1);
+  assert.deepEqual(s.tab.map(r => r[0]), ['matchId', 'm1', 'm2']);
+  assert.deepEqual(s.tab[2].slice(0, 6),
+    ['m2', 'codex', '', 'Arsenal', 'Chelsea', 'Asia/Ho_Chi_Minh|yyyy-MM-dd HH:mm|2026-11-22T19:45:00.000Z']);
+  assert.equal(s.tab[2].length, SETTLE_HEADER.length);
+  assert.equal(s.calls[0].url, BASE + '/api/v1/external/matches/unsettled');
+  assert.deepEqual([s.calls[0].method, s.calls[0].headers, s.calls[0].followRedirects],
+    ['get', { 'X-Api-Key': 'mmk_sheet_secret' }, false]);
+});
+
+test('pullUnsettled needs the results key and a 200 answer', () => {
+  assert.throws(() => loadSettle([], [], null).google.pullUnsettled(), /MATCHMIND_RESULTS_KEY/);
+  assert.throws(() => loadSettle([], [{ code: 403, body: { code: 'SCOPE_REQUIRED' } }]).google.pullUnsettled(), /403/);
+});
+
+test('sends filled SETTLE rows as match results with the results key, and checks the values first', () => {
+  const s = loadSettle([
+    pad(open('m1', 'finished', '2', '1', ['9', '4', '1', '0', 'https://example.org/live'])),
+    pad(open('m2')),                                     // not filled in yet
+    pad(open('m3', 'FINISHED')),                         // no score
+    pad(open('m4', 'FINISHED', '2', 'x')),
+    pad(open('m5', 'CANCELLED')),
+    pad(open('m6', 'FINISHED', '1', '1', ['', '', '', '', '', 'sent 200'])),
+    pad(open('m7', 'LIVE')),
+  ], [{ code: 200, body: { settlement: { settled: 3, pending: 0 } } }, { code: 200, body: { settlement: { settled: 0, pending: 0 } } }]);
+  s.google.sendPending();
+  assert.deepEqual(s.tab.slice(1).map(r => r[14]), ['sent 200: settled 3, pending 0', '',
+    'rejected: FINISHED needs homeScore and awayScore', 'rejected: finalScore needs two whole numbers',
+    'sent 200: settled 0, pending 0', 'sent 200', 'rejected: status must be one of FINISHED, CANCELLED, POSTPONED']);
+  assert.equal(s.calls.length, 2);
+  assert.equal(s.calls[0].url, BASE + '/api/v1/external/matches/results');
+  assert.deepEqual(s.calls[0].headers, { 'X-Api-Key': 'mmk_sheet_secret' });
+  const body = JSON.parse(s.calls[0].payload);
+  assert.deepEqual({ ...body, resultAt: undefined }, { matchId: 'm1', status: 'FINISHED', finalScore: { home: 2, away: 1 },
+    finalCorners: { home: 9, away: 4 }, halfTimeScore: { home: 1, away: 0 }, resultAt: undefined });
+  assert.ok(Date.parse(body.resultAt) <= Date.now());
+  assert.equal(JSON.parse(s.calls[1].payload).status, 'CANCELLED');
+});
+
+test('SETTLE rows wait while the results key is missing', () => {
+  const s = loadSettle([pad(open('m1', 'FINISHED', '2', '1'))], [], null);
+  s.google.sendPending();
+  assert.equal(s.sync(1), '');
+  assert.equal(s.calls.length, 0);
 });

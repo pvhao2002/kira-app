@@ -361,7 +361,7 @@ export interface ResultResponse {
 }
 /** GET /settlements/matches/{id}/prompt-input: what the settlement prompt needs, with the pick ids. */
 export interface SettlementPromptInput {
-  matchId: string; externalMatchId: string; league: string; homeTeam: string; awayTeam: string; startTime: string;
+  matchId: string; externalMatchId: string; provider: string; league: string; homeTeam: string; awayTeam: string; startTime: string;
   status: MatchStatus; finalScore: ScorePair | null; finalCorners: ScorePair | null; halfTimeScore: ScorePair | null;
   picks: SettlementPromptInputPick[];
 }

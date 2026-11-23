@@ -22,6 +22,13 @@ class PromptVersionsIT extends IntegrationTestBase {
             + "ORDER BY created_at LIMIT 1", String.class, type);
     }
 
+    /** No default template carries the key or the API base URL any more: a custom one still may. */
+    private String keyedPrompt() throws Exception {
+        return adminPost("/api/v1/prompts", Map.of("name", "keyed-" + UUID.randomUUID().toString().substring(0, 8),
+            "templateType", "TEST_KEYED", "content", "POST {{API_BASE_URL}}/api/v1/external/ping X-Api-Key: {{EXTERNAL_API_KEY}}"))
+            .get("id").asText();
+    }
+
     private MvcResult putPrompt(String id, String content, int expectedVersion) throws Exception {
         return mvc.perform(asAdmin(put("/api/v1/prompts/" + id)).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(
             Map.of("content", content, "description", "d", "active", true, "expectedVersion", expectedVersion)))).andReturn();
@@ -59,7 +66,7 @@ class PromptVersionsIT extends IntegrationTestBase {
 
     @Test
     void seededTemplatesHaveTheirCurrentVersionInTheHistory() throws Exception {
-        for (String type : List.of("AI_PREDICTION", "AI_SETTLEMENT", "AI_ARTIFACT", "AI_MATCH_RESULT")) {
+        for (String type : List.of("AI_PREDICTION", "AI_SHEET_SETTLEMENT")) {
             String id = seeded(type);
             int current = adminGet("/api/v1/prompts/" + id).get("version").asInt();
             JsonNode versions = adminGet("/api/v1/prompts/" + id + "/versions");
@@ -69,7 +76,7 @@ class PromptVersionsIT extends IntegrationTestBase {
 
     @Test
     void historyRowsCannotBeChanged() {
-        String id = seeded("AI_SETTLEMENT");
+        String id = seeded("AI_PREDICTION");
         assertThat(org.assertj.core.api.Assertions.catchThrowable(() ->
             db.update("UPDATE prompt_template_versions SET content = 'x' WHERE template_id = ?::uuid", id))).isNotNull();
     }
@@ -81,7 +88,7 @@ class PromptVersionsIT extends IntegrationTestBase {
         String name = "copy-" + UUID.randomUUID().toString().substring(0, 8);
         adminPost("/api/v1/users", Map.of("username", name, "password", "viewer-password-1", "role", "VIEWER"));
         String viewer = login(name, "viewer-password-1");
-        String id = seeded("AI_PREDICTION");
+        String id = keyedPrompt();
 
         MvcResult res = mvc.perform(get("/api/v1/prompts/" + id + "/for-agent").header("Authorization", "Bearer " + viewer)).andReturn();
         assertThat(res.getResponse().getStatus()).isEqualTo(200);
@@ -98,23 +105,18 @@ class PromptVersionsIT extends IntegrationTestBase {
 
     @Test
     void promptsNameTheApiThroughAPlaceholderFilledFromTheRequestOrigin() throws Exception {
-        for (String type : List.of("AI_PREDICTION", "AI_SETTLEMENT", "AI_ARTIFACT", "AI_MATCH_RESULT")) {
-            String id = seeded(type);
-            assertThat(adminGet("/api/v1/prompts/" + id).get("content").asText()).as(type)
-                .contains("{{API_BASE_URL}}").doesNotContain("match.kira.id.vn");
-            String copy = read(mvc.perform(asAdmin(get("/api/v1/prompts/" + id + "/for-agent"))
-                .header("Host", "staging.example.org").header("X-Forwarded-Proto", "https")).andReturn()).get("content").asText();
-            assertThat(copy).as(type).contains("https://staging.example.org").doesNotContain("{{API_BASE_URL}}");
-        }
-        assertThat(adminGet("/api/v1/prompts/" + seeded("AI_PREDICTION") + "/for-agent").get("content").asText())
-            .contains("POST http://localhost/api/v1/external/predictions");
+        String id = keyedPrompt();
+        assertThat(adminGet("/api/v1/prompts/" + id).get("content").asText()).contains("{{API_BASE_URL}}");
+        String copy = read(mvc.perform(asAdmin(get("/api/v1/prompts/" + id + "/for-agent"))
+            .header("Host", "staging.example.org").header("X-Forwarded-Proto", "https")).andReturn()).get("content").asText();
+        assertThat(copy).contains("https://staging.example.org").doesNotContain("{{API_BASE_URL}}");
     }
 
     // ---------------------------------------------------------------- UX-116 size limit
 
     @Test
     void anOverLongPromptGetsAFieldErrorNamingTheLimit() throws Exception {
-        MvcResult res = putPrompt(seeded("AI_SETTLEMENT"), "x".repeat(200_001), 1);
+        MvcResult res = putPrompt(seeded("AI_PREDICTION"), "x".repeat(200_001), 1);
         assertThat(res.getResponse().getStatus()).isEqualTo(400);
         assertThat(read(res).get("fieldErrors").get("content").asText()).contains("200000");
     }
@@ -124,14 +126,10 @@ class PromptVersionsIT extends IntegrationTestBase {
     @Test
     void defaultTemplatesTellAgentsWhatToReportAndHowToHandleErrors() throws Exception {
         String prediction = adminGet("/api/v1/prompts/" + seeded("AI_PREDICTION")).get("content").asText();
-        assertThat(prediction).contains("predictionId, matchId", "409 EVENT_ID_REUSED", "409 MATCH_ALREADY_FINAL");
+        assertThat(prediction).contains("QUEUED_IN_SHEET", "CANNOT_CALL_API", "Never write into row 1");
 
-        String settlement = adminGet("/api/v1/prompts/" + seeded("AI_SETTLEMENT")).get("content").asText();
-        assertThat(settlement).contains("422 PICK_NOT_IN_MATCH", "FINAL_BELOW_CAPTURE_SCORE", "\"predictionId\"", "prompt-input")
-            .doesNotContain("<!-- e2e");
 
-        String result = adminGet("/api/v1/prompts/" + seeded("AI_MATCH_RESULT")).get("content").asText();
-        assertThat(result).contains("{{API_BASE_URL}}/api/v1/external/matches/results", "X-Api-Key: {{EXTERNAL_API_KEY}}",
-            "\"predictionId\"", "\"resultAt\"", "5 minutes", "409 STALE_RESULT", "409 MATCH_NOT_STARTED", "CANNOT_CALL_API");
+        assertThat(db.queryForObject("SELECT count(*) FROM prompt_templates WHERE template_type IN ('AI_ARTIFACT', 'AI_MATCH_RESULT', 'AI_SETTLEMENT')",
+            Integer.class)).isZero();
     }
 }

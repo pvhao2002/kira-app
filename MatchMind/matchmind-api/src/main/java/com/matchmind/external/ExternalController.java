@@ -23,6 +23,7 @@ import com.matchmind.provider.ProviderService;
 import com.matchmind.security.Principals.ProviderPrincipal;
 import com.matchmind.settlement.SettlementService;
 import com.matchmind.settlement.SettlementService.MatchSettlement;
+import com.matchmind.settlement.SettlementService.UnsettledMatch;
 import com.matchmind.shared.ApiException;
 import com.matchmind.shared.TextRules;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +40,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,6 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -141,6 +144,21 @@ public class ExternalController {
         });
     }
 
+    /** The Google Sheet SETTLE tab: matches of every provider still waiting for a result. Trusted results keys only. */
+    @GetMapping(value = "/matches/unsettled", consumes = MediaType.ALL_VALUE)
+    @Operation(summary = "List matches (all providers) with pending picks whose kick-off was over 2 hours ago")
+    public ResponseEntity<List<UnsettledMatch>> unsettled(@AuthenticationPrincipal ProviderPrincipal caller,
+                                                          HttpServletRequest http) {
+        return audited(caller, http, Instant.now(), null, () -> {
+            requireScope(caller, ProviderKeyService.RESULTS);
+            if (caller.apiKeyId() == null) { // the legacy shared key is not a trusted source
+                throw new ApiException(HttpStatus.FORBIDDEN, "SCOPE_REQUIRED",
+                    "Only a per-provider key with the RESULTS scope may list every provider's matches");
+            }
+            return ResponseEntity.ok(settlement.unsettledMatches());
+        });
+    }
+
     @PostMapping("/predictions/settle")
     @Operation(summary = "Request backend settlement of a match's picks; AI calculations are stored as advisory only")
     public ResponseEntity<MatchSettlement> settle(@AuthenticationPrincipal ProviderPrincipal caller,
@@ -223,6 +241,7 @@ public class ExternalController {
 
     private JsonNode summary(Object body) {
         if (body == null) return null;
+        if (body instanceof List<?> list) return mapper.valueToTree(Map.of("count", list.size())); // not the whole list
         JsonNode tree = mapper.valueToTree(body);
         if (tree instanceof ObjectNode o && o.has("settlement") && o.get("settlement").isObject()) {
             ((ObjectNode) o.get("settlement")).remove("picks");

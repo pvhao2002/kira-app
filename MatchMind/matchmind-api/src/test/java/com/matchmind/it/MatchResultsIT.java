@@ -260,6 +260,7 @@ class MatchResultsIT extends IntegrationTestBase {
         JsonNode input = read(res);
         assertThat(input.get("matchId").asText()).isEqualTo(match);
         assertThat(input.get("externalMatchId").asText()).isEqualTo(matchId);
+        assertThat(input.get("provider").asText()).isEqualTo(in.provider()); // the X-Provider the settle call needs
         assertThat(input.get("status").asText()).isEqualTo("FINISHED");
         assertThat(input.get("finalScore").get("home").asInt()).isEqualTo(2);
         assertThat(input.get("finalCorners").isNull()).isTrue();

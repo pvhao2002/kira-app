@@ -123,12 +123,11 @@ class ExternalHeadersIT extends IntegrationTestBase {
     }
 
     @Test
-    void defaultPromptsTellAgentsToSendProviderAndModelAsHeaders() {
+    void defaultPromptsPutProviderAndModelInTheirOwnSheetColumns() {
+        // The sheet script turns the provider, model and modelVersion columns into these headers (MatchMind.gs).
         String prediction = db.queryForObject("SELECT content FROM prompt_templates WHERE template_type = 'AI_PREDICTION'", String.class);
-        assertThat(prediction).contains("X-Api-Key", "X-Provider", "X-Model-Name", "X-Model-Version",
-            "POST {{API_BASE_URL}}/api/v1/external/predictions").doesNotContain("\"model\": {");
-        String settle = db.queryForObject("SELECT content FROM prompt_templates WHERE template_type = 'AI_SETTLEMENT'", String.class);
-        assertThat(settle).contains("X-Api-Key", "X-Provider", "POST {{API_BASE_URL}}/api/v1/external/predictions/settle");
+        assertThat(prediction).contains("- provider: ", "- model: ", "- modelVersion: ", "- path: /api/v1/external/predictions\n")
+            .doesNotContain("\"model\": {", "X-Api-Key");
     }
 
     @Test

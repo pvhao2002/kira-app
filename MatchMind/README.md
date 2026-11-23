@@ -28,8 +28,9 @@ docker compose up -d --build
 - The web port is bound to `127.0.0.1` and serves plain HTTP. To reach it from other machines, put a TLS reverse
   proxy (for example Caddy or nginx with a certificate) in front of it. Never publish port 8088 directly: logins,
   JWTs and the agent API key would cross the network unencrypted.
-- The API is at http://localhost:8090, bound to localhost only. Swagger (`/swagger-ui.html`, `/v3/api-docs`) exists only on
-  this port and only when `SWAGGER_ENABLED=true`; the web container answers 404 for those paths.
+- The API is at http://localhost:8090, bound to localhost only. Swagger (`/swagger/index.html`, `/swagger/v3/api-docs`,
+  on while `SWAGGER_ENABLED=true`) is also served by the web container at http://localhost:8088/swagger/ to admins only:
+  open it from the **API Docs** sidebar item, which signs the new tab in like **Monitor**.
 - PostgreSQL is at localhost:5433.
 
 ### Client IP behind a reverse proxy
@@ -66,6 +67,15 @@ header. nginx gzips JS, CSS, JSON and SVG, except `/api/v1/auth/*` (credentials)
 The first start creates the admin from `MATCHMIND_ADMIN_USERNAME` / `MATCHMIND_ADMIN_PASSWORD`, only while there are no
 users. There is no public sign-up: the admin creates other users in **Settings**.
 
+### Log monitoring (`/monitor/`)
+
+Set `COMPOSE_PROFILES=monitoring` in `.env` to also run Loki, Grafana Alloy and Grafana ([`monitoring/`](monitoring)).
+Alloy ships the output of every `matchmind` container to Loki (kept 14 days, labels `service`, `container`, `level`).
+Grafana opens on the **MatchMind Logs** dashboard at `/monitor/`, through the web container, for admins only: the
+**Monitor** menu item sets an HttpOnly cookie with the admin's session (`POST /api/v1/auth/monitor-session`), nginx
+checks it with the API on every request and passes only the username to Grafana's auth proxy. Grafana has no login
+form and no host port. Signing out, a password change or a disabled user ends the Grafana access too.
+
 ## Connect an AI provider
 
 1. As an admin, open **Providers**, create the provider (e.g. `openclaw`) and issue it a key. The key
@@ -91,17 +101,14 @@ See [API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) for every field and rule, 
 [`docs/samples`](docs/samples). Every call appears on the **API Logs** page, except `GET /api/v1/external/ping`: a
 public reachability check that needs no key and stores nothing.
 
-The **Prompt Notes** page holds the "AI Football Prediction Prompt" and "AI Settlement Calculation Prompt" that
+The **Prompt Notes** page holds the "AI Football Prediction Prompt" and "AI Sheet Settlement Prompt" that
 providers should use. Edits are versioned. When an agent's sandbox cannot reach the API, the prompts tell it to:
 1. Append the request as a row of your Google Sheet, if it can write to Google Sheets (e.g. Meta AI). Set the sheet up
    once with [`docs/google-sheet/MatchMind.gs`](docs/google-sheet/MatchMind.gs) and put its link in
    `MATCHMIND_SHEET_URL`: the admin **Copy** fills it in, and the script sends new rows every minute. Keep the sheet
    private: anyone who can edit it can read the API key. Agents write to it through their Google account connection,
    signed in as you. Never share it by link: the link is in every prompt you paste into a chat.
-2. Otherwise keep the request in a "MatchMind" artifact built from the "MatchMind Artifact Prompt" (give that prompt to
-   the agent in the same conversation). You send the requests from the browser with **Send** or **Send all**. The
-   artifact holds the API key, so do not publish or share it.
-3. Only if neither works, reply `CANNOT_CALL_API` with the JSON body for **Import prediction**.
+2. Otherwise reply `CANNOT_CALL_API` with the JSON body for **Import prediction**.
 
 ## Develop locally
 
@@ -109,7 +116,7 @@ providers should use. Edits are versioned. When an agent's sandbox cannot reach 
 # database only
 docker compose up -d db
 
-# API (http://localhost:8090, Swagger at /swagger-ui.html)
+# API (http://localhost:8090, Swagger at /swagger/index.html)
 cd matchmind-api
 export DB_PASSWORD=... JWT_SECRET=... MATCHMIND_ADMIN_USERNAME=admin MATCHMIND_ADMIN_PASSWORD=...
 mvn spring-boot:run

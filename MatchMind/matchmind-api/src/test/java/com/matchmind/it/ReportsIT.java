@@ -84,7 +84,7 @@ class ReportsIT extends IntegrationTestBase {
     @Test
     void defaultPromptsExistAndEditsAreVersioned() throws Exception {
         JsonNode prompts = adminGet("/api/v1/prompts");
-        assertThat(prompts.findValuesAsText("templateType")).contains("AI_PREDICTION", "AI_SETTLEMENT");
+        assertThat(prompts.findValuesAsText("templateType")).contains("AI_PREDICTION", "AI_SHEET_SETTLEMENT").doesNotContain("AI_SETTLEMENT");
         JsonNode prediction = find(prompts, "templateType", "AI_PREDICTION");
         assertThat(prediction.get("content").asText()).contains("1000").contains("REMAINING_MATCH");
         String id = prediction.get("id").asText();

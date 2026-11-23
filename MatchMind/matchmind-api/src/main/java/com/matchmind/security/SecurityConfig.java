@@ -59,11 +59,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(a -> a
                 // The end of an event stream re-enters the chain as an ASYNC dispatch of a request already authorized.
                 .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
-                .requestMatchers("/actuator/health/**", "/actuator/health", "/swagger-ui/**", "/swagger-ui.html",
-                    "/v3/api-docs/**").permitAll()
+                // /swagger/** is reached only through nginx, which lets admins in (auth_request); the API port is localhost only.
+                .requestMatchers("/actuator/health/**", "/actuator/health", "/swagger/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                 .requestMatchers(HttpMethod.GET, ExternalPingController.PATH).permitAll()
                 .requestMatchers("/api/v1/external/**").hasRole("PROVIDER")
+                .requestMatchers("/api/v1/auth/monitor-session", MonitorController.CHECK_PATH).hasRole("ADMIN")
                 .requestMatchers("/api/v1/auth/**").hasAnyRole("ADMIN", "VIEWER")
                 .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
                 // Callback audit trail: client IPs, endpoints and error text are for admins only (the UI hides the menu).

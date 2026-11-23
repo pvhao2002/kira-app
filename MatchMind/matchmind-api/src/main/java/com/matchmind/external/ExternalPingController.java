@@ -2,6 +2,7 @@ package com.matchmind.external;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.java.Log;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,6 +15,7 @@ import java.time.Instant;
  */
 @RestController
 @Tag(name = "External AI callbacks")
+@Log
 public class ExternalPingController {
     public static final String PATH = "/api/v1/external/ping";
 
@@ -23,6 +25,7 @@ public class ExternalPingController {
     @GetMapping(PATH)
     @Operation(summary = "Public connectivity test: no API key, nothing stored")
     public PingResponse ping() {
+        log.info("Ping reviewed at " + Instant.now());
         return new PingResponse("ok", Instant.now());
     }
 }

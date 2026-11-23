@@ -41,7 +41,7 @@ services:
       MATCHMIND_ADMIN_PASSWORD: ${MATCHMIND_ADMIN_PASSWORD:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12}
-      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
     ports:
       - "127.0.0.1:${API_PORT:-8090}:8090"
     healthcheck:
@@ -68,5 +68,61 @@ services:
       timeout: 5s
       retries: 5
 
+  # Log monitoring (profile "monitoring": set COMPOSE_PROFILES=monitoring in .env to run it). Alloy ships every
+  # container's output to Loki; Grafana is served by the web container at /monitor/, for MatchMind admins only
+  # (nginx auth_request against the API, then Grafana's auth proxy). None of them publishes a host port.
+  loki:
+    image: grafana/loki:3.5.5
+    profiles: [monitoring]
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki.yaml
+    volumes:
+      - ./monitoring/loki.yaml:/etc/loki/loki.yaml:ro
+      - matchmind-loki:/loki
+
+  alloy:
+    image: grafana/alloy:v1.10.2
+    profiles: [monitoring]
+    restart: unless-stopped
+    depends_on: [loki]
+    command: run /etc/alloy/config.alloy --storage.path=/var/lib/alloy/data
+    volumes:
+      - ./monitoring/config.alloy:/etc/alloy/config.alloy:ro
+      # Read access to the Docker API is root-equivalent on this host: Alloy is the only service given it.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  grafana:
+    image: grafana/grafana:12.2.1
+    profiles: [monitoring]
+    restart: unless-stopped
+    depends_on: [loki]
+    environment:
+      GF_SERVER_ROOT_URL: ${PUBLIC_BASE_URL:-http://localhost:8088}/monitor/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      # Sign-in comes only from nginx (X-WEBAUTH-USER after the API checked the admin session). Grafana has no port on
+      # the host, so only containers of this stack can reach it.
+      GF_AUTH_PROXY_ENABLED: "true"
+      GF_AUTH_PROXY_HEADER_NAME: X-WEBAUTH-USER
+      GF_AUTH_PROXY_HEADER_PROPERTY: username
+      GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
+      GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_AUTH_DISABLE_SIGNOUT_MENU: "true"
+      GF_AUTH_BASIC_ENABLED: "false"
+      GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION: "true"
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: strict
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: Editor
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/matchmind-logs.json
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana:/etc/grafana/provisioning:ro
+      - matchmind-grafana:/var/lib/grafana
+
 volumes:
   matchmind-db:
+  matchmind-loki:
+  matchmind-grafana:
