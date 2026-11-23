@@ -59,7 +59,7 @@ jobs:
           releaseDraft: true
           args: ${{ matrix.args }}
       # Manual runs have no tag/release, so publish the installers as workflow artifacts.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: farm-admin-${{ matrix.os }}
           path: farm-market/farm-market-admin-desktop/src-tauri/target/**/release/bundle/**

@@ -43,7 +43,7 @@ jobs:
           releaseDraft: true
           args: --target universal-apple-darwin --bundles dmg
       # Manual runs have no release, so expose the dmg as a workflow artifact.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: kira-bank-desktop-dmg
           path: kira-bank/kira-bank-desktop/src-tauri/target/**/release/bundle/dmg/*.dmg
