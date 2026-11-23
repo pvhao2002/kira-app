@@ -15,6 +15,9 @@
  * Status column: rows marked "sent ..." or "rejected ..." are never sent again (clear the cell to resend one, or write
  * "rejected" in it to skip one). Rows marked "retry ..." go out on the next run.
  *
+ * Successful rows are removed after 48 hours by the hourly cleanup trigger. Existing sent rows without a timestamp
+ * receive one on the first cleanup run. Pending, retry and rejected rows are retained. Run setup again after upgrading.
+ *
  * SETTLE tab (match results):
  * 5. On the MatchMind Providers screen create a provider such as "sheet", issue it a key and grant it the RESULTS scope.
  *    Add the script property MATCHMIND_RESULTS_KEY = that key (mmk_...). Run setup again.
@@ -29,7 +32,8 @@
 const API_BASE = 'https://match.kira.id.vn';
 const SHEET_NAME = 'MatchMind';
 // Agents fill the columns in this order; the MatchMind prompts list the same names.
-const COLUMNS = ['label', 'path', 'provider', 'model', 'modelVersion', 'body', 'status'];
+const COLUMNS = ['label', 'path', 'provider', 'model', 'modelVersion', 'body', 'status', 'processedAt'];
+const RETENTION_MS = 48 * 60 * 60 * 1000;
 const TIME_BUDGET_MS = 4 * 60 * 1000; // Google stops a run after 6 minutes: end early so no status is lost
 const TIMEOUT_SECONDS = 30; // Google waits 6 minutes by default: a host that hangs would use up the day's trigger time
 const SETTLE_SHEET = 'SETTLE';
@@ -51,16 +55,17 @@ function setup() {
   const sheet = book.getSheetByName(SHEET_NAME) || book.insertSheet(SHEET_NAME, 0);
   sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
   // Plain text: otherwise Sheets turns a model version such as 2024-08-06 or 4.10 into a date or a number.
-  sheet.getRange('A:G').setNumberFormat('@');
+  sheet.getRange('A:H').setNumberFormat('@');
   sheet.setFrozenRows(1);
   const settle = book.getSheetByName(SETTLE_SHEET) || book.insertSheet(SETTLE_SHEET);
   settle.getRange(1, 1, 1, SETTLE_COLUMNS.length).setValues([SETTLE_COLUMNS]);
   settle.getRange('A:O').setNumberFormat('@');
   settle.setFrozenRows(1);
   ScriptApp.getProjectTriggers()
-    .filter(t => t.getHandlerFunction() === 'sendPending' || t.getHandlerFunction() === 'pullUnsettled')
+    .filter(t => ['sendPending', 'cleanupOldRows', 'pullUnsettled'].includes(t.getHandlerFunction()))
     .forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('sendPending').timeBased().everyMinutes(1).create();
+  ScriptApp.newTrigger('cleanupOldRows').timeBased().everyHours(1).create();
   ScriptApp.newTrigger('pullUnsettled').timeBased().everyHours(1).create();
 }
 
@@ -106,7 +111,7 @@ function sendPending() {
       const outcome = send(key, rows[r]);
       // Rows deleted, inserted or sorted during the run moved this one: stop, the next run reads the sheet again.
       if (String(sheet.getRange(r + 1, 6).getValue()) !== String(rows[r][5])) break;
-      sheet.getRange(r + 1, COLUMNS.length).setValue(outcome.status);
+      sheet.getRange(r + 1, 7, 1, 2).setValues([[outcome.status, /^sent\b/.test(outcome.status) ? new Date().toISOString() : '']]);
       SpreadsheetApp.flush();
       if (outcome.stop) break;
     }
@@ -152,6 +157,36 @@ function resultBody(row) {
   if (status === 'FINISHED' && !body.finalScore) throw new Error('FINISHED needs homeScore and awayScore');
   body.resultAt = new Date().toISOString();
   return body;
+}
+
+/** Remove only successful rows whose recorded processing time is at least 48 hours old. */
+function cleanupOldRows() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return;
+  try {
+    const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
+    if (!sheet) return;
+    const rows = sheet.getDataRange().getValues();
+    const now = Date.now();
+    for (let r = rows.length - 1; r >= 1; r--) {
+      const row = rows[r];
+      if (!/^sent\b/.test(row[6])) continue;
+      // Recheck the row before changing it; the script lock does not prevent manual sheet edits.
+      const current = sheet.getRange(r + 1, 1, 1, 8).getValues()[0];
+      if (row.some((value, i) => String(value) !== String(current[i]))) continue;
+      const processedAt = row[7];
+      const timestamp = Date.parse(String(processedAt || ''));
+      if (!Number.isFinite(timestamp)) {
+        // Legacy rows have no known send time: retain them for another full 48 hours.
+        sheet.getRange(r + 1, 8).setValue(new Date(now).toISOString());
+      } else if (now - timestamp >= RETENTION_MS) {
+        sheet.deleteRows(r + 1, 1);
+      }
+    }
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /** Sends one row. stop: the next rows would fail the same way, so this run ends and the next one tries again. */

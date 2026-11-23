@@ -111,7 +111,8 @@ class PromptTemplatesIT extends IntegrationTestBase {
         String columns = "label, path, provider, model, modelVersion, body, status";
         // The sheet script reads the columns by position, so the prompts must list them in the script's order.
         assertThat(Files.readString(Path.of("../docs/google-sheet/MatchMind.gs")))
-            .contains("const COLUMNS = ['" + columns.replace(", ", "', '") + "'];");
+            // processedAt (last) is the script's own: agents leave it empty, so the prompts do not name it.
+            .contains("const COLUMNS = ['" + columns.replace(", ", "', '") + "', 'processedAt'];");
         Map<String, String> paths = Map.of("AI_PREDICTION", "path: /api/v1/external/predictions\n");
         for (Map.Entry<String, String> e : paths.entrySet()) {
             String id = seededPromptId(e.getKey());
