@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { User } from '../core/models';
 import { ConfirmService, ToastService } from '../shared/kit';
 import { SettingsPage } from './settings';
@@ -16,6 +16,7 @@ const q = <T extends HTMLElement>(f: ComponentFixture<unknown>, sel: string) => 
 
 describe('SettingsPage (W5)', () => {
   let http: HttpTestingController;
+  beforeAll(() => { Element.prototype.scrollIntoView ??= () => {}; });   // jsdom lacks it; cdkOption calls it
   afterEach(() => http.verify());
 
   async function open(user: User = me, flush = true) {
@@ -89,27 +90,56 @@ describe('SettingsPage (W5)', () => {
     expect(c.newPassword()).toBe('');
   });
 
+  /** Opens an mm-select trigger and clicks the option with this label (the real pick path, not a DOM change event). */
+  async function pick(f: ComponentFixture<unknown>, triggerSel: string, label: string) {
+    q<HTMLButtonElement>(f, triggerSel).click();
+    await f.whenStable();
+    const opt = [...document.querySelectorAll('[role="option"]')].find(o => o.textContent?.trim().startsWith(label)) as HTMLElement;
+    opt.click();
+    await new Promise(r => setTimeout(r));   // not whenStable: the pick may start a request, and a pending request keeps it waiting
+    f.detectChanges();
+  }
+
   it('a role change needs confirmation; declining keeps the old role (UX-044)', async () => {
     const f = await open();
-    const select = q<HTMLSelectElement>(f, 'select[aria-label="Role of kim"]');
-    select.value = 'ADMIN';
-    const declined = f.componentInstance.setRole(kim, { target: select } as unknown as Event);
-    TestBed.inject(ConfirmService).answer(false);
-    await declined;
+    document.body.appendChild(f.nativeElement);
+    const trigger = () => q<HTMLButtonElement>(f, 'button[aria-label="Role of kim"]');
+    expect(trigger().textContent).toContain('Viewer');
+    await pick(f, 'button[aria-label="Role of kim"]', 'Admin');
+    const confirm = TestBed.inject(ConfirmService);
+    expect(confirm.current()?.header).toContain('kim');
+    confirm.answer(false);
+    await new Promise(r => setTimeout(r));
+    f.detectChanges();
     http.expectNone('/api/v1/users/u2');
-    expect(select.value).toBe('VIEWER');
+    expect(trigger().textContent).toContain('Viewer');
 
     const toast = vi.spyOn(TestBed.inject(ToastService), 'add');
-    select.value = 'ADMIN';
-    const accepted = f.componentInstance.setRole(kim, { target: select } as unknown as Event);
-    expect(TestBed.inject(ConfirmService).current()?.header).toContain('kim');
-    TestBed.inject(ConfirmService).answer(true);
-    await accepted;
-    const req = http.expectOne('/api/v1/users/u2');
+    await pick(f, 'button[aria-label="Role of kim"]', 'Admin');
+    confirm.answer(true);
+    const req = await vi.waitFor(() => http.expectOne('/api/v1/users/u2'));
     expect(req.request.body).toEqual({ role: 'ADMIN' });
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('tr .pi-spinner')).not.toBeNull();   // SET-2: the row shows it is saving
     req.flush({ ...kim, role: 'ADMIN' });
     http.expectOne(r => r.url === '/api/v1/users/audit').flush(emptyPage);
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success', summary: 'Role changed' }));
+    document.body.innerHTML = '';
+  });
+
+  it('browsing the role list without picking never asks for confirmation (SET-1)', async () => {
+    const f = await open();
+    document.body.appendChild(f.nativeElement);
+    q<HTMLButtonElement>(f, 'button[aria-label="Role of kim"]').click();
+    await f.whenStable();
+    const list = document.querySelector('[role="listbox"]') as HTMLElement;
+    for (const [key, keyCode] of [['ArrowDown', 40], ['ArrowUp', 38], ['Escape', 27]] as const) {
+      list.dispatchEvent(new KeyboardEvent('keydown', { key, keyCode, bubbles: true, cancelable: true }));
+    }
+    await f.whenStable();
+    expect(TestBed.inject(ConfirmService).current()).toBeNull();
+    http.expectNone('/api/v1/users/u2');
+    document.body.innerHTML = '';
   });
 
   it('Disable asks first and confirms with a toast (UX-042)', async () => {
@@ -166,12 +196,67 @@ describe('SettingsPage (W5)', () => {
 
   it('the status filter sends ?status= (archive plan Task 5)', async () => {
     const f = await open();
-    const sel = q<HTMLSelectElement>(f, '[data-testid="user-status"]');
-    sel.value = 'DISABLED';
-    sel.dispatchEvent(new Event('change'));
+    document.body.appendChild(f.nativeElement);
+    expect(q<HTMLButtonElement>(f, '[data-testid="user-status"] button').textContent).toContain('All statuses');   // SET-15
+    await pick(f, '[data-testid="user-status"] button', 'Disabled');
     TestBed.tick();
     const r = http.expectOne(x => x.url === '/api/v1/users');
     expect(r.request.params.get('status')).toBe('DISABLED');
     r.flush([{ ...kim, status: 'DISABLED' }]);
+    document.body.innerHTML = '';
+  });
+
+  it('shows what is wrong with the new password, links it to the field and focuses the first one (SET-5, SET-6)', async () => {
+    const f = await open({ ...me, role: 'VIEWER' });
+    document.body.appendChild(f.nativeElement);
+    const submit = q<HTMLButtonElement>(f, 'form button[type="submit"]');
+    expect(submit.disabled).toBe(false);   // never a dead button
+    f.componentInstance.changePassword();
+    await f.whenStable();
+    expect(text(f.nativeElement)).toContain('Enter your current password.');
+    expect(q(f, '#cur').getAttribute('aria-invalid')).toBe('true');
+    expect(q(f, '#cur').getAttribute('aria-describedby')).toBe('cur-error');
+    expect(document.activeElement).toBe(q(f, '#cur'));
+    f.componentInstance.pw.setValue({ currentPassword: 'old-password', newPassword: 'short', confirm: 'short' });
+    f.componentInstance.changePassword();
+    await f.whenStable();
+    expect(q(f, '#new-error').textContent).toBe('Use at least 10 characters.');
+    expect(q(f, '#new').getAttribute('aria-describedby')).toBe('new-error new-rules');
+    f.componentInstance.pw.setValue({ currentPassword: 'old-password', newPassword: 'a-long-password', confirm: 'different-one' });
+    f.componentInstance.changePassword();
+    await f.whenStable();
+    expect(q(f, '#confirm-error').textContent).toBe("The passwords don't match.");
+    http.expectNone('/api/v1/auth/change-password');
+    document.body.innerHTML = '';
+  });
+
+  it('Unlock disables the row actions while it runs, so a double click sends once (SET-2, SET-7)', async () => {
+    const f = await open();
+    const unlock = q<HTMLButtonElement>(f, '[data-testid="unlock-u2"]');
+    expect(unlock.getAttribute('aria-label')).toBe('Unlock kim');
+    unlock.click();
+    await f.whenStable();
+    expect(unlock.disabled).toBe(true);
+    unlock.click();
+    http.expectOne('/api/v1/users/u2/unlock').flush(null);
+    http.expectOne(r => r.url === '/api/v1/users/audit').flush(emptyPage);
+  });
+
+  it('says loading, not "No account changes yet", until the audit arrives, and offers Retry when it fails (SET-3, SET-4)', async () => {
+    const f = await open(me, false);
+    http.expectOne('/api/v1/auth/me').flush(me);
+    http.expectOne('/api/v1/users').flush([me, kim]);
+    const audit = http.expectOne(r => r.url === '/api/v1/users/audit');
+    f.detectChanges();
+    const panel = () => q(f, '[data-testid="user-audit"]');
+    expect(panel().querySelector('mm-state[state="loading"]')).not.toBeNull();
+    expect(text(panel())).not.toContain('No account changes yet');
+    audit.flush({ status: 500, code: 'X', message: 'Audit is down' }, { status: 500, statusText: 'Server Error' });
+    await f.whenStable();
+    expect(text(panel())).toContain('Audit is down');
+    (panel().querySelector('[data-testid="state-retry"]') as HTMLButtonElement).click();
+    http.expectOne(r => r.url === '/api/v1/users/audit').flush(emptyPage);
+    await f.whenStable();
+    expect(text(panel())).toContain('No account changes yet.');
   });
 });

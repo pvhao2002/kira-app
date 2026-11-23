@@ -3,9 +3,10 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Subject } from 'rxjs';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LiveService } from '../core/live.service';
 import { Dashboard, PredictionRow } from '../core/models';
+import { RESULT_COLORS, SERIES } from '../shared/chart';
 import { isoDay } from '../shared/filter-bar';
 import { DashboardPage } from './dashboard';
 
@@ -156,6 +157,57 @@ describe('DashboardPage', () => {
     const o = f.componentInstance.modelBarOptions as { indexAxis?: string; scales?: { y?: { ticks?: { autoSkip?: boolean } } } };
     expect(o.indexAxis).toBe('y');
     expect(o.scales?.y?.ticks?.autoSkip).toBe(false);
+  });
+});
+
+describe('DashboardPage review fixes (DASH-1..9)', () => {
+  it('shows a loading state, not "No predictions", while the latest predictions load (DASH-3)', async () => {
+    const f = TestBed.createComponent(DashboardPage);
+    f.detectChanges();
+    TestBed.tick();
+    http.match(r => r.url.endsWith('/dashboard')).forEach(r => r.flush(dashboard()));
+    http.match(r => !r.url.endsWith('/dashboard') && !r.url.endsWith('/predictions')).forEach(r => r.flush([]));
+    const el = f.nativeElement as HTMLElement;
+    await vi.waitFor(() => { TestBed.tick(); f.detectChanges(); expect(el.querySelector('.form-guide')).not.toBeNull(); });   // whenStable would wait for the open request
+    expect(text(el)).not.toContain('No predictions in this range');
+    expect(text(el.querySelector('.form-guide')!)).toContain('loading');
+    expect(el.querySelector('table[aria-label="Latest predictions"] mm-state[state="loading"]')).not.toBeNull();
+    http.match(r => r.url.endsWith('/predictions')).forEach(r => r.flush({ data: [], meta: { page: 0, size: 10, totalElements: 0, totalPages: 1 } }));
+    await f.whenStable();
+    expect(text(el)).toContain('No predictions in this range');
+  });
+
+  it('links every KPI, including Units and ROI, and shows the Units/ROI definition as text (DASH-5, DASH-6)', async () => {
+    const f = await open();
+    const el = f.nativeElement as HTMLElement;
+    const l = links(el);
+    expect(l.find(x => x.text.startsWith('Units'))?.href).toBe('/reports');
+    expect(l.find(x => x.text.startsWith('ROI'))?.href).toBe('/reports');
+    expect(text(el.querySelector('[data-testid="roi-def"]')!)).toContain('ROI = units / staked');
+  });
+
+  it('colours charts from the theme tokens at draw time, not hard-coded hex (DASH-1, DASH-2)', async () => {
+    const f = await open();
+    const c = f.componentInstance;
+    const fn = (c.modelRateChart().datasets[0].backgroundColor as unknown) as () => string;
+    expect(fn()).toBe(SERIES[0]);
+    const slice = (c.resultChart().datasets[0].backgroundColor as unknown) as (ctx: { dataIndex: number }) => string;
+    expect(slice({ dataIndex: 0 })).toBe(RESULT_COLORS['WIN']);
+    expect(slice({ dataIndex: 2 })).toBe(RESULT_COLORS['LOSS']);
+  });
+
+  it('grows the model charts with the number of models so labels never overlap (DASH-4)', async () => {
+    const many = Array.from({ length: 30 }, (_, i) => ({ ...counts, key: `model-${i}` }));
+    const f = await open(dashboard({ modelPerformance: many }));
+    expect(f.componentInstance.modelChartHeight()).toBe(30 * 26 + 60);
+    expect(f.componentInstance.byModelChartHeight()).toBe(280);   // one model: the minimum
+  });
+
+  it('keeps the hero label short and moves the counts into a note (DASH-9)', async () => {
+    const f = await open();
+    const guide = text(f.nativeElement.querySelector('.form-guide'));
+    expect(guide).toContain('Recent form (newest on the right)');
+    expect(guide).toContain('Last 1 settled of the latest 1 predictions.');
   });
 });
 

@@ -9,29 +9,30 @@ import { FixtureSuggestion, FixtureSuggestionSide, LeagueAlias, MATCH_STATUSES, 
 import { errorMessage, safeValue } from '../core/resource';
 import { dayRange } from '../shared/filter-bar';
 import { fmtDateTime, humanize } from '../shared/format';
+import { DateInput, DateRange } from '../shared/date-picker';
 import { Paginator, SortHeader, Tabs } from '../shared/kit';
 import { PagedList } from '../shared/paged-list';
 import { fromQuery, toQuery } from '../shared/url-state';
-import { ReasonAction, ReasonDialog, ResultTag, ScoreChip } from '../shared/ui';
+import { ReasonAction, ReasonDialog, ResultTag, ScoreChip, StateView } from '../shared/ui';
 
 @Component({
   selector: 'mm-matches',
-  imports: [FormsModule, RouterLink, ScoreChip, ResultTag, SortHeader, Paginator, ReasonDialog, Tabs],
+  imports: [FormsModule, RouterLink, ScoreChip, ResultTag, SortHeader, Paginator, ReasonDialog, Tabs, DateInput, DateRange, StateView],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stack">
       @if (auth.isAdmin()) { <mm-tabs controls="matches-panel" [tabs]="tabs" [(value)]="tab" /> }
-      <div class="stack" id="matches-panel" role="tabpanel" [attr.aria-labelledby]="auth.isAdmin() ? 'tab-' + tab() : null">
+      <div class="stack" id="matches-panel" [attr.role]="auth.isAdmin() ? 'tabpanel' : null" [attr.aria-labelledby]="auth.isAdmin() ? 'tab-' + tab() : null">
       @if (tab() === 'suggestions' && auth.isAdmin()) {
       <section class="panel flush" data-testid="suggestions">
-        <header><h2>Suggested merges</h2><span class="muted-text">Matches that look like one game: same or similar team names, kick-off within 24 hours</span>
+        <header><div><h2>Suggested merges</h2><p class="muted-text sub">Matches that look like one game: same or similar team names, kick-off within 24 hours</p></div>
           <span class="row backfill">
             @if (backfillNote()) { <span class="muted-text" role="status">{{ backfillNote() }}</span> }
             <button type="button" class="btn btn-outline btn-sm" data-testid="fixture-backfill" [disabled]="backfilling()" (click)="backfill()"
               title="Link every match recorded before fixtures existed to its game (safe to run again)">
               <i class="pi" [class.pi-link]="!backfilling()" [class.pi-spinner]="backfilling()" [class.pi-spin]="backfilling()" aria-hidden="true"></i> Link existing matches</button>
           </span></header>
-        <div class="table-wrap"><table class="dt compact-sm" aria-label="Suggested merges" [class.loading]="suggestionsResource.isLoading()">
+        <div class="table-wrap"><table class="dt compact-sm" aria-label="Suggested merges" [class.loading]="suggestionsResource.isLoading()" [attr.aria-busy]="suggestionsResource.isLoading()">
           <thead><tr><th>Match A</th><th>Match B</th><th>Why</th><th class="actions"><span class="sr-only">Actions</span></th></tr></thead>
           <tbody>
             @for (s of suggestions(); track s.a.fixtureId + s.b.fixtureId) {
@@ -43,8 +44,8 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip } from '../shared/ui';
             </tr>
             } @empty {
               <tr><td colspan="4" class="empty">
-                @if (suggestionsError()) { <span role="alert">{{ suggestionsError() }}</span> }
-                @else if (suggestionsResource.isLoading()) { Loading… } @else { No suggested merges. }
+                @if (suggestionsError()) { <mm-state state="error" [message]="suggestionsError()" retryable (retry)="suggestionsResource.reload()" /> }
+                @else if (suggestionsResource.isLoading()) { <mm-state state="loading" [rows]="3" /> } @else { No suggested merges. }
               </td></tr>
             }
           </tbody>
@@ -53,9 +54,9 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip } from '../shared/ui';
       </section>
       } @else if (tab() === 'leagues' && auth.isAdmin()) {
       <section class="panel flush" data-testid="league-aliases">
-        <header><h2>League aliases</h2><span class="muted-text">Variant league names that filters, the league list and reports count as one league</span>
+        <header><div><h2>League aliases</h2><p class="muted-text sub">Variant league names that filters, the league list and reports count as one league</p></div>
           <button type="button" class="btn btn-primary btn-sm alias-add" data-testid="alias-add" (click)="addAlias()"><i class="pi pi-plus" aria-hidden="true"></i> Add alias</button></header>
-        <div class="table-wrap"><table class="dt compact-sm" aria-label="League aliases" [class.loading]="aliasesResource.isLoading()">
+        <div class="table-wrap"><table class="dt compact-sm" aria-label="League aliases" [class.loading]="aliasesResource.isLoading()" [attr.aria-busy]="aliasesResource.isLoading()">
           <thead><tr><th>Alias</th><th>Counts as</th><th class="hide-sm">Added</th><th class="actions"><span class="sr-only">Actions</span></th></tr></thead>
           <tbody>
             @for (a of aliases(); track a.id) {
@@ -63,12 +64,12 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip } from '../shared/ui';
               <td><span class="truncate" [title]="a.alias">{{ a.alias }}</span></td>
               <td><span class="truncate" [title]="a.canonical">{{ a.canonical }}</span></td>
               <td class="nowrap hide-sm">{{ fmt(a.createdAt) }}</td>
-              <td class="actions"><button type="button" class="btn btn-text btn-sm" [attr.data-testid]="'alias-remove-' + a.id" (click)="removeAlias(a)">Remove</button></td>
+              <td class="actions"><button type="button" class="btn btn-text btn-sm danger" [attr.data-testid]="'alias-remove-' + a.id" (click)="removeAlias(a)">Remove</button></td>
             </tr>
             } @empty {
               <tr><td colspan="4" class="empty">
-                @if (aliasesError()) { <span role="alert">{{ aliasesError() }}</span> }
-                @else if (aliasesResource.isLoading()) { Loading… } @else { No league aliases. }
+                @if (aliasesError()) { <mm-state state="error" [message]="aliasesError()" retryable (retry)="aliasesResource.reload()" /> }
+                @else if (aliasesResource.isLoading()) { <mm-state state="loading" [rows]="3" /> } @else { No league aliases. }
               </td></tr>
             }
           </tbody>
@@ -76,19 +77,25 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip } from '../shared/ui';
       </section>
       } @else {
       <form class="filter-bar" (ngSubmit)="apply()">
+        <button type="button" class="filter-toggle" (click)="collapsed.set(!collapsed())" [attr.aria-expanded]="!collapsed()">
+          <i class="pi pi-sliders-h" aria-hidden="true"></i> Filters
+          @if (activeCount()) { <span class="count">{{ activeCount() }}</span> }
+          @if (pending()) { <span class="pending-note">· not applied</span> }
+          <i class="pi" [class.pi-chevron-down]="collapsed()" [class.pi-chevron-up]="!collapsed()" aria-hidden="true"></i>
+        </button>
+        @if (!collapsed()) {
         <div class="filter-fields">
           <input class="input f-search" name="search" [(ngModel)]="search" placeholder="Team, league or match id" aria-label="Search matches" />
-          <span class="date-range">
-            <input class="input" type="date" name="from" [(ngModel)]="from" aria-label="Kick-off from" />
-            <span aria-hidden="true">–</span>
-            <input class="input" type="date" name="to" [(ngModel)]="to" aria-label="Kick-off to" />
-          </span>
+          <mm-date-range label="Kick-off">
+            <mm-date-input name="from" [(ngModel)]="from" />
+            <mm-date-input name="to" [(ngModel)]="to" />
+          </mm-date-range>
           <input class="input f-select" name="league" [(ngModel)]="league" list="mm-match-leagues" placeholder="All leagues" aria-label="League" />
           <datalist id="mm-match-leagues">@for (l of leagues(); track l) { <option [value]="l"></option> }</datalist>
-          <label class="check"><input type="checkbox" data-testid="show-archived" [checked]="archived()" (change)="setArchived($any($event.target).checked)" /> Show archived</label>
+          <label class="check"><input type="checkbox" data-testid="show-archived" [checked]="archived()" (change)="archived.set($any($event.target).checked)" /> Show archived</label>
           @if (dateError()) { <span class="field-error" role="alert">{{ dateError() }}</span> }
           <span class="filter-actions">
-            <button type="submit" class="btn btn-primary btn-sm" [disabled]="!!rangeError()"><i class="pi pi-check"></i> Apply</button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="!!rangeError()"><i class="pi pi-check" aria-hidden="true"></i> Apply</button>
             <button type="button" class="btn btn-text btn-sm" (click)="reset()">Reset</button>
             @if (pending()) { <span class="pending-note" role="status">Changes not applied</span> }
           </span>
@@ -101,14 +108,16 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip } from '../shared/ui';
             <button type="button" class="chip" [attr.aria-pressed]="status() === s.value" (click)="setStatus(s.value)">{{ s.label }}</button>
           }
         </div>
+        }
       </form>
       @if (auth.isAdmin() && selected().length) {
-        <div class="row selection-bar" role="status" data-testid="selection-bar">
-          <span>{{ selected().length }} selected</span>
+        <div class="panel row selection-bar" data-testid="selection-bar">
+          <span role="status">{{ selected().length }} selected</span>
           <button type="button" class="btn btn-primary btn-sm" data-testid="merge-open" [disabled]="selected().length < 2 || selected().length > 20"
             title="Treat the selected rows as one real game, so their models are compared together" (click)="mergeSelected()"><i class="pi pi-link" aria-hidden="true"></i> Merge matches</button>
           <button type="button" class="btn btn-text btn-sm" (click)="selected.set([])">Clear</button>
           @if (selected().length < 2) { <span class="muted-text">Select at least 2 matches to merge.</span> }
+          @else if (selected().length > 20) { <span class="muted-text">Merge at most 20 matches at once.</span> }
         </div>
       }
       <section class="panel flush">
@@ -139,7 +148,7 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip } from '../shared/ui';
                   <td><a class="truncate" [routerLink]="['/matches', m.id]" [title]="m.homeTeam + ' – ' + m.awayTeam">{{ m.homeTeam }} – {{ m.awayTeam }}</a><span class="cell-sub hide-sm">{{ m.externalMatchId }}</span><span class="cell-sub show-sm">{{ m.league }} · {{ fmt(m.startTime) }}</span></td>
                   <td><mm-score [home]="m.finalHomeScore" [away]="m.finalAwayScore" [muted]="m.status !== 'FINISHED'" /></td>
                   <td class="hide-sm"><mm-score [home]="m.htHomeScore" [away]="m.htAwayScore" [muted]="true" /></td>
-                  <td class="nowrap hide-sm">{{ m.finalHomeCorners ?? '—' }} : {{ m.finalAwayCorners ?? '—' }}</td>
+                  <td class="hide-sm"><mm-score [home]="m.finalHomeCorners" [away]="m.finalAwayCorners" [muted]="true" /></td>
                   <td class="nowrap"><mm-result [value]="m.status" kind="status" />
                     @if (m.overdue) { <span class="tag tag-warn" title="Kick-off more than 3 hours ago and no final result yet">Overdue</span> }
                     @if (m.archivedAt) { <span class="tag tag-secondary">Archived</span> }</td>
@@ -147,16 +156,16 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip } from '../shared/ui';
                   <td class="num hide-sm">{{ m.modelCount }}</td>
                   <td class="hide-sm">{{ m.providerName }}</td>
                   @if (auth.isAdmin()) {
-                    <td class="actions"><button type="button" class="btn btn-text btn-sm" [attr.data-testid]="'archive-' + m.id"
+                    <td class="actions"><button type="button" class="btn btn-text btn-sm" [class.danger]="!m.archivedAt" [attr.data-testid]="'archive-' + m.id"
                       (click)="$event.stopPropagation(); archive(m)">{{ m.archivedAt ? 'Unarchive' : 'Archive' }}</button></td>
                   }
                 </tr>
               } @empty {
                 <tr><td [attr.colspan]="auth.isAdmin() ? 12 : 10" class="empty">
-                  @if (list.loading()) { <div class="empty-state"><i class="pi pi-spinner pi-spin" aria-hidden="true"></i><span>Loading…</span></div> }
+                  @if (list.loading()) { <mm-state state="loading" [rows]="6" /> }
                   @else if (list.error()) {
                     <div class="empty-state" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><strong>Couldn't load matches</strong><span>{{ list.error() }}</span>
-                      <button type="button" class="btn btn-outline btn-sm" data-testid="retry" (click)="list.load()"><i class="pi pi-refresh"></i> Retry</button></div>
+                      <button type="button" class="btn btn-outline btn-sm" data-testid="retry" (click)="list.load()"><i class="pi pi-refresh" aria-hidden="true"></i> Retry</button></div>
                   }
                   @else { <div class="empty-state"><i class="pi pi-calendar" aria-hidden="true"></i><strong>No matches found</strong><span>Widen the dates or reset the filters.</span></div> }
                 </td></tr>
@@ -185,13 +194,13 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip } from '../shared/ui';
     </mm-reason-dialog>`,
   styles: `
     .league .truncate { max-width: 11rem; }
-    .pending-note { color: var(--mm-pending); font-size: .8rem; font-weight: 600; }
     .tag-warn { margin-left: .3rem; }
-    .selection-bar { gap: .75rem; align-items: center; flex-wrap: wrap; }
+    .selection-bar { gap: .75rem; align-items: center; flex-wrap: wrap; padding: var(--sp-2) var(--sp-3); }
+    mm-date-range { min-width: 0; }
+    @media (min-width: 761px) { mm-date-range { grid-column: span 2; } }
     th.select, td.select { width: 2rem; }
     .backfill, .alias-add { margin-left: auto; }
-    .backfill { gap: .5rem; align-items: center; flex-wrap: wrap; }
-    @media (max-height: 500px) { .table-wrap.tall { max-height: none; } }`,
+    .backfill { gap: .5rem; align-items: center; flex-wrap: wrap; }`,
 })
 export class MatchesPage {
   private readonly api = inject(ApiService);
@@ -209,16 +218,24 @@ export class MatchesPage {
   readonly overdue = signal(false);
   readonly from = signal('');
   readonly to = signal('');
+  /** Starts collapsed on phones and short (landscape) screens, where an open form would push the table below the fold. */
+  readonly collapsed = signal(typeof window !== 'undefined' && (window.innerWidth < 760 || window.innerHeight <= 500));
+  /** How many filters the last Apply put in force. */
+  readonly activeCount = signal(0);
 
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  /** The typed fields as of the last Apply; differences are shown as not applied. */
+  /**
+   * Every control (text, dates, status chips, archived) waits for Apply; differences are shown as not applied.
+   * Reset applies at once.
+   */
   private readonly appliedKey = signal('');
-  private readonly key = computed(() => JSON.stringify([this.search(), this.league(), this.from(), this.to()]));
+  private readonly key = computed(() => JSON.stringify([this.search(), this.league(), this.from(), this.to(), this.status(), this.overdue(), this.archived()]));
   readonly pending = computed(() => this.key() !== this.appliedKey());
   readonly rangeError = computed(() => dayRange(this.from(), this.to()).error ?? '');
-  readonly dateError = computed(() => this.rangeError() || (this.list.fieldErrors()['from'] ?? ''));
+  /** The server's date error only: the range shows the From-after-To error itself. */
+  readonly dateError = computed(() => this.list.fieldErrors()['from'] ?? '');
 
   constructor() {
     // A shared or refreshed link restores the filters.
@@ -239,8 +256,6 @@ export class MatchesPage {
     this.archived.set(false);
     this.apply();
   }
-
-  setArchived(v: boolean): void { this.archived.set(v); this.apply(); }
 
   // Fixtures (admin): merge selected rows into one game, or a suggested pair.
   readonly tabs = [{ value: 'matches', label: 'Matches' }, { value: 'suggestions', label: 'Suggested merges' },
@@ -345,9 +360,9 @@ export class MatchesPage {
     });
   }
 
-  setStatus(value: string): void { this.status.set(value); this.overdue.set(false); this.apply(); }
+  setStatus(value: string): void { this.status.set(value); this.overdue.set(false); }
   /** "Awaiting result": overdue matches (still scheduled or live 3 h after kick-off); replaces the status filter. */
-  setOverdue(): void { this.status.set(''); this.overdue.set(true); this.apply(); }
+  setOverdue(): void { this.status.set(''); this.overdue.set(true); }
 
   apply(updateUrl = true): void {
     if (this.rangeError()) return;
@@ -358,6 +373,7 @@ export class MatchesPage {
       from: range.from, to: range.to, overdue: overdue || undefined, includeArchived: this.archived() || undefined,
     };
     this.appliedKey.set(this.key());
+    this.activeCount.set([search, league, status || overdue, from || to, this.archived()].filter(Boolean).length);
     // First load keeps the page and sort that came with the URL; an applied filter starts over at page 1.
     if (updateUrl) this.list.reload(); else this.list.load();
     if (updateUrl) {

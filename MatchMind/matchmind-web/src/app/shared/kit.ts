@@ -3,6 +3,8 @@ import {
   ChangeDetectionStrategy, Component, Directive, ElementRef, Injectable, afterRenderEffect, computed, inject,
   input, model, output, signal, viewChild,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Select, SelectOption } from './select';
 
 // ------------------------------------------------------------------ toasts
 export interface Toast { id: number; severity: 'success' | 'info' | 'warn' | 'error'; summary: string; detail?: string; }
@@ -65,12 +67,12 @@ export class ToastService {
   selector: 'mm-toasts',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="toasts" aria-live="polite" (mouseenter)="toast.pause()" (mouseleave)="toast.resume()"
+    <div class="toasts" (mouseenter)="toast.pause()" (mouseleave)="toast.resume()"
       (focusin)="toast.pause()" (focusout)="focusOut($event)">
       @for (t of toast.toasts(); track t.id) {
         <div class="toast toast-{{ t.severity }}" [attr.role]="t.severity === 'error' ? 'alert' : 'status'">
           <div><strong>{{ t.summary }}</strong>@if (t.detail) { <span>{{ t.detail }}</span> }</div>
-          <button type="button" class="btn btn-text btn-icon" aria-label="Dismiss" (click)="toast.dismiss(t.id)"><i class="pi pi-times"></i></button>
+          <button type="button" class="btn btn-text btn-icon" aria-label="Dismiss" (click)="toast.dismiss(t.id)"><i class="pi pi-times" aria-hidden="true"></i></button>
         </div>
       }
     </div>`,
@@ -120,17 +122,25 @@ export class Dialog {
     });
   }
 
-  /** Esc. A statement, not an expression: a listener returning `false` makes Angular prevent the default (UX-120). */
+  /**
+   * Esc. Always prevented: the native dialog never closes by itself. A closable, idle dialog turns it into the same close
+   * request as the X button, so the page can veto (discard-changes confirm) and the page's `open` stays the one truth;
+   * when the page accepts, `open` goes false and the effect above closes the dialog. A statement, not an expression: a
+   * listener returning `false` makes Angular prevent the default (UX-120).
+   */
   onCancel(e: Event): void {
-    if (!this.closable() || this.busy()) e.preventDefault();
+    e.preventDefault();
+    if (this.closable() && !this.busy()) this.closed.emit();
   }
 
-  /** Esc (native cancel → close) while the parent still thinks it is open. */
+  /**
+   * A native close while the page still has `open` set (Chrome closes a modal on a second Esc even when cancel is
+   * prevented): show it again so page and dialog agree, and treat it as a close request unless closing is not allowed.
+   */
   onNativeClose(): void {
     if (!this.open()) return;
-    // Chrome closes a modal on a second Esc even when cancel is prevented; a non-closable dialog must stay up.
-    if (!this.closable() || this.busy()) this.el().nativeElement.showModal?.();
-    else this.closed.emit();
+    this.el().nativeElement.showModal?.();
+    if (this.closable() && !this.busy()) this.closed.emit();
   }
 }
 
@@ -212,6 +222,7 @@ export function sortParam(sort: Sort): string | undefined {
 
 @Component({
   selector: 'mm-paginator',
+  imports: [FormsModule, Select],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nav class="paginator" aria-label="Pagination">
@@ -223,9 +234,7 @@ export function sortParam(sort: Sort): string | undefined {
         <button type="button" class="btn btn-text btn-icon" aria-label="Next page" [disabled]="page() >= pages() - 1" (click)="go(page() + 1)"><i class="pi pi-angle-right"></i></button>
         <button type="button" class="btn btn-text btn-icon" aria-label="Last page" [disabled]="page() >= pages() - 1" (click)="go(pages() - 1)"><i class="pi pi-angle-double-right"></i></button>
         @if (sizes().length > 1) {
-          <select class="input input-sm" aria-label="Rows per page" [value]="size()" (change)="resize($event)">
-            @for (s of sizes(); track s) { <option [value]="s" [selected]="s === size()">{{ s }} / page</option> }
-          </select>
+          <mm-select size="sm" ariaLabel="Rows per page" [options]="sizeOptions()" [ngModel]="'' + size()" (selectionChange)="resize($event)" />
         }
       </span>
     </nav>`,
@@ -243,7 +252,9 @@ export class Paginator {
   readonly last = computed(() => Math.min(this.total(), (this.page() + 1) * this.size()));
 
   go(p: number): void { this.pageChange.emit({ page: p, size: this.size() }); }
-  resize(e: Event): void { this.pageChange.emit({ page: 0, size: Number((e.target as HTMLSelectElement).value) }); }
+  /** mm-select values are strings. */
+  readonly sizeOptions = computed<SelectOption[]>(() => this.sizes().map(s => ({ value: String(s), label: `${s} / page` })));
+  resize(size: string): void { this.pageChange.emit({ page: 0, size: Number(size) }); }
 }
 
 /** Drag handle on the right edge of a header cell; also a focusable separator: Left/Right resize (Shift: 64px). */

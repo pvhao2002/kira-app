@@ -49,3 +49,38 @@ describe('LoginPage redirects', () => {
     expect(navigate).toHaveBeenCalledWith('/dashboard');
   });
 });
+
+describe('LoginPage validation (LOGIN-1..3)', () => {
+  function create() {
+    sessionStorage.clear();
+    TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
+      { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } }] });
+    const f = TestBed.createComponent(LoginPage);
+    document.body.appendChild(f.nativeElement);
+    return f;
+  }
+  afterEach(() => { document.body.innerHTML = ''; });
+
+  it('says "too long", not "required", for an over-long username or password', async () => {
+    const f = create();
+    await f.whenStable();
+    f.componentInstance.form.setValue({ username: 'a'.repeat(65), password: 'b'.repeat(73) });
+    f.componentInstance.submit();
+    await f.whenStable();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('#username-error')?.textContent).toBe('Username can be 64 characters at most.');
+    expect(el.querySelector('#password-error')?.textContent).toBe('Password can be 72 characters at most.');
+  });
+
+  it('links each error to its field and focuses the first invalid one; "Sign in" is the page h1', async () => {
+    const f = create();
+    await f.whenStable();
+    f.componentInstance.submit();
+    await f.whenStable();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('#username')?.getAttribute('aria-describedby')).toBe('username-error');
+    expect(el.querySelector('#password')?.getAttribute('aria-describedby')).toBe('password-error');
+    expect(document.activeElement).toBe(el.querySelector('#username'));
+    expect([...el.querySelectorAll('h1')].map(h => h.textContent)).toEqual(['Sign in']);
+  });
+});

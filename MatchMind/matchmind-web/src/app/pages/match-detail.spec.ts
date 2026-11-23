@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MatchDetail, ReviewItem } from '../core/models';
 import { PageTitle } from '../core/page-title';
+import { ConfirmService } from '../shared/kit';
 import { MatchDetailPage } from './match-detail';
 
 const admin = { id: 'u1', username: 'admin', role: 'ADMIN', status: 'ACTIVE', lastLoginAt: null, createdAt: '', updatedAt: '' };
@@ -194,6 +195,89 @@ describe('MatchDetailPage', () => {
     q(f, 'prompt-input-copy')!.click();
     http.expectOne('/api/v1/settlements/matches/m1/prompt-input').flush({ matchId: 'm1', picks: [{ pickId: 'k1' }] });
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"pickId": "k1"'));
+  });
+
+  it('asks before settling pending picks, and does nothing when declined (MDET-5)', async () => {
+    const f = await open([]);
+    const confirm = TestBed.inject(ConfirmService);
+    q(f, 'settle')!.click();
+    await f.whenStable();
+    expect(confirm.current()?.header).toBe('Settle pending picks');
+    confirm.answer(false);
+    await f.whenStable();
+    http.expectNone(r => r.method === 'POST');
+
+    q(f, 'settle')!.click();
+    await f.whenStable();
+    confirm.answer(true);
+    (await vi.waitFor(() => http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/settlements/matches/m1')))
+      .flush({ matchId: 'm1', matchStatus: 'FINISHED', settled: 1, alreadySettled: 0, pending: 0, needsReview: 0, picks: [] });
+    await flushLoads(f, []);
+  });
+
+  it('disables Copy settlement input while the request runs (MDET-3)', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn().mockResolvedValue(undefined) }, configurable: true });
+    const f = await open([]);
+    const btn = q(f, 'prompt-input-copy') as HTMLButtonElement;
+    btn.click();
+    btn.click();   // the second click sends nothing
+    f.detectChanges();
+    expect(btn.disabled).toBe(true);
+    http.expectOne('/api/v1/settlements/matches/m1/prompt-input').flush({ matchId: 'm1', picks: [] });
+    f.detectChanges();
+    expect(btn.disabled).toBe(false);
+  });
+
+  it('shows a failed history load with Retry instead of "No predictions yet" (MDET-1)', async () => {
+    const f = TestBed.createComponent(MatchDetailPage);
+    f.componentRef.setInput('id', 'm1');
+    f.detectChanges();
+    TestBed.tick();
+    http.expectOne('/api/v1/matches/m1').flush(detail);
+    http.expectOne(r => r.url === '/api/v1/settlements/needs-review').flush([]);
+    http.expectOne(r => r.url === '/api/v1/predictions').flush({ status: 500, code: 'INTERNAL', message: 'History unavailable' }, { status: 500, statusText: 'Server Error' });
+    await f.whenStable();
+    f.detectChanges();
+    const panel = q(f, 'prediction-history')!;
+    expect(text(panel)).toContain('History unavailable');
+    expect(text(panel)).not.toContain('No predictions yet');
+    expect(text(panel.querySelector('h2'))).toContain('(—)');
+    (panel.querySelector('[data-testid="state-retry"]') as HTMLButtonElement).click();
+    TestBed.tick();
+    http.expectOne(r => r.url === '/api/v1/predictions').flush({ data: preds, meta: { page: 0, size: 100, totalElements: 2, totalPages: 1 } });
+    await f.whenStable();
+    f.detectChanges();
+    expect(text(panel)).toContain('AH HOME -0.25');
+  });
+
+  it('marks the score pair that failed validation as invalid and links its error (MDET-7)', async () => {
+    const f = await open([]);
+    const c = f.componentInstance;
+    q(f, 'result-open')!.click();
+    f.detectChanges();
+    c.resultForm.htHome = 1;   // half-time score with no away value
+    c.resultForm.htAway = null;
+    c.submitResult();
+    f.detectChanges();
+    const dlg = f.nativeElement.querySelector('mm-dialog dialog') as HTMLElement;
+    const inputs = [...dlg.querySelectorAll('input[aria-invalid="true"]')];
+    expect(inputs.map(i => i.getAttribute('aria-label'))).toEqual(['Half-time score home', 'Half-time score away']);
+    const err = dlg.querySelector('#res-error')!;
+    expect(inputs.every(i => i.getAttribute('aria-describedby') === 'res-error')).toBe(true);
+    expect(text(err)).toContain('Half-time score');
+    http.expectNone(r => r.method === 'POST');
+  });
+
+  it('picks the match status with the custom select, focused when the dialog opens (CUSTOM-1)', async () => {
+    const f = await open([]);
+    q(f, 'result-open')!.click();
+    f.detectChanges();
+    await f.whenStable();   // ngModel writes its value in a microtask
+    f.detectChanges();
+    const trigger = f.nativeElement.querySelector('mm-dialog mm-select button#res-status[role="combobox"]') as HTMLButtonElement;
+    expect(trigger.hasAttribute('autofocus')).toBe(true);
+    expect(text(trigger)).toContain('Finished');
+    expect(f.nativeElement.querySelector('mm-dialog select')).toBeNull();
   });
 
   it('shows no admin actions to a viewer, but still the review badge', async () => {

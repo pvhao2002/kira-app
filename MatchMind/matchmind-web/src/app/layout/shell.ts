@@ -31,26 +31,26 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:resize)': 'onResize()' },
   template: `
-    <div class="shell" [class.nav-collapsed]="collapsed()" [class.nav-open]="mobileOpen()" (keydown.escape)="closeNav(true)">
+    <div class="shell" [class.nav-collapsed]="compact()" [class.nav-open]="mobileOpen()" (keydown.escape)="closeNav(true)">
       <button type="button" class="skip-link" (click)="mainEl.focus()">Skip to content</button>
       <aside id="mm-sidebar" class="sidebar" aria-label="Main navigation" (keydown)="trapTab($event)">
         <a routerLink="/dashboard" class="brand">
           <span class="brand-mark" aria-hidden="true">M</span>
-          @if (!collapsed()) { <span class="brand-text"><strong>MatchMind</strong><small>Private workspace</small></span> }
+          @if (!compact()) { <span class="brand-text"><strong>MatchMind</strong><small>Private workspace</small></span> }
         </a>
         <nav>
           @for (item of nav; track item.path) {
             @if (!item.adminOnly || auth.isAdmin()) {
             <a [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-link"
-               [attr.title]="collapsed() ? item.label : null" [attr.aria-label]="collapsed() ? item.label : null" (click)="closeNav(false)">
+               [attr.title]="compact() ? item.label : null" [attr.aria-label]="compact() ? item.label : null" (click)="closeNav(false)">
               <i class="pi {{ item.icon }}" aria-hidden="true"></i>
-              @if (!collapsed()) { <span>{{ item.label }}</span> }
+              @if (!compact()) { <span>{{ item.label }}</span> }
             </a>
             }
           }
         </nav>
         <button type="button" class="collapse-btn" (click)="toggle()" [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
-          <i class="pi" [class.pi-angle-double-left]="!collapsed()" [class.pi-angle-double-right]="collapsed()"></i>
+          <i class="pi" aria-hidden="true" [class.pi-angle-double-left]="!collapsed()" [class.pi-angle-double-right]="collapsed()"></i>
         </button>
       </aside>
       <div class="scrim" (click)="closeNav(true)"></div>
@@ -58,12 +58,12 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
       <div class="main" [attr.inert]="mobileOpen() ? '' : null">
         <header class="topbar">
           <button #menuBtn type="button" class="btn btn-text btn-icon menu-btn" aria-label="Open navigation" aria-controls="mm-sidebar"
-            [attr.aria-expanded]="mobileOpen()" (click)="openNav()"><i class="pi pi-bars"></i></button>
+            [attr.aria-expanded]="mobileOpen()" (click)="openNav()"><i class="pi pi-bars" aria-hidden="true"></i></button>
           <h1 #pageTitle class="page-title" tabindex="-1">{{ heading() }}</h1>
           <div class="topbar-right">
-            <span class="tz-chip" [title]="'Times are shown in your time zone (' + tzName + ')'">{{ tz }}</span>
-            <span class="user-chip"><span class="avatar" aria-hidden="true">{{ auth.user()?.username?.charAt(0) }}</span>{{ auth.user()?.username }}<small>{{ auth.user()?.role === 'ADMIN' ? 'Admin' : 'Viewer' }}</small></span>
-            <button type="button" class="btn btn-text btn-sm" (click)="auth.logout()"><i class="pi pi-sign-out"></i><span class="label">Sign out</span></button>
+            <span class="tz-chip" [title]="tzNote">{{ tz }}</span><span class="sr-only">{{ tzNote }}</span>
+            <span class="user-chip"><span class="avatar" aria-hidden="true">{{ auth.user()?.username?.charAt(0) }}</span><span class="user-name">{{ auth.user()?.username }}</span><small>{{ auth.user()?.role === 'ADMIN' ? 'Admin' : 'Viewer' }}</small></span>
+            <button type="button" class="btn btn-text btn-sm" aria-label="Sign out" (click)="auth.logout()"><i class="pi pi-sign-out" aria-hidden="true"></i><span class="label">Sign out</span></button>
           </div>
         </header>
         <main class="content" #mainEl tabindex="-1"><router-outlet /></main>
@@ -83,7 +83,11 @@ export class Shell {
   readonly nav = NAV;
   readonly tz = tzLabel();
   readonly tzName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  readonly tzNote = `Times are shown in your time zone (${this.tzName})`;
   readonly collapsed = signal(Shell.storedCollapsed());
+  private readonly narrow = signal(innerWidth <= MOBILE_MAX);
+  /** The icon-only rail is a desktop state: the mobile drawer always shows labels (its collapse button is hidden). */
+  readonly compact = computed(() => this.collapsed() && !this.narrow());
   readonly mobileOpen = signal(false);
   /** Polite live region: the new page's name after a route change (UX-123). */
   readonly announced = signal('');
@@ -139,6 +143,7 @@ export class Shell {
 
   /** Rotating or widening past the breakpoint hides the drawer; it must not leave the page inert. */
   onResize(): void {
+    this.narrow.set(innerWidth <= MOBILE_MAX);
     if (this.mobileOpen() && innerWidth > MOBILE_MAX) this.mobileOpen.set(false);
   }
 

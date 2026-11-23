@@ -7,8 +7,10 @@ import { AuthService } from '../core/auth.service';
 import { apiError } from '../core/http';
 import { ApiError } from '../core/models';
 import { safeValue } from '../core/resource';
+import { ConfirmService } from '../shared/kit';
 
 const PROVIDER_KEY = 'matchmind.import-provider';
+const PROVIDER_RE = /^[a-zA-Z0-9][a-zA-Z0-9_-]{1,63}$/;
 
 /** Copy of docs/samples/prediction-pre-match.json (kept in sync by hand; the web app does not fetch docs). */
 export const SAMPLE_PREDICTION = `{
@@ -186,13 +188,16 @@ const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
         <div class="alert alert-warn" role="status">Only an admin can import predictions.</div>
       } @else {
         <form class="stack" (ngSubmit)="send()">
+          <fieldset class="stack fields" [disabled]="busy()">
           <p class="muted-text"><span aria-hidden="true">*</span> required</p>
           <div class="import-ids">
             <div class="field"><label for="imp-provider">Provider <span aria-hidden="true">*</span></label>
               <input class="input w-full" id="imp-provider" name="provider" [ngModel]="provider()" (ngModelChange)="provider.set($event)" placeholder="e.g. chatgpt" required
-                     list="imp-providers" pattern="[a-zA-Z0-9][a-zA-Z0-9_\\-]{1,63}" autocomplete="off" />
+                     list="imp-providers" pattern="[a-zA-Z0-9][a-zA-Z0-9_\\-]{1,63}" autocomplete="off"
+                     [attr.aria-invalid]="providerError() ? true : null" [attr.aria-describedby]="providerError() ? 'imp-provider-error' : null" />
               <datalist id="imp-providers">@for (p of providers(); track p.id) { <option [value]="p.code">{{ p.name }}</option> }</datalist>
               <small class="muted-text">The agent or app that made it. Use the same name every time.</small>
+              @if (providerError()) { <small class="field-error" id="imp-provider-error">{{ providerError() }}</small> }
               @if (newProvider()) { <small class="warn-text">New provider "{{ provider().trim() }}": it is created by the first accepted prediction.</small> }</div>
             <div class="field"><label for="imp-model">Model</label>
               <input class="input w-full" id="imp-model" name="model" [ngModel]="model()" (ngModelChange)="model.set($event)" placeholder="from the JSON or X-Model-Name"
@@ -203,24 +208,26 @@ const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
               <input class="input w-full" id="imp-version" name="version" [ngModel]="version()" (ngModelChange)="version.set($event)" placeholder="from the JSON, else 1" /></div>
           </div>
           <div class="field"><label for="imp-json">Agent reply <span aria-hidden="true">*</span></label>
-            <textarea class="input import-text" id="imp-json" name="text" [ngModel]="text()" (ngModelChange)="onPaste($event)" spellcheck="false"
+            <textarea class="input import-text" id="imp-json" name="text" [ngModel]="text()" (ngModelChange)="onPaste($event)" (blur)="touched.set(true)" spellcheck="false"
+                      required [attr.aria-invalid]="showParseError() ? true : null" [attr.aria-describedby]="showParseError() ? 'imp-json-error' : null"
                       placeholder="CANNOT_CALL_API&#10;X-Model-Name: …&#10;{ … }" data-testid="import-text"></textarea>
             <div class="row">
               <button type="button" class="btn btn-text btn-sm" (click)="useExample()"><i class="pi pi-file" aria-hidden="true"></i> Use example</button>
               <small class="muted-text">One prediction, a JSON array, or several JSON blocks. Required in each: match.homeTeam, match.awayTeam,
                 predictionType, odds, picks, correctScore (LIVE also matchMinute, currentScore).</small>
             </div>
-            @if (text() && parsed().error) { <div class="field-error" role="alert">{{ parsed().error }}</div> }
+            @if (showParseError()) { <div class="field-error" id="imp-json-error" role="alert">{{ parsed().error }}</div> }
             @if (parsed().cleaned) { <small class="muted-text">Curly quotes or trailing commas were fixed before reading the JSON.</small> }</div>
+          </fieldset>
 
           @if (previews().length) {
-            <div class="table-wrap"><table class="dt" data-testid="import-preview">
+            <div class="table-wrap"><table class="dt compact-sm" data-testid="import-preview">
               <caption class="sr-only">What will be sent</caption>
-              <thead><tr><th>#</th><th>Match</th><th>Type</th><th>Picks</th><th>Odds</th><th>Model</th><th>Missing</th></tr></thead>
+              <thead><tr><th class="num">#</th><th>Match</th><th class="hide-sm">Type</th><th class="num">Picks</th><th class="num hide-sm">Odds</th><th>Model</th><th>Missing</th></tr></thead>
               <tbody>
                 @for (p of previews(); track $index) {
-                  <tr><td>{{ $index + 1 }}</td><td>{{ p.match }}@if (p.league) { <span class="cell-sub">{{ p.league }}</span> }</td>
-                    <td>{{ p.type ?? '—' }}</td><td>{{ p.picks }}</td><td>{{ p.odds }}</td>
+                  <tr><td class="num">{{ $index + 1 }}</td><td>{{ p.match }}@if (p.league) { <span class="cell-sub">{{ p.league }}</span> }</td>
+                    <td class="hide-sm">{{ p.type ?? '—' }}</td><td class="num">{{ p.picks }}</td><td class="num hide-sm">{{ p.odds }}</td>
                     <td>{{ modelOf(p) ?? '—' }}</td>
                     <td>@if (p.missing.length) { <span class="warn-text">{{ p.missing.join(', ') }}</span> } @else { — }</td></tr>
                 }
@@ -234,7 +241,7 @@ const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
           }
 
           @for (r of results(); track $index) {
-            <div class="alert" [class.alert-success]="r.status !== 'error'" [class.alert-error]="r.status === 'error'" role="status" data-testid="import-result">
+            <div class="alert" [class.alert-success]="r.status !== 'error'" [class.alert-error]="r.status === 'error'" [attr.role]="r.status === 'error' ? 'alert' : 'status'" data-testid="import-result">
               <div>
                 <strong>{{ results().length > 1 ? '#' + ($index + 1) + ' ' + r.label + ': ' : '' }}</strong>
                 @if (r.status === 'error') {
@@ -254,10 +261,11 @@ const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
 
           <div class="row">
             <button type="submit" class="btn btn-primary" aria-describedby="imp-hint" [disabled]="!canSend()">
-              <i class="pi" [class.pi-upload]="!busy()" [class.pi-spinner]="busy()" [class.pi-spin]="busy()"></i>
-              Send {{ parsed().items.length > 1 ? parsed().items.length + ' predictions' : 'prediction' }}</button>
+              <i class="pi" [class.pi-upload]="!busy()" [class.pi-spinner]="busy()" [class.pi-spin]="busy()" aria-hidden="true"></i>
+              @if (busy() && sendTotal() > 1) { Sending {{ sendDone() + 1 }} of {{ sendTotal() }}… }
+              @else { Send {{ parsed().items.length > 1 ? parsed().items.length + ' predictions' : 'prediction' }} }</button>
             @if (results().length && !busy()) { <button type="button" class="btn btn-outline" (click)="importAnother()">Import another</button> }
-            <small id="imp-hint" class="warn-text">{{ hint() }}</small>
+            <small id="imp-hint" class="muted-text">{{ hint() }}</small>
           </div>
         </form>
       }
@@ -265,10 +273,11 @@ const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
   styles: `
     .steps { margin: .35rem 0 0; padding-left: 1.25rem; display: grid; gap: .2rem; }
     .warn-text { color: var(--mm-warn-ink); display: block; }
-    @media (max-width: 640px) { input.input, textarea.input { font-size: 16px; } }`,
+    fieldset.fields { border: 0; margin: 0; padding: 0; min-width: 0; }`,
 })
 export class ImportPage {
   private readonly api = inject(ApiService);
+  private readonly confirm = inject(ConfirmService);
   readonly auth = inject(AuthService);
   readonly provider = signal(ImportPage.storedProvider());
   readonly version = signal('');
@@ -277,6 +286,15 @@ export class ImportPage {
   readonly parsed = computed(() => readAgentOutput(this.text()));
   readonly previews = computed(() => this.parsed().items.map(i => previewOf(i.data)));
   readonly busy = signal(false);
+  /** Set on blur of the reply: a half-typed reply does not show a JSON error while the user is still typing. */
+  readonly touched = signal(false);
+  readonly showParseError = computed(() => this.touched() && !!this.text() && !!this.parsed().error);
+  readonly sendTotal = signal(0);
+  readonly sendDone = computed(() => Math.min(this.results().length, this.sendTotal() - 1));
+  readonly providerError = computed(() => {
+    const p = this.provider().trim();
+    return p && !PROVIDER_RE.test(p) ? 'Provider: 2–64 characters a-z, 0-9, - or _.' : '';
+  });
   readonly results = signal<ImportResult[]>([]);
   private readonly models = safeValue(this.api.modelsResource(() => this.auth.isAdmin()), []);
   readonly providers = safeValue(this.api.providersResource(), []);
@@ -308,8 +326,9 @@ export class ImportPage {
   readonly hint = computed(() => {
     if (this.busy()) return '';
     if (!this.provider().trim()) return 'Enter the provider to send.';
+    if (this.providerError()) return this.providerError();
     if (!this.text().trim()) return 'Paste the agent reply that contains the JSON to send.';
-    if (this.parsed().error) return 'Fix the JSON above to send.';
+    if (this.parsed().error) return 'Fix the JSON to send.';
     if (this.missingModel()) return 'Enter the model name (or add model.name to the JSON) to send.';
     return '';
   });
@@ -319,16 +338,23 @@ export class ImportPage {
   quoted(names: string[]): string { return names.map(n => `"${n}"`).join(', '); }
 
   onPaste(text: string): void {
+    if (this.busy()) return;   // an edit would wipe the results of the send in progress
+    this.touched.set(false);
     this.text.set(text);
     this.results.set([]);
     const model = readAgentOutput(text).model;
     if (model) this.model.set(model);
   }
 
-  useExample(): void { this.onPaste(SAMPLE_REPLY); }
+  async useExample(): Promise<void> {
+    if (this.text().trim() && !(await this.confirm.ask({
+      header: 'Replace the pasted reply?', acceptLabel: 'Use example', message: 'The example replaces the reply you pasted. This cannot be undone.' }))) return;
+    this.onPaste(SAMPLE_REPLY);
+  }
 
   importAnother(): void {
     this.text.set('');
+    this.touched.set(false);
     this.model.set('');
     this.version.set('');
     this.results.set([]);
@@ -340,6 +366,7 @@ export class ImportPage {
     const items = this.parsed().items;
     const previews = this.previews();
     const provider = this.provider().trim();
+    this.sendTotal.set(items.length);
     this.busy.set(true);
     this.results.set([]);
     try { localStorage.setItem(PROVIDER_KEY, provider); } catch { /* optional convenience */ }

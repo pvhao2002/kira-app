@@ -208,3 +208,56 @@ describe('PredictionDetailPage counting (UX-046)', () => {
     expect(q(f, 'similar')).toBeNull();
   });
 });
+
+describe('PredictionDetailPage UI review fixes', () => {
+  it('explains the disabled admin actions in visible text, tied to the buttons (PDET-4)', async () => {
+    const f = await open({ ...base, match: { ...base.match, status: 'SCHEDULED' } });
+    const note = q(f, 'actions-note')!;
+    expect(text(note)).toContain('Finished or Cancelled');
+    expect(q(f, 'override')!.getAttribute('aria-describedby')).toBe(note.id);
+    const done = await open();
+    expect(q(done, 'actions-note')).toBeNull();
+  });
+
+  it('keeps the hint inside the reason field and the Override result is a custom select (PDET-6, CUSTOM-1)', async () => {
+    const f = await open();
+    q(f, 'override')!.click();
+    f.detectChanges();
+    const dialog = f.nativeElement.querySelector('mm-dialog') as HTMLElement;
+    expect(dialog.querySelector('#ov-reason + small#ov-hint')).not.toBeNull();
+    expect(dialog.querySelector('select')).toBeNull();
+    const trigger = dialog.querySelector('mm-select button#ov-result') as HTMLButtonElement;
+    expect(trigger.hasAttribute('autofocus')).toBe(true);
+    expect(text(trigger)).toContain('Choose a result');
+  });
+
+  it('formats the iteration count and wraps the odds table for phones (PDET-11, PDET-2)', async () => {
+    const f = await open({ ...base, simulation: { method: 'MC', simulationCount: 100000, randomSeed: null, algorithmVersion: null, parameters: {},
+      expectedRemainingHomeGoals: null, expectedRemainingAwayGoals: null, expectedRemainingHomeCorners: null, expectedRemainingAwayCorners: null,
+      probabilities: null, correctScoreDistribution: [] } } as unknown as PredictionDetail);
+    f.componentInstance.tab.set('sim');
+    f.detectChanges();
+    expect(text(f.nativeElement)).toContain('100,000');
+    f.componentInstance.tab.set('odds');
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('table[aria-label="Odds"]')!.classList.contains('compact-sm')).toBe(true);
+  });
+
+  it('retries a failed load and warns when the review check fails (PDET-5, PDET-12)', async () => {
+    const f = TestBed.createComponent(PredictionDetailPage);
+    f.componentRef.setInput('id', 'p1');
+    f.detectChanges();
+    TestBed.tick();
+    http.expectOne('/api/v1/predictions/p1').flush({ status: 503, code: 'DOWN', message: 'Database unavailable' }, { status: 503, statusText: 'Down' });
+    http.expectOne(r => r.url === '/api/v1/settlements/needs-review').flush({ status: 500, code: 'X', message: 'nope' }, { status: 500, statusText: 'Err' });
+    await f.whenStable();
+    f.detectChanges();
+    expect(text(f.nativeElement)).toContain('Database unavailable');
+    (q(f, 'state-retry') as HTMLButtonElement).click();
+    TestBed.tick();
+    http.expectOne('/api/v1/predictions/p1').flush(base);
+    await f.whenStable();
+    f.detectChanges();
+    expect(text(q(f, 'review-failed'))).toContain('review');
+  });
+});

@@ -2,17 +2,19 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { By } from '@angular/platform-browser';
+import { SERIES } from '../shared/chart';
 import { FilterBar } from '../shared/filter-bar';
 import { ReportsPage } from './reports';
 
 let http: HttpTestingController;
+beforeAll(() => { Element.prototype.scrollIntoView ??= () => {}; });   // the select's list scrolls the active option into view
 beforeEach(() => {
   TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] });
   http = TestBed.inject(HttpTestingController);
 });
-afterEach(() => http.verify({ ignoreCancelled: true }));
+afterEach(() => { http.verify({ ignoreCancelled: true }); document.body.querySelectorAll('.cdk-overlay-container').forEach(e => e.remove()); });
 
 const text = (el: HTMLElement) => el.textContent?.replace(/\s+/g, ' ') ?? '';
 /** Lets a flushed response reach its resource, then runs the effects that depend on it. */
@@ -79,10 +81,13 @@ describe('ReportsPage model comparison (UX-009)', () => {
     await settle();
     http.expectOne(r => r.url.endsWith('/reports/model-comparison')).flush({ data: [], meta: { totalElements: 14 } });
     await f.whenStable();
-    const select = (f.nativeElement as HTMLElement).querySelector('#min-models') as HTMLSelectElement;
-    expect([...select.options].map(o => o.textContent?.trim())).toEqual(['1 (35 matches)', '2 (14 matches)', '3 (0 matches)']);
-    select.value = '1';
-    select.dispatchEvent(new Event('change'));
+    const trigger = (f.nativeElement as HTMLElement).querySelector('button#min-models[role="combobox"]') as HTMLButtonElement;
+    expect(text(trigger)).toContain('2 (14 matches)');
+    trigger.click();
+    await f.whenStable();
+    const options = [...document.querySelectorAll('[role="option"]')] as HTMLElement[];
+    expect(options.map(o => text(o).trim())).toEqual(['1 (35 matches)', '2 (14 matches)', '3 (0 matches)']);
+    options[0].click();
     TestBed.tick();
     expect(http.expectOne(r => r.url.endsWith('/reports/model-comparison')).request.params.get('minModels')).toBe('1');
   });
@@ -213,6 +218,48 @@ describe('ReportsPage ROI, small sample and calibration (UX-018)', () => {
     expect(text(el)).toContain('excluded: 4');
     const chart = f.componentInstance.calibrationChart();
     expect(chart.datasets[0].data).toHaveLength(2);   // only non-empty bins are plotted
-    expect(chart.datasets[0].backgroundColor).toEqual(['rgba(79,70,229,.7)', 'rgba(138,150,168,.55)']);
+    // Thin bins are hollow, the others solid in the theme's accent (REP-3); colours are read on every draw (REP-2).
+    const fill = chart.datasets[0].backgroundColor as unknown as (c: { dataIndex: number }) => string;
+    expect([fill({ dataIndex: 0 }), fill({ dataIndex: 1 })]).toEqual([SERIES[0], 'transparent']);
+    expect(chart.datasets[0].borderWidth).toEqual([1, 2]);
+  });
+});
+
+describe('ReportsPage review fixes', () => {
+  it('keeps at least one history column checked (REP-18)', async () => {
+    localStorage.setItem('matchmind.history.hidden', JSON.stringify(['league', 'match', 'modelName', 'predictionType', 'matchMinute', 'current', 'predicted', 'final',
+      'corners', 'market', 'pick', 'line', 'price', 'oddsStage', 'probability', 'result', 'units', 'settledAt', 'settlementSource']));
+    const f = await open('history');
+    http.expectOne(r => r.url.endsWith('/reports/prediction-history')).flush({ data: [], meta: { totalElements: 0 } });
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.componentInstance.visibleFields()).toEqual(['predictedAt']);
+    f.componentInstance.toggleVisible('predictedAt');
+    expect(f.componentInstance.visibleFields()).toEqual(['predictedAt']);
+    const boxes = [...(f.nativeElement as HTMLElement).querySelectorAll('.menu-body input[type=checkbox]')] as HTMLInputElement[];
+    expect(boxes.filter(b => b.checked).every(b => b.disabled)).toBe(true);
+    localStorage.removeItem('matchmind.history.hidden');
+  });
+
+  it('shows a load error as an error box with Retry, never as an empty-table message (REP-7, REP-8)', async () => {
+    const f = await open('history');
+    f.detectChanges();
+    expect(text(f.nativeElement)).not.toContain('No picks match');   // first load: skeleton, not "empty"
+    http.expectOne(r => r.url.endsWith('/reports/prediction-history')).flush({ status: 500, code: 'INTERNAL', message: 'Boom' }, { status: 500, statusText: 'Server Error' });
+    await f.whenStable();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    expect(text(el.querySelector('.state-box.error') as HTMLElement)).toContain('Boom');
+    expect(text(el)).not.toContain('No picks match');
+    (el.querySelector('[data-testid="state-retry"]') as HTMLButtonElement).click();
+    await settle();
+    http.expectOne(r => r.url.endsWith('/reports/prediction-history')).flush({ data: [], meta: { totalElements: 0 } });
+  });
+
+  it('labels each expand button with its row (REP-12)', async () => {
+    const f = await open('models');
+    http.expectOne(r => r.url.endsWith('/reports/model-performance')).flush([model]);
+    await f.whenStable();
+    expect((f.nativeElement as HTMLElement).querySelector('button[aria-label="Breakdown for gpt"]')).not.toBeNull();
   });
 });

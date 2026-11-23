@@ -9,7 +9,8 @@ import { AdminResultRequest, MATCH_STATUSES, MatchStatus, ResultHistory, ReviewI
 import { PageTitle } from '../core/page-title';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { bidiSafe, fmtDateTime, humanize, lineSplit, pct, pickText, resultChanges, statRows } from '../shared/format';
-import { Dialog, ToastService } from '../shared/kit';
+import { ConfirmService, Dialog, ToastService } from '../shared/kit';
+import { Select, SelectOption } from '../shared/select';
 import { JsonView, ReasonAction, ReasonDialog, ResultTag, ScoreChip, StateView } from '../shared/ui';
 
 interface ResultForm {
@@ -27,7 +28,7 @@ const MIN_REASON = 5;
 
 @Component({
   selector: 'mm-match-detail',
-  imports: [FormsModule, RouterLink, Dialog, ScoreChip, ResultTag, StateView, JsonView, ReasonDialog],
+  imports: [FormsModule, RouterLink, Dialog, ScoreChip, ResultTag, StateView, JsonView, ReasonDialog, Select],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     h2, .sub, .hist-item { overflow-wrap: anywhere; min-width: 0; }
@@ -36,13 +37,15 @@ const MIN_REASON = 5;
     .pair { display: flex; align-items: center; gap: .4rem; }
     .pair .input { width: 5rem; }
     .head-actions { flex-wrap: wrap; justify-content: flex-end; }
+    @media (max-width: 640px) { .head-actions { justify-content: flex-start; } }
     .outcome { margin-top: .75rem; }
-    fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: .6rem; }
+    .pairs { display: grid; gap: .6rem; }
+    .stat-team { max-width: 8rem; }
   `],
   template: `
     <div class="stack">
       <a routerLink="/matches" class="back-link"><i class="pi pi-arrow-left" aria-hidden="true"></i> Matches</a>
-      <mm-state [state]="state()" [message]="error()" />
+      <mm-state [state]="state()" [message]="error()" retryable (retry)="resource.reload()" />
       @if (detail(); as d) {
         <section class="panel">
           <header>
@@ -56,11 +59,11 @@ const MIN_REASON = 5;
                 <button type="button" class="btn btn-outline btn-sm" data-testid="result-open" (click)="openResult()"><i class="pi pi-pencil" aria-hidden="true"></i>
                   {{ d.match.finalHomeScore === null ? 'Enter result' : 'Correct result' }}</button>
                 @if (d.match.status === 'FINISHED' || d.match.status === 'CANCELLED') {
-                  <button type="button" class="btn btn-outline btn-sm" [disabled]="settling()" (click)="settle()"><i class="pi" [class.pi-calculator]="!settling()" [class.pi-spinner]="settling()" [class.pi-spin]="settling()"></i> Settle pending picks</button>
+                  <button type="button" class="btn btn-outline btn-sm" data-testid="settle" [disabled]="settling()" (click)="settle()"><i class="pi" [class.pi-calculator]="!settling()" [class.pi-spinner]="settling()" [class.pi-spin]="settling()" aria-hidden="true"></i> Settle pending picks</button>
                 }
               }
-              <button type="button" class="btn btn-text btn-sm" data-testid="prompt-input-copy" (click)="copyPromptInput()"
-                title="Copies the match result and every pick with its id, as the settlement prompt expects"><i class="pi pi-copy" aria-hidden="true"></i> Copy settlement input</button>
+              <button type="button" class="btn btn-text btn-sm" data-testid="prompt-input-copy" [disabled]="copying()" (click)="copyPromptInput()"
+                title="Copies the match result and every pick with its id, as the settlement prompt expects"><i class="pi" [class.pi-copy]="!copying()" [class.pi-spinner]="copying()" [class.pi-spin]="copying()" aria-hidden="true"></i> Copy settlement input</button>
             </div>
           </header>
           <div class="facts">
@@ -70,7 +73,7 @@ const MIN_REASON = 5;
             <div class="fact"><span class="fact-label">HT corners</span><mm-score [home]="d.match.htHomeCorners" [away]="d.match.htAwayCorners" [muted]="true" /></div>
             <div class="fact"><span class="fact-label">Result updated</span>{{ fmt(d.match.resultUpdatedAt) }}</div>
           </div>
-          @if (outcome()) { <p class="page-note outcome" role="status" data-testid="result-outcome">{{ outcome() }}</p> }
+          @if (outcome()) { <div class="alert alert-success outcome" role="status" data-testid="result-outcome">{{ outcome() }}</div> }
         </section>
 
         @if (review().length) {
@@ -114,10 +117,11 @@ const MIN_REASON = 5;
         } }
 
         <section class="panel flush">
-          <header><h2>Models on this match</h2></header>
+          <header><div><h2>Models on this match</h2>
+            <p class="muted-text sub">Win rate = (win + half win) divided by settled picks. Push and void are left out.</p></div></header>
           <div class="table-wrap"><table class="dt compact-sm" aria-label="Models on this match">
             <thead><tr><th>Model</th><th class="num hide-sm">Predictions</th><th class="hide-sm">Latest</th><th class="hide-sm">Predicted score</th><th>Top pick</th><th class="num hide-sm">Prob.</th>
-                <th class="num hide-sm">Price</th><th>Result</th><th class="num hide-sm">W / L</th><th class="num" title="(Win + half win) divided by settled picks. Push and void are left out.">Win rate</th><th class="num hide-sm">Pending</th></tr></thead>
+                <th class="num hide-sm">Price</th><th>Result</th><th class="num hide-sm">W / L</th><th class="num">Win rate</th><th class="num hide-sm">Pending</th></tr></thead>
             <tbody>
               @for (m of d.models; track m.modelId) {
               <tr>
@@ -148,9 +152,12 @@ const MIN_REASON = 5;
         </section>
 
         <section class="panel flush" id="prediction-history" data-testid="prediction-history">
-          <header><h2>Prediction history ({{ predTotal() }})</h2>
-            @if (predTotal() > predictions().length) { <span class="muted-text">Showing the latest {{ predictions().length }}</span> }</header>
-          <div class="table-wrap"><table class="dt compact-sm" aria-label="Prediction history">
+          <header><h2>Prediction history ({{ predPage() ? predTotal() : '—' }})</h2>
+            @if (predTotal() > predictions().length) {
+              <span class="muted-text">Showing the latest {{ predictions().length }}
+                · <a [routerLink]="['/predictions']" [queryParams]="{ search: d.match.externalMatchId }">See all in Predictions</a></span>
+            }</header>
+          <div class="table-wrap"><table class="dt compact-sm" aria-label="Prediction history" [attr.aria-busy]="predResource.isLoading()">
             <thead><tr><th>Predicted</th><th>Model</th><th class="hide-sm">Type</th><th class="hide-sm">Score then</th><th>Top pick</th><th class="num hide-sm">Prob.</th><th>Result</th></tr></thead>
             <tbody>
               @for (p of predictions(); track p.id) {
@@ -163,7 +170,13 @@ const MIN_REASON = 5;
                 <td class="num hide-sm">{{ pct(p.topPickProbability) }}</td>
                 <td><mm-result [value]="p.settlementStatus" /></td>
               </tr>
-              } @empty { <tr><td colspan="7" class="empty">No predictions yet.</td></tr> }
+              } @empty {
+                <tr><td colspan="7" class="empty">
+                  @if (predResource.error()) { <mm-state state="error" [message]="predError()" retryable (retry)="predResource.reload()" /> }
+                  @else if (predResource.isLoading()) { <mm-state state="loading" [rows]="3" /> }
+                  @else { No predictions yet. }
+                </td></tr>
+              }
             </tbody>
           </table></div>
         </section>
@@ -172,8 +185,10 @@ const MIN_REASON = 5;
           <section class="panel">
             <header><h2>Latest live stats</h2>@if (d.latestStats) { <span class="muted-text">{{ d.latestStats.matchMinute ?? '—' }}' · {{ fmt(d.latestStats.predictedAt) }}</span> }</header>
             @if (d.latestStats; as s) {
-              <table class="dt" aria-label="Latest live stats"><thead><tr><th>Stat</th><th class="num">{{ bidi(d.match.homeTeam) }}</th><th class="num">{{ bidi(d.match.awayTeam) }}</th></tr></thead>
-                <tbody>@for (r of statRows(s); track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody></table>
+              <div class="table-wrap"><table class="dt" aria-label="Latest live stats"><thead><tr><th>Stat</th>
+                <th class="num"><span class="truncate stat-team" [title]="bidi(d.match.homeTeam)">{{ bidi(d.match.homeTeam) }}</span></th>
+                <th class="num"><span class="truncate stat-team" [title]="bidi(d.match.awayTeam)">{{ bidi(d.match.awayTeam) }}</span></th></tr></thead>
+                <tbody>@for (r of statRows(s); track r[0]) { <tr><td>{{ r[0] }}</td><td class="num">{{ r[1] ?? '—' }}</td><td class="num">{{ r[2] ?? '—' }}</td></tr> }</tbody></table></div>
             } @else { <p class="muted-text">No stats were sent with predictions for this match.</p> }
           </section>
           <section class="panel" data-testid="result-history">
@@ -205,22 +220,23 @@ const MIN_REASON = 5;
           <p class="muted-text">Saved as an admin result in the result history. FINISHED or CANCELLED settles the pending picks;
             already-settled picks that now differ are flagged for review, never changed silently.</p>
           <div class="field"><label for="res-status">Status</label>
-            <select class="input w-full" id="res-status" name="status" [(ngModel)]="resultForm.status" autofocus>
-              @for (s of statuses; track s) { <option [ngValue]="s">{{ humanize(s) }}</option> }
-            </select></div>
-          <fieldset>
+            <mm-select id="res-status" class="w-full" style="width: 100%" name="status" [(ngModel)]="resultForm.status" [options]="statusOptions" autofocus />
+          </div>
+          <div class="pairs">
             @for (p of pairs; track p.field) {
-              <div class="field"><span class="fact-label" [id]="'res-' + p.field">{{ p.label }} (home : away)</span>
-                <span class="pair" role="group" [attr.aria-labelledby]="'res-' + p.field">
-                  <input class="input" type="number" min="0" step="1" [name]="p.home" [(ngModel)]="resultForm[p.home]" [attr.aria-label]="p.label + ' home'">
-                  <span>:</span>
-                  <input class="input" type="number" min="0" step="1" [name]="p.away" [(ngModel)]="resultForm[p.away]" [attr.aria-label]="p.label + ' away'">
-                </span></div>
+              <fieldset class="field"><legend>{{ p.label }} (home : away)</legend>
+                <span class="pair">
+                  <input class="input" type="number" min="0" step="1" [name]="p.home" [(ngModel)]="resultForm[p.home]" [attr.aria-label]="p.label + ' home'"
+                    [attr.aria-invalid]="resultErrorField() === p.field || null" [attr.aria-describedby]="resultErrorField() === p.field ? 'res-error' : null">
+                  <span aria-hidden="true">:</span>
+                  <input class="input" type="number" min="0" step="1" [name]="p.away" [(ngModel)]="resultForm[p.away]" [attr.aria-label]="p.label + ' away'"
+                    [attr.aria-invalid]="resultErrorField() === p.field || null" [attr.aria-describedby]="resultErrorField() === p.field ? 'res-error' : null">
+                </span></fieldset>
             }
-          </fieldset>
+          </div>
           <div class="field"><label for="res-reason">Reason (optional)</label>
             <textarea class="input" id="res-reason" name="reason" [(ngModel)]="resultForm.reason" rows="2" maxlength="2000"></textarea></div>
-          @if (resultError()) { <div class="field-error" role="alert">{{ resultError() }}</div> }
+          @if (resultError()) { <div class="field-error" id="res-error" role="alert">{{ resultError() }}</div> }
           <div class="dialog-actions">
             <button type="button" class="btn btn-text" (click)="resultOpen.set(false)">Cancel</button>
             <button type="submit" class="btn btn-primary" [disabled]="savingResult()">
@@ -253,10 +269,11 @@ export class MatchDetailPage {
   readonly id = input.required<string>();
   private readonly api = inject(ApiService);
   private readonly messages = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
   readonly auth = inject(AuthService);
-  private readonly resource = this.api.matchResource(() => this.id());
+  readonly resource = this.api.matchResource(() => this.id());
   private readonly reviewResource = rxResource({ params: () => this.id(), stream: ({ params }) => this.api.needsReview({ matchId: params }) });
-  private readonly predResource = rxResource({
+  readonly predResource = rxResource({
     params: () => this.id(),
     stream: ({ params }) => this.api.predictions({ matchId: params }, { page: 0, size: 100, sort: 'predictedAt,desc' }),
   });
@@ -264,13 +281,17 @@ export class MatchDetailPage {
   readonly error = errorMessage(this.resource);
   readonly detail = safeValue(this.resource);
   readonly review = safeValue(this.reviewResource, []);
-  private readonly predPage = safeValue(this.predResource);
+  readonly predPage = safeValue(this.predResource);
+  readonly predError = errorMessage(this.predResource);
   readonly predictions = computed(() => this.predPage()?.data ?? []);
   readonly predTotal = computed(() => this.predPage()?.meta.totalElements ?? 0);
   readonly settling = signal(false);
   readonly resultOpen = signal(false);
   readonly savingResult = signal(false);
   readonly resultError = signal('');
+  /** The score pair a validation error is about, so its inputs get aria-invalid. */
+  readonly resultErrorField = signal<string | null>(null);
+  readonly copying = signal(false);
   readonly outcome = signal('');
   readonly recalcOpen = signal(false);
   readonly recalcPending = signal(false);
@@ -278,7 +299,7 @@ export class MatchDetailPage {
   readonly action = signal<ReasonAction | null>(null);
   resultForm: ResultForm = MatchDetailPage.emptyForm();
   recalcReason = '';
-  readonly statuses = MATCH_STATUSES;
+  readonly statusOptions: SelectOption[] = MATCH_STATUSES.map(s => ({ value: s, label: humanize(s) }));
   readonly pairs = PAIRS;
   readonly minReason = MIN_REASON;
   readonly fmt = fmtDateTime;
@@ -314,7 +335,13 @@ export class MatchDetailPage {
     this.predResource.reload();
   }
 
-  settle(): void {
+  async settle(): Promise<void> {
+    if (this.settling()) return;
+    const ok = await this.confirm.ask({
+      header: 'Settle pending picks', acceptLabel: 'Settle',
+      message: 'Pending picks of this match get a result from the stored match result now. Picks that are already settled are not changed.',
+    });
+    if (!ok) return;
     this.settling.set(true);
     this.api.settleMatch(this.id()).subscribe({
       next: r => {
@@ -336,6 +363,7 @@ export class MatchDetailPage {
       reason: '',
     };
     this.resultError.set('');
+    this.resultErrorField.set(null);
     this.resultOpen.set(true);
   }
 
@@ -348,13 +376,15 @@ export class MatchDetailPage {
       if (home === null && away === null) continue;
       if (home === null || away === null || !Number.isInteger(home) || !Number.isInteger(away) || home < 0 || away < 0) {
         this.resultError.set(`${p.label}: enter whole numbers of 0 or more for both sides, or leave both empty.`);
+        this.resultErrorField.set(p.field);
         return;
       }
       body[p.field] = { home, away } satisfies ScorePair;
     }
-    if (f.status === 'FINISHED' && !body.finalScore) { this.resultError.set('A FINISHED match needs the final score.'); return; }
+    if (f.status === 'FINISHED' && !body.finalScore) { this.resultError.set('A FINISHED match needs the final score.'); this.resultErrorField.set('finalScore'); return; }
     if (f.reason.trim()) body.reason = f.reason.trim();
     this.resultError.set('');
+    this.resultErrorField.set(null);
     this.savingResult.set(true);
     this.api.enterMatchResult(this.id(), body).subscribe({
       next: r => {
@@ -406,9 +436,11 @@ export class MatchDetailPage {
   }
 
   copyPromptInput(): void {
+    if (this.copying()) return;
+    this.copying.set(true);
     this.api.settlementPromptInput(this.id()).subscribe({
-      next: x => this.messages.copy(JSON.stringify(x, null, 2), 'settlement input'),
-      error: e => this.messages.add({ severity: 'error', summary: 'Copy failed', detail: apiError(e).message }),
+      next: x => { this.copying.set(false); this.messages.copy(JSON.stringify(x, null, 2), 'settlement input'); },
+      error: e => { this.copying.set(false); this.messages.add({ severity: 'error', summary: 'Copy failed', detail: apiError(e).message }); },
     });
   }
 }

@@ -118,13 +118,111 @@ describe('PromptsPage (W5)', () => {
       expect(diff).toContain('- old line');
       expect(diff).toContain('+ line two');
 
-      f.componentInstance.restore();
+      const restoring = f.componentInstance.restore();
+      const confirm = TestBed.inject(ConfirmService);
+      await vi.waitFor(() => expect(confirm.current()?.header).toBe('Restore v2?'));   // PROMPT-10
+      http.expectNone('/api/v1/prompts/p1/versions/2/restore');
+      confirm.answer(true);
+      await restoring;
       const req = http.expectOne('/api/v1/prompts/p1/versions/2/restore');
       expect(req.request.body).toEqual({ expectedVersion: 3 });
       req.flush({ ...prompt, content: 'line one\nold line\nkey {{EXTERNAL_API_KEY}}', version: 4 });
       await f.whenStable();
       expect(f.componentInstance.selected()?.version).toBe(4);
       expect(f.componentInstance.history()).toBeNull();
+    });
+
+    it('declining the restore confirm sends nothing (PROMPT-10)', async () => {
+      const f = await open();
+      f.componentInstance.openHistory();
+      http.expectOne('/api/v1/prompts/p1/versions').flush([{ version: 2, description: null, active: true, updatedBy: 'u1', updatedByUsername: 'admin', createdAt: '' }]);
+      await f.whenStable();
+      f.componentInstance.viewVersion(2);
+      http.expectOne('/api/v1/prompts/p1/versions/2').flush({ version: 2, description: null, active: true, updatedBy: 'u1', updatedByUsername: 'admin', createdAt: '', content: 'old' });
+      await f.whenStable();
+      const restoring = f.componentInstance.restore();
+      const confirm = TestBed.inject(ConfirmService);
+      await vi.waitFor(() => expect(confirm.current()).not.toBeNull());
+      confirm.answer(false);
+      await restoring;
+      http.expectNone(r => r.url.endsWith('/restore'));
+    });
+
+    it('History shows a busy state, and a repeat click sends no second request (PROMPT-6)', async () => {
+      const f = await open();
+      const btn = f.nativeElement.querySelector('[data-testid="prompt-history"]') as HTMLButtonElement;
+      btn.click();
+      f.detectChanges();
+      expect(btn.disabled).toBe(true);
+      expect(btn.querySelector('.pi-spinner')).not.toBeNull();
+      f.componentInstance.openHistory();
+      http.expectOne('/api/v1/prompts/p1/versions').flush([]);
+      f.detectChanges();
+      expect(btn.disabled).toBe(false);
+    });
+
+    it('picking a version clears the old diff and shows a loading state until the new one arrives (PROMPT-7)', async () => {
+      const f = await open();
+      f.componentInstance.openHistory();
+      http.expectOne('/api/v1/prompts/p1/versions').flush([]);
+      f.componentInstance.viewVersion(2);
+      http.expectOne('/api/v1/prompts/p1/versions/2').flush({ version: 2, content: 'two', description: null, active: true, updatedBy: null, updatedByUsername: null, createdAt: '' });
+      f.componentInstance.viewVersion(1);
+      f.componentInstance.viewVersion(2);
+      expect(f.componentInstance.version()).toBeNull();
+      expect(f.componentInstance.loadingVersion()).toBe(true);
+      const [v1, v2] = [http.expectOne('/api/v1/prompts/p1/versions/1'), http.expectOne('/api/v1/prompts/p1/versions/2')];
+      v2.flush({ version: 2, content: 'two', description: null, active: true, updatedBy: null, updatedByUsername: null, createdAt: '' });
+      v1.flush({ version: 1, content: 'one', description: null, active: true, updatedBy: null, updatedByUsername: null, createdAt: '' });   // late answer of an older click
+      expect(f.componentInstance.version()?.version).toBe(2);
+      expect(f.componentInstance.loadingVersion()).toBe(false);
+    });
+
+    it('closing the create dialog with typed text asks first; an empty one closes at once (PROMPT-2)', async () => {
+      const f = await open();
+      f.componentInstance.openCreate();
+      await f.componentInstance.closeCreate();
+      expect(f.componentInstance.creating()).toBe(false);
+
+      f.componentInstance.openCreate();
+      f.componentInstance.newName.set('Draft');
+      const confirm = TestBed.inject(ConfirmService);
+      const closing = f.componentInstance.closeCreate();
+      await vi.waitFor(() => expect(confirm.current()?.header).toBe('Discard changes?'));
+      confirm.answer(false);
+      await closing;
+      expect(f.componentInstance.creating()).toBe(true);
+      const again = f.componentInstance.closeCreate();
+      await vi.waitFor(() => expect(confirm.current()).not.toBeNull());
+      confirm.answer(true);
+      await again;
+      expect(f.componentInstance.creating()).toBe(false);
+    });
+
+    it('an invalid type is marked aria-invalid in the create dialog (PROMPT-4)', async () => {
+      const f = await open();
+      f.componentInstance.openCreate();
+      f.componentInstance.newType.set('bad type');
+      f.detectChanges();
+      const input = document.querySelector('#np-type') as HTMLInputElement;
+      expect(input.getAttribute('aria-invalid')).toBe('true');
+      expect(input.getAttribute('aria-describedby')).toBe('np-type-hint');
+    });
+
+    it('Copy has a busy state on the shared-key path too, and a double click sends one request (PROMPT-8)', async () => {
+      const f = await open();
+      f.componentInstance.copy();
+      f.componentInstance.copy();
+      expect(f.componentInstance.copying()).toBe(true);
+      http.expectOne('/api/v1/prompts/p1/for-agent').flush({ content: 'x', keyRendered: true });
+      expect(f.componentInstance.copying()).toBe(false);
+    });
+
+    it('"Copy for:" is a visible label of the provider select (PROMPT-14)', async () => {
+      const f = await open();
+      const label = f.nativeElement.querySelector('label[for="prompt-provider"]') as HTMLElement;
+      expect(label.textContent).toContain('Copy for:');
+      expect(f.nativeElement.querySelector('button#prompt-provider[role="combobox"]')).not.toBeNull();
     });
 
     it('a session that ends while editing keeps the draft without a blocking dialog and restores it after sign-in (UX-048)', async () => {

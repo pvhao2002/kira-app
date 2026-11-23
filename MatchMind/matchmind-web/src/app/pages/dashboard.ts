@@ -8,14 +8,14 @@ import { Filters } from '../core/models';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { FilterBar, isoDay } from '../shared/filter-bar';
 import { ROI_DEF, fmtShort, humanize, lineSplit, pct, pickText, units } from '../shared/format';
-import { ChartView } from '../shared/chart';
+import { ChartView, RESULT_COLORS, SERIES } from '../shared/chart';
 import { ResultTag, SmallSample, StateView } from '../shared/ui';
 
-// Same hues as the result tags and the form guide.
-const RESULT_COLORS: Record<string, string> = {
-  WIN: '#059669', HALF_WIN: '#6ee7b7', PUSH: '#8a96a8', VOID: '#c3cad5', HALF_LOSS: '#fda4af', LOSS: '#e11d48', PENDING: '#f59e0b',
-};
-const SERIES = ['#4f46e5', '#0891b2', '#c98a00', '#7b4bb3', '#d1603d', '#3a9fb0', '#5b6779', '#a3476f'];
+// Colours come from chart.ts (theme tokens). Datasets pass functions, so Chart.js re-reads them after a light/dark switch.
+// ponytail: '1f' makes a series colour a ~12% fill; it assumes the --mm-series-* tokens stay 6-digit hex.
+const FILL = '1f';
+/** Height of a horizontal bar chart: one row per model, so many models never overlap their labels (DASH-4). */
+const barsHeight = (rows: number) => Math.max(280, rows * 26 + 60);
 const GRID = {};   // grid colour comes from the chart defaults (light/dark aware)
 const WITH_YEAR = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 /**
@@ -35,7 +35,7 @@ const MODEL_TICKS = {
     a.kpi { color: inherit; text-decoration: none; transition: border-color var(--mm-t) var(--mm-ease); }
     a.kpi:hover { border-color: var(--mm-green); }
     a.kpi:focus-visible { outline: none; box-shadow: var(--mm-focus); }
-    .kpi > .kpi-sub { grid-column: 1 / -1; font-size: var(--fs-xs); font-weight: 400; color: var(--mm-ink-2); }
+    @media (max-width: 480px) { .kpi > strong { font-size: clamp(1.15rem, 5vw, 1.6rem); } }
     .hero-tally a { color: inherit; margin-left: .55rem; text-underline-offset: 3px; }
     .hero-tally a b { margin-left: 0; }
     .chart-note { margin: .5rem 0 0; text-align: center; font-size: var(--fs-sm); color: var(--mm-ink-2); }
@@ -87,8 +87,10 @@ const MODEL_TICKS = {
             <span class="hero-note">Win rate = (W + ½W) / (W + ½W + L + ½L): a half win counts as a win, a half loss as a loss. Push, void and pending picks are left out.</span>
           </div>
           <div class="form-guide">
-            @if (form().length) {
-              <span class="hero-label">Recent outcomes: last {{ form().length }} settled of the latest {{ recent().length }} predictions, newest on the right</span>
+            @if (recentLoading()) {
+              <span class="hero-label" role="status">Recent form: loading…</span>
+            } @else if (form().length) {
+              <span class="hero-label">Recent form (newest on the right)</span>
               <ol class="form-chips">
                 @for (p of form(); track p.id) {
                   <li><a class="fchip" [attr.data-r]="p.settlementStatus" [routerLink]="['/predictions', p.id]"
@@ -96,6 +98,7 @@ const MODEL_TICKS = {
                     [attr.aria-label]="p.homeTeam + ' – ' + p.awayTeam + ', ' + humanize(p.settlementStatus)">{{ FORM[p.settlementStatus] ?? '?' }}</a></li>
                 }
               </ol>
+              <span class="hero-note">Last {{ form().length }} settled of the latest {{ recent().length }} predictions.</span>
             } @else if (recent().length) {
               <span class="hero-label">Recent outcomes: none of the latest {{ recent().length }} predictions is settled yet.</span>
             }
@@ -119,13 +122,14 @@ const MODEL_TICKS = {
             <span class="kpi-sub">With predictions in {{ periodLabel() }}</span></a>
           <a class="kpi" routerLink="/models"><span>Active models</span><strong>{{ d.totals.activeModels }}<small> / {{ d.totals.totalModels }}</small></strong><i class="pi pi-microchip-ai" aria-hidden="true"></i>
             <span class="kpi-sub">{{ d.totals.activeModels }} with predictions in range, of {{ d.totals.totalModels }} known</span></a>
-          <div class="kpi" [title]="roiDef"><span>Units</span><strong data-testid="kpi-units">{{ units(d.totals.units) }}</strong><i class="pi pi-wallet" aria-hidden="true"></i>
-            <span class="kpi-sub">Profit at stake 1 over {{ d.totals.staked }} staked picks</span></div>
-          <div class="kpi" [title]="roiDef"><span>ROI</span><strong data-testid="kpi-roi">{{ pct(d.totals.roi) }}</strong><i class="pi pi-percentage" aria-hidden="true"></i>
-            <span class="kpi-sub">Units / staked <mm-small-sample [n]="d.totals.staked" /></span></div>
+          <a class="kpi" routerLink="/reports"><span>Units</span><strong data-testid="kpi-units">{{ units(d.totals.units) }}</strong><i class="pi pi-wallet" aria-hidden="true"></i>
+            <span class="kpi-sub">Profit at stake 1 over {{ d.totals.staked }} staked picks</span></a>
+          <a class="kpi" routerLink="/reports"><span>ROI</span><strong data-testid="kpi-roi">{{ pct(d.totals.roi) }}</strong><i class="pi pi-percentage" aria-hidden="true"></i>
+            <span class="kpi-sub">Units / staked <mm-small-sample [n]="d.totals.staked" /></span></a>
         </section>
+        <p class="page-note" data-testid="roi-def"><b>Units and ROI.</b> {{ roiDef }}</p>
         @if (d.totals.notCountedPredictions) {
-          <p class="muted-text count-note">{{ d.totals.notCountedPredictions }} {{ d.totals.notCountedPredictions === 1 ? 'prediction' : 'predictions' }} not counted:
+          <p class="page-note">{{ d.totals.notCountedPredictions }} {{ d.totals.notCountedPredictions === 1 ? 'prediction' : 'predictions' }} not counted:
             a later prediction of the same match, model, type and minute replaces each. Choose "Count: all" to include them.</p>
         }
         <div class="dash-grid">
@@ -142,12 +146,12 @@ const MODEL_TICKS = {
           </section>
           <section class="panel span-2">
             <header><h2>Win rate by model</h2></header>
-            @if (hasRate(d.modelPerformance)) { <mm-chart type="bar" [data]="modelRateChart()" [options]="modelBarOptions" label="Win rate by model chart" /> }
+            @if (hasRate(d.modelPerformance)) { <mm-chart type="bar" [style.height.px]="modelChartHeight()" [data]="modelRateChart()" [options]="modelBarOptions" label="Win rate by model chart" /> }
             @else { <div class="empty-state"><i class="pi pi-chart-bar" aria-hidden="true"></i><span>No settled picks in this range.</span></div> }
           </section>
           <section class="panel span-2">
             <header><h2>Predictions by model</h2></header>
-            @if (d.predictionsByModel.length) { <mm-chart type="bar" [data]="byModelChart()" [options]="byModelOptions" label="Predictions by model chart" /> }
+            @if (d.predictionsByModel.length) { <mm-chart type="bar" [style.height.px]="byModelChartHeight()" [data]="byModelChart()" [options]="byModelOptions" label="Predictions by model chart" /> }
             @else { <div class="empty-state"><i class="pi pi-chart-bar" aria-hidden="true"></i><span>No predictions in this range.</span></div> }
           </section>
           <section class="panel span-2">
@@ -163,7 +167,7 @@ const MODEL_TICKS = {
           <section class="panel flush span-6">
             <header><h2>Latest predictions</h2><a routerLink="/predictions">All predictions</a></header>
             <div class="table-wrap short">
-              <table class="dt compact-sm" aria-label="Latest predictions">
+              <table class="dt compact-sm" aria-label="Latest predictions" [attr.aria-busy]="recentBusy()">
                 <thead><tr><th>Match</th><th class="hide-sm">Model</th><th>Pick</th><th>Result</th></tr></thead>
                 <tbody>
                   @for (p of recent(); track p.id) {
@@ -173,7 +177,12 @@ const MODEL_TICKS = {
                       <td class="nowrap" data-testid="recent-pick" [title]="lineSplit(p.topPickMarket, p.topPickLine)">{{ pickText(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}</td>
                       <td><mm-result [value]="p.settlementStatus" /></td>
                     </tr>
-                  } @empty { <tr><td colspan="4" class="empty"><div class="empty-state"><i class="pi pi-bolt" aria-hidden="true"></i><span>No predictions in this range.</span></div></td></tr> }
+                  } @empty {
+                    <tr><td colspan="4" class="empty">
+                      @if (recentLoading()) { <mm-state state="loading" [rows]="3" /> }
+                      @else { <div class="empty-state"><i class="pi pi-bolt" aria-hidden="true"></i><span>No predictions in this range.</span></div> }
+                    </td></tr>
+                  }
                 </tbody>
               </table>
             </div>
@@ -195,6 +204,11 @@ export class DashboardPage {
   readonly data = safeValue(this.dashboard);
   readonly recent = computed(() => (this.recentPage.hasValue() ? this.recentPage.value().data : []));
   readonly review = safeValue(this.reviewItems, []);
+  /** First load of the latest predictions: no "empty" message and no missing form guide until they arrive (DASH-3). */
+  readonly recentLoading = computed(() => this.recentPage.isLoading() && !this.recentPage.hasValue());
+  readonly recentBusy = this.recentPage.isLoading;
+  readonly modelChartHeight = computed(() => barsHeight(this.data()?.modelPerformance.length ?? 0));
+  readonly byModelChartHeight = computed(() => barsHeight(this.data()?.predictionsByModel.length ?? 0));
 
   constructor() {
     // A live update reloads in place: reload() keeps the current figures on screen until the new ones arrive.
@@ -240,8 +254,8 @@ export class DashboardPage {
     const rows = this.data()?.winRateOverTime ?? [];
     return {
       labels: rows.map(r => r.day),
-      datasets: [{ label: 'Win rate', data: rows.map(r => r.winRate === null ? null : r.winRate * 100), borderColor: '#4f46e5',
-        backgroundColor: 'rgba(79,70,229,.12)', fill: true, tension: .25, spanGaps: true, pointRadius: rows.length < 3 ? 5 : 2 }],
+      datasets: [{ label: 'Win rate', data: rows.map(r => r.winRate === null ? null : r.winRate * 100), borderColor: () => SERIES[0],
+        backgroundColor: () => SERIES[0] + FILL, fill: true, tension: .25, spanGaps: true, pointRadius: rows.length < 3 ? 5 : 2 }],
     };
   });
   /** Running total of the daily units; a day without staked picks keeps the total (UX-018). */
@@ -251,7 +265,7 @@ export class DashboardPage {
     const data = rows.map(r => (total += Number(r.units ?? 0)));
     return {
       labels: rows.map(r => r.day),
-      datasets: [{ label: 'Cumulative units', data, borderColor: SERIES[1], backgroundColor: 'rgba(8,145,178,.12)', fill: 'origin',
+      datasets: [{ label: 'Cumulative units', data, borderColor: () => SERIES[1], backgroundColor: () => SERIES[1] + FILL, fill: 'origin',
         tension: .2, pointRadius: rows.length < 3 ? 5 : 2 }],
     };
   });
@@ -265,23 +279,23 @@ export class DashboardPage {
     const rows = (this.data()?.resultDistribution ?? []).filter(r => r.result !== 'PENDING' && r.picks > 0);
     return {
       labels: rows.map(r => humanize(r.result)),
-      datasets: [{ data: rows.map(r => r.picks), backgroundColor: rows.map(r => RESULT_COLORS[r.result] ?? '#8a96a8'), borderWidth: 0, cutout: '68%' }],
+      datasets: [{ data: rows.map(r => r.picks), backgroundColor: (ctx: { dataIndex: number }) => RESULT_COLORS[rows[ctx.dataIndex]?.result] ?? RESULT_COLORS['VOID'], borderWidth: 0, cutout: '68%' }],
     };
   });
   readonly modelRateChart = computed(() => {
     const rows = this.data()?.modelPerformance ?? [];
     return {
       labels: rows.map(r => r.key),
-      datasets: [{ label: 'Win rate', data: rows.map(r => r.winRate === null ? null : r.winRate * 100), backgroundColor: '#4f46e5', borderRadius: 4 }],
+      datasets: [{ label: 'Win rate', data: rows.map(r => r.winRate === null ? null : r.winRate * 100), backgroundColor: () => SERIES[0], borderRadius: 4 }],
     };
   });
   readonly byModelChart = computed(() => {
     const rows = this.data()?.predictionsByModel ?? [];
-    return { labels: rows.map(r => r.model), datasets: [{ label: 'Predictions', data: rows.map(r => r.predictions), backgroundColor: SERIES[1], borderRadius: 4 }] };
+    return { labels: rows.map(r => r.model), datasets: [{ label: 'Predictions', data: rows.map(r => r.predictions), backgroundColor: () => SERIES[1], borderRadius: 4 }] };
   });
   readonly byMarketChart = computed(() => {
     const rows = this.data()?.predictionsByMarket ?? [];
-    return { labels: rows.map(r => humanize(r.market)), datasets: [{ label: 'Picks', data: rows.map(r => r.picks), backgroundColor: rows.map((_, i) => SERIES[i % SERIES.length]), borderRadius: 4 }] };
+    return { labels: rows.map(r => humanize(r.market)), datasets: [{ label: 'Picks', data: rows.map(r => r.picks), backgroundColor: (ctx: { dataIndex: number }) => SERIES[ctx.dataIndex % SERIES.length], borderRadius: 4 }] };
   });
 
   /** Horizontal bars, one labelled row per model (vertical bars let Chart.js skip most model names). */

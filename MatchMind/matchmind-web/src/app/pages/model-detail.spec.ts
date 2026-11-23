@@ -65,6 +65,7 @@ describe('ModelDetailPage', () => {
     const f = await open();
     expect(q(f, 'view-all')!.getAttribute('href')).toBe('/predictions?modelId=md1');
     expect(q(f, 'view-all')!.textContent).toContain('301');
+    expect(f.nativeElement.querySelectorAll('[data-testid="view-all"]')).toHaveLength(1);   // MDL-9
     expect(q(f, 'small-sample')!.textContent).toContain('n = 1');
     expect(q(f, 'trend-empty')).not.toBeNull();   // one settled day is no trend
   });
@@ -74,7 +75,7 @@ describe('ModelDetailPage', () => {
       { ...model, settledPicks: 32, wins: 20, losses: 10, staked: 30 });
     expect(q(f, 'small-sample')).toBeNull();
     const c = f.componentInstance;
-    expect(c.trend()!.labels).toEqual(['2026-11-01', '2026-11-03']);
+    expect(c.trend()!.labels).toEqual(['1 Nov', '3 Nov']);   // MDL-8: short day labels
     expect(c.trend()!.datasets[0].data).toEqual([50, 75]);
   });
 
@@ -101,5 +102,49 @@ describe('ModelDetailPage', () => {
     const req = http.expectOne('/api/v1/models/md1/merge');
     expect(req.request.body).toEqual({ targetModelId: 'md2', reason: 'duplicate spelling' });
     req.flush({ ...model, mergedIntoId: 'md2' });
+  });
+});
+
+describe('ModelDetailPage loading and merge states', () => {
+  async function openPending() {
+    const f = TestBed.createComponent(ModelDetailPage);
+    f.componentRef.setInput('id', 'md1');
+    f.detectChanges();
+    TestBed.tick();
+    http.expectOne('/api/v1/models/md1').flush(model);
+    http.match(r => r.url === '/api/v1/reports/breakdown').forEach(r => r.flush([]));
+    http.expectOne(r => r.url === '/api/v1/predictions').flush({ data: recent, meta: { page: 0, size: 15, totalElements: 301, totalPages: 21 } });
+    await new Promise(res => setTimeout(res));
+    TestBed.tick();
+    f.detectChanges();
+    return f;
+  }
+
+  it('shows a skeleton, not the empty text, while the trend loads; an error offers Retry (MDL-1)', async () => {
+    const f = await openPending();
+    expect(q(f, 'trend-loading')).not.toBeNull();
+    expect(q(f, 'trend-empty')).toBeNull();
+    http.expectOne(r => r.url === '/api/v1/dashboard').flush({ status: 503, code: 'DOWN', message: 'down' }, { status: 503, statusText: 'Down' });
+    http.expectOne(r => r.url === '/api/v1/models').flush([]);
+    await f.whenStable();
+    f.detectChanges();
+    expect(q(f, 'trend-error')).not.toBeNull();
+    expect(q(f, 'trend-empty')).toBeNull();
+  });
+
+  it('Merge into… shows a loading option, then an empty hint when nothing can be a target (MDL-3, MDL-5)', async () => {
+    const f = await openPending();
+    http.expectOne(r => r.url === '/api/v1/dashboard').flush({ winRateOverTime: [] });
+    q(f, 'merge')!.click();
+    f.detectChanges();
+    const select = q(f, 'merge-target')!;
+    expect(select.tagName).toBe('MM-SELECT');
+    expect(select.classList.contains('w-full')).toBe(true);
+    expect(f.componentInstance.loadingTargets()).toBe(true);
+    http.expectOne(r => r.url === '/api/v1/models').flush([]);
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.componentInstance.loadingTargets()).toBe(false);
+    expect(f.componentInstance.targetOptions()).toEqual([]);
   });
 });

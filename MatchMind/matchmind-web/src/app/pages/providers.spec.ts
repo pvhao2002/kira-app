@@ -3,7 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Provider, User } from '../core/models';
+import { IssuedKey, Provider, User } from '../core/models';
+import { ConfirmService } from '../shared/kit';
 import { ProvidersPage } from './providers';
 
 const admin: User = { id: 'u1', username: 'admin', role: 'ADMIN', status: 'ACTIVE', lastLoginAt: null, createdAt: '', updatedAt: '' };
@@ -93,5 +94,112 @@ describe('ProvidersPage (UX-019)', () => {
     const req = http.expectOne('/api/v1/providers/p1/archive');
     expect(req.request.body).toEqual({ reason: 'duplicate' });
     req.flush(acme);
+  });
+
+  const KEY = { id: 'k1', keyId: 'abcdefghijkl', label: null, scopes: ['PREDICTIONS'], status: 'ACTIVE', createdAt: '', lastUsedAt: null, revokedAt: null };
+  const ISSUED: IssuedKey = { id: 'k2', keyId: 'zzzzzzzzzzzz', label: null, apiKey: SECRET, scopes: ['PREDICTIONS'], createdAt: '' };
+
+  async function openKeys(prompts: unknown[] = []) {
+    const f = await open(admin);
+    q<HTMLButtonElement>(f, '[data-testid="keys-acme"]').click();
+    http.expectOne('/api/v1/providers/p1/keys').flush([KEY]);
+    http.expectOne('/api/v1/prompts').flush(prompts);
+    f.detectChanges();
+    return f;
+  }
+
+  it('rotating asks first and sends nothing when declined (PROV-1)', async () => {
+    const f = await openKeys();
+    const confirm = TestBed.inject(ConfirmService);
+    let rotating = f.componentInstance.rotate(KEY as never);
+    await vi.waitFor(() => expect(confirm.current()?.header).toBe('Rotate key abcdefghijkl?'));
+    expect(confirm.current()?.danger).toBe(true);
+    confirm.answer(false);
+    await rotating;
+    http.expectNone(r => r.url.endsWith('/rotate'));
+
+    rotating = f.componentInstance.rotate(KEY as never);
+    await vi.waitFor(() => expect(confirm.current()).not.toBeNull());
+    confirm.answer(true);
+    await rotating;
+    http.expectOne('/api/v1/providers/p1/keys/k1/rotate').flush(ISSUED);
+    http.expectOne('/api/v1/providers/p1/keys').flush([KEY]);
+    expect(f.componentInstance.issued()?.apiKey).toBe(SECRET);
+  });
+
+  it('masks the issued key, copies the raw value, and warns before closing while it is uncopied (PROV-12, PROV-2)', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const f = await openKeys();
+    q<HTMLButtonElement>(f, '[data-testid="issue-key"]').click();
+    http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/providers/p1/keys').flush(ISSUED);
+    http.expectOne('/api/v1/providers/p1/keys').flush([KEY]);
+    f.detectChanges();
+    const input = q<HTMLInputElement>(f, '#pv-key');
+    expect(input.type).toBe('password');
+    q<HTMLButtonElement>(f, 'button[aria-label="Show key"]').click();
+    f.detectChanges();
+    expect(input.type).toBe('text');
+
+    // Uncopied: closing asks first, and declining keeps the key on screen.
+    const confirm = TestBed.inject(ConfirmService);
+    const closing = f.componentInstance.askCloseKeys();
+    await vi.waitFor(() => expect(confirm.current()?.header).toBe('Close without copying the key?'));
+    confirm.answer(false);
+    await closing;
+    expect(f.componentInstance.issued()).not.toBeNull();
+
+    // Copied: closing is silent.
+    q<HTMLButtonElement>(f, '[data-testid="copy-key"]').click();
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith(SECRET));
+    await f.componentInstance.askCloseKeys();
+    TestBed.tick();
+    http.expectOne(r => r.url === '/api/v1/providers').flush([acme]);
+    expect(confirm.current()).toBeNull();
+    expect(f.componentInstance.keysFor()).toBeNull();
+    Reflect.deleteProperty(navigator, 'clipboard');
+  });
+
+  it('a key-list failure is its own error with a Retry, not the issue-form error (PROV-5)', async () => {
+    const f = await open(admin);
+    q<HTMLButtonElement>(f, '[data-testid="keys-acme"]').click();
+    http.expectOne('/api/v1/providers/p1/keys').flush({ status: 500, code: 'INTERNAL', message: 'Keys are down' }, { status: 500, statusText: 'Server Error' });
+    http.expectOne('/api/v1/prompts').flush([]);
+    f.detectChanges();
+    expect(text(q(f, '[data-testid="keys-error"]'))).toContain('Keys are down');
+    expect(f.componentInstance.formError()).toBe('');
+    q<HTMLButtonElement>(f, '[data-testid="keys-error"] button').click();
+    http.expectOne('/api/v1/providers/p1/keys').flush([KEY]);
+    f.detectChanges();
+    expect(q(f, '[data-testid="keys-error"]')).toBeNull();
+  });
+
+  it('does not say "No keys yet" while the keys load (PROV-4)', async () => {
+    const f = await open(admin);
+    q<HTMLButtonElement>(f, '[data-testid="keys-acme"]').click();
+    f.detectChanges();
+    expect(text(f.nativeElement)).not.toContain('No keys yet');
+    http.expectOne('/api/v1/providers/p1/keys').flush([]);
+    http.expectOne('/api/v1/prompts').flush([]);
+    f.detectChanges();
+    expect(text(f.nativeElement)).toContain('No keys yet');
+  });
+
+  it('explains an empty prompt list instead of showing an empty select (PROV-11)', async () => {
+    const f = await openKeys([{ id: 't1', name: 'No key slot', content: 'nothing here' }]);
+    f.componentInstance.issued.set(ISSUED);
+    f.detectChanges();
+    expect(text(q(f, '[data-testid="no-prompt"]'))).toContain('No prompt contains {{EXTERNAL_API_KEY}}');
+    expect(q(f, '[data-testid="copy-prompt-with-key"]')).toBeNull();
+  });
+
+  it('flags a code that breaks the rule (PROV-16)', async () => {
+    const f = await open(admin);
+    f.componentInstance.openEdit(null);
+    f.detectChanges();
+    f.componentInstance.patchEdit({ code: 'Bad Code', name: 'X' });
+    f.detectChanges();
+    expect(q<HTMLInputElement>(f, '#pv-code').getAttribute('aria-invalid')).toBe('true');
+    expect(f.componentInstance.codeBad('ok_code-1')).toBe(false);
   });
 });

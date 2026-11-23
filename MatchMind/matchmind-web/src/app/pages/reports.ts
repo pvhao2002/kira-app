@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ChartOptions } from 'chart.js';
+import { Chart, ChartOptions } from 'chart.js';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { apiError } from '../core/http';
@@ -12,8 +13,9 @@ import { Col, ROI_DEF, cell, downloadCsv, fmtDateTime, humanize, lineSplit, line
 import {
   Expansion, Paginator, ResizableColumn, Sort, SortHeader, sortParam, sortRows, Tabs, ToastService,
 } from '../shared/kit';
-import { ChartView } from '../shared/chart';
-import { JsonView, ResultTag, ScoreChip, SmallSample, StateView } from '../shared/ui';
+import { ChartView, RESULT_COLORS, SERIES } from '../shared/chart';
+import { Select, SelectOption } from '../shared/select';
+import { DetailsMenu, JsonView, ResultTag, ScoreChip, SmallSample, StateView } from '../shared/ui';
 
 type Tab = 'models' | 'history' | 'markets' | 'calibration' | 'comparison' | 'montecarlo';
 const TABS: { value: Tab; label: string }[] = [
@@ -124,13 +126,16 @@ export class ModelBreakdown {
 
 @Component({
   selector: 'mm-reports',
-  imports: [RouterLink, FilterBar, ModelBreakdown, Tabs, SortHeader, ResizableColumn, Paginator, ChartView, JsonView, ResultTag, ScoreChip, SmallSample, StateView],
+  imports: [FormsModule, RouterLink, FilterBar, ModelBreakdown, Tabs, SortHeader, ResizableColumn, Paginator, ChartView, DetailsMenu, JsonView, ResultTag, ScoreChip, Select, SmallSample, StateView],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     :host { display: block; }
     .toolbar { display: flex; gap: .5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: .6rem .75rem; }
     .toolbar .row { gap: .35rem; }
-    .kpi .kpi-sub { font-size: var(--fs-xs); font-weight: 400; }
+    /* An expanded row spans every column: pin its content to the left edge and cap its width, so it wraps in view. */
+    .expand-box { position: sticky; left: 0; max-width: min(60rem, calc(100vw - 2rem)); }
+    .kpi .skeleton { height: 1.2rem; width: 60%; }
+    .kpi strong.skeleton { height: 1.6rem; width: 40%; }
   `],
   template: `
     <div class="stack">
@@ -142,11 +147,11 @@ export class ModelBreakdown {
         @case ('models') {
           <section class="panel flush">
             <div class="toolbar">
-              <span class="muted-text">Expand a model for its results by market and by league. {{ winRateDef }}
-                @if (notCounted()) { <b class="count-note">{{ notCounted() }} {{ notCounted() === 1 ? 'prediction' : 'predictions' }} not counted</b> (superseded by a later one of the same match, model, type and minute; "Count: all" includes them). }</span>
+              <span class="muted-text">Expand a model for its results by market and by league. {{ winRateDef }} {{ roiDef }}
+                @if (notCounted()) { <b>{{ notCounted() }} {{ notCounted() === 1 ? 'prediction' : 'predictions' }} not counted</b> (superseded by a later one of the same match, model, type and minute; "Count: all" includes them). }</span>
               <button type="button" class="btn btn-outline btn-sm" (click)="csv('model-performance', modelCols, sortedModels())" [disabled]="!modelRows().length"><i class="pi pi-download"></i> CSV</button>
             </div>
-            <mm-state [state]="state()" [message]="error()" />
+            <mm-state [state]="state()" [message]="error()" retryable (retry)="retry()" />
             @if (state() === 'ready') {
               <div class="table-wrap tall"><table class="dt" aria-label="AI model performance">
                 <thead><tr><th class="th-icon"><span class="sr-only">Details</span></th>
@@ -155,8 +160,8 @@ export class ModelBreakdown {
                 <tbody>
                   @for (r of sortedModels(); track r.modelId) {
                     <tr>
-                      <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="modelOpen.has(r.modelId)" [attr.aria-controls]="'breakdown-' + r.modelId" aria-label="Toggle breakdown" (click)="modelOpen.toggle(r.modelId)">
-                        <i class="pi" [class.pi-chevron-down]="modelOpen.has(r.modelId)" [class.pi-chevron-right]="!modelOpen.has(r.modelId)"></i></button></td>
+                      <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="modelOpen.has(r.modelId)" [attr.aria-controls]="'breakdown-' + r.modelId" [attr.aria-label]="'Breakdown for ' + r.modelName" (click)="modelOpen.toggle(r.modelId)">
+                        <i class="pi" [class.pi-chevron-down]="modelOpen.has(r.modelId)" [class.pi-chevron-right]="!modelOpen.has(r.modelId)" aria-hidden="true"></i></button></td>
                       @for (c of modelCols; track c.field) {
                         <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">
                           @if (c.field === 'modelName') { <a [routerLink]="['/models', r.modelId]">{{ r.modelName }}</a> } @else { {{ cell(r, c) }} }
@@ -166,7 +171,7 @@ export class ModelBreakdown {
                     </tr>
                     @if (modelOpen.has(r.modelId)) {
                       <tr class="expanded" [id]="'breakdown-' + r.modelId"><td [attr.colspan]="modelCols.length + 1">
-                        <mm-model-breakdown [modelId]="r.modelId" [filters]="filters() ?? {}" />
+                        <div class="expand-box"><mm-model-breakdown [modelId]="r.modelId" [filters]="filters() ?? {}" /></div>
                       </td></tr>
                     }
                   } @empty { <tr><td [attr.colspan]="modelCols.length + 1" class="empty">No predictions match these filters.</td></tr> }
@@ -183,7 +188,7 @@ export class ModelBreakdown {
                 <summary class="btn btn-sm"><i class="pi pi-table"></i> Columns ({{ shownHistoryCols().length }}/{{ historyCols.length }})</summary>
                 <div class="menu-body" role="group" aria-label="Visible columns">
                   @for (c of historyCols; track c.field) {
-                    <label class="check"><input type="checkbox" [checked]="isVisible(c.field)" (change)="toggleVisible(c.field)" /> {{ c.header }}</label>
+                    <label class="check"><input type="checkbox" [checked]="isVisible(c.field)" [disabled]="isVisible(c.field) && visibleFields().length === 1" (change)="toggleVisible(c.field)" /> {{ c.header }}</label>
                   }
                 </div>
               </details>
@@ -194,6 +199,7 @@ export class ModelBreakdown {
                   <i class="pi" [class.pi-file-excel]="exporting() !== 'xlsx'" [class.pi-spinner]="exporting() === 'xlsx'" [class.pi-spin]="exporting() === 'xlsx'"></i> Excel</button>
               </div>
             </div>
+            <mm-state [state]="firstLoadState(historyRows().length)" [message]="error()" retryable (retry)="retry()" />
             <div class="table-wrap tall"><table class="dt" aria-label="Prediction history" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
               <thead><tr><th class="th-icon"><span class="sr-only">Details</span></th>
                 @for (c of shownHistoryCols(); track c.field) {
@@ -204,8 +210,8 @@ export class ModelBreakdown {
               <tbody>
                 @for (r of historyRows(); track r.pickId) {
                   <tr>
-                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="historyOpen.has(r.pickId)" [attr.aria-controls]="'pick-' + r.pickId" aria-label="Toggle details" (click)="historyOpen.toggle(r.pickId)">
-                      <i class="pi" [class.pi-chevron-down]="historyOpen.has(r.pickId)" [class.pi-chevron-right]="!historyOpen.has(r.pickId)"></i></button></td>
+                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="historyOpen.has(r.pickId)" [attr.aria-controls]="'pick-' + r.pickId" [attr.aria-label]="'Details of ' + r.homeTeam + ' – ' + r.awayTeam + ', ' + r.modelName" (click)="historyOpen.toggle(r.pickId)">
+                      <i class="pi" [class.pi-chevron-down]="historyOpen.has(r.pickId)" [class.pi-chevron-right]="!historyOpen.has(r.pickId)" aria-hidden="true"></i></button></td>
                     @for (c of shownHistoryCols(); track c.field) {
                       <td [class.num]="isNum(c)" [class.sticky-end]="c.field === 'result'" class="nowrap"
                         [attr.title]="c.field === 'line' ? lineSplit(r.market, r.line) || null : null">
@@ -227,7 +233,7 @@ export class ModelBreakdown {
                     }
                   </tr>
                   @if (historyOpen.has(r.pickId)) {
-                    <tr class="expanded" [id]="'pick-' + r.pickId"><td [attr.colspan]="shownHistoryCols().length + 1">
+                    <tr class="expanded" [id]="'pick-' + r.pickId"><td [attr.colspan]="shownHistoryCols().length + 1"><div class="expand-box">
                       <div class="grid-3">
                         <dl class="dl">
                           <dt>Match</dt><dd>{{ r.homeTeam }} – {{ r.awayTeam }} ({{ r.league }})</dd>
@@ -247,11 +253,11 @@ export class ModelBreakdown {
                           <dt>Result</dt><dd>{{ humanize(r.result) }}{{ r.settledAt ? ' · ' + fmt(r.settledAt) + ' by ' + humanize(r.settlementSource) : '' }}</dd>
                           <dt>Full record</dt><dd><a [routerLink]="['/predictions', r.predictionId]">Odds, stats, settlement history and raw payload</a></dd>
                         </dl>
-                      </div>
+                      </div></div>
                     </td></tr>
                   }
                 } @empty {
-                  <tr><td [attr.colspan]="shownHistoryCols().length + 1" class="empty">{{ state() === 'loading' ? 'Loading…' : error() || 'No picks match these filters.' }}</td></tr>
+                  @if (state() === 'ready') { <tr><td [attr.colspan]="shownHistoryCols().length + 1" class="empty">No picks match these filters.</td></tr> }
                 }
               </tbody>
             </table></div>
@@ -260,7 +266,7 @@ export class ModelBreakdown {
         }
 
         @case ('markets') {
-          <mm-state [state]="state()" [message]="error()" />
+          <mm-state [state]="state()" [message]="error()" retryable (retry)="retry()" />
           @if (state() === 'ready') {
             <div class="grid-2">
               <section class="panel"><header><h2>Win rate by market</h2></header>
@@ -269,7 +275,7 @@ export class ModelBreakdown {
                 <mm-chart type="bar" [data]="marketStack()" [options]="stackOptions" label="Outcomes by market chart" /></section>
             </div>
             <section class="panel flush">
-              <div class="toolbar"><span class="muted-text">All five markets are always listed, including ones without picks. {{ winRateDef }}</span>
+              <div class="toolbar"><span class="muted-text">All five markets are always listed, including ones without picks. {{ winRateDef }} {{ roiDef }}</span>
                 <button type="button" class="btn btn-outline btn-sm" (click)="csv('market-performance', marketCols, sortedMarkets())"><i class="pi pi-download"></i> CSV</button></div>
               <div class="table-wrap"><table class="dt" aria-label="Market performance">
                 <thead><tr>@for (c of marketCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="marketSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="headerTitle(c)">{{ c.header }}</th> }</tr></thead>
@@ -280,12 +286,12 @@ export class ModelBreakdown {
         }
 
         @case ('calibration') {
-          <mm-state [state]="state()" [message]="error()" />
+          <mm-state [state]="state()" [message]="error()" retryable (retry)="retry()" />
           @if (calibration(); as cal) {
             <section class="panel"><header><h2>Stated probability vs hit rate</h2></header>
               <mm-chart type="scatter" [data]="calibrationChart()" [options]="calibrationOptions" label="Calibration chart: average stated probability against hit rate per bin" />
               <p class="muted-text">Every pick of every rank. On the dashed line a model's stated probability matches how often it wins.
-                Point size follows the number of picks; bins with fewer than {{ minPicks }} picks are grey.</p>
+                Point size follows the number of picks; bins with fewer than {{ minPicks }} picks are hollow.</p>
             </section>
             <section class="panel flush">
               <div class="toolbar"><span class="muted-text"><b>Evaluated: {{ cal.evaluated }}</b> (wins and losses) · <b>excluded: {{ cal.excluded }}</b> (half wins, half losses, push and void: a quarter-line probability is not a plain win probability)</span></div>
@@ -293,7 +299,7 @@ export class ModelBreakdown {
                 <thead><tr><th>Stated probability</th><th class="num">Picks</th><th class="num">Avg stated</th><th class="num">Hit rate</th></tr></thead>
                 <tbody>@for (b of cal.bins; track b.bin) {
                   <tr [class.muted-text]="b.picks < minPicks" data-testid="calibration-bin">
-                    <td>{{ pct(b.from, 0) }} – {{ pct(b.to, 0) }}</td><td class="num">{{ b.picks }}</td>
+                    <td>{{ pct(b.from, 0) }} – {{ pct(b.to, 0) }} @if (b.picks < minPicks) { <span class="tag tag-warn nowrap">few picks</span> }</td><td class="num">{{ b.picks }}</td>
                     <td class="num">{{ pct(b.avgProbability) }}</td><td class="num">{{ pct(b.hitRate) }}</td>
                   </tr>
                 }</tbody>
@@ -306,19 +312,17 @@ export class ModelBreakdown {
           <section class="panel flush">
             <div class="toolbar">
               <div class="row"><label for="min-models">Matches with at least</label>
-                <select class="input input-sm" id="min-models" [value]="minModels()" (change)="setMinModels($event)">
-                  @for (o of minModelOptions(); track o.n) { <option [value]="o.n" [selected]="o.n === minModels()">{{ o.label }}</option> }
-                </select>
+                <mm-select id="min-models" size="sm" [options]="minModelOptions()" [ngModel]="'' + minModels()" (ngModelChange)="setMinModels($event)" />
                 <span>models</span></div>
               <span class="muted-text">@if (state() === 'ready') { <b>{{ comparisonTotal() }} {{ comparisonTotal() === 1 ? 'match' : 'matches' }} with ≥ {{ minModels() }} {{ minModels() === 1 ? 'model' : 'models' }}.</b> }
                 Latest prediction of each model per match, with its top pick.</span>
             </div>
-            <mm-state [state]="state()" [message]="error()" />
+            <mm-state [state]="state()" [message]="error()" retryable (retry)="retry()" />
             @if (state() === 'ready') {
               <div class="table-wrap tall"><table class="dt" aria-label="Model comparison">
                 <thead>
-                  <tr><th>Match</th><th>Final</th><th>AI model</th><th>Predicted</th><th class="num">Type / min</th><th>Predicted score</th><th class="num">CS prob.</th>
-                    <th>CS hit</th><th>Top pick</th><th class="num">Prob.</th><th class="num">Odds</th><th>Outcome</th><th class="num">Predictions</th></tr>
+                  <tr><th>Match</th><th>Final</th><th>AI model</th><th class="hide-sm">Predicted</th><th class="hide-sm">Type / min</th><th class="hide-sm">Predicted score</th><th class="num hide-sm">CS prob.</th>
+                    <th class="hide-sm">CS hit</th><th>Top pick</th><th class="num">Prob.</th><th class="num hide-sm">Odds</th><th>Outcome</th><th class="num hide-sm">Predictions</th></tr>
                 </thead>
                 <tbody>
                   @for (m of comparison(); track m.matchId) {
@@ -331,16 +335,16 @@ export class ModelBreakdown {
                             <span class="cell-sub">{{ humanize(m.status) }}</span></td>
                         }
                         <td class="nowrap"><a [routerLink]="['/predictions', r.predictionId]">{{ r.modelName }}</a> <span class="cell-sub">{{ r.modelVersion }}</span></td>
-                        <td class="nowrap">{{ fmt(r.predictedAt) }}</td>
-                        <td class="num">{{ humanize(r.predictionType) }}{{ r.matchMinute !== null ? ' · ' + r.matchMinute + "'" : '' }}</td>
-                        <td><mm-score [home]="r.predictedHomeScore" [away]="r.predictedAwayScore" /></td>
-                        <td class="num">{{ pct(r.correctScoreProbability) }}</td>
-                        <td>@if (r.correctScoreHit === null) { — } @else if (r.correctScoreHit) { <span class="win">Hit</span> } @else { <span class="loss">Miss</span> }</td>
+                        <td class="nowrap hide-sm">{{ fmt(r.predictedAt) }}</td>
+                        <td class="hide-sm">{{ humanize(r.predictionType) }}{{ r.matchMinute !== null ? ' · ' + r.matchMinute + "'" : '' }}</td>
+                        <td class="hide-sm"><mm-score [home]="r.predictedHomeScore" [away]="r.predictedAwayScore" /></td>
+                        <td class="num hide-sm">{{ pct(r.correctScoreProbability) }}</td>
+                        <td class="hide-sm">@if (r.correctScoreHit === null) { — } @else if (r.correctScoreHit) { <span class="win">Hit</span> } @else { <span class="loss">Miss</span> }</td>
                         <td class="nowrap" [title]="lineSplit(r.market, r.line)">{{ pickText(r.market, r.pick, r.line, r.lineDisplay) }}</td>
                         <td class="num">{{ pct(r.probability) }}</td>
-                        <td class="num">{{ num(r.price) }}</td>
+                        <td class="num hide-sm">{{ num(r.price) }}</td>
                         <td><mm-result [value]="r.result" /></td>
-                        <td class="num">{{ r.predictionCount }}</td>
+                        <td class="num hide-sm">{{ r.predictionCount }}</td>
                       </tr>
                     }
                   } @empty { <tr><td colspan="13" class="empty">No match has predictions from that many models.</td></tr> }
@@ -354,7 +358,7 @@ export class ModelBreakdown {
         @case ('montecarlo') {
           @if (monteCarlo(); as mc) {
             <section class="kpis">
-              <div class="kpi"><span>Simulated predictions</span><strong>{{ mc.summary.simulatedPredictions }}</strong></div>
+              <div class="kpi"><span>Simulated predictions</span><strong>{{ num(mc.summary.simulatedPredictions, 0) }}</strong></div>
               <div class="kpi"><span>Avg iterations</span><strong>{{ num(mc.summary.avgSimulationCount, 0) }}</strong></div>
               <div class="kpi"><span>Avg expected remaining goals</span><strong>{{ num(mc.summary.avgExpectedRemainingGoals) }}</strong></div>
               <div class="kpi"><span>Avg actual remaining goals</span><strong>{{ num(mc.summary.avgActualRemainingGoals) }}</strong>
@@ -365,46 +369,51 @@ export class ModelBreakdown {
               <div class="kpi accent"><span>Correct score accuracy</span><strong>{{ mc.summary.finishedPredictions ? pct(mc.summary.correctScoreAccuracy) : '—' }}</strong>
                 <span class="kpi-sub">{{ mc.summary.correctScoreHits }} / {{ mc.summary.finishedPredictions }} finished</span></div>
             </section>
+          } @else if (state() === 'loading') {
+            <section class="kpis" aria-hidden="true">
+              @for (i of [1, 2, 3, 4, 5, 6]; track i) { <div class="kpi"><span class="skeleton"></span><strong class="skeleton"></strong></div> }
+            </section>
           }
+          <mm-state [state]="firstLoadState(monteCarlo()?.page?.data?.length ?? 0)" [message]="error()" retryable (retry)="retry()" />
           <section class="panel flush">
             <div class="table-wrap tall"><table class="dt" aria-label="Monte Carlo simulations" [class.loading]="state() === 'loading'" [attr.aria-busy]="state() === 'loading'">
               <thead>
-                <tr><th class="th-icon"><span class="sr-only">Details</span></th><th>Predicted</th><th>Match</th><th>AI model</th><th>Type / min</th><th>At prediction</th><th>Method</th>
-                  <th class="num">Iterations</th><th class="num">xG home</th><th class="num">xG away</th><th class="num">xCorners home</th><th class="num">xCorners away</th>
-                  <th>Predicted score</th><th class="num">CS prob.</th><th>Actual</th><th class="num">Actual rem. goals</th><th>Top pick</th></tr>
+                <tr><th class="th-icon"><span class="sr-only">Details</span></th><th class="hide-sm">Predicted</th><th>Match</th><th>AI model</th><th>Type / min</th><th class="hide-sm">At prediction</th><th class="hide-sm">Method</th>
+                  <th class="num hide-sm">Iterations</th><th class="num hide-sm">xG home</th><th class="num hide-sm">xG away</th><th class="num hide-sm">xCorners home</th><th class="num hide-sm">xCorners away</th>
+                  <th>Predicted score</th><th class="num hide-sm">CS prob.</th><th>Actual</th><th class="num hide-sm">Actual rem. goals</th><th>Top pick</th></tr>
               </thead>
               <tbody>
                 @for (r of monteCarlo()?.page?.data ?? []; track r.predictionId) {
                   <tr>
-                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="mcOpen.has(r.predictionId)" [attr.aria-controls]="'sim-' + r.predictionId" aria-label="Toggle distribution" (click)="mcOpen.toggle(r.predictionId)">
-                      <i class="pi" [class.pi-chevron-down]="mcOpen.has(r.predictionId)" [class.pi-chevron-right]="!mcOpen.has(r.predictionId)"></i></button></td>
-                    <td class="nowrap"><a [routerLink]="['/predictions', r.predictionId]">{{ fmt(r.predictedAt) }}</a></td>
+                    <td><button type="button" class="btn btn-text btn-icon" [attr.aria-expanded]="mcOpen.has(r.predictionId)" [attr.aria-controls]="'sim-' + r.predictionId" [attr.aria-label]="'Distribution of ' + r.homeTeam + ' – ' + r.awayTeam + ', ' + r.modelName" (click)="mcOpen.toggle(r.predictionId)">
+                      <i class="pi" [class.pi-chevron-down]="mcOpen.has(r.predictionId)" [class.pi-chevron-right]="!mcOpen.has(r.predictionId)" aria-hidden="true"></i></button></td>
+                    <td class="nowrap hide-sm"><a [routerLink]="['/predictions', r.predictionId]">{{ fmt(r.predictedAt) }}</a></td>
                     <td class="nowrap">{{ r.homeTeam }} – {{ r.awayTeam }}<span class="cell-sub">{{ r.league }}</span></td>
                     <td class="nowrap">{{ r.modelName }} <span class="cell-sub">{{ r.modelVersion }}</span></td>
                     <td>{{ humanize(r.predictionType) }}{{ r.matchMinute !== null ? ' · ' + r.matchMinute + "'" : '' }}</td>
                     <td><mm-score [home]="r.currentHomeScore" [away]="r.currentAwayScore" [muted]="true" /></td>
-                    <td>{{ r.method }}</td>
-                    <td class="num">{{ r.simulationCount }}</td>
-                    <td class="num">{{ num(r.expectedHomeGoals) }}</td><td class="num">{{ num(r.expectedAwayGoals) }}</td>
-                    <td class="num">{{ num(r.expectedHomeCorners) }}</td><td class="num">{{ num(r.expectedAwayCorners) }}</td>
+                    <td class="hide-sm">{{ r.method }}</td>
+                    <td class="num hide-sm">{{ r.simulationCount }}</td>
+                    <td class="num hide-sm">{{ num(r.expectedHomeGoals) }}</td><td class="num hide-sm">{{ num(r.expectedAwayGoals) }}</td>
+                    <td class="num hide-sm">{{ num(r.expectedHomeCorners) }}</td><td class="num hide-sm">{{ num(r.expectedAwayCorners) }}</td>
                     <td><mm-score [home]="r.predictedHomeScore" [away]="r.predictedAwayScore" /></td>
-                    <td class="num">{{ pct(r.correctScoreProbability) }}</td>
+                    <td class="num hide-sm">{{ pct(r.correctScoreProbability) }}</td>
                     <td><mm-score [home]="r.finalHomeScore" [away]="r.finalAwayScore" [muted]="r.matchStatus !== 'FINISHED'" /></td>
-                    <td class="num">{{ r.actualRemainingGoals ?? '—' }}</td>
+                    <td class="num hide-sm">{{ r.actualRemainingGoals ?? '—' }}</td>
                     <td><mm-result [value]="r.topPickResult" /></td>
                   </tr>
                   @if (mcOpen.has(r.predictionId)) {
-                    <tr class="expanded" [id]="'sim-' + r.predictionId"><td colspan="17">
+                    <tr class="expanded" [id]="'sim-' + r.predictionId"><td colspan="17"><div class="expand-box">
                       <div class="grid-3">
                         <div><h3 class="mb-2">Predicted probabilities</h3><mm-json [value]="r.probabilitiesJson" /></div>
                         <div><h3 class="mb-2">Scoreline distribution</h3><mm-json [value]="r.distributionJson" /></div>
                         <dl class="dl"><dt>Seed</dt><dd>{{ r.randomSeed ?? '—' }}</dd><dt>Algorithm</dt><dd>{{ r.algorithmVersion ?? '—' }}</dd>
                           <dt>Final corners</dt><dd>{{ r.finalHomeCorners ?? '—' }}:{{ r.finalAwayCorners ?? '—' }}</dd></dl>
-                      </div>
+                      </div></div>
                     </td></tr>
                   }
                 } @empty {
-                  <tr><td colspan="17" class="empty">{{ state() === 'loading' ? 'Loading…' : error() || 'No prediction with a simulation matches these filters.' }}</td></tr>
+                  @if (state() === 'ready') { <tr><td colspan="17" class="empty">No prediction with a simulation matches these filters.</td></tr> }
                 }
               </tbody>
             </table></div>
@@ -432,6 +441,7 @@ export class ReportsPage {
   readonly breakdownCols = BREAKDOWN_COLS;
   readonly historyCols = HISTORY_COLS;
   readonly winRateDef = WIN_RATE_DEF;
+  readonly roiDef = ROI_DEF;
   readonly headerTitle = headerTitle;
   readonly sampleSize = sampleSize;
   readonly minPicks = CALIBRATION_MIN_PICKS;
@@ -490,11 +500,11 @@ export class ReportsPage {
   /** The user's choice, else the largest N that still has matches (1 when nothing matches or coverage failed). */
   readonly minModels = computed(() =>
     this.minModelsChoice() ?? Math.max(1, ...this.coverage().filter(c => c.matches > 0).map(c => c.minModels)));
-  readonly minModelOptions = computed(() => {
+  readonly minModelOptions = computed<SelectOption[]>(() => {
     const c = this.coverage();
     return c.length
-      ? c.map(x => ({ n: x.minModels, label: `${x.minModels} (${x.matches} ${x.matches === 1 ? 'match' : 'matches'})` }))
-      : [1, 2, 3, 4, 5].map(n => ({ n, label: `${n}` }));
+      ? c.map(x => ({ value: String(x.minModels), label: `${x.minModels} (${x.matches} ${x.matches === 1 ? 'match' : 'matches'})` }))
+      : [1, 2, 3, 4, 5].map(n => ({ value: String(n), label: `${n}` }));
   });
   private readonly comparisonRes = rxResource({
     params: () => {
@@ -518,6 +528,12 @@ export class ReportsPage {
     comparison: this.comparisonRes, montecarlo: this.monteCarloRes,
   })[this.tab()]);
   readonly state = computed(() => statusToView(this.active().status()));
+  /** Skeleton for a first load with no rows yet, the error box on failure; a reload keeps its rows (the table dims instead). */
+  firstLoadState(rows: number): 'loading' | 'error' | 'ready' {
+    const s = this.state();
+    return s === 'loading' && rows > 0 ? 'ready' : s;
+  }
+  retry(): void { this.active().reload(); }
   readonly error = computed(() => { const e = this.active().error(); return e ? apiError(e).message : ''; });
 
   // Report 1
@@ -535,18 +551,21 @@ export class ReportsPage {
   readonly sortedMarkets = computed(() => sortRows(this.marketRows(), this.marketSort()));
   readonly marketChart = computed(() => ({
     labels: this.marketRows().map(r => r.market),
-    datasets: [{ label: 'Win rate', data: this.marketRows().map(r => r.winRate === null ? null : r.winRate * 100), backgroundColor: '#4f46e5', borderRadius: 4 }],
+    datasets: [{ label: 'Win rate', data: this.marketRows().map(r => r.winRate === null ? null : r.winRate * 100), backgroundColor: () => SERIES[0], borderRadius: 4 }],
   }));
   readonly marketStack = computed(() => ({
     labels: this.marketRows().map(r => r.market),
     datasets: [
-      { label: 'Wins incl. ½', data: this.marketRows().map(r => r.wins), backgroundColor: '#059669' },
-      { label: 'Losses incl. ½', data: this.marketRows().map(r => r.losses), backgroundColor: '#e11d48' },
-      { label: 'Push / void', data: this.marketRows().map(r => r.pushOrVoid), backgroundColor: '#8a96a8' },
-      { label: 'Pending', data: this.marketRows().map(r => r.pending), backgroundColor: '#c98a00' },
+      { label: 'Wins incl. ½', data: this.marketRows().map(r => r.wins), backgroundColor: () => RESULT_COLORS['WIN'] },
+      { label: 'Losses incl. ½', data: this.marketRows().map(r => r.losses), backgroundColor: () => RESULT_COLORS['LOSS'] },
+      { label: 'Push / void', data: this.marketRows().map(r => r.pushOrVoid), backgroundColor: () => RESULT_COLORS['VOID'] },
+      { label: 'Pending', data: this.marketRows().map(r => r.pending), backgroundColor: () => RESULT_COLORS['PENDING'] },
     ],
   }));
-  readonly marketChartOptions: ChartOptions = { plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { callback: v => `${v}%` } } } };
+  readonly marketChartOptions: ChartOptions = {
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `Win rate: ${pct(typeof ctx.raw === 'number' ? ctx.raw / 100 : null)}` } } },
+    scales: { y: { min: 0, max: 100, ticks: { callback: v => `${v}%` } } },
+  };
   readonly stackOptions: ChartOptions = { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } };
   // Calibration (UX-018): one point per non-empty bin, sized by picks, thin bins grey; percent axes like the win rate.
   readonly calibration = safeValue(this.calibrationRes);
@@ -560,10 +579,12 @@ export class ReportsPage {
       datasets: [
         { label: 'Bins', data: bins.map(b => ({ x: b.avgProbability * 100, y: b.hitRate * 100 })),
           pointRadius: bins.map(b => 4 + 12 * Math.sqrt(b.picks / most)),
-          backgroundColor: bins.map(b => thin(b) ? 'rgba(138,150,168,.55)' : 'rgba(79,70,229,.7)'),
-          borderColor: bins.map(b => thin(b) ? '#8a96a8' : '#4f46e5') },
+          // Thin bins are hollow (shape, not only colour); the reference line is a dashed rule in the text colour.
+          backgroundColor: (ctx: { dataIndex: number }) => thin(bins[ctx.dataIndex]) ? 'transparent' : SERIES[0],
+          borderColor: (ctx: { dataIndex: number }) => thin(bins[ctx.dataIndex]) ? RESULT_COLORS['VOID'] : SERIES[0],
+          borderWidth: bins.map(b => thin(b) ? 2 : 1) },
         { label: 'Perfect calibration', data: [{ x: 0, y: 0 }, { x: 100, y: 100 }], showLine: true, pointRadius: 0,
-          borderColor: '#8a96a8', borderDash: [6, 4], borderWidth: 1.5 },
+          borderColor: () => String(Chart.defaults.color), borderDash: [6, 4], borderWidth: 1.5 },
       ],
     };
   });
@@ -614,11 +635,12 @@ export class ReportsPage {
   setHistoryPage(e: { page: number; size: number }): void { this.historySize.set(e.size); this.historyPage.set(e.page); this.historyOpen.clear(); }
   setComparisonPage(page: number): void { this.comparisonPage.set(page); }
   setMcPage(page: number): void { this.mcPage.set(page); this.mcOpen.clear(); }
-  setMinModels(e: Event): void { this.minModelsChoice.set(Number((e.target as HTMLSelectElement).value)); this.comparisonPage.set(0); }
+  setMinModels(value: string): void { this.minModelsChoice.set(Number(value)); this.comparisonPage.set(0); }
 
   isVisible(field: string): boolean { return this.visibleFields().includes(field); }
 
   toggleVisible(field: string): void {
+    if (this.isVisible(field) && this.visibleFields().length === 1) return;   // the table keeps at least one column
     const shown = this.isVisible(field) ? this.visibleFields().filter(f => f !== field) : [...this.visibleFields(), field];
     this.visibleFields.set(shown);
     try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(HISTORY_COLS.map(c => c.field).filter(f => !shown.includes(f)))); } catch { /* optional */ }
