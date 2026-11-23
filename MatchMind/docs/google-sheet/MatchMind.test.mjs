@@ -6,7 +6,7 @@ import vm from 'node:vm';
 
 const SOURCE = readFileSync(new URL('./MatchMind.gs', import.meta.url), 'utf8');
 const BASE = 'https://match.kira.id.vn';
-const HEADER = ['label', 'path', 'provider', 'model', 'modelVersion', 'body', 'status'];
+const HEADER = ['label', 'path', 'provider', 'model', 'modelVersion', 'body', 'status', 'processedAt'];
 
 /**
  * Loads the script over a MatchMind tab holding `rows` below the header. The server gives `answers` in order: {code,
@@ -14,11 +14,14 @@ const HEADER = ['label', 'path', 'provider', 'model', 'modelVersion', 'body', 's
  * request is out, as the user could during a run.
  */
 function load(rows, answers, key = 'agent-key') {
-  const grid = [HEADER, ...rows.map(r => [...r])];
+  const grid = [HEADER, ...rows.map(r => Array.from({ length: HEADER.length }, (_, i) => r[i] ?? ''))];
   const calls = [];
   const sheet = {
     getDataRange: () => ({ getValues: () => grid.map(r => [...r]) }),
-    getRange: (row, col) => ({
+    deleteRows: (row, count) => grid.splice(row - 1, count),
+    getRange: (row, col, height = 1, width = 1) => ({
+      getValues: () => [Array.from({ length: width }, (_, i) => grid[row - 1]?.[col - 1 + i] ?? '')],
+      setValues: values => values[0].forEach((v, i) => { grid[row - 1][col - 1 + i] = v; }),
       getValue: () => grid[row - 1]?.[col - 1] ?? '',
       setValue: v => { (grid[row - 1] ??= Array(HEADER.length).fill(''))[col - 1] = v; },
     }),
@@ -38,7 +41,7 @@ function load(rows, answers, key = 'agent-key') {
     },
   };
   vm.runInNewContext(SOURCE, google);
-  return { sendPending: () => google.sendPending(), status: row => grid[row][6], grid, calls };
+  return { cleanupOldRows: () => google.cleanupOldRows(), sendPending: () => google.sendPending(), status: row => grid[row][6], grid, calls };
 }
 
 const prediction = ["Arsenal vs Chelsea - LIVE 63'", '/api/v1/external/predictions', 'meta', 'llama-4', '4.1', '{"a":1}', ''];
@@ -125,7 +128,7 @@ test('refuses to run without the key', () => {
   assert.throws(() => load([prediction], [], null).sendPending(), /MATCHMIND_API_KEY/);
 });
 
-test('setup makes a plain-text MatchMind tab and one 1-minute trigger, for this spreadsheet only', () => {
+test('setup makes a plain-text MatchMind tab and one sender and one cleanup trigger, for this spreadsheet only', () => {
   assert.match(SOURCE, /^\/\*\* @OnlyCurrentDoc \*\//); // the owner's trigger may open no other spreadsheet
   const log = [];
   const range = at => ({ setValues: v => log.push(['values', at, v]), setNumberFormat: f => log.push(['format', at, f]) });
@@ -133,19 +136,48 @@ test('setup makes a plain-text MatchMind tab and one 1-minute trigger, for this 
   const google = {
     SpreadsheetApp: { getActive: () => ({ getSheetByName: () => null, insertSheet: (n, i) => (log.push(['insert', n, i]), sheet) }) },
     ScriptApp: {
-      getProjectTriggers: () => [{ getHandlerFunction: () => 'sendPending' }, { getHandlerFunction: () => 'other' }],
+      getProjectTriggers: () => [{ getHandlerFunction: () => 'sendPending' }, { getHandlerFunction: () => 'cleanupOldRows' }, { getHandlerFunction: () => 'other' }],
       deleteTrigger: t => log.push(['delete', t.getHandlerFunction()]),
-      newTrigger: f => ({ timeBased: () => ({ everyMinutes: m => ({ create: () => log.push(['trigger', f, m]) }) }) }),
+      newTrigger: f => ({ timeBased: () => ({ everyMinutes: m => ({ create: () => log.push(['trigger', f, m]) }), everyHours: h => ({ create: () => log.push(['hourly', f, h]) }) }) }),
     },
   };
   vm.runInNewContext(SOURCE, google);
   google.setup();
   assert.deepEqual(JSON.parse(JSON.stringify(log)), [
     ['insert', 'MatchMind', 0],
-    ['values', '1,1,1,7', [HEADER]],
-    ['format', 'A:G', '@'], // plain text: Sheets would turn a version such as 2024-08-06 or 4.10 into a date or a number
+    ['values', '1,1,1,8', [HEADER]],
+    ['format', 'A:H', '@'], // plain text: Sheets would turn a version such as 2024-08-06 or 4.10 into a date or a number
     ['frozen', 1],
     ['delete', 'sendPending'],
+    ['delete', 'cleanupOldRows'],
     ['trigger', 'sendPending', 1],
+    ['hourly', 'cleanupOldRows', 1],
   ]);
+});
+
+test('records a timestamp only for successful requests', () => {
+  const s = load([prediction, settle], [{ code: 201 }, { code: 400, body: { code: 'VALIDATION_ERROR' } }]);
+  s.sendPending();
+  assert.ok(Number.isFinite(Date.parse(s.grid[1][7])));
+  assert.equal(s.grid[2][7], '');
+});
+
+test('cleanup deletes only sent rows older than 48 hours and timestamps legacy rows', () => {
+  const old = new Date(Date.now() - 49 * 3600000).toISOString();
+  const recent = new Date(Date.now() - 47 * 3600000).toISOString();
+  const s = load([
+    [...marked('sent 201'), old],
+    [...marked('sent 200 (already received)'), old],
+    [...marked('sent 200'), recent],
+    [...marked('retry 500'), old],
+    [...marked('rejected 400'), old],
+    prediction,
+    marked('sent 201'),
+  ], []);
+  s.cleanupOldRows();
+  assert.deepEqual(s.grid.slice(1).map(r => r[6]), ['sent 200', 'retry 500', 'rejected 400', '', 'sent 201']);
+  assert.ok(Date.parse(s.grid[5][7]) > Date.parse(recent));
+  s.cleanupOldRows();
+  assert.equal(s.grid.length, 6);
+  assert.equal(s.calls.length, 0);
 });
