@@ -44,6 +44,9 @@ const DAY_LABEL = new Intl.DateTimeFormat(APP_LOCALE, { day: 'numeric', month: '
                 <button type="button" class="btn btn-text btn-sm" data-testid="archive" [class.danger]="!m.archivedAt" (click)="openArchive(m)">{{ m.archivedAt ? 'Unarchive' : 'Archive' }}</button>
               }
             </div></header>
+          @if (m.mergedIntoId && siblingError(); as message) {
+            <mm-state state="error" [message]="message" retryable (retry)="retrySiblings()" />
+          }
           @if (m.description) { <p class="page-note mb-2">{{ m.description }}</p> }
           <div class="kpis">
             <div class="kpi accent"><span>Win rate</span><strong>{{ pct(m.winRate) }}</strong>
@@ -106,9 +109,13 @@ const DAY_LABEL = new Intl.DateTimeFormat(APP_LOCALE, { day: 'numeric', month: '
           <input class="input w-full" id="md-name" maxlength="128" [value]="newName()" (input)="newName.set($any($event.target).value)" aria-describedby="md-name-hint" />
           <small id="md-name-hint" class="muted-text">Leave empty to show the name the agent sends.</small></div>
       } @else if (kind() === 'merge') {
-        <div class="field"><label for="md-target">Merge into</label>
-          <mm-select id="md-target" class="w-full" data-testid="merge-target" [ngModel]="target()" (ngModelChange)="target.set($event)" [ngModelOptions]="{ standalone: true }"
-            placeholder="Choose a model of this provider" [options]="targetOptions()" [loading]="loadingTargets()" emptyText="No other model of this provider can be a target." /></div>
+        @if (siblingError(); as message) {
+          <mm-state state="error" [message]="message" retryable (retry)="retrySiblings()" />
+        } @else {
+          <div class="field"><label for="md-target">Merge into</label>
+            <mm-select id="md-target" class="w-full" data-testid="merge-target" [ngModel]="target()" (ngModelChange)="target.set($event)" [ngModelOptions]="{ standalone: true }"
+              placeholder="Choose a model of this provider" [options]="targetOptions()" [loading]="loadingTargets()" emptyText="No other model of this provider can be a target." /></div>
+        }
       }
     </mm-reason-dialog>`,
 })
@@ -130,6 +137,7 @@ export class ModelDetailPage {
     stream: ({ params }) => this.api.models({ providerId: params, includeArchived: true }),
   });
   private readonly siblings = safeValue(this.siblingsRes, []);
+  readonly siblingError = errorMessage(this.siblingsRes);
   /** A merge target must not itself be merged (the database rejects chains). */
   readonly mergeTargets = computed(() => this.siblings().filter(o => o.id !== this.id() && !o.mergedIntoId));
   readonly targetOptions = computed<SelectOption[]>(() => this.mergeTargets().map(o => ({ value: o.id, label: `${this.label(o)} ${o.version}` })));
@@ -186,6 +194,8 @@ export class ModelDetailPage {
     this.newName.set(m.displayName && m.displayName !== m.name ? m.displayName : '');
     this.open('rename', { header: 'Rename model', label: 'Save', run: reason => this.api.renameModel(m.id, this.newName().trim(), reason) });
   }
+
+  retrySiblings(): void { this.siblingsRes.reload(); }
 
   openMerge(m: AiModel): void {
     this.target.set('');

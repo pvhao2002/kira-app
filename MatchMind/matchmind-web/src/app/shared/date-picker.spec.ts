@@ -16,14 +16,17 @@ class FormHost {
   imports: [FormsModule, DateInput, DateRange],
   template: `
     <mm-date-range label="Kick-off">
-      <mm-date-input [(ngModel)]="from" />
-      <mm-date-input [(ngModel)]="to" [max]="max()" />
+      <mm-date-input [(ngModel)]="from" [min]="min()" [max]="fromMax()" />
+      <mm-date-input [(ngModel)]="to" [min]="toMin()" [max]="max()" />
     </mm-date-range>`,
 })
 class RangeHost {
   readonly from = signal('');
   readonly to = signal('');
+  readonly min = signal('');
   readonly max = signal('');
+  readonly fromMax = signal('');
+  readonly toMin = signal('');
 }
 
 const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector(sel) as T | null;
@@ -223,6 +226,35 @@ describe('mm-date-range', () => {
     cell('2026-11-12').click();
     await settle();
     expect([host.from(), host.to()]).toEqual(['2026-11-12', '2026-11-20']);
+    expect($('[role="dialog"]')).toBeNull();
+  });
+
+  it.each(['from', 'to'])('enforces both endpoint bounds from the %s calendar trigger', async trigger => {
+    const { host, el, settle } = await mount(RangeHost);
+    host.from.set('2026-11-10');
+    host.to.set('2026-11-12');
+    host.min.set('2026-11-05');
+    host.max.set('2026-11-25');
+    host.fromMax.set('2026-11-15');
+    host.toMin.set('2026-11-18');
+    await settle();
+    el.querySelector<HTMLButtonElement>(`button[aria-label="Choose kick-off ${trigger}"]`)!.click();
+    await settle();
+    const cell = (iso: string) => $<HTMLElement>(`[role="gridcell"][id$="-${iso}"]`)!;
+    expect(cell('2026-11-04').getAttribute('aria-disabled')).toBe('true');
+    expect(cell('2026-11-16').getAttribute('aria-disabled')).toBe('true');
+    expect(cell('2026-11-26').getAttribute('aria-disabled')).toBe('true');
+    expect(cell('2026-11-20').getAttribute('aria-disabled')).toBeNull();
+    cell('2026-11-20').click();
+    await settle();
+    expect(cell('2026-11-21').getAttribute('aria-disabled')).toBe('true');
+    cell('2026-11-26').click();
+    await settle();
+    expect([host.from(), host.to()]).toEqual(['2026-11-10', '2026-11-12']);
+    expect($('[role="dialog"]')).not.toBeNull();
+    cell('2026-11-05').click();
+    await settle();
+    expect([host.from(), host.to()]).toEqual(['2026-11-05', '2026-11-20']);
     expect($('[role="dialog"]')).toBeNull();
   });
 

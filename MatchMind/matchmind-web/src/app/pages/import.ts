@@ -328,11 +328,11 @@ export class ImportPage {
     if (!this.provider().trim()) return 'Enter the provider to send.';
     if (this.providerError()) return this.providerError();
     if (!this.text().trim()) return 'Paste the agent reply that contains the JSON to send.';
-    if (this.parsed().error) return 'Fix the JSON to send.';
+    if (this.parsed().error) return this.showParseError() ? 'Fix the JSON to send.' : '';
     if (this.missingModel()) return 'Enter the model name (or add model.name to the JSON) to send.';
     return '';
   });
-  readonly canSend = computed(() => !this.busy() && !this.hint() && this.parsed().items.length > 0);
+  readonly canSend = computed(() => !this.busy() && !this.hint() && !this.parsed().error && this.parsed().items.length > 0);
 
   modelOf(p: ImportPreview): string | null { return this.model().trim() || p.model; }
   quoted(names: string[]): string { return names.map(n => `"${n}"`).join(', '); }

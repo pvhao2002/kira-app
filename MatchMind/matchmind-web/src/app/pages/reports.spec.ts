@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { By } from '@angular/platform-browser';
-import { SERIES } from '../shared/chart';
+import { RESULT_COLORS, SERIES } from '../shared/chart';
 import { FilterBar } from '../shared/filter-bar';
 import { ReportsPage } from './reports';
 
@@ -220,12 +220,30 @@ describe('ReportsPage ROI, small sample and calibration (UX-018)', () => {
     expect(chart.datasets[0].data).toHaveLength(2);   // only non-empty bins are plotted
     // Thin bins are hollow, the others solid in the theme's accent (REP-3); colours are read on every draw (REP-2).
     const fill = chart.datasets[0].backgroundColor as unknown as (c: { dataIndex: number }) => string;
+    const border = chart.datasets[0].borderColor as unknown as (c: { dataIndex: number }) => string;
     expect([fill({ dataIndex: 0 }), fill({ dataIndex: 1 })]).toEqual([SERIES[0], 'transparent']);
+    expect(border({ dataIndex: 1 })).toBe(RESULT_COLORS['VOID']);
+    expect(fill({ dataIndex: 2 })).toBe(SERIES[0]);
+    expect(border({ dataIndex: 2 })).toBe(SERIES[0]);
     expect(chart.datasets[0].borderWidth).toEqual([1, 2]);
   });
 });
 
 describe('ReportsPage review fixes', () => {
+  it('restores default history columns when every column was hidden in storage', () => {
+    const baseline = TestBed.createComponent(ReportsPage);
+    const defaults = baseline.componentInstance.visibleFields();
+    const all = baseline.componentInstance.historyCols.map(c => c.field);
+    baseline.destroy();
+    localStorage.setItem('matchmind.history.hidden', JSON.stringify(all));
+    try {
+      const recovered = TestBed.createComponent(ReportsPage);
+      expect(recovered.componentInstance.visibleFields()).toEqual(defaults);
+    } finally {
+      localStorage.removeItem('matchmind.history.hidden');
+    }
+  });
+
   it('keeps at least one history column checked (REP-18)', async () => {
     localStorage.setItem('matchmind.history.hidden', JSON.stringify(['league', 'match', 'modelName', 'predictionType', 'matchMinute', 'current', 'predicted', 'final',
       'corners', 'market', 'pick', 'line', 'price', 'oddsStage', 'probability', 'result', 'units', 'settledAt', 'settlementSource']));

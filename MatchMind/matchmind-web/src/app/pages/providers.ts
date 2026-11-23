@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, WritableSignal, computed, inject, signal } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
@@ -340,9 +340,9 @@ export class ProvidersPage {
     this.keyCopied.set(false);
   }
 
-  copyKey(k: IssuedKey): void {
-    this.keyCopied.set(true);
-    void this.clipboard.copy(k.apiKey, 'API key');
+  async copyKey(k: IssuedKey): Promise<void> {
+    const copied = await this.clipboard.copy(k.apiKey, 'API key');
+    if (copied && this.issued() === k) this.keyCopied.set(true);
   }
 
   revoke(k: ProviderKey): void {
@@ -370,13 +370,19 @@ export class ProvidersPage {
   }
 
   /** The prompt with this key put in here, in the browser: the key is never sent back to the API. */
-  copyPrompt(k: IssuedKey): void {
+  async copyPrompt(k: IssuedKey): Promise<void> {
     if (this.copying()) return;
     this.copying.set(true);
-    this.api.promptForAgent(this.promptId(), false).subscribe({
-      next: r => { this.copying.set(false); this.keyCopied.set(true); void this.clipboard.copy(r.content.split(KEY_PLACEHOLDER).join(k.apiKey), 'Prompt for the agent'); },
-      error: e => { this.copying.set(false); this.messages.add({ severity: 'error', summary: 'Copy failed', detail: apiErrorText(e) }); },
-    });
+    try {
+      const r = await firstValueFrom(this.api.promptForAgent(this.promptId(), false));
+      if (this.issued() !== k) return;
+      const copied = await this.clipboard.copy(r.content.split(KEY_PLACEHOLDER).join(k.apiKey), 'Prompt for the agent');
+      if (copied && this.issued() === k) this.keyCopied.set(true);
+    } catch (e) {
+      this.messages.add({ severity: 'error', summary: 'Copy failed', detail: apiErrorText(e) });
+    } finally {
+      this.copying.set(false);
+    }
   }
 
   loadKeys(): void {

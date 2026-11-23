@@ -574,7 +574,7 @@ export class ReportsPage {
   readonly calibrationChart = computed(() => {
     const bins = this.plottedBins();
     const most = Math.max(1, ...bins.map(b => b.picks));
-    const thin = (b: CalibrationBin) => b.picks < CALIBRATION_MIN_PICKS;
+    const thin = (b: CalibrationBin | undefined) => b !== undefined && b.picks < CALIBRATION_MIN_PICKS;
     return {
       datasets: [
         { label: 'Bins', data: bins.map(b => ({ x: b.avgProbability * 100, y: b.hitRate * 100 })),
@@ -670,8 +670,14 @@ export class ReportsPage {
   }
 
   private restoreVisible(): string[] {
-    let hidden: string[] = [...HISTORY_DEFAULT_HIDDEN];
-    try { const raw = localStorage.getItem(HIDDEN_KEY); if (raw) hidden = JSON.parse(raw) as string[]; } catch { /* default */ }
-    return HISTORY_COLS.map(c => c.field).filter(f => !hidden.includes(f));
+    const fields = HISTORY_COLS.map(c => c.field);
+    try {
+      const hidden: unknown = JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? 'null');
+      if (Array.isArray(hidden)) {
+        const shown = fields.filter(f => !hidden.includes(f));
+        if (shown.length) return shown;
+      }
+    } catch { /* default */ }
+    return fields.filter(f => !HISTORY_DEFAULT_HIDDEN.has(f));
   }
 }

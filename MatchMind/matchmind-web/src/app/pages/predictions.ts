@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { LiveService } from '../core/live.service';
 import { Filters, PredictionRow } from '../core/models';
@@ -36,6 +36,9 @@ export function pickSummary(p: PredictionRow): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stack">
+      @if (matchId(); as match) {
+        <p class="page-note">Showing prediction history for <a [routerLink]="['/matches', match]">this match</a>.</p>
+      }
       <mm-filter-bar [fields]="['search', 'dates', 'league', 'model', 'type', 'market', 'result', 'resultScope']" [initialDays]="1" [daysAhead]="1" (changed)="onFilters($event)" />
       <section class="panel flush">
         <div class="toolbar">
@@ -76,9 +79,9 @@ export function pickSummary(p: PredictionRow): string {
           <tbody>
             @for (p of list.rows(); track p.id) {
             <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]">
-              <td class="nowrap hide-sm"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a>
+              <td class="nowrap hide-sm"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
+              <td><span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }}</span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">{{ p.modelName }} · {{ fmt(p.predictedAt) }}</a>
                 @if (p.counted === false) { <span class="tag tag-secondary" title="A later prediction of the same match, model, type and minute replaces it in reports">not counted</span><span class="sr-only"> (a later prediction of the same match, model, type and minute replaces it in reports)</span> }</td>
-              <td><span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }}</span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">{{ p.modelName }} · {{ fmt(p.predictedAt) }}</a></td>
               <td class="nowrap hide-sm">{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td>
               <td class="nowrap" data-testid="top-pick" [title]="lineSplit(p.topPickMarket, p.topPickLine)">{{ pickText(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}<span class="cell-sub">{{ humanize(p.topPickStage) }}</span></td>
               @if (show('probability')) { <td class="num hide-sm">{{ pct(p.topPickProbability) }}</td> }
@@ -126,6 +129,8 @@ export function pickSummary(p: PredictionRow): string {
 })
 export class PredictionsPage {
   private readonly api = inject(ApiService);
+  private readonly route = inject(ActivatedRoute);
+  readonly matchId = signal(this.route.snapshot.queryParamMap.get('matchId') || undefined);
   readonly fmt = fmtDateTime;
   readonly humanize = humanize;
   readonly pct = pct;
@@ -137,7 +142,10 @@ export class PredictionsPage {
   private filters: Filters = {};
   private resultScope: 'TOP' | 'ANY' | undefined;
 
-  readonly list = new PagedList<PredictionRow>(paging => this.api.predictions(this.filters, paging, this.resultScope), { field: 'predictedAt', dir: 'desc' }, 100);
+  readonly list = new PagedList<PredictionRow>(paging => {
+    const matchId = this.matchId();
+    return this.api.predictions({ ...this.filters, matchId, includeArchived: matchId ? true : undefined }, paging, this.resultScope);
+  }, { field: 'predictedAt', dir: 'desc' }, 100);
 
   private readonly visible = signal<string[]>(this.restoreVisible());
   readonly shownCount = computed(() => this.visible().length);
@@ -146,6 +154,12 @@ export class PredictionsPage {
   readonly newCount = signal(0);
 
   constructor() {
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => {
+      const matchId = query.get('matchId') || undefined;
+      if (matchId === this.matchId()) return;
+      this.matchId.set(matchId);
+      this.list.reload();
+    });
     const live = inject(LiveService);
     live.predictions.pipe(takeUntilDestroyed()).subscribe(() => { if (this.list.page() > 0) this.newCount.update(n => n + 1); });
     // Page 1 refreshes in place; on later pages new rows would shift what the user is looking at, so only offer it.

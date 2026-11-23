@@ -316,7 +316,17 @@ export class DateInput implements ControlValueAccessor {
   }
 
   outOfBounds(iso: string): boolean {
-    return (!!this.min() && iso < this.min()) || (!!this.max() && iso > this.max());
+    const within = (input: DateInput, day: string) =>
+      (!input.min() || day >= input.min()) && (!input.max() || day <= input.max());
+    const [from, to] = this.range?.inputs() ?? [];
+    if (!from || !to) return !within(this, iso);
+
+    const anchor = this.range?.anchor();
+    if (!anchor) {
+      return (!!from.min() && iso < from.min()) || (!!to.max() && iso > to.max())
+        || (!within(from, iso) && !within(to, iso));
+    }
+    return anchor <= iso ? !within(from, anchor) || !within(to, iso) : !within(from, iso) || !within(to, anchor);
   }
 
   // ---- ControlValueAccessor

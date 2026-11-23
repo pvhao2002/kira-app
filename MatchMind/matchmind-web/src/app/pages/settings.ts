@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { API, ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { apiError, apiErrorText } from '../core/http';
@@ -139,17 +140,21 @@ const AUDIT_SIZE = 10;
           <div class="table-wrap"><table class="dt" aria-label="Account changes" [attr.aria-busy]="auditLoading() || null">
             <thead><tr><th>When</th><th>Who</th><th>Account</th><th>Change</th><th class="hide-sm">IP</th></tr></thead>
             <tbody>
+              @if (auditError(); as failure) {
+                <tr><td colspan="5" class="empty">
+                  <mm-state state="error" [message]="failure.message" retryable (retry)="loadAudit(failure.page)" />
+                </td></tr>
+              }
               @for (a of audit()?.data ?? []; track a.id) {
                 <tr><td class="nowrap">{{ fmt(a.at) }}</td><td>{{ a.actor ?? '—' }}</td><td>{{ a.target }}</td>
                   <td>{{ humanize(a.action) }}@if (a.oldValue || a.newValue) { : {{ humanize(a.oldValue) }} → {{ humanize(a.newValue) }} }</td>
                   <td class="hide-sm">{{ a.clientIp ?? '—' }}</td></tr>
-              } @empty {
+              } @empty { @if (!auditError()) {
                 <tr><td colspan="5" class="empty">
                   @if (auditLoading()) { <mm-state state="loading" [rows]="4" /> }
-                  @else if (auditError()) { <mm-state state="error" [message]="auditError()" retryable (retry)="loadAudit(0)" /> }
                   @else { <div class="empty-state"><i class="pi pi-history" aria-hidden="true"></i><span>No account changes yet.</span></div> }
                 </td></tr>
-              }
+              } }
             </tbody>
           </table></div>
           @if ((audit()?.meta?.totalElements ?? 0) > auditSize) {
@@ -221,8 +226,10 @@ export class SettingsPage {
   /** Fresh from /auth/me, so "Last sign-in" matches the Users table (the session copy is from sign-in time). */
   readonly account = signal<User | null>(null);
   readonly audit = signal<Page<UserAuditRow> | null>(null);
-  readonly auditError = signal('');
-  readonly auditLoading = computed(() => this.audit() === null && !this.auditError());
+  readonly auditError = signal<{ page: number; message: string } | null>(null);
+  readonly auditLoading = signal(false);
+  private readonly destroyRef = inject(DestroyRef);
+  private auditRequest?: Subscription;
   /** Id of the user whose change is being saved: every row action waits for it, and its row shows a spinner. */
   readonly pendingId = signal<string | null>(null);
   readonly auditSize = AUDIT_SIZE;
@@ -263,9 +270,15 @@ export class SettingsPage {
   loadUsers(): void { this.usersRes.reload(); }
 
   loadAudit(page: number): void {
-    this.api.userAudit({ page, size: AUDIT_SIZE }).subscribe({
-      next: p => { this.auditError.set(''); this.audit.set(p); },
-      error: e => this.auditError.set(apiError(e).message),
+    this.auditRequest?.unsubscribe();
+    this.auditError.set(null);
+    this.auditLoading.set(true);
+    this.auditRequest = this.api.userAudit({ page, size: AUDIT_SIZE }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: p => { this.audit.set(p); this.auditLoading.set(false); },
+      error: e => {
+        this.auditError.set({ page, message: `Could not load page ${page + 1}. ${apiError(e).message}` });
+        this.auditLoading.set(false);
+      },
     });
   }
 

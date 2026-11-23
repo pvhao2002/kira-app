@@ -241,8 +241,7 @@ export class PromptsPage {
   readonly reloading = signal(false);
   readonly loadingHistory = signal(false);
   readonly loadingVersion = signal(false);
-  /** The version the user clicked last: an older response must not replace it. */
-  private wantedVersion = 0;
+  private historySession: { promptId: string; versionRequest: number } | null = null;
   readonly historyError = signal('');
   readonly diff = computed(() => {
     const v = this.version(), p = this.selected();
@@ -250,6 +249,10 @@ export class PromptsPage {
   });
 
   constructor() {
+    effect(() => {
+      const id = this.selectedId();
+      if (this.historySession && this.historySession.promptId !== id) this.closeHistory();
+    });
     // A draft kept when the session ended mid-edit (UX-048) comes back once the templates are loaded.
     let checked = false;
     effect(() => {
@@ -288,6 +291,7 @@ export class PromptsPage {
     this.conflict.set(false);
     this.restored.set(false);
     this.saveError.set('');
+    this.closeHistory();
     this.selectedId.set(p.id);
   }
 
@@ -421,51 +425,79 @@ export class PromptsPage {
 
   openHistory(): void {
     const p = this.selected();
-    if (!p || this.loadingHistory()) return;
-    this.version.set(null);
-    this.showFull.set(false);
-    this.historyError.set('');
+    if (!p || (this.historySession?.promptId === p.id && this.loadingHistory())) return;
+    this.closeHistory();
+    const session = this.historySession = { promptId: p.id, versionRequest: 0 };
+    const isCurrent = () => this.historySession === session && this.selectedId() === session.promptId;
     this.loadingHistory.set(true);
     this.api.promptVersions(p.id).subscribe({
-      next: list => { this.loadingHistory.set(false); this.history.set(list); },
-      error: e => { this.loadingHistory.set(false); this.messages.add({ severity: 'error', summary: 'Could not load the history', detail: apiError(e).message }); },
+      next: list => {
+        if (!isCurrent()) return;
+        this.loadingHistory.set(false);
+        this.history.set(list);
+      },
+      error: e => {
+        if (!isCurrent()) return;
+        this.loadingHistory.set(false);
+        this.messages.add({ severity: 'error', summary: 'Could not load the history', detail: apiError(e).message });
+      },
     });
   }
 
-  closeHistory(): void { this.history.set(null); this.version.set(null); this.loadingVersion.set(false); this.wantedVersion = 0; }
+  closeHistory(): void {
+    this.historySession = null;
+    this.history.set(null);
+    this.version.set(null);
+    this.showFull.set(false);
+    this.historyError.set('');
+    this.loadingHistory.set(false);
+    this.loadingVersion.set(false);
+  }
 
   viewVersion(v: number): void {
-    const p = this.selected();
-    if (!p) return;
+    const session = this.historySession;
+    if (!session || !this.history() || this.selectedId() !== session.promptId) return;
+    const request = ++session.versionRequest;
+    const isCurrent = () => this.historySession === session && this.selectedId() === session.promptId && session.versionRequest === request;
     this.historyError.set('');
     this.version.set(null);
     this.loadingVersion.set(true);
-    this.wantedVersion = v;
-    this.api.promptVersion(p.id, v).subscribe({
-      next: version => { if (this.wantedVersion !== v) return; this.loadingVersion.set(false); this.version.set(version); },
-      error: e => { if (this.wantedVersion !== v) return; this.loadingVersion.set(false); this.historyError.set(apiError(e).message); },
+    this.api.promptVersion(session.promptId, v).subscribe({
+      next: version => {
+        if (!isCurrent()) return;
+        this.loadingVersion.set(false);
+        this.version.set(version);
+      },
+      error: e => {
+        if (!isCurrent()) return;
+        this.loadingVersion.set(false);
+        this.historyError.set(apiError(e).message);
+      },
     });
   }
 
   /** Saves the viewed version again as the newest one, unless someone saved in between (409). */
   async restore(): Promise<void> {
-    const p = this.selected(), v = this.version();
-    if (!p || !v || this.restoring()) return;
+    const p = this.selected(), v = this.version(), session = this.historySession;
+    if (!p || !v || !session || session.promptId !== p.id || this.restoring()) return;
+    const request = session.versionRequest;
+    const isCurrent = () => this.historySession === session && this.selectedId() === p.id && session.versionRequest === request;
     const ok = await this.confirm.ask({
       header: `Restore v${v.version}?`, acceptLabel: 'Restore',
       message: `v${v.version} becomes the new live version of ${p.name}. Agents pick up its text from their next copy.`,
     });
-    if (!ok) return;
+    if (!ok || !isCurrent() || this.restoring()) return;
     this.restoring.set(true);
     this.api.restorePromptVersion(p.id, v.version, p.version).subscribe({
       next: updated => {
         this.restoring.set(false);
         this.promptsRes.update(list => list?.map(x => x.id === updated.id ? updated : x));
-        this.closeHistory();
+        if (isCurrent()) this.closeHistory();
         this.messages.add({ severity: 'success', summary: 'Version restored', detail: `v${v.version} is now version ${updated.version} of ${updated.name}.` });
       },
       error: e => {
         this.restoring.set(false);
+        if (!isCurrent()) return;
         const err = apiError(e);
         if (err.code === 'PROMPT_VERSION_CONFLICT') {
           this.historyError.set('Someone saved a newer version meanwhile. The list was reloaded: compare again, then restore.');

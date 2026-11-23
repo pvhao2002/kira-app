@@ -147,4 +147,26 @@ describe('ModelDetailPage loading and merge states', () => {
     expect(f.componentInstance.loadingTargets()).toBe(false);
     expect(f.componentInstance.targetOptions()).toEqual([]);
   });
+
+  it('offers a separate retry when the merge targets request fails', async () => {
+    const f = await openPending();
+    http.expectOne(r => r.url === '/api/v1/dashboard').flush({ winRateOverTime: [] });
+    http.expectOne(r => r.url === '/api/v1/models').flush(
+      { code: 'DOWN', message: 'Models unavailable' }, { status: 503, statusText: 'Unavailable' });
+    await f.whenStable();
+    q(f, 'merge')!.click();
+    f.detectChanges();
+
+    const dialog = (f.nativeElement as HTMLElement).querySelector('mm-reason-dialog')!;
+    expect(dialog.textContent).toContain('Models unavailable');
+    expect(q(f, 'merge-target')).toBeNull();
+    dialog.querySelector<HTMLButtonElement>('[data-testid="state-retry"]')!.click();
+    TestBed.tick();
+    http.expectOne(r => r.url === '/api/v1/models' && r.params.get('providerId') === 'p1')
+      .flush([{ ...model, id: 'md2', name: 'Other' }]);
+    await f.whenStable();
+    expect(dialog.querySelector('[data-testid="state-retry"]')).toBeNull();
+    expect(q(f, 'merge-target')).not.toBeNull();
+    expect(f.componentInstance.targetOptions()).toEqual([{ value: 'md2', label: 'Other v1' }]);
+  });
 });

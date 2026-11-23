@@ -64,12 +64,12 @@ beforeEach(() => {
 });
 afterEach(() => sessionStorage.clear());
 
-async function flushLoads(f: { whenStable(): Promise<unknown>; detectChanges(): void }, items: ReviewItem[] = review, d = detail) {
+async function flushLoads(f: { whenStable(): Promise<unknown>; detectChanges(): void }, items: ReviewItem[] = review, d = detail, total = preds.length) {
   TestBed.tick();
   http.expectOne('/api/v1/matches/m1').flush(d);
   http.expectOne(r => r.url === '/api/v1/settlements/needs-review' && r.params.get('matchId') === 'm1').flush(items);
   http.expectOne(r => r.url === '/api/v1/predictions' && r.params.get('matchId') === 'm1')
-    .flush({ data: preds, meta: { page: 0, size: 100, totalElements: 2, totalPages: 1 } });
+    .flush({ data: preds, meta: { page: 0, size: 100, totalElements: total, totalPages: Math.ceil(total / 100) } });
   await f.whenStable();
   f.detectChanges();
 }
@@ -83,6 +83,16 @@ async function open(items: ReviewItem[] = review, d = detail) {
 }
 
 describe('MatchDetailPage', () => {
+  it('links to prediction history without a kick-off date limit (MDET-11)', async () => {
+    const f = TestBed.createComponent(MatchDetailPage);
+    f.componentRef.setInput('id', 'm1');
+    f.detectChanges();
+    await flushLoads(f, [], detail, 101);
+    const link = q(f, 'prediction-history')!.querySelector<HTMLAnchorElement>('a[href^="/predictions?"]')!;
+    const { searchParams } = new URL(link.href);
+    expect(Object.fromEntries(searchParams)).toEqual({ matchId: 'm1', from: '', to: '' });
+  });
+
   it('titles the page with the teams (UX-005)', async () => {
     await open();
     expect(document.title).toBe('Home FC – Away FC · MatchMind');
@@ -250,13 +260,13 @@ describe('MatchDetailPage', () => {
     expect(text(panel)).toContain('AH HOME -0.25');
   });
 
-  it('marks the score pair that failed validation as invalid and links its error (MDET-7)', async () => {
+  it.each([null, 100])('marks a score pair with an invalid away value (%s) and links its error (MDET-7)', async away => {
     const f = await open([]);
     const c = f.componentInstance;
     q(f, 'result-open')!.click();
     f.detectChanges();
-    c.resultForm.htHome = 1;   // half-time score with no away value
-    c.resultForm.htAway = null;
+    c.resultForm.htHome = 1;
+    c.resultForm.htAway = away;
     c.submitResult();
     f.detectChanges();
     const dlg = f.nativeElement.querySelector('mm-dialog dialog') as HTMLElement;
