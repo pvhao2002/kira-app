@@ -285,6 +285,7 @@ describe('PredictionsPage', () => {
     expect(params.get('liveFirst')).toBe('true');
     expect(params.get('sort')).toBe('probability,desc');
     expect(t.el().querySelectorAll('[data-testid="live"]').length).toBe(1);
+    expect(text(t.el().querySelector('[data-testid="kickoff"]')!).trim()).not.toBe('');
   });
 
   it('shows the odds of a prediction in a popover while the mouse rests on its row', async () => {
