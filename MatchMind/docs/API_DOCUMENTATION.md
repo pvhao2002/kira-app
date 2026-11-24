@@ -22,8 +22,11 @@ It leaves `sync` and `syncedAt` blank for the minute trigger. Spreadsheet reader
 For a scoped sender, issue the `sheet` provider a key with the `ACCOUNT_IMPORT` scope and save it in the
 `MATCHMIND_ACCOUNT_KEY` Script Property. The script otherwise uses its existing `MATCHMIND_API_KEY`.
 The signed-in account's cash profit is successful withdrawals minus successful deposits. Reports track rewards separately.
-The `allTime` totals contain `deposits`, `withdrawals`, `rewards` and `profit`. The `weekly` and `monthly` arrays
-use the same totals with a `periodStart` date. Weeks begin on Monday and reporting dates use GMT+7.
+The `allTime` totals contain `deposits`, `withdrawals`, `rewards` and `profit`, plus `depositCount` and
+`withdrawalCount` (successful rows) and `cancelledWithdrawalCount` and `cancelledWithdrawals` (cancelled withdrawal
+rows and their amount, which stay out of `withdrawals` and `profit`). The `weekly` and `monthly` arrays use the same
+totals with a `periodStart` date. Weeks begin on Monday and reporting dates use GMT+7. `weekly` and `monthly` are
+newest first and omit periods without transactions. See the [example response](samples/account-transactions.json).
 
 ## Authentication
 

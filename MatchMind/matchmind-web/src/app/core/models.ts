@@ -13,7 +13,10 @@ export const MATCH_STATUSES: MatchStatus[] = ['SCHEDULED', 'LIVE', 'FINISHED', '
 export interface PageMeta { page: number; size: number; totalElements: number; totalPages: number; }
 export interface Page<T> { data: T[]; meta: PageMeta; }
 
-export interface AccountTotals { deposits: number; withdrawals: number; rewards: number; profit: number; }
+export interface AccountTotals {
+  deposits: number; withdrawals: number; rewards: number; profit: number;
+  depositCount: number; withdrawalCount: number; cancelledWithdrawalCount: number; cancelledWithdrawals: number;
+}
 export interface AccountPeriod extends AccountTotals { periodStart: string; }
 export interface AccountLedger {
   meta: PageMeta;

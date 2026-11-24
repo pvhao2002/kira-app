@@ -1,0 +1,66 @@
+{
+  "transactions": [
+    {
+      "reference": "WD-2411-02",
+      "type": "DEBIT",
+      "status": "CANCELLED",
+      "amount": 70,
+      "occurredAt": "2026-11-21T03:00:00Z"
+    }
+  ],
+  "reports": {
+    "allTime": {
+      "deposits": 80,
+      "withdrawals": 90,
+      "rewards": 5,
+      "depositCount": 1,
+      "withdrawalCount": 1,
+      "cancelledWithdrawalCount": 1,
+      "cancelledWithdrawals": 70,
+      "profit": 10
+    },
+    "weekly": [
+      {
+        "periodStart": "2026-11-16",
+        "deposits": 0,
+        "withdrawals": 90,
+        "rewards": 5,
+        "depositCount": 0,
+        "withdrawalCount": 1,
+        "cancelledWithdrawalCount": 1,
+        "cancelledWithdrawals": 70,
+        "profit": 90
+      },
+      {
+        "periodStart": "2026-11-02",
+        "deposits": 80,
+        "withdrawals": 0,
+        "rewards": 0,
+        "depositCount": 1,
+        "withdrawalCount": 0,
+        "cancelledWithdrawalCount": 0,
+        "cancelledWithdrawals": 0,
+        "profit": -80
+      }
+    ],
+    "monthly": [
+      {
+        "periodStart": "2026-11-01",
+        "deposits": 80,
+        "withdrawals": 90,
+        "rewards": 5,
+        "depositCount": 1,
+        "withdrawalCount": 1,
+        "cancelledWithdrawalCount": 1,
+        "cancelledWithdrawals": 70,
+        "profit": 10
+      }
+    ]
+  },
+  "meta": {
+    "page": 0,
+    "size": 1,
+    "totalElements": 4,
+    "totalPages": 4
+  }
+}

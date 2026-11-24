@@ -48,7 +48,8 @@ public class AccountTransactions {
                       @NotNull @Positive @Digits(integer = 16, fraction = 4) BigDecimal amount, @NotNull Instant occurredAt) {}
     public record Batch(@NotNull UUID importId, @NotEmpty @Size(max = 500) List<@NotNull @Valid Row> transactions) {}
     public record Entry(String reference, Type type, Status status, BigDecimal amount, Instant occurredAt) {}
-    public record Summary(BigDecimal deposits, BigDecimal withdrawals, BigDecimal rewards) {
+    public record Summary(BigDecimal deposits, BigDecimal withdrawals, BigDecimal rewards, long depositCount,
+                          long withdrawalCount, long cancelledWithdrawalCount, BigDecimal cancelledWithdrawals) {
         @JsonProperty
         public BigDecimal profit() { return withdrawals.subtract(deposits); }
     }
@@ -122,12 +123,17 @@ public class AccountTransactions {
             SELECT week, month, count(*) AS count,
                    coalesce(sum(amount) FILTER (WHERE type='CREDIT' AND status='SUCCESS'),0) AS deposits,
                    coalesce(sum(amount) FILTER (WHERE type='DEBIT' AND status='SUCCESS'),0) AS withdrawals,
-                   coalesce(sum(amount) FILTER (WHERE type='REWARD' AND status='SUCCESS'),0) AS rewards
+                   coalesce(sum(amount) FILTER (WHERE type='REWARD' AND status='SUCCESS'),0) AS rewards,
+                   count(*) FILTER (WHERE type='CREDIT' AND status='SUCCESS') AS deposit_count,
+                   count(*) FILTER (WHERE type='DEBIT' AND status='SUCCESS') AS withdrawal_count,
+                   count(*) FILTER (WHERE type='DEBIT' AND status='CANCELLED') AS cancelled_withdrawal_count,
+                   coalesce(sum(amount) FILTER (WHERE type='DEBIT' AND status='CANCELLED'),0) AS cancelled_withdrawals
             FROM periods GROUP BY GROUPING SETS ((), (week), (month))
             ORDER BY week DESC NULLS FIRST, month DESC NULLS FIRST
             """, (rs, i) -> new Group(rs.getObject("week", LocalDate.class), rs.getObject("month", LocalDate.class),
             rs.getLong("count"), new Summary(rs.getBigDecimal("deposits"), rs.getBigDecimal("withdrawals"),
-            rs.getBigDecimal("rewards"))), user.id());
+            rs.getBigDecimal("rewards"), rs.getLong("deposit_count"), rs.getLong("withdrawal_count"),
+            rs.getLong("cancelled_withdrawal_count"), rs.getBigDecimal("cancelled_withdrawals"))), user.id());
         // The empty grouping set always yields one grand total, including for an empty account.
         Group total = groups.getFirst();
         List<Period> weekly = new ArrayList<>();
