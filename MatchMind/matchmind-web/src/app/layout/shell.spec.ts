@@ -35,7 +35,18 @@ describe('routing', () => {
     const h = await start('ADMIN', '/no-such-page');
     expect(TestBed.inject(Router).url).toBe('/no-such-page');
     expect(root(h).querySelector('h1')?.textContent).toContain('Page not found');
-    expect(root(h).querySelector('a[href="/dashboard"].btn')).not.toBeNull();
+    expect(root(h).querySelector('a[href="/"].btn')).not.toBeNull();
+  });
+
+  it('viewers get no dashboard, models, providers, reports or prompts, and start on Predictions', async () => {
+    const h = await start('VIEWER', '/no-such-page');
+    await TestBed.inject(Router).navigateByUrl('/');
+    expect(TestBed.inject(Router).url).toBe('/predictions');
+    for (const label of ['Dashboard', 'AI Models', 'Providers', 'Reports', 'Prompt Notes']) expect(navLabels(h)).not.toContain(label);
+    for (const url of ['/dashboard', '/models', '/providers', '/reports', '/prompts']) {
+      await TestBed.inject(Router).navigateByUrl(url);
+      expect(TestBed.inject(Router).url).toBe('/predictions');
+    }
   });
 
   it('API Logs is admin only: hidden from viewers and guarded (UX-026)', async () => {
@@ -43,7 +54,7 @@ describe('routing', () => {
     expect(navLabels(h)).not.toContain('API Logs');
     expect(navLabels(h)).not.toContain('Visitors');
     await TestBed.inject(Router).navigateByUrl('/api-logs');
-    expect(TestBed.inject(Router).url).toBe('/dashboard');
+    expect(TestBed.inject(Router).url).toBe('/predictions');
   });
 
   it('gives every menu icon its own colour', async () => {

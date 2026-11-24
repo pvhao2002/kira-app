@@ -6,7 +6,7 @@ import { AuthService } from './auth.service';
 
 /** What the server announces when an AI agent has stored a new prediction. */
 export interface NewPrediction {
-  predictionId: string; matchId: string; homeTeam: string; awayTeam: string; model: string; predictionType: string;
+  predictionId: string; matchId: string; homeTeam: string; awayTeam: string; model: string | null; predictionType: string;
 }
 
 interface SseEvent { event: string; data: string; }
@@ -126,7 +126,7 @@ export class LiveService {
     const list = this.unannounced;
     this.unannounced = [];
     const last = list[list.length - 1];
-    const detail = `${last.homeTeam} – ${last.awayTeam}, by ${last.model}`;
+    const detail = `${last.homeTeam} – ${last.awayTeam}` + (last.model ? `, by ${last.model}` : '');   // viewers get no model
     this.toasts.add(list.length === 1
       ? { severity: 'info', summary: 'New prediction', detail }
       : { severity: 'info', summary: `${list.length} new predictions`, detail: `Latest: ${detail}` });

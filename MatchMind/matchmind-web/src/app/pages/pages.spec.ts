@@ -57,7 +57,7 @@ describe('LoginPage', () => {
     const req = http.expectOne('/api/v1/auth/login');
     expect(req.request.body.username).toBe('admin');
     req.flush({ accessToken: 'jwt', expiresAt: new Date(Date.now() + 3_600_000).toISOString(), user: admin });
-    expect(navigate).toHaveBeenCalledWith('/dashboard');
+    expect(navigate).toHaveBeenCalledWith('/');
   });
 });
 

@@ -63,7 +63,7 @@ export function apiErrorText(raw: unknown): string {
 /** Only same-app paths: never redirect to an absolute/external URL taken from the query string, nor back to login. */
 export function safeReturnUrl(target: string | null | undefined): string {
   return target && target.startsWith('/') && !target.startsWith('//') && !target.startsWith('/\\') && !target.startsWith('/login')
-    ? target : '/dashboard';
+    ? target : '/';
 }
 
 /** No session in this tab: borrow one from another open tab (Ctrl+click) before sending the user to login. */

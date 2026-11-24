@@ -132,7 +132,7 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip, StateView } from '../
                 <th>Score</th><th class="hide-sm">HT</th><th class="hide-sm">Corners</th>
                 <th mmSort="status" [sort]="list.sort()" (sortChange)="list.setSort($event)">Status</th>
                 <th class="num hide-sm" mmSort="predictionCount" [sort]="list.sort()" (sortChange)="list.setSort($event)">Predictions</th>
-                <th class="num hide-sm">Models</th><th class="hide-sm">Provider</th>
+                @if (auth.isAdmin()) { <th class="num hide-sm">Models</th><th class="hide-sm">Provider</th> }
                 @if (auth.isAdmin()) { <th class="actions"><span class="sr-only">Actions</span></th> }
               </tr>
             </thead>
@@ -153,15 +153,15 @@ import { ReasonAction, ReasonDialog, ResultTag, ScoreChip, StateView } from '../
                     @if (m.overdue) { <span class="tag tag-warn" title="Kick-off more than 3 hours ago and no final result yet">Overdue</span> }
                     @if (m.archivedAt) { <span class="tag tag-secondary">Archived</span> }</td>
                   <td class="num hide-sm">{{ m.predictionCount }}</td>
-                  <td class="num hide-sm">{{ m.modelCount }}</td>
-                  <td class="hide-sm">{{ m.providerName }}</td>
+                  @if (auth.isAdmin()) { <td class="num hide-sm">{{ m.modelCount }}</td>
+                  <td class="hide-sm">{{ m.providerName }}</td> }
                   @if (auth.isAdmin()) {
                     <td class="actions"><button type="button" class="btn btn-text btn-sm" [class.danger]="!m.archivedAt" [attr.data-testid]="'archive-' + m.id"
                       (click)="$event.stopPropagation(); archive(m)">{{ m.archivedAt ? 'Unarchive' : 'Archive' }}</button></td>
                   }
                 </tr>
               } @empty {
-                <tr><td [attr.colspan]="auth.isAdmin() ? 12 : 10" class="empty">
+                <tr><td [attr.colspan]="auth.isAdmin() ? 12 : 8" class="empty">
                   @if (list.loading()) { <mm-state state="loading" [rows]="6" /> }
                   @else if (list.error()) {
                     <div class="empty-state" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><strong>Couldn't load matches</strong><span>{{ list.error() }}</span>

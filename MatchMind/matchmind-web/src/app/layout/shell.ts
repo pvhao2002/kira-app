@@ -14,15 +14,15 @@ import { ParlaySlipPanel } from '../shared/parlay-slip';
 interface NavItem { path: string; label: string; icon: string; color: string; adminOnly?: boolean; }
 
 const NAV: NavItem[] = [
-  { path: '/dashboard', label: 'Dashboard', icon: 'pi-th-large', color: '#60a5fa' },
+  { path: '/dashboard', label: 'Dashboard', icon: 'pi-th-large', color: '#60a5fa', adminOnly: true },
   { path: '/matches', label: 'Matches', icon: 'pi-calendar', color: '#34d399' },
   { path: '/predictions', label: 'Predictions', icon: 'pi-bolt', color: '#fbbf24' },
-  { path: '/models', label: 'AI Models', icon: 'pi-microchip-ai', color: '#c084fc' },
-  { path: '/providers', label: 'Providers', icon: 'pi-server', color: '#22d3ee' },
-  { path: '/reports', label: 'Reports', icon: 'pi-chart-bar', color: '#f472b6' },
+  { path: '/models', label: 'AI Models', icon: 'pi-microchip-ai', color: '#c084fc', adminOnly: true },
+  { path: '/providers', label: 'Providers', icon: 'pi-server', color: '#22d3ee', adminOnly: true },
+  { path: '/reports', label: 'Reports', icon: 'pi-chart-bar', color: '#f472b6', adminOnly: true },
   { path: '/parlays', label: 'Parlays', icon: 'pi-ticket', color: '#fb7185' },
   { path: '/account', label: 'Account Management', icon: 'pi-wallet', color: '#facc15' },
-  { path: '/prompts', label: 'Prompt Notes', icon: 'pi-file-edit', color: '#fb923c' },
+  { path: '/prompts', label: 'Prompt Notes', icon: 'pi-file-edit', color: '#fb923c', adminOnly: true },
   { path: '/import', label: 'Import', icon: 'pi-upload', color: '#a3e635', adminOnly: true },
   { path: '/api-logs', label: 'API Logs', icon: 'pi-list', color: '#93c5fd', adminOnly: true },
   { path: '/visitors', label: 'Visitors', icon: 'pi-globe', color: '#2dd4bf', adminOnly: true },
@@ -40,7 +40,7 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
     <div class="shell" [class.nav-collapsed]="compact()" [class.nav-open]="mobileOpen()" (keydown.escape)="closeNav(true)">
       <button type="button" class="skip-link" (click)="mainEl.focus()">Skip to content</button>
       <aside id="mm-sidebar" class="sidebar" aria-label="Main navigation" (keydown)="trapTab($event)">
-        <a routerLink="/dashboard" class="brand">
+        <a routerLink="/" class="brand">
           <span class="brand-mark" aria-hidden="true">M</span>
           @if (!compact()) { <span class="brand-text"><strong>MatchMind</strong><small>Private workspace</small></span> }
         </a>

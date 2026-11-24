@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signa
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { AuthService } from '../core/auth.service';
 import { LiveService } from '../core/live.service';
 import { Filters, OddsSnapshot, PickDetail, PredictionRow } from '../core/models';
 import { BarFilters, FilterBar } from '../shared/filter-bar';
@@ -62,7 +63,7 @@ export function pickSummary(p: PredictionRow): string {
             <tr>
               <th class="hide-sm" mmSort="predictedAt" [sort]="list.sort()" (sortChange)="list.setSort($event)">Predicted at</th>
               <th mmSort="startTime" [sort]="list.sort()" (sortChange)="list.setSort($event)">Match</th>
-              <th class="hide-sm" mmSort="model" [sort]="list.sort()" (sortChange)="list.setSort($event)">Model</th>
+              @if (isAdmin()) { <th class="hide-sm" mmSort="model" [sort]="list.sort()" (sortChange)="list.setSort($event)">Model</th> }
               <th>Top pick</th>
               @if (show('probability')) { <th class="num hide-sm" mmSort="probability" [sort]="list.sort()" (sortChange)="list.setSort($event)">Prob.</th> }
               @if (show('price')) { <th class="num hide-sm">Price</th> }
@@ -80,9 +81,9 @@ export function pickSummary(p: PredictionRow): string {
             @for (p of list.rows(); track p.id) {
             <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]" (mouseenter)="peek(p.id, $event)" (mouseleave)="unpeek()">
               <td class="nowrap hide-sm"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
-              <td>@if (p.matchStatus === 'LIVE') { <span class="tag tag-danger" data-testid="live">Live</span> }<span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }} · <span data-testid="kickoff" title="Kick-off">{{ fmt(p.startTime) }}</span></span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">{{ p.modelName }} · {{ fmt(p.predictedAt) }}</a>
+              <td>@if (p.matchStatus === 'LIVE') { <span class="tag tag-danger" data-testid="live">Live</span> }<span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }} · <span data-testid="kickoff" title="Kick-off">{{ fmt(p.startTime) }}</span></span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">@if (isAdmin()) { {{ p.modelName }} · }{{ fmt(p.predictedAt) }}</a>
                 @if (p.counted === false) { <span class="tag tag-secondary" title="A later prediction of the same match, model, type and minute replaces it in reports">not counted</span><span class="sr-only"> (a later prediction of the same match, model, type and minute replaces it in reports)</span> }</td>
-              <td class="nowrap hide-sm">{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td>
+              @if (isAdmin()) { <td class="nowrap hide-sm">{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td> }
               <td class="nowrap" data-testid="top-pick" [title]="lineSplit(p.topPickMarket, p.topPickLine)">{{ pickText(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}<span class="cell-sub">{{ humanize(p.topPickStage) }}</span></td>
               @if (show('probability')) { <td class="num hide-sm">{{ pct(p.topPickProbability) }}</td> }
               @if (show('price')) { <td class="num hide-sm">{{ num(p.topPickPrice) }}</td> }
@@ -96,7 +97,7 @@ export function pickSummary(p: PredictionRow): string {
               <td class="sticky-end"><mm-result [value]="p.settlementStatus" /></td>
             </tr>
             } @empty {
-              <tr><td [attr.colspan]="4 + 1 + shownCount()" class="empty">
+              <tr><td [attr.colspan]="(isAdmin() ? 5 : 4) + shownCount()" class="empty">
                 @if (list.loading()) { <mm-state state="loading" [rows]="6" /> }
                 @else if (list.error()) {
                   <div class="empty-state" role="alert"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><strong>Couldn't load predictions</strong><span>{{ list.error() }}</span>
@@ -161,6 +162,7 @@ export function pickSummary(p: PredictionRow): string {
 export class PredictionsPage {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
+  readonly isAdmin = inject(AuthService).isAdmin;
   readonly matchId = signal(this.route.snapshot.queryParamMap.get('matchId') || undefined);
   readonly fmt = fmtDateTime;
   readonly humanize = humanize;

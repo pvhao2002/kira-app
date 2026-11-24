@@ -51,7 +51,7 @@ const MIN_REASON = 5;
           <header>
             <div>
               <h2>{{ bidi(d.match.homeTeam) }} <span class="muted-text">vs</span> {{ bidi(d.match.awayTeam) }}</h2>
-              <p class="muted-text sub">{{ bidi(d.match.league) }} · kick-off {{ fmt(d.match.startTime) }} · {{ bidi(d.match.providerName) }} · {{ bidi(d.match.externalMatchId) }}</p>
+              <p class="muted-text sub">{{ bidi(d.match.league) }} · kick-off {{ fmt(d.match.startTime) }}@if (auth.isAdmin()) { · {{ bidi(d.match.providerName) }} · {{ bidi(d.match.externalMatchId) }} }</p>
             </div>
             <div class="row head-actions">
               <mm-result [value]="d.match.status" kind="status" />
@@ -62,8 +62,10 @@ const MIN_REASON = 5;
                   <button type="button" class="btn btn-outline btn-sm" data-testid="settle" [disabled]="settling()" (click)="settle()"><i class="pi" [class.pi-calculator]="!settling()" [class.pi-spinner]="settling()" [class.pi-spin]="settling()" aria-hidden="true"></i> Settle pending picks</button>
                 }
               }
+              @if (auth.isAdmin()) {
               <button type="button" class="btn btn-text btn-sm" data-testid="prompt-input-copy" [disabled]="copying()" (click)="copyPromptInput()"
                 title="Copies the match result and every pick with its id, as JSON"><i class="pi" [class.pi-copy]="!copying()" [class.pi-spinner]="copying()" [class.pi-spin]="copying()" aria-hidden="true"></i> Copy settlement input</button>
+              }
             </div>
           </header>
           <div class="facts">
@@ -116,6 +118,7 @@ const MIN_REASON = 5;
           </section>
         } }
 
+        @if (auth.isAdmin()) {
         <section class="panel flush">
           <header><div><h2>Models on this match</h2>
             <p class="muted-text sub">Win rate = (win + half win) divided by settled picks. Push and void are left out.</p></div></header>
@@ -150,6 +153,7 @@ const MIN_REASON = 5;
             </tbody>
           </table></div>
         </section>
+        }
 
         <section class="panel flush" id="prediction-history" data-testid="prediction-history">
           <header><h2>Prediction history ({{ predPage() ? predTotal() : '—' }})</h2>
@@ -158,12 +162,12 @@ const MIN_REASON = 5;
                 · <a [routerLink]="['/predictions']" [queryParams]="{ matchId: id(), from: '', to: '' }">See all in Predictions</a></span>
             }</header>
           <div class="table-wrap"><table class="dt compact-sm" aria-label="Prediction history" [attr.aria-busy]="predResource.isLoading()">
-            <thead><tr><th>Predicted</th><th>Model</th><th class="hide-sm">Type</th><th class="hide-sm">Score then</th><th>Top pick</th><th class="num hide-sm">Prob.</th><th>Result</th></tr></thead>
+            <thead><tr><th>Predicted</th>@if (auth.isAdmin()) { <th>Model</th> }<th class="hide-sm">Type</th><th class="hide-sm">Score then</th><th>Top pick</th><th class="num hide-sm">Prob.</th><th>Result</th></tr></thead>
             <tbody>
               @for (p of predictions(); track p.id) {
               <tr>
                 <td class="nowrap"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
-                <td>{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td>
+                @if (auth.isAdmin()) { <td>{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td> }
                 <td class="hide-sm">{{ humanize(p.predictionType) }}{{ p.matchMinute !== null ? ' · ' + p.matchMinute + "'" : '' }}</td>
                 <td class="hide-sm">@if (p.predictionType === 'LIVE') { <mm-score [home]="p.currentHomeScore" [away]="p.currentAwayScore" [muted]="true" /> } @else { — }</td>
                 <td class="nowrap" [title]="lineSplit(p.topPickMarket, p.topPickLine)">{{ pickText(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}</td>
@@ -171,7 +175,7 @@ const MIN_REASON = 5;
                 <td><mm-result [value]="p.settlementStatus" /></td>
               </tr>
               } @empty {
-                <tr><td colspan="7" class="empty">
+                <tr><td [attr.colspan]="auth.isAdmin() ? 7 : 6" class="empty">
                   @if (predResource.error()) { <mm-state state="error" [message]="predError()" retryable (retry)="predResource.reload()" /> }
                   @else if (predResource.isLoading()) { <mm-state state="loading" [rows]="3" /> }
                   @else { No predictions yet. }

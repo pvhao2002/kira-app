@@ -72,7 +72,7 @@ describe('LoginPage redirects', () => {
   it('never returns to the login page itself', async () => {
     const navigate = setup({ returnUrl: '/login?expired=1' });
     await signIn(user);
-    expect(navigate).toHaveBeenCalledWith('/dashboard');
+    expect(navigate).toHaveBeenCalledWith('/');
   });
 });
 

@@ -50,7 +50,7 @@ const MIN_REASON = 5;
           <header>
             <div>
               <h2><a [routerLink]="['/matches', d.match.id]">{{ bidi(d.match.homeTeam) }} – {{ bidi(d.match.awayTeam) }}</a></h2>
-              <p class="muted-text sub">{{ bidi(d.match.league) }} · {{ bidi(d.model.name) }} {{ bidi(d.model.version) }} · predicted {{ fmt(d.predictedAt) }} · event {{ d.eventId }}</p>
+              <p class="muted-text sub">{{ bidi(d.match.league) }} · @if (d.model) { {{ bidi(d.model.name) }} {{ bidi(d.model.version) }} · }predicted {{ fmt(d.predictedAt) }} · event {{ d.eventId }}</p>
             </div>
             <mm-result [value]="d.match.status" kind="status" />
           </header>

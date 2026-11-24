@@ -253,9 +253,10 @@ class MatchResultsIT extends IntegrationTestBase {
         external(in.provider(), "matches/results", Payloads.result(matchId, "FINISHED", TWO_ONE, null, "2026-11-10T21:40:00Z"));
         String match = matchUuid(matchId);
 
-        String viewer = viewerToken();
-        MvcResult res = mvc.perform(get("/api/v1/settlements/matches/" + match + "/prompt-input")
-            .header("Authorization", "Bearer " + viewer)).andReturn();
+        // The settlement prompt input is admin only, like every prompt.
+        assertThat(mvc.perform(get("/api/v1/settlements/matches/" + match + "/prompt-input")
+            .header("Authorization", "Bearer " + viewerToken())).andReturn().getResponse().getStatus()).isEqualTo(403);
+        MvcResult res = mvc.perform(asAdmin(get("/api/v1/settlements/matches/" + match + "/prompt-input"))).andReturn();
         assertThat(res.getResponse().getStatus()).isEqualTo(200);
         JsonNode input = read(res);
         assertThat(input.get("matchId").asText()).isEqualTo(match);

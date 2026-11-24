@@ -90,11 +90,10 @@ class PromptVersionsIT extends IntegrationTestBase {
         String viewer = login(name, "viewer-password-1");
         String id = keyedPrompt();
 
+        // Prompts are admin only now: a viewer gets nothing, the key least of all.
         MvcResult res = mvc.perform(get("/api/v1/prompts/" + id + "/for-agent").header("Authorization", "Bearer " + viewer)).andReturn();
-        assertThat(res.getResponse().getStatus()).isEqualTo(200);
-        JsonNode copy = read(res);
-        assertThat(copy.get("keyRendered").asBoolean()).isFalse();
-        assertThat(copy.get("content").asText()).contains("{{EXTERNAL_API_KEY}}").doesNotContain(EXTERNAL_KEY);
+        assertThat(res.getResponse().getStatus()).isEqualTo(403);
+        assertThat(res.getResponse().getContentAsString()).doesNotContain(EXTERNAL_KEY);
 
         JsonNode admin = adminGet("/api/v1/prompts/" + id + "/for-agent");
         assertThat(admin.get("keyRendered").asBoolean()).isTrue();

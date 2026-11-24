@@ -13,7 +13,7 @@ import { Router, RouterLink } from '@angular/router';
         <div>
           <strong>There is no page at <code>{{ url }}</code>.</strong>
           <p>The link may be old or mistyped.</p>
-          <p><a routerLink="/dashboard" class="btn btn-primary">Go to the dashboard</a></p>
+          <p><a routerLink="/" class="btn btn-primary">Go to the start page</a></p>
         </div>
       </div>
     </section>`,

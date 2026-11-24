@@ -18,6 +18,19 @@ class TextRulesTest {
     }
 
     @Test
+    void leagueDropsStageGroupRoundAndRegionSuffixes() {
+        assertEquals("UEFA Champions League", TextRules.league("UEFA Champions League - Round 5"));
+        assertEquals("AFC Champions League Two", TextRules.league("AFC Champions League Two - Group 4 - Round 5"));
+        assertEquals("AFC Champions League Elite", TextRules.league("AFC Champions League Elite - East Region"));
+        assertEquals("UEFA Youth League", TextRules.league("UEFA Youth League - League Round"));
+        assertEquals("Azerbaijan First Division", TextRules.league("Azerbaijan First Division - League"));
+        assertEquals("Copa Libertadores", TextRules.league("Copa Libertadores - Quarter-finals"));
+        assertEquals("Sweden Allsvenskan", TextRules.league("Sweden Allsvenskan"));
+        assertEquals("Brasileirão - Série A", TextRules.league("Brasileirão - Série A"));   // part of the name: kept
+        assertNull(TextRules.league(null));
+    }
+
+    @Test
     void forbiddenCharactersAreNamed() {
         assertNull(TextRules.forbiddenCharacter("Arsenal é 😀")); // accents and emoji are fine
         assertNotNull(TextRules.forbiddenCharacter("Ars\u0000enal"));

@@ -35,7 +35,7 @@ class AuthIT extends IntegrationTestBase {
     void viewerCanReadButNotChange() throws Exception {
         adminPost("/api/v1/users", Map.of("username", "viewer1", "password", "viewer-password-1", "role", "VIEWER"));
         String viewer = login("viewer1", "viewer-password-1");
-        assertThat(mvc.perform(get("/api/v1/providers").header("Authorization", "Bearer " + viewer)).andReturn().getResponse().getStatus()).isEqualTo(200);
+        assertThat(mvc.perform(get("/api/v1/matches").header("Authorization", "Bearer " + viewer)).andReturn().getResponse().getStatus()).isEqualTo(200);
         assertThat(mvc.perform(post("/api/v1/providers").header("Authorization", "Bearer " + viewer).contentType(MediaType.APPLICATION_JSON)
             .content("{\"code\":\"nope\",\"name\":\"Nope\"}")).andReturn().getResponse().getStatus()).isEqualTo(403);
     }

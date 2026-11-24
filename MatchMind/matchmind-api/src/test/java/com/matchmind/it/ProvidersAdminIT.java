@@ -55,8 +55,8 @@ class ProvidersAdminIT extends IntegrationTestBase {
             assertThat(send((HttpMethod) w[0], (String) w[1], viewer, Map.of("code", code(), "name", "x", "reason", "x"))
                 .getResponse().getStatus()).as(w[1].toString()).isEqualTo(403);
         }
-        // The provider list itself stays readable for viewers.
-        assertThat(send(HttpMethod.GET, "/api/v1/providers", viewer, Map.of()).getResponse().getStatus()).isEqualTo(200);
+        // Providers are admin only: viewers cannot even list them.
+        assertThat(send(HttpMethod.GET, "/api/v1/providers", viewer, Map.of()).getResponse().getStatus()).isEqualTo(403);
     }
 
     @Test

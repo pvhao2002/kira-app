@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /**
  * Tells signed-in browsers that a new prediction was stored, over Server-Sent Events. The event carries only what a
@@ -49,7 +49,8 @@ public class PredictionEvents {
                                 String predictionType) {
     }
 
-    private record Subscriber(SseEmitter emitter, UUID userId, UUID tokenId, AtomicInteger pending) {
+    /** {@code admin}: only admins are told which model made the prediction. */
+    private record Subscriber(SseEmitter emitter, UUID userId, UUID tokenId, boolean admin, AtomicInteger pending) {
     }
 
     // ponytail: in-memory subscriber list, fine for one API instance; use Postgres LISTEN/NOTIFY if the API scales out.
@@ -83,7 +84,7 @@ public class PredictionEvents {
             lifetime = Math.max(1_000, Math.min(lifetime, Duration.between(Instant.now(), me.tokenExpiresAt()).toMillis()));
         }
         SseEmitter emitter = new SseEmitter(lifetime);
-        Subscriber sub = new Subscriber(emitter, me.id(), me.tokenId(), new AtomicInteger());
+        Subscriber sub = new Subscriber(emitter, me.id(), me.tokenId(), "ADMIN".equals(me.role()), new AtomicInteger());
         emitter.onCompletion(() -> streams.remove(sub));
         emitter.onTimeout(emitter::complete);
         emitter.onError(e -> streams.remove(sub));
@@ -102,13 +103,15 @@ public class PredictionEvents {
     }
 
     public void published(NewPrediction p) {
-        send(() -> SseEmitter.event().name("prediction").data(p));
+        NewPrediction anonymous = new NewPrediction(p.predictionId(), p.matchId(), p.homeTeam(), p.awayTeam(), null,
+            p.predictionType());
+        send(s -> SseEmitter.event().name("prediction").data(s.admin() ? p : anonymous));
     }
 
     /** Keeps idle streams open through proxies (nginx 60s, Cloudflare 100s) and drops browsers that left. */
     @Scheduled(fixedDelayString = "PT25S")
     void heartbeat() {
-        send(() -> SseEmitter.event().comment("ping"));
+        send(s -> SseEmitter.event().comment("ping"));
     }
 
     public int openStreams() {
@@ -117,7 +120,7 @@ public class PredictionEvents {
 
     // An event builder is single-use, so each stream gets its own. A browser that left or fell behind is dropped and
     // never fails or slows the caller: the work runs on virtual threads.
-    private void send(Supplier<SseEventBuilder> event) {
+    private void send(Function<Subscriber, SseEventBuilder> event) {
         for (Subscriber s : streams) {
             if (s.pending().incrementAndGet() > MAX_PENDING_PER_STREAM) {
                 s.pending().decrementAndGet();
@@ -126,7 +129,7 @@ public class PredictionEvents {
             }
             sender.execute(() -> {
                 try {
-                    s.emitter().send(event.get());
+                    s.emitter().send(event.apply(s));
                 } catch (IOException | IllegalStateException gone) {
                     streams.remove(s);
                 } finally {

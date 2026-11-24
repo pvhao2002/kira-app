@@ -75,6 +75,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
                 // Callback audit trail: client IPs, endpoints and error text are for admins only (the UI hides the menu).
                 .requestMatchers("/api/v1/api-logs", "/api/v1/api-logs/**").hasRole("ADMIN")
+                // Dashboard, reports, models, providers and prompts show who predicted what: admins only.
+                .requestMatchers("/api/v1/dashboard", "/api/v1/reports/**", "/api/v1/models", "/api/v1/models/**",
+                    "/api/v1/providers", "/api/v1/providers/**", "/api/v1/prompts", "/api/v1/prompts/**",
+                    "/api/v1/settlements/matches/*/prompt-input").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAnyRole("ADMIN", "VIEWER")
                 .requestMatchers("/api/v1/**").hasRole("ADMIN")
                 .anyRequest().denyAll())

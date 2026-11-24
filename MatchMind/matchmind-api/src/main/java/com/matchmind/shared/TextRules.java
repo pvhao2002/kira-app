@@ -7,6 +7,20 @@ public final class TextRules {
     private TextRules() {
     }
 
+    // ponytail: English stage words only; a real name ending in " - League Two" would lose it. Add an alias if that shows up.
+    // Keep in step with V40__league_without_stage.sql, which applied the same rule to stored matches.
+    private static final java.util.regex.Pattern STAGE = java.util.regex.Pattern.compile(
+        " - (?:round|group|matchday|match day|week|leg|stage|phase|league|regular season|play-?offs?|qualif\\w*|"
+            + "preliminary|knockout|quarter\\S*|semi\\S*|finals?|(?:[a-z]+ )?region)\\b.*$", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    /**
+     * A competition name without the stage, group, round or region agents append ("UEFA Champions League - Group 4 -
+     * Round 5" becomes "UEFA Champions League"), so one league is not split into several. Apply after {@link #clean}.
+     */
+    public static String league(String s) {
+        return s == null ? null : STAGE.matcher(s).replaceFirst("");
+    }
+
     /**
      * Unicode NFC, zero-width characters and BOM removed, every whitespace or control character (including NBSP, tab
      * and newline) turned into one space, then trimmed. A name that only had invisible characters becomes "".

@@ -161,9 +161,9 @@ describe('AuthService session', () => {
 
   it('safeReturnUrl accepts only in-app paths', () => {
     expect(safeReturnUrl('/matches?x=1')).toBe('/matches?x=1');
-    expect(safeReturnUrl('//evil.example')).toBe('/dashboard');
-    expect(safeReturnUrl('https://evil.example')).toBe('/dashboard');
-    expect(safeReturnUrl('/login?expired=1')).toBe('/dashboard');
-    expect(safeReturnUrl(null)).toBe('/dashboard');
+    expect(safeReturnUrl('//evil.example')).toBe('/');
+    expect(safeReturnUrl('https://evil.example')).toBe('/');
+    expect(safeReturnUrl('/login?expired=1')).toBe('/');
+    expect(safeReturnUrl(null)).toBe('/');
   });
 });

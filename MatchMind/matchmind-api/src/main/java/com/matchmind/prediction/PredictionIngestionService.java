@@ -219,7 +219,7 @@ public class PredictionIngestionService {
         String status = m.status() != null ? m.status() : ("LIVE".equals(r.predictionType()) ? "LIVE" : "SCHEDULED");
         String home = TextRules.clean(m.homeTeam());
         String away = TextRules.clean(m.awayTeam());
-        String league = m.league() == null || TextRules.clean(m.league()).isEmpty() ? null : TextRules.clean(m.league());
+        String league = m.league() == null || TextRules.clean(m.league()).isEmpty() ? null : TextRules.league(TextRules.clean(m.league()));
         Instant start = m.startTime() != null ? m.startTime() : estimatedKickOff(r.matchMinute(), predictedAt);
         String externalId = m.externalMatchId() != null ? m.externalMatchId() : externalIdByTeams(providerId, home, away, start);
         boolean created = jdbc.update("""

@@ -66,7 +66,11 @@ visit. Rows are kept without expiry. See the [example responses](samples/visits.
 | Anyone (connectivity test) | nothing | `GET /api/v1/external/ping` only |
 
 Roles:
-- `VIEWER` can call every `GET` except `/api-logs/**` (admin only), plus `/auth/**`.
+- `VIEWER` can call every `GET` except `/api-logs/**`, `/dashboard`, `/reports/**`, `/models/**`, `/providers/**`,
+  `/prompts/**` and `/settlements/matches/{id}/prompt-input` (admin only), plus `/auth/**` and their own `/parlays`.
+  Responses to a viewer never carry who made a prediction: the keys `model`, `models`, `modelId`, `modelName`,
+  `modelKey`, `modelVersion`, `modelCount`, `provider`, `providerId` and `providerName` are removed at every depth, and
+  the live `prediction` event has `model: null`.
 - `ADMIN` can also call every `POST`, `PUT`, `PATCH` and `DELETE`.
 
 A JWT carries the user's `token_version` and a token id (`jti`). Password change, password reset, disabling the user and
@@ -491,7 +495,7 @@ See [league alias examples](samples/league-aliases.json).
 | `POST /settlements/matches/{matchId}` | – | Settle pending picks now |
 | `GET /settlements/needs-review?matchId=&predictionId=` | — | Settled picks whose match result changed afterwards and would now settle differently (newest 500 checked). Both filters are optional; the list length is the badge count for a match or prediction |
 | `POST /settlements/matches/{matchId}/recalculate` | `{reason}` | Recalculates every pick of the match that `needs-review` lists, with one reason. Returns `PickSettlement[]` (empty when nothing needed review); `404 MATCH_NOT_FOUND` |
-| `GET /settlements/matches/{matchId}/prompt-input` (viewers too) | — | The match result and its picks with ids (**Copy settlement input**): `{matchId, externalMatchId, provider, league, homeTeam, awayTeam, startTime, status, finalScore, finalCorners, halfTimeScore, picks[{pickId, predictionId, market, pick, line, lineDisplay, oddsStage, settlementBasis, price, scoreAtCapture, cornersAtCapture, currentResult}]}`. Pairs are `{home, away}` or `null` |
+| `GET /settlements/matches/{matchId}/prompt-input` (admin only) | — | The match result and its picks with ids (**Copy settlement input**): `{matchId, externalMatchId, provider, league, homeTeam, awayTeam, startTime, status, finalScore, finalCorners, halfTimeScore, picks[{pickId, predictionId, market, pick, line, lineDisplay, oddsStage, settlementBasis, price, scoreAtCapture, cornersAtCapture, currentResult}]}`. Pairs are `{home, away}` or `null` |
 | `POST /settlements/picks/{pickId}/recalculate` | `{reason}` | Re-runs the engine and always writes a new row that supersedes the current one, so the reason is recorded. Status `UNCHANGED` (same result), `SUPERSEDED`, `SETTLED` or, if the match is no longer FINISHED or CANCELLED, `UNSETTLED` (back to `PENDING`). Status `PENDING`: nothing written, `reason` says why |
 | `POST /settlements/picks/{pickId}/override` | `{result, reason}` | Manual result that supersedes the current one. Only for a FINISHED or CANCELLED match (`409 MATCH_NOT_FINAL`). The same result again is `UNCHANGED` and writes nothing |
 

@@ -61,8 +61,8 @@ class SecurityBacklogIT extends IntegrationTestBase {
         assertThat(status(as(viewer, get("/api/v1/api-logs/endpoints")))).isEqualTo(403);
         assertThat(status(as(viewer, get("/api/v1/api-logs/" + UUID.randomUUID())))).isEqualTo(403);
         assertThat(status(asAdmin(get("/api/v1/api-logs")))).isEqualTo(200);
-        // Filters for other pages stay readable.
-        assertThat(status(as(viewer, get("/api/v1/providers")))).isEqualTo(200);
+        // Pages viewers keep stay readable.
+        assertThat(status(as(viewer, get("/api/v1/matches")))).isEqualTo(200);
     }
 
     // ---- UX-068: one error shape, no Java types ---------------------------------------------------------------

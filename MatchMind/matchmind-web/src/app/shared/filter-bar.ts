@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { AuthService } from '../core/auth.service';
 import { Filters, MARKETS, RESULTS } from '../core/models';
 import { safeValue } from '../core/resource';
 import { DateInput, DateRange } from './date-picker';
@@ -144,7 +145,9 @@ export class FilterBar implements OnInit {
   readonly resultOptions: SelectOption[] = [{ value: '', label: 'Any result' }, ...RESULTS.map(r => ({ value: r, label: humanize(r) }))];
   readonly scopeOptions: SelectOption[] = [{ value: '', label: 'Top pick' }, { value: 'ANY', label: 'Any pick' }];
   readonly countOptions: SelectOption[] = [{ value: '', label: 'Count: latest' }, { value: 'all', label: 'Count: all' }];
-  private readonly fieldSet = computed(() => new Set(this.fields()));
+  private readonly auth = inject(AuthService);
+  /** Viewers never see which model made a prediction: no model filter for them. */
+  private readonly fieldSet = computed(() => new Set(this.fields().filter(f => f !== 'model' || this.auth.isAdmin())));
 
   readonly form = this.fb.nonNullable.group({ from: '', to: '', league: '', modelId: '', type: '', market: '', search: '', result: '', resultScope: '', count: '' });
   private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
