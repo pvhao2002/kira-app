@@ -62,6 +62,9 @@ public class SecurityConfig {
                 // /swagger/** is reached only through nginx, which lets admins in (auth_request); the API port is localhost only.
                 .requestMatchers("/actuator/health/**", "/actuator/health", "/swagger/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                // Signed-out visitors log their visit from the login page; reading the log is ADMIN only.
+                .requestMatchers(HttpMethod.POST, "/api/v1/visits").permitAll()
+                .requestMatchers("/api/v1/visits", "/api/v1/visits/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, ExternalPingController.PATH).permitAll()
                 .requestMatchers("/api/v1/external/**").hasRole("PROVIDER")
                 .requestMatchers("/api/v1/auth/monitor-session", MonitorController.CHECK_PATH, MonitorController.SHEET_PATH).hasRole("ADMIN")

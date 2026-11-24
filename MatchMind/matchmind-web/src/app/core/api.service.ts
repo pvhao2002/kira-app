@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Observable, forkJoin } from 'rxjs';
 import {
-  AccountImageImport, AccountLedger,
+  AccountImageImport, AccountLedger, Visit, VisitCountry,
   AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, CalibrationReport, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
   Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
@@ -34,6 +34,13 @@ export class ApiService {
 
   accountTransactionsResource(page: () => number, size: number) {
     return httpResource<AccountLedger>(() => ({ url: API + '/account/transactions', params: toParams({ page: page(), size }) }));
+  }
+
+  /** Admin: signed-out visits grouped by country. */
+  visitCountriesResource() { return httpResource<VisitCountry[]>(() => `${API}/visits/countries`); }
+  /** Admin: one country's visits, newest first, 100 per page. */
+  visitsResource(country: () => string, page: () => number) {
+    return httpResource<Page<Visit>>(() => ({ url: `${API}/visits`, params: toParams({ country: country(), page: page(), size: 100 }) }));
   }
 
   /** One import for the whole batch: the API returns one importId and one prompt. */

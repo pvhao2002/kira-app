@@ -19,7 +19,7 @@ public class ClientIpResolver {
             .map(IpAddressMatcher::new).toList();
     }
 
-    static String normalize(String value) {
+    public static String normalize(String value) {
         if (value == null || value.length() > 45 || !value.matches("[0-9a-fA-F:.]+")) return null;
         if (!value.contains(":") && !value.matches("[0-9]{1,3}(\\.[0-9]{1,3}){3}")) return null;
         try {

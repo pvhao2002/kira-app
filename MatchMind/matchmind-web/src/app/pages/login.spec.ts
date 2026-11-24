@@ -3,7 +3,33 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LoginPage } from './login';
+import { LoginPage, recordVisit } from './login';
+
+// The login page logs a visit through fetch (ipify + our API); never reach the network from a test.
+beforeEach(() => vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => ({}) })));
+afterEach(() => vi.unstubAllGlobals());
+
+describe('recordVisit', () => {
+  it('sends the ipify address once per browser session, and still logs when ipify is blocked', async () => {
+    sessionStorage.clear();
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ json: async () => ({ ip: '203.0.113.7' }) })
+      .mockResolvedValueOnce({ status: 204 });
+    vi.stubGlobal('fetch', fetch);
+    await recordVisit();
+    await recordVisit();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls[0][0]).toBe('https://api.ipify.org?format=json');
+    expect(fetch.mock.calls[1][0]).toBe('/api/v1/visits');
+    expect(fetch.mock.calls[1][1]).toMatchObject({ method: 'POST', body: '{"ip":"203.0.113.7"}' });
+
+    sessionStorage.clear();
+    const blocked = vi.fn().mockRejectedValueOnce(new TypeError('blocked')).mockResolvedValueOnce({ status: 204 });
+    vi.stubGlobal('fetch', blocked);
+    await recordVisit();
+    expect(blocked.mock.calls[1][1]).toMatchObject({ body: '{}' });
+  });
+});
 
 const user = { id: 'u1', username: 'kim', role: 'VIEWER', status: 'ACTIVE', lastLoginAt: null, createdAt: '', updatedAt: '' };
 

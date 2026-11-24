@@ -26,6 +26,9 @@ export interface AccountLedger {
   }[];
   reports: { allTime: AccountTotals; weekly: AccountPeriod[]; monthly: AccountPeriod[] };
 }
+/** Signed-out visitors (`GET /visits/countries`, `GET /visits`). `country` is a Cloudflare code: XX unknown, T1 Tor. */
+export interface VisitCountry { country: string; visits: number; uniqueIps: number; lastSeen: string; }
+export interface Visit { id: number; visitedAt: string; ip: string; country: string; browser: string; os: string; userAgent: string | null; }
 export interface AccountImageImport { importId: string; prompt: string; }
 
 export interface ApiError {

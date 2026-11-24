@@ -9,20 +9,22 @@ import { LiveService } from '../core/live.service';
 import { PageTitle } from '../core/page-title';
 import { tzLabel } from '../shared/format';
 
-interface NavItem { path: string; label: string; icon: string; adminOnly?: boolean; }
+/** `color`: icon tint, a light 300/400 shade so it reads on the navy sidebar in both themes. */
+interface NavItem { path: string; label: string; icon: string; color: string; adminOnly?: boolean; }
 
 const NAV: NavItem[] = [
-  { path: '/dashboard', label: 'Dashboard', icon: 'pi-th-large' },
-  { path: '/matches', label: 'Matches', icon: 'pi-calendar' },
-  { path: '/predictions', label: 'Predictions', icon: 'pi-bolt' },
-  { path: '/models', label: 'AI Models', icon: 'pi-microchip-ai' },
-  { path: '/providers', label: 'Providers', icon: 'pi-server' },
-  { path: '/reports', label: 'Reports', icon: 'pi-chart-bar' },
-  { path: '/account', label: 'Account Management', icon: 'pi-wallet' },
-  { path: '/prompts', label: 'Prompt Notes', icon: 'pi-file-edit' },
-  { path: '/import', label: 'Import', icon: 'pi-upload', adminOnly: true },
-  { path: '/api-logs', label: 'API Logs', icon: 'pi-list', adminOnly: true },
-  { path: '/settings', label: 'Settings', icon: 'pi-cog' },
+  { path: '/dashboard', label: 'Dashboard', icon: 'pi-th-large', color: '#60a5fa' },
+  { path: '/matches', label: 'Matches', icon: 'pi-calendar', color: '#34d399' },
+  { path: '/predictions', label: 'Predictions', icon: 'pi-bolt', color: '#fbbf24' },
+  { path: '/models', label: 'AI Models', icon: 'pi-microchip-ai', color: '#c084fc' },
+  { path: '/providers', label: 'Providers', icon: 'pi-server', color: '#22d3ee' },
+  { path: '/reports', label: 'Reports', icon: 'pi-chart-bar', color: '#f472b6' },
+  { path: '/account', label: 'Account Management', icon: 'pi-wallet', color: '#facc15' },
+  { path: '/prompts', label: 'Prompt Notes', icon: 'pi-file-edit', color: '#fb923c' },
+  { path: '/import', label: 'Import', icon: 'pi-upload', color: '#a3e635', adminOnly: true },
+  { path: '/api-logs', label: 'API Logs', icon: 'pi-list', color: '#93c5fd', adminOnly: true },
+  { path: '/visitors', label: 'Visitors', icon: 'pi-globe', color: '#2dd4bf', adminOnly: true },
+  { path: '/settings', label: 'Settings', icon: 'pi-cog', color: '#cbd5e1' },
 ];
 
 const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.scss
@@ -43,7 +45,7 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
         <nav>
           @for (item of nav; track item.path) {
             @if (!item.adminOnly || auth.isAdmin()) {
-            <a [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-link"
+            <a [routerLink]="item.path" [style.--nav-c]="item.color" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-link"
                [attr.title]="compact() ? item.label : null" [attr.aria-label]="compact() ? item.label : null" (click)="closeNav(false)">
               <i class="pi {{ item.icon }}" aria-hidden="true"></i>
               @if (!compact()) { <span>{{ item.label }}</span> }
@@ -52,17 +54,17 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
           }
           @if (auth.isAdmin()) {
             <!-- Grafana logs and Swagger: full pages outside the SPA, signed in by the cookie monitorSession() sets. -->
-            <a href="/monitor/" target="_blank" class="nav-link" (click)="openAdminPage($event, '/monitor/')"
+            <a href="/monitor/" target="_blank" class="nav-link" style="--nav-c: #f87171" (click)="openAdminPage($event, '/monitor/')"
                [attr.title]="compact() ? 'Monitor' : null" [attr.aria-label]="compact() ? 'Monitor (opens a new tab)' : null">
               <i class="pi pi-chart-line" aria-hidden="true"></i>
               @if (!compact()) { <span>Monitor</span> }
             </a>
-            <a href="/swagger/index.html" target="_blank" class="nav-link" (click)="openAdminPage($event, '/swagger/index.html')"
+            <a href="/swagger/index.html" target="_blank" class="nav-link" style="--nav-c: #818cf8" (click)="openAdminPage($event, '/swagger/index.html')"
                [attr.title]="compact() ? 'API Docs' : null" [attr.aria-label]="compact() ? 'API Docs (opens a new tab)' : null">
               <i class="pi pi-book" aria-hidden="true"></i>
               @if (!compact()) { <span>API Docs</span> }
             </a>
-            <a href="#" target="_blank" class="nav-link" data-nav="sheet" (click)="openSheet($event)"
+            <a href="#" target="_blank" class="nav-link" data-nav="sheet" style="--nav-c: #4ade80" (click)="openSheet($event)"
                [attr.title]="compact() ? 'Google Sheet' : null" [attr.aria-label]="compact() ? 'Google Sheet (opens a new tab)' : null">
               <i class="pi pi-table" aria-hidden="true"></i>
               @if (!compact()) { <span>Google Sheet</span> }

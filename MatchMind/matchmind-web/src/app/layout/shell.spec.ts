@@ -41,13 +41,22 @@ describe('routing', () => {
   it('API Logs is admin only: hidden from viewers and guarded (UX-026)', async () => {
     const h = await start('VIEWER', '/no-such-page');
     expect(navLabels(h)).not.toContain('API Logs');
+    expect(navLabels(h)).not.toContain('Visitors');
     await TestBed.inject(Router).navigateByUrl('/api-logs');
     expect(TestBed.inject(Router).url).toBe('/dashboard');
+  });
+
+  it('gives every menu icon its own colour', async () => {
+    const h = await start('ADMIN', '/no-such-page');
+    const colours = [...root(h).querySelectorAll<HTMLElement>('.nav-link')].map(a => a.style.getPropertyValue('--nav-c'));
+    expect(colours.every(c => /^#[0-9a-f]{6}$/.test(c))).toBe(true);
+    expect(new Set(colours).size).toBe(colours.length);
   });
 
   it('admins see API Logs', async () => {
     const h = await start('ADMIN', '/no-such-page');
     expect(navLabels(h)).toContain('API Logs');
+    expect(navLabels(h)).toContain('Visitors');
   });
 
   it('Monitor is admin only and opens /monitor/ in a new tab after the API sets its cookie', async () => {

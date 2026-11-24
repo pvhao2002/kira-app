@@ -28,6 +28,19 @@ rows and their amount, which stay out of `withdrawals` and `profit`). The `weekl
 totals with a `periodStart` date. Weeks begin on Monday and reporting dates use GMT+7. `weekly` and `monthly` are
 newest first and omit periods without transactions. See the [example response](samples/account-transactions.json).
 
+## Visitors
+
+Signed-out visits for the admin **Visitors** page. The login page sends the public IP it got from
+`https://api.ipify.org?format=json` once per browser session. The country comes from Cloudflare's `CF-IPCountry` header
+(`XX` unknown, `T1` Tor), browser and OS from the `User-Agent`. The same IP and User-Agent within 30 minutes is one
+visit. Rows are kept without expiry. See the [example responses](samples/visits.json).
+
+| Endpoint | Behaviour |
+| --- | --- |
+| `POST /visits` | Public. Body `{"ip": "203.0.113.7"}`, `ip` optional (the API then uses `CF-Connecting-IP` or the peer). Any other field or a malformed IP is `400`. `204` always, also for a repeat within 30 minutes. nginx limits it to 6 per minute per visitor IP (`429`). |
+| `GET /visits/countries` | ADMIN. `[{country, visits, uniqueIps, lastSeen}]`, most visits first. |
+| `GET /visits?country=VN&page=0&size=100` | ADMIN. One page of visits, newest first: `{id, visitedAt, ip, country, browser, os, userAgent}`. `size` defaults to 100 (max 200). |
+
 ## Authentication
 
 | Caller | How | Scope |

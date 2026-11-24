@@ -4,6 +4,22 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { apiError, safeReturnUrl } from '../core/http';
 
+const VISIT_KEY = 'matchmind.visit-logged';
+
+/**
+ * Logs this signed-out visit for the admin Visitors page, once per browser session. Plain fetch, not HttpClient:
+ * a blocked ipify or a failed log must never show an error toast. Without ipify the API uses the IP it sees.
+ */
+export async function recordVisit(): Promise<void> {
+  try {
+    if (sessionStorage.getItem(VISIT_KEY)) return;
+    sessionStorage.setItem(VISIT_KEY, '1');
+    const ip = await fetch('https://api.ipify.org?format=json').then(r => r.json()).then(j => j?.ip).catch(() => undefined);
+    await fetch('/api/v1/visits', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(typeof ip === 'string' ? { ip } : {}) });
+  } catch { /* best effort */ }
+}
+
 @Component({
   selector: 'mm-login',
   imports: [ReactiveFormsModule],
@@ -66,6 +82,7 @@ export class LoginPage {
   readonly submitted = signal(false);
   readonly showPassword = signal(false);
   readonly expired = this.route.snapshot.queryParamMap.get('expired') === '1';
+  private readonly visit = recordVisit();
 
   readonly form = inject(FormBuilder).nonNullable.group({
     username: ['', [Validators.required, Validators.maxLength(64)]],
