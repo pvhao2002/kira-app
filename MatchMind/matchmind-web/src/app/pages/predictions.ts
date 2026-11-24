@@ -4,11 +4,12 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { LiveService } from '../core/live.service';
-import { Filters, OddsSnapshot, PickDetail, PredictionRow } from '../core/models';
+import { Filters, OddsSnapshot, PickDetail, PredictionDetail, PredictionRow } from '../core/models';
 import { BarFilters, FilterBar } from '../shared/filter-bar';
 import { dayEndExclusive, dayStart, fmtDateTime, humanize, lineSplit, lineText, num, pct, pickText } from '../shared/format';
 import { Paginator, SortHeader } from '../shared/kit';
 import { PagedList } from '../shared/paged-list';
+import { ParlaySlip } from '../shared/parlay-slip';
 import { DetailsMenu, ResultTag, ScoreChip, StateView } from '../shared/ui';
 
 /** Columns a user can show or hide; the rest (match, model, pick, result) always show. */
@@ -116,7 +117,8 @@ export function pickSummary(p: PredictionRow): string {
         }
       </section>
       @if (peeked(); as h) {
-        <div class="odds-pop" role="tooltip" data-testid="odds-pop" [style.left.px]="h.left" [style.top.px]="h.top" [class.above]="h.above">
+        <div class="odds-pop" role="dialog" aria-label="Odds and top picks" data-testid="odds-pop" [style.left.px]="h.left" [style.top.px]="h.top" [class.above]="h.above"
+          (mouseenter)="keepPeek()" (mouseleave)="unpeek()">
           @if (peekDetail.value(); as d) {
             <div class="pop-body">
             <table class="dt compact-sm" aria-label="Odds">
@@ -128,7 +130,11 @@ export function pickSummary(p: PredictionRow): string {
             <ol class="pop-picks" aria-label="Picks" data-testid="pop-picks">
               @for (k of topPicks(d.picks); track k.id) {
                 <li><span class="rank">#{{ k.rank }}</span><span><strong>{{ pickText(k.market, k.pick, k.line) }}</strong>
-                  <span class="cell-sub">{{ pct(k.probability) }} · {{ num(k.price) }}</span></span><mm-result [value]="k.settlementStatus" /></li>
+                  <span class="cell-sub">{{ pct(k.probability) }} · {{ num(k.price) }}</span></span><mm-result [value]="k.settlementStatus" />
+                  <button type="button" class="btn btn-sm btn-icon" data-testid="add-parlay" [class.btn-primary]="slip.has(k.id)" [attr.aria-pressed]="slip.has(k.id)"
+                    [title]="slip.has(k.id) ? 'In parlay: click to take it out' : 'Add to parlay'" [attr.aria-label]="slip.has(k.id) ? 'In parlay' : 'Add to parlay'"
+                    (click)="toggleParlay(d, k)">
+                    <i class="pi" [class.pi-check]="slip.has(k.id)" [class.pi-plus]="!slip.has(k.id)" aria-hidden="true"></i></button></li>
               } @empty { <li class="muted-text">No picks.</li> }
             </ol>
             </div>
@@ -141,9 +147,9 @@ export function pickSummary(p: PredictionRow): string {
     /* Hover popover with the prediction's odds; mouse only (touch opens the detail page instead). */
     .pop-body { display: flex; gap: .75rem; align-items: flex-start; }
     .pop-picks { list-style: none; margin: 0; padding: 0 0 0 .75rem; border-left: 1px solid var(--mm-line); display: grid; gap: .5rem; min-width: 180px; }
-    .pop-picks li { display: grid; grid-template-columns: auto 1fr auto; gap: .4rem; align-items: center; }
+    .pop-picks li { display: grid; grid-template-columns: auto 1fr auto auto; gap: .4rem; align-items: center; }
     .pop-picks .rank { font-weight: 700; color: var(--mm-ink-2); }
-    .odds-pop { position: fixed; z-index: 50; pointer-events: none; max-width: min(680px, calc(100vw - 16px)); max-height: 50vh; overflow: hidden;
+    .odds-pop { position: fixed; z-index: 50; max-width: min(680px, calc(100vw - 16px)); max-height: 50vh; overflow: hidden;
       padding: .5rem; background: var(--mm-card); border: 1px solid var(--mm-glass-border); border-radius: var(--mm-radius);
       box-shadow: var(--mm-shadow); backdrop-filter: var(--mm-blur); -webkit-backdrop-filter: var(--mm-blur); font-size: var(--fs-sm); }
     .odds-pop.above { transform: translateY(-100%); }
@@ -163,6 +169,7 @@ export class PredictionsPage {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
   readonly isAdmin = inject(AuthService).isAdmin;
+  readonly slip = inject(ParlaySlip);
   readonly matchId = signal(this.route.snapshot.queryParamMap.get('matchId') || undefined);
   readonly fmt = fmtDateTime;
   readonly humanize = humanize;
@@ -214,9 +221,17 @@ export class PredictionsPage {
     this.peekTimer = setTimeout(() => this.peeked.set({ id, left, top: above ? row.top - 4 : row.bottom + 4, above }), 250);
   }
 
+  /** Closes after a short grace, so the mouse can cross from the row onto the popover to use its buttons. */
   unpeek(): void {
     clearTimeout(this.peekTimer);
-    this.peeked.set(null);
+    this.peekTimer = setTimeout(() => this.peeked.set(null), 150);
+  }
+
+  keepPeek(): void { clearTimeout(this.peekTimer); }
+
+  toggleParlay(d: PredictionDetail, k: PickDetail): void {
+    this.slip.toggle({ pickId: k.id, matchId: d.match.id, match: `${d.match.homeTeam} – ${d.match.awayTeam}`,
+      pick: pickText(k.market, k.pick, k.line), price: Number(k.price) });
   }
 
   /** Rank 1 and 2, in rank order. */

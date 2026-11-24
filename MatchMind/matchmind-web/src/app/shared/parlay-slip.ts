@@ -27,6 +27,13 @@ export class ParlaySlip {
 
   remove(pickId: string): void { this.set(this.legs().filter(l => l.pickId !== pickId)); }
 
+  /** Adds the leg and opens the slip, or takes it out again when it is already on the slip. */
+  toggle(leg: SlipLeg): void {
+    if (this.has(leg.pickId)) { this.remove(leg.pickId); return; }
+    this.add(leg);
+    this.open.set(true);
+  }
+
   clear(): void { this.set([]); this.open.set(false); }
 
   private set(legs: SlipLeg[]): void {

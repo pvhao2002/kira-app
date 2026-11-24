@@ -12,6 +12,7 @@ import { ApiLogsPage } from './api-logs';
 import { MatchesPage } from './matches';
 import { ModelsPage } from './models';
 import { PredictionsPage } from './predictions';
+import { ParlaySlip } from '../shared/parlay-slip';
 
 const page = <T>(data: T[]) => ({ data, meta: { page: 0, size: 25, totalElements: data.length, totalPages: 1 } });
 const PAGED = ['/api/v1/matches', '/api/v1/predictions', '/api/v1/api-logs'];
@@ -295,7 +296,7 @@ describe('PredictionsPage', () => {
     const tr = t.el().querySelector('tbody tr')!;
     tr.dispatchEvent(new MouseEvent('mouseenter', { clientX: 100 }));
     await new Promise(res => setTimeout(res, 300));
-    await t.answer({ [`/api/v1/predictions/${row.id}`]: { id: row.id, odds: [
+    await t.answer({ [`/api/v1/predictions/${row.id}`]: { id: row.id, match: { id: 'm1', homeTeam: 'Arsenal', awayTeam: 'Chelsea' }, odds: [
       { id: 'o1', ref: 'ah-live', market: 'AH', stage: 'LIVE', snapshotOrder: 1, line: -0.25, lineDisplay: '0/-0.5', homeOdds: 1.95,
         drawOdds: null, awayOdds: 1.9, overOdds: null, underOdds: null } ], picks: [
       { id: 'k2', rank: 2, market: 'OU', pick: 'OVER', probability: 0.54, price: 1.85, line: 2.25, settlementStatus: 'PENDING' },
@@ -307,7 +308,21 @@ describe('PredictionsPage', () => {
     expect(picks[0]).toContain('#1');
     expect(picks[0]).toContain('AH HOME');
     expect(picks[1]).toContain('OU OVER');
+    // The mouse may cross from the row onto the popover and add a pick to the parlay from there.
     tr.dispatchEvent(new MouseEvent('mouseleave'));
+    pop.dispatchEvent(new MouseEvent('mouseenter'));
+    await new Promise(res => setTimeout(res, 250));
+    t.harness.fixture.detectChanges();
+    const add = pop.querySelector<HTMLButtonElement>('[data-testid="pop-picks"] li [data-testid="add-parlay"]')!;
+    add.click();
+    t.harness.fixture.detectChanges();
+    const slip = TestBed.inject(ParlaySlip);
+    expect(slip.has('k1')).toBe(true);
+    expect(slip.legs()[0]).toMatchObject({ matchId: 'm1', match: 'Arsenal – Chelsea', price: 1.95 });
+    expect(add.getAttribute('aria-pressed')).toBe('true');
+    slip.clear();
+    pop.dispatchEvent(new MouseEvent('mouseleave'));
+    await new Promise(res => setTimeout(res, 250));
     t.harness.fixture.detectChanges();
     expect(t.el().querySelector('[data-testid="odds-pop"]')).toBeNull();
   });

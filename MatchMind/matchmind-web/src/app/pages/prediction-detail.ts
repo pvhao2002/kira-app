@@ -328,10 +328,8 @@ export class PredictionDetailPage {
 
   /** Adds the pick to the draft parlay (replacing another pick of this match), or takes it out again. */
   toggleParlay(d: PredictionDetail, p: PickDetail): void {
-    if (this.slip.has(p.id)) { this.slip.remove(p.id); return; }
-    this.slip.add({ pickId: p.id, matchId: d.match.id, match: `${d.match.homeTeam} – ${d.match.awayTeam}`,
+    this.slip.toggle({ pickId: p.id, matchId: d.match.id, match: `${d.match.homeTeam} – ${d.match.awayTeam}`,
       pick: pickText(p.market, p.pick, p.line), price: Number(p.price) });
-    this.slip.open.set(true);
   }
   /** A count with thousands separators (100000 becomes 100,000). */
   readonly int = (n: number): string => n.toLocaleString();
