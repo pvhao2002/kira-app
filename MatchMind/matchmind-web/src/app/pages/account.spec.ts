@@ -54,6 +54,7 @@ describe('Account Management', () => {
     expect(el.textContent).toContain('WD-17');
     expect(el.textContent).toContain('Cancelled');
     expect(el.textContent).toContain('-20');
+    expect(el.querySelector('table[aria-label="Transactions"] .tag')!.className).toContain('tag-success');   // withdrawal green
     choose('weekly');
     expect(el.textContent).toContain('16 Nov 2026');
     http.verify();

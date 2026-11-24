@@ -41,7 +41,11 @@ const monthLabel = new Intl.DateTimeFormat(APP_LOCALE, { month: 'short', year: '
   selector: 'mm-account',
   imports: [ChartView, CopyFallback, DecimalPipe, Paginator, StateView],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: `.steps { margin: 0; padding-left: 1.25rem; display: grid; gap: 6px; }`,
+  // Money tiles: wider columns, and the value shrinks with its tile (cqi) and wraps as a last resort instead of overflowing.
+  styles: `.steps { margin: 0; padding-left: 1.25rem; display: grid; gap: 6px; }
+    .kpis { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
+    .kpi { container-type: inline-size; min-width: 0; }
+    .kpi strong { font-size: clamp(1rem, 10cqi, 1.75rem); white-space: normal; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }`,
   template: `
     <div class="stack">
       <section class="panel stack">
@@ -116,7 +120,7 @@ const monthLabel = new Intl.DateTimeFormat(APP_LOCALE, { month: 'short', year: '
           <div class="table-wrap"><table class="dt" aria-label="Transactions">
             <thead><tr><th>Date</th><th>Reference</th><th>Type</th><th>Status</th><th class="num">Amount</th></tr></thead>
             <tbody>@for (txn of ledger.transactions; track txn) {
-              <tr><td>{{ fmt(txn.occurredAt) }}</td><td>{{ txn.reference }}</td><td>{{ labels[txn.type] }}</td>
+              <tr><td>{{ fmt(txn.occurredAt) }}</td><td>{{ txn.reference }}</td><td><span class="tag" [class]="tags[txn.type]">{{ labels[txn.type] }}</span></td>
                 <td>{{ statuses[txn.status] }}</td><td class="num">{{ txn.amount | number:'1.0-4' }}</td></tr>
             } @empty { <tr><td colspan="5" class="empty">No imported transactions yet.</td></tr> }</tbody>
           </table></div>
@@ -147,6 +151,7 @@ export class AccountPage {
   readonly period = signal<keyof AccountLedger['reports']>('allTime');
   readonly periods = [{ key: 'allTime', label: 'All time' }, { key: 'weekly', label: 'Weekly' }, { key: 'monthly', label: 'Monthly' }] as const;
   readonly labels = { CREDIT: 'Deposit', DEBIT: 'Withdrawal', REWARD: 'Bonus' };
+  readonly tags = { CREDIT: 'tag-danger', DEBIT: 'tag-success', REWARD: 'tag-warn' };
   readonly statuses = { SUCCESS: 'Successful', CANCELLED: 'Cancelled' };
   readonly fmt = fmtDateTime;
   readonly hasData = computed(() => (this.data()?.meta.totalElements ?? 0) > 0);
