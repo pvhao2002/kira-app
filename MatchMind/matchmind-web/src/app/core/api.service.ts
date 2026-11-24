@@ -117,6 +117,8 @@ export class ApiService {
   /** Sliding renewal: swap the stored token for the new one before `expiresAt`. A 401 means the session is over. */
   refreshToken() { return this.http.post<LoginResponse>(`${API}/auth/refresh`, {}); }
   /** Admin: sets the HttpOnly cookie that signs this session in to /monitor (Grafana). */
+  /** Admin: the shared Google Sheet link; 404 SHEET_NOT_CONFIGURED when MATCHMIND_SHEET_URL is unset. */
+  sheetLink() { return this.http.get<{ url: string }>(`${API}/auth/sheet`); }
   monitorSession() { return this.http.post<void>(`${API}/auth/monitor-session`, {}); }
   /** Admin: a random 16-character password for the create-user and reset forms. Nothing is stored server-side. */
   generatePassword() { return this.http.post<{ password: string }>(`${API}/users/generate-password`, {}); }

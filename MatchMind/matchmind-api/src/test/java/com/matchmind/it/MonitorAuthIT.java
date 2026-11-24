@@ -54,4 +54,15 @@ class MonitorAuthIT extends IntegrationTestBase {
         assertThat(mvc.perform(get("/api/v1/auth/me").cookie(new Cookie("mm_monitor", adminToken)))
             .andReturn().getResponse().getStatus()).isEqualTo(401);
     }
+
+    @Test
+    void onlyAdminsReadTheSheetLink() throws Exception {
+        MockHttpServletResponse admin = mvc.perform(asAdmin(get("/api/v1/auth/sheet"))).andReturn().getResponse();
+        assertThat(admin.getStatus()).isEqualTo(200);
+        assertThat(admin.getContentAsString()).isEqualTo("{\"url\":\"" + SHEET_URL + "\"}");
+        adminPost("/api/v1/users", Map.of("username", "sheetviewer", "password", "viewer-password-12", "role", "VIEWER"));
+        String viewer = login("sheetviewer", "viewer-password-12");
+        assertThat(mvc.perform(get("/api/v1/auth/sheet").header("Authorization", "Bearer " + viewer))
+            .andReturn().getResponse().getStatus()).isEqualTo(403);
+    }
 }

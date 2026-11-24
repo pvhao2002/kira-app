@@ -62,6 +62,11 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
               <i class="pi pi-book" aria-hidden="true"></i>
               @if (!compact()) { <span>API Docs</span> }
             </a>
+            <a href="#" target="_blank" class="nav-link" data-nav="sheet" (click)="openSheet($event)"
+               [attr.title]="compact() ? 'Google Sheet' : null" [attr.aria-label]="compact() ? 'Google Sheet (opens a new tab)' : null">
+              <i class="pi pi-table" aria-hidden="true"></i>
+              @if (!compact()) { <span>Google Sheet</span> }
+            </a>
           }
         </nav>
         <button type="button" class="collapse-btn" (click)="toggle()" [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
@@ -139,6 +144,19 @@ export class Shell {
     tab.opener = null;
     this.api.monitorSession().subscribe({
       next: () => { tab.location.href = url; },
+      error: () => tab.close(),   // the error interceptor already shows why
+    });
+  }
+
+  /** Same as openAdminPage, but the address comes from the API (MATCHMIND_SHEET_URL). */
+  openSheet(e: Event): void {
+    e.preventDefault();
+    this.closeNav(false);
+    const tab = window.open('', '_blank');
+    if (!tab) return;
+    tab.opener = null;
+    this.api.sheetLink().subscribe({
+      next: ({ url }) => { tab.location.href = url; },
       error: () => tab.close(),   // the error interceptor already shows why
     });
   }

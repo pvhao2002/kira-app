@@ -64,7 +64,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                 .requestMatchers(HttpMethod.GET, ExternalPingController.PATH).permitAll()
                 .requestMatchers("/api/v1/external/**").hasRole("PROVIDER")
-                .requestMatchers("/api/v1/auth/monitor-session", MonitorController.CHECK_PATH).hasRole("ADMIN")
+                .requestMatchers("/api/v1/auth/monitor-session", MonitorController.CHECK_PATH, MonitorController.SHEET_PATH).hasRole("ADMIN")
                 .requestMatchers("/api/v1/auth/**").hasAnyRole("ADMIN", "VIEWER")
                 .requestMatchers(HttpMethod.POST, "/api/v1/account/images").hasAnyRole("ADMIN", "VIEWER")
                 .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")

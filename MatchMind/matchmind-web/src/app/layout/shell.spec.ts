@@ -86,6 +86,25 @@ describe('routing', () => {
     open.mockRestore();
   });
 
+  it('Google Sheet is admin only and opens the configured sheet in a new tab', async () => {
+    const viewer = await start('VIEWER', '/no-such-page');
+    expect(navLabels(viewer)).not.toContain('Google Sheet');
+    TestBed.resetTestingModule();
+
+    const h = await start('ADMIN', '/no-such-page');
+    const link = root(h).querySelector<HTMLAnchorElement>('a.nav-link[data-nav="sheet"]');
+    expect(link?.textContent?.trim()).toBe('Google Sheet');
+    const tab = { opener: {}, location: { href: '' }, close: vi.fn() };
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    link!.click();
+    expect(open).toHaveBeenCalledWith('', '_blank');
+    const url = 'https://docs.google.com/spreadsheets/d/abc/edit';
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/auth/sheet').flush({ url });
+    expect(tab.opener).toBeNull();
+    expect(tab.location.href).toBe(url);
+    open.mockRestore();
+  });
+
   it('keeps a user who must change the password on Settings (UX-059)', async () => {
     await start('VIEWER', '/dashboard', { mustChangePassword: true });
     expect(TestBed.inject(Router).url).toBe('/settings');
