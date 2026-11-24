@@ -123,7 +123,9 @@ class ProviderKeysIT extends IntegrationTestBase {
         Created p = provider();
         JsonNode key = issue(p.providerId(), null);
         String apiKey = key.get("apiKey").asText();
-        String secret = apiKey.substring(apiKey.lastIndexOf('_') + 1);
+        // The secret is base64url, which may itself contain '_': cut after the known "mmk_<keyId>_" prefix.
+        String secret = apiKey.substring(("mmk_" + key.get("keyId").asText() + "_").length());
+        assertThat(secret).hasSize(43);   // 32 random bytes
         call(apiKey, "predictions", Payloads.livePrediction(id("e"), id("m"), "audit"));
         Map<String, Object> row = db.queryForMap("SELECT * FROM external_api_requests WHERE provider_id = ? ORDER BY received_at DESC LIMIT 1",
             p.providerId());
