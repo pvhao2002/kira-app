@@ -8,6 +8,7 @@ import { AuthService } from '../core/auth.service';
 import { LiveService } from '../core/live.service';
 import { PageTitle } from '../core/page-title';
 import { tzLabel } from '../shared/format';
+import { ParlaySlipPanel } from '../shared/parlay-slip';
 
 /** `color`: icon tint, a light 300/400 shade so it reads on the navy sidebar in both themes. */
 interface NavItem { path: string; label: string; icon: string; color: string; adminOnly?: boolean; }
@@ -19,6 +20,7 @@ const NAV: NavItem[] = [
   { path: '/models', label: 'AI Models', icon: 'pi-microchip-ai', color: '#c084fc' },
   { path: '/providers', label: 'Providers', icon: 'pi-server', color: '#22d3ee' },
   { path: '/reports', label: 'Reports', icon: 'pi-chart-bar', color: '#f472b6' },
+  { path: '/parlays', label: 'Parlays', icon: 'pi-ticket', color: '#fb7185' },
   { path: '/account', label: 'Account Management', icon: 'pi-wallet', color: '#facc15' },
   { path: '/prompts', label: 'Prompt Notes', icon: 'pi-file-edit', color: '#fb923c' },
   { path: '/import', label: 'Import', icon: 'pi-upload', color: '#a3e635', adminOnly: true },
@@ -31,7 +33,7 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
 
 @Component({
   selector: 'mm-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ParlaySlipPanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(window:resize)': 'onResize()' },
   template: `
@@ -89,6 +91,7 @@ const MOBILE_MAX = 900;   // keep in step with the drawer breakpoint in styles.s
           </div>
         </header>
         <main class="content" #mainEl tabindex="-1"><router-outlet /></main>
+        <mm-parlay-slip />
       </div>
       <div class="sr-only" aria-live="polite">{{ announced() }}</div>
     </div>`,

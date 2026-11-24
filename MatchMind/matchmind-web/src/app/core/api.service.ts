@@ -6,7 +6,7 @@ import {
   AccountImport, AccountLedger, Visit, VisitCountry,
   AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, CalibrationReport, TopPickBy, TopPickReport, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
-  Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
+  Page, Parlay, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
   AdminResultRequest, AgentPrompt, PromptVersion, PromptVersionSummary, ResultResponse, SettlementPromptInput,
   PredictionIngestResponse, IssuedKey, KeyScope, ProviderKey, FixtureMergeRequest, FixtureBackfillResult, LeagueAlias, LeagueAliasRequest, AdminReasonRequest,
   FixtureSuggestion, FixtureView, TypeCompareBy, TypeComparisonRow,
@@ -39,6 +39,15 @@ export class ApiService {
   /** Admin: signed-out visits grouped by country. */
   visitCountriesResource() { return httpResource<VisitCountry[]>(() => `${API}/visits/countries`); }
   /** Admin: one country's visits, newest first, 100 per page. */
+  // Parlays: the signed-in user's own
+  parlaysResource(page: () => number) {
+    return httpResource<Page<Parlay>>(() => ({ url: `${API}/parlays`, params: toParams({ page: page(), size: 25 }) }));
+  }
+  createParlay(pickIds: string[], stake: number | null) {
+    return this.http.post<{ id: string }>(`${API}/parlays`, { pickIds, stake: stake ?? undefined });
+  }
+  deleteParlay(id: string) { return this.http.delete<void>(`${API}/parlays/${encodeURIComponent(id)}`); }
+
   visitsResource(country: () => string, page: () => number) {
     return httpResource<Page<Visit>>(() => ({ url: `${API}/visits`, params: toParams({ country: country(), page: page(), size: 100 }) }));
   }

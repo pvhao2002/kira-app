@@ -403,3 +403,13 @@ export interface PromptVersionSummary {
   createdAt: string;
 }
 export interface PromptVersion extends PromptVersionSummary { content: string; }
+
+export interface ParlayLeg {
+  pickId: string; predictionId: string; matchId: string; homeTeam: string; awayTeam: string; league: string; startTime: string;
+  market: Market; pick: string; line: number | null; lineDisplay: string | null; price: number; result: SettlementResult;
+}
+/** result: WIN, LOSS, PUSH or PENDING; payout and profit only with a stake and once every leg is settled (or one lost). */
+export interface Parlay {
+  id: string; createdAt: string; stake: number | null; legs: ParlayLeg[]; totalOdds: number; result: SettlementResult;
+  payout: number | null; profit: number | null;
+}

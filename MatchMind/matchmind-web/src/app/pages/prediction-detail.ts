@@ -9,10 +9,11 @@ import { PageTitle } from '../core/page-title';
 import { errorMessage, safeValue, viewState } from '../core/resource';
 import { PickDetail, PickResultRow, PredictionDetail } from '../core/models';
 import {
-  basisNote, bidiSafe, extraStatRows, fmtDateTime, humanize, lineSplit, lineText, num, pct, probabilityTables, score, settlementSentence, statRows,
+  basisNote, bidiSafe, extraStatRows, fmtDateTime, humanize, lineSplit, lineText, num, pct, pickText, probabilityTables, score, settlementSentence, statRows,
 } from '../shared/format';
 import { Dialog, Expansion, Tabs, ToastService } from '../shared/kit';
 import { Select, SelectOption } from '../shared/select';
+import { ParlaySlip } from '../shared/parlay-slip';
 import { JsonView, ResultTag, ScoreChip, StateView } from '../shared/ui';
 
 type Action = { kind: 'recalculate' | 'override'; pick: PickDetail };
@@ -112,7 +113,7 @@ const MIN_REASON = 5;
               <div class="table-wrap"><table class="dt compact-sm" aria-label="Picks">
                 <thead>
                   <tr><th class="th-icon"><span class="sr-only">Details</span></th><th class="num hide-sm">#</th><th class="hide-sm">Market</th><th>Pick</th><th class="num">Line</th><th class="hide-sm">Stage</th>
-                    <th class="num hide-sm">Prob.</th><th class="num hide-sm">Price</th><th>Result</th><th class="hide-sm">Settled by</th>@if (auth.isAdmin()) { <th><span class="sr-only">Actions</span></th> }</tr>
+                    <th class="num hide-sm">Prob.</th><th class="num hide-sm">Price</th><th>Result</th><th class="hide-sm">Settled by</th><th><span class="sr-only">Parlay</span></th>@if (auth.isAdmin()) { <th><span class="sr-only">Actions</span></th> }</tr>
                 </thead>
                 <tbody>
                   @for (p of d.picks; track p.id) {
@@ -135,6 +136,12 @@ const MIN_REASON = 5;
                       } @else { <mm-result [value]="p.settlementStatus" /> }
                     </td>
                     <td class="hide-sm">{{ currentSource(p) }}</td>
+                    <td>@if (p.price) {
+                      <button type="button" class="btn btn-sm" data-testid="add-parlay" [class.btn-primary]="slip.has(p.id)"
+                        [attr.aria-pressed]="slip.has(p.id)" (click)="toggleParlay(d, p)">
+                        <i class="pi" [class.pi-check]="slip.has(p.id)" [class.pi-plus]="!slip.has(p.id)" aria-hidden="true"></i>
+                        {{ slip.has(p.id) ? 'In parlay' : 'Add to parlay' }}</button>
+                    }</td>
                     @if (auth.isAdmin()) {
                       <td class="actions">
                         <button type="button" class="btn btn-text btn-sm" data-testid="recalculate" [attr.aria-describedby]="isFinal() ? null : 'pick-actions-note'" (click)="open('recalculate', p)" [disabled]="!isFinal() && p.settlementStatus === 'PENDING'">Recalculate</button>
@@ -144,7 +151,7 @@ const MIN_REASON = 5;
                     }
                   </tr>
                   @if (expanded.has(p.id)) {
-                  <tr class="expanded" [id]="'pick-hist-' + p.id"><td [attr.colspan]="auth.isAdmin() ? 11 : 10">
+                  <tr class="expanded" [id]="'pick-hist-' + p.id"><td [attr.colspan]="auth.isAdmin() ? 12 : 11">
                     @for (r of p.results; track r.id; let i = $index) {
                       <div class="hist-item">
                         <mm-result [value]="r.result" /> <strong>{{ humanize(r.source) }}</strong>@if (actedBy(r)) { by {{ actedBy(r) }} } · {{ fmt(r.settledAt) }} · {{ r.calculationVersion }}
@@ -157,7 +164,7 @@ const MIN_REASON = 5;
                     } @empty { <p class="muted-text">Not settled yet. It settles automatically when the match result arrives.</p> }
                   </td></tr>
                   }
-                  } @empty { <tr><td [attr.colspan]="auth.isAdmin() ? 11 : 10" class="empty">No picks.</td></tr> }
+                  } @empty { <tr><td [attr.colspan]="auth.isAdmin() ? 12 : 11" class="empty">No picks.</td></tr> }
                 </tbody>
               </table></div>
             }
@@ -317,6 +324,15 @@ export class PredictionDetailPage {
   readonly humanize = humanize;
   readonly pct = pct;
   readonly num = num;
+  readonly slip = inject(ParlaySlip);
+
+  /** Adds the pick to the draft parlay (replacing another pick of this match), or takes it out again. */
+  toggleParlay(d: PredictionDetail, p: PickDetail): void {
+    if (this.slip.has(p.id)) { this.slip.remove(p.id); return; }
+    this.slip.add({ pickId: p.id, matchId: d.match.id, match: `${d.match.homeTeam} – ${d.match.awayTeam}`,
+      pick: pickText(p.market, p.pick, p.line), price: Number(p.price) });
+    this.slip.open.set(true);
+  }
   /** A count with thousands separators (100000 becomes 100,000). */
   readonly int = (n: number): string => n.toLocaleString();
   readonly lineText = lineText;

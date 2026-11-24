@@ -8,6 +8,21 @@ Interactive docs: `/swagger/index.html` (Swagger UI) and `/swagger/v3/api-docs` 
 sets the `mm_monitor` cookie (`POST /auth/monitor-session`, also scoped to `/swagger`) and nginx checks it on every
 request, as for `/monitor/`. **Authorize** with a bearer token (or `X-Api-Key`) to use "Try it out".
 
+## Parlays
+
+Every signed-in user (ADMIN or VIEWER) keeps their own parlays; another user's parlay is `404`.
+
+| Method and path | Input and result |
+|---|---|
+| `POST /parlays` | `{pickIds: [2..20 pick IDs], stake?: positive decimal}`. `201 {id}`. One pick per match: `400 SAME_MATCH`; a pick twice `400 DUPLICATE_PICK`; an unknown pick `404 PICK_NOT_FOUND`; a pick whose odds have no price `400 NO_PRICE`. |
+| `GET /parlays?page=0&size=25` | Newest first. Each parlay: `id, createdAt, stake, legs[], totalOdds` (product of the leg prices), `result, payout, profit`. A leg: `pickId, predictionId, matchId, homeTeam, awayTeam, league, startTime, market, pick, line, lineDisplay, price, result`. |
+| `DELETE /parlays/{id}` | `204`. |
+
+`result` is worked out on every read from the legs' current pick results: any `LOSS` makes it `LOSS`; otherwise any
+`PENDING` keeps it `PENDING`; otherwise each leg multiplies the return, `WIN` by its price, `HALF_WIN` by
+(1 + price) / 2, `PUSH` and `VOID` by 1, `HALF_LOSS` by 0.5, and the parlay is `WIN` above 1, `PUSH` at 1, `LOSS` below.
+`payout` = stake x that factor and `profit` = payout - stake, both `null` without a stake or while `PENDING`.
+
 ## Account Management
 
 | Method and path | Input and result |

@@ -70,6 +70,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/monitor-session", MonitorController.CHECK_PATH, MonitorController.SHEET_PATH).hasRole("ADMIN")
                 .requestMatchers("/api/v1/auth/**").hasAnyRole("ADMIN", "VIEWER")
                 .requestMatchers(HttpMethod.POST, "/api/v1/account/imports").hasAnyRole("ADMIN", "VIEWER")
+                // Every signed-in user keeps their own parlays (the controller scopes each query to the caller).
+                .requestMatchers("/api/v1/parlays", "/api/v1/parlays/**").hasAnyRole("ADMIN", "VIEWER")
                 .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
                 // Callback audit trail: client IPs, endpoints and error text are for admins only (the UI hides the menu).
                 .requestMatchers("/api/v1/api-logs", "/api/v1/api-logs/**").hasRole("ADMIN")
