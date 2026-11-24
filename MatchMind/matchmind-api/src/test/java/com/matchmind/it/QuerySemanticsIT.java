@@ -134,12 +134,17 @@ class QuerySemanticsIT extends IntegrationTestBase {
         Integration in = newIntegration("lf-model");
         external(in.provider(), "predictions", Payloads.livePrediction("e1-" + suffix, "lf1-" + suffix, in.modelName()));
         external(in.provider(), "predictions", Payloads.livePrediction("e2-" + suffix, "lf2-" + suffix, in.modelName()));
-        db.update("UPDATE matches SET status = 'SCHEDULED' WHERE external_match_id = ?", "lf1-" + suffix);
-        db.update("UPDATE matches SET status = 'LIVE' WHERE external_match_id = ?", "lf2-" + suffix);
+        // Live means kicked off less than 2 hours ago, whatever status the feed last sent.
+        db.update("UPDATE matches SET status = 'SCHEDULED', start_time = now() - interval '3 hours' WHERE external_match_id = ?", "lf1-" + suffix);
+        db.update("UPDATE matches SET status = 'SCHEDULED', start_time = now() - interval '30 minutes' WHERE external_match_id = ?", "lf2-" + suffix);
+        String live = db.queryForObject("SELECT id::text FROM matches WHERE external_match_id = ?", String.class, "lf2-" + suffix);
         String q = "/api/v1/predictions?providerId=" + providerId(in) + "&sort=startTime,asc";
 
-        assertThat(adminGet(q + "&liveFirst=true").get("data").get(0).get("matchStatus").asText()).isEqualTo("LIVE");
-        assertThat(adminGet(q.replace("asc", "desc") + "&liveFirst=true").get("data").get(0).get("matchStatus").asText()).isEqualTo("LIVE");
+        assertThat(adminGet(q).get("data").get(0).get("matchId").asText()).isNotEqualTo(live);
+        assertThat(adminGet(q + "&liveFirst=true").get("data").get(0).get("matchId").asText()).isEqualTo(live);
+        assertThat(adminGet(q.replace("asc", "desc") + "&liveFirst=true").get("data").get(0).get("matchId").asText()).isEqualTo(live);
+        db.update("UPDATE matches SET status = 'FINISHED', final_home_score = 1, final_away_score = 0 WHERE id = ?::uuid", live);
+        assertThat(adminGet(q + "&liveFirst=true").get("data").get(0).get("matchId").asText()).isNotEqualTo(live);
     }
 
     @Test

@@ -281,7 +281,11 @@ describe('PredictionsPage', () => {
 
   it('asks for live matches first, then the highest top-pick probability, and badges live rows', async () => {
     const t = await open('/predictions', PredictionsPage);
-    await t.answer({ '/api/v1/predictions': page([prediction({ matchStatus: 'LIVE' }), prediction({ id: 'p2', matchStatus: 'FINISHED' })]) });
+    const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
+    // Live by kick-off time: under 2 hours since kick-off and not ended, whatever status the feed last sent.
+    await t.answer({ '/api/v1/predictions': page([prediction({ matchStatus: 'SCHEDULED', startTime: ago(30) }),
+      prediction({ id: 'p2', matchStatus: 'LIVE', startTime: ago(180) }), prediction({ id: 'p3', matchStatus: 'FINISHED', startTime: ago(60) }),
+      prediction({ id: 'p4', matchStatus: 'SCHEDULED', startTime: ago(-30) })]) });
     const params = t.requests('/api/v1/predictions')[0].request.params;
     expect(params.get('liveFirst')).toBe('true');
     expect(params.get('sort')).toBe('probability,desc');

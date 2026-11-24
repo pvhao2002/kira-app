@@ -91,12 +91,16 @@ public class PredictionQueryService {
         "predictedAt", "p.predicted_at", "league", "m.league", "model", Sql.MODEL_NAME, "type", "p.prediction_type",
         "minute", "p.match_minute", "probability", "pk.probability", "startTime", "m.start_time");
 
+    /** Being played now by the clock: kicked off under 2 hours ago (a match with half-time) and not ended. The feed's LIVE status lags. */
+    static final String LIVE_NOW = "(m.status NOT IN ('FINISHED','CANCELLED','POSTPONED') AND m.start_time <= now() AND m.start_time > now() - interval '2 hours')";
+
     @Transactional(readOnly = true)
     /**
      * {@code result} matches the top-ranked pick ({@code resultScope=TOP}, default) or any pick of the prediction
      * ({@code ANY}); with ANY and {@code market}, the same pick must have both. {@code kickoffFrom}/{@code kickoffTo}
      * bound the match kick-off time ({@code to} exclusive), where {@code from}/{@code to} bound when it was predicted.
-     * {@code liveFirst} puts predictions of matches being played now above the rest, each part in {@code sort} order.
+     * {@code liveFirst} puts predictions of matches being played now (by kick-off time, see {@link #LIVE_NOW}) above
+     * the rest, each part in {@code sort} order.
      */
     public PageResponse<Map<String, Object>> list(Filters f, String resultScope, Instant kickoffFrom, Instant kickoffTo,
                                                   Integer page, Integer size, String sort, boolean liveFirst) {
@@ -124,7 +128,7 @@ public class PredictionQueryService {
         long total = jdbc.queryForObject("SELECT count(*) " + FROM + w.sql(), w.params, Long.class);
         Paging.limit(w.params, pg, sz);
         List<Map<String, Object>> rows = jdbc.query(COLUMNS + FROM + PICK_COUNTS + w.sql() + " ORDER BY "
-            + (liveFirst ? "(m.status = 'LIVE') DESC, " : "") + Paging.orderBy(sort, SORT, "p.predicted_at DESC") + ", p.id LIMIT :limit OFFSET :offset", w.params, Sql.ROW);
+            + (liveFirst ? LIVE_NOW + " DESC, " : "") + Paging.orderBy(sort, SORT, "p.predicted_at DESC") + ", p.id LIMIT :limit OFFSET :offset", w.params, Sql.ROW);
         return Paging.response(rows, pg, sz, total);
     }
 

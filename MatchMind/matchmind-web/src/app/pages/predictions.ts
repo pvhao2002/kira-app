@@ -82,7 +82,7 @@ export function pickSummary(p: PredictionRow): string {
             @for (p of list.rows(); track p.id) {
             <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]" (mouseenter)="peek(p, $event)" (mouseleave)="unpeek()">
               <td class="nowrap hide-sm"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
-              <td>@if (p.matchStatus === 'LIVE') { <span class="tag tag-danger" data-testid="live">Live</span> }<span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }} · <span data-testid="kickoff" title="Kick-off">{{ fmt(p.startTime) }}</span></span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">@if (isAdmin()) { {{ p.modelName }} · }{{ fmt(p.predictedAt) }}</a>
+              <td>@if (liveNow(p)) { <span class="tag tag-danger" data-testid="live">Live</span> }<span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }} · <span data-testid="kickoff" title="Kick-off">{{ fmt(p.startTime) }}</span></span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">@if (isAdmin()) { {{ p.modelName }} · }{{ fmt(p.predictedAt) }}</a>
                 @if (p.counted === false) { <span class="tag tag-secondary" title="A later prediction of the same match, model, type and minute replaces it in reports">not counted</span><span class="sr-only"> (a later prediction of the same match, model, type and minute replaces it in reports)</span> }</td>
               @if (isAdmin()) { <td class="nowrap hide-sm">{{ p.modelName }} <span class="cell-sub">{{ p.modelVersion }}</span></td> }
               <td class="nowrap" data-testid="top-pick" [title]="lineSplit(p.topPickMarket, p.topPickLine)">{{ pickText(p.topPickMarket, p.topPick, p.topPickLine, p.topPickLineDisplay) }}<span class="cell-sub">{{ humanize(p.topPickStage) }}</span></td>
@@ -121,7 +121,7 @@ export function pickSummary(p: PredictionRow): string {
           (mouseenter)="keepPeek()" (mouseleave)="unpeek()">
           @let r = h.row;
           <header class="pop-head">
-            <div class="pop-title">@if (r.matchStatus === 'LIVE') { <span class="tag tag-danger">Live</span> }<strong>{{ r.homeTeam }} – {{ r.awayTeam }}</strong></div>
+            <div class="pop-title">@if (liveNow(r)) { <span class="tag tag-danger">Live</span> }<strong>{{ r.homeTeam }} – {{ r.awayTeam }}</strong></div>
             <span class="muted-text">{{ r.league }} · {{ fmt(r.startTime) }}</span>
           </header>
           @if (peekDetail.value(); as d) {
@@ -255,6 +255,12 @@ export class PredictionsPage {
   toggleParlay(d: PredictionDetail, k: PickDetail): void {
     this.slip.toggle({ pickId: k.id, matchId: d.match.id, match: `${d.match.homeTeam} – ${d.match.awayTeam}`,
       pick: pickText(k.market, k.pick, k.line), price: Number(k.price) });
+  }
+
+  /** Being played now by the clock, as the API's liveFirst sort: kicked off under 2 hours ago and not ended. The feed's LIVE status lags. */
+  liveNow(p: PredictionRow): boolean {
+    const since = Date.now() - Date.parse(p.startTime);
+    return since >= 0 && since < 2 * 3600_000 && !['FINISHED', 'CANCELLED', 'POSTPONED'].includes(p.matchStatus);
   }
 
   /** Rank 1 and 2, in rank order. */
