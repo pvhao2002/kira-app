@@ -36,6 +36,8 @@ export function periodSeries(rows: AccountPeriod[], step: 'week' | 'month', limi
 
 const weekLabel = new Intl.DateTimeFormat(APP_LOCALE, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 const monthLabel = new Intl.DateTimeFormat(APP_LOCALE, { month: 'short', year: 'numeric', timeZone: 'UTC' });
+const dayKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' });
+const dayLabel = new Intl.DateTimeFormat(APP_LOCALE, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' });
 
 @Component({
   selector: 'mm-account',
@@ -118,11 +120,18 @@ const monthLabel = new Intl.DateTimeFormat(APP_LOCALE, { month: 'short', year: '
         <section class="panel stack">
           <div class="filter-bar"><h2>Transactions</h2><button class="btn btn-sm" type="button" [disabled]="resource.isLoading()" (click)="resource.reload()">Refresh transactions</button></div>
           <div class="table-wrap"><table class="dt" aria-label="Transactions">
-            <thead><tr><th>Date</th><th>Reference</th><th>Type</th><th>Status</th><th class="num">Amount</th></tr></thead>
-            <tbody>@for (txn of ledger.transactions; track txn) {
-              <tr><td>{{ fmt(txn.occurredAt) }}</td><td>{{ txn.reference }}</td><td><span class="tag" [class]="tags[txn.type]">{{ labels[txn.type] }}</span></td>
-                <td>{{ statuses[txn.status] }}</td><td class="num">{{ txn.amount | number:'1.0-4' }}</td></tr>
-            } @empty { <tr><td colspan="5" class="empty">No imported transactions yet.</td></tr> }</tbody>
+            <thead><tr><th>Date</th><th>Type</th><th class="num">Amount</th><th>Reference</th><th>Status</th></tr></thead>
+            @for (day of days(); track day.key) {
+              @let shown = expanded().has(day.key);
+              <tbody><tr><th colspan="5" scope="rowgroup">
+                <button type="button" class="btn btn-sm btn-text" [attr.aria-expanded]="shown" (click)="toggle(day.key)">
+                  <i class="pi" [class.pi-chevron-down]="shown" [class.pi-chevron-right]="!shown" aria-hidden="true"></i>
+                  {{ day.label }} · {{ day.rows.length }} {{ day.rows.length === 1 ? 'transaction' : 'transactions' }}</button></th></tr>
+              @if (shown) { @for (txn of day.rows; track txn) {
+                <tr><td>{{ fmt(txn.occurredAt) }}</td><td><span class="tag" [class]="tags[txn.type]">{{ labels[txn.type] }}</span></td>
+                  <td class="num">{{ txn.amount | number:'1.0-4' }}</td><td>{{ txn.reference }}</td><td>{{ statuses[txn.status] }}</td></tr>
+              } }</tbody>
+            } @empty { <tbody><tr><td colspan="5" class="empty">No imported transactions yet.</td></tr></tbody> }
           </table></div>
           @if (ledger.meta.totalElements > ledger.meta.size) {
             <mm-paginator [page]="ledger.meta.page" [size]="ledger.meta.size" [total]="ledger.meta.totalElements"
@@ -154,6 +163,21 @@ export class AccountPage {
   readonly tags = { CREDIT: 'tag-danger', DEBIT: 'tag-success', REWARD: 'tag-warn' };
   readonly statuses = { SUCCESS: 'Successful', CANCELLED: 'Cancelled' };
   readonly fmt = fmtDateTime;
+  readonly expanded = signal(new Set<string>());
+  /** This page's transactions grouped by GMT+7 day, newest first as the API sends them; every day starts collapsed. */
+  readonly days = computed(() => {
+    const groups = new Map<string, { key: string; label: string; rows: AccountLedger['transactions'] }>();
+    for (const txn of this.data()?.transactions ?? []) {
+      const when = new Date(txn.occurredAt);
+      const key = dayKey.format(when);
+      if (!groups.has(key)) groups.set(key, { key, label: dayLabel.format(when), rows: [] });
+      groups.get(key)!.rows.push(txn);
+    }
+    return [...groups.values()];
+  });
+  toggle(key: string): void {
+    this.expanded.update(s => { const next = new Set(s); if (!next.delete(key)) next.add(key); return next; });
+  }
   readonly hasData = computed(() => (this.data()?.meta.totalElements ?? 0) > 0);
   readonly reportRows = computed(() => {
     const reports = this.data()?.reports;

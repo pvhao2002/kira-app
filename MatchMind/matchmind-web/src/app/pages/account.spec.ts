@@ -50,7 +50,16 @@ describe('Account Management', () => {
   afterEach(() => vi.useRealTimers());
 
   it('renders the ledger and changes the report period without reloading transactions', async () => {
-    const { el, http, choose } = await open({ allTime: totals, weekly: [at('2026-11-16', totals)], monthly: [] });
+    const { el, http, choose, fixture } = await open({ allTime: totals, weekly: [at('2026-11-16', totals)], monthly: [] });
+    const table = el.querySelector('table[aria-label="Transactions"]')!;
+    expect([...table.querySelectorAll('thead th')].map(text)).toEqual(['Date', 'Type', 'Amount', 'Reference', 'Status']);
+    const day = table.querySelector<HTMLButtonElement>('button[aria-expanded]')!;
+    expect(text(day)).toContain('19 Nov 2026');   // grouped by GMT+7 day, collapsed by default
+    expect(day.getAttribute('aria-expanded')).toBe('false');
+    expect(el.textContent).not.toContain('WD-17');
+    day.click();
+    fixture.detectChanges();
+    expect(day.getAttribute('aria-expanded')).toBe('true');
     expect(el.textContent).toContain('WD-17');
     expect(el.textContent).toContain('Cancelled');
     expect(el.textContent).toContain('-20');
