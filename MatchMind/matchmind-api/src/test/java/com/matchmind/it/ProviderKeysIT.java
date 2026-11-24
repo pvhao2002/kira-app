@@ -176,7 +176,9 @@ class ProviderKeysIT extends IntegrationTestBase {
 
     @Test
     void promptCopyForAPerProviderKeyNeverCarriesTheSharedKey() throws Exception {
-        String id = db.queryForObject("SELECT id::text FROM prompt_templates WHERE content LIKE '%{{EXTERNAL_API_KEY}}%' LIMIT 1",
+        // Own template: the seeded prompts no longer carry the placeholder since they deliver through the Sheet (V31).
+        String id = db.queryForObject("INSERT INTO prompt_templates (name, template_type, content) "
+            + "VALUES ('Key placeholder', 'AI_PREDICTION', 'Send with X-Api-Key: {{EXTERNAL_API_KEY}}') RETURNING id::text",
             String.class);
         JsonNode copy = adminGet("/api/v1/prompts/" + id + "/for-agent?sharedKey=false");
         assertThat(copy.get("keyRendered").asBoolean()).isFalse();
