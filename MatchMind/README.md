@@ -112,12 +112,11 @@ providers should use. Edits are versioned. When an agent's sandbox cannot reach 
 
 ## Import account transactions
 
-Configure the API's R2 bucket and credentials using the variables in Configuration. Keep the existing
-`MATCHMIND_SHEET_URL`. Update the bound [Apps Script](docs/google-sheet/MatchMind.gs) in that spreadsheet
+Set `MATCHMIND_SHEET_URL`. Update the bound [Apps Script](docs/google-sheet/MatchMind.gs) in that spreadsheet
 and run `setup()` once to add the `ACCOUNT` tab.
 
-In **Account Management**, upload a transaction screenshot, copy the generated prompt, and attach the same
-image alongside the prompt in an AI chat with write access to the spreadsheet. After the minute trigger sends
+In **Account Management**, click **Get import prompt**, copy it, and paste it with your transaction screenshots
+attached in an AI chat with write access to the spreadsheet. The screenshots never reach MatchMind. After the minute trigger sends
 the row, refresh the transaction list. If an import fails, the tab's `sync` cell records the reason.
 The [account API contract](docs/API_DOCUMENTATION.md#account-management) includes the Sheet columns and report rules.
 
@@ -161,8 +160,6 @@ All configuration comes from environment variables; see [`.env.example`](.env.ex
 | `JWT_SECRET`, `JWT_TTL` | Token signing secret (≥ 32 bytes) and lifetime (ISO-8601, default `PT8H`) |
 | `MATCHMIND_ADMIN_USERNAME`, `MATCHMIND_ADMIN_PASSWORD` | First admin. Used only while the users table is empty |
 | `MATCHMIND_SHEET_URL` | Optional Google Sheet that agents append unsent requests to. The admin copy of the prompts names it |
-| `R2_ACCOUNT_ID`, `R2_BUCKET` | Cloudflare account ID and private R2 bucket for Account Management screenshots |
-| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | S3-compatible credentials scoped to that bucket with object read/write access |
 | `CORS_ALLOWED_ORIGINS` | Extra browser origins for direct dashboard API calls. `/api/v1/external/**` accepts any origin |
 | `TRUSTED_PROXIES` | CIDRs whose `X-Forwarded-For` is trusted |
 | `LOGIN_MAX_ATTEMPTS_PER_IP`, `LOGIN_MAX_FAILURES_PER_USER` | Login rate limits (defaults 20 per 5 min and 5 per 15 min) |

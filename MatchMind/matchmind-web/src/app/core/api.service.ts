@@ -3,8 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Observable, forkJoin } from 'rxjs';
 import {
-  AccountImageImport, AccountLedger, Visit, VisitCountry,
-  AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, CalibrationReport, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
+  AccountImport, AccountLedger, Visit, VisitCountry,
+  AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, CalibrationReport, TopPickBy, TopPickReport, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
   Page, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
   AdminResultRequest, AgentPrompt, PromptVersion, PromptVersionSummary, ResultResponse, SettlementPromptInput,
@@ -43,12 +43,8 @@ export class ApiService {
     return httpResource<Page<Visit>>(() => ({ url: `${API}/visits`, params: toParams({ country: country(), page: page(), size: 100 }) }));
   }
 
-  /** One import for the whole batch: the API returns one importId and one prompt. */
-  uploadAccountImages(files: File[]) {
-    const body = new FormData();
-    for (const file of files) body.append('file', file);
-    return this.http.post<AccountImageImport>(API + '/account/images', body);
-  }
+  /** A new import ID and the prompt to paste with the screenshots into an AI chat. */
+  createAccountImport() { return this.http.post<AccountImport>(API + '/account/imports', {}); }
 
   // Reactive reads (httpResource). Call from an injection context (field initializer). They run again when the
   // signals they read change, cancel the superseded request and expose status()/error(); view with core/resource.ts.
@@ -140,6 +136,9 @@ export class ApiService {
   }
   breakdown(f: Filters, by: 'market' | 'league' | 'type' | 'stage' | 'model') {
     return this.http.get<BreakdownRow[]>(`${API}/reports/breakdown`, { params: toParams({ ...f, by }) });
+  }
+  topPick(f: Filters, by: TopPickBy) {
+    return this.http.get<TopPickReport>(`${API}/reports/top-pick`, { params: toParams({ ...f, by }) });
   }
   typeComparison(f: Filters, by: TypeCompareBy) {
     return this.http.get<TypeComparisonRow[]>(`${API}/reports/type-comparison`, { params: toParams({ ...f, by }) });

@@ -6,10 +6,6 @@ server:
     include-message: never
 
 spring:
-  servlet:
-    multipart:
-      max-file-size: 8MB
-      max-request-size: 40MB # up to 10 screenshots per account import
   application:
     name: matchmind-api
   datasource:

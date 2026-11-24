@@ -8,6 +8,9 @@
  * Setup, once:
  * 1. Create a Google Sheet that only you can open. Extensions > Apps Script: replace the code with this file, save.
  * 2. Project Settings > Script Properties > Add script property: MATCHMIND_API_KEY = the server's EXTERNAL_API_KEY.
+ *    Per-provider keys (mmk_..., from the Providers screen) only send their own provider's rows: add one script property
+ *    per provider, MATCHMIND_KEY_<PROVIDER> (upper case, "-" becomes "_"; provider "openai-gpt" -> MATCHMIND_KEY_OPENAI_GPT),
+ *    or use the menu MatchMind > Set provider key. A row whose provider has no key of its own uses MATCHMIND_API_KEY.
  * 3. Choose the function "setup" and click Run, then allow the access Google asks for. setup() adds the MatchMind tab
  *    with its header row and sends new rows every minute. Reload the sheet to get the MatchMind menu.
  * 4. Put the sheet's link in MATCHMIND_SHEET_URL in the server's .env: the admin copy of the prompts then names it.
@@ -49,6 +52,7 @@ function onOpen() {
     .addItem('Send now', 'sendPending')
     .addItem('Pull unsettled matches', 'pullUnsettled')
     .addItem('Test connection', 'testConnection')
+    .addItem('Set provider key', 'setProviderKey')
     .addToUi();
 }
 
@@ -106,15 +110,25 @@ function sendPending() {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(1000)) return; // the previous run is still sending
   try {
-    const key = PropertiesService.getScriptProperties().getProperty('MATCHMIND_API_KEY');
-    if (!key) throw new Error('Add the script property MATCHMIND_API_KEY first (Project Settings > Script Properties)');
+    const props = PropertiesService.getScriptProperties();
+    const key = props.getProperty('MATCHMIND_API_KEY');
     const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
     if (!sheet) throw new Error('Run setup first: there is no ' + SHEET_NAME + ' tab');
     const rows = sheet.getDataRange().getValues();
     const started = Date.now();
+    const badKeys = new Set();
     for (let r = 1; r < rows.length && Date.now() - started < TIME_BUDGET_MS; r++) {
       if (!String(rows[r][5]).trim() || /^(sent|rejected)\b/.test(rows[r][6])) continue;
-      const outcome = send(key, rows[r]);
+      const name = keyName(rows[r][2]);
+      const rowKey = props.getProperty(name) || key;
+      if (badKeys.has(rowKey)) continue;   // that key was refused this run: its rows wait, the others go on
+      const outcome = rowKey ? send(rowKey, rows[r])
+        : { status: 'retry: add the script property ' + name + ' or MATCHMIND_API_KEY (MatchMind > Set provider key)' };
+      if (/^retry 401\b/.test(outcome.status)) {
+        badKeys.add(rowKey);
+        outcome.status += ' - check the ' + (props.getProperty(name) ? name : 'MATCHMIND_API_KEY') + ' script property';
+        outcome.stop = false;
+      }
       // Rows deleted, inserted or sorted during the run moved this one: stop, the next run reads the sheet again.
       if (String(sheet.getRange(r + 1, 6).getValue()) !== String(rows[r][5])) break;
       sheet.getRange(r + 1, 7, 1, 2).setValues([[outcome.status, /^sent\b/.test(outcome.status) ? new Date().toISOString() : '']]);
@@ -122,8 +136,8 @@ function sendPending() {
       if (outcome.stop) break;
     }
     pushResults(started);
-    const accountKey = PropertiesService.getScriptProperties().getProperty('MATCHMIND_ACCOUNT_KEY') || key;
-    pushAccountTransactions(accountKey, started);
+    const accountKey = props.getProperty('MATCHMIND_ACCOUNT_KEY') || key;
+    if (accountKey) pushAccountTransactions(accountKey, started);
   } finally {
     lock.releaseLock();
   }
@@ -262,10 +276,28 @@ function post(key, path, headers, payload) {
   const detail = code + (data.code ? ' ' + data.code : '') + (data.message ? ': ' + data.message : '') + fields;
   // MatchMind answers every error with a code. Without one, a redirect, a proxy or a firewall answered: try again later.
   if (!data.code) return { status: 'retry ' + detail, stop: true };
-  if (code === 401) return { status: 'retry ' + detail + ' - check the MATCHMIND_API_KEY script property', stop: true };
+  if (code === 401) return { status: 'retry ' + detail, stop: true };
   // A server error or a lock conflict on this row: try it again next run, and go on with the others.
   if (code >= 500 || data.code === 'CONCURRENT_UPDATE') return { status: 'retry ' + detail };
   return { status: 'rejected ' + detail };
+}
+
+/** Script property holding the key for a provider: "openai-gpt" -> MATCHMIND_KEY_OPENAI_GPT. */
+function keyName(provider) {
+  return 'MATCHMIND_KEY_' + String(provider).trim().toUpperCase().replace(/[^A-Z0-9]/g, '_');
+}
+
+/** Menu: stores (or, with an empty key, removes) the key one provider's rows are sent with. */
+function setProviderKey() {
+  const ui = SpreadsheetApp.getUi();
+  const provider = ui.prompt('Set provider key', 'Provider, exactly as in the provider column (e.g. openai-gpt):', ui.ButtonSet.OK_CANCEL);
+  if (provider.getSelectedButton() !== ui.Button.OK || !provider.getResponseText().trim()) return;
+  const name = keyName(provider.getResponseText());
+  const key = ui.prompt('Set provider key', 'API key for ' + name + ' (mmk_...). Leave empty to remove it:', ui.ButtonSet.OK_CANCEL);
+  if (key.getSelectedButton() !== ui.Button.OK) return;
+  const props = PropertiesService.getScriptProperties();
+  if (key.getResponseText().trim()) props.setProperty(name, key.getResponseText().trim()); else props.deleteProperty(name);
+  ui.alert(name + (key.getResponseText().trim() ? ' saved.' : ' removed.'));
 }
 
 function testConnection() {

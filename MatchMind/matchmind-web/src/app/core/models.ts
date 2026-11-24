@@ -29,7 +29,7 @@ export interface AccountLedger {
 /** Signed-out visitors (`GET /visits/countries`, `GET /visits`). `country` is a Cloudflare code: XX unknown, T1 Tor. */
 export interface VisitCountry { country: string; visits: number; uniqueIps: number; lastSeen: string; }
 export interface Visit { id: number; visitedAt: string; ip: string; country: string; browser: string; os: string; userAgent: string | null; }
-export interface AccountImageImport { importId: string; prompt: string; }
+export interface AccountImport { importId: string; prompt: string; }
 
 export interface ApiError {
   status: number; code: string; message: string; fieldErrors?: Record<string, string>; traceId?: string;
@@ -268,6 +268,9 @@ export interface ModelPerformanceRow extends PerformanceCounts {
 }
 export interface BreakdownRow extends PerformanceCounts { key: string; }
 export type TypeCompareBy = 'model' | 'market' | 'league';
+export type TopPickBy = 'model' | 'market' | 'league' | 'type';
+/** GET /reports/top-pick: only each prediction's top pick (lowest rank) counts; `total` is every group together. */
+export interface TopPickReport { total: PerformanceCounts; rows: BreakdownRow[]; }
 /** One group of GET /reports/type-comparison: PRE_MATCH and LIVE side by side; a side without picks is null. Deltas are live minus pre-match. */
 export interface TypeComparisonRow {
   key: string; preMatch: PerformanceCounts | null; live: PerformanceCounts | null; winRateDelta: number | null; roiDelta: number | null;

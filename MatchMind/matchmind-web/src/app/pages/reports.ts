@@ -7,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { apiError } from '../core/http';
 import { errorMessage, keepPrevious, safeValue, statusToView, viewState } from '../core/resource';
-import { CalibrationBin, Filters, PerformanceCounts, TypeCompareBy } from '../core/models';
+import { CalibrationBin, Filters, PerformanceCounts, TopPickBy, TypeCompareBy } from '../core/models';
 import { FilterBar } from '../shared/filter-bar';
 import { Col, ROI_DEF, cell, downloadCsv, fmtDateTime, humanize, lineSplit, lineText, num, pct, pickText, saveBlob, units } from '../shared/format';
 import {
@@ -17,9 +17,10 @@ import { ChartView, RESULT_COLORS, SERIES } from '../shared/chart';
 import { Select, SelectOption } from '../shared/select';
 import { DetailsMenu, JsonView, ResultTag, ScoreChip, SmallSample, StateView } from '../shared/ui';
 
-type Tab = 'models' | 'history' | 'markets' | 'calibration' | 'comparison' | 'montecarlo' | 'typecompare';
+type Tab = 'models' | 'toppick' | 'history' | 'markets' | 'calibration' | 'comparison' | 'montecarlo' | 'typecompare';
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'models', label: 'AI model performance' }, { value: 'history', label: 'Prediction history' },
+  { value: 'models', label: 'AI model performance' }, { value: 'toppick', label: 'Top pick' },
+  { value: 'history', label: 'Prediction history' },
   { value: 'markets', label: 'Market performance' }, { value: 'calibration', label: 'Calibration' },
   { value: 'comparison', label: 'Model comparison' }, { value: 'montecarlo', label: 'Monte Carlo' },
   { value: 'typecompare', label: 'Pre-match vs Live' },
@@ -30,6 +31,7 @@ const SIDE_COLS: Col[] = [
   { field: 'units', header: 'Units', kind: 'units' }, { field: 'roi', header: 'ROI', kind: 'pct' },
 ];
 const TYPE_BY_OPTIONS: SelectOption[] = [{ value: 'model', label: 'Model' }, { value: 'market', label: 'Market' }, { value: 'league', label: 'League' }];
+const TOP_BY_OPTIONS: SelectOption[] = [...TYPE_BY_OPTIONS, { value: 'type', label: 'Type' }];
 /** A fraction difference in percentage points, rounded to 0.1 first so sign and colour match what is shown. */
 const roundedPoints = (v: number) => Math.round(v * 1000) / 10;
 /** 0.1 -> "+10.0", -0.0123 -> "−1.2" (real minus sign, like `units`), -0.0004 -> "0.0"; null stays a dash. */
@@ -282,6 +284,36 @@ export class ModelBreakdown {
           </section>
         }
 
+        @case ('toppick') {
+          <mm-state [state]="state()" [message]="error()" retryable (retry)="retry()" />
+          @if (state() === 'ready' && topPick(); as t) {
+            <section class="kpis" aria-label="Top pick totals">
+              <div class="kpi"><span>Picks</span><strong>{{ num(t.total.picks, 0) }}</strong></div>
+              <div class="kpi"><span>Settled</span><strong>{{ num(t.total.settled, 0) }}</strong></div>
+              <div class="kpi accent"><span>Win rate</span><strong>{{ pct(t.total.winRate) }}</strong></div>
+              <div class="kpi"><span>Units</span><strong>{{ units(t.total.units) }}</strong></div>
+              <div class="kpi"><span>ROI</span><strong>{{ pct(t.total.roi) }}</strong></div>
+            </section>
+            <section class="panel"><header><h2>Win rate by {{ humanize(topBy()) }}</h2></header>
+              <mm-chart type="bar" [data]="topChart()" [options]="marketChartOptions" label="Top pick win rate chart" /></section>
+          }
+          <section class="panel flush">
+            <div class="toolbar">
+              <div class="row"><label for="top-by">Group by</label>
+                <mm-select id="top-by" size="sm" [options]="topByOptions" [ngModel]="topBy()" (ngModelChange)="topBy.set($event)" /></div>
+              <span class="muted-text">Only each prediction's top-ranked pick counts. {{ winRateDef }} {{ roiDef }}</span>
+              <button type="button" class="btn btn-outline btn-sm" (click)="csv('top-pick', topCols, sortedTop())"><i class="pi pi-download"></i> CSV</button>
+            </div>
+            @if (state() === 'ready') {
+              <div class="table-wrap"><table class="dt" aria-label="Top pick performance">
+                <thead><tr>@for (c of topCols; track c.field) { <th mmResize [mmSort]="c.field" [(sort)]="topSort" [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)" [attr.title]="headerTitle(c)">{{ c.header }}</th> }</tr></thead>
+                <tbody>@for (r of sortedTop(); track r.key) { <tr>@for (c of topCols; track c.field) { <td [class.num]="isNum(c)" [class.hide-sm]="hideSm(c)">{{ cell(r, c) }} @if (sampleSize(r, c.field) !== null) { <mm-small-sample [n]="sampleSize(r, c.field)!" /> }</td> }</tr> }
+                  @empty { <tr><td [attr.colspan]="topCols.length" class="empty">No predictions match these filters.</td></tr> }</tbody>
+              </table></div>
+            }
+          </section>
+        }
+
         @case ('markets') {
           <mm-state [state]="state()" [message]="error()" retryable (retry)="retry()" />
           @if (state() === 'ready') {
@@ -518,6 +550,8 @@ export class ReportsPage {
   readonly units = units;
   readonly typeLabel = TYPE_LABEL;
   readonly typeByOptions = TYPE_BY_OPTIONS;
+  readonly topByOptions = TOP_BY_OPTIONS;
+  readonly topCols = BREAKDOWN_COLS;
   readonly deltaPoints = deltaPoints;
   readonly deltaClass = deltaClass;
 
@@ -538,6 +572,8 @@ export class ReportsPage {
   readonly mcPage = signal(0);
   readonly mcOpen = new Expansion();
   readonly typeBy = signal<TypeCompareBy>('model');
+  readonly topBy = signal<TopPickBy>('model');
+  readonly topSort = signal<Sort>({ field: 'picks', dir: 'desc' });
 
   private readonly modelsRes = rxResource({
     params: () => (this.tab() === 'models' ? this.filters() : undefined),
@@ -549,6 +585,13 @@ export class ReportsPage {
       return f && this.tab() === 'history' ? { f, page: this.historyPage(), size: this.historySize(), sort: sortParam(this.historySort()) } : undefined;
     },
     stream: ({ params: { f, ...paging } }) => this.api.predictionHistory(f, paging),
+  });
+  private readonly topPickRes = rxResource({
+    params: () => {
+      const f = this.filters();
+      return f && this.tab() === 'toppick' ? { f, by: this.topBy() } : undefined;
+    },
+    stream: ({ params: { f, by } }) => this.api.topPick(f, by),
   });
   private readonly marketsRes = rxResource({
     params: () => (this.tab() === 'markets' ? this.filters() : undefined),
@@ -604,7 +647,7 @@ export class ReportsPage {
   });
 
   private readonly active = computed(() => ({
-    models: this.modelsRes, history: this.historyRes, markets: this.marketsRes, calibration: this.calibrationRes,
+    models: this.modelsRes, toppick: this.topPickRes, history: this.historyRes, markets: this.marketsRes, calibration: this.calibrationRes,
     comparison: this.comparisonRes, montecarlo: this.monteCarloRes, typecompare: this.typeCompareRes,
   })[this.tab()]);
   readonly state = computed(() => statusToView(this.active().status()));
@@ -626,6 +669,13 @@ export class ReportsPage {
   readonly historyRows = computed(() => this.historyData()?.data ?? []);
   readonly historyTotal = computed(() => this.historyData()?.meta.totalElements ?? 0);
   readonly shownHistoryCols = computed(() => { const v = new Set(this.visibleFields()); return HISTORY_COLS.filter(c => v.has(c.field)); });
+  // Top pick
+  readonly topPick = safeValue(this.topPickRes);
+  readonly sortedTop = computed(() => sortRows(this.topPick()?.rows ?? [], this.topSort()));
+  readonly topChart = computed(() => {
+    const rows = this.topPick()?.rows ?? [];
+    return { labels: rows.map(r => r.key), datasets: [{ label: 'Win rate', data: rows.map(r => r.winRate === null ? null : r.winRate * 100), backgroundColor: () => SERIES[0], borderRadius: 4 }] };
+  });
   // Report 3
   readonly marketRows = safeValue(this.marketsRes, []);
   readonly sortedMarkets = computed(() => sortRows(this.marketRows(), this.marketSort()));

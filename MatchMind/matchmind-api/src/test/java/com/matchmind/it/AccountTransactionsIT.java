@@ -58,4 +58,14 @@ class AccountTransactionsIT extends IntegrationTestBase {
         assertThat(other.at("/reports/allTime/profit").asInt()).isZero();
         assertThat(other.at("/reports/allTime/cancelledWithdrawalCount").asInt()).isZero();
     }
+
+    @Test void signedInUsersCreateImportsAndAnonymousCannot() throws Exception {
+        var created = mvc.perform(asAdmin(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/account/imports")))
+            .andReturn().getResponse();
+        assertThat(created.getStatus()).isEqualTo(201);
+        String importId = json.readTree(created.getContentAsString()).path("importId").asText();
+        assertThat(db.queryForObject("SELECT count(*) FROM account_images WHERE id=?::uuid AND object_key IS NULL", Integer.class, importId)).isOne();
+        assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/account/imports"))
+            .andReturn().getResponse().getStatus()).isEqualTo(401);
+    }
 }

@@ -116,6 +116,10 @@ public class ReportService {
     /** Drill-down of one model (or all models when modelId is null) by market, league, prediction type or odds stage. */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> breakdown(Filters f, String by) {
+        return breakdown(f.where(true), by);
+    }
+
+    private List<Map<String, Object>> breakdown(Sql.Where w, String by) {
         String key = switch (by == null ? "market" : by) {
             case "market" -> "pk.market";
             case "league" -> "mm_league(m.league)";
@@ -124,11 +128,28 @@ public class ReportService {
             case "model" -> Sql.MODEL_NAME + " || ' ' || am.version";
             default -> throw ApiException.badRequest("INVALID_GROUP", "by must be market, league, type, stage or model");
         };
-        Sql.Where w = f.where(true);
         List<Map<String, Object>> rows = jdbc.query("SELECT " + key + " AS \"key\", " + AGG + PICKS_FROM + w.sql()
             + " GROUP BY 1 ORDER BY count(pk.id) DESC, 1", w.params, Sql.ROW);
         rows.forEach(ReportService::addRates);
         return rows;
+    }
+
+    /** A prediction's top pick: its lowest pick_rank (same meaning as ORDER BY pick_rank LIMIT 1 elsewhere). */
+    static final String TOP_PICK = "pk.pick_rank = (SELECT min(x.pick_rank) FROM prediction_picks x WHERE x.prediction_id = p.id)";
+
+    /** {@link #breakdown} counting only each prediction's top pick, plus the overall total. */
+    @Transactional(readOnly = true)
+    public Map<String, Object> topPick(Filters f, String by) {
+        if (!List.of("model", "market", "league", "type").contains(by)) {
+            throw ApiException.badRequest("INVALID_GROUP", "by must be model, market, league or type");
+        }
+        Sql.Where w = f.where(true).and(TOP_PICK);
+        Map<String, Object> total = jdbc.query("SELECT " + AGG + PICKS_FROM + w.sql(), w.params, Sql.ROW).getFirst();
+        addRates(total);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("total", total);
+        out.put("rows", breakdown(w, by));
+        return out;
     }
 
     /**

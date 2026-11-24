@@ -42,6 +42,12 @@ public class ReportController {
         return reports.breakdown(filters, by);
     }
 
+    @GetMapping("/reports/top-pick")
+    @Operation(summary = "Pick performance counting only each prediction's top pick (lowest rank), with a total, grouped by model, market, league or type")
+    public Map<String, Object> topPick(Filters filters, @RequestParam(defaultValue = "model") String by) {
+        return reports.topPick(filters, by);
+    }
+
     @GetMapping("/reports/type-comparison")
     @Operation(summary = "PRE_MATCH vs LIVE pick performance side by side, grouped by model, market or league (type filter ignored)")
     public List<Map<String, Object>> typeComparison(Filters filters, @RequestParam(defaultValue = "model") String by) {

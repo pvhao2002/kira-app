@@ -15,6 +15,7 @@ const SETTLE_HEADER = ['matchId', 'provider', 'league', 'homeTeam', 'awayTeam', 
  * body} for JSON, {code, text} for anything else, or an Error for no connection. `after(grid)` edits the sheet while the
  * request is out, as the user could during a run.
  */
+/** `key`: the MATCHMIND_API_KEY value, or an object holding every script property. */
 function load(rows, answers, key = 'agent-key') {
   const grid = [HEADER, ...rows.map(r => Array.from({ length: HEADER.length }, (_, i) => r[i] ?? ''))];
   const calls = [];
@@ -30,7 +31,7 @@ function load(rows, answers, key = 'agent-key') {
   };
   const google = {
     SpreadsheetApp: { getActive: () => ({ getSheetByName: n => (n === 'MatchMind' ? sheet : null) }), flush() {} },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: n => (n === 'MATCHMIND_API_KEY' ? key : null) }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: n => (key && typeof key === 'object' ? key[n] ?? null : n === 'MATCHMIND_API_KEY' ? key : null) }) },
     LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
     UrlFetchApp: {
       fetch(url, options) {
@@ -126,8 +127,32 @@ test('stops without writing when rows move during the run', () => {
   assert.equal(s.calls.length, 1);
 });
 
-test('refuses to run without the key', () => {
-  assert.throws(() => load([prediction], [], null).sendPending(), /MATCHMIND_API_KEY/);
+test('leaves a row for the next run when its provider has no key', () => {
+  const s = load([prediction], [], null);
+  s.sendPending();
+  assert.match(s.status(1), /^retry: add the script property MATCHMIND_KEY_META or MATCHMIND_API_KEY/);
+  assert.equal(s.calls.length, 0);
+});
+
+const gpt = ['Arsenal vs Chelsea - GPT', '/api/v1/external/predictions', 'openai-gpt', 'gpt-5', '', '{"c":3}', ''];
+
+test('sends each row with the key of its provider, falling back to MATCHMIND_API_KEY', () => {
+  const s = load([prediction, gpt], [{ code: 201 }, { code: 201 }],
+    { MATCHMIND_API_KEY: 'shared', MATCHMIND_KEY_OPENAI_GPT: 'mmk_gpt' });
+  s.sendPending();
+  assert.deepEqual(s.calls.map(c => [c.headers['X-Api-Key'], c.headers['X-Provider']]),
+    [['shared', 'meta'], ['mmk_gpt', 'openai-gpt']]);
+  assert.deepEqual([s.status(1), s.status(2)], ['sent 201', 'sent 201']);
+});
+
+test('a wrong key holds back only the rows of that key, the other providers still go out', () => {
+  const s = load([gpt, prediction, gpt], [{ code: 401, body: { code: 'INVALID_API_KEY', message: 'Invalid API key' } }, { code: 201 }],
+    { MATCHMIND_KEY_META: 'mmk_meta', MATCHMIND_KEY_OPENAI_GPT: 'mmk_old' });
+  s.sendPending();
+  assert.match(s.status(1), /^retry 401 INVALID_API_KEY: Invalid API key - check the MATCHMIND_KEY_OPENAI_GPT script property/);
+  assert.equal(s.status(2), 'sent 201');
+  assert.equal(s.status(3), '');
+  assert.equal(s.calls.length, 2);
 });
 
 test('setup makes a plain-text MatchMind tab and one sender and one cleanup trigger, for this spreadsheet only', () => {

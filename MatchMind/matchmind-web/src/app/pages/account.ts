@@ -1,5 +1,5 @@
 import { DecimalPipe, formatNumber } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, LOCALE_ID, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, LOCALE_ID, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ChartOptions } from 'chart.js';
 import { ApiService } from '../core/api.service';
@@ -41,70 +41,21 @@ const monthLabel = new Intl.DateTimeFormat(APP_LOCALE, { month: 'short', year: '
   selector: 'mm-account',
   imports: [ChartView, CopyFallback, DecimalPipe, Paginator, StateView],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:paste)': 'paste($event)' },
-  styles: `
-    .drop { display: grid; justify-items: center; gap: 4px; padding: 24px 16px; text-align: center; cursor: pointer;
-      border: 2px dashed var(--mm-input-line); border-radius: var(--mm-radius); background: var(--mm-surface-2);
-      transition: border-color .15s, background-color .15s; }
-    .drop:hover, .drop.drag { border-color: var(--mm-accent-ui); background: var(--mm-green-soft); }
-    .drop:focus-within { outline: 2px solid var(--mm-green); outline-offset: 2px; }
-    .drop.busy { cursor: progress; opacity: .7; }
-    .drop .pi-images { font-size: 1.75rem; color: var(--mm-accent-ui); }
-    .drop-title { font-weight: 600; color: var(--mm-ink); }
-    .drop-title u { color: var(--mm-link); }
-    .drop-hint, .muted { color: var(--mm-ink-3); font-size: .875rem; font-weight: 400; }
-    kbd { font-family: var(--mm-mono); font-size: .8em; padding: 1px 5px; border: 1px solid var(--mm-line-2); border-radius: 4px; background: var(--mm-card-solid); }
-    .drop-count { margin: 0; font-weight: 600; }
-    .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
-    .thumb { position: relative; display: grid; place-items: center; aspect-ratio: 3 / 4; overflow: hidden;
-      border: 1px solid var(--mm-line-2); border-radius: 10px; background: var(--mm-card-solid); color: var(--mm-ink-3); }
-    .thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-    .thumb-n { position: absolute; left: 6px; top: 6px; min-width: 20px; padding: 0 5px; border-radius: 10px;
-      background: var(--mm-navy); color: #fff; font-size: .75rem; line-height: 20px; text-align: center; }
-    .thumb-x { position: absolute; right: 4px; top: 4px; width: 32px; height: 32px; display: grid; place-items: center;
-      border: 0; border-radius: 50%; background: rgba(15, 23, 42, .72); color: #fff; cursor: pointer; }
-    .thumb-x:hover { background: var(--mm-danger-bg); }
-    .thumb-x:focus-visible { outline: 2px solid var(--mm-green); outline-offset: 1px; }
-    .steps { margin: 0; padding-left: 1.25rem; display: grid; gap: 6px; }
-    @media (prefers-reduced-motion: reduce) { .drop { transition: none; } }
-  `,
+  styles: `.steps { margin: 0; padding-left: 1.25rem; display: grid; gap: 6px; }`,
   template: `
     <div class="stack">
       <section class="panel stack">
         <h2>Import transactions</h2>
-        <label class="drop" for="account-image" data-drop [class.drag]="dragging()" [class.busy]="uploading()"
-          (dragover)="$event.preventDefault(); dragging.set(true)" (dragleave)="dragging.set(false)"
-          (drop)="$event.preventDefault(); dragging.set(false); add($event.dataTransfer?.files)">
-          <i class="pi pi-images" aria-hidden="true"></i>
-          <span class="drop-title">Drop screenshots here, paste with <kbd>Ctrl</kbd>+<kbd>V</kbd>, or <u>browse</u></span>
-          <span class="drop-hint">PNG or JPEG · up to 8 MiB each · 1 to 10 per import · overlapping screenshots are fine</span>
-          <input #image id="account-image" class="sr-only" type="file" accept="image/png,image/jpeg" multiple [disabled]="uploading()"
-            (change)="add(image.files); image.value = ''" />
-        </label>
-        @if (uploadError()) { <p role="alert" class="alert alert-error">{{ uploadError() }}</p> }
-        @if (pending().length) {
-          <p role="status" class="drop-count">{{ pending().length }} screenshots ready <span class="muted">· {{ pendingSize() }} · {{ 10 - pending().length }} more allowed</span></p>
-          <ul class="thumbs" aria-label="Screenshots to upload">
-            @for (file of pending(); track file; let i = $index) {
-              <li class="thumb">
-                @if (thumbs()[i]; as url) { <img [src]="url" [alt]="'Screenshot ' + (i + 1)" /> } @else { <i class="pi pi-image" aria-hidden="true"></i> }
-                <span class="thumb-n" aria-hidden="true">{{ i + 1 }}</span>
-                <button type="button" class="thumb-x" [attr.aria-label]="'Remove screenshot ' + (i + 1)" [disabled]="uploading()" (click)="remove(i)">
-                  <i class="pi pi-times" aria-hidden="true"></i></button>
-              </li>
-            }
-          </ul>
-          <div class="filter-bar">
-            <button type="button" class="btn btn-primary" data-action="upload" [disabled]="uploading()" (click)="upload()">
-              @if (uploading()) { <i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Uploading… } @else { <i class="pi pi-upload" aria-hidden="true"></i> Upload {{ pending().length }} screenshots }
-            </button>
-            <button type="button" class="btn" data-action="clear" [disabled]="uploading()" (click)="pending.set([]); uploadError.set('')">Remove all</button>
-          </div>
-        }
+        <p class="page-note">Get a prompt, then paste it in your AI chat and attach your transaction screenshots in the same message.
+          The AI writes them to the Sheet, which syncs them here.</p>
+        <div><button type="button" class="btn btn-primary" data-action="prompt" [disabled]="busy()" (click)="createImport()">
+          @if (busy()) { <i class="pi pi-spin pi-spinner" aria-hidden="true"></i> } @else { <i class="pi pi-sparkles" aria-hidden="true"></i> }
+          Get import prompt</button></div>
+        @if (importError()) { <p role="alert" class="alert alert-error">{{ importError() }}</p> }
         @if (prompt(); as text) {
           <ol class="steps" role="status">
             <li><button type="button" class="btn btn-primary btn-sm" data-action="copy" (click)="copy.copy(text, 'Account import prompt')"><i class="pi pi-copy" aria-hidden="true"></i> Copy prompt</button></li>
-            <li>Paste it in your AI chat and attach these {{ imageCount() }} screenshots in one message.</li>
+            <li>Paste it in your AI chat and attach your transaction screenshots in the same message.</li>
             <li>Refresh transactions after the Sheet syncs.</li>
           </ol>
         }
@@ -190,20 +141,9 @@ export class AccountPage {
   readonly data = keepPrevious(this.resource);
   readonly state = viewState(this.resource);
   readonly error = errorMessage(this.resource);
-  readonly uploading = signal(false);
-  readonly uploadError = signal('');
+  readonly busy = signal(false);
+  readonly importError = signal('');
   readonly prompt = signal('');
-  readonly imageCount = signal(0);
-  readonly pending = signal<File[]>([]);
-  readonly dragging = signal(false);
-  readonly pendingSize = computed(() => (this.pending().reduce((sum, file) => sum + file.size, 0) / 1048576).toFixed(1) + ' MiB');
-  readonly thumbs = signal<string[]>([]);
-  private readonly previews = effect(onCleanup => {
-    // jsdom has no createObjectURL: tests fall back to an icon.
-    const urls = this.pending().map(file => URL.createObjectURL?.(file) ?? '');
-    this.thumbs.set(urls);
-    onCleanup(() => urls.forEach(url => url && URL.revokeObjectURL(url)));
-  });
   readonly period = signal<keyof AccountLedger['reports']>('allTime');
   readonly periods = [{ key: 'allTime', label: 'All time' }, { key: 'weekly', label: 'Weekly' }, { key: 'monthly', label: 'Monthly' }] as const;
   readonly labels = { CREDIT: 'Deposit', DEBIT: 'Withdrawal', REWARD: 'Bonus' };
@@ -286,41 +226,13 @@ export class AccountPage {
     return count ? this.money(Number(sum) / count) : '—';
   }
 
-  /** Queues screenshots from the file input or the clipboard; Upload sends the whole queue as one import. */
-  /** Returns how many images were queued (0 when nothing was a PNG or JPEG). */
-  add(selected?: ArrayLike<File> | null): number {
-    const all = Array.from(selected ?? []).filter(file => file.type === 'image/png' || file.type === 'image/jpeg');
-    if (!all.length) return 0;
-    const images = all.filter(file => file.size <= 8 * 1048576);
-    const errors = all.filter(file => !images.includes(file)).map(file => file.name + ' is larger than 8 MiB.');
-    const queue = [...this.pending(), ...images];
-    if (queue.length > 10) errors.push('Choose 1 to 10 screenshots.');
+  createImport(): void {
     this.prompt.set('');
-    this.uploadError.set(errors.join(' '));
-    this.pending.set(queue.slice(0, 10));
-    return all.length;
-  }
-
-  remove(index: number): void {
-    this.pending.update(files => files.filter((_, i) => i !== index));
-    this.uploadError.set('');
-  }
-
-  paste(event: ClipboardEvent): void {
-    if (this.uploading()) return;
-    if (this.add(event.clipboardData?.files)) event.preventDefault(); // text pastes pass through
-  }
-
-  upload(): void {
-    const files = this.pending();
-    if (!files.length) return;
-    this.prompt.set('');
-    this.uploadError.set('');
-    this.uploading.set(true);
-    this.api.uploadAccountImages(files)
-      .pipe(takeUntilDestroyed(this.destroy)).subscribe({
-        next: result => { this.uploading.set(false); this.pending.set([]); this.imageCount.set(files.length); this.prompt.set(result.prompt); },
-        error: error => { this.uploading.set(false); this.uploadError.set(apiErrorText(error)); },
-      });
+    this.importError.set('');
+    this.busy.set(true);
+    this.api.createAccountImport().pipe(takeUntilDestroyed(this.destroy)).subscribe({
+      next: result => { this.busy.set(false); this.prompt.set(result.prompt); },
+      error: error => { this.busy.set(false); this.importError.set(apiErrorText(error)); },
+    });
   }
 }

@@ -362,3 +362,27 @@ describe('ReportsPage Pre-match vs Live', () => {
     expect(http.expectOne(r => r.url.endsWith('/reports/type-comparison')).request.params.get('by')).toBe('market');
   });
 });
+
+describe('ReportsPage Top pick', () => {
+  it('shows totals and rows of top picks only, and regroups by market', async () => {
+    const f = await open('toppick');
+    const req = http.expectOne(r => r.url.endsWith('/reports/top-pick'));
+    expect(req.request.params.get('by')).toBe('model');
+    req.flush({
+      total: { ...model, picks: 4, settled: 3, winRate: 0.6667, units: 0.95, roi: null, staked: 3 },
+      rows: [{ ...model, key: 'gpt 5', picks: 4, winRate: 0.6667, units: 0.95, roi: 0.3167, staked: 3 }],
+    });
+    await settle();
+    const el = f.nativeElement as HTMLElement;
+    expect(text(el)).toContain("Only each prediction's top-ranked pick counts.");
+    const kpis = [...el.querySelectorAll('.kpi')].map(k => text(k as HTMLElement));
+    expect(kpis.some(k => k.includes('Win rate') && k.includes('66.7%'))).toBe(true);
+    expect(kpis.some(k => k.includes('Units') && k.includes('+0.950'))).toBe(true);
+    expect(kpis.some(k => k.includes('ROI') && k.includes('—'))).toBe(true);
+    const row = el.querySelector('table[aria-label="Top pick performance"] tbody tr')!;
+    expect(text(row as HTMLElement)).toContain('gpt 5');
+    f.componentInstance.topBy.set('market');
+    TestBed.tick();
+    expect(http.expectOne(r => r.url.endsWith('/reports/top-pick')).request.params.get('by')).toBe('market');
+  });
+});
