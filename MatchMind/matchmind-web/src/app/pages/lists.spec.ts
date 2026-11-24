@@ -278,6 +278,30 @@ describe('PredictionsPage', () => {
     expect(t.el().querySelector('tbody .empty-state')).not.toBeNull();
   });
 
+  it('shows the odds of a prediction in a popover while the mouse rests on its row', async () => {
+    const t = await open('/predictions', PredictionsPage);
+    const row = prediction();
+    await t.answer({ '/api/v1/predictions': page([row]) });
+    const tr = t.el().querySelector('tbody tr')!;
+    tr.dispatchEvent(new MouseEvent('mouseenter', { clientX: 100 }));
+    await new Promise(res => setTimeout(res, 300));
+    await t.answer({ [`/api/v1/predictions/${row.id}`]: { id: row.id, odds: [
+      { id: 'o1', ref: 'ah-live', market: 'AH', stage: 'LIVE', snapshotOrder: 1, line: -0.25, lineDisplay: '0/-0.5', homeOdds: 1.95,
+        drawOdds: null, awayOdds: 1.9, overOdds: null, underOdds: null } ], picks: [
+      { id: 'k2', rank: 2, market: 'OU', pick: 'OVER', probability: 0.54, price: 1.85, line: 2.25, settlementStatus: 'PENDING' },
+      { id: 'k1', rank: 1, market: 'AH', pick: 'HOME', probability: 0.58, price: 1.95, line: -0.25, settlementStatus: 'WIN' } ] } });
+    const pop = t.el().querySelector('[data-testid="odds-pop"]')!;
+    expect(text(pop)).toContain('AH');
+    expect(text(pop)).toContain('H 1.95 · A 1.90');
+    const picks = [...pop.querySelectorAll('[data-testid="pop-picks"] li')].map(li => text(li));
+    expect(picks[0]).toContain('#1');
+    expect(picks[0]).toContain('AH HOME');
+    expect(picks[1]).toContain('OU OVER');
+    tr.dispatchEvent(new MouseEvent('mouseleave'));
+    t.harness.fixture.detectChanges();
+    expect(t.el().querySelector('[data-testid="odds-pop"]')).toBeNull();
+  });
+
   it('quotes the top pick AH line one way, with the split as its tooltip (UX-008)', async () => {
     const t = await open('/predictions', PredictionsPage);
     await t.answer({ '/api/v1/predictions': page([prediction({ topPickMarket: 'AH', topPickLine: -0.25, topPickLineDisplay: '0/-0.5' })]) });

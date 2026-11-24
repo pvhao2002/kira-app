@@ -97,7 +97,10 @@ export class ApiService {
   }
   promptsResource() { return httpResource<PromptTemplate[]>(() => `${API}/prompts`); }
   needsReviewResource() { return httpResource<ReviewItem[]>(() => `${API}/settlements/needs-review`); }
-  predictionResource(id: () => string) { return httpResource<PredictionDetail>(() => `${API}/predictions/${encodeURIComponent(id())}`); }
+  /** No request while `id` is empty. */
+  predictionResource(id: () => string | undefined) {
+    return httpResource<PredictionDetail>(() => { const v = id(); return v ? `${API}/predictions/${encodeURIComponent(v)}` : undefined; });
+  }
 
   // Auth & users
   login(username: string, password: string) {

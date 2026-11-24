@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { LiveService } from '../core/live.service';
-import { Filters, PredictionRow } from '../core/models';
+import { Filters, OddsSnapshot, PickDetail, PredictionRow } from '../core/models';
 import { BarFilters, FilterBar } from '../shared/filter-bar';
-import { dayEndExclusive, dayStart, fmtDateTime, humanize, lineSplit, num, pct, pickText } from '../shared/format';
+import { dayEndExclusive, dayStart, fmtDateTime, humanize, lineSplit, lineText, num, pct, pickText } from '../shared/format';
 import { Paginator, SortHeader } from '../shared/kit';
 import { PagedList } from '../shared/paged-list';
 import { DetailsMenu, ResultTag, ScoreChip, StateView } from '../shared/ui';
@@ -78,7 +78,7 @@ export function pickSummary(p: PredictionRow): string {
           </thead>
           <tbody>
             @for (p of list.rows(); track p.id) {
-            <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]">
+            <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]" (mouseenter)="peek(p.id, $event)" (mouseleave)="unpeek()">
               <td class="nowrap hide-sm"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
               <td><span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }}</span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">{{ p.modelName }} · {{ fmt(p.predictedAt) }}</a>
                 @if (p.counted === false) { <span class="tag tag-secondary" title="A later prediction of the same match, model, type and minute replaces it in reports">not counted</span><span class="sr-only"> (a later prediction of the same match, model, type and minute replaces it in reports)</span> }</td>
@@ -114,8 +114,39 @@ export function pickSummary(p: PredictionRow): string {
         <mm-paginator [page]="list.page()" [size]="list.size()" [total]="list.total()" unit="predictions" (pageChange)="list.setPage($event)" />
         }
       </section>
+      @if (peeked(); as h) {
+        <div class="odds-pop" role="tooltip" data-testid="odds-pop" [style.left.px]="h.left" [style.top.px]="h.top" [class.above]="h.above">
+          @if (peekDetail.value(); as d) {
+            <div class="pop-body">
+            <table class="dt compact-sm" aria-label="Odds">
+              <thead><tr><th>Market</th><th>Stage</th><th class="num">Line</th><th class="num">Prices</th></tr></thead>
+              <tbody>@for (o of d.odds; track o.id) {
+                <tr><td>{{ o.market }}</td><td>{{ humanize(o.stage) }}</td><td class="num">{{ lineText(o.market, o.line, o.lineDisplay) }}</td><td class="num nowrap">{{ prices(o) }}</td></tr>
+              } @empty { <tr><td colspan="4" class="empty">No odds were sent with this prediction.</td></tr> }</tbody>
+            </table>
+            <ol class="pop-picks" aria-label="Picks" data-testid="pop-picks">
+              @for (k of topPicks(d.picks); track k.id) {
+                <li><span class="rank">#{{ k.rank }}</span><span><strong>{{ pickText(k.market, k.pick, k.line) }}</strong>
+                  <span class="cell-sub">{{ pct(k.probability) }} · {{ num(k.price) }}</span></span><mm-result [value]="k.settlementStatus" /></li>
+              } @empty { <li class="muted-text">No picks.</li> }
+            </ol>
+            </div>
+          } @else if (peekDetail.error()) { <span>Couldn't load the odds.</span> }
+          @else { <span><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Loading odds…</span> }
+        </div>
+      }
     </div>`,
   styles: `
+    /* Hover popover with the prediction's odds; mouse only (touch opens the detail page instead). */
+    .pop-body { display: flex; gap: .75rem; align-items: flex-start; }
+    .pop-picks { list-style: none; margin: 0; padding: 0 0 0 .75rem; border-left: 1px solid var(--mm-line); display: grid; gap: .5rem; min-width: 180px; }
+    .pop-picks li { display: grid; grid-template-columns: auto 1fr auto; gap: .4rem; align-items: center; }
+    .pop-picks .rank { font-weight: 700; color: var(--mm-ink-2); }
+    .odds-pop { position: fixed; z-index: 50; pointer-events: none; max-width: min(680px, calc(100vw - 16px)); max-height: 50vh; overflow: hidden;
+      padding: .5rem; background: var(--mm-card); border: 1px solid var(--mm-glass-border); border-radius: var(--mm-radius);
+      box-shadow: var(--mm-shadow); backdrop-filter: var(--mm-blur); -webkit-backdrop-filter: var(--mm-blur); font-size: var(--fs-sm); }
+    .odds-pop.above { transform: translateY(-100%); }
+    @media (hover: none) { .odds-pop { display: none; } }
     .toolbar { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; padding: .45rem .75rem; border-bottom: 1px solid var(--mm-line); }
     .units { font-size: var(--fs-sm); }
     /* UX-011: under 600px each prediction is a card (match + result, then the pick); no sideways scrolling. */
@@ -164,6 +195,37 @@ export class PredictionsPage {
     live.predictions.pipe(takeUntilDestroyed()).subscribe(() => { if (this.list.page() > 0) this.newCount.update(n => n + 1); });
     // Page 1 refreshes in place; on later pages new rows would shift what the user is looking at, so only offer it.
     live.refresh.pipe(takeUntilDestroyed()).subscribe(() => { if (this.list.page() === 0) this.list.load(); });
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.peekTimer));
+  }
+
+  /** The row under the mouse, after a short pause so passing over rows does not fetch each one. */
+  readonly peeked = signal<{ id: string; left: number; top: number; above: boolean } | null>(null);
+  readonly peekDetail = this.api.predictionResource(() => this.peeked()?.id);
+  private peekTimer?: ReturnType<typeof setTimeout>;
+  readonly lineText = lineText;
+
+  peek(id: string, e: MouseEvent): void {
+    const row = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const above = row.bottom + 280 > window.innerHeight;   // near the bottom: open upwards
+    const left = Math.max(8, Math.min(e.clientX, window.innerWidth - 690));
+    clearTimeout(this.peekTimer);
+    this.peekTimer = setTimeout(() => this.peeked.set({ id, left, top: above ? row.top - 4 : row.bottom + 4, above }), 250);
+  }
+
+  unpeek(): void {
+    clearTimeout(this.peekTimer);
+    this.peeked.set(null);
+  }
+
+  /** Rank 1 and 2, in rank order. */
+  topPicks(picks: PickDetail[]): PickDetail[] {
+    return picks.filter(k => k.rank <= 2).sort((a, b) => a.rank - b.rank);
+  }
+
+  /** "H 1.95 · D 3.40 · A 3.60" or "O 1.85 · U 2.00": only the prices this snapshot has. */
+  prices(o: OddsSnapshot): string {
+    return ([['H', o.homeOdds], ['D', o.drawOdds], ['A', o.awayOdds], ['O', o.overOdds], ['U', o.underOdds]] as const)
+      .filter(([, v]) => v !== null && v !== undefined).map(([k, v]) => `${k} ${num(v)}`).join(' · ');
   }
 
   show(field: string): boolean { return this.visible().includes(field); }
