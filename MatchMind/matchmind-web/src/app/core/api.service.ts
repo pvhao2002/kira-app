@@ -175,9 +175,9 @@ export class ApiService {
     overdue?: boolean; includeArchived?: boolean } & Paging) {
     return this.http.get<Page<MatchRow>>(`${API}/matches`, { params: toParams(q) });
   }
-  /** resultScope: `result` applies to the top pick (TOP, default) or to any pick (ANY). */
-  predictions(f: Filters, p: Paging, resultScope?: 'TOP' | 'ANY') {
-    return this.http.get<Page<PredictionRow>>(`${API}/predictions`, { params: toParams({ ...f, ...p, resultScope }) });
+  /** resultScope: `result` applies to the top pick (TOP, default) or to any pick (ANY). liveFirst: live matches on top. */
+  predictions(f: Filters, p: Paging, resultScope?: 'TOP' | 'ANY', liveFirst?: boolean) {
+    return this.http.get<Page<PredictionRow>>(`${API}/predictions`, { params: toParams({ ...f, ...p, resultScope, liveFirst }) });
   }
 
   // Archive, rename and merge (admin; every write needs a reason)

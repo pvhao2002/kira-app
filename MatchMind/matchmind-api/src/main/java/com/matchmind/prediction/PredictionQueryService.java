@@ -96,9 +96,10 @@ public class PredictionQueryService {
      * {@code result} matches the top-ranked pick ({@code resultScope=TOP}, default) or any pick of the prediction
      * ({@code ANY}); with ANY and {@code market}, the same pick must have both. {@code kickoffFrom}/{@code kickoffTo}
      * bound the match kick-off time ({@code to} exclusive), where {@code from}/{@code to} bound when it was predicted.
+     * {@code liveFirst} puts predictions of matches being played now above the rest, each part in {@code sort} order.
      */
     public PageResponse<Map<String, Object>> list(Filters f, String resultScope, Instant kickoffFrom, Instant kickoffTo,
-                                                  Integer page, Integer size, String sort) {
+                                                  Integer page, Integer size, String sort, boolean liveFirst) {
         int pg = Paging.page(page), sz = Paging.size(size);
         boolean any = scopeIsAny(resultScope);
         Filters.checkRange(kickoffFrom, kickoffTo);
@@ -123,7 +124,7 @@ public class PredictionQueryService {
         long total = jdbc.queryForObject("SELECT count(*) " + FROM + w.sql(), w.params, Long.class);
         Paging.limit(w.params, pg, sz);
         List<Map<String, Object>> rows = jdbc.query(COLUMNS + FROM + PICK_COUNTS + w.sql() + " ORDER BY "
-            + Paging.orderBy(sort, SORT, "p.predicted_at DESC") + ", p.id LIMIT :limit OFFSET :offset", w.params, Sql.ROW);
+            + (liveFirst ? "(m.status = 'LIVE') DESC, " : "") + Paging.orderBy(sort, SORT, "p.predicted_at DESC") + ", p.id LIMIT :limit OFFSET :offset", w.params, Sql.ROW);
         return Paging.response(rows, pg, sz, total);
     }
 

@@ -129,6 +129,20 @@ class QuerySemanticsIT extends IntegrationTestBase {
     }
 
     @Test
+    void liveFirstPutsMatchesBeingPlayedOnTopThenFollowsTheSort() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Integration in = newIntegration("lf-model");
+        external(in.provider(), "predictions", Payloads.livePrediction("e1-" + suffix, "lf1-" + suffix, in.modelName()));
+        external(in.provider(), "predictions", Payloads.livePrediction("e2-" + suffix, "lf2-" + suffix, in.modelName()));
+        db.update("UPDATE matches SET status = 'SCHEDULED' WHERE external_match_id = ?", "lf1-" + suffix);
+        db.update("UPDATE matches SET status = 'LIVE' WHERE external_match_id = ?", "lf2-" + suffix);
+        String q = "/api/v1/predictions?providerId=" + providerId(in) + "&sort=startTime,asc";
+
+        assertThat(adminGet(q + "&liveFirst=true").get("data").get(0).get("matchStatus").asText()).isEqualTo("LIVE");
+        assertThat(adminGet(q.replace("asc", "desc") + "&liveFirst=true").get("data").get(0).get("matchStatus").asText()).isEqualTo("LIVE");
+    }
+
+    @Test
     void predictionResultFilterCanMatchAnyPickAndRowsCarryPickCounts() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         Integration in = newIntegration("rs-model");

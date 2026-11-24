@@ -28,8 +28,9 @@ public class PredictionController {
                                                   @RequestParam(required = false) Instant kickoffTo,
                                                   @RequestParam(required = false) Integer page,
                                                   @RequestParam(required = false) Integer size,
-                                                  @RequestParam(required = false) String sort) {
-        return service.list(filters, resultScope, kickoffFrom, kickoffTo, page, size, sort);
+                                                  @RequestParam(required = false) String sort,
+                                                  @RequestParam(defaultValue = "false") boolean liveFirst) {
+        return service.list(filters, resultScope, kickoffFrom, kickoffTo, page, size, sort, liveFirst);
     }
 
     /** Everything stored for one prediction: odds, stats, simulation, picks with settlement history, raw payload. */

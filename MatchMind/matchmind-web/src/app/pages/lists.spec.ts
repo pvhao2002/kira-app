@@ -278,6 +278,15 @@ describe('PredictionsPage', () => {
     expect(t.el().querySelector('tbody .empty-state')).not.toBeNull();
   });
 
+  it('asks for live matches first, then the highest top-pick probability, and badges live rows', async () => {
+    const t = await open('/predictions', PredictionsPage);
+    await t.answer({ '/api/v1/predictions': page([prediction({ matchStatus: 'LIVE' }), prediction({ id: 'p2', matchStatus: 'FINISHED' })]) });
+    const params = t.requests('/api/v1/predictions')[0].request.params;
+    expect(params.get('liveFirst')).toBe('true');
+    expect(params.get('sort')).toBe('probability,desc');
+    expect(t.el().querySelectorAll('[data-testid="live"]').length).toBe(1);
+  });
+
   it('shows the odds of a prediction in a popover while the mouse rests on its row', async () => {
     const t = await open('/predictions', PredictionsPage);
     const row = prediction();
