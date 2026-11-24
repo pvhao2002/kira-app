@@ -80,7 +80,7 @@ export function pickSummary(p: PredictionRow): string {
           </thead>
           <tbody>
             @for (p of list.rows(); track p.id) {
-            <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]" (mouseenter)="peek(p.id, $event)" (mouseleave)="unpeek()">
+            <tr class="clickable" tabindex="-1" [routerLink]="['/predictions', p.id]" (mouseenter)="peek(p, $event)" (mouseleave)="unpeek()">
               <td class="nowrap hide-sm"><a [routerLink]="['/predictions', p.id]">{{ fmt(p.predictedAt) }}</a></td>
               <td>@if (p.matchStatus === 'LIVE') { <span class="tag tag-danger" data-testid="live">Live</span> }<span class="truncate" [title]="p.homeTeam + ' – ' + p.awayTeam">{{ p.homeTeam }} – {{ p.awayTeam }}</span><span class="cell-sub">{{ p.league }} · <span data-testid="kickoff" title="Kick-off">{{ fmt(p.startTime) }}</span></span><a class="cell-sub show-sm" [routerLink]="['/predictions', p.id]">@if (isAdmin()) { {{ p.modelName }} · }{{ fmt(p.predictedAt) }}</a>
                 @if (p.counted === false) { <span class="tag tag-secondary" title="A later prediction of the same match, model, type and minute replaces it in reports">not counted</span><span class="sr-only"> (a later prediction of the same match, model, type and minute replaces it in reports)</span> }</td>
@@ -119,40 +119,63 @@ export function pickSummary(p: PredictionRow): string {
       @if (peeked(); as h) {
         <div class="odds-pop" role="dialog" aria-label="Odds and top picks" data-testid="odds-pop" [style.left.px]="h.left" [style.top.px]="h.top" [class.above]="h.above"
           (mouseenter)="keepPeek()" (mouseleave)="unpeek()">
+          @let r = h.row;
+          <header class="pop-head">
+            <div class="pop-title">@if (r.matchStatus === 'LIVE') { <span class="tag tag-danger">Live</span> }<strong>{{ r.homeTeam }} – {{ r.awayTeam }}</strong></div>
+            <span class="muted-text">{{ r.league }} · {{ fmt(r.startTime) }}</span>
+          </header>
           @if (peekDetail.value(); as d) {
             <div class="pop-body">
-            <table class="dt compact-sm" aria-label="Odds">
-              <thead><tr><th>Market</th><th>Stage</th><th class="num">Line</th><th class="num">Prices</th></tr></thead>
-              <tbody>@for (o of d.odds; track o.id) {
-                <tr><td>{{ o.market }}</td><td>{{ humanize(o.stage) }}</td><td class="num">{{ lineText(o.market, o.line, o.lineDisplay) }}</td><td class="num nowrap">{{ prices(o) }}</td></tr>
-              } @empty { <tr><td colspan="4" class="empty">No odds were sent with this prediction.</td></tr> }</tbody>
-            </table>
-            <ol class="pop-picks" aria-label="Picks" data-testid="pop-picks">
+            <ol class="pop-picks" aria-label="Top picks" data-testid="pop-picks">
               @for (k of topPicks(d.picks); track k.id) {
-                <li><span class="rank">#{{ k.rank }}</span><span><strong>{{ pickText(k.market, k.pick, k.line) }}</strong>
-                  <span class="cell-sub">{{ pct(k.probability) }} · {{ num(k.price) }}</span></span><mm-result [value]="k.settlementStatus" />
-                  <button type="button" class="btn btn-sm btn-icon" data-testid="add-parlay" [class.btn-primary]="slip.has(k.id)" [attr.aria-pressed]="slip.has(k.id)"
-                    [title]="slip.has(k.id) ? 'In parlay: click to take it out' : 'Add to parlay'" [attr.aria-label]="slip.has(k.id) ? 'In parlay' : 'Add to parlay'"
-                    (click)="toggleParlay(d, k)">
-                    <i class="pi" [class.pi-check]="slip.has(k.id)" [class.pi-plus]="!slip.has(k.id)" aria-hidden="true"></i></button></li>
+                @let added = slip.has(k.id);
+                <li [class.added]="added"><span class="rank">#{{ k.rank }}</span>
+                  <span class="pick"><strong>{{ pickText(k.market, k.pick, k.line) }}</strong>
+                    <span class="cell-sub">{{ pct(k.probability) }} · &#64; {{ num(k.price) }}</span></span>
+                  <mm-result [value]="k.settlementStatus" />
+                  <button type="button" class="btn btn-sm" data-testid="add-parlay" [class.btn-primary]="added" [attr.aria-pressed]="added"
+                    [title]="added ? 'Take it out of the parlay' : 'Add to parlay'" (click)="toggleParlay(d, k)">
+                    <i class="pi" [class.pi-check]="added" [class.pi-plus]="!added" aria-hidden="true"></i> {{ added ? 'Added' : 'Parlay' }}</button></li>
               } @empty { <li class="muted-text">No picks.</li> }
             </ol>
+            <table class="dt compact-sm pop-odds" aria-label="Odds">
+              <thead><tr><th>Market</th><th>Stage</th><th class="num">Line</th><th>Prices</th></tr></thead>
+              <tbody>@for (o of d.odds; track o.id) {
+                <tr><td>{{ o.market }}</td><td>{{ humanize(o.stage) }}</td><td class="num">{{ lineText(o.market, o.line, o.lineDisplay) }}</td>
+                  <td class="nowrap">@for (c of prices(o, d.picks); track c.side) { <span class="price" [class.picked]="c.picked" [title]="c.picked ? 'A top pick' : ''">{{ c.side }} <b>{{ num(c.value) }}</b></span> }</td></tr>
+              } @empty { <tr><td colspan="4" class="empty">No odds were sent with this prediction.</td></tr> }</tbody>
+            </table>
             </div>
-          } @else if (peekDetail.error()) { <span>Couldn't load the odds.</span> }
+            <a class="pop-more" [routerLink]="['/predictions', r.id]">Open prediction <i class="pi pi-arrow-right" aria-hidden="true"></i></a>
+          } @else if (peekDetail.error()) { <span role="alert">Couldn't load the odds.</span> }
           @else { <span><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Loading odds…</span> }
         </div>
       }
     </div>`,
   styles: `
     /* Hover popover with the prediction's odds; mouse only (touch opens the detail page instead). */
-    .pop-body { display: flex; gap: .75rem; align-items: flex-start; }
-    .pop-picks { list-style: none; margin: 0; padding: 0 0 0 .75rem; border-left: 1px solid var(--mm-line); display: grid; gap: .5rem; min-width: 180px; }
-    .pop-picks li { display: grid; grid-template-columns: auto 1fr auto auto; gap: .4rem; align-items: center; }
+    .pop-head { display: grid; gap: .15rem; padding-bottom: .5rem; margin-bottom: .5rem; border-bottom: 1px solid var(--mm-line); }
+    .pop-title { display: flex; gap: .4rem; align-items: center; min-width: 0; }
+    .pop-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pop-body { display: grid; gap: .6rem; }
+    .pop-picks { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+    .pop-picks li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: .5rem; align-items: center;
+      padding: .35rem .5rem; border: 1px solid var(--mm-line); border-radius: var(--mm-radius); transition: border-color .15s, background-color .15s; }
+    .pop-picks li.added { border-color: var(--mm-accent-ui); }
     .pop-picks .rank { font-weight: 700; color: var(--mm-ink-2); }
-    .odds-pop { position: fixed; z-index: 50; max-width: min(680px, calc(100vw - 16px)); max-height: 50vh; overflow: hidden;
-      padding: .5rem; background: var(--mm-card); border: 1px solid var(--mm-glass-border); border-radius: var(--mm-radius);
-      box-shadow: var(--mm-shadow); backdrop-filter: var(--mm-blur); -webkit-backdrop-filter: var(--mm-blur); font-size: var(--fs-sm); }
+    .pop-picks .pick { display: grid; min-width: 0; }
+    .pop-picks .btn { min-height: 32px; }
+    .price { display: inline-block; padding: 0 .3rem; border-radius: 4px; font-variant-numeric: tabular-nums; }
+    .price + .price { margin-left: .25rem; }
+    .price.picked { outline: 1px solid var(--mm-accent-ui); font-weight: 600; }
+    .pop-more { display: inline-flex; gap: .3rem; align-items: center; margin-top: .5rem; }
+    .odds-pop { position: fixed; z-index: 50; width: max-content; min-width: 320px; max-width: min(560px, calc(100vw - 16px)); max-height: 60vh; overflow: auto;
+      padding: .65rem .75rem; background: var(--mm-card); border: 1px solid var(--mm-glass-border); border-radius: var(--mm-radius);
+      box-shadow: var(--mm-shadow); backdrop-filter: var(--mm-blur); -webkit-backdrop-filter: var(--mm-blur); font-size: var(--fs-sm);
+      animation: pop-in .12s ease-out; }
     .odds-pop.above { transform: translateY(-100%); }
+    @keyframes pop-in { from { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .odds-pop, .pop-picks li { animation: none; transition: none; } }
     @media (hover: none) { .odds-pop { display: none; } }
     .toolbar { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; padding: .45rem .75rem; border-bottom: 1px solid var(--mm-line); }
     .units { font-size: var(--fs-sm); }
@@ -208,17 +231,17 @@ export class PredictionsPage {
   }
 
   /** The row under the mouse, after a short pause so passing over rows does not fetch each one. */
-  readonly peeked = signal<{ id: string; left: number; top: number; above: boolean } | null>(null);
-  readonly peekDetail = this.api.predictionResource(() => this.peeked()?.id);
+  readonly peeked = signal<{ row: PredictionRow; left: number; top: number; above: boolean } | null>(null);
+  readonly peekDetail = this.api.predictionResource(() => this.peeked()?.row.id);
   private peekTimer?: ReturnType<typeof setTimeout>;
   readonly lineText = lineText;
 
-  peek(id: string, e: MouseEvent): void {
+  peek(p: PredictionRow, e: MouseEvent): void {
     const row = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const above = row.bottom + 280 > window.innerHeight;   // near the bottom: open upwards
-    const left = Math.max(8, Math.min(e.clientX, window.innerWidth - 690));
+    const above = row.bottom + 320 > window.innerHeight;   // near the bottom: open upwards
+    const left = Math.max(8, Math.min(e.clientX, window.innerWidth - 568));
     clearTimeout(this.peekTimer);
-    this.peekTimer = setTimeout(() => this.peeked.set({ id, left, top: above ? row.top - 4 : row.bottom + 4, above }), 250);
+    this.peekTimer = setTimeout(() => this.peeked.set({ row: p, left, top: above ? row.top - 4 : row.bottom + 4, above }), 250);
   }
 
   /** Closes after a short grace, so the mouse can cross from the row onto the popover to use its buttons. */
@@ -239,10 +262,13 @@ export class PredictionsPage {
     return picks.filter(k => k.rank <= 2).sort((a, b) => a.rank - b.rank);
   }
 
-  /** "H 1.95 · D 3.40 · A 3.60" or "O 1.85 · U 2.00": only the prices this snapshot has. */
-  prices(o: OddsSnapshot): string {
+  /** H/D/A or O/U prices this snapshot has; `picked` when a top pick takes that side of the same market and line. */
+  prices(o: OddsSnapshot, picks: PickDetail[]): { side: string; value: number; picked: boolean }[] {
+    const top = this.topPicks(picks);
     return ([['H', o.homeOdds], ['D', o.drawOdds], ['A', o.awayOdds], ['O', o.overOdds], ['U', o.underOdds]] as const)
-      .filter(([, v]) => v !== null && v !== undefined).map(([k, v]) => `${k} ${num(v)}`).join(' · ');
+      .filter(([, v]) => v !== null && v !== undefined)
+      .map(([side, v]) => ({ side, value: Number(v), picked: top.some(k => k.market === o.market && k.pick?.[0] === side
+        && (k.line == null ? o.line == null : o.line != null && Number(k.line) === Number(o.line))) }));
   }
 
   show(field: string): boolean { return this.visible().includes(field); }

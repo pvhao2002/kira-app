@@ -303,7 +303,9 @@ describe('PredictionsPage', () => {
       { id: 'k1', rank: 1, market: 'AH', pick: 'HOME', probability: 0.58, price: 1.95, line: -0.25, settlementStatus: 'WIN' } ] } });
     const pop = t.el().querySelector('[data-testid="odds-pop"]')!;
     expect(text(pop)).toContain('AH');
-    expect(text(pop)).toContain('H 1.95 · A 1.90');
+    expect([...pop.querySelectorAll('.price')].map(text)).toEqual(['H 1.95', 'A 1.90']);
+    expect(pop.querySelector('.price.picked')!.textContent).toContain('H');   // the #1 pick's side is marked
+    expect(text(pop)).toContain(row.homeTeam);
     const picks = [...pop.querySelectorAll('[data-testid="pop-picks"] li')].map(li => text(li));
     expect(picks[0]).toContain('#1');
     expect(picks[0]).toContain('AH HOME');
