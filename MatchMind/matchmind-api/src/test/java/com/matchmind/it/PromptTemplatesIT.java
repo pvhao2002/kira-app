@@ -86,6 +86,15 @@ class PromptTemplatesIT extends IntegrationTestBase {
     }
 
     @Test
+    void predictionPromptCarriesSelectionRulesAndTodaysTrackRecord() throws Exception {
+        String id = seededPromptId("AI_PREDICTION");
+        assertThat(adminGet("/api/v1/prompts/" + id).get("content").asText())
+            .contains("SELECTION RULES - TO WIN MORE OFTEN", "NO_PICK_PRICE_OUT_OF_RANGE", "{{TRACK_RECORD}}");
+        String forAgent = adminGet("/api/v1/prompts/" + id + "/for-agent").get("content").asText();
+        assertThat(forAgent).doesNotContain("{{TRACK_RECORD}}").containsPattern("Settled picks, last 60 days|No settled picks yet");
+    }
+
+    @Test
     void agentPromptsMakeTheAgentAppendTheSheetRowItself() throws Exception {
         for (String type : List.of("AI_PREDICTION")) {
             String prompt = adminGet("/api/v1/prompts/" + seededPromptId(type)).get("content").asText();

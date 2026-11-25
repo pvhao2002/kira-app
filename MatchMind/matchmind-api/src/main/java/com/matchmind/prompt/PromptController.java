@@ -40,6 +40,7 @@ public class PromptController {
     /** The API origin agents call, e.g. https://match.example.org (no trailing slash). */
     static final String BASE_URL_PLACEHOLDER = "{{API_BASE_URL}}";
     private final PromptService service;
+    private final TrackRecord trackRecord;
     @Value("${app.external-api-key:}")
     private String externalApiKey;
     @Value("${app.matchmind-sheet-url:}")
@@ -75,6 +76,8 @@ public class PromptController {
         boolean keyRendered = sharedKey && "ADMIN".equals(me.role()) && !externalApiKey.isBlank();
         // The key goes in first, so a placeholder inside a request header value is never expanded into it.
         if (keyRendered) content = content.replace(API_KEY_PLACEHOLDER, externalApiKey);
+        // Today's settled results, so each copy of the prompt carries the latest lessons.
+        if (content.contains(TrackRecord.PLACEHOLDER)) content = content.replace(TrackRecord.PLACEHOLDER, trackRecord.text());
         return new AgentPrompt(content.replace(SHEET_URL_PLACEHOLDER, sheetUrl).replace(BASE_URL_PLACEHOLDER, baseUrl(http)),
             keyRendered);
     }
