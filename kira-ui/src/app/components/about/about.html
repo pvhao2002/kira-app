@@ -236,13 +236,133 @@
       </article>
     </section>
 
+    <!-- Projects (data: projects.data.ts) -->
+    <section id="projects" class="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
+      <p class="font-mono text-sm text-[#86efac]">04 / Projects</p>
+      <h2 class="text-3xl sm:text-4xl font-bold mt-2">What I am building</h2>
+      <p class="text-slate-400 mt-3 max-w-2xl leading-relaxed">
+        Side projects I design, build and self-host, each living in its own folder of one monorepo.
+      </p>
+
+      <nav class="flex flex-wrap gap-2 mt-8" aria-label="Projects">
+        @for (project of projects; track project.id) {
+          <a [href]="'#project-' + project.id"
+             class="rounded-full border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:text-white hover:border-white/30 transition-colors focus-ring"
+             (click)="$event.preventDefault(); scrollToSection('project-' + project.id)">{{ project.name }}</a>
+        }
+      </nav>
+
+      <div class="space-y-8 mt-10">
+        @for (project of projects; track project.id; let i = $index) {
+          <!-- Reveal per card: the whole section is too tall to reach the observer threshold. -->
+          <article [id]="'project-' + project.id"
+                   data-reveal
+                   [class.revealed]="isSectionVisible('project-' + project.id)"
+                   class="scroll-mt-20 rounded-2xl bg-[#0f172a] border border-white/10 p-5 sm:p-8">
+            <header class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-mono text-xs text-slate-500">{{ (i + 1).toString().padStart(2, '0') }} · {{ project.folder }}/</p>
+                <h3 class="text-2xl font-bold mt-1">{{ project.name }}</h3>
+                <p class="text-[#86efac] mt-1">{{ project.tagline }}</p>
+              </div>
+              @if (project.liveUrl) {
+                <a [href]="project.liveUrl" target="_blank" rel="noopener noreferrer"
+                   class="self-start shrink-0 inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[#22c55e] hover:bg-[#4ade80] text-[#0b1121] text-sm font-bold transition-colors focus-ring">
+                  <span class="material-symbols-outlined text-lg" aria-hidden="true">open_in_new</span>
+                  Visit site
+                </a>
+              } @else {
+                <span class="self-start shrink-0 rounded-full border border-dashed border-white/20 px-3 py-1 font-mono text-xs text-slate-400">
+                  Live URL coming soon
+                </span>
+              }
+            </header>
+
+            <p class="text-slate-300 leading-relaxed mt-5">{{ project.description }}</p>
+
+            <div class="grid lg:grid-cols-2 gap-6 mt-6">
+              <figure class="rounded-xl border border-white/10 bg-[#0b1121] p-4 sm:p-5">
+                <figcaption class="font-mono text-xs font-semibold uppercase tracking-wider text-slate-400">Architecture</figcaption>
+                <ol class="mt-4 flex flex-col items-stretch" [attr.aria-label]="project.name + ' architecture, top to bottom'">
+                  @for (layer of project.diagram; track $index; let first = $first) {
+                    <li>
+                      @if (!first) {
+                        <div class="flex flex-col items-center py-1.5 text-slate-500" aria-hidden="true">
+                          @if (layer.via) {
+                            <span class="font-mono text-[11px] text-[#86efac]/80">{{ layer.via }}</span>
+                          }
+                          <span class="material-symbols-outlined text-lg leading-none">south</span>
+                        </div>
+                      }
+                      @if (layer.via) {
+                        <span class="sr-only">via {{ layer.via }}:</span>
+                      }
+                      <ul class="flex flex-wrap justify-center gap-2">
+                        @for (node of layer.nodes; track node.name) {
+                          <li class="flex-1 min-w-[8.5rem] rounded-lg border border-[#22c55e]/30 bg-[#22c55e]/5 px-3 py-2 text-center">
+                            <span class="block text-sm font-semibold text-white">{{ node.name }}</span>
+                            @if (node.detail) {
+                              <span class="block text-xs text-slate-400 mt-0.5">{{ node.detail }}</span>
+                            }
+                          </li>
+                        }
+                      </ul>
+                    </li>
+                  }
+                </ol>
+              </figure>
+
+              <div class="space-y-6">
+                <div>
+                  <h4 class="font-mono text-xs font-semibold uppercase tracking-wider text-slate-400">Main features</h4>
+                  <ul class="mt-3 space-y-2 text-sm text-slate-300">
+                    @for (feature of project.features; track feature) {
+                      <li class="flex items-start gap-2">
+                        <span class="material-symbols-outlined text-base text-[#86efac] mt-0.5" aria-hidden="true">check</span>
+                        <span>{{ feature }}</span>
+                      </li>
+                    }
+                  </ul>
+                </div>
+                <div>
+                  <h4 class="font-mono text-xs font-semibold uppercase tracking-wider text-slate-400">Tech stack</h4>
+                  <ul class="flex flex-wrap gap-1.5 mt-3">
+                    @for (tech of project.stack; track tech) {
+                      <li class="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-xs text-slate-300">{{ tech }}</li>
+                    }
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6">
+              <h4 class="font-mono text-xs font-semibold uppercase tracking-wider text-slate-400">Screenshots</h4>
+              @if (project.screenshots.length) {
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+                  @for (shot of project.screenshots; track shot; let n = $index) {
+                    <img [src]="shot" [alt]="project.name + ' screenshot ' + (n + 1)" loading="lazy"
+                         class="w-full aspect-video object-cover rounded-lg border border-white/10 bg-[#0b1121]"/>
+                  }
+                </div>
+              } @else {
+                <div class="mt-3 flex items-center justify-center gap-2 h-24 rounded-lg border border-dashed border-white/15 text-sm text-slate-500">
+                  <span class="material-symbols-outlined" aria-hidden="true">image</span>
+                  Demo screenshots coming soon
+                </div>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+
     <!-- Contact CTA -->
     <section id="contact"
              data-reveal
              [class.revealed]="isSectionVisible('contact')"
              class="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
       <div class="contact-band rounded-3xl border border-[#22c55e]/25 p-8 sm:p-12 text-center">
-        <p class="font-mono text-sm text-[#86efac]">04 / Contact</p>
+        <p class="font-mono text-sm text-[#86efac]">05 / Contact</p>
         <h2 class="text-3xl sm:text-4xl font-bold mt-2">Let’s connect</h2>
         <p class="text-slate-300 mt-4 max-w-xl mx-auto leading-relaxed">
           I am open to Java Backend and Full-Stack Developer opportunities. If my experience matches your

@@ -14,6 +14,7 @@ class JavaSecurityTest(unittest.TestCase):
             'kira-producer/Dockerfile', 'kira-queue/Dockerfile', 'kira-crawl-java/Dockerfile',
             'kira-bank/kira-bank-service/Dockerfile',
             'kira-affilate/kira-affilate-service/Dockerfile',
+            'kira-memory/kira-memory-service/Dockerfile',
             'farm-market/farm-market-service/Dockerfile']]
         for path in dockerfiles:
             with self.subTest(path=path):

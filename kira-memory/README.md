@@ -4,7 +4,7 @@ Nơi cất ảnh, video và lời nhắn của hai đứa mình. Two fixed accou
 Hugging Face (default) or Cloudflare R2, albums with pinning, captions, and a realtime message box.
 
 - Service `kira-memory-service` → :8086 · UI `kira-memory-ui` → :4206 · MySQL → :3316 · local "R2" (S3Mock) → :9096
-- Rules: `AGENTS.override.md` · API: `docs/api.md`
+- Rules: `AGENTS.override.md` · API: `docs/api.md` · Deploy (Docker images, Portainer stack, CI): `docs/deployment.md`
 
 ## Run locally
 ```bash

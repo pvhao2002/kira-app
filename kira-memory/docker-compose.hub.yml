@@ -1,0 +1,61 @@
+# Production stack (Portainer): images built by .github/workflows/deploy-kira-memory.yml.
+# Every secret is required; the stack refuses to start without it. See docs/deployment.md.
+name: kira-memory
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: kira_memory
+      MYSQL_USER: kira_memory
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  kira-memory-service:
+    image: kira2308/kira-memory-service:${IMAGE_TAG:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/kira_memory?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: kira_memory
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      MEDIA_URL_SECRET: ${MEDIA_URL_SECRET:?set MEDIA_URL_SECRET}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      HF_DATASET_REPO: ${HF_DATASET_REPO:-}
+      HF_TOKEN: ${HF_TOKEN:-}
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+      R2_BUCKET: ${R2_BUCKET:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_REGION: ${R2_REGION:-auto}
+      UPLOAD_PARALLEL_STORES: ${UPLOAD_PARALLEL_STORES:-2}
+    volumes:
+      - upload-tmp:/data/uploads
+    # Not published: only the UI container talks to it.
+
+  kira-memory-ui:
+    image: kira2308/kira-memory-ui:${IMAGE_TAG:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      kira-memory-service:
+        condition: service_healthy
+    ports:
+      - "${UI_PORT:-4206}:80"
+
+volumes:
+  mysql-data:
+  upload-tmp:

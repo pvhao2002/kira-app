@@ -10,6 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import {ThreeBackground} from './three-background/three-background';
+import {PROJECTS} from './projects.data';
 
 interface SocialLink {
   label: string;
@@ -62,8 +63,11 @@ export class About implements OnInit, AfterViewInit {
     {id: 'about', label: 'About'},
     {id: 'skills', label: 'Skills'},
     {id: 'experience', label: 'Experience'},
+    {id: 'projects', label: 'Projects'},
     {id: 'contact', label: 'Contact'},
   ];
+
+  readonly projects = PROJECTS;
 
   readonly typingText = signal('');
   readonly visibleSections = signal<Set<string>>(new Set());
