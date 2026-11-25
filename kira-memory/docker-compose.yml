@@ -1,0 +1,23 @@
+# Local development only: MySQL, plus S3Mock standing in for Cloudflare R2 (same S3 API).
+# Run the service with Maven and the UI with `npm start`; see README.md.
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: kira-memory-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MYSQL_DATABASE: kira_memory
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "127.0.0.1:3316:3306"
+    volumes:
+      - kira-memory-mysql:/var/lib/mysql
+  r2-local:
+    image: adobe/s3mock:4.7.0
+    container_name: kira-memory-r2-local
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: memories
+    ports:
+      - "127.0.0.1:9096:9090"
+volumes:
+  kira-memory-mysql:

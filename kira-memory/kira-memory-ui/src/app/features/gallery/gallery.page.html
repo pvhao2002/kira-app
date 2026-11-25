@@ -1,0 +1,114 @@
+<header class="top">
+  <div class="brand">
+    <h1 class="script">Chuyện của chúng mình</h1>
+    <p class="muted">Bên nhau {{ days }} ngày</p>
+  </div>
+  <nav class="actions">
+    @if (auth.isAdmin()) {
+      <button class="btn primary" type="button" (click)="uploading.set(true)">Thêm kỷ niệm</button>
+      <a class="btn" routerLink="/cai-dat">Cài đặt</a>
+    }
+    <button class="btn ghost" type="button" (click)="logout()">Đăng xuất</button>
+  </nav>
+</header>
+
+<nav class="albums" aria-label="Nhóm ảnh">
+  <button type="button" class="album plain" [class.active]="filter() === 'all'" (click)="setFilter('all')">Tất cả kỷ niệm</button>
+  @for (g of groups(); track g.id) {
+    <button type="button" class="album" [class.active]="filter() === g.id" (click)="setFilter(g.id)">
+      @if (g.coverUrl) { <img [src]="g.coverUrl" alt="" loading="lazy"> } @else { <span class="cover-empty"></span> }
+      <span class="album-text">
+        <span class="name">{{ g.name }}</span>
+        <span class="count">{{ g.count }} kỷ niệm</span>
+      </span>
+      @if (g.pinned) { <span class="pin" title="Đã ghim" aria-label="Đã ghim">❤</span> }
+    </button>
+  }
+  <button type="button" class="album plain" [class.active]="filter() === 'ungrouped'" (click)="setFilter('ungrouped')">Chưa vào nhóm</button>
+  @if (auth.isAdmin()) {
+    @if (creatingGroup()) {
+      <form class="new-group" (ngSubmit)="createGroup()">
+        <input class="input" name="name" maxlength="100" placeholder="Tên nhóm mới" [(ngModel)]="newGroupName" autofocus>
+        <button class="btn primary" type="submit" [disabled]="!newGroupName.trim()">Tạo</button>
+        <button class="btn ghost" type="button" (click)="creatingGroup.set(false)">Huỷ</button>
+      </form>
+    } @else {
+      <button type="button" class="album plain add" (click)="creatingGroup.set(true)">+ Nhóm mới</button>
+    }
+  }
+</nav>
+
+<section class="bar">
+  @if (activeGroup(); as g) {
+    @if (renaming()) {
+      <form class="rename" (ngSubmit)="rename(g)">
+        <input class="input" name="rename" maxlength="100" [(ngModel)]="renameValue" aria-label="Tên nhóm">
+        <button class="btn primary" type="submit">Lưu</button>
+        <button class="btn ghost" type="button" (click)="renaming.set(false)">Huỷ</button>
+      </form>
+    } @else {
+      <h2 class="script">{{ g.name }}</h2>
+    }
+    @if (auth.isAdmin() && !renaming()) {
+      <button class="btn" type="button" (click)="togglePin(g)">{{ g.pinned ? 'Bỏ ghim' : 'Ghim lên đầu' }}</button>
+      <button class="btn" type="button" (click)="renameValue = g.name; renaming.set(true)">Đổi tên</button>
+      <button class="btn danger" type="button" (click)="deleteGroup(g)">Xoá nhóm</button>
+    }
+  } @else {
+    <h2 class="script">{{ filter() === 'ungrouped' ? 'Chưa vào nhóm' : 'Tất cả kỷ niệm' }}</h2>
+  }
+  <span class="spacer"></span>
+  @if (auth.isAdmin()) {
+    @if (selecting()) {
+      <span class="muted">Đã chọn {{ selected().size }}</span>
+      <label class="sr-only" for="move">Chuyển vào nhóm</label>
+      <select id="move" class="input select" [(ngModel)]="moveTarget">
+        <option value="" disabled>Chuyển vào…</option>
+        <option value="none">Bỏ khỏi nhóm</option>
+        @for (g of groups(); track g.id) { <option [value]="g.id">{{ g.name }}</option> }
+      </select>
+      <button class="btn primary" type="button" [disabled]="!selected().size || moveTarget === ''" (click)="moveSelected()">Chuyển</button>
+      <button class="btn ghost" type="button" (click)="toggleSelect()">Xong</button>
+    } @else {
+      <button class="btn" type="button" (click)="toggleSelect()">Chọn nhiều</button>
+    }
+  }
+</section>
+
+@if (error()) { <p class="error page-error" role="alert">{{ error() }} <button class="btn ghost" type="button" (click)="more()">Thử lại</button></p> }
+
+<main class="grid-wrap" #grid>
+  @if (width() > 0) {
+    <cdk-virtual-scroll-viewport scrollWindow [itemSize]="rowHeight()" minBufferPx="900" maxBufferPx="1800"
+                                 (scrolledIndexChange)="onScroll($event)">
+      <div *cdkVirtualFor="let row of rows(); let r = index; trackBy: trackRow" class="row"
+           [style.height.px]="rowHeight()" [style.gap.px]="18" [style.grid-template-columns]="'repeat(' + cols() + ', 1fr)'">
+        @for (m of row; track m.id; let c = $index) {
+          <button type="button" class="tile" [style.--tilt]="tilt(r * cols() + c) + 'deg'" [class.picked]="selected().has(m.id)"
+                  (click)="open(m)" [attr.aria-label]="m.caption || 'Kỷ niệm ngày ' + day(m.takenAt)">
+            <img [src]="m.thumbUrl" alt="" loading="lazy" decoding="async">
+            @if (m.kind === 'VIDEO') { <span class="play" aria-hidden="true">▶</span> }
+            @if (selecting()) { <span class="check" aria-hidden="true">{{ selected().has(m.id) ? '✓' : '' }}</span> }
+            <span class="caption script">{{ m.caption }}</span>
+            <time class="date" [attr.datetime]="m.takenAt">{{ day(m.takenAt) }}</time>
+          </button>
+        }
+      </div>
+    </cdk-virtual-scroll-viewport>
+  }
+  @if (!loading() && done() && !items().length) {
+    <div class="empty">
+      <p class="script">Chưa có kỷ niệm nào ở đây.</p>
+      @if (auth.isAdmin()) { <button class="btn primary" type="button" (click)="uploading.set(true)">Thêm kỷ niệm đầu tiên</button> }
+    </div>
+  }
+  @if (loading()) { <p class="loading muted">Đang mở hộp kỷ niệm…</p> }
+</main>
+
+@if (viewing() !== null) {
+  <app-media-viewer [items]="items()" [index]="viewing()!" [groups]="groups()" (indexChange)="viewing.set($event)"
+                    (closed)="viewing.set(null)" (changed)="changed($event)" (deleted)="deleted($event)"/>
+}
+@if (uploading()) {
+  <app-upload-dialog [groups]="groups()" [defaultGroup]="activeGroup()?.id ?? null" (closed)="uploading.set(false)" (done)="uploaded()"/>
+}

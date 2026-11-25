@@ -38,6 +38,12 @@ Frontend / mobile:
   client, link conversion, order sync, reports); `kira-affilate/kira-affilate-ui` — Angular 22 client (Vietnamese).
   Rules and verify commands: `kira-affilate/AGENTS.override.md`; API contract: `kira-affilate/docs/api.md`.
 
+`kira-memory` is a private photo/video memories site for two accounts (tracked in this repo):
+- `kira-memory/kira-memory-service` — Java 25 / Spring Boot 3.5 / MySQL / Flyway / JdbcClient API (cookie session,
+  Hugging Face + R2 blob stores, Cloudflare-cacheable signed media URLs, SSE messages); `kira-memory/kira-memory-ui` —
+  Angular 22 client (Vietnamese, love theme). Rules and verify commands: `kira-memory/AGENTS.override.md`; API
+  contract: `kira-memory/docs/api.md`.
+
 Infra/ops (not application code): `docker-compose*.yml`, `nginx/`, `monitoring/` (Grafana/Loki/Promtail), `mysql/`
 (primary+replica conf), `scripts/` (deploy, EC2 bootstrap, stack files), `docs/`.
 

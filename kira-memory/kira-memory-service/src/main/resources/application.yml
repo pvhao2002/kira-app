@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: kira-memory-service
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  threads.virtual.enabled: true
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3316/kira_memory?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+  servlet:
+    multipart:
+      # Only the thumbnail travels as multipart; the media file arrives in raw chunks (see app.upload).
+      max-file-size: 3MB
+      max-request-size: 4MB
+  mvc:
+    async:
+      # SSE streams stay open; the client reconnects on its own.
+      request-timeout: -1
+server:
+  port: ${SERVER_PORT:8086}
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+    include-exception: false
+    whitelabel.enabled: false
+management.endpoints.web.exposure.include: health
+app:
+  jwt:
+    # No default: the service refuses to start without a real secret (>= 32 chars).
+    secret: ${JWT_SECRET}
+    ttl: ${SESSION_TTL:P30D}
+  cookie-secure: ${COOKIE_SECURE:false}
+  # Signs public media URLs. Changing it invalidates every cached media URL.
+  media-url-secret: ${MEDIA_URL_SECRET}
+  upload:
+    max-size: ${UPLOAD_MAX_SIZE:2GB}
+    # Below Cloudflare's 100 MB request limit; each chunk is retried on its own.
+    chunk-size: ${UPLOAD_CHUNK_SIZE:32MB}
+    # Needs free space for the files being uploaded at once (blank = system temp dir).
+    tmp-dir: ${UPLOAD_TMP_DIR:}
+    # How many finished uploads are pushed to Hugging Face/R2 at the same time.
+    parallel-stores: ${UPLOAD_PARALLEL_STORES:2}
+  # Prefix put in front of media URLs returned by the API, e.g. https://memory.example.com (blank = same origin).
+  media-base-url: ${MEDIA_BASE_URL:}
+storage:
+  hugging-face:
+    base-url: ${HF_BASE_URL:https://huggingface.co}
+    # A private dataset repo, e.g. "kira/memories".
+    repo: ${HF_DATASET_REPO:}
+    token: ${HF_TOKEN:}
+  r2:
+    # https://<account-id>.r2.cloudflarestorage.com
+    endpoint: ${R2_ENDPOINT:}
+    bucket: ${R2_BUCKET:}
+    access-key: ${R2_ACCESS_KEY_ID:}
+    secret-key: ${R2_SECRET_ACCESS_KEY:}
+    # R2 uses "auto"; MinIO (local dev) wants us-east-1.
+    region: ${R2_REGION:auto}
+    # Files above this go up as S3 multipart uploads of this part size (R2 minimum is 5 MB).
+    part-size: ${R2_PART_SIZE:64MB}

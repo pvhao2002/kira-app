@@ -1,0 +1,52 @@
+:root {
+  --petal: #fff0f3;
+  --paper: #fffdfd;
+  --blush: #ffd6df;
+  --rose: #e11d48;
+  --rose-deep: #be123c; /* white text on it is 6.3:1; on --rose only 4.4:1 */
+  --wine: #5b0f23;
+  --mauve: #93505f;
+  --danger: #b42318;
+  --script: 'Dancing Script', 'Segoe Script', cursive;
+  --sans: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --shadow: 0 1px 2px rgb(91 15 35 / 0.08), 0 8px 24px -12px rgb(91 15 35 / 0.25);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { background: var(--petal); color: var(--wine); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+body { margin: 0; min-width: 320px; font-size: 15px; line-height: 1.55; }
+img, video { display: block; max-width: 100%; }
+button, input, textarea, select { font: inherit; color: inherit; }
+
+:focus-visible { outline: 2px solid var(--rose); outline-offset: 2px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--blush);
+  background: var(--paper); color: var(--wine); font-weight: 600; cursor: pointer;
+}
+.btn:hover { border-color: var(--rose); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn.primary { background: var(--rose-deep); border-color: var(--rose-deep); color: #fff; }
+.btn.primary:hover { background: #9f1239; border-color: #9f1239; }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.danger { color: var(--danger); }
+
+.field { display: grid; gap: 6px; font-size: 14px; font-weight: 500; }
+.input {
+  width: 100%; min-height: 42px; padding: 9px 14px; border-radius: 14px; border: 1px solid var(--blush);
+  background: #fff; outline: none;
+}
+.input:focus { border-color: var(--rose); box-shadow: 0 0 0 3px rgb(225 29 72 / 0.12); }
+textarea.input { resize: vertical; min-height: 72px; }
+
+.script { font-family: var(--script); font-weight: 700; }
+.muted { color: var(--mauve); }
+.error { color: var(--danger); font-size: 14px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
