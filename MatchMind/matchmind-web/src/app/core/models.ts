@@ -29,6 +29,9 @@ export interface AccountLedger {
 /** Signed-out visitors (`GET /visits/countries`, `GET /visits`). `country` is a Cloudflare code: XX unknown, T1 Tor. */
 export interface VisitCountry { country: string; visits: number; uniqueIps: number; lastSeen: string; }
 export interface Visit { id: number; visitedAt: string; ip: string; country: string; browser: string; os: string; userAgent: string | null; }
+/** One sign-in attempt or change; username is null for a sign-in with an unknown username. */
+export interface Activity { id: string; at: string; username: string | null; method: string; path: string; status: number;
+  clientIp: string | null; userAgent: string | null; browser: string; os: string; }
 export interface AccountImport { importId: string; prompt: string; }
 
 export interface ApiError {

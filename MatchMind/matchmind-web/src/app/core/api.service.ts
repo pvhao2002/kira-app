@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Observable, forkJoin } from 'rxjs';
 import {
-  AccountImport, AccountLedger, Visit, VisitCountry,
+  AccountImport, AccountLedger, Activity, Visit, VisitCountry,
   AiModel, ApiLogDetail, ApiLogRow, BreakdownRow, CalibrationReport, TopPickBy, TopPickReport, ComparisonCoverage, ComparisonMatch, Dashboard, Filters, HistoryRow,
   LoginResponse, MarketPerformanceRow, MatchDetail, MatchRow, MatchSettlement, ModelPerformanceRow, MonteCarloReport,
   Page, Parlay, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
@@ -36,6 +36,10 @@ export class ApiService {
     return httpResource<AccountLedger>(() => ({ url: API + '/account/transactions', params: toParams({ page: page(), size }) }));
   }
 
+  /** Account activity, newest first: the caller's own, or (admins) everyone's or one user's. */
+  activityResource(username: () => string, page: () => number) {
+    return httpResource<Page<Activity>>(() => ({ url: `${API}/activity`, params: toParams({ username: username() || undefined, page: page(), size: 50 }) }));
+  }
   /** Admin: signed-out visits grouped by country. */
   visitCountriesResource() { return httpResource<VisitCountry[]>(() => `${API}/visits/countries`); }
   /** Admin: one country's visits, newest first, 100 per page. */

@@ -81,7 +81,7 @@ public class VisitController {
     }
 
     /** Order matters: Edge and Opera also say Chrome, Chrome also says Safari. */
-    static String browser(String ua) {
+    public static String browser(String ua) {
         if (ua == null) return "Other";
         if (ua.contains("Edg/")) return "Edge";
         if (ua.contains("OPR/") || ua.contains("Opera")) return "Opera";
@@ -91,7 +91,7 @@ public class VisitController {
         return "Other";
     }
 
-    static String os(String ua) {
+    public static String os(String ua) {
         if (ua == null) return "Other";
         if (ua.contains("Windows")) return "Windows";
         if (ua.contains("Android")) return "Android";

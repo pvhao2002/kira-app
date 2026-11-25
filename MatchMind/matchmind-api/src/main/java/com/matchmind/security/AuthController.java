@@ -38,10 +38,12 @@ import java.util.UUID;
 public class AuthController {
     private final AuthService auth;
     private final UserAudit audit;
+    private final UserActivity activity;
     private final ClientIpResolver ips;
 
     @PostMapping("/auth/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest r, HttpServletRequest request) {
+        request.setAttribute(UserActivity.ATTEMPTED_USERNAME, r.username());
         return auth.login(r, ips.resolve(request));
     }
 
@@ -63,6 +65,15 @@ public class AuthController {
     @PostMapping("/auth/refresh")
     public LoginResponse refresh(@AuthenticationPrincipal UserPrincipal me) {
         return auth.refresh(me);
+    }
+
+    /** The caller's account activity; admins may see everyone's, or one user's by {@code username}. */
+    @GetMapping("/activity")
+    public PageResponse<Map<String, Object>> activity(@AuthenticationPrincipal UserPrincipal me,
+                                                      @RequestParam(required = false) String username,
+                                                      @RequestParam(required = false) Integer page,
+                                                      @RequestParam(required = false) Integer size) {
+        return activity.list(me, username, page, size);
     }
 
     @GetMapping("/auth/me")

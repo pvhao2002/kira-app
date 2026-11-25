@@ -36,6 +36,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtFilter;
     private final ApiKeyAuthenticationFilter apiKeyFilter;
     private final AdminActionAuditFilter adminActionAuditFilter;
+    private final UserActivity userActivity;
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -85,6 +86,7 @@ public class SecurityConfig {
             .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(adminActionAuditFilter, JwtAuthenticationFilter.class)
+            .addFilterAfter(userActivity, JwtAuthenticationFilter.class)
             .build();
     }
 
@@ -106,6 +108,13 @@ public class SecurityConfig {
     @Bean
     FilterRegistrationBean<AdminActionAuditFilter> adminActionAuditFilterRegistration(AdminActionAuditFilter f) {
         FilterRegistrationBean<AdminActionAuditFilter> r = new FilterRegistrationBean<>(f);
+        r.setEnabled(false);
+        return r;
+    }
+
+    @Bean
+    FilterRegistrationBean<UserActivity> userActivityRegistration(UserActivity f) {
+        FilterRegistrationBean<UserActivity> r = new FilterRegistrationBean<>(f);
         r.setEnabled(false);
         return r;
     }

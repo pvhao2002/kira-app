@@ -33,6 +33,7 @@ export const routes: Routes = [
       { path: 'import', title: 'Import prediction', canActivate: [adminGuard], loadComponent: () => import('./pages/import').then(m => m.ImportPage) },
       { path: 'visitors', title: 'Visitors', canActivate: [adminGuard], loadComponent: () => import('./pages/visitors').then(m => m.VisitorsPage) },
       { path: 'api-logs', title: 'API Logs', canActivate: [adminGuard], loadComponent: () => import('./pages/api-logs').then(m => m.ApiLogsPage) },
+      { path: 'activity', title: 'Activity', loadComponent: () => import('./pages/activity').then(m => m.ActivityPage) },
       { path: 'settings', title: 'Settings', loadComponent: () => import('./pages/settings').then(m => m.SettingsPage) },
       // Signed-in unknown URL: a 404 inside the shell. Signed out, the parent's authGuard sends it to login first.
       { path: '**', title: 'Page not found', component: NotFoundPage },

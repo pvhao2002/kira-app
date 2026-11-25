@@ -26,6 +26,7 @@ const NAV: NavItem[] = [
   { path: '/import', label: 'Import', icon: 'pi-upload', color: '#a3e635', adminOnly: true },
   { path: '/api-logs', label: 'API Logs', icon: 'pi-list', color: '#93c5fd', adminOnly: true },
   { path: '/visitors', label: 'Visitors', icon: 'pi-globe', color: '#2dd4bf', adminOnly: true },
+  { path: '/activity', label: 'Activity', icon: 'pi-history', color: '#a78bfa' },
   { path: '/settings', label: 'Settings', icon: 'pi-cog', color: '#cbd5e1' },
 ];
 

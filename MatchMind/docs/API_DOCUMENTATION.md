@@ -398,6 +398,7 @@ after a corrected score. An admin resolves them with recalculate or override; th
 | POST | `/users/{id}/reset-password` | admin | `{newPassword, mustChangePassword?}` → 204 |
 | POST | `/users/{id}/unlock` | admin | 204. Clears the failed-login lockout of the user on every IP |
 | GET | `/users/audit` | admin | `userId?, page, size` → `{data:[{id, at, actor, targetId, target, action, oldValue, newValue, clientIp}], meta}`. Actions: `USER_CREATED`, `ROLE_CHANGED`, `STATUS_CHANGED`, `PASSWORD_RESET`, `PASSWORD_CHANGED`, `LOGIN_UNLOCKED` |
+| GET | `/activity` | admin, viewer | `username?, page, size` → `{data:[{id, at, username, method, path, status, clientIp, userAgent, browser, os}], meta}`, newest first. Every sign-in attempt (`POST /api/v1/auth/login`, any status) and every non-GET request of a signed-in user except `/auth/refresh`. A viewer always gets only their own rows (`username` ignored); an admin gets everyone or one user. `username` is null for a sign-in with an unknown username. Kept without expiry. |
 
 ### Providers and AI models
 Providers are created by an admin (below); the legacy shared key still creates them from `X-Provider` until the
