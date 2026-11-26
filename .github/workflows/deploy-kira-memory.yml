@@ -8,9 +8,10 @@ on:
     paths: ['kira-memory/**', '.github/workflows/deploy-kira-memory.yml']
   workflow_dispatch:
 
+# One deploy at a time; never cancel a deploy half way through.
 concurrency:
   group: deploy-kira-memory-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -77,27 +78,82 @@ jobs:
         if: matrix.image == 'kira-memory-service'
         run: python3 scripts/check_java_image.py ${{ env.DOCKERHUB_USERNAME }}/kira-memory-service:${{ github.sha }}
 
-  # Redeploy the existing Portainer stack with image re-pull; stack file and env stay in Portainer.
+  # Ship kira-memory/ to the shared ARM64 VPS (same host and secrets as deploy-matchmind.yml) and rebuild there with
+  # docker-compose.vps.yml. The VPS keeps its own ~/kira-memory/.env; it is never shipped or overwritten.
   deploy:
-    needs: build
-    if: github.event_name != 'pull_request'
+    needs: [test-service, test-ui]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment: production
     env:
-      PORTAINER_URL: ${{ secrets.KIRA_MEMORY_PORTAINER_URL }}
-      PORTAINER_API_KEY: ${{ secrets.KIRA_MEMORY_PORTAINER_API_KEY }}
-      STACK_ID: ${{ secrets.KIRA_MEMORY_PORTAINER_STACK_ID }}
-      ENDPOINT_ID: ${{ secrets.KIRA_MEMORY_PORTAINER_ENDPOINT_ID }}
+      VPS_HOST: ${{ secrets.MATCHMIND_VPS_HOST }}
+      VPS_USER: ${{ secrets.MATCHMIND_VPS_USER }}
     steps:
-      - name: Redeploy Portainer stack
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Package kira-memory
         run: |
+          tar czf "$RUNNER_TEMP/kira-memory.tgz" \
+            --exclude='.env' --exclude='node_modules' --exclude='dist' --exclude='.angular' --exclude='target' \
+            kira-memory
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.MATCHMIND_VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.MATCHMIND_VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host vps\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking yes\n' "$VPS_HOST" "$VPS_USER" > ~/.ssh/config
+
+      - name: Upload
+        run: scp "$RUNNER_TEMP/kira-memory.tgz" vps:/tmp/kira-memory-${{ github.sha }}.tgz
+
+      - name: Deploy
+        run: |
+          ssh vps "SHA=${{ github.sha }} bash -s" <<'REMOTE'
           set -euo pipefail
-          if [ -z "${PORTAINER_URL:-}" ]; then echo "Portainer secrets not set; images are pushed, skipping redeploy"; exit 0; fi
-          api() { curl -fsS --max-time 600 -H "X-API-Key: $PORTAINER_API_KEY" "$@"; }
-          env_json=$(api "$PORTAINER_URL/api/stacks/$STACK_ID" | jq '.Env // []')
-          file=$(api "$PORTAINER_URL/api/stacks/$STACK_ID/file" | jq -r '.StackFileContent')
-          jq -n --arg f "$file" --argjson e "$env_json" \
-            '{stackFileContent: $f, env: $e, prune: false, pullImage: true}' \
-          | api -X PUT -H "Content-Type: application/json" --data @- \
-              "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" >/dev/null
-          echo "kira-memory stack $STACK_ID redeployed"
+          cd ~
+          PKG=/tmp/kira-memory-$SHA.tgz
+          BAK=~/kira-memory.bak-ci-$(date -u +%Y%m%d%H%M%S)-${SHA:0:7}
+
+          # New tree beside the live one; the live .env comes along, nothing else from the server does.
+          rm -rf kira-memory.new && mkdir kira-memory.new
+          tar xzf "$PKG" -C kira-memory.new --strip-components=1
+          cp -p kira-memory/.env kira-memory.new/.env
+
+          # Swap: the live tree becomes the backup (same compose project name, so containers and volumes carry over).
+          mv kira-memory "$BAK" && mv kira-memory.new kira-memory
+          rm -f "$PKG"
+
+          cd ~/kira-memory
+          docker compose -f docker-compose.vps.yml up -d --build --remove-orphans
+
+          c=kira-memory-kira-memory-service-1
+          for i in $(seq 1 40); do
+            s=$(docker inspect -f '{{.State.Health.Status}}' "$c" 2>/dev/null || echo missing)
+            [ "$s" = healthy ] && break
+            sleep 5
+          done
+          echo "service: $s"
+          if [ "$s" != healthy ]; then
+            docker compose -f docker-compose.vps.yml logs --tail 80 kira-memory-service
+            echo "Deploy FAILED. Previous tree: $BAK"
+            echo "Rollback: cd ~ && mv kira-memory kira-memory.failed && mv $BAK kira-memory && cd kira-memory && docker compose -f docker-compose.vps.yml up -d --build"
+            exit 1
+          fi
+          curl -fsS -o /dev/null http://127.0.0.1:4206/ && echo "ui: HTTP ok"
+          curl -fsS -o /dev/null http://127.0.0.1:4206/api/public/login-banner && echo "api: HTTP ok"
+
+          # Keep the 3 newest CI backups and drop dangling images from the rebuild.
+          ls -1dt ~/kira-memory.bak-ci-* 2>/dev/null | tail -n +4 | xargs -r rm -rf
+          docker image prune -f >/dev/null
+          echo "Deployed $SHA (backup: $BAK)"
+          REMOTE
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

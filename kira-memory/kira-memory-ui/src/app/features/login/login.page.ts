@@ -65,6 +65,11 @@ import {fmt, together, todayInVietnam} from '../../core/since';
       .page { grid-template-columns: 1fr; }
       .banner { min-height: 62vh; }
     }
+    /* Phones: keep the login form close to the first screen. */
+    @media (max-width: 560px) {
+      .banner { min-height: 46vh; }
+      h2 { font-size: 38px; }
+    }
   `
 })
 export class LoginPage {

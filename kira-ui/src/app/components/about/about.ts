@@ -9,6 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import {NgTemplateOutlet} from '@angular/common';
 import {ThreeBackground} from './three-background/three-background';
 import {PROJECTS} from './projects.data';
 
@@ -45,9 +46,27 @@ interface Experience {
   highlights: {title: string; text: string}[];
 }
 
+interface InfraNode {
+  icon: string;
+  name: string;
+  detail: string;
+  /** Label on the arrow coming into this node from the one before it. */
+  via?: string;
+}
+
+/** One step of the deployment diagram. A named step is drawn as a box around its nodes. */
+interface InfraStep {
+  name?: string;
+  icon?: string;
+  detail?: string;
+  /** Label on the arrow coming into this step. */
+  via?: string;
+  nodes: InfraNode[];
+}
+
 @Component({
   selector: 'app-about',
-  imports: [ThreeBackground],
+  imports: [NgTemplateOutlet, ThreeBackground],
   templateUrl: './about.html',
   styleUrl: './about.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -102,6 +121,77 @@ export class About implements OnInit, AfterViewInit {
       summary: 'End-to-end pipelines from raw sources to clean data exposed through APIs.',
       points: ['Source analysis', 'Crawlers & scheduling', 'Cleaning & storage'],
     },
+  ];
+
+  // Deployment of the self-hosted apps, as checked on the server. Names no specific app on purpose.
+  readonly infraSteps: InfraStep[] = [
+    {nodes: [{icon: 'language', name: 'kira.id.vn', detail: 'One subdomain per app: *.kira.id.vn'}]},
+    {
+      name: 'Cloudflare',
+      icon: 'cloud',
+      detail: 'DNS and edge network',
+      via: 'DNS lookup',
+      nodes: [
+        {icon: 'dns', name: 'DNS', detail: 'Authoritative DNS, proxied records'},
+        {icon: 'shield', name: 'Edge', detail: 'CDN cache · Universal SSL · DDoS mitigation', via: 'proxied'},
+      ],
+    },
+    {
+      name: 'Oracle Cloud VPS',
+      icon: 'computer',
+      detail: 'Always Free · Ampere A1 (ARM64) · 4 OCPU · 24 GB RAM · Ubuntu · firewall: 22, 80, 443',
+      via: 'HTTPS · Full (strict)',
+      nodes: [
+        {icon: 'router', name: 'nginx (host)', detail: 'TLS, HTTP → HTTPS, HSTS; routes each subdomain'},
+        {icon: 'web', name: 'Angular', detail: 'nginx web container serving the build', via: '127.0.0.1 only'},
+        {
+          icon: 'coffee',
+          name: 'Java + other services',
+          detail: 'Spring Boot on Java 25 · Node.js · log stack',
+          via: '/api · same origin',
+        },
+        {
+          icon: 'database',
+          name: 'Databases',
+          detail: 'PostgreSQL 17 · MySQL 8 on named volumes',
+          via: 'Docker network',
+        },
+      ],
+    },
+  ];
+
+  readonly infraNotes = [
+    {icon: 'lock', text: 'TLS mode Full (strict) with a wildcard Cloudflare Origin Certificate for *.kira.id.vn'},
+    {icon: 'my_location', text: 'nginx trusts CF-Connecting-IP only from Cloudflare\'s published IP ranges'},
+    {icon: 'block', text: 'Every container port is bound to 127.0.0.1; databases are never published publicly'},
+    {icon: 'cached', text: 'Hashed bundles are cached for a year; index.html is never cached'},
+    {icon: 'monitor_heart', text: 'Docker health checks and restart policies; Grafana + Loki + Alloy for logs'},
+    {icon: 'perm_media', text: 'Object storage on Cloudflare R2 (S3 API) and Hugging Face private datasets'},
+  ];
+
+  readonly deploySteps = ['push to master', 'tests', 'package', 'SSH', 'docker compose up -d --build',
+    'health-check loop'];
+
+  readonly freeTiers = [
+    {
+      name: 'Oracle Cloud Always Free',
+      text: 'Ampere A1 compute up to 4 OCPUs and 24 GB of memory, up to 200 GB of block storage and 10 TB of '
+        + 'outbound data per month, at no cost.',
+    },
+    {
+      name: 'Cloudflare Free plan',
+      text: 'Authoritative DNS, CDN caching, Universal SSL, free Origin CA certificates (valid up to 15 years) '
+        + 'and unmetered DDoS mitigation.',
+    },
+    {name: 'Cloudflare R2', text: 'A free storage tier and no egress fees.'},
+    {name: 'Hugging Face', text: 'Private datasets hold large media for free.'},
+  ];
+
+  readonly performancePoints = [
+    'Cloudflare\'s edge serves cached static bundles and immutable media, so the VPS mostly answers API calls.',
+    'ARM cores and 24 GB of RAM fit every app, its database and the log stack on one host.',
+    'Spring Boot runs on Java virtual threads, with capped JVM memory.',
+    'Same-origin /api proxying: no CORS preflights, and SameSite=Strict cookies work.',
   ];
 
   readonly skillGroups: SkillGroup[] = [
@@ -267,7 +357,8 @@ export class About implements OnInit, AfterViewInit {
           }
         });
       },
-      {threshold: 0.12, rootMargin: '0px 0px -40px 0px'},
+      // threshold 0: a ratio threshold never fires for a section taller than viewport / ratio (phones).
+      {threshold: 0, rootMargin: '0px 0px -40px 0px'},
     );
 
     root.querySelectorAll('[data-reveal]').forEach((el) => observer.observe(el));

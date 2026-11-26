@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,12 +44,14 @@ public class MediaService {
     private final BlobStores stores;
     private final SettingsService settings;
     private final MediaUrls urls;
+    private final CloudflarePurge purge;
 
-    public MediaService(JdbcClient jdbc, BlobStores stores, SettingsService settings, MediaUrls urls) {
+    public MediaService(JdbcClient jdbc, BlobStores stores, SettingsService settings, MediaUrls urls, CloudflarePurge purge) {
         this.jdbc = jdbc;
         this.stores = stores;
         this.settings = settings;
         this.urls = urls;
+        this.purge = purge;
     }
 
     public record MediaView(long id, String kind, String contentType, Integer width, Integer height, String caption,
@@ -177,6 +180,40 @@ public class MediaService {
 
     public void delete(long id) {
         MediaRow r = row(id);
+        remove(r);
+        purge.purge(cachedUrls(r));
+    }
+
+    /**
+     * One at a time like {@link #delete}, skipping ids that are already gone. The first failure stops the batch;
+     * what was deleted before it stays deleted, and leaves Cloudflare's cache in one purge.
+     * ponytail: each object is its own storage call (a Hub commit each), so a full batch can take minutes behind a
+     * 100 s proxy timeout; group the keys into one Hub commit / S3 DeleteObjects if that bites.
+     */
+    public int deleteAll(List<Long> ids) {
+        List<String> gone = new ArrayList<>();
+        int deleted = 0;
+        try {
+            for (long id : ids) {
+                MediaRow r;
+                try {
+                    r = row(id);
+                } catch (ApiException e) {
+                    if (e.status() != HttpStatus.NOT_FOUND) throw e;
+                    continue;
+                }
+                remove(r);
+                gone.addAll(cachedUrls(r));
+                deleted++;
+            }
+        } finally {
+            purge.purge(gone);
+        }
+        return deleted;
+    }
+
+    /** Deletes the stored objects, then the row. */
+    private void remove(MediaRow r) {
         BlobStore store = stores.get(StorageProvider.valueOf(r.provider()));
         try {
             deleteIfPresent(store, r.objectKey());
@@ -185,8 +222,13 @@ public class MediaService {
             log.warn("Delete from {} failed: {}", r.provider(), e.getMessage());
             throw new ApiException(HttpStatus.BAD_GATEWAY, "STORAGE_FAILED", "Không xoá được trên nơi lưu trữ, hãy thử lại");
         }
-        jdbc.sql("DELETE FROM app_setting WHERE name = 'banner_media_id' AND value = ?").param(String.valueOf(id)).update();
-        jdbc.sql("DELETE FROM media WHERE id = ?").param(id).update();
+        jdbc.sql("DELETE FROM app_setting WHERE name = 'banner_media_id' AND value = ?").param(String.valueOf(r.id())).update();
+        jdbc.sql("DELETE FROM media WHERE id = ?").param(r.id()).update();
+    }
+
+    /** The URLs Cloudflare may have cached for an item. */
+    private List<String> cachedUrls(MediaRow r) {
+        return List.of(urls.original(r.id(), r.objectKey()), urls.thumb(r.id()));
     }
 
     public MediaRow row(long id) {

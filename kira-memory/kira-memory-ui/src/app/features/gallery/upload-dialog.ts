@@ -22,14 +22,15 @@ const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/avif,image/heic,
   imports: [FormsModule, A11yModule],
   template: `
     <div class="backdrop" (click)="close()"></div>
-    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="up-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="up-title" cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
+             (dragover)="dragOver($event)" (dragleave)="leave($event)" (drop)="drop($event)">
       <header>
         <h2 id="up-title" class="script">Thêm kỷ niệm</h2>
         <button class="btn ghost" type="button" (click)="close()" aria-label="Đóng" [disabled]="running()">✕</button>
       </header>
-      <label class="drop">
+      <label class="drop" [class.over]="over()">
         <input type="file" multiple [accept]="accept" (change)="add($event)" [disabled]="running()">
-        <span>Chọn ảnh hoặc video</span>
+        <span>{{ over() ? 'Thả vào đây' : 'Chọn hoặc kéo thả ảnh, video vào đây' }}</span>
         <small class="muted">jpg, png, webp, gif, heic, mp4, mov, webm, tối đa 2GB mỗi file</small>
       </label>
       @if (picks().length) {
@@ -81,6 +82,7 @@ const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/avif,image/heic,
     .drop { display: grid; justify-items: center; gap: 4px; padding: 26px; border: 2px dashed var(--blush); border-radius: 18px;
       cursor: pointer; font-weight: 600; color: var(--rose-deep); }
     .drop:hover, .drop:focus-within { border-color: var(--rose); }
+    .drop.over { border-color: var(--rose); background: var(--petal); }
     .drop input { position: absolute; opacity: 0; width: 1px; height: 1px; }
     .picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
     .picks li { display: flex; gap: 12px; align-items: flex-start; padding: 8px; border: 1px solid var(--blush); border-radius: 16px; }
@@ -89,17 +91,25 @@ const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/avif,image/heic,
     .pick-body { flex: 1; display: grid; gap: 4px; min-width: 0; }
     .pick-body small { overflow-wrap: anywhere; }
     footer { display: flex; justify-content: flex-end; }
+    /* Phones: a bottom sheet. */
+    @media (max-width: 560px) {
+      :host { place-items: end stretch; padding: 0; }
+      .dialog { width: 100%; max-height: 92vh; border-radius: 24px 24px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+    }
   `
 })
 export class UploadDialog implements OnInit {
   private api = inject(Api);
   readonly groups = input.required<Group[]>();
   readonly defaultGroup = input<number | null>(null);
+  /** Files dropped on the gallery page, added when the dialog opens. */
+  readonly files = input<File[]>([]);
   readonly closed = output<void>();
   readonly done = output<void>();
   protected accept = ACCEPT;
   protected picks = signal<Pick[]>([]);
   protected running = signal(false);
+  protected over = signal(false);
   protected groupId: number | null = null;
 
   constructor() {
@@ -108,6 +118,7 @@ export class UploadDialog implements OnInit {
 
   ngOnInit() {
     this.groupId = this.defaultGroup();
+    this.addFiles(this.files());
   }
 
   @HostListener('document:keydown.escape')
@@ -125,6 +136,33 @@ export class UploadDialog implements OnInit {
     const input = e.target as HTMLInputElement;
     const files = [...(input.files ?? [])];
     input.value = '';
+    this.addFiles(files);
+  }
+
+  protected dragOver(e: DragEvent) {
+    if (!e.dataTransfer?.types.includes('Files')) return;
+    e.preventDefault();
+    if (this.running()) {
+      e.dataTransfer.dropEffect = 'none';
+      return;
+    }
+    this.over.set(true);
+  }
+
+  /** Moving onto a child element also fires dragleave; only leaving the dialog counts. */
+  protected leave(e: DragEvent) {
+    if (!(e.currentTarget as Node).contains(e.relatedTarget as Node | null)) this.over.set(false);
+  }
+
+  protected drop(e: DragEvent) {
+    if (!e.dataTransfer?.types.includes('Files')) return;
+    e.preventDefault();
+    this.over.set(false);
+    if (!this.running()) this.addFiles([...e.dataTransfer.files]);
+  }
+
+  private addFiles(files: File[]) {
+    if (!files.length) return;
     this.picks.update(list => [...list, ...files.map(file => {
       const tooBig = file.size > MAX_BYTES;
       const known = contentTypeOf(file) !== 'application/octet-stream';

@@ -31,9 +31,150 @@ export interface Project {
   diagram: DiagramLayer[];
   stack: string[];
   features: string[];
+  /** Optional "why it is hard" cards, shown before the architecture. */
+  challenges?: {icon: string; title: string; text: string}[];
+  /** Optional rewrite story, shown after the architecture. */
+  migration?: ProjectMigration;
+}
+
+export interface ProjectMigration {
+  from: string;
+  to: string;
+  points: string[];
+  /** Optional side-by-side diagrams of the part that changed, drawn like `Project.diagram`. */
+  diagrams?: {before: DiagramLayer[]; after: DiagramLayer[]};
 }
 
 export const PROJECTS: Project[] = [
+  {
+    id: 'kira-crawl',
+    name: 'Kira Crawl',
+    folder: 'kira-queue',
+    tagline: 'Distributed crawler for a large, heavily protected live-score website',
+    description:
+      'Collects match lists and per-match detail data from www.aiscore.com, a large live-score '
+      + 'website behind Cloudflare bot protection. A scheduler publishes crawl jobs to RabbitMQ, '
+      + 'horizontally scaled workers fetch the data through warm browser sessions, and the results '
+      + 'land in MySQL.',
+    liveUrl: '',
+    screenshots: [],
+    challenges: [
+      {
+        icon: 'shield',
+        title: 'Bot protection',
+        text: '"Just a moment" interstitials guard the pages and API calls can come back with '
+          + 'cf-mitigated: challenge. Plain HTTP clients fail; it takes a real browser.',
+      },
+      {
+        icon: 'cookie',
+        title: 'Session-bound clearance',
+        text: 'The cf_clearance cookie is bound to the browser session that earned it, so every '
+          + 'API request has to run inside that same session.',
+      },
+      {
+        icon: 'data_object',
+        title: 'A binary API',
+        text: 'The site\'s own API answers in binary Protocol Buffers, not JSON. Every response is '
+          + 'decoded in-process with the upstream protobuf.json schema.',
+      },
+      {
+        icon: 'memory',
+        title: 'Chromium is heavy',
+        text: 'Every worker runs Playwright with a full Chromium, so each one gets its own EC2 '
+          + 'instance: t3.small or larger, and 4 GB of RAM once Portainer runs beside it.',
+      },
+      {
+        icon: 'sync_lock',
+        title: 'One thread per browser',
+        text: 'Playwright for Java is not thread-safe, so each browser lane owns a dedicated '
+          + 'driver thread and runs its requests one at a time.',
+      },
+      {
+        icon: 'front_hand',
+        title: 'Blocks mid-crawl',
+        text: 'Any call can come back 403, 429, 503 or as a challenge. Each one is a hard stop '
+          + 'with a domain error code, never a blind retry, and captchas are never solved '
+          + 'automatically.',
+      },
+    ],
+    diagram: [
+      {
+        nodes: [
+          {name: 'kira-producer', detail: 'Spring Boot scheduler'},
+          {name: 'kira-data-manager', detail: 'crawl dates · failures · requeue'},
+        ],
+      },
+      {
+        via: 'publish jobs',
+        nodes: [{name: 'RabbitMQ', detail: 'crawl_exchange · crawlByDate · event'}],
+      },
+      {
+        via: 'consume (redelivery-safe)',
+        nodes: [{name: 'kira-queue workers', detail: 'Docker · several EC2 instances'}],
+      },
+      {nodes: [{name: 'Warm browser lanes', detail: '1 match-list lane + up to 5 detail lanes'}]},
+      {
+        via: 'in-page fetch() + cf_clearance',
+        nodes: [{name: 'www.aiscore.com', detail: 'Cloudflare · Protocol Buffers API'}],
+      },
+      {
+        via: 'decoded in-process',
+        nodes: [
+          {name: 'MySQL 8', detail: 'shared schema: kira-schema'},
+          {name: 'kira-gateway', detail: 'crawl callbacks'},
+        ],
+      },
+    ],
+    stack: ['Java 21', 'Spring Boot', 'Playwright for Java', 'Virtual threads', 'RabbitMQ',
+      'MySQL 8', 'Protocol Buffers', 'Docker', 'AWS EC2', 'Node.js 22', 'patchright', 'amqplib',
+      'mysql2', 'protobufjs', 'Chrome MV3 extension'],
+    features: [
+      'Warm browser lanes open once on the home page; in-page fetch() then reuses that session and '
+        + 'its clearance instead of navigating per request',
+      'One lane for match lists plus up to 5 parallel lanes for per-match detail',
+      'Lean network: images, fonts and media are blocked',
+      'HTTP handlers run on Java virtual threads and hand browser calls to each lane\'s driver '
+        + 'thread',
+      'A challenge pauses the run until a person completes the verification in the open browser, '
+        + 'with remote display over VNC',
+      'A persistent browser profile keeps a legitimately earned clearance across restarts',
+      'Redelivery-safe consumers: each message is acked after its handler settles',
+      'Chrome MV3 extension variant that fetches inside the operator\'s own tab through a shared '
+        + 'limiter (default 1 request/second)',
+    ],
+    migration: {
+      from: 'Java 21 + Playwright',
+      to: 'Node.js 22 + Patchright',
+      points: [
+        'patchright is a Playwright fork for Chromium with a patched, less detectable automation '
+          + 'fingerprint',
+        'No user-agent or extra-header overrides, so the browser keeps its real Chrome fingerprint',
+        'Playwright for Java drives a bundled Node.js driver process: JVM → Node driver → browser '
+          + 'becomes Node → browser',
+        'In-page fetch() runs in the page\'s main world, so the browser sends the clearance cookie',
+        'One persistent browser context per lane, and a promise-chain mutex instead of driver '
+          + 'threads',
+        'Same queue names, message payloads and database writes as v1, so both versions can run '
+          + 'side by side',
+        'Plain ESM JavaScript with no build step; node --test runs against fake pages, database '
+          + 'and AMQP',
+      ],
+      diagrams: {
+        before: [
+          {nodes: [{name: 'kira-queue', detail: 'Java 21 · Spring Boot'}]},
+          {
+            via: 'Playwright for Java',
+            nodes: [{name: 'Node.js driver', detail: 'bundled subprocess'}],
+          },
+          {nodes: [{name: 'Chromium', detail: 'driver thread per lane'}]},
+        ],
+        after: [
+          {nodes: [{name: 'kira-queue-v2', detail: 'Node.js 22 · plain ESM'}]},
+          {via: 'patchright', nodes: [{name: 'Chromium', detail: 'persistent context per lane'}]},
+        ],
+      },
+    },
+  },
   {
     id: 'kira-tool',
     name: 'Kira Tool',

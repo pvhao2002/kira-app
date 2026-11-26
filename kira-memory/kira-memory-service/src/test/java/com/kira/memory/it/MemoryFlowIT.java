@@ -2,6 +2,8 @@ package com.kira.memory.it;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,16 +34,22 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
-    "app.jwt.secret=integration-test-secret-with-at-least-32-chars",
+    "app.jwt.secret=" + MemoryFlowIT.JWT_SECRET,
     "app.media-url-secret=integration-media-secret-with-at-least-32-chars",
     "storage.hugging-face.repo=kira/memories", "storage.hugging-face.token=" + HubStub.TOKEN,
     "storage.r2.bucket=memories", "storage.r2.access-key=test", "storage.r2.secret-key=test",
     "storage.r2.region=us-east-1", "storage.r2.part-size=5MB", "app.upload.chunk-size=1MB"})
 class MemoryFlowIT {
+    static final String JWT_SECRET = "integration-test-secret-with-at-least-32-chars";
+    /** bcrypt of the seeded password 14062018, as in V1. */
+    static final String SEEDED_HASH = "$2y$10$dZ/whZTIG9AjCiZv5usOYuPjgt7yxjFD.iHrRi5VP7nuo5Oc4CVRu";
     static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0");
     static final GenericContainer<?> S3 = new GenericContainer<>("adobe/s3mock:4.7.0")
         .withEnv("COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS", "memories").withExposedPorts(9090);
     static final HubStub HUB = new HubStub();
+    static final CloudflareStub CF = new CloudflareStub();
+    /** The site as Cloudflare caches it. */
+    static final String SITE = "https://memory.test";
 
     static {
         MYSQL.start();
@@ -55,11 +63,16 @@ class MemoryFlowIT {
         r.add("spring.datasource.password", MYSQL::getPassword);
         r.add("storage.hugging-face.base-url", HUB::url);
         r.add("storage.r2.endpoint", () -> "http://" + S3.getHost() + ":" + S3.getMappedPort(9090));
+        r.add("cdn.cloudflare.api-base", CF::url);
+        r.add("cdn.cloudflare.zone-id", () -> CloudflareStub.ZONE);
+        r.add("cdn.cloudflare.api-token", () -> CloudflareStub.TOKEN);
+        r.add("cdn.cloudflare.site-url", () -> SITE);
     }
 
     @Autowired TestRestTemplate rest;
     @Autowired JdbcClient jdbc;
     @Autowired com.kira.memory.identity.LoginRateLimiter limiter;
+    @Autowired com.kira.memory.identity.SessionTokens tokens;
     @LocalServerPort int port;
     final ObjectMapper json = new ObjectMapper();
 
@@ -71,6 +84,15 @@ class MemoryFlowIT {
         jdbc.sql("UPDATE app_setting SET value = 'HUGGING_FACE' WHERE name = 'storage_provider'").update();
         jdbc.sql("DELETE FROM app_setting WHERE name = 'banner_media_id'").update();
         HUB.multipartChunk = 0;
+        HUB.failDelete = null;
+        CF.purges.clear();
+        CF.fail = false;
+        // The rows above are gone, so their Hub files are orphans; dropping them keeps file counts per test.
+        HUB.files.clear();
+        // Password tests change these: every test starts from the seeded password and no failed attempts.
+        jdbc.sql("UPDATE users SET password_hash = ?").param(SEEDED_HASH).update();
+        limiter.succeeded("admin");
+        limiter.succeeded("love");
     }
 
     // ---- auth ----
@@ -117,6 +139,88 @@ class MemoryFlowIT {
         assertEquals(403, upload(love, Map.of()).getStatusCode().value());
         assertEquals(403, call(HttpMethod.PUT, "/api/admin/settings", love, Map.of("widgetShape", "star")).getStatusCode().value());
         assertEquals(403, call(HttpMethod.POST, "/api/admin/groups", love, Map.of("name", "x", "pinned", false)).getStatusCode().value());
+    }
+
+    // ---- passwords ----
+
+    @Test
+    void changingThePasswordSignsOutTheOtherSessionsOfThatAccount() throws Exception {
+        String admin = (String) login("admin").get("cookie");
+        String otherDevice = (String) login("admin").get("cookie");
+        String love = (String) login("love").get("cookie");
+
+        ResponseEntity<String> changed = changePassword(admin, "14062018", "mat-khau-moi");
+        assertEquals("admin", body(changed).path("username").asText());
+        String setCookie = changed.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
+        assertTrue(setCookie.contains("HttpOnly") && setCookie.contains("SameSite=Strict"), setCookie);
+        String fresh = setCookie.split(";")[0];
+
+        assertEquals(200, call(HttpMethod.GET, "/api/auth/me", fresh, null).getStatusCode().value());
+        assertEquals(401, call(HttpMethod.GET, "/api/auth/me", admin, null).getStatusCode().value());
+        assertEquals(401, call(HttpMethod.GET, "/api/auth/me", otherDevice, null).getStatusCode().value());
+        assertEquals(200, call(HttpMethod.GET, "/api/auth/me", love, null).getStatusCode().value(), "the other account stays signed in");
+        assertEquals(401, loginWith("admin", "14062018").getStatusCode().value());
+        assertEquals(200, loginWith("admin", "mat-khau-moi").getStatusCode().value());
+    }
+
+    @Test
+    void wrongCurrentPasswordCountsTowardTheLoginLimit() {
+        String admin = (String) login("admin").get("cookie");
+        ResponseEntity<String> wrong = changePassword(admin, "doan-bua", "mat-khau-moi");
+        assertEquals(400, wrong.getStatusCode().value());
+        assertEquals("WRONG_PASSWORD", code(wrong));
+        assertEquals("Mật khẩu hiện tại không đúng", read(wrong).path("message").asText());
+        assertTrue(limiter.tracking("admin"));
+
+        for (int i = 1; i < 10; i++) changePassword(admin, "doan-bua", "mat-khau-moi");
+        ResponseEntity<String> blocked = changePassword(admin, "14062018", "mat-khau-moi");
+        assertEquals(429, blocked.getStatusCode().value(), "even the right password waits once the limit is hit");
+        assertEquals("TOO_MANY_ATTEMPTS", code(blocked));
+        assertEquals(429, loginWith("admin", "14062018").getStatusCode().value(), "login shares the limit");
+        assertEquals(200, call(HttpMethod.GET, "/api/auth/me", admin, null).getStatusCode().value(), "nothing changed");
+    }
+
+    @Test
+    void newPasswordMustDifferAndFitTheLimits() {
+        String admin = (String) login("admin").get("cookie");
+        ResponseEntity<String> same = changePassword(admin, "14062018", "14062018");
+        assertEquals(400, same.getStatusCode().value());
+        assertEquals("SAME_PASSWORD", code(same));
+        // The last one is 25 characters but 75 bytes, past what bcrypt can hash.
+        for (String bad : List.of("ngan", " ".repeat(8), "x".repeat(101), "ệ".repeat(25))) {
+            ResponseEntity<String> r = changePassword(admin, "14062018", bad);
+            assertEquals(400, r.getStatusCode().value(), bad);
+            assertEquals("VALIDATION_ERROR", code(r), bad);
+        }
+        assertEquals(200, call(HttpMethod.GET, "/api/auth/me", admin, null).getStatusCode().value(), "the session survives");
+    }
+
+    @Test
+    void adminResetsTheOtherAccountsPassword() throws Exception {
+        String admin = (String) login("admin").get("cookie");
+        Map<String, Object> loveLogin = login("love");
+        String love = (String) loveLogin.get("cookie");
+        String legacy = legacyToken(((Number) loveLogin.get("id")).longValue(), "love", "VIEWER", "Em");
+        assertEquals(0, tokens.read(legacy).orElseThrow().version(), "a cookie from before V2 counts as version 0");
+
+        assertEquals(403, resetPassword(love, "admin", "chiem-quyen-123").getStatusCode().value());
+        assertEquals(204, resetPassword(admin, "love", "mat-khau-cua-em").getStatusCode().value());
+        assertEquals(401, call(HttpMethod.GET, "/api/auth/me", love, null).getStatusCode().value(), "love is signed out everywhere");
+        assertEquals(401, call(HttpMethod.GET, "/api/auth/me", "km_session=" + legacy, null).getStatusCode().value(),
+            "so a reset ends it as well");
+        assertEquals(200, call(HttpMethod.GET, "/api/auth/me", admin, null).getStatusCode().value());
+        assertEquals(401, loginWith("love", "14062018").getStatusCode().value());
+        assertEquals(200, loginWith("love", "mat-khau-cua-em").getStatusCode().value());
+
+        for (String self : List.of("admin", "ADMIN")) {
+            ResponseEntity<String> r = resetPassword(admin, self, "mat-khau-moi");
+            assertEquals(400, r.getStatusCode().value(), self);
+            assertEquals("USE_CHANGE_PASSWORD", code(r), self);
+        }
+        ResponseEntity<String> unknown = resetPassword(admin, "nobody", "mat-khau-moi");
+        assertEquals(404, unknown.getStatusCode().value());
+        assertEquals("NOT_FOUND", code(unknown));
+        assertEquals("VALIDATION_ERROR", code(resetPassword(admin, "love", "ngan")));
     }
 
     // ---- media + storage ----
@@ -199,6 +303,60 @@ class MemoryFlowIT {
         assertEquals("UNSUPPORTED_FILE", code(upload(admin, Map.of("type", "application/x-msdownload", "name", "a.exe"))));
         assertEquals("INVALID_THUMB", code(upload(admin, Map.of("thumbType", "image/png"))));
         assertEquals("INVALID_GROUP", code(upload(admin, Map.of("groupId", "999999"))));
+    }
+
+    @Test
+    void adminDeletesSeveralAtOnceAndStopsAtTheFirstStorageError() throws Exception {
+        String admin = (String) login("admin").get("cookie");
+        String love = (String) login("love").get("cookie");
+        long a = body(upload(admin, Map.of())).path("id").asLong();
+        long b = body(upload(admin, Map.of())).path("id").asLong();
+        long c = body(upload(admin, Map.of())).path("id").asLong();
+        long d = body(upload(admin, Map.of())).path("id").asLong();
+
+        assertEquals(403, deleteMany(love, List.of(a)).getStatusCode().value());
+        assertEquals("VALIDATION_ERROR", code(deleteMany(admin, List.of())));
+        assertEquals("VALIDATION_ERROR", code(deleteMany(admin, java.util.stream.LongStream.rangeClosed(1, 201).boxed().toList())));
+
+        assertEquals(2, body(deleteMany(admin, List.of(a, 999_999L, b))).path("deleted").asInt(), "unknown ids are skipped");
+        assertEquals(List.of(d, c), ids(body(call(HttpMethod.GET, "/api/media", admin, null))));
+        assertEquals(4, HUB.files.size(), "their stored objects went too");
+
+        HUB.failDelete = jdbc.sql("SELECT object_key FROM media WHERE id = ?").param(d).query(String.class).single();
+        ResponseEntity<String> failed = deleteMany(admin, List.of(c, d));
+        assertEquals(502, failed.getStatusCode().value());
+        assertEquals("STORAGE_FAILED", code(failed));
+        assertEquals(List.of(d), ids(body(call(HttpMethod.GET, "/api/media", admin, null))), "what was deleted before the error stays deleted");
+    }
+
+    @Test
+    void deletingMediaPurgesItsUrlsFromCloudflare() throws Exception {
+        String admin = (String) login("admin").get("cookie");
+        JsonNode a = body(upload(admin, Map.of()));
+        JsonNode b = body(upload(admin, Map.of()));
+        JsonNode c = body(upload(admin, Map.of()));
+        JsonNode d = body(upload(admin, Map.of()));
+        JsonNode e = body(upload(admin, Map.of()));
+
+        assertEquals(200, call(HttpMethod.DELETE, "/api/admin/media/" + a.path("id").asLong(), admin, null).getStatusCode().value());
+        assertEquals(List.of(cached(a)), CF.purges, "the original and the thumbnail, as Cloudflare caches them");
+
+        CF.purges.clear();
+        assertEquals(2, body(deleteMany(admin, List.of(b.path("id").asLong(), 999_999L, c.path("id").asLong()))).path("deleted").asInt());
+        assertEquals(List.of(java.util.stream.Stream.concat(cached(b).stream(), cached(c).stream()).toList()), CF.purges,
+            "one purge for the whole batch");
+
+        CF.purges.clear();
+        HUB.failDelete = jdbc.sql("SELECT object_key FROM media WHERE id = ?").param(e.path("id").asLong()).query(String.class).single();
+        assertEquals(502, deleteMany(admin, List.of(d.path("id").asLong(), e.path("id").asLong())).getStatusCode().value());
+        assertEquals(List.of(cached(d)), CF.purges, "what a failed batch deleted still leaves the cache");
+
+        CF.purges.clear();
+        HUB.failDelete = null;
+        CF.fail = true;
+        assertEquals(200, call(HttpMethod.DELETE, "/api/admin/media/" + e.path("id").asLong(), admin, null).getStatusCode().value(),
+            "a Cloudflare outage neither fails nor undoes a delete");
+        assertEquals(404, rest.getForEntity(e.path("url").asText(), byte[].class).getStatusCode().value());
     }
 
     @Test
@@ -357,6 +515,10 @@ class MemoryFlowIT {
 
     // ---- helpers ----
 
+    private static List<String> cached(JsonNode m) {
+        return List.of(SITE + m.path("url").asText(), SITE + m.path("thumbUrl").asText());
+    }
+
     private Map<String, Object> login(String user) {
         ResponseEntity<Map> r = rest.postForEntity("/api/auth/login", Map.of("username", user, "password", "14062018"), Map.class);
         assertEquals(200, r.getStatusCode().value());
@@ -364,6 +526,29 @@ class MemoryFlowIT {
         Map<String, Object> m = new java.util.HashMap<>(r.getBody());
         m.put("cookie", cookie);
         return m;
+    }
+
+    private ResponseEntity<String> loginWith(String user, String password) {
+        return rest.postForEntity("/api/auth/login", Map.of("username", user, "password", password), String.class);
+    }
+
+    private ResponseEntity<String> changePassword(String cookie, String current, String next) {
+        return call(HttpMethod.PUT, "/api/auth/password", cookie, Map.of("currentPassword", current, "newPassword", next));
+    }
+
+    private ResponseEntity<String> resetPassword(String cookie, String username, String next) {
+        return call(HttpMethod.PUT, "/api/admin/users/" + username + "/password", cookie, Map.of("newPassword", next));
+    }
+
+    private ResponseEntity<String> deleteMany(String cookie, List<Long> ids) {
+        return call(HttpMethod.POST, "/api/admin/media/delete", cookie, Map.of("ids", ids));
+    }
+
+    /** A session token as the service signed it before V2, without the "sv" claim. */
+    private static String legacyToken(long id, String username, String role, String name) {
+        return Jwts.builder().subject(String.valueOf(id)).claim("u", username).claim("r", role).claim("n", name)
+            .expiration(new java.util.Date(System.currentTimeMillis() + 600_000))
+            .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8))).compact();
     }
 
     private ResponseEntity<String> call(HttpMethod method, String path, String cookie, Object body) {

@@ -17,9 +17,11 @@ import java.util.List;
 @Component
 public class SessionCookieFilter extends OncePerRequestFilter {
     private final SessionTokens tokens;
+    private final SessionVersions versions;
 
-    public SessionCookieFilter(SessionTokens tokens) {
+    public SessionCookieFilter(SessionTokens tokens, SessionVersions versions) {
         this.tokens = tokens;
+        this.versions = versions;
     }
 
     @Override
@@ -29,9 +31,12 @@ public class SessionCookieFilter extends OncePerRequestFilter {
         if (cookies != null) {
             for (Cookie c : cookies) {
                 if (!SessionTokens.COOKIE.equals(c.getName())) continue;
-                tokens.read(c.getValue()).ifPresent(user -> SecurityContextHolder.getContext().setAuthentication(
-                    new UsernamePasswordAuthenticationToken(user, null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + user.role())))));
+                tokens.read(c.getValue())
+                    // A password change moves the account to a new version, which ends every older session.
+                    .filter(s -> s.version() == versions.current(s.user().id()))
+                    .ifPresent(s -> SecurityContextHolder.getContext().setAuthentication(
+                        new UsernamePasswordAuthenticationToken(s.user(), null,
+                            List.of(new SimpleGrantedAuthority("ROLE_" + s.user().role())))));
             }
         }
         chain.doFilter(request, response);

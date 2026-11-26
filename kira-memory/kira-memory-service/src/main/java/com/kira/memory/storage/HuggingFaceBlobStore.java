@@ -61,10 +61,10 @@ public class HuggingFaceBlobStore implements BlobStore {
         io("upload", () -> {
             long size = Files.size(file);
             String oid = sha256(file);
-            JsonNode batch = send(HttpRequest.newBuilder(URI.create(baseUrl + "/datasets/" + repo + ".git/info/lfs/objects/batch"))
+            JsonNode batch = json.readTree(send(HttpRequest.newBuilder(URI.create(baseUrl + "/datasets/" + repo + ".git/info/lfs/objects/batch"))
                 .header("Authorization", "Bearer " + token).header("Accept", LFS_JSON).header("Content-Type", LFS_JSON)
                 .POST(body(Map.of("operation", "upload", "transfers", List.of("basic", "multipart"), "hash_algo", "sha256",
-                    "ref", Map.of("name", "main"), "objects", List.of(Map.of("oid", oid, "size", size))))), "LFS batch");
+                    "ref", Map.of("name", "main"), "objects", List.of(Map.of("oid", oid, "size", size))))), "LFS batch"));
             JsonNode object = batch.path("objects").path(0);
             if (object.has("error")) throw new StorageException("Hugging Face LFS batch rejected the object");
             JsonNode upload = object.path("actions").path("upload");
@@ -157,11 +157,11 @@ public class HuggingFaceBlobStore implements BlobStore {
             .POST(HttpRequest.BodyPublishers.ofString(ndjson)), "commit");
     }
 
-    private JsonNode send(HttpRequest.Builder request, String step) throws IOException, InterruptedException {
+    /** Returns the raw body: only the LFS batch answer is JSON (verify answers a plain-text "OK"). */
+    private String send(HttpRequest.Builder request, String step) throws IOException, InterruptedException {
         HttpResponse<String> r = http.send(request.timeout(Duration.ofMinutes(10)).build(), HttpResponse.BodyHandlers.ofString());
         expectOk(r, step);
-        String b = r.body();
-        return b == null || b.isBlank() ? json.createObjectNode() : json.readTree(b);
+        return r.body();
     }
 
     private static void expectOk(HttpResponse<?> r, String step) {

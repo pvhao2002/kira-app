@@ -27,22 +27,28 @@ public class SessionTokens {
         this.ttl = ttl;
     }
 
+    /** A correctly signed, unexpired token: the account and the session version it was issued under. */
+    public record Session(CurrentUser user, int version) {
+    }
+
     public Duration ttl() {
         return ttl;
     }
 
-    public String issue(CurrentUser user) {
+    public String issue(CurrentUser user, int sessionVersion) {
         Instant now = Instant.now();
         return Jwts.builder().subject(String.valueOf(user.id())).claim("u", user.username()).claim("r", user.role())
-            .claim("n", user.displayName()).issuedAt(Date.from(now)).expiration(Date.from(now.plus(ttl)))
-            .signWith(key).compact();
+            .claim("n", user.displayName()).claim("sv", sessionVersion).issuedAt(Date.from(now))
+            .expiration(Date.from(now.plus(ttl))).signWith(key).compact();
     }
 
-    public Optional<CurrentUser> read(String token) {
+    public Optional<Session> read(String token) {
         try {
             Claims c = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
-            return Optional.of(new CurrentUser(Long.parseLong(c.getSubject()), c.get("u", String.class),
-                c.get("r", String.class), c.get("n", String.class)));
+            Integer sv = c.get("sv", Integer.class);
+            // Tokens issued before session versions existed carry none: they count as version 0.
+            return Optional.of(new Session(new CurrentUser(Long.parseLong(c.getSubject()), c.get("u", String.class),
+                c.get("r", String.class), c.get("n", String.class)), sv == null ? 0 : sv));
         } catch (JwtException | IllegalArgumentException e) {
             return Optional.empty();
         }

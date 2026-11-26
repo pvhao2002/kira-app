@@ -1,7 +1,8 @@
 import {ScrollingModule} from '@angular/cdk/scrolling';
-import {Component, computed, DestroyRef, ElementRef, inject, signal, viewChild} from '@angular/core';
+import {Component, computed, DestroyRef, ElementRef, HostListener, inject, signal, viewChild} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Router, RouterLink} from '@angular/router';
+import {firstValueFrom} from 'rxjs';
 import {Api, errorMessage, Filter, Group, Media} from '../../core/api';
 import {AuthStore} from '../../core/auth';
 import {fmt, together, todayInVietnam} from '../../core/since';
@@ -10,6 +11,8 @@ import {UploadDialog} from './upload-dialog';
 
 const GAP = 18;
 const PAGE = 60;
+/** Ids per delete request: each Hugging Face delete is its own commit, and Cloudflare cuts requests at 100 s. */
+const DELETE_BATCH = 20;
 
 @Component({
   selector: 'app-gallery-page',
@@ -54,6 +57,11 @@ export class GalleryPage {
 
   protected viewing = signal<number | null>(null);
   protected uploading = signal(false);
+  /** Files dropped on the page, handed to the upload dialog. */
+  protected dropped = signal<File[]>([]);
+  protected dragging = signal(false);
+  private dragDepth = 0;
+  protected deleting = signal('');
   protected selecting = signal(false);
   protected selected = signal<Set<number>>(new Set());
   protected moveTarget: string = '';
@@ -151,6 +159,7 @@ export class GalleryPage {
 
   protected uploaded() {
     this.uploading.set(false);
+    this.dropped.set([]);
     this.loadGroups();
     this.reload();
   }
@@ -172,6 +181,77 @@ export class GalleryPage {
       },
       error: err => this.error.set(errorMessage(err))
     });
+  }
+
+  protected async deleteSelected() {
+    const ids = [...this.selected()];
+    if (!ids.length || !confirm(`Xoá vĩnh viễn ${ids.length} kỷ niệm? Ảnh và video sẽ bị xoá khỏi nơi lưu trữ và không khôi phục được.`)) return;
+    this.error.set('');
+    try {
+      for (let i = 0; i < ids.length; i += DELETE_BATCH) {
+        this.deleting.set(`Đang xoá ${i}/${ids.length}…`);
+        await firstValueFrom(this.api.deleteMany(ids.slice(i, i + DELETE_BATCH)));
+      }
+    } catch (err) {
+      this.error.set(errorMessage(err, 'Chưa xoá được hết, thử lại nhé'));
+    }
+    // Reload either way: a failed batch keeps what was deleted before it.
+    this.deleting.set('');
+    this.toggleSelect();
+    this.loadGroups();
+    this.reload();
+  }
+
+  // Dropping files anywhere on the page opens the upload dialog with them (admin). Files dropped where they are not
+  // taken never make the browser leave the page.
+  private hasFiles(e: DragEvent) {
+    return !!e.dataTransfer?.types.includes('Files');
+  }
+
+  private canDrop() {
+    return this.auth.isAdmin() && !this.uploading();
+  }
+
+  @HostListener('window:dragenter', ['$event'])
+  protected dragEnter(e: DragEvent) {
+    if (!this.hasFiles(e) || !this.canDrop()) return;
+    this.dragDepth++;
+    this.dragging.set(true);
+  }
+
+  @HostListener('window:dragleave', ['$event'])
+  protected dragLeave(e: DragEvent) {
+    if (!this.hasFiles(e) || !this.dragging()) return;
+    if (--this.dragDepth <= 0) this.endDrag();
+  }
+
+  @HostListener('window:dragover', ['$event'])
+  protected dragOver(e: DragEvent) {
+    if (!this.hasFiles(e)) return;
+    // Already taken by the upload dialog's own drop area.
+    const taken = e.defaultPrevented;
+    e.preventDefault();
+    if (!taken && !this.canDrop() && e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+  }
+
+  @HostListener('window:drop', ['$event'])
+  protected drop(e: DragEvent) {
+    if (!this.hasFiles(e)) return;
+    e.preventDefault();
+    this.endDrag();
+    const files = [...(e.dataTransfer?.files ?? [])];
+    if (!this.canDrop() || !files.length) return;
+    this.dropped.set(files);
+    this.uploading.set(true);
+  }
+
+  private endDrag() {
+    this.dragDepth = 0;
+    this.dragging.set(false);
+  }
+
+  protected faded(e: Event) {
+    (e.target as HTMLElement).classList.add('in');
   }
 
   protected createGroup() {

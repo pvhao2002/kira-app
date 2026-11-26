@@ -1,9 +1,29 @@
 import {Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {errorMessage} from '../core/api';
+import {errorMessage, Message} from '../core/api';
 import {AuthStore} from '../core/auth';
 import {Live} from '../core/live';
 import {shapeAt, SHAPES} from './shapes';
+
+export interface MessageRow { message: Message; day: string | null; }
+
+/** Each message, with a label on the first one of every local day: "Hôm nay", "Hôm qua" or the date. */
+export function byDay(messages: Message[], now: number): MessageRow[] {
+  const key = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  const today = key(new Date(now));
+  const before = new Date(now);
+  before.setDate(before.getDate() - 1);
+  const yesterday = key(before);
+  let last = '';
+  return messages.map(message => {
+    const d = new Date(message.createdAt);
+    const k = key(d);
+    const day = k === last ? null : k === today ? 'Hôm nay' : k === yesterday ? 'Hôm qua'
+      : d.toLocaleDateString('vi-VN', {weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'});
+    last = k;
+    return {message, day};
+  });
+}
 
 /** Bottom-right note box: its outline is the shape the admin picked; it opens the shared messages. */
 @Component({
@@ -17,10 +37,18 @@ import {shapeAt, SHAPES} from './shapes';
           <button class="btn ghost close" type="button" (click)="live.open(false)" aria-label="Đóng">✕</button>
         </header>
         <ol class="list" #list aria-live="polite">
-          @for (m of live.messages(); track m.id) {
-            <li [class.mine]="m.author === me()">
-              <p>{{ m.body }}</p>
-              <small>{{ m.authorName }}, {{ time(m.createdAt) }}</small>
+          @if (live.hasOlder()) {
+            <li class="older">
+              <button class="btn ghost" type="button" [disabled]="loadingOlder()" (click)="older()">
+                {{ loadingOlder() ? 'Đang tải…' : 'Xem lời nhắn cũ hơn' }}
+              </button>
+            </li>
+          }
+          @for (row of rows(); track row.message.id) {
+            @if (row.day) { <li class="day"><span>{{ row.day }}</span></li> }
+            <li [class.mine]="row.message.author === me()">
+              <p>{{ row.message.body }}</p>
+              <small>{{ row.message.authorName }}, {{ time(row.message.createdAt) }}</small>
             </li>
           } @empty {
             <li class="empty">Chưa có lời nhắn nào. Viết điều đầu tiên đi.</li>
@@ -65,6 +93,10 @@ import {shapeAt, SHAPES} from './shapes';
       overflow-wrap: anywhere; text-align: left; }
     .list li.mine p { background: var(--rose-deep); color: #fff; border-radius: 16px 16px 4px 16px; }
     .list small { font-size: 12px; color: var(--mauve); }
+    .list .day { max-width: none; justify-self: stretch; display: flex; align-items: center; gap: 10px; margin-top: 4px;
+      font-size: 12px; color: var(--mauve); }
+    .list .day::before, .list .day::after { content: ''; flex: 1; border-top: 1px solid var(--blush); }
+    .list .older { max-width: none; justify-self: center; }
     .list .empty { max-width: none; color: var(--mauve); text-align: center; justify-self: stretch; padding: 24px 0; }
     form { display: flex; gap: 8px; align-items: end; padding: 12px; border-top: 1px solid var(--blush); }
     textarea { min-height: 44px; resize: none; }
@@ -80,16 +112,26 @@ export class LoveWidget {
   private now = signal(Date.now());
   protected turning = signal(false);
   protected path = computed(() => SHAPES[shapeAt(this.live.shape(), this.now())].path);
+  protected rows = computed(() => byDay(this.live.messages(), this.now()));
   protected draft = '';
   protected sending = signal(false);
+  protected loadingOlder = signal(false);
   protected error = signal('');
+  /** Distance from the bottom of the list to restore once an older page is in. */
+  private keepFromBottom: number | null = null;
 
   constructor() {
-    // Keep the newest message in view.
+    // Keep the newest message in view; an older page goes on top without moving what the reader sees.
+    let newest = 0;
     effect(() => {
-      this.live.messages();
+      const last = this.live.messages().at(-1)?.id ?? 0;
+      const appended = last !== newest;
+      newest = last;
       const el = this.listEl()?.nativeElement;
-      if (el) queueMicrotask(() => (el.scrollTop = el.scrollHeight));
+      if (!el) return;
+      const keep = this.keepFromBottom;
+      this.keepFromBottom = null;
+      queueMicrotask(() => (el.scrollTop = keep !== null && !appended ? el.scrollHeight - keep : el.scrollHeight));
     });
     // A short pop when the shape changes, so the change is noticed.
     let last = '';
@@ -117,6 +159,21 @@ export class LoveWidget {
     }
   }
 
+  protected older() {
+    const el = this.listEl()?.nativeElement;
+    if (el) this.keepFromBottom = el.scrollHeight - el.scrollTop;
+    this.loadingOlder.set(true);
+    this.error.set('');
+    this.live.loadOlder().subscribe({
+      next: () => this.loadingOlder.set(false),
+      error: err => {
+        this.keepFromBottom = null;
+        this.error.set(errorMessage(err, 'Không tải được lời nhắn cũ'));
+        this.loadingOlder.set(false);
+      }
+    });
+  }
+
   protected send() {
     const body = this.draft.trim();
     if (!body || this.sending()) return;
@@ -136,6 +193,7 @@ export class LoveWidget {
   }
 
   protected time(iso: string) {
-    return new Date(iso).toLocaleString('vi-VN', {hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit'});
+    // The day is on the separator above.
+    return new Date(iso).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
   }
 }

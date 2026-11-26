@@ -10,6 +10,7 @@ import {SHAPE_KEYS, shapeAt, SHAPES} from '../../shared/shapes';
     <header>
       <a class="btn ghost" routerLink="/">‹ Về trang ảnh</a>
       <h1 class="script">Cài đặt</h1>
+      <a class="btn" routerLink="/tai-khoan">Tài khoản và mật khẩu</a>
     </header>
     @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
     @if (s(); as s) {
