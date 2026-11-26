@@ -35,6 +35,12 @@ export class Api {
   login(username: string, password: string) { return this.http.post<User>('/api/auth/login', {username, password}); }
   logout() { return this.http.post<void>('/api/auth/logout', {}); }
   me() { return this.http.get<User>('/api/auth/me'); }
+  changePassword(currentPassword: string, newPassword: string) {
+    return this.http.put<User>('/api/auth/password', {currentPassword, newPassword});
+  }
+  resetPassword(username: string, newPassword: string) {
+    return this.http.put<void>(`/api/admin/users/${encodeURIComponent(username)}/password`, {newPassword});
+  }
   loginBanner() { return this.http.get<{since: string; imageUrl: string | null}>('/api/public/login-banner'); }
 
   media(filter: Filter, cursor: string | null, limit = 60) {
@@ -58,6 +64,8 @@ export class Api {
   }
   moveMedia(ids: number[], groupId: number | null) { return this.http.post<{moved: number}>('/api/admin/media/move', {ids, groupId}); }
   deleteMedia(id: number) { return this.http.delete<void>(`/api/admin/media/${id}`); }
+  /** 1–200 ids; unknown ones are skipped. */
+  deleteMany(ids: number[]) { return this.http.post<{deleted: number}>('/api/admin/media/delete', {ids}); }
 
   groups() { return this.http.get<Group[]>('/api/groups'); }
   createGroup(name: string, pinned: boolean) { return this.http.post<Group>('/api/admin/groups', {name, pinned}); }

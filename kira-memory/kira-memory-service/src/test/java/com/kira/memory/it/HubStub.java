@@ -20,6 +20,8 @@ class HubStub {
     final List<String> cdnAuthHeaders = Collections.synchronizedList(new ArrayList<>());
     /** Objects at least this big are uploaded in multipart with this chunk size. */
     volatile int multipartChunk = 0;
+    /** Deleting this path fails with a 500, like a Hub outage part way through a batch. */
+    volatile String failDelete;
     private final ObjectMapper json = new ObjectMapper();
     private final HttpServer server;
 
@@ -79,7 +81,8 @@ class HubStub {
             lfs.put(oid, out.toByteArray());
             reply(x, 200, new byte[0]);
         } else if (path.equals("/verify") && hubAuth) {
-            reply(x, lfs.containsKey(json.readTree(body).path("oid").asText()) ? 200 : 404, new byte[0]);
+            // Like the real Hub: a text/plain "OK", not JSON.
+            reply(x, lfs.containsKey(json.readTree(body).path("oid").asText()) ? 200 : 404, "OK".getBytes(StandardCharsets.UTF_8));
         } else if (path.equals("/api/datasets/kira/memories/commit/main") && hubAuth) {
             String[] lines = new String(body, StandardCharsets.UTF_8).split("\n");
             for (int i = 1; i < lines.length; i++) {
@@ -93,7 +96,13 @@ class HubStub {
                         }
                         files.put(file, op.path("value").path("oid").asText());
                     }
-                    case "deletedFile" -> files.remove(file);
+                    case "deletedFile" -> {
+                        if (file.equals(failDelete)) {
+                            reply(x, 500, new byte[0]);
+                            return;
+                        }
+                        files.remove(file);
+                    }
                     default -> {
                         reply(x, 400, new byte[0]);
                         return;

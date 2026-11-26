@@ -15,6 +15,7 @@ All JSON. Auth is the `km_session` cookie set by login. Errors: `{status, code, 
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/auth/me` | `User {id, username, role: ADMIN\|VIEWER, displayName}` |
+| PUT | `/api/auth/password` | `{currentPassword, newPassword}` (new: 8–100 chars, ≤ 72 bytes) → `User` + a fresh cookie; every other session of the account gets 401. 400 `WRONG_PASSWORD` (counts toward the login limit), `SAME_PASSWORD`, `VALIDATION_ERROR`; 429 `TOO_MANY_ATTEMPTS` |
 | GET | `/api/media?groupId=&ungrouped=true&cursor=&limit=60` | `{items: Media[], nextCursor}`; newest `takenAt` first; limit ≤ 100 |
 | GET | `/api/groups` | `Group[] {id, name, pinned, count, coverUrl}`; pinned first (latest pin on top), then newest |
 | GET | `/api/messages?before=&limit=50` | `Message[] {id, author, authorName, body, createdAt}`, newest first |
@@ -30,6 +31,8 @@ All JSON. Auth is the `km_session` cookie set by login. Errors: `{status, code, 
 | PUT | `/api/admin/media/{id}` | `{caption, groupId}` (both replaced; null clears) |
 | POST | `/api/admin/media/move` | `{ids: number[], groupId: number \| null}` → `{moved}` |
 | DELETE | `/api/admin/media/{id}` | deletes from storage first, then the row |
+| POST | `/api/admin/media/delete` | `{ids: number[]}` (1–200) → `{deleted}`; unknown ids are skipped. The first storage error stops the batch (502 `STORAGE_FAILED`); items deleted before it stay deleted |
+| PUT | `/api/admin/users/{username}/password` | `{newPassword}` (8–100) → 204; signs that account out on every device. 400 `USE_CHANGE_PASSWORD` for your own account, 404 `NOT_FOUND` |
 | POST / PUT | `/api/admin/groups`, `/api/admin/groups/{id}` | `{name, pinned}` |
 | DELETE | `/api/admin/groups/{id}` | media in it becomes ungrouped |
 | POST | `/api/admin/uploads` | `{contentType, size}` (≤ 2 GB) → `UploadStatus`; 507 `SERVER_DISK_FULL` when the temp disk is short |

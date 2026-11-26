@@ -47,6 +47,11 @@ textarea.input { resize: vertical; min-height: 72px; }
 .error { color: var(--danger); font-size: 14px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* Touch screens: 44 px targets. */
+@media (pointer: coarse) {
+  .btn, .input { min-height: 44px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

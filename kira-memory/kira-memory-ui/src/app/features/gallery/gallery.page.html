@@ -8,6 +8,7 @@
       <button class="btn primary" type="button" (click)="uploading.set(true)">Thêm kỷ niệm</button>
       <a class="btn" routerLink="/cai-dat">Cài đặt</a>
     }
+    <a class="btn" routerLink="/tai-khoan">Tài khoản</a>
     <button class="btn ghost" type="button" (click)="logout()">Đăng xuất</button>
   </nav>
 </header>
@@ -67,8 +68,10 @@
         <option value="none">Bỏ khỏi nhóm</option>
         @for (g of groups(); track g.id) { <option [value]="g.id">{{ g.name }}</option> }
       </select>
-      <button class="btn primary" type="button" [disabled]="!selected().size || moveTarget === ''" (click)="moveSelected()">Chuyển</button>
-      <button class="btn ghost" type="button" (click)="toggleSelect()">Xong</button>
+      <button class="btn primary" type="button" [disabled]="!selected().size || moveTarget === '' || !!deleting()" (click)="moveSelected()">Chuyển</button>
+      <button class="btn danger" type="button" [disabled]="!selected().size || !!deleting()" (click)="deleteSelected()">Xoá</button>
+      @if (deleting()) { <span class="muted" role="status">{{ deleting() }}</span> }
+      <button class="btn ghost" type="button" [disabled]="!!deleting()" (click)="toggleSelect()">Xong</button>
     } @else {
       <button class="btn" type="button" (click)="toggleSelect()">Chọn nhiều</button>
     }
@@ -86,7 +89,7 @@
         @for (m of row; track m.id; let c = $index) {
           <button type="button" class="tile" [style.--tilt]="tilt(r * cols() + c) + 'deg'" [class.picked]="selected().has(m.id)"
                   (click)="open(m)" [attr.aria-label]="m.caption || 'Kỷ niệm ngày ' + day(m.takenAt)">
-            <img [src]="m.thumbUrl" alt="" loading="lazy" decoding="async">
+            <img [src]="m.thumbUrl" alt="" loading="lazy" decoding="async" (load)="faded($event)">
             @if (m.kind === 'VIDEO') { <span class="play" aria-hidden="true">▶</span> }
             @if (selecting()) { <span class="check" aria-hidden="true">{{ selected().has(m.id) ? '✓' : '' }}</span> }
             <span class="caption script">{{ m.caption }}</span>
@@ -106,9 +109,14 @@
 </main>
 
 @if (viewing() !== null) {
-  <app-media-viewer [items]="items()" [index]="viewing()!" [groups]="groups()" (indexChange)="viewing.set($event)"
+  <app-media-viewer [items]="items()" [index]="viewing()!" [groups]="groups()" [more]="!done()" (needMore)="more()"
+                    (indexChange)="viewing.set($event)"
                     (closed)="viewing.set(null)" (changed)="changed($event)" (deleted)="deleted($event)"/>
 }
 @if (uploading()) {
-  <app-upload-dialog [groups]="groups()" [defaultGroup]="activeGroup()?.id ?? null" (closed)="uploading.set(false)" (done)="uploaded()"/>
+  <app-upload-dialog [groups]="groups()" [defaultGroup]="activeGroup()?.id ?? null" [files]="dropped()"
+                     (closed)="uploading.set(false); dropped.set([])" (done)="uploaded()"/>
+}
+@if (dragging()) {
+  <div class="drop-hint" aria-hidden="true"><p class="script">Thả vào đây để thêm kỷ niệm</p></div>
 }

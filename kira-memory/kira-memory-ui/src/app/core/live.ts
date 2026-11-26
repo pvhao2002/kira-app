@@ -1,6 +1,17 @@
 import {DestroyRef, inject, Injectable, signal} from '@angular/core';
+import {tap} from 'rxjs';
 import {Api, Message, WidgetShape} from './api';
 import {AuthStore} from './auth';
+
+/** The server's page size for GET /api/messages. */
+const PAGE = 50;
+
+/** Both lists by id, oldest first; a message that arrives twice (page, live push, catch-up) is kept once. */
+export function mergeMessages(current: Message[], incoming: Message[]): Message[] {
+  const byId = new Map(current.map(m => [m.id, m]));
+  for (const m of incoming) if (!byId.has(m.id)) byId.set(m.id, m);
+  return [...byId.values()].sort((a, b) => a.id - b.id);
+}
 
 /**
  * The realtime side: one EventSource per tab for new messages and settings changes,
@@ -13,6 +24,8 @@ export class Live {
   readonly messages = signal<Message[]>([]);
   readonly shape = signal<WidgetShape>('heart');
   readonly unread = signal(0);
+  /** The last page was full, so older messages may exist. */
+  readonly hasOlder = signal(false);
   readonly panelOpen = signal(false);
   private source: EventSource | null = null;
   private audio: AudioContext | null = null;
@@ -40,13 +53,16 @@ export class Live {
   connect() {
     if (this.source) return;
     this.api.settings().subscribe(s => this.shape.set(s.widgetShape));
-    this.api.messages().subscribe(list => this.messages.set(list.reverse()));
+    this.api.messages().subscribe(list => {
+      this.messages.update(current => mergeMessages(current, list));
+      this.hasOlder.set(list.length === PAGE);
+    });
     this.source = new EventSource('/api/events');
     this.source.addEventListener('message', e => this.receive(JSON.parse((e as MessageEvent).data) as Message));
     this.source.addEventListener('settings', e => this.shape.set(JSON.parse((e as MessageEvent).data).widgetShape));
     // After a reconnect, fetch what was missed while the stream was down.
     this.source.addEventListener('ready', () => {
-      if (this.messages().length) this.api.messages().subscribe(list => list.reverse().forEach(m => this.add(m)));
+      if (this.messages().length) this.api.messages().subscribe(list => this.messages.update(current => mergeMessages(current, list)));
     });
   }
 
@@ -54,7 +70,16 @@ export class Live {
     this.source?.close();
     this.source = null;
     this.messages.set([]);
+    this.hasOlder.set(false);
     this.unread.set(0);
+  }
+
+  /** The page before the oldest message shown. */
+  loadOlder() {
+    return this.api.messages(this.messages()[0]?.id).pipe(tap(list => {
+      this.messages.update(current => mergeMessages(current, list));
+      this.hasOlder.set(list.length === PAGE);
+    }));
   }
 
   send(body: string) {
@@ -63,7 +88,7 @@ export class Live {
 
   add(m: Message) {
     if (this.messages().some(x => x.id === m.id)) return false;
-    this.messages.update(list => [...list, m].sort((a, b) => a.id - b.id));
+    this.messages.update(list => mergeMessages(list, [m]));
     return true;
   }
 

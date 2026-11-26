@@ -60,3 +60,12 @@ storage:
     region: ${R2_REGION:auto}
     # Files above this go up as S3 multipart uploads of this part size (R2 minimum is 5 MB).
     part-size: ${R2_PART_SIZE:64MB}
+cdn:
+  cloudflare:
+    # Purges a deleted item's URLs from Cloudflare's cache; off while any of the next three is blank.
+    # The token needs Zone -> Cache Purge on the site's zone.
+    zone-id: ${CF_ZONE_ID:}
+    api-token: ${CF_API_TOKEN:}
+    # The site as Cloudflare serves it, e.g. https://memory.kira.id.vn
+    site-url: ${CF_SITE_URL:}
+    api-base: ${CF_API_BASE:https://api.cloudflare.com/client/v4}

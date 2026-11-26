@@ -1,5 +1,8 @@
 package com.kira.memory.media;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +21,9 @@ public class MediaController {
     }
 
     public record MoveMedia(List<Long> ids, Long groupId) {
+    }
+
+    public record DeleteMedia(@NotNull @Size(min = 1, max = 200) List<@NotNull Long> ids) {
     }
 
     @GetMapping("/media")
@@ -40,5 +46,10 @@ public class MediaController {
     @DeleteMapping("/admin/media/{id}")
     void delete(@PathVariable long id) {
         media.delete(id);
+    }
+
+    @PostMapping("/admin/media/delete")
+    Map<String, Integer> deleteAll(@Valid @RequestBody DeleteMedia req) {
+        return Map.of("deleted", media.deleteAll(req.ids()));
     }
 }
