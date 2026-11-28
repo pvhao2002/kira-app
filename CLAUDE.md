@@ -44,6 +44,11 @@ Frontend / mobile:
   Angular 22 client (Vietnamese, love theme). Rules and verify commands: `kira-memory/AGENTS.override.md`; API
   contract: `kira-memory/docs/api.md`.
 
+`kira-game` is a browser 3D story game in Vietnamese (tracked in this repo; planning stage, no code yet):
+- Planned as a static Vite + TypeScript + three.js + inkjs web app with no backend (progress in localStorage). Rules
+  and verify commands: `kira-game/AGENTS.override.md`; design: `kira-game/docs/design.md`; build plan:
+  `kira-game/docs/plan.md`; story drafts: `kira-game/docs/story/`.
+
 Infra/ops (not application code): `docker-compose*.yml`, `nginx/`, `monitoring/` (Grafana/Loki/Promtail), `mysql/`
 (primary+replica conf), `scripts/` (deploy, EC2 bootstrap, stack files), `docs/`.
 
