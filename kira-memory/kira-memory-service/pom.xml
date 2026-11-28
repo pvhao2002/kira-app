@@ -14,6 +14,10 @@
   <name>kira-memory-service</name>
   <properties>
     <java.version>25</java.version>
+    <!-- Patched versions of Boot-managed deps (security fixes); drop when the Boot parent manages these or newer. -->
+    <tomcat.version>10.1.59</tomcat.version>
+    <jackson-bom.version>2.21.7</jackson-bom.version>
+    <log4j2.version>2.25.5</log4j2.version>
     <jjwt.version>0.12.6</jjwt.version>
     <awssdk.version>2.31.59</awssdk.version>
     <testcontainers.version>1.21.3</testcontainers.version>

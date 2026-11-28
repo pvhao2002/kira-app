@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.5</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
     <groupId>kira</groupId>
@@ -15,6 +15,11 @@
     <description>Spring Boot AiScore crawl service (Playwright + protobuf)</description>
     <properties>
         <java.version>21</java.version>
+        <!-- Patched versions of Boot-managed deps (security fixes); drop when the Boot parent manages these or newer. -->
+        <tomcat.version>10.1.59</tomcat.version>
+        <jackson-bom.version>2.21.7</jackson-bom.version>
+        <log4j2.version>2.25.5</log4j2.version>
+        <commons-lang3.version>3.18.0</commons-lang3.version>
         <playwright.version>1.54.0</playwright.version>
     </properties>
     <dependencies>

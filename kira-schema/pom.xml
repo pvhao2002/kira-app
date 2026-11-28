@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.5</version>
+        <version>3.5.16</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>kira</groupId>
@@ -28,6 +28,8 @@
     </scm>
     <properties>
         <java.version>21</java.version>
+        <!-- Patched versions of Boot-managed deps (security fixes); drop when the Boot parent manages these or newer. -->
+        <log4j2.version>2.25.5</log4j2.version>
     </properties>
     <dependencies>
         <dependency>
