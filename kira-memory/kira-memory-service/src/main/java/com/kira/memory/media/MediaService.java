@@ -100,14 +100,15 @@ public class MediaService {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "STORAGE_NOT_CONFIGURED",
                 "Nơi lưu trữ đang chọn chưa được cấu hình trên server");
         }
-        String base = "memories/" + m.takenAt().atZone(ZoneOffset.UTC).getYear() + "/" + UUID.randomUUID();
+        var at = m.takenAt().atZone(ZoneOffset.UTC);
+        // A folder per month: Hugging Face refuses more than 10k entries in one folder.
+        String base = "memories/%d/%02d/%s".formatted(at.getYear(), at.getMonthValue(), UUID.randomUUID());
         String key = base + "." + m.ext();
         String thumbKey = base + "_thumb.jpg";
         long size;
         try {
             size = Files.size(original);
-            store.put(key, original, m.contentType());
-            store.put(thumbKey, thumb, "image/jpeg");
+            store.put(List.of(new BlobStore.Upload(key, original, m.contentType()), new BlobStore.Upload(thumbKey, thumb, "image/jpeg")));
         } catch (IOException e) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "UPLOAD_FAILED", "Không đọc được file tải lên");
         } catch (StorageException e) {

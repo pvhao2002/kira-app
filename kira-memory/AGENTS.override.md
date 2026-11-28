@@ -10,7 +10,8 @@ Scope: `kira-memory/` only. A private photo/video memories site for exactly two 
 
 ## Rules
 - Exactly two accounts, seeded by `V1__init.sql`: `admin` (ADMIN) and `love` (VIEWER). There is no registration.
-  Everything that changes data except messages lives under `/api/admin/**` (ADMIN only).
+  Everything that changes data except messages and period days (`/api/cycle`, Em logs them herself) lives under
+  `/api/admin/**` (ADMIN only).
 - Session = signed JWT in the HttpOnly `SameSite=Strict` cookie `km_session`. CSRF tokens are off because of that.
 - Media bytes are served only from `/m/{id}/{hmac}/o.{ext}` and `/m/{id}/{hmac}/t.jpg`: cookie-free,
   `Cache-Control: public, max-age=31536000, immutable`, Range passthrough. Never add a `Set-Cookie` or `Vary: Cookie`

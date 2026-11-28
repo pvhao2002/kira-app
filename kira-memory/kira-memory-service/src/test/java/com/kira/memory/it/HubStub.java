@@ -10,6 +10,9 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** A tiny Hugging Face Hub: LFS batch (basic + multipart), verify, commit, resolve with a redirect to a "CDN". */
 class HubStub {
@@ -22,6 +25,11 @@ class HubStub {
     volatile int multipartChunk = 0;
     /** Deleting this path fails with a 500, like a Hub outage part way through a batch. */
     volatile String failDelete;
+    /** Successful commits: each one is a git commit in the real repo. */
+    final AtomicInteger commits = new AtomicInteger();
+    /** How long a commit takes, so a test can make two of them overlap. */
+    volatile long commitDelayMs = 0;
+    private final AtomicBoolean committing = new AtomicBoolean();
     private final ObjectMapper json = new ObjectMapper();
     private final HttpServer server;
 
@@ -32,6 +40,8 @@ class HubStub {
             throw new IllegalStateException(e);
         }
         server.createContext("/", this::handle);
+        // Requests run concurrently, like on the real Hub.
+        server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
         server.start();
     }
 
@@ -45,20 +55,23 @@ class HubStub {
         byte[] body = x.getRequestBody().readAllBytes();
         boolean hubAuth = ("Bearer " + TOKEN).equals(x.getRequestHeaders().getFirst("Authorization"));
         if (path.equals("/datasets/kira/memories.git/info/lfs/objects/batch") && hubAuth) {
-            JsonNode o = json.readTree(body).path("objects").path(0);
-            String oid = o.path("oid").asText();
-            long size = o.path("size").asLong();
-            Map<String, Object> obj = new LinkedHashMap<>(Map.of("oid", oid, "size", size));
-            if (!lfs.containsKey(oid)) {
-                Map<String, Object> header = new LinkedHashMap<>();
-                if (multipartChunk > 0 && size > multipartChunk) {
-                    header.put("chunk_size", String.valueOf(multipartChunk));
-                    for (int i = 1; i <= (size + multipartChunk - 1) / multipartChunk; i++) header.put(String.valueOf(i), url() + "/part/" + oid + "/" + i);
+            List<Map<String, Object>> objects = new ArrayList<>();
+            for (JsonNode o : json.readTree(body).path("objects")) {
+                String oid = o.path("oid").asText();
+                long size = o.path("size").asLong();
+                Map<String, Object> obj = new LinkedHashMap<>(Map.of("oid", oid, "size", size));
+                if (!lfs.containsKey(oid)) {
+                    Map<String, Object> header = new LinkedHashMap<>();
+                    if (multipartChunk > 0 && size > multipartChunk) {
+                        header.put("chunk_size", String.valueOf(multipartChunk));
+                        for (int i = 1; i <= (size + multipartChunk - 1) / multipartChunk; i++) header.put(String.valueOf(i), url() + "/part/" + oid + "/" + i);
+                    }
+                    obj.put("actions", Map.of("upload", Map.of("href", url() + "/upload/" + oid, "header", header),
+                        "verify", Map.of("href", url() + "/verify")));
                 }
-                obj.put("actions", Map.of("upload", Map.of("href", url() + "/upload/" + oid, "header", header),
-                    "verify", Map.of("href", url() + "/verify")));
+                objects.add(obj);
             }
-            reply(x, 200, json.writeValueAsBytes(Map.of("objects", List.of(obj))));
+            reply(x, 200, json.writeValueAsBytes(Map.of("objects", objects)));
         } else if (path.startsWith("/upload/") && method.equals("PUT")) {
             lfs.put(path.substring(8), body);
             reply(x, 200, new byte[0]);
@@ -84,32 +97,16 @@ class HubStub {
             // Like the real Hub: a text/plain "OK", not JSON.
             reply(x, lfs.containsKey(json.readTree(body).path("oid").asText()) ? 200 : 404, "OK".getBytes(StandardCharsets.UTF_8));
         } else if (path.equals("/api/datasets/kira/memories/commit/main") && hubAuth) {
-            String[] lines = new String(body, StandardCharsets.UTF_8).split("\n");
-            for (int i = 1; i < lines.length; i++) {
-                JsonNode op = json.readTree(lines[i]);
-                String file = op.path("value").path("path").asText();
-                switch (op.path("key").asText()) {
-                    case "lfsFile" -> {
-                        if (!lfs.containsKey(op.path("value").path("oid").asText())) {
-                            reply(x, 422, new byte[0]);
-                            return;
-                        }
-                        files.put(file, op.path("value").path("oid").asText());
-                    }
-                    case "deletedFile" -> {
-                        if (file.equals(failDelete)) {
-                            reply(x, 500, new byte[0]);
-                            return;
-                        }
-                        files.remove(file);
-                    }
-                    default -> {
-                        reply(x, 400, new byte[0]);
-                        return;
-                    }
-                }
+            // Like the Hub: 409 while another commit to the repo is in progress.
+            if (!committing.compareAndSet(false, true)) {
+                reply(x, 409, new byte[0]);
+                return;
             }
-            reply(x, 200, "{\"commitOid\":\"abc\"}".getBytes());
+            try {
+                commit(x, body);
+            } finally {
+                committing.set(false);
+            }
         } else if (path.startsWith("/datasets/kira/memories/resolve/main/") && hubAuth) {
             String oid = files.get(path.substring("/datasets/kira/memories/resolve/main/".length()));
             if (oid == null) {
@@ -135,6 +132,44 @@ class HubStub {
         } else {
             reply(x, 401, new byte[0]);
         }
+    }
+
+    /** Applies one commit's operations; the caller holds the commit flag. */
+    private void commit(HttpExchange x, byte[] body) throws IOException {
+        if (commitDelayMs > 0) {
+            try {
+                Thread.sleep(commitDelayMs);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        String[] lines = new String(body, StandardCharsets.UTF_8).split("\n");
+        for (int i = 1; i < lines.length; i++) {
+            JsonNode op = json.readTree(lines[i]);
+            String file = op.path("value").path("path").asText();
+            switch (op.path("key").asText()) {
+                case "lfsFile" -> {
+                    if (!lfs.containsKey(op.path("value").path("oid").asText())) {
+                        reply(x, 422, new byte[0]);
+                        return;
+                    }
+                    files.put(file, op.path("value").path("oid").asText());
+                }
+                case "deletedFile" -> {
+                    if (file.equals(failDelete)) {
+                        reply(x, 500, new byte[0]);
+                        return;
+                    }
+                    files.remove(file);
+                }
+                default -> {
+                    reply(x, 400, new byte[0]);
+                    return;
+                }
+            }
+        }
+        commits.incrementAndGet();
+        reply(x, 200, "{\"commitOid\":\"abc\"}".getBytes());
     }
 
     private static void reply(HttpExchange x, int status, byte[] body) throws IOException {

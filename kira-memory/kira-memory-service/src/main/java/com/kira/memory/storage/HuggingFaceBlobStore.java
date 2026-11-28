@@ -16,10 +16,12 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A private Hugging Face dataset repo used as a blob store, over the same HTTP protocol huggingface_hub uses:
@@ -33,6 +35,8 @@ public class HuggingFaceBlobStore implements BlobStore {
     private final String repo;
     private final String token;
     private final ObjectMapper json;
+    /** The Hub answers 409 while another commit to the repo is in progress, and uploads are stored in parallel. */
+    private final ReentrantLock commitLock = new ReentrantLock();
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20))
         .followRedirects(HttpClient.Redirect.NEVER).build();
 
@@ -56,20 +60,33 @@ public class HuggingFaceBlobStore implements BlobStore {
     }
 
     @Override
-    public void put(String key, Path file, String contentType) {
+    public void put(List<Upload> files) {
         requireConfigured();
         io("upload", () -> {
-            long size = Files.size(file);
-            String oid = sha256(file);
+            // One batch and one commit for all files: a commit costs the most, and HF repos slow down after a few thousand.
+            Map<String, Path> byOid = new HashMap<>();
+            List<Map<String, Object>> objects = new ArrayList<>();
+            List<Map<String, Object>> operations = new ArrayList<>();
+            for (Upload f : files) {
+                long size = Files.size(f.file());
+                String oid = sha256(f.file());
+                byOid.putIfAbsent(oid, f.file());
+                objects.add(Map.of("oid", oid, "size", size));
+                operations.add(Map.of("key", "lfsFile", "value", Map.of("path", f.key(), "algo", "sha256", "oid", oid, "size", size)));
+            }
             JsonNode batch = json.readTree(send(HttpRequest.newBuilder(URI.create(baseUrl + "/datasets/" + repo + ".git/info/lfs/objects/batch"))
                 .header("Authorization", "Bearer " + token).header("Accept", LFS_JSON).header("Content-Type", LFS_JSON)
                 .POST(body(Map.of("operation", "upload", "transfers", List.of("basic", "multipart"), "hash_algo", "sha256",
-                    "ref", Map.of("name", "main"), "objects", List.of(Map.of("oid", oid, "size", size))))), "LFS batch"));
-            JsonNode object = batch.path("objects").path(0);
-            if (object.has("error")) throw new StorageException("Hugging Face LFS batch rejected the object");
-            JsonNode upload = object.path("actions").path("upload");
-            // No upload action means the Hub already has this content.
-            if (!upload.isMissingNode()) {
+                    "ref", Map.of("name", "main"), "objects", objects))), "LFS batch"));
+            for (JsonNode object : batch.path("objects")) {
+                if (object.has("error")) throw new StorageException("Hugging Face LFS batch rejected an object");
+                JsonNode upload = object.path("actions").path("upload");
+                // No upload action means the Hub already has this content.
+                if (upload.isMissingNode()) continue;
+                String oid = object.path("oid").asText();
+                Path file = byOid.get(oid);
+                if (file == null) throw new StorageException("Hugging Face LFS batch answered for an unknown object");
+                long size = Files.size(file);
                 if (upload.path("header").has("chunk_size")) uploadMultipart(upload, file, oid, size);
                 else expectOk(http.send(HttpRequest.newBuilder(URI.create(upload.path("href").asText()))
                     .PUT(HttpRequest.BodyPublishers.ofFile(file)).build(), HttpResponse.BodyHandlers.discarding()), "LFS upload");
@@ -80,7 +97,7 @@ public class HuggingFaceBlobStore implements BlobStore {
                         .POST(body(Map.of("oid", oid, "size", size))), "LFS verify");
                 }
             }
-            commit("Add " + key, Map.of("key", "lfsFile", "value", Map.of("path", key, "algo", "sha256", "oid", oid, "size", size)));
+            commit("Add " + String.join(", ", files.stream().map(Upload::key).toList()), operations);
             return null;
         });
     }
@@ -120,7 +137,7 @@ public class HuggingFaceBlobStore implements BlobStore {
     public void delete(String key) {
         requireConfigured();
         io("delete", () -> {
-            commit("Delete " + key, Map.of("key", "deletedFile", "value", Map.of("path", key)));
+            commit("Delete " + key, List.of(Map.of("key", "deletedFile", "value", Map.of("path", key))));
             return null;
         });
     }
@@ -149,12 +166,17 @@ public class HuggingFaceBlobStore implements BlobStore {
             .header("Content-Type", LFS_JSON).POST(body(Map.of("oid", oid, "parts", parts))), "LFS multipart complete");
     }
 
-    private void commit(String summary, Map<String, Object> operation) throws IOException, InterruptedException {
-        String ndjson = json.writeValueAsString(Map.of("key", "header", "value", Map.of("summary", summary))) + "\n"
-            + json.writeValueAsString(operation) + "\n";
-        send(HttpRequest.newBuilder(URI.create(baseUrl + "/api/datasets/" + repo + "/commit/main"))
-            .header("Authorization", "Bearer " + token).header("Content-Type", "application/x-ndjson")
-            .POST(HttpRequest.BodyPublishers.ofString(ndjson)), "commit");
+    private void commit(String summary, List<Map<String, Object>> operations) throws IOException, InterruptedException {
+        StringBuilder ndjson = new StringBuilder(json.writeValueAsString(Map.of("key", "header", "value", Map.of("summary", summary)))).append('\n');
+        for (Map<String, Object> op : operations) ndjson.append(json.writeValueAsString(op)).append('\n');
+        commitLock.lockInterruptibly();
+        try {
+            send(HttpRequest.newBuilder(URI.create(baseUrl + "/api/datasets/" + repo + "/commit/main"))
+                .header("Authorization", "Bearer " + token).header("Content-Type", "application/x-ndjson")
+                .POST(HttpRequest.BodyPublishers.ofString(ndjson.toString())), "commit");
+        } finally {
+            commitLock.unlock();
+        }
     }
 
     /** Returns the raw body: only the LFS batch answer is JSON (verify answers a plain-text "OK"). */

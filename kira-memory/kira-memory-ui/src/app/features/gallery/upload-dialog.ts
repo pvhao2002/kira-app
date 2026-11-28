@@ -1,10 +1,10 @@
 import {Component, DestroyRef, HostListener, inject, input, OnInit, output, signal} from '@angular/core';
 import {A11yModule} from '@angular/cdk/a11y';
 import {FormsModule} from '@angular/forms';
-import {Api, errorMessage, Group} from '../../core/api';
+import {Api, errorMessage, Group, UploadStatus} from '../../core/api';
 import {exifTakenAt} from '../../core/exif';
 import {prepare} from '../../core/thumbs';
-import {chunkedUpload, contentTypeOf, MAX_BYTES} from './chunked-upload';
+import {awaitStored, contentTypeOf, inTurn, MAX_BYTES, sendUpload} from './chunked-upload';
 
 interface Pick {
   file: File;
@@ -179,32 +179,49 @@ export class UploadDialog implements OnInit {
     this.picks.update(list => list.filter((_, j) => j !== i));
   }
 
-  /** One file at a time, so a big video never competes with photos for bandwidth. */
+  /** Bytes go out one file at a time (a big video never competes with photos); the server stores earlier files meanwhile. */
   protected async start() {
     this.running.set(true);
-    for (const p of this.picks()) {
-      if (p.state === 'done' || p.state === 'uploading' || p.file.size > MAX_BYTES) continue;
-      this.patch(p, {state: 'uploading', progress: 0, error: ''});
-      try {
-        const prepared = await prepare(p.file);
-        const form = new FormData();
-        form.append('thumb', prepared.thumb, 'thumb.jpg');
-        if (p.caption.trim()) form.append('caption', p.caption.trim());
-        if (this.groupId !== null) form.append('groupId', String(this.groupId));
-        if (prepared.width) form.append('width', String(prepared.width));
-        if (prepared.height) form.append('height', String(prepared.height));
-        // The real shot time from EXIF; otherwise the file date, which messaging apps often reset.
-        const exif = p.file.type.startsWith('image/') ? await exifTakenAt(p.file) : null;
-        form.append('takenAt', String(exif ?? (p.file.lastModified || Date.now())));
-        await chunkedUpload(this.api, p.file, form, (phase, percent) =>
-          this.patch(p, {state: phase === 'storing' ? 'storing' : 'uploading', progress: percent}));
-        this.patch(p, {state: 'done', progress: 100});
-      } catch (err) {
-        this.patch(p, {state: 'failed', error: errorMessage(err, 'Tải lên thất bại')});
-      }
+    const sessions = new Map<Pick, UploadStatus>();
+    const todo = this.picks().filter(p => (p.state === 'waiting' || p.state === 'failed') && p.file.size <= MAX_BYTES);
+    try {
+      await inTurn(todo, async p => {
+        this.patch(p, {state: 'uploading', progress: 0, error: ''});
+        try {
+          sessions.set(p, await sendUpload(this.api, p.file, await this.details(p), percent => this.patch(p, {progress: percent})));
+          this.patch(p, {state: 'storing', progress: 100});
+          return true;
+        } catch (err) {
+          this.patch(p, {state: 'failed', error: errorMessage(err, 'Tải lên thất bại')});
+          return false;
+        }
+      }, async p => {
+        try {
+          await awaitStored(this.api, sessions.get(p)!);
+          this.patch(p, {state: 'done'});
+        } catch (err) {
+          this.patch(p, {state: 'failed', error: errorMessage(err, 'Tải lên thất bại')});
+        }
+      });
+    } finally {
+      this.running.set(false);
     }
-    this.running.set(false);
     if (this.picks().every(p => p.state === 'done')) this.done.emit();
+  }
+
+  /** The thumbnail and details that complete an upload. */
+  private async details(p: Pick): Promise<FormData> {
+    const prepared = await prepare(p.file);
+    const form = new FormData();
+    form.append('thumb', prepared.thumb, 'thumb.jpg');
+    if (p.caption.trim()) form.append('caption', p.caption.trim());
+    if (this.groupId !== null) form.append('groupId', String(this.groupId));
+    if (prepared.width) form.append('width', String(prepared.width));
+    if (prepared.height) form.append('height', String(prepared.height));
+    // The real shot time from EXIF; otherwise the file date, which messaging apps often reset.
+    const exif = p.file.type.startsWith('image/') ? await exifTakenAt(p.file) : null;
+    form.append('takenAt', String(exif ?? (p.file.lastModified || Date.now())));
+    return form;
   }
 
   private patch(p: Pick, change: Partial<Pick>) {

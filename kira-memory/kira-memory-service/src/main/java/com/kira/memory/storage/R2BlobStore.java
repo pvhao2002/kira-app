@@ -58,7 +58,11 @@ public class R2BlobStore implements BlobStore {
     }
 
     @Override
-    public void put(String key, Path file, String contentType) {
+    public void put(List<Upload> files) {
+        for (Upload f : files) putOne(f.key(), f.file(), f.contentType());
+    }
+
+    private void putOne(String key, Path file, String contentType) {
         try {
             long size = Files.size(file);
             if (size <= partSize) {

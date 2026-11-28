@@ -26,6 +26,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -81,10 +83,13 @@ class MemoryFlowIT {
         jdbc.sql("DELETE FROM media").update();
         jdbc.sql("DELETE FROM memory_group").update();
         jdbc.sql("DELETE FROM message").update();
+        jdbc.sql("DELETE FROM cycle_start").update();
         jdbc.sql("UPDATE app_setting SET value = 'HUGGING_FACE' WHERE name = 'storage_provider'").update();
         jdbc.sql("DELETE FROM app_setting WHERE name = 'banner_media_id'").update();
         HUB.multipartChunk = 0;
         HUB.failDelete = null;
+        HUB.commits.set(0);
+        HUB.commitDelayMs = 0;
         CF.purges.clear();
         CF.fail = false;
         // The rows above are gone, so their Hub files are orphans; dropping them keeps file counts per test.
@@ -234,6 +239,9 @@ class MemoryFlowIT {
         assertEquals("Lần đầu hẹn hò ❤", m.path("caption").asText());
         assertTrue(m.path("url").asText().matches("/m/\\d+/[A-Za-z0-9_-]{22}/o\\.jpg"), m.path("url").asText());
         assertEquals(2, HUB.files.size(), "original + thumbnail committed");
+        assertEquals(1, HUB.commits.get(), "original and thumbnail go up in one commit");
+        assertTrue(HUB.files.keySet().stream().allMatch(k -> k.matches("memories/\\d{4}/\\d{2}/[0-9a-f-]{36}(_thumb)?\\.jpg")),
+            HUB.files.keySet().toString());
 
         ResponseEntity<byte[]> original = rest.getForEntity(m.path("url").asText(), byte[].class);
         assertEquals(200, original.getStatusCode().value());
@@ -265,6 +273,18 @@ class MemoryFlowIT {
     }
 
     @Test
+    void overlappingStoresCommitToTheHubOneAtATime() throws Exception {
+        HUB.commitDelayMs = 400;
+        String admin = (String) login("admin").get("cookie");
+        // Both files reach the server before either is stored, as when the dialog sends the next file meanwhile.
+        String first = sendOnly(admin, "first-photo".getBytes());
+        String second = sendOnly(admin, "second-photo".getBytes());
+        body(awaitStored(admin, first));
+        body(awaitStored(admin, second));
+        assertEquals(2, HUB.commits.get());
+    }
+
+    @Test
     void largeHuggingFaceUploadUsesMultipart() throws Exception {
         HUB.multipartChunk = 10;
         String admin = (String) login("admin").get("cookie");
@@ -272,6 +292,7 @@ class MemoryFlowIT {
         JsonNode m = body(upload(admin, Map.of("bytes", video, "type", "video/mp4", "name", "clip.mp4")));
         assertEquals("VIDEO", m.path("kind").asText());
         assertTrue(m.path("url").asText().endsWith("/o.mp4"));
+        assertEquals(1, HUB.commits.get());
         assertArrayEquals(video, rest.getForEntity(m.path("url").asText(), byte[].class).getBody());
     }
 
@@ -519,6 +540,32 @@ class MemoryFlowIT {
         return List.of(SITE + m.path("url").asText(), SITE + m.path("thumbUrl").asText());
     }
 
+    @Test
+    void bothAccountsLogPeriodDays() throws Exception {
+        String admin = (String) login("admin").get("cookie");
+        String love = (String) login("love").get("cookie");
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        String earlier = today.minusDays(30).toString();
+        assertEquals(List.of(earlier), days(body(call(HttpMethod.POST, "/api/cycle", love, Map.of("day", earlier)))));
+        assertEquals(List.of(today.toString(), earlier),
+            days(body(call(HttpMethod.POST, "/api/cycle", admin, Map.of("day", today.toString())))));
+        assertEquals(2, days(body(call(HttpMethod.POST, "/api/cycle", love, Map.of("day", today.toString())))).size(),
+            "the same day twice is one entry");
+        for (String bad : List.of(today.plusDays(1).toString(), "2018-06-13", "hôm qua")) {
+            assertEquals("INVALID_DAY", code(call(HttpMethod.POST, "/api/cycle", love, Map.of("day", bad))), bad);
+        }
+        assertEquals("INVALID_DAY", code(call(HttpMethod.DELETE, "/api/cycle/xyz", love, null)));
+        assertEquals(List.of(earlier), days(body(call(HttpMethod.DELETE, "/api/cycle/" + today, love, null))));
+        assertEquals(List.of(earlier), days(body(call(HttpMethod.GET, "/api/cycle", admin, null))));
+        assertEquals(401, call(HttpMethod.GET, "/api/cycle", null, null).getStatusCode().value());
+    }
+
+    private static List<String> days(JsonNode cycle) {
+        List<String> out = new java.util.ArrayList<>();
+        cycle.path("starts").forEach(d -> out.add(d.asText()));
+        return out;
+    }
+
     private Map<String, Object> login(String user) {
         ResponseEntity<Map> r = rest.postForEntity("/api/auth/login", Map.of("username", user, "password", "14062018"), Map.class);
         assertEquals(200, r.getStatusCode().value());
@@ -574,6 +621,15 @@ class MemoryFlowIT {
         ResponseEntity<String> done = complete(cookie, id, type, o);
         if (done.getStatusCode().value() != 202) return done;
         return awaitStored(cookie, id);
+    }
+
+    /** The browser's flow up to "complete", without waiting for the store; returns the upload id. */
+    private String sendOnly(String cookie, byte[] bytes) {
+        String id = read(call(HttpMethod.POST, "/api/admin/uploads", cookie, Map.of("contentType", "image/jpeg", "size", bytes.length)))
+            .path("uploadId").asText();
+        assertEquals(200, putChunk(cookie, id, 0, bytes).getStatusCode().value());
+        assertEquals(202, complete(cookie, id, "image/jpeg", Map.of()).getStatusCode().value());
+        return id;
     }
 
     private ResponseEntity<String> putChunk(String cookie, String id, int index, byte[] data) {

@@ -1,9 +1,13 @@
 :host { display: block; max-width: 1360px; margin: 0 auto; padding: 0 20px 120px; }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 22px 0 10px; }
 .brand h1 { margin: 0; font-size: clamp(34px, 4vw, 46px); line-height: 1.1; color: var(--rose-deep); }
-.brand p { margin: 2px 0 0; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .actions a { text-decoration: none; }
+
+/* The day counters: the card frame lives here, each card styles its own content. */
+.counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; padding: 8px 0 2px; }
+.counters > * { display: grid; align-content: start; gap: 4px; padding: 14px 18px 16px; border: 1px solid var(--blush);
+  border-radius: 20px; background: var(--paper); box-shadow: var(--shadow); }
 
 /* Snaps album by album; the fading right edge hints that the rail scrolls. */
 .albums { display: flex; gap: 12px; overflow-x: auto; padding: 14px 32px 16px 2px; scrollbar-width: thin;

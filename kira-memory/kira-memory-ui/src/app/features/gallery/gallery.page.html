@@ -1,7 +1,6 @@
 <header class="top">
   <div class="brand">
     <h1 class="script">Chuyện của chúng mình</h1>
-    <p class="muted">Bên nhau {{ days }} ngày</p>
   </div>
   <nav class="actions">
     @if (auth.isAdmin()) {
@@ -12,6 +11,11 @@
     <button class="btn ghost" type="button" (click)="logout()">Đăng xuất</button>
   </nav>
 </header>
+
+<section class="counters" aria-label="Đếm ngày">
+  <app-love-days/>
+  <app-cycle-card/>
+</section>
 
 <nav class="albums" aria-label="Nhóm ảnh">
   <button type="button" class="album plain" [class.active]="filter() === 'all'" (click)="setFilter('all')">Tất cả kỷ niệm</button>

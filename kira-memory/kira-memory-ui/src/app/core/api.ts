@@ -21,6 +21,8 @@ export interface AdminSettings {
   widgetShape: WidgetShape; storageProvider: StorageProvider; bannerMediaId: number | null;
   huggingFaceConfigured: boolean; r2Configured: boolean;
 }
+/** Em's period start days (YYYY-MM-DD), newest first. */
+export interface Cycle { starts: string[]; }
 export interface UploadStatus {
   uploadId: string; state: 'RECEIVING' | 'PROCESSING' | 'DONE' | 'FAILED'; size: number; chunkSize: number;
   totalChunks: number; receivedChunks: number; missingChunks: number[]; media: Media | null; error: string | null;
@@ -78,6 +80,10 @@ export class Api {
   sendMessage(body: string) { return this.http.post<Message>('/api/messages', {body}); }
 
   settings() { return this.http.get<{widgetShape: WidgetShape}>('/api/settings'); }
+
+  cycle() { return this.http.get<Cycle>('/api/cycle'); }
+  addCycleStart(day: string) { return this.http.post<Cycle>('/api/cycle', {day}); }
+  deleteCycleStart(day: string) { return this.http.delete<Cycle>(`/api/cycle/${day}`); }
   adminSettings() { return this.http.get<AdminSettings>('/api/admin/settings'); }
   updateSettings(patch: Partial<{widgetShape: WidgetShape; storageProvider: StorageProvider; bannerMediaId: number; clearBanner: boolean}>) {
     return this.http.put<AdminSettings>('/api/admin/settings', patch);

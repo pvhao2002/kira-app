@@ -5,7 +5,8 @@ import {Router, RouterLink} from '@angular/router';
 import {firstValueFrom} from 'rxjs';
 import {Api, errorMessage, Filter, Group, Media} from '../../core/api';
 import {AuthStore} from '../../core/auth';
-import {fmt, together, todayInVietnam} from '../../core/since';
+import {CycleCard} from './cycle-card';
+import {LoveDays} from './love-days';
 import {MediaViewer} from './media-viewer';
 import {UploadDialog} from './upload-dialog';
 
@@ -16,7 +17,7 @@ const DELETE_BATCH = 20;
 
 @Component({
   selector: 'app-gallery-page',
-  imports: [ScrollingModule, FormsModule, RouterLink, MediaViewer, UploadDialog],
+  imports: [ScrollingModule, FormsModule, RouterLink, MediaViewer, UploadDialog, LoveDays, CycleCard],
   templateUrl: './gallery.page.html',
   styleUrl: './gallery.page.css'
 })
@@ -24,7 +25,6 @@ export class GalleryPage {
   private api = inject(Api);
   private router = inject(Router);
   protected auth = inject(AuthStore);
-  protected days = fmt(together(todayInVietnam()).totalDays);
 
   protected groups = signal<Group[]>([]);
   protected filter = signal<Filter>('all');

@@ -22,6 +22,9 @@ All JSON. Auth is the `km_session` cookie set by login. Errors: `{status, code, 
 | POST | `/api/messages` | `{body}` (1–2000 chars) → `Message`; also pushed as SSE `message` |
 | GET | `/api/events` | `text/event-stream`: `ready`, `message` (Message), `settings` ({widgetShape}); `:ping` every 25 s |
 | GET | `/api/settings` | `{widgetShape}` |
+| GET | `/api/cycle` | `{starts: string[]}`: Em's period start days (`YYYY-MM-DD`), newest first, the last 12 |
+| POST | `/api/cycle` | `{day}` (14/06/2018 to today in Vietnam) → `{starts}`; logging a day again keeps one entry. 400 `INVALID_DAY` |
+| DELETE | `/api/cycle/{day}` | → `{starts}`; removing a day that is not there is fine. 400 `INVALID_DAY` |
 
 `Media = {id, kind: IMAGE|VIDEO, contentType, width, height, caption, groupId, takenAt, createdAt, provider, url, thumbUrl}`
 
