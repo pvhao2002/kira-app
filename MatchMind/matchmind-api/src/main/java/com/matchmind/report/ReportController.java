@@ -25,6 +25,7 @@ import java.util.Map;
 @Tag(name = "Dashboard & reports")
 public class ReportController {
     private final ReportService reports;
+    private final PromptTuningService tuning;
 
     @GetMapping("/dashboard")
     public Map<String, Object> dashboard(Filters filters, @RequestParam(required = false) String tz) {
@@ -58,6 +59,13 @@ public class ReportController {
     @Operation(summary = "What winning and losing picks have in common: performance per factor value vs the overall win rate, flagged when significant")
     public Map<String, Object> patterns(Filters filters, @RequestParam(required = false) Integer minSample) {
         return reports.patterns(filters, minSample);
+    }
+
+    @GetMapping("/reports/prompt-tuning")
+    @Operation(summary = "Settled picks grouped every way a prompt rule can act on, the prompt's selection rules followed vs "
+        + "broken, expected vs actual goals, and the same as text for an AI agent (result filter ignored)")
+    public Map<String, Object> promptTuning(Filters filters) {
+        return tuning.report(filters);
     }
 
     @GetMapping("/reports/prediction-history")

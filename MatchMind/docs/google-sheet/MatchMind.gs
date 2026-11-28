@@ -29,6 +29,13 @@
  *    the SETTLE tab. An agent ("AI Sheet Settlement Prompt") fills in status and score; every minute the filled rows
  *    are sent to MatchMind, which settles the picks, and the outcome lands in the sync column (same rules as status).
  *
+ * GOALS tab (Next Goal and BTTS before kick-off; these rows never leave the sheet):
+ * 7. The "AI Next Goal & BTTS Prompt" has an agent read the Next Goal and BTTS odds off pre-match screenshots, run
+ *    1000 simulations and append one row to the GOALS tab. After the match the AI Sheet Settlement Prompt fills in
+ *    firstGoal, homeScore, awayScore and resultSource. Every hour (or MatchMind > Goals report) goalsReport() scores the
+ *    filled rows into ngResult and bttsResult and rewrites the GOALS_REPORT tab, which the prompt reads before each
+ *    prediction. sendPending and the cleanup never read these tabs and nothing in them is sent to MatchMind.
+ *
  * Keep the sheet private. Anyone who can edit it can read the key, change this script and add rows that are sent
  * with your key. Agents write to it through their Google account connection, signed in as you. Never share the sheet
  * by link: the link is in every prompt you paste into a chat.
@@ -46,11 +53,27 @@ const SETTLE_SHEET = 'SETTLE';
 const SETTLE_COLUMNS = ['matchId', 'provider', 'league', 'homeTeam', 'awayTeam', 'kickoffGmt7', 'status', 'homeScore', 'awayScore',
   'homeCorners', 'awayCorners', 'htHomeScore', 'htAwayScore', 'source', 'sync', 'syncedAt'];
 const RESULT_STATUSES = ['FINISHED', 'CANCELLED', 'POSTPONED'];
+const GOALS_SHEET = 'GOALS';
+// The AI Next Goal & BTTS Prompt names the same columns. The agent fills league .. notes, the AI Sheet Settlement
+// Prompt fills firstGoal .. resultSource, and goalsReport() fills ngResult, bttsResult and settledAt.
+const GOALS_COLUMNS = ['league', 'homeTeam', 'awayTeam', 'kickoffGmt7', 'provider', 'model', 'promptVersion',
+  'ngHomeOdds', 'ngNoGoalOdds', 'ngAwayOdds', 'bttsYesOdds', 'bttsNoOdds', 'lambdaHome', 'lambdaAway', 'simulations',
+  'pNgHome', 'pNgNoGoal', 'pNgAway', 'pBttsYes', 'ngPick', 'bttsPick', 'notes', 'firstGoal', 'homeScore', 'awayScore',
+  'resultSource', 'ngResult', 'bttsResult', 'settledAt'];
+const GOALS_REPORT_SHEET = 'GOALS_REPORT';
+const GOALS_REPORT_COLUMNS = ['group', 'picks', 'wins', 'losses', 'winRate', 'units', 'roi', 'stated', 'market', 'tooSure'];
+// [upper bound (inclusive), label]; the prompt's price window is above 1.50 and at most 2.30.
+const GOAL_PRICE_BANDS = [[1.50, '1.50 or lower'], [1.70, '1.51-1.70'], [1.90, '1.71-1.90'], [2.10, '1.91-2.10'],
+  [2.30, '2.11-2.30'], [Infinity, 'above 2.30']];
+const GOAL_EDGE_BANDS = [[0, '0 or below'], [0.03, '0 to 0.03'], [0.06, '0.03 to 0.06'], [0.10, '0.06 to 0.10'],
+  [Infinity, 'above 0.10']];
+const GOAL_MIN_GROUP = 6; // FAVOUR / AVOID need at least this many scored picks, as TRACK RECORD does
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('MatchMind')
     .addItem('Send now', 'sendPending')
     .addItem('Pull unsettled matches', 'pullUnsettled')
+    .addItem('Goals report', 'goalsReport')
     .addItem('Test connection', 'testConnection')
     .addItem('Set provider key', 'setProviderKey')
     .addToUi();
@@ -71,12 +94,177 @@ function setup() {
   account.getRange(1, 1, 1, 4).setValues([['importId', 'transactions', 'sync', 'syncedAt']]);
   account.getRange('A:D').setNumberFormat('@');
   account.setFrozenRows(1);
+  const goals = book.getSheetByName(GOALS_SHEET) || book.insertSheet(GOALS_SHEET);
+  goals.getRange(1, 1, 1, GOALS_COLUMNS.length).setValues([GOALS_COLUMNS]);
+  goals.getRange('A:AC').setNumberFormat('@');
+  goals.setFrozenRows(1);
+  const report = book.getSheetByName(GOALS_REPORT_SHEET) || book.insertSheet(GOALS_REPORT_SHEET);
+  report.getRange('A:J').setNumberFormat('@'); // "+3.00" and "83%" stay as written instead of becoming numbers
   ScriptApp.getProjectTriggers()
-    .filter(t => ['sendPending', 'cleanupOldRows', 'pullUnsettled'].includes(t.getHandlerFunction()))
+    .filter(t => ['sendPending', 'cleanupOldRows', 'pullUnsettled', 'goalsReport'].includes(t.getHandlerFunction()))
     .forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('sendPending').timeBased().everyMinutes(1).create();
   ScriptApp.newTrigger('cleanupOldRows').timeBased().everyHours(1).create();
   ScriptApp.newTrigger('pullUnsettled').timeBased().everyHours(1).create();
+  ScriptApp.newTrigger('goalsReport').timeBased().everyHours(1).create();
+}
+
+/**
+ * Scores the GOALS rows whose result is filled in (ngResult, bttsResult, settledAt) and rewrites GOALS_REPORT, which
+ * the AI Next Goal & BTTS Prompt reads before predicting. Never calls MatchMind: these rows stay in the sheet.
+ */
+function goalsReport() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) return; // a send run holds the lock: the next hour scores the rows
+  try {
+    const book = SpreadsheetApp.getActive();
+    const sheet = book.getSheetByName(GOALS_SHEET);
+    if (!sheet) throw new Error('Run setup first: there is no ' + GOALS_SHEET + ' tab');
+    const rows = sheet.getDataRange().getValues();
+    const at = GOALS_COLUMNS.indexOf('ngResult');
+    for (let r = 1; r < rows.length; r++) {
+      const result = goalOutcome(rows[r]);
+      if (result[0] === String(rows[r][at]) && result[1] === String(rows[r][at + 1])) continue;
+      // Rows deleted, inserted or sorted, or a result edited, during the run: stop, the next run reads the sheet again.
+      // Every input column is compared: two agents' rows for one match share league, teams and kick-off.
+      const current = sheet.getRange(r + 1, 1, 1, at).getValues()[0];
+      if (current.some((v, i) => String(v) !== String(rows[r][i]))) break;
+      const settledAt = result.some(v => /^(WIN|LOSS|VOID)$/.test(v)) ? new Date().toISOString() : '';
+      sheet.getRange(r + 1, at + 1, 1, 3).setValues([[result[0], result[1], settledAt]]);
+      rows[r][at] = result[0];
+      rows[r][at + 1] = result[1];
+      rows[r][at + 2] = settledAt;
+    }
+    const table = goalsReportTable(rows.slice(1), new Date());
+    const report = book.getSheetByName(GOALS_REPORT_SHEET) || book.insertSheet(GOALS_REPORT_SHEET);
+    report.clearContents();
+    report.getRange(1, 1, table.length, GOALS_REPORT_COLUMNS.length).setValues(table);
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * [ngResult, bttsResult] of one GOALS row: WIN, LOSS or VOID per pick, '' for NO_BET or while the result is not in,
+ * and "check: ..." when the filled-in result cannot be right (the report leaves such rows out).
+ */
+function goalOutcome(row) {
+  const cell = name => String(row[GOALS_COLUMNS.indexOf(name)]).trim().toUpperCase();
+  const first = cell('firstGoal') === 'NO_GOAL' ? 'NONE' : cell('firstGoal'); // the word the row uses for the pick
+  if (!first) return ['', ''];
+  const ngPick = cell('ngPick'), bttsPick = cell('bttsPick');
+  const ngBet = ['HOME', 'AWAY', 'NO_GOAL'].includes(ngPick), bttsBet = ['YES', 'NO'].includes(bttsPick);
+  const check = message => ['check: ' + message, 'check: ' + message];
+  if (!ngBet && !['', 'NO_BET'].includes(ngPick)) return check('ngPick must be HOME, AWAY, NO_GOAL or NO_BET');
+  if (!bttsBet && !['', 'NO_BET'].includes(bttsPick)) return check('bttsPick must be YES, NO or NO_BET');
+  if (first === 'VOID') return [ngBet ? 'VOID' : '', bttsBet ? 'VOID' : ''];
+  if (!['HOME', 'AWAY', 'NONE'].includes(first)) return check('firstGoal must be HOME, AWAY, NONE or VOID');
+  const home = cell('homeScore'), away = cell('awayScore');
+  if (!/^\d{1,2}$/.test(home) || !/^\d{1,2}$/.test(away)) return check('homeScore and awayScore need whole numbers');
+  const h = Number(home), a = Number(away);
+  if ((first === 'NONE') !== (h + a === 0) || (first === 'HOME' && h === 0) || (first === 'AWAY' && a === 0)) {
+    return check('firstGoal ' + first + ' does not fit the score ' + h + '-' + a);
+  }
+  const scorer = first === 'NONE' ? 'NO_GOAL' : first;
+  return [ngBet ? (ngPick === scorer ? 'WIN' : 'LOSS') : '',
+    bttsBet ? ((bttsPick === 'YES') === (h > 0 && a > 0) ? 'WIN' : 'LOSS') : ''];
+}
+
+/** Every scored pick (WIN or LOSS) with its price, stated probability and the bookmaker's without margin (q). */
+function goalPicks(rows) {
+  const cell = (row, name) => String(row[GOALS_COLUMNS.indexOf(name)]).trim();
+  // Agents may write a decimal comma (1,85); an empty or unreadable cell is null, never 0.
+  const number = text => { const v = Number(text.replace(',', '.')); return text && Number.isFinite(v) ? v : null; };
+  // A probability outside 0..1 (e.g. 54 for 54%) is unknown: it would otherwise skew the stated, tooSure and edge figures.
+  const probability = text => { const v = number(text); return v !== null && v >= 0 && v <= 1 ? v : null; };
+  const markets = [
+    ['NEXT_GOAL', 'ngPick', 'ngResult', { HOME: ['ngHomeOdds', 'pNgHome'], NO_GOAL: ['ngNoGoalOdds', 'pNgNoGoal'], AWAY: ['ngAwayOdds', 'pNgAway'] }],
+    ['BTTS', 'bttsPick', 'bttsResult', { YES: ['bttsYesOdds', 'pBttsYes'], NO: ['bttsNoOdds', null] }],
+  ];
+  const picks = [];
+  rows.forEach(row => markets.forEach(([market, pickColumn, resultColumn, selections]) => {
+    const result = cell(row, resultColumn), pick = cell(row, pickColumn).toUpperCase();
+    if (!['WIN', 'LOSS'].includes(result) || !selections[pick]) return;
+    const price = number(cell(row, selections[pick][0]));
+    if (price === null || price <= 1) return; // without its price a pick has no units: leave it out
+    const yes = probability(cell(row, 'pBttsYes'));
+    const p = selections[pick][1] ? probability(cell(row, selections[pick][1])) : yes === null ? null : 1 - yes;
+    const prices = Object.keys(selections).map(s => number(cell(row, selections[s][0])));
+    const q = prices.every(v => v !== null && v > 1) ? (1 / price) / prices.reduce((sum, v) => sum + 1 / v, 0) : null;
+    picks.push({ market, pick, price, p, q, won: result === 'WIN', version: cell(row, 'promptVersion'),
+      model: (cell(row, 'provider') + ' ' + cell(row, 'model')).trim() });
+  }));
+  return picks;
+}
+
+/** The GOALS_REPORT tab as rows of GOALS_REPORT_COLUMNS.length cells: groups of scored picks, then FAVOUR / AVOID. */
+function goalsReportTable(rows, now) {
+  const width = GOALS_REPORT_COLUMNS.length;
+  const pad = cells => cells.concat(Array(width - cells.length).fill(''));
+  const picks = goalPicks(rows);
+  const waiting = rows.filter(r => String(r[GOALS_COLUMNS.indexOf('homeTeam')]).trim()
+    && !String(r[GOALS_COLUMNS.indexOf('firstGoal')]).trim()).length;
+  const table = [pad(['MatchMind GOALS report', 'updated ' + Utilities.formatDate(now, 'Asia/Ho_Chi_Minh', 'yyyy-MM-dd HH:mm')
+    + ' GMT+7', 'scored picks: ' + picks.length, 'rows waiting for a result: ' + waiting])];
+  if (!picks.length) {
+    table.push(pad(['No scored picks yet: follow the rules of the AI Next Goal & BTTS Prompt as written.']));
+    return table;
+  }
+  table.push(GOALS_REPORT_COLUMNS.slice());
+  const band = (bands, v) => bands.find(b => v <= b[0])[1];
+  const labels = (prefix, bands) => bands.map(b => prefix + b[1]);
+  // [key of a pick, keys in display order (null: alphabetical), whether the group can go to FAVOUR / AVOID]
+  const groupings = [
+    [p => p.market, null, true],
+    [p => p.market + ' ' + p.pick, null, true],
+    [p => 'price ' + band(GOAL_PRICE_BANDS, p.price), labels('price ', GOAL_PRICE_BANDS), true],
+    [p => 'edge ' + (p.q === null || p.p === null ? 'unknown' : band(GOAL_EDGE_BANDS, p.p - p.q)),
+      labels('edge ', GOAL_EDGE_BANDS).concat(['edge unknown']), true],
+    [p => 'prompt v' + (p.version || '?'), null, false],
+    [p => 'model ' + p.model, null, false],
+  ];
+  const favour = [], avoid = [];
+  groupings.forEach(([key, order, signal]) => {
+    const groups = new Map();
+    picks.forEach(p => groups.set(key(p), (groups.get(key(p)) || []).concat([p])));
+    // Numbers inside keys compare as numbers: prompt v2 before prompt v10.
+    const keys = [...groups.keys()].sort((a, b) => order ? order.indexOf(a) - order.indexOf(b)
+      : a.localeCompare(b, undefined, { numeric: true }));
+    keys.forEach(k => {
+      const s = goalStats(groups.get(k));
+      table.push([k, s.n, s.wins, s.n - s.wins, percent(s.winRate), signed(s.units, 2), signed(s.roi * 100, 0) + '%',
+        s.stated === null ? '' : percent(s.stated), s.market === null ? '' : percent(s.market),
+        s.stated === null ? '' : signed((s.stated - s.winRate) * 100, 0)]);
+      if (!signal || s.n < GOAL_MIN_GROUP) return;
+      if (s.winRate >= 0.6) favour.push(k + ' ' + percent(s.winRate) + ' (n ' + s.n + ')');
+      else if (s.winRate < 0.45) avoid.push(k + ' ' + percent(s.winRate) + ' (n ' + s.n + ')');
+    });
+  });
+  table.push(pad(['FAVOUR (won 60% or more, at least ' + GOAL_MIN_GROUP + ' picks)', favour.join(' · ') || 'none yet']));
+  table.push(pad(['AVOID (won under 45%, at least ' + GOAL_MIN_GROUP + ' picks)', avoid.join(' · ') || 'none yet']));
+  table.push(pad(['winRate = wins / picks. units = profit at a stake of 1 per pick, roi = units / picks. stated = the'
+    + ' probability you gave, market = the bookmaker\'s without margin. tooSure = stated minus win rate, in points.']));
+  return table;
+}
+
+function goalStats(picks) {
+  const average = values => values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+  const wins = picks.filter(p => p.won).length;
+  const units = picks.reduce((sum, p) => sum + (p.won ? p.price - 1 : -1), 0);
+  return { n: picks.length, wins, winRate: wins / picks.length, units, roi: units / picks.length,
+    stated: average(picks.map(p => p.p).filter(v => v !== null)),
+    market: average(picks.map(p => p.q).filter(v => v !== null)) };
+}
+
+function percent(fraction) {
+  return Math.round(fraction * 100) + '%';
+}
+
+/** +3.00, -2.30, 0.00: a sign on every non-zero figure. */
+function signed(value, digits) {
+  const text = Math.abs(value).toFixed(digits);
+  return (Number(text) === 0 ? '' : value > 0 ? '+' : '-') + text;
 }
 
 /** Adds every match that still waits for its result (and is not in the tab yet) to the SETTLE tab. */

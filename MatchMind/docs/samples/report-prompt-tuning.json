@@ -1,0 +1,46 @@
+{
+  "total": {
+    "picks": 4, "settled": 4, "wins": 2, "losses": 2, "pushOrVoid": 0, "pending": 0,
+    "halfWins": 0, "halfLosses": 0, "fullWins": 2, "fullLosses": 2,
+    "avgProbability": 0.5225, "units": -0.100, "staked": 4, "avgMarketProbability": 0.4728, "hitRate": 0.5, "winRate": 0.5, "roi": -0.025
+  },
+  "rules": [
+    {
+      "rule": "price", "text": "Price above 1.65 and at most 1.90",
+      "follows": {
+        "picks": 1, "settled": 1, "wins": 0, "losses": 1, "pushOrVoid": 0, "pending": 0,
+        "halfWins": 0, "halfLosses": 0, "fullWins": 0, "fullLosses": 1,
+        "avgProbability": 0.5400, "units": -1.000, "staked": 1, "avgMarketProbability": 0.5195, "hitRate": 0.0, "winRate": 0.0, "roi": -1.0
+      },
+      "breaks": {
+        "picks": 3, "settled": 3, "wins": 2, "losses": 1, "pushOrVoid": 0, "pending": 0,
+        "halfWins": 0, "halfLosses": 0, "fullWins": 2, "fullLosses": 1,
+        "avgProbability": 0.5167, "units": 0.900, "staked": 3, "avgMarketProbability": 0.4573, "hitRate": 0.6667, "winRate": 0.6667, "roi": 0.3
+      }
+    },
+    { "rule": "rank2", "text": "Rank 2 only in another market than rank 1", "follows": { "settled": 4, "wins": 2, "losses": 2, "hitRate": 0.5, "winRate": 0.5 }, "breaks": null },
+    { "rule": "market", "text": "Edge over the market at least 0.10 ((stated - market) x price) and expected return at least 0.03 (stated x price - 1)", "follows": { "settled": 2, "wins": 1, "losses": 1, "hitRate": 0.5, "winRate": 0.5 }, "breaks": { "settled": 2, "wins": 1, "losses": 1, "hitRate": 0.5, "winRate": 0.5 } },
+    { "rule": "all", "text": "All three rules", "follows": null, "breaks": { "settled": 4, "wins": 2, "losses": 2, "hitRate": 0.5, "winRate": 0.5 } }
+  ],
+  "dimensions": [
+    {
+      "by": "price", "title": "Price",
+      "rows": [
+        { "key": "price 1.81-1.90", "settled": 1, "wins": 0, "losses": 1, "avgProbability": 0.5400, "avgMarketProbability": 0.5195, "hitRate": 0.0, "units": -1.000, "winRate": 0.0, "roi": -1.0 },
+        { "key": "price 1.91-2.05", "settled": 2, "wins": 2, "losses": 0, "avgProbability": 0.5500, "avgMarketProbability": 0.4902, "hitRate": 1.0, "units": 1.900, "winRate": 1.0, "roi": 0.95 },
+        { "key": "price above 2.05", "settled": 1, "wins": 0, "losses": 1, "avgProbability": 0.4500, "avgMarketProbability": 0.3914, "hitRate": 0.0, "units": -1.000, "winRate": 0.0, "roi": -1.0 }
+      ]
+    },
+    {
+      "by": "edge", "title": "Edge over the market ((stated - market) x price, as in SELECTION RULES)",
+      "rows": [
+        { "key": "edge 0 to 0.05", "settled": 1, "wins": 0, "losses": 1, "avgProbability": 0.5400, "avgMarketProbability": 0.5195, "hitRate": 0.0, "units": -1.000, "winRate": 0.0, "roi": -1.0 },
+        { "key": "edge 0.05 to 0.10", "settled": 1, "wins": 1, "losses": 0, "avgProbability": 0.5200, "avgMarketProbability": 0.4868, "hitRate": 1.0, "units": 0.950, "winRate": 1.0, "roi": 0.95 },
+        { "key": "edge 0.10 to 0.15", "settled": 1, "wins": 0, "losses": 1, "avgProbability": 0.4500, "avgMarketProbability": 0.3914, "hitRate": 0.0, "units": -1.000, "winRate": 0.0, "roi": -1.0 },
+        { "key": "edge above 0.15", "settled": 1, "wins": 1, "losses": 0, "avgProbability": 0.5800, "avgMarketProbability": 0.4935, "hitRate": 1.0, "units": 0.950, "winRate": 1.0, "roi": 0.95 }
+      ]
+    }
+  ],
+  "goals": { "predictions": 1, "avgExpectedGoals": 1.20, "avgActualGoals": 2.00 },
+  "text": "MATCHMIND PROMPT TUNING REPORT - settled picks made with the AI_PREDICTION prompt\nScope: predicted from the first prediction to now · PRE_MATCH and LIVE · one provider · latest prediction per match, model, type and minute\n...\nSELECTION RULES (the prompt's rules; picks that followed vs broke each one):\n- Price above 1.65 and at most 1.90: followed won 0% of 1, ROI -100.0% | broken won 67% of 3, ROI +30.0%\n...\nFAVOUR (beat the market by more than two standard errors, at least 30 picks): none yet\nAVOID (trailed the market by more than two standard errors, at least 30 picks): none yet\n..."
+}

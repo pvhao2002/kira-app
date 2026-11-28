@@ -47,4 +47,13 @@ class SharedHelpersTest {
         assertThat(Stats.roi(java.math.BigDecimal.ONE, 0)).isNull();
         assertThat(Stats.roi(null, 3)).isNull();
     }
+
+    @Test
+    void versusMarketNeedsThirtyPicksAndTwoStandardErrors() {
+        assertThat(Stats.versusMarket(29, 0.90, 0.50)).isZero();       // too few picks, however far apart
+        assertThat(Stats.versusMarket(30, 0.70, 0.50)).isEqualTo(1);   // 0.20 > 2 x sqrt(0.25 / 30) = 0.183
+        assertThat(Stats.versusMarket(30, 0.68, 0.50)).isZero();       // 0.18 is inside two standard errors
+        assertThat(Stats.versusMarket(100, 0.39, 0.50)).isEqualTo(-1); // 0.11 below, two standard errors are 0.10
+        assertThat(Stats.versusMarket(100, 0.41, 0.50)).isZero();
+    }
 }

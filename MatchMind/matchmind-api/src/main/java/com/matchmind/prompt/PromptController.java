@@ -39,6 +39,8 @@ public class PromptController {
     static final String SHEET_URL_PLACEHOLDER = "{{MATCHMIND_SHEET_URL}}";
     /** The API origin agents call, e.g. https://match.example.org (no trailing slash). */
     static final String BASE_URL_PLACEHOLDER = "{{API_BASE_URL}}";
+    /** The template's version, so what an agent writes (a GOALS row) says which version of the prompt made it. */
+    static final String PROMPT_VERSION_PLACEHOLDER = "{{PROMPT_VERSION}}";
     private final PromptService service;
     private final TrackRecord trackRecord;
     @Value("${app.external-api-key:}")
@@ -72,14 +74,15 @@ public class PromptController {
     @Operation(summary = "Prompt text with the API base URL, the Google Sheet link and (admins only) the agent key filled in")
     public AgentPrompt forAgent(@PathVariable UUID id, @RequestParam(defaultValue = "true") boolean sharedKey,
                                 @AuthenticationPrincipal UserPrincipal me, HttpServletRequest http) {
-        String content = service.get(id).content();
+        PromptView prompt = service.get(id);
+        String content = prompt.content();
         boolean keyRendered = sharedKey && "ADMIN".equals(me.role()) && !externalApiKey.isBlank();
         // The key goes in first, so a placeholder inside a request header value is never expanded into it.
         if (keyRendered) content = content.replace(API_KEY_PLACEHOLDER, externalApiKey);
         // Today's settled results, so each copy of the prompt carries the latest lessons.
         if (content.contains(TrackRecord.PLACEHOLDER)) content = content.replace(TrackRecord.PLACEHOLDER, trackRecord.text());
-        return new AgentPrompt(content.replace(SHEET_URL_PLACEHOLDER, sheetUrl).replace(BASE_URL_PLACEHOLDER, baseUrl(http)),
-            keyRendered);
+        return new AgentPrompt(content.replace(SHEET_URL_PLACEHOLDER, sheetUrl).replace(BASE_URL_PLACEHOLDER, baseUrl(http))
+            .replace(PROMPT_VERSION_PLACEHOLDER, String.valueOf(prompt.version())), keyRendered);
     }
 
     /** PUBLIC_BASE_URL when set; otherwise the origin the browser used (Host, and X-Forwarded-Proto behind nginx). */

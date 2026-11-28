@@ -110,6 +110,18 @@ providers should use. Edits are versioned. When an agent's sandbox cannot reach 
    signed in as you. Never share it by link: the link is in every prompt you paste into a chat.
 2. Otherwise reply `CANNOT_CALL_API` with the JSON body for **Import prediction**.
 
+## Next Goal & BTTS (sheet only) and prompt tuning
+
+Update the bound [Apps Script](docs/google-sheet/MatchMind.gs) and run `setup()` again: it adds the `GOALS` and
+`GOALS_REPORT` tabs and an hourly `goalsReport` trigger. Copy the **AI Next Goal & BTTS Prompt** and paste it with
+screenshots of a match before kick-off showing its Next Goal and BTTS odds. The agent runs 1000 simulations and appends
+one row to `GOALS`; nothing in that tab is sent to MatchMind. After the match the **AI Sheet Settlement Prompt** fills in
+the first scorer and the score, the script scores the row and rewrites `GOALS_REPORT`, which the prompt reads first.
+
+**Reports > Prompt tuning** groups the settled picks of the prediction prompt every way a prompt rule can act on
+(price, edge over the market, stated probability, line, minute, prompt version…) and checks its SELECTION RULES.
+**Copy for AI agent** copies the same report as text for an agent asked to improve the prompt.
+
 ## Import account transactions
 
 Set `MATCHMIND_SHEET_URL`. Update the bound [Apps Script](docs/google-sheet/MatchMind.gs) in that spreadsheet

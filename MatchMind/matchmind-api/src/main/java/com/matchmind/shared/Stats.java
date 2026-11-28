@@ -28,6 +28,16 @@ public final class Stats {
     public static final String UNITS = "round(sum(" + PICK_UNITS + "), 3)";
     /** Picks whose stake was placed: PUSH counts (stake returned), VOID does not (bet cancelled). */
     public static final String STAKED = "count(*) FILTER (WHERE r.result IN ('WIN','HALF_WIN','PUSH','HALF_LOSS','LOSS'))";
+    /**
+     * What a settled pick paid back per unit of its price, (1 + {@link #PICK_UNITS}) / price: a win 1, a loss 0, a half
+     * win or half loss in between. Averaged, it compares straight with the bookmaker's probability without margin and
+     * with a stated probability of (1 + expected return) / price on every line, Asian quarter lines included, where the
+     * half-counted win rate does not. Aliases pk, o and r.
+     */
+    public static final String PICK_HIT = "(1 + (" + PICK_UNITS + ")) / (" + Sql.PRICE + ")";
+    /** Average {@link #PICK_HIT} over wins and losses with halves (PUSH and VOID left out), 4 decimals; NULL without one. */
+    public static final String HIT_RATE = "round(avg(" + PICK_HIT
+        + ") FILTER (WHERE r.result IN ('WIN','HALF_WIN','HALF_LOSS','LOSS')), 4)";
 
     /**
      * UX-046 "latest counts": prediction alias p is counted unless a later prediction (order predicted_at, created_at,
@@ -69,5 +79,18 @@ public final class Stats {
 
     public static BigDecimal ratio(long part, long total) {
         return total == 0 ? null : BigDecimal.valueOf(part).divide(BigDecimal.valueOf(total), 4, RoundingMode.HALF_UP);
+    }
+
+    /** Fewest picks a group needs before it is judged against the market (FAVOUR / AVOID). */
+    public static final int MIN_GROUP = 30;
+
+    /**
+     * 1 when a group's hit rate beats the market's average probability by more than two standard errors, -1 when it
+     * trails by that much, 0 otherwise and below {@link #MIN_GROUP} picks: a smaller gap is what chance alone gives.
+     */
+    public static int versusMarket(long n, double hit, double market) {
+        if (n < MIN_GROUP) return 0;
+        double twoSe = 2 * Math.sqrt(market * (1 - market) / n);
+        return hit - market > twoSe ? 1 : market - hit > twoSe ? -1 : 0;
     }
 }

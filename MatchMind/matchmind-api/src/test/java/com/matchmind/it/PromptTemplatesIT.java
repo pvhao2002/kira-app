@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /** The default prediction prompt must describe both match states, and its examples must pass the real API. */
 class PromptTemplatesIT extends IntegrationTestBase {
@@ -69,11 +70,99 @@ class PromptTemplatesIT extends IntegrationTestBase {
         for (JsonNode odds : pre.get("odds")) assertThat(odds.get("stage").asText()).isIn("OPENING", "PRE_MATCH");
         MvcResult preRes = send(pre);
         assertThat(preRes.getResponse().getStatus()).as(preRes.getResponse().getContentAsString()).isEqualTo(201);
+
+        // The examples follow SELECTION RULES: one pick inside the price window, live xG where the API takes it.
+        assertThat(live.get("stats").get("extra").has("xg")).isTrue();
+        for (ObjectNode example : List.of(live, pre)) {
+            assertThat(example.get("picks")).hasSize(1);
+            for (JsonNode pick : example.get("picks")) {
+                JsonNode odds = null;
+                for (JsonNode o : example.get("odds")) if (o.get("ref").asText().equals(pick.get("oddsRef").asText())) odds = o;
+                double price = odds.get(pick.get("pick").asText().toLowerCase() + "Odds").asDouble();
+                assertThat(price).as(pick.toString()).isGreaterThan(1.65).isLessThanOrEqualTo(1.90);
+            }
+        }
     }
 
     private String seededPromptId(String type) {
         return db.queryForObject("SELECT id::text FROM prompt_templates WHERE template_type = ? AND updated_by IS NULL "
             + "ORDER BY created_at LIMIT 1", String.class, type);
+    }
+
+    /** P(X = k) for X ~ Poisson(lambda). */
+    private static double poisson(double lambda, int k) {
+        double p = Math.exp(-lambda);
+        for (int i = 1; i <= k; i++) p *= lambda / i;
+        return p;
+    }
+
+    /** Expected return at stake 1 of AH HOME at {@code line} (quarter lines split in two halves), goals ~ Poisson. */
+    private static double ahHomeReturn(double home, double away, double line, double price) {
+        double[] halves = Math.abs(line * 4) % 2 == 1 ? new double[] {line - 0.25, line + 0.25} : new double[] {line};
+        double r = 0;
+        for (int h = 0; h <= 15; h++) {
+            for (int a = 0; a <= 15; a++) {
+                double result = 0;
+                for (double half : halves) {
+                    double margin = h - a + half;
+                    result += (margin > 0 ? price - 1 : margin == 0 ? 0 : -1) / halves.length;
+                }
+                r += poisson(home, h) * poisson(away, a) * result;
+            }
+        }
+        return r;
+    }
+
+    @Test
+    void examplesKeepTheirPickByTheirOwnSimulation() throws Exception {
+        // Agents copy the examples: each example's pick must pass the edge gate by the example's own expected goals.
+        String prompt = predictionPrompt();
+        for (String heading : List.of("OUTPUT JSON SCHEMA (example values)", "\nPRE_MATCH EXAMPLE (")) {
+            ObjectNode example = exampleAfter(prompt, heading);
+            JsonNode pick = example.get("picks").get(0), odds = null;
+            for (JsonNode o : example.get("odds")) if (o.get("ref").asText().equals(pick.get("oddsRef").asText())) odds = o;
+            assertThat(pick.get("market").asText() + " " + pick.get("pick").asText()).as(heading).isEqualTo("AH HOME");
+            // LIVE AH is REMAINING_MATCH and PRE_MATCH starts from 0-0: either way the line applies to the simulated goals.
+            JsonNode goals = example.get("simulation").get("expectedRemainingGoals");
+            double price = odds.get("homeOdds").asDouble();
+            double r = ahHomeReturn(goals.get("home").asDouble(), goals.get("away").asDouble(), odds.get("line").asDouble(), price);
+            double q = (1 / price) / (1 / price + 1 / odds.get("awayOdds").asDouble());
+            assertThat(pick.get("probability").asDouble()).as(heading).isCloseTo((1 + r) / price, within(0.01));
+            assertThat(r).as(heading).isGreaterThanOrEqualTo(0.03);
+            assertThat(r - (q * price - 1)).as(heading + " edge").isGreaterThanOrEqualTo(0.10);
+        }
+    }
+
+    @Test
+    @org.springframework.transaction.annotation.Transactional // rolled back: the test's copies never reach other tests
+    void v45RewritesOnlyAPromptWithEveryAnchor() throws Exception {
+        // The prompt as V45 found it, from the history the V16 trigger keeps: the version just before the first one with
+        // the new rules. The first, because other ITs save over the seeded prompt and restore it as newer versions.
+        String before = db.queryForObject("""
+            SELECT prev.content FROM prompt_template_versions cur
+            JOIN prompt_templates t ON t.id = cur.template_id
+            JOIN prompt_template_versions prev ON prev.template_id = cur.template_id AND prev.version = cur.version - 1
+            WHERE t.template_type = 'AI_PREDICTION' AND position('NO_PICK_NO_EDGE' IN cur.content) > 0
+              AND position('NO_PICK_NO_EDGE' IN prev.content) = 0
+            ORDER BY cur.created_at, cur.version LIMIT 1""", String.class);
+        String edited = before.replace("WIN hoặc HALF_WIN, chia cho 1.000", "WIN or HALF_WIN, chia cho 1.000");
+        assertThat(edited).isNotEqualTo(before);
+        String tag = UUID.randomUUID().toString().substring(0, 8);
+        String insert = "INSERT INTO prompt_templates (name, template_type, content) VALUES (?, 'AI_PREDICTION', ?) RETURNING id::text";
+        String editedId = db.queryForObject(insert, String.class, "v45 edited " + tag, edited);
+        String intactId = db.queryForObject(insert, String.class, "v45 intact " + tag, before);
+        String v45;
+        try (var in = getClass().getResourceAsStream("/db/migration/V45__prediction_edge_gated_selection_rules.sql")) {
+            v45 = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+
+        db.execute(v45);
+
+        String sql = "SELECT content FROM prompt_templates WHERE id = ?::uuid";
+        // One anchor gone (an admin edit): nothing changes, rather than new rules next to the old steps.
+        assertThat(db.queryForObject(sql, String.class, editedId)).isEqualTo(edited);
+        assertThat(db.queryForObject(sql, String.class, intactId)).contains("NO_PICK_NO_EDGE")
+            .doesNotContain("WIN hoặc HALF_WIN", "PRICE FLOOR", "short reasoning summary");
     }
 
     @Test
@@ -88,10 +177,17 @@ class PromptTemplatesIT extends IntegrationTestBase {
     @Test
     void predictionPromptCarriesSelectionRulesAndTodaysTrackRecord() throws Exception {
         String id = seededPromptId("AI_PREDICTION");
+        // One phrase per section V45 rewrites: a replace() whose anchor does not match leaves its old text behind.
         assertThat(adminGet("/api/v1/prompts/" + id).get("content").asText())
-            .contains("SELECTION RULES - TO WIN MORE OFTEN", "NO_PICK_PRICE_OUT_OF_RANGE", "{{TRACK_RECORD}}");
+            .contains("SELECTION RULES - BET ONLY WITH A REAL EDGE", "NO_PICK_NO_EDGE", "NO_PICK_PRICE_OUT_OF_RANGE",
+                "probability = (1 + R) / price", "- OPTIONAL INDEPENDENT DATA", "then move it only for INDEPENDENT DATA",
+                "điều chỉnh các con số này theo INDEPENDENT DATA", "{{TRACK_RECORD}}",
+                "Whether there is a pick at all is for SELECTION RULES")
+            .doesNotContain("TO WIN MORE OFTEN", "lower yours by that much", "WIN hoặc HALF_WIN", "PRICE FLOOR",
+                "compute the win probability of every candidate pick", "short reasoning summary");
         String forAgent = adminGet("/api/v1/prompts/" + id + "/for-agent").get("content").asText();
-        assertThat(forAgent).doesNotContain("{{TRACK_RECORD}}").containsPattern("Settled picks, last 60 days|No settled picks yet");
+        assertThat(forAgent).doesNotContain("{{TRACK_RECORD}}", "lower your probabilities")
+            .containsPattern("Settled picks, last 60 days|No settled picks yet");
     }
 
     @Test
@@ -137,6 +233,45 @@ class PromptTemplatesIT extends IntegrationTestBase {
             String forAgent = adminGet("/api/v1/prompts/" + id + "/for-agent").get("content").asText();
             assertThat(forAgent).as(e.getKey()).contains("Google Sheet: " + SHEET_URL).doesNotContain("{{MATCHMIND_SHEET_URL}}");
         }
+    }
+
+    private static final String GOALS_COLUMNS = "league, homeTeam, awayTeam, kickoffGmt7, provider, model, promptVersion, "
+        + "ngHomeOdds, ngNoGoalOdds, ngAwayOdds, bttsYesOdds, bttsNoOdds, lambdaHome, lambdaAway, simulations, pNgHome, "
+        + "pNgNoGoal, pNgAway, pBttsYes, ngPick, bttsPick, notes, firstGoal, homeScore, awayScore, resultSource, ngResult, "
+        + "bttsResult, settledAt";
+
+    @Test
+    void nextGoalBttsPromptWritesOnlyTheGoalsTabInTheScriptsColumnOrder() throws Exception {
+        // The script scores the GOALS tab by position and never sends it to MatchMind.
+        assertThat(Files.readString(Path.of("../docs/google-sheet/MatchMind.gs")).replaceAll("\\s+", " "))
+            .contains("const GOALS_COLUMNS = ['" + GOALS_COLUMNS.replace(", ", "', '") + "'];");
+        String stored = adminGet("/api/v1/prompts/" + seededPromptId("AI_NEXT_GOAL_BTTS")).get("content").asText();
+        assertThat(stored.replaceAll("\\s+", " ")).contains("Columns in this order: " + GOALS_COLUMNS + ".",
+                "Google Sheet: {{MATCHMIND_SHEET_URL}}", "tab named GOALS", "GOALS_REPORT", "PRE_MATCH", "exactly 1000",
+                "NO_BET", "QUEUED_IN_SHEET", "Never write into row 1", "{{PROMPT_VERSION}}")
+            .doesNotContain("/api/v1/external", "X-Api-Key", "{{EXTERNAL_API_KEY}}", "CANNOT_CALL_API");
+    }
+
+    @Test
+    void forAgentFillsThePromptVersionSoEachSheetRowSaysWhichPromptMadeIt() throws Exception {
+        String id = seededPromptId("AI_NEXT_GOAL_BTTS");
+        int version = adminGet("/api/v1/prompts/" + id).get("version").asInt();
+        String forAgent = adminGet("/api/v1/prompts/" + id + "/for-agent").get("content").asText();
+        assertThat(forAgent).contains("Google Sheet: " + SHEET_URL, "promptVersion: " + version)
+            .doesNotContain("{{PROMPT_VERSION}}", "{{MATCHMIND_SHEET_URL}}", EXTERNAL_KEY);
+    }
+
+    @Test
+    void sheetSettlementPromptAlsoFillsInTheGoalsResults() throws Exception {
+        String stored = adminGet("/api/v1/prompts/" + seededPromptId("AI_SHEET_SETTLEMENT")).get("content").asText();
+        // The settlement agent writes exactly the result columns the script scores.
+        assertThat(GOALS_COLUMNS).contains("firstGoal, homeScore, awayScore, resultSource");
+        assertThat(stored.replaceAll("\\s+", " ")).contains("THE GOALS TAB", "firstGoal, homeScore, awayScore and resultSource",
+                "HOME, AWAY, NONE", "VOID", "own goal", "tab named SETTLE",
+                // Only SETTLE rows reach MatchMind; the GOALS backlog stays bounded.
+                "sends each SETTLE row you fill in to MatchMind", "a row with NO_BET in both has nothing to score",
+                "at most 7 days ago")
+            .doesNotContain("sends each row you fill in");
     }
 
     @Test

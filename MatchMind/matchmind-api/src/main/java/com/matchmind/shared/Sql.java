@@ -31,6 +31,21 @@ public final class Sql {
         + "WHEN 'DRAW' THEN o.draw_odds WHEN 'OVER' THEN o.over_odds ELSE o.under_odds END";
 
     /**
+     * The bookmaker's probability of pick {@code pk} without its margin: 1 / price over the sum of 1 / price of every
+     * selection of the same snapshot {@code o}. NUMERIC throughout; the schema keeps every price above 1.
+     */
+    public static final String MARKET_PROBABILITY = "((1 / (" + PRICE + ")) / CASE o.market"
+        + " WHEN '1X2' THEN 1 / o.home_odds + 1 / o.draw_odds + 1 / o.away_odds"
+        + " WHEN 'AH' THEN 1 / o.home_odds + 1 / o.away_odds WHEN 'CORNER_AH' THEN 1 / o.home_odds + 1 / o.away_odds"
+        + " ELSE 1 / o.over_odds + 1 / o.under_odds END)";
+    /**
+     * The pick's edge over the market in the prediction prompt's unit (SELECTION RULES b, V45): (stated probability -
+     * {@link #MARKET_PROBABILITY}) x price, which is the stated expected return minus the market's, since the prompt
+     * states probability = (1 + expected return) / price.
+     */
+    public static final String EDGE = "(pk.probability - " + MARKET_PROBABILITY + ") * (" + PRICE + ")";
+
+    /**
      * Prediction alias p -> its effective model, alias am: the model it was merged into (V24), else itself. Reports group
      * on am, so a merged model's predictions roll up into the surviving model; am0 is the model the agent named.
      */

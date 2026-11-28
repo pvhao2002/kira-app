@@ -16,14 +16,16 @@ import {
 import { ChartView, RESULT_COLORS, SERIES } from '../shared/chart';
 import { Select, SelectOption } from '../shared/select';
 import { DetailsMenu, JsonView, ResultTag, ScoreChip, SmallSample, StateView } from '../shared/ui';
+import { CopyFallback, CopyService } from '../shared/copy';
 
-type Tab = 'models' | 'toppick' | 'history' | 'markets' | 'calibration' | 'comparison' | 'montecarlo' | 'typecompare' | 'patterns';
+type Tab = 'models' | 'toppick' | 'history' | 'markets' | 'calibration' | 'comparison' | 'montecarlo' | 'typecompare' | 'patterns' | 'tuning';
 const TABS: { value: Tab; label: string }[] = [
   { value: 'models', label: 'AI model performance' }, { value: 'toppick', label: 'Top pick' },
   { value: 'history', label: 'Prediction history' },
   { value: 'markets', label: 'Market performance' }, { value: 'calibration', label: 'Calibration' },
   { value: 'comparison', label: 'Model comparison' }, { value: 'montecarlo', label: 'Monte Carlo' },
   { value: 'typecompare', label: 'Pre-match vs Live' }, { value: 'patterns', label: 'Win/loss patterns' },
+  { value: 'tuning', label: 'Prompt tuning' },
 ];
 /** Win/loss patterns: the API's factors, in its order. */
 const FACTOR_LABEL: Record<PatternFactor, string> = {
@@ -56,7 +58,10 @@ const CALIBRATION_MIN_PICKS = 5;
 
 /** Matches the API definition (API_DOCUMENTATION.md, "Win rate"); shown on every Win rate header. */
 export const WIN_RATE_DEF = 'Win rate = (W + ½W) / (W + ½W + L + ½L): a half win counts as a win, a half loss as a loss. Push, void and pending picks are left out.';
-const headerTitle = (c: Col) => c.field === 'winRate' ? WIN_RATE_DEF : c.field === 'units' || c.field === 'roi' ? ROI_DEF : null;
+/** Prompt tuning's hit rate (API_DOCUMENTATION.md, prompt-tuning): the figure to set against Stated and Market. */
+const HIT_RATE_DEF = 'Hit = what the picks paid back divided by their price, (1 + profit at a stake of 1) / price: a win 100%, a loss 0%, a half win or half loss in between. Compare it with Stated and Market.';
+const headerTitle = (c: Col) => c.field === 'winRate' ? WIN_RATE_DEF : c.field === 'units' || c.field === 'roi' ? ROI_DEF
+  : c.field === 'hitRate' ? HIT_RATE_DEF : null;
 /** The denominator a small-sample badge is judged on: wins + losses for the win rate, staked for ROI; null elsewhere. */
 export function sampleSize(r: { wins?: number; losses?: number; staked?: number }, field: string): number | null {
   if (field === 'winRate') return (r.wins ?? 0) + (r.losses ?? 0);
@@ -83,6 +88,13 @@ const MODEL_COLS: Col[] = [
 ];
 const MARKET_COLS: Col[] = [{ field: 'market', header: 'Market' }, ...PERF_COLS.filter(c => c.field !== 'predictions')];
 const BREAKDOWN_COLS: Col[] = [{ field: 'key', header: 'Group' }, ...PERF_COLS.filter(c => c.field !== 'predictions')];
+/** Prompt tuning: settled picks per group, the probability the agent stated against the bookmaker's without margin. */
+const TUNING_COLS: Col[] = [
+  { field: 'key', header: 'Group' }, { field: 'settled', header: 'Settled', kind: 'int' },
+  { field: 'winRate', header: 'Win rate', kind: 'pct' }, { field: 'roi', header: 'ROI', kind: 'pct' },
+  { field: 'units', header: 'Units', kind: 'units' }, { field: 'hitRate', header: 'Hit', kind: 'pct' },
+  { field: 'avgProbability', header: 'Stated', kind: 'pct' }, { field: 'avgMarketProbability', header: 'Market', kind: 'pct' },
+];
 
 /** History columns; `sort` is the backend sort key (absent = not sortable). */
 interface HistCol extends Col { sort?: string; }
@@ -154,7 +166,7 @@ export class ModelBreakdown {
 
 @Component({
   selector: 'mm-reports',
-  imports: [FormsModule, RouterLink, FilterBar, ModelBreakdown, Tabs, SortHeader, ResizableColumn, Paginator, ChartView, DetailsMenu, JsonView, ResultTag, ScoreChip, Select, SmallSample, StateView],
+  imports: [FormsModule, RouterLink, FilterBar, ModelBreakdown, Tabs, SortHeader, ResizableColumn, Paginator, ChartView, CopyFallback, DetailsMenu, JsonView, ResultTag, ScoreChip, Select, SmallSample, StateView],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     :host { display: block; }
@@ -574,14 +586,61 @@ export class ModelBreakdown {
             <mm-paginator [page]="mcPage()" [size]="25" [sizes]="[25]" [total]="monteCarlo()?.page?.meta?.totalElements ?? 0" unit="predictions" (pageChange)="setMcPage($event.page)" />
           </section>
         }
+
+        @case ('tuning') {
+          <mm-state [state]="firstLoadState(tuning() ? 1 : 0)" [message]="error()" retryable (retry)="retry()" />
+          @if (tuning(); as t) {
+            <section class="kpis" aria-label="Prompt tuning totals">
+              <div class="kpi"><span>Settled picks</span><strong>{{ num(t.total.settled, 0) }}</strong></div>
+              <div class="kpi accent"><span>Win rate</span><strong>{{ pct(t.total.winRate) }}</strong></div>
+              <div class="kpi"><span>ROI</span><strong>{{ pct(t.total.roi) }}</strong></div>
+              <div class="kpi"><span>Stated probability</span><strong>{{ pct(t.total.avgProbability) }}</strong></div>
+              <div class="kpi"><span>Market probability</span><strong>{{ pct(t.total.avgMarketProbability) }}</strong>
+                <span class="kpi-sub">bookmaker, without margin</span></div>
+            </section>
+            <section class="panel flush">
+              <div class="toolbar">
+                <span class="muted-text">Settled picks grouped every way a prompt rule can act on. Copy the report into the AI agent that edits the prediction prompt. The result filter does not apply here. {{ winRateDef }}</span>
+                <button type="button" class="btn btn-primary btn-sm" (click)="copyTuning(t.text)"><i class="pi pi-copy"></i> Copy for AI agent</button>
+              </div>
+              <div class="table-wrap"><table class="dt" aria-label="Selection rules">
+                <thead>
+                  <tr><th rowspan="2">Selection rule in the prompt</th><th colspan="3" class="num">Followed</th><th colspan="3" class="num">Broken</th></tr>
+                  <tr>@for (side of ['followed', 'broken']; track side) { <th class="num">Settled</th><th class="num" [attr.title]="winRateDef">Win rate</th><th class="num" [attr.title]="roiDef">ROI</th> }</tr>
+                </thead>
+                <tbody>@for (r of t.rules; track r.rule) {
+                  <tr><td>{{ r.text }}</td>
+                    @for (s of [r.follows, r.breaks]; track $index) {
+                      <td class="num">{{ s ? num(s.settled, 0) : '—' }}</td><td class="num">{{ pct(s?.winRate) }}</td><td class="num">{{ pct(s?.roi) }}</td>
+                    }
+                  </tr>
+                }</tbody>
+              </table></div>
+            </section>
+            <section class="panel"><header><h2>By group</h2></header>
+              <div class="grid-2">
+                @for (d of t.dimensions; track d.by) {
+                  <div><h3 class="mb-2">{{ d.title }}</h3>
+                    <div class="table-wrap short"><table class="dt" [attr.aria-label]="d.title">
+                      <thead><tr>@for (c of tuningCols; track c.field) { <th [class.num]="isNum(c)" [attr.title]="headerTitle(c)">{{ c.header }}</th> }</tr></thead>
+                      <tbody>@for (r of d.rows; track r.key) { <tr>@for (c of tuningCols; track c.field) { <td [class.num]="isNum(c)">{{ cell(r, c) }} @if (sampleSize(r, c.field) !== null) { <mm-small-sample [n]="sampleSize(r, c.field)!" /> }</td> }</tr> }
+                        @empty { <tr><td [attr.colspan]="tuningCols.length" class="empty">No settled picks.</td></tr> }</tbody>
+                    </table></div></div>
+                }
+              </div>
+            </section>
+          }
+        }
       }
       </div>
+      <mm-copy-fallback />
     </div>`,
 })
 export class ReportsPage {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   private readonly messages = inject(ToastService);
+  private readonly copier = inject(CopyService);
 
   /** Bound from the `tab` query parameter (withComponentInputBinding): a tab is linkable and Back/Forward work. */
   protected readonly tabParam = input<string | undefined>(undefined, { alias: 'tab' });
@@ -615,6 +674,7 @@ export class ReportsPage {
   readonly typeByOptions = TYPE_BY_OPTIONS;
   readonly topByOptions = TOP_BY_OPTIONS;
   readonly topCols = BREAKDOWN_COLS;
+  readonly tuningCols = TUNING_COLS;
   readonly deltaPoints = deltaPoints;
   readonly deltaClass = deltaClass;
   readonly factorLabel = FACTOR_LABEL;
@@ -722,9 +782,17 @@ export class ReportsPage {
     stream: ({ params: { f, minSample } }) => this.api.patterns(f, minSample),
   });
 
+  /** Prompt tuning covers every settled pick, so the result filter is left out of its request. */
+  private readonly tuningFilters = computed(() => { const f = this.filters(); return f && { ...f, result: undefined }; });
+  private readonly tuningRes = rxResource({
+    params: () => (this.tab() === 'tuning' ? this.tuningFilters() : undefined),
+    stream: ({ params }) => this.api.promptTuning(params),
+  });
+
   private readonly active = computed(() => ({
     models: this.modelsRes, toppick: this.topPickRes, history: this.historyRes, markets: this.marketsRes, calibration: this.calibrationRes,
     comparison: this.comparisonRes, montecarlo: this.monteCarloRes, typecompare: this.typeCompareRes, patterns: this.patternsRes,
+    tuning: this.tuningRes,
   })[this.tab()]);
   readonly state = computed(() => statusToView(this.active().status()));
   /** Skeleton for a first load with no rows yet, the error box on failure; a reload keeps its rows (the table dims instead). */
@@ -833,6 +901,11 @@ export class ReportsPage {
     const f = this.patternFactor();
     return (this.patterns()?.rows ?? []).filter(r => f === 'all' || r.factor === f);
   });
+
+  // Prompt tuning: the last report stays on screen while the next one loads.
+  readonly tuning = keepPrevious(this.tuningRes);
+
+  copyTuning(text: string): void { void this.copier.copy(text, 'Prompt tuning report'); }
 
   onFilters(f: Filters): void {
     this.historyPage.set(0);

@@ -2,9 +2,10 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { By } from '@angular/platform-browser';
 import { RESULT_COLORS, SERIES } from '../shared/chart';
+import { CopyService } from '../shared/copy';
 import { FilterBar } from '../shared/filter-bar';
 import { ReportsPage } from './reports';
 
@@ -441,5 +442,87 @@ describe('ReportsPage Top pick', () => {
     f.componentInstance.topBy.set('market');
     TestBed.tick();
     expect(http.expectOne(r => r.url.endsWith('/reports/top-pick')).request.params.get('by')).toBe('market');
+  });
+});
+
+describe('ReportsPage Prompt tuning', () => {
+  const counts = (o: Record<string, unknown>) => ({ ...model, ...o });
+  const report = {
+    total: counts({ settled: 4, wins: 2, losses: 2, winRate: 0.5, units: -0.1, roi: -0.025, avgProbability: 0.5225, avgMarketProbability: 0.4728, hitRate: 0.5 }),
+    rules: [
+      { rule: 'price', text: 'Price above 1.65 and at most 1.90',
+        follows: counts({ settled: 1, wins: 0, losses: 1, winRate: 0, roi: -1, avgMarketProbability: 0.5195, hitRate: 0 }),
+        breaks: counts({ settled: 3, wins: 2, losses: 1, winRate: 0.6667, roi: 0.3, avgMarketProbability: 0.4573, hitRate: 0.6667 }) },
+      { rule: 'all', text: 'All three rules', follows: null,
+        breaks: counts({ settled: 4, wins: 2, losses: 2, winRate: 0.5, roi: -0.025, avgMarketProbability: 0.4728, hitRate: 0.5 }) },
+    ],
+    dimensions: [
+      { by: 'price', title: 'Price', rows: [counts({ key: 'price 1.91-2.05', settled: 2, wins: 2, halfWins: 1, losses: 0, winRate: 1, roi: 0.7125, avgMarketProbability: 0.4902, hitRate: 0.8782 })] },
+      { by: 'edge', title: 'Edge over the market (stated minus market)', rows: [] },
+    ],
+    goals: { predictions: 1, avgExpectedGoals: 1.2, avgActualGoals: 2 },
+    text: 'MATCHMIND PROMPT TUNING REPORT\nScope: every prediction',
+  };
+
+  async function openTuning() {
+    const f = await open('tuning');
+    http.expectOne(r => r.url.endsWith('/reports/prompt-tuning')).flush(report);
+    await settle();
+    return f.nativeElement as HTMLElement;
+  }
+
+  it('shows the totals, the selection rules followed vs broken and one table per grouping', async () => {
+    const el = await openTuning();
+    const kpis = [...el.querySelectorAll('.kpi')].map(k => text(k as HTMLElement));
+    expect(kpis.some(k => k.includes('Win rate') && k.includes('50.0%'))).toBe(true);
+    expect(kpis.some(k => k.includes('Market probability') && k.includes('47.3%'))).toBe(true);
+    const rules = el.querySelector('table[aria-label="Selection rules"]') as HTMLElement;
+    const rows = [...rules.querySelectorAll('tbody tr')].map(r => text(r as HTMLElement));
+    expect(rows[0]).toContain('Price above 1.65 and at most 1.90');
+    expect(rows[0]).toContain('66.7%');
+    expect(rows[1]).toContain('All three rules');
+    expect(rows[1]).toContain('—');   // no pick followed all three rules
+    const price = text(el.querySelector('table[aria-label="Price"]') as HTMLElement);
+    expect(price).toContain('price 1.91-2.05');
+    expect(price).toContain('Hit');
+    expect(price).toContain('87.8%');   // a win and a half win: what they paid back per unit of price
+    expect(text(el.querySelector('table[aria-label="Edge over the market (stated minus market)"]') as HTMLElement)).toContain('No settled picks.');
+  });
+
+  it('copies the report as text for an AI agent', async () => {
+    const el = await openTuning();
+    const copy = vi.spyOn(TestBed.inject(CopyService), 'copy').mockResolvedValue(true);
+    const button = [...el.querySelectorAll('button')].find(b => text(b).includes('Copy for AI agent')) as HTMLButtonElement;
+    button.click();
+    expect(copy).toHaveBeenCalledWith(report.text, 'Prompt tuning report');
+  });
+
+  it('leaves the Result filter out of its request and says so', async () => {
+    const f = await open('tuning');
+    http.expectOne(r => r.url.endsWith('/reports/prompt-tuning')).flush(report);
+    await settle();
+    const bar = f.debugElement.query(By.directive(FilterBar)).componentInstance as FilterBar;
+    bar.form.patchValue({ result: 'WIN' });
+    bar.apply(false);
+    TestBed.tick();
+    const req = http.expectOne(r => r.url.endsWith('/reports/prompt-tuning'));
+    expect(req.request.params.has('result')).toBe(false);   // the report is about every settled pick
+    req.flush(report);
+    await settle();
+    expect(text(f.nativeElement)).toContain('The result filter does not apply here');
+  });
+
+  it('keeps the last report on screen while the next one loads', async () => {
+    const f = await open('tuning');
+    http.expectOne(r => r.url.endsWith('/reports/prompt-tuning')).flush(report);
+    await settle();
+    const bar = f.debugElement.query(By.directive(FilterBar)).componentInstance as FilterBar;
+    bar.form.patchValue({ type: 'LIVE' });
+    bar.apply(false);
+    TestBed.tick();
+    const pending = http.expectOne(r => r.url.endsWith('/reports/prompt-tuning'));
+    TestBed.tick();   // not whenStable(): it waits for the pending request
+    expect((f.nativeElement as HTMLElement).querySelector('table[aria-label="Price"]')).not.toBeNull();
+    pending.flush(report);
   });
 });

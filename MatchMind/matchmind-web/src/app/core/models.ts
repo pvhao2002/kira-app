@@ -287,6 +287,18 @@ export interface PatternRow extends PerformanceCounts {
 }
 export interface PatternsReport { overall: PerformanceCounts; minSample: number; rows: PatternRow[]; }
 export interface MarketPerformanceRow extends PerformanceCounts { market: Market; }
+/** GET /reports/prompt-tuning counters: settled picks, the bookmaker's probability without margin and the hit rate. */
+export interface TuningCounts extends PerformanceCounts { avgMarketProbability: number | null; hitRate: number | null; }
+export interface TuningRow extends TuningCounts { key: string; }
+/** One of the prediction prompt's SELECTION RULES: picks that followed it vs broke it; a side without picks is null. */
+export interface TuningRule { rule: 'price' | 'rank2' | 'market' | 'all'; text: string; follows: TuningCounts | null; breaks: TuningCounts | null; }
+export interface TuningDimension { by: string; title: string; rows: TuningRow[]; }
+export interface PromptTuningReport {
+  total: TuningCounts; rules: TuningRule[]; dimensions: TuningDimension[];
+  goals: { predictions: number; avgExpectedGoals: number | null; avgActualGoals: number | null };
+  /** The same report as plain text, for pasting into the AI agent that edits the prompt. */
+  text: string;
+}
 
 export interface HistoryRow {
   pickId: string; predictionId: string; predictedAt: string; matchId: string; league: string; homeTeam: string;

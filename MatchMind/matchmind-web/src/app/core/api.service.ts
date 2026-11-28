@@ -9,7 +9,7 @@ import {
   Page, Parlay, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
   AdminResultRequest, AgentPrompt, PromptVersion, PromptVersionSummary, ResultResponse, SettlementPromptInput,
   PredictionIngestResponse, IssuedKey, KeyScope, ProviderKey, FixtureMergeRequest, FixtureBackfillResult, LeagueAlias, LeagueAliasRequest, AdminReasonRequest,
-  FixtureSuggestion, FixtureView, PatternsReport, TypeCompareBy, TypeComparisonRow,
+  FixtureSuggestion, FixtureView, PatternsReport, TypeCompareBy, TypeComparisonRow, PromptTuningReport,
 } from './models';
 
 export const API = '/api/v1';
@@ -175,6 +175,9 @@ export class ApiService {
   }
   calibration(f: Filters) {
     return this.http.get<CalibrationReport>(`${API}/reports/calibration`, { params: toParams({ ...f }) });
+  }
+  promptTuning(f: Filters) {
+    return this.http.get<PromptTuningReport>(`${API}/reports/prompt-tuning`, { params: toParams({ ...f }) });
   }
   modelComparison(f: Filters, minModels: number, p: Paging) {
     return this.http.get<Page<ComparisonMatch>>(`${API}/reports/model-comparison`, { params: toParams({ ...f, minModels, ...p }) });

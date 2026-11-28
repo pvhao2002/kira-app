@@ -9,6 +9,10 @@ const BASE = 'https://match.kira.id.vn';
 const HEADER = ['label', 'path', 'provider', 'model', 'modelVersion', 'body', 'status', 'processedAt'];
 const SETTLE_HEADER = ['matchId', 'provider', 'league', 'homeTeam', 'awayTeam', 'kickoffGmt7', 'status', 'homeScore',
   'awayScore', 'homeCorners', 'awayCorners', 'htHomeScore', 'htAwayScore', 'source', 'sync', 'syncedAt'];
+const GOALS_HEADER = ['league', 'homeTeam', 'awayTeam', 'kickoffGmt7', 'provider', 'model', 'promptVersion',
+  'ngHomeOdds', 'ngNoGoalOdds', 'ngAwayOdds', 'bttsYesOdds', 'bttsNoOdds', 'lambdaHome', 'lambdaAway', 'simulations',
+  'pNgHome', 'pNgNoGoal', 'pNgAway', 'pBttsYes', 'ngPick', 'bttsPick', 'notes', 'firstGoal', 'homeScore', 'awayScore',
+  'resultSource', 'ngResult', 'bttsResult', 'settledAt'];
 
 /**
  * Loads the script over a MatchMind tab holding `rows` below the header. The server gives `answers` in order: {code,
@@ -164,7 +168,8 @@ test('setup makes a plain-text MatchMind tab and one sender and one cleanup trig
     SpreadsheetApp: { getActive: () => ({ getSheetByName: () => null, insertSheet: (n, i) => (log.push(['insert', n, i]), sheet) }) },
     ScriptApp: {
       getProjectTriggers: () => [{ getHandlerFunction: () => 'sendPending' }, { getHandlerFunction: () => 'cleanupOldRows' },
-        { getHandlerFunction: () => 'other' }, { getHandlerFunction: () => 'pullUnsettled' }],
+        { getHandlerFunction: () => 'other' }, { getHandlerFunction: () => 'pullUnsettled' },
+        { getHandlerFunction: () => 'goalsReport' }],
       deleteTrigger: t => log.push(['delete', t.getHandlerFunction()]),
       newTrigger: f => ({ timeBased: () => ({
         everyMinutes: m => ({ create: () => log.push(['trigger', f, m]) }),
@@ -187,12 +192,20 @@ test('setup makes a plain-text MatchMind tab and one sender and one cleanup trig
     ['values', '1,1,1,4', [['importId', 'transactions', 'sync', 'syncedAt']]],
     ['format', 'A:D', '@'],
     ['frozen', 1],
+    ['insert', 'GOALS', null],
+    ['values', '1,1,1,29', [GOALS_HEADER]],
+    ['format', 'A:AC', '@'], // odds stay as typed: Sheets would read 1.90 as a number and a kick-off as a date
+    ['frozen', 1],
+    ['insert', 'GOALS_REPORT', null],
+    ['format', 'A:J', '@'], // "+3.00" and "83%" stay as written instead of becoming numbers
     ['delete', 'sendPending'],
     ['delete', 'cleanupOldRows'],
     ['delete', 'pullUnsettled'],
+    ['delete', 'goalsReport'],
     ['trigger', 'sendPending', 1],
     ['hourly', 'cleanupOldRows', 1],
     ['hourly', 'pullUnsettled', 1],
+    ['hourly', 'goalsReport', 1],
   ]);
 });
 
@@ -231,6 +244,7 @@ function loadSettle(rows, answers, resultsKey = 'mmk_sheet_secret') {
   const sheetOf = grid => ({
     getDataRange: () => ({ getValues: () => grid.map(r => [...r]) }),
     getLastRow: () => grid.length,
+    clearContents: () => { grid.length = 0; },
     deleteRows: (row, count) => grid.splice(row - 1, count),
     getRange: (row, col, height = 1, width = 1) => ({
       getValues: () => [Array.from({ length: width }, (_, i) => grid[row - 1]?.[col - 1 + i] ?? '')],
@@ -356,4 +370,123 @@ test('SETTLE rows record syncedAt only when sent, and cleanup removes them 72 ho
   c.google.cleanupOldRows();
   assert.deepEqual(c.tab.slice(1).map(r => r[0]), ['recent', 'rejected', 'legacy', 'open']);
   assert.ok(Number.isFinite(Date.parse(c.tab[3][15]))); // legacy row: kept for another 72 hours
+});
+
+// GOALS tab: Next Goal & BTTS predictions that stay in the sheet.
+const goalRow = values => GOALS_HEADER.map(c => values[c] ?? '');
+const goal = {
+  league: 'V.League 1', homeTeam: 'Ha Noi', awayTeam: 'Hai Phong', kickoffGmt7: '2026-11-27 19:15', provider: 'chatgpt',
+  model: 'gpt-5.1', promptVersion: '1', ngHomeOdds: '1.80', ngNoGoalOdds: '9.50', ngAwayOdds: '2.30', bttsYesOdds: '1.85',
+  bttsNoOdds: '1.95', lambdaHome: '1.45', lambdaAway: '1.05', simulations: '1000', pNgHome: '0.540', pNgNoGoal: '0.082',
+  pNgAway: '0.378', pBttsYes: '0.470', ngPick: 'HOME', bttsPick: 'NO',
+};
+
+test('goalOutcome scores the first scorer and BTTS, voids, and flags results that contradict each other', () => {
+  const { google } = loadSettle([], []);
+  // Spread into an array of this realm: the script's arrays come from the vm context.
+  const out = (picks, result) => [...google.goalOutcome(goalRow({ ...goal, ...picks, ...result }))];
+  assert.deepEqual(out({}, { firstGoal: 'HOME', homeScore: '2', awayScore: '0' }), ['WIN', 'WIN']);
+  assert.deepEqual(out({ ngPick: 'AWAY', bttsPick: 'YES' }, { firstGoal: 'HOME', homeScore: '1', awayScore: '1' }), ['LOSS', 'WIN']);
+  assert.deepEqual(out({ ngPick: 'NO_GOAL', bttsPick: 'YES' }, { firstGoal: 'NONE', homeScore: '0', awayScore: '0' }), ['WIN', 'LOSS']);
+  assert.deepEqual(out({ ngPick: 'home', bttsPick: 'no' }, { firstGoal: 'away', homeScore: '1', awayScore: '2' }), ['LOSS', 'LOSS']);
+  assert.deepEqual(out({ ngPick: 'NO_BET', bttsPick: 'NO_BET' }, { firstGoal: 'HOME', homeScore: '1', awayScore: '0' }), ['', '']);
+  assert.deepEqual(out({}, { firstGoal: 'VOID' }), ['VOID', 'VOID']);
+  assert.deepEqual(out({ ngPick: 'NO_BET' }, { firstGoal: 'VOID' }), ['', 'VOID']);
+  assert.deepEqual(out({}, {}), ['', '']); // no result yet
+  // NO_GOAL, the word the row uses for the pick, reads as NONE (0-0).
+  assert.deepEqual(out({ ngPick: 'NO_GOAL', bttsPick: 'NO' }, { firstGoal: 'NO_GOAL', homeScore: '0', awayScore: '0' }), ['WIN', 'WIN']);
+  assert.match(out({}, { firstGoal: 'HOME', homeScore: '0', awayScore: '2' })[0], /^check: firstGoal HOME does not fit the score 0-2/);
+  assert.match(out({}, { firstGoal: 'NONE', homeScore: '1', awayScore: '0' })[1], /^check: /);
+  assert.match(out({}, { firstGoal: 'HOME', homeScore: '2', awayScore: '' })[0], /^check: homeScore and awayScore/);
+  assert.match(out({ ngPick: 'DRAW' }, { firstGoal: 'HOME', homeScore: '1', awayScore: '0' })[0], /^check: ngPick/);
+});
+
+test('goalsReport scores each finished row once and writes a report the prompt reads, without a single request', () => {
+  const s = loadSettle([], []);
+  const rows = [];
+  // Six NEXT_GOAL HOME picks, five won; the odds written with a decimal comma, as some agents do.
+  for (let i = 0; i < 6; i++) {
+    rows.push(goalRow({ ...goal, homeTeam: 'Home ' + i, ngHomeOdds: '1,80', bttsPick: 'NO_BET',
+      ...(i < 5 ? { firstGoal: 'HOME', homeScore: '1', awayScore: '0' } : { firstGoal: 'AWAY', homeScore: '0', awayScore: '1' }) }));
+  }
+  // Six BTTS YES picks, two won.
+  for (let i = 6; i < 12; i++) {
+    rows.push(goalRow({ ...goal, homeTeam: 'Home ' + i, ngPick: 'NO_BET', bttsPick: 'YES',
+      ...(i < 8 ? { firstGoal: 'HOME', homeScore: '1', awayScore: '1' } : { firstGoal: 'HOME', homeScore: '2', awayScore: '0' }) }));
+  }
+  rows.push(goalRow({ ...goal, homeTeam: 'Waiting' })); // kick-off not played yet
+  s.tabs.GOALS = [GOALS_HEADER, ...rows];
+  s.tabs.GOALS_REPORT = [];
+
+  s.google.goalsReport();
+
+  const col = name => GOALS_HEADER.indexOf(name);
+  const goals = s.tabs.GOALS;
+  assert.deepEqual(goals.slice(1, 7).map(r => r[col('ngResult')]), ['WIN', 'WIN', 'WIN', 'WIN', 'WIN', 'LOSS']);
+  assert.deepEqual(goals.slice(7, 13).map(r => r[col('bttsResult')]), ['WIN', 'WIN', 'LOSS', 'LOSS', 'LOSS', 'LOSS']);
+  assert.ok(Number.isFinite(Date.parse(goals[1][col('settledAt')])));
+  assert.deepEqual(goals[13].slice(col('ngResult')), ['', '', '']);
+  const report = s.tabs.GOALS_REPORT.map(r => r.slice(0, 10).join('|')); // the fake sheet pads rows to 16 cells
+  const line = group => report.find(r => r.startsWith(group + '|'));
+  // 5 x (1.80 - 1) - 1 = +3.00 units; stated 54%, bookmaker without margin 51%, 29 points too cautious.
+  assert.equal(line('NEXT_GOAL HOME'), 'NEXT_GOAL HOME|6|5|1|83%|+3.00|+50%|54%|51%|-29');
+  assert.match(line('BTTS YES'), /^BTTS YES\|6\|2\|4\|33%\|-2\.30\|-38%\|/);
+  assert.ok(report.some(r => r.startsWith('FAVOUR') && r.includes('NEXT_GOAL HOME 83% (n 6)')), report.join('\n'));
+  assert.ok(report.some(r => r.startsWith('AVOID') && r.includes('BTTS YES 33% (n 6)')), report.join('\n'));
+
+  // Nothing new on a second run; neither the sender nor the cleanup touches the tab or calls out.
+  const before = JSON.stringify(goals);
+  s.google.goalsReport();
+  s.google.sendPending();
+  s.google.cleanupOldRows();
+  assert.equal(JSON.stringify(s.tabs.GOALS), before);
+  assert.equal(s.calls.length, 0);
+});
+
+test('goalsReport leaves a probability typed as a whole percent out of the stated and edge figures', () => {
+  const s = loadSettle([], []);
+  // "54" instead of 0.540: counted as unknown, never as 5400%.
+  s.tabs.GOALS = [GOALS_HEADER, goalRow({ ...goal, pNgHome: '54', bttsPick: 'NO_BET', firstGoal: 'HOME', homeScore: '1', awayScore: '0' })];
+  s.tabs.GOALS_REPORT = [];
+  s.google.goalsReport();
+  const report = s.tabs.GOALS_REPORT.map(r => r.slice(0, 10).join('|'));
+  assert.equal(report.find(r => r.startsWith('NEXT_GOAL HOME|')), 'NEXT_GOAL HOME|1|1|0|100%|+0.80|+80%||51%|');
+  assert.ok(report.some(r => r.startsWith('edge unknown|')), report.join('\n'));
+});
+
+test('goalsReport writes nothing into a row that moved during the run', () => {
+  const s = loadSettle([], []);
+  const result = { firstGoal: 'HOME', homeScore: '1', awayScore: '0' };
+  // Two agents' rows for the same match share league, teams and kick-off.
+  s.tabs.GOALS = [GOALS_HEADER, goalRow({ ...goal, ...result }),
+    goalRow({ ...goal, provider: 'gemini', ngPick: 'AWAY', bttsPick: 'NO_BET', ...result })];
+  s.tabs.GOALS_REPORT = [];
+  const active = s.google.SpreadsheetApp.getActive;
+  // The user deletes the first row right after the script has read the tab.
+  s.google.SpreadsheetApp.getActive = () => {
+    const book = active();
+    return { getSheetByName: name => {
+      const sheet = book.getSheetByName(name);
+      if (name !== 'GOALS') return sheet;
+      return { ...sheet, getDataRange: () => {
+        const values = sheet.getDataRange().getValues();
+        s.tabs.GOALS.splice(1, 1);
+        return { getValues: () => values };
+      } };
+    } };
+  };
+  s.google.goalsReport();
+  const at = GOALS_HEADER.indexOf('ngResult');
+  // gemini's row moved up into row 2: it must not take the first row's WIN, WIN.
+  assert.deepEqual(s.tabs.GOALS[1].slice(at), ['', '', '']);
+});
+
+test('goalsReport orders prompt versions by number', () => {
+  const s = loadSettle([], []);
+  const scored = version => goalRow({ ...goal, promptVersion: version, bttsPick: 'NO_BET', firstGoal: 'HOME', homeScore: '1', awayScore: '0' });
+  s.tabs.GOALS = [GOALS_HEADER, scored('10'), scored('2')];
+  s.tabs.GOALS_REPORT = [];
+  s.google.goalsReport();
+  const groups = s.tabs.GOALS_REPORT.map(r => r[0]).filter(g => String(g).startsWith('prompt v'));
+  assert.deepEqual(groups, ['prompt v2', 'prompt v10']);
 });
