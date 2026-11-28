@@ -54,6 +54,12 @@ public class ReportController {
         return reports.typeComparison(filters, by);
     }
 
+    @GetMapping("/reports/patterns")
+    @Operation(summary = "What winning and losing picks have in common: performance per factor value vs the overall win rate, flagged when significant")
+    public Map<String, Object> patterns(Filters filters, @RequestParam(required = false) Integer minSample) {
+        return reports.patterns(filters, minSample);
+    }
+
     @GetMapping("/reports/prediction-history")
     public PageResponse<Map<String, Object>> history(Filters filters, @RequestParam(required = false) Integer page,
                                                      @RequestParam(required = false) Integer size,

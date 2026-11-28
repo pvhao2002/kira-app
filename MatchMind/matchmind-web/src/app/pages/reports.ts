@@ -7,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { apiError } from '../core/http';
 import { errorMessage, keepPrevious, safeValue, statusToView, viewState } from '../core/resource';
-import { CalibrationBin, Filters, PerformanceCounts, TopPickBy, TypeCompareBy } from '../core/models';
+import { CalibrationBin, Filters, PatternFactor, PatternRow, PerformanceCounts, TopPickBy, TypeCompareBy } from '../core/models';
 import { FilterBar } from '../shared/filter-bar';
 import { Col, ROI_DEF, cell, downloadCsv, fmtDateTime, humanize, lineSplit, lineText, num, pct, pickText, saveBlob, units } from '../shared/format';
 import {
@@ -17,14 +17,23 @@ import { ChartView, RESULT_COLORS, SERIES } from '../shared/chart';
 import { Select, SelectOption } from '../shared/select';
 import { DetailsMenu, JsonView, ResultTag, ScoreChip, SmallSample, StateView } from '../shared/ui';
 
-type Tab = 'models' | 'toppick' | 'history' | 'markets' | 'calibration' | 'comparison' | 'montecarlo' | 'typecompare';
+type Tab = 'models' | 'toppick' | 'history' | 'markets' | 'calibration' | 'comparison' | 'montecarlo' | 'typecompare' | 'patterns';
 const TABS: { value: Tab; label: string }[] = [
   { value: 'models', label: 'AI model performance' }, { value: 'toppick', label: 'Top pick' },
   { value: 'history', label: 'Prediction history' },
   { value: 'markets', label: 'Market performance' }, { value: 'calibration', label: 'Calibration' },
   { value: 'comparison', label: 'Model comparison' }, { value: 'montecarlo', label: 'Monte Carlo' },
-  { value: 'typecompare', label: 'Pre-match vs Live' },
+  { value: 'typecompare', label: 'Pre-match vs Live' }, { value: 'patterns', label: 'Win/loss patterns' },
 ];
+/** Win/loss patterns: the API's factors, in its order. */
+const FACTOR_LABEL: Record<PatternFactor, string> = {
+  market: 'Market', side: 'Market and side', type: 'Prediction type', stage: 'Odds stage', league: 'League', model: 'Model',
+  rank: 'Pick rank', probability: 'Stated probability', price: 'Price', line: 'Market, side and line', minute: 'Match minute',
+  scoreState: 'Score at prediction',
+};
+const FACTOR_OPTIONS: SelectOption[] = [{ value: 'all', label: 'All factors' },
+  ...Object.entries(FACTOR_LABEL).map(([value, label]) => ({ value, label }))];
+const MIN_SAMPLE_OPTIONS: SelectOption[] = ['10', '20', '50', '100'].map(v => ({ value: v, label: v }));
 /** Pre-match vs Live: the figures shown for each side. */
 const SIDE_COLS: Col[] = [
   { field: 'picks', header: 'Picks', kind: 'int' }, { field: 'winRate', header: 'Win rate', kind: 'pct' },
@@ -446,6 +455,60 @@ export class ModelBreakdown {
           </section>
         }
 
+        @case ('patterns') {
+          @if (patterns(); as p) {
+            <section class="kpis" aria-label="Overall">
+              <div class="kpi"><span>Overall win rate</span><strong>{{ pct(p.overall.winRate) }}</strong>
+                <span class="kpi-sub">{{ p.overall.wins }}–{{ p.overall.losses }} decided · {{ p.overall.picks }} picks · ROI {{ pct(p.overall.roi) }}</span></div>
+              <div class="kpi"><span>Watch out</span><strong>{{ patternWarnings().length }}</strong><span class="kpi-sub">groups significantly worse</span></div>
+              <div class="kpi"><span>Strengths</span><strong>{{ patternStrengths().length }}</strong><span class="kpi-sub">groups significantly better</span></div>
+            </section>
+          }
+          <section class="panel flush">
+            <div class="toolbar">
+              <div class="row"><label for="pattern-min">Min. decided picks</label>
+                <mm-select id="pattern-min" size="sm" [options]="minSampleOptions" [ngModel]="'' + patternMinSample()" (ngModelChange)="patternMinSample.set(+$event)" /></div>
+              <span class="muted-text">A group is flagged when its win rate is at least 1.96 standard errors away from the overall win rate
+                over at least that many decided picks. Many groups are tested and they overlap, so about 1 in 20 can be flagged by
+                chance: treat flags as things to check, not proof. "vs overall" is in percentage points. {{ winRateDef }}</span>
+            </div>
+            <mm-state [state]="state()" [message]="error()" retryable (retry)="retry()" />
+          </section>
+          @if (state() === 'ready') {
+            @for (l of patternLists(); track l.label) {
+              <section class="panel flush"><header><h2>{{ l.label }}</h2></header>
+                <div class="table-wrap"><table class="dt" [attr.aria-label]="l.label">
+                  <thead><tr><th>Factor</th><th>Value</th><th class="num" title="Wins–losses; a half win or loss counts as one">W–L</th>
+                    <th class="num" [attr.title]="winRateDef">Win rate</th><th class="num">vs overall</th><th class="num" [attr.title]="roiDef">ROI</th></tr></thead>
+                  <tbody>
+                    @for (r of l.rows; track r.factor + r.value) {
+                      <tr><td>{{ factorLabel[r.factor] }}</td><td>{{ r.value }}</td><td class="num">{{ r.wins }}–{{ r.losses }}</td>
+                        <td class="num">{{ pct(r.winRate) }}</td><td class="num" [class]="deltaClass(r.lift)">{{ deltaPoints(r.lift) }}</td><td class="num">{{ pct(r.roi) }}</td></tr>
+                    } @empty { <tr><td colspan="6" class="empty">{{ l.empty }}</td></tr> }
+                  </tbody>
+                </table></div>
+              </section>
+            }
+            <section class="panel flush">
+              <div class="toolbar"><div class="row"><label for="pattern-factor">Factor</label>
+                <mm-select id="pattern-factor" size="sm" [options]="factorOptions" [ngModel]="patternFactor()" (ngModelChange)="patternFactor.set($event)" /></div></div>
+              <div class="table-wrap tall"><table class="dt" aria-label="All factors">
+                <thead><tr><th>Factor</th><th>Value</th><th class="num" title="Wins–losses; a half win or loss counts as one">W–L</th>
+                  <th class="num" [attr.title]="winRateDef">Win rate</th><th class="num">vs overall</th><th class="num" [attr.title]="roiDef">ROI</th>
+                  <th class="num hide-sm">Picks</th><th>Signal</th></tr></thead>
+                <tbody>
+                  @for (r of patternRows(); track r.factor + r.value) {
+                    <tr><td>{{ factorLabel[r.factor] }}</td><td>{{ r.value }}</td><td class="num">{{ r.wins }}–{{ r.losses }}</td>
+                      <td class="num">{{ pct(r.winRate) }}</td><td class="num" [class]="deltaClass(r.lift)">{{ deltaPoints(r.lift) }}</td><td class="num">{{ pct(r.roi) }}</td>
+                      <td class="num hide-sm">{{ r.picks }}</td>
+                      <td [class.loss]="r.signal === 'WARNING'" [class.win]="r.signal === 'STRENGTH'">{{ r.signal === 'WARNING' ? 'Watch out' : r.signal === 'STRENGTH' ? 'Strength' : '' }}</td></tr>
+                  } @empty { <tr><td colspan="8" class="empty">No predictions match these filters.</td></tr> }
+                </tbody>
+              </table></div>
+            </section>
+          }
+        }
+
         @case ('montecarlo') {
           @if (monteCarlo(); as mc) {
             <section class="kpis">
@@ -554,6 +617,11 @@ export class ReportsPage {
   readonly topCols = BREAKDOWN_COLS;
   readonly deltaPoints = deltaPoints;
   readonly deltaClass = deltaClass;
+  readonly factorLabel = FACTOR_LABEL;
+  readonly factorOptions = FACTOR_OPTIONS;
+  readonly minSampleOptions = MIN_SAMPLE_OPTIONS;
+  readonly patternFactor = signal<PatternFactor | 'all'>('all');
+  readonly patternMinSample = signal(20);
 
   // Paging, sorting and column state. Each report below is a resource that only runs while its tab is the active one,
   // so a request for another tab or older filters is cancelled and can never land.
@@ -646,9 +714,17 @@ export class ReportsPage {
     stream: ({ params: { f, by } }) => this.api.typeComparison(f, by),
   });
 
+  private readonly patternsRes = rxResource({
+    params: () => {
+      const f = this.filters();
+      return f && this.tab() === 'patterns' ? { f, minSample: this.patternMinSample() } : undefined;
+    },
+    stream: ({ params: { f, minSample } }) => this.api.patterns(f, minSample),
+  });
+
   private readonly active = computed(() => ({
     models: this.modelsRes, toppick: this.topPickRes, history: this.historyRes, markets: this.marketsRes, calibration: this.calibrationRes,
-    comparison: this.comparisonRes, montecarlo: this.monteCarloRes, typecompare: this.typeCompareRes,
+    comparison: this.comparisonRes, montecarlo: this.monteCarloRes, typecompare: this.typeCompareRes, patterns: this.patternsRes,
   })[this.tab()]);
   readonly state = computed(() => statusToView(this.active().status()));
   /** Skeleton for a first load with no rows yet, the error box on failure; a reload keeps its rows (the table dims instead). */
@@ -743,6 +819,20 @@ export class ReportsPage {
   readonly typeKpiError = computed(() => { const e = this.typeKpiRes.error(); return e ? apiError(e).message : ''; });
   readonly typeKpis = computed<{ type: string; row: PerformanceCounts | undefined }[]>(
     () => ['PRE_MATCH', 'LIVE'].map(type => ({ type, row: this.typeKpiRows().find(r => r.key === type) })));
+  // Report 7: win/loss patterns
+  readonly patterns = keepPrevious(this.patternsRes);
+  private readonly flagged = (signal: PatternRow['signal']) => (this.patterns()?.rows ?? []).filter(r => r.signal === signal);
+  /** Worst first: a flagged row always has a z. */
+  readonly patternWarnings = computed(() => this.flagged('WARNING').sort((a, b) => a.z! - b.z!));
+  readonly patternStrengths = computed(() => this.flagged('STRENGTH').sort((a, b) => b.z! - a.z!));
+  readonly patternLists = computed(() => [
+    { label: 'Watch out', rows: this.patternWarnings(), empty: 'Nothing is significantly worse than overall with these filters.' },
+    { label: 'Strengths', rows: this.patternStrengths(), empty: 'Nothing is significantly better than overall with these filters.' },
+  ]);
+  readonly patternRows = computed(() => {
+    const f = this.patternFactor();
+    return (this.patterns()?.rows ?? []).filter(r => f === 'all' || r.factor === f);
+  });
 
   onFilters(f: Filters): void {
     this.historyPage.set(0);

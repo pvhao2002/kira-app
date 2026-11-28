@@ -9,7 +9,7 @@ import {
   Page, Parlay, PickSettlement, ReviewItem, PredictionDetail, PredictionRow, PromptTemplate, Provider, User, UserAuditRow,
   AdminResultRequest, AgentPrompt, PromptVersion, PromptVersionSummary, ResultResponse, SettlementPromptInput,
   PredictionIngestResponse, IssuedKey, KeyScope, ProviderKey, FixtureMergeRequest, FixtureBackfillResult, LeagueAlias, LeagueAliasRequest, AdminReasonRequest,
-  FixtureSuggestion, FixtureView, TypeCompareBy, TypeComparisonRow,
+  FixtureSuggestion, FixtureView, PatternsReport, TypeCompareBy, TypeComparisonRow,
 } from './models';
 
 export const API = '/api/v1';
@@ -158,6 +158,9 @@ export class ApiService {
   }
   typeComparison(f: Filters, by: TypeCompareBy) {
     return this.http.get<TypeComparisonRow[]>(`${API}/reports/type-comparison`, { params: toParams({ ...f, by }) });
+  }
+  patterns(f: Filters, minSample: number) {
+    return this.http.get<PatternsReport>(`${API}/reports/patterns`, { params: toParams({ ...f, minSample }) });
   }
   predictionHistory(f: Filters, p: Paging) {
     return this.http.get<Page<HistoryRow>>(`${API}/reports/prediction-history`, { params: toParams({ ...f, ...p }) });

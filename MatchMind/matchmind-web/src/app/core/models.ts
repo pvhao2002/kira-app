@@ -278,6 +278,14 @@ export interface TopPickReport { total: PerformanceCounts; rows: BreakdownRow[];
 export interface TypeComparisonRow {
   key: string; preMatch: PerformanceCounts | null; live: PerformanceCounts | null; winRateDelta: number | null; roiDelta: number | null;
 }
+export type PatternFactor = 'market' | 'side' | 'type' | 'stage' | 'league' | 'model' | 'rank' | 'probability' | 'price'
+  | 'line' | 'minute' | 'scoreState';
+/** One group of GET /reports/patterns: picks sharing one factor value. lift = winRate − overall winRate; z = lift in
+ *  standard errors; signal when |z| ≥ 1.96 over at least minSample decided picks. All three null when unknown. */
+export interface PatternRow extends PerformanceCounts {
+  factor: PatternFactor; value: string; lift: number | null; z: number | null; signal: 'WARNING' | 'STRENGTH' | null;
+}
+export interface PatternsReport { overall: PerformanceCounts; minSample: number; rows: PatternRow[]; }
 export interface MarketPerformanceRow extends PerformanceCounts { market: Market; }
 
 export interface HistoryRow {

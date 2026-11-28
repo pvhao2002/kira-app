@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -208,6 +210,93 @@ public class ReportService {
             if (s != null) n += num(s.get("picks"));
         }
         return n;
+    }
+
+    // ------------------------------------------------------------------ Win/loss patterns
+    private static final int DEFAULT_MIN_SAMPLE = 20;
+    private static final int MAX_MIN_SAMPLE = 1000;
+    /** Two-sided 95%: a group whose win rate is this many standard errors from the overall rate is flagged. */
+    private static final BigDecimal Z_95 = new BigDecimal("1.96");
+
+    /**
+     * Each pick unpivoted into the groups it falls into, in display order. A NULL value means the pick is not in that
+     * factor (e.g. minute and score state are LIVE only; score state is goals, so goal markets only) and is skipped. Price bands match {@code TrackRecord.priceBand}.
+     */
+    private static final String PATTERN_FACTORS = """
+         CROSS JOIN LATERAL (VALUES
+          (1, 'market', pk.market),
+          (2, 'side', pk.market || ' ' || pk.pick),
+          (3, 'type', p.prediction_type),
+          (4, 'stage', o.odds_stage),
+          (5, 'league', mm_league(m.league)),
+          (6, 'model', %1$s || ' ' || am.version),
+          (7, 'rank', CASE WHEN pk.pick_rank >= 3 THEN '3+' ELSE pk.pick_rank::text END),
+          (8, 'probability', CASE WHEN pk.probability < 0.4 THEN '<40%%' WHEN pk.probability < 0.5 THEN '40-50%%'
+               WHEN pk.probability < 0.6 THEN '50-60%%' WHEN pk.probability < 0.7 THEN '60-70%%' ELSE '70%%+' END),
+          (9, 'price', CASE WHEN (%2$s) IS NULL THEN NULL WHEN (%2$s) <= 1.65 THEN '1.65 or lower'
+               WHEN (%2$s) <= 1.80 THEN '1.66-1.80' WHEN (%2$s) <= 1.90 THEN '1.81-1.90'
+               WHEN (%2$s) <= 2.05 THEN '1.91-2.05' ELSE 'above 2.05' END),
+          (10, 'line', CASE WHEN o.line IS NOT NULL THEN pk.market || ' ' || pk.pick || ' ' || trim_scale(o.line)::text END),
+          (11, 'minute', CASE WHEN p.prediction_type = 'LIVE' AND p.match_minute IS NOT NULL THEN CASE
+               WHEN p.match_minute <= 15 THEN '0-15' WHEN p.match_minute <= 30 THEN '16-30' WHEN p.match_minute <= 45 THEN '31-45'
+               WHEN p.match_minute <= 60 THEN '46-60' WHEN p.match_minute <= 75 THEN '61-75' ELSE '76+' END END),
+          (12, 'scoreState', CASE WHEN p.prediction_type <> 'LIVE' OR p.current_home_score IS NULL
+                                    OR pk.market NOT IN ('1X2', 'AH', 'OU') THEN NULL
+               WHEN p.current_home_score = p.current_away_score THEN 'Level'
+               WHEN pk.pick NOT IN ('HOME', 'AWAY') THEN 'Not level'
+               WHEN (pk.pick = 'HOME') = (p.current_home_score > p.current_away_score) THEN 'Pick side leading'
+               ELSE 'Pick side trailing' END)
+        ) f(ord, factor, value)
+        """.formatted(Sql.MODEL_NAME, Sql.PRICE);
+
+    /**
+     * What winning and losing picks have in common: pick performance per value of each factor, compared with the
+     * overall win rate. Same filters, count policy and formulas as the other reports.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> patterns(Filters f, Integer minSample) {
+        int min = minSample == null ? DEFAULT_MIN_SAMPLE : Math.max(1, Math.min(minSample, MAX_MIN_SAMPLE));
+        Sql.Where ow = f.where(true);
+        Map<String, Object> overall = jdbc.query("SELECT " + AGG + PICKS_FROM + ow.sql(), ow.params, Sql.ROW).getFirst();
+        addRates(overall);
+        BigDecimal baseline = (BigDecimal) overall.get("winRate");
+
+        Sql.Where w = f.where(true).and("f.value IS NOT NULL");
+        List<Map<String, Object>> rows = jdbc.query("SELECT f.factor AS \"factor\", f.value AS \"value\", " + AGG + PICKS_FROM
+            + PATTERN_FACTORS + w.sql() + " GROUP BY f.ord, f.factor, f.value ORDER BY f.ord, count(pk.id) DESC, f.value",
+            w.params, Sql.ROW);
+        for (Map<String, Object> row : rows) {
+            addRates(row);
+            addSignal(row, baseline, min);
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("overall", overall);
+        out.put("minSample", min);
+        out.put("rows", rows);
+        return out;
+    }
+
+    /**
+     * lift = row win rate minus the baseline; z = lift / sqrt(p0(1-p0)/n) over the n decisive picks; signal WARNING or
+     * STRENGTH when n reaches minSample and |z| >= 1.96. Null when a rate is unknown or the baseline is 0 or 1.
+     */
+    static void addSignal(Map<String, Object> row, BigDecimal baseline, int minSample) {
+        BigDecimal rate = (BigDecimal) row.get("winRate"), lift = null, z = null;
+        String signal = null;
+        long n = num(row.get("wins")) + num(row.get("losses"));
+        if (rate != null && baseline != null) {
+            lift = rate.subtract(baseline);
+            BigDecimal variance = baseline.multiply(BigDecimal.ONE.subtract(baseline));
+            if (variance.signum() > 0) {
+                BigDecimal se = variance.divide(BigDecimal.valueOf(n), MathContext.DECIMAL64).sqrt(MathContext.DECIMAL64);
+                BigDecimal raw = lift.divide(se, MathContext.DECIMAL64); // compare unrounded: 1.955 must not flag
+                if (n >= minSample && raw.abs().compareTo(Z_95) >= 0) signal = raw.signum() < 0 ? "WARNING" : "STRENGTH";
+                z = raw.setScale(2, RoundingMode.HALF_UP);
+            }
+        }
+        row.put("lift", lift);
+        row.put("z", z);
+        row.put("signal", signal);
     }
 
     // ------------------------------------------------------------------ Calibration (UX-018)

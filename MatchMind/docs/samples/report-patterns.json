@@ -1,0 +1,38 @@
+{
+  "overall": {
+    "picks": 140, "settled": 124, "wins": 60, "losses": 60, "pushOrVoid": 4, "pending": 16,
+    "halfWins": 3, "halfLosses": 2, "fullWins": 57, "fullLosses": 58,
+    "avgProbability": 0.5600, "units": -3.600, "staked": 122, "winRate": 0.5, "roi": -0.0295
+  },
+  "minSample": 20,
+  "rows": [
+    {
+      "factor": "market", "value": "AH",
+      "picks": 44, "settled": 40, "wins": 20, "losses": 20, "pushOrVoid": 0, "pending": 4,
+      "halfWins": 1, "halfLosses": 1, "fullWins": 19, "fullLosses": 19,
+      "avgProbability": 0.5700, "units": -1.600, "staked": 40, "winRate": 0.5, "roi": -0.0400,
+      "lift": 0.0, "z": 0.00, "signal": null
+    },
+    {
+      "factor": "side", "value": "AH AWAY",
+      "picks": 42, "settled": 40, "wins": 12, "losses": 28, "pushOrVoid": 0, "pending": 2,
+      "halfWins": 0, "halfLosses": 1, "fullWins": 12, "fullLosses": 27,
+      "avgProbability": 0.5800, "units": -17.200, "staked": 40, "winRate": 0.3, "roi": -0.4300,
+      "lift": -0.2, "z": -2.53, "signal": "WARNING"
+    },
+    {
+      "factor": "price", "value": "above 2.05",
+      "picks": 41, "settled": 40, "wins": 27, "losses": 13, "pushOrVoid": 0, "pending": 1,
+      "halfWins": 1, "halfLosses": 0, "fullWins": 26, "fullLosses": 13,
+      "avgProbability": 0.4900, "units": 22.100, "staked": 40, "winRate": 0.675, "roi": 0.5525,
+      "lift": 0.175, "z": 2.21, "signal": "STRENGTH"
+    },
+    {
+      "factor": "minute", "value": "76+",
+      "picks": 3, "settled": 0, "wins": 0, "losses": 0, "pushOrVoid": 0, "pending": 3,
+      "halfWins": 0, "halfLosses": 0, "fullWins": 0, "fullLosses": 0,
+      "avgProbability": 0.6100, "units": null, "staked": 0, "winRate": null, "roi": null,
+      "lift": null, "z": null, "signal": null
+    }
+  ]
+}

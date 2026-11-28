@@ -363,6 +363,63 @@ describe('ReportsPage Pre-match vs Live', () => {
   });
 });
 
+describe('ReportsPage Win/loss patterns', () => {
+  const cells = (row: Element) => [...row.querySelectorAll('td')].map(td => text(td as HTMLElement).trim());
+  const pr = (factor: string, value: string, winRate: number | null, lift: number | null, z: number | null, signal: string | null) =>
+    ({ ...model, factor, value, picks: 32, wins: 10, losses: 20, winRate, roi: -0.2, units: -6, staked: 30, lift, z, signal });
+  const report = {
+    overall: { ...model, picks: 100, wins: 45, losses: 45, winRate: 0.5, roi: 0.01, units: 0.9, staked: 90 }, minSample: 20,
+    rows: [
+      pr('side', 'AH AWAY', 0.3, -0.2, -2.5, 'WARNING'),
+      pr('line', 'AH AWAY 0.5', 0.25, -0.25, -3.1, 'WARNING'),
+      pr('price', 'above 2.05', 0.7, 0.2, 2.4, 'STRENGTH'),
+      pr('minute', '76+', null, null, null, null),
+    ],
+  };
+
+  it('lists significant warnings and strengths against the overall win rate', async () => {
+    const f = await open('patterns');
+    const req = http.expectOne(r => r.url.endsWith('/reports/patterns'));
+    expect(req.request.params.get('minSample')).toBe('20');
+    req.flush(report);
+    await settle();
+    const el = f.nativeElement as HTMLElement;
+    expect(text(el.querySelector('.kpis') as HTMLElement)).toContain('50.0%');
+    // Worst first (lowest z).
+    const watch = [...el.querySelectorAll('table[aria-label="Watch out"] tbody tr')];
+    expect(watch.map(r => cells(r)[1])).toEqual(['AH AWAY 0.5', 'AH AWAY']);
+    expect(cells(watch[1])).toEqual(['Market and side', 'AH AWAY', '10–20', '30.0%', '−20.0', '-20.0%']);
+    const strong = [...el.querySelectorAll('table[aria-label="Strengths"] tbody tr')];
+    expect(strong.map(r => cells(r)[1])).toEqual(['above 2.05']);
+    // The full table keeps groups without a decided pick, as dashes.
+    const all = [...el.querySelectorAll('table[aria-label="All factors"] tbody tr')];
+    expect(all).toHaveLength(4);
+    expect(cells(all[3]).slice(0, 5)).toEqual(['Match minute', '76+', '10–20', '—', '—']);
+  });
+
+  it('filters the full table by factor and re-requests with another minimum sample', async () => {
+    const f = await open('patterns');
+    http.expectOne(r => r.url.endsWith('/reports/patterns')).flush(report);
+    await settle();
+    f.componentInstance.patternFactor.set('price');
+    TestBed.tick();
+    const el = f.nativeElement as HTMLElement;
+    expect([...el.querySelectorAll('table[aria-label="All factors"] tbody tr')].map(r => cells(r)[1])).toEqual(['above 2.05']);
+    f.componentInstance.patternMinSample.set(50);
+    TestBed.tick();
+    expect(http.expectOne(r => r.url.endsWith('/reports/patterns')).request.params.get('minSample')).toBe('50');
+  });
+
+  it('says so when nothing is significant', async () => {
+    const f = await open('patterns');
+    http.expectOne(r => r.url.endsWith('/reports/patterns')).flush({ ...report, rows: [pr('market', 'AH', 0.5, 0, 0, null)] });
+    await settle();
+    const el = f.nativeElement as HTMLElement;
+    expect(text(el.querySelector('table[aria-label="Watch out"]') as HTMLElement)).toContain('Nothing is significantly worse');
+    expect(text(el.querySelector('table[aria-label="Strengths"]') as HTMLElement)).toContain('Nothing is significantly better');
+  });
+});
+
 describe('ReportsPage Top pick', () => {
   it('shows totals and rows of top picks only, and regroups by market', async () => {
     const f = await open('toppick');
