@@ -81,7 +81,7 @@ public class SettlementService {
     }
 
     private static final String PENDING = "PENDING";
-    private static final List<String> FINAL_STATUSES = List.of("FINISHED", "CANCELLED");
+    private static final List<String> FINAL_STATUSES = List.of("FINISHED", "CANCELLED", "POSTPONED");
 
     /**
      * Settles every pending pick of the match. Already-settled picks are left untouched; when a fresh calculation
@@ -186,7 +186,7 @@ public class SettlementService {
         Match match = lockMatchOf(pick);
         if (!FINAL_STATUSES.contains(match.getStatus())) {
             throw ApiException.conflict("MATCH_NOT_FINAL",
-                "The match is " + match.getStatus() + ". Enter its final result first; overrides need a FINISHED or CANCELLED match");
+                "The match is " + match.getStatus() + ". Enter its final result first; overrides need a FINISHED, CANCELLED or POSTPONED match");
         }
         PredictionOdds o = odds.findById(pick.getOddsId()).orElseThrow();
         Outcome engine = SettlementEngine.settle(input(pick, o, match));

@@ -109,10 +109,14 @@ class SettlementEngineTest {
     }
 
     @Test
-    void cancelledIsVoidAndUnfinishedIsPending() {
+    void cancelledOrPostponedIsVoidAndUnfinishedIsPending() {
         assertThat(SettlementEngine.settle(new Input("1X2", "HOME", null, "FULL_MATCH", "CANCELLED",
             null, null, null, null)).result()).isEqualTo("VOID");
-        for (String status : new String[]{"SCHEDULED", "LIVE", "POSTPONED"}) {
+        var postponed = SettlementEngine.settle(new Input("1X2", "HOME", null, "FULL_MATCH", "POSTPONED",
+            null, null, null, null));
+        assertThat(postponed.result()).isEqualTo("VOID");
+        assertThat(postponed.reason()).isEqualTo("MATCH_POSTPONED");
+        for (String status : new String[]{"SCHEDULED", "LIVE"}) {
             var out = SettlementEngine.settle(new Input("1X2", "HOME", null, "FULL_MATCH", status,
                 new Score(1, 0), null, null, null));
             assertThat(out.result()).isEqualTo("PENDING");

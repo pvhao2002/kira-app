@@ -77,7 +77,7 @@ public class MatchController {
     }
 
     @PostMapping("/{id}/result")
-    @Operation(summary = "Enter or correct the match result (admin); FINISHED or CANCELLED settles pending picks")
+    @Operation(summary = "Enter or correct the match result (admin); FINISHED, CANCELLED or POSTPONED settles pending picks")
     public ResultResponse enterResult(@PathVariable UUID id, @Valid @RequestBody AdminResultRequest r,
                                       @AuthenticationPrincipal UserPrincipal me) {
         return results.applyByAdmin(id, r, me.id(), me.username());

@@ -359,7 +359,7 @@ If the match is not `FINISHED` or `CANCELLED`, picks stay pending (`pending` cou
 `needsReview` counts already-settled picks whose fresh calculation now differs from the stored result, for example
 after a corrected score. An admin resolves them with recalculate or override; they are never changed silently.
 
-### Settlement rules (engine `settle-v1`)
+### Settlement rules (engine `settle-v2`)
 
 - **1X2:** WIN or LOSS on the final score.
 - **AH:** the line is applied to the home margin, with the sign flipped for an AWAY pick.
@@ -371,7 +371,7 @@ after a corrected score. An admin resolves them with recalculate or override; th
   `CORNER_RESULT_MISSING`).
 - **REMAINING_MATCH basis:** uses final minus at-capture goals or corners. A final below the capture score keeps the
   pick pending (`FINAL_BELOW_CAPTURE_SCORE`).
-- **CANCELLED match:** VOID.
+- **CANCELLED or POSTPONED match:** VOID. A postponed match that is later rescheduled keeps its old picks VOID (admin recalculate reopens one).
 - **Any other non-final status:** PENDING, with no row written.
 - **Win rate:** `(WIN + HALF_WIN) / (WIN + HALF_WIN + LOSS + HALF_LOSS)`.
 
@@ -497,8 +497,8 @@ See [league alias examples](samples/league-aliases.json).
 | `GET /settlements/needs-review?matchId=&predictionId=` | — | Settled picks whose match result changed afterwards and would now settle differently (newest 500 checked). Both filters are optional; the list length is the badge count for a match or prediction |
 | `POST /settlements/matches/{matchId}/recalculate` | `{reason}` | Recalculates every pick of the match that `needs-review` lists, with one reason. Returns `PickSettlement[]` (empty when nothing needed review); `404 MATCH_NOT_FOUND` |
 | `GET /settlements/matches/{matchId}/prompt-input` (admin only) | — | The match result and its picks with ids (**Copy settlement input**): `{matchId, externalMatchId, provider, league, homeTeam, awayTeam, startTime, status, finalScore, finalCorners, halfTimeScore, picks[{pickId, predictionId, market, pick, line, lineDisplay, oddsStage, settlementBasis, price, scoreAtCapture, cornersAtCapture, currentResult}]}`. Pairs are `{home, away}` or `null` |
-| `POST /settlements/picks/{pickId}/recalculate` | `{reason}` | Re-runs the engine and always writes a new row that supersedes the current one, so the reason is recorded. Status `UNCHANGED` (same result), `SUPERSEDED`, `SETTLED` or, if the match is no longer FINISHED or CANCELLED, `UNSETTLED` (back to `PENDING`). Status `PENDING`: nothing written, `reason` says why |
-| `POST /settlements/picks/{pickId}/override` | `{result, reason}` | Manual result that supersedes the current one. Only for a FINISHED or CANCELLED match (`409 MATCH_NOT_FINAL`). The same result again is `UNCHANGED` and writes nothing |
+| `POST /settlements/picks/{pickId}/recalculate` | `{reason}` | Re-runs the engine and always writes a new row that supersedes the current one, so the reason is recorded. Status `UNCHANGED` (same result), `SUPERSEDED`, `SETTLED` or, if the match is no longer FINISHED, CANCELLED or POSTPONED, `UNSETTLED` (back to `PENDING`). Status `PENDING`: nothing written, `reason` says why |
+| `POST /settlements/picks/{pickId}/override` | `{result, reason}` | Manual result that supersedes the current one. Only for a FINISHED, CANCELLED or POSTPONED match (`409 MATCH_NOT_FINAL`). The same result again is `UNCHANGED` and writes nothing |
 
 The `reason` of a `PickSettlement` returned by recalculate or override is the admin's reason. Rows written by an admin
 store the admin's username in `details.actedBy`.

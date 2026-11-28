@@ -20,7 +20,7 @@ import java.util.Map;
  * </ul>
  */
 public final class SettlementEngine {
-    public static final String VERSION = "settle-v1";
+    public static final String VERSION = "settle-v2";
     private static final BigDecimal QUARTER = new BigDecimal("0.25");
 
     private SettlementEngine() {
@@ -51,6 +51,8 @@ public final class SettlementEngine {
         details.put("matchStatus", in.matchStatus());
 
         if ("CANCELLED".equals(in.matchStatus())) return new Outcome("VOID", "MATCH_CANCELLED", details);
+        // A rescheduled match gets new picks: the old ones stay VOID (admin recalculate reopens them).
+        if ("POSTPONED".equals(in.matchStatus())) return new Outcome("VOID", "MATCH_POSTPONED", details);
         if (!"FINISHED".equals(in.matchStatus())) return pending("MATCH_NOT_FINISHED", details);
 
         Basis basis = basisScore(in, details);

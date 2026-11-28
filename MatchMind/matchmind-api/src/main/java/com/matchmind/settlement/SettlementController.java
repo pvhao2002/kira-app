@@ -66,7 +66,7 @@ public class SettlementController {
     }
 
     @PostMapping("/picks/{pickId}/override")
-    @Operation(summary = "Manually set a result with a mandatory reason (audited); the match must be FINISHED or CANCELLED")
+    @Operation(summary = "Manually set a result with a mandatory reason (audited); the match must be FINISHED, CANCELLED or POSTPONED")
     public PickSettlement override(@PathVariable UUID pickId, @Valid @RequestBody OverrideRequest r,
                                    @AuthenticationPrincipal UserPrincipal me) {
         return service.override(pickId, r, me.id(), me.username());

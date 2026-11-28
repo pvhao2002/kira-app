@@ -161,7 +161,7 @@ class ExternalCallbackIT extends IntegrationTestBase {
         String postponed = id("m");
         JsonNode p = read(external(in.provider(), "predictions", Payloads.preMatchWithCorners(id("e"), postponed, in.modelName(), "AWAY")));
         external(in.provider(), "matches/results", Payloads.result(postponed, "POSTPONED", null, null, "2026-11-11T22:00:00Z"));
-        assertThat(currentResult(p.get("picks").get(0).get("pickId").asText())).isNull();
+        assertThat(currentResult(p.get("picks").get(0).get("pickId").asText())).isEqualTo("VOID");
 
         // FINISHED 2-0: 1X2 AWAY loses. The AI claims WIN: stored as advisory, the backend result stands.
         String finished = id("m");

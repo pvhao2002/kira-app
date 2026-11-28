@@ -30,8 +30,8 @@ import java.util.stream.Stream;
 /**
  * Applies match results. Providers report them through POST /api/v1/external/matches/results (only the provider that
  * owns the match); admins enter or correct them through POST /api/v1/matches/{id}/result. Every change is written to
- * match_result_history; identical re-sends are no-ops; out-of-order (older) provider results are rejected. A FINISHED
- * or CANCELLED result immediately settles the still-pending picks of the match.
+ * match_result_history; identical re-sends are no-ops; out-of-order (older) provider results are rejected. A FINISHED,
+ * CANCELLED or POSTPONED result immediately settles the still-pending picks of the match (VOID unless FINISHED).
  * <p>
  * A trusted source (an admin, or a per-provider key with the RESULTS scope, which the results endpoint requires) shares
  * the result with every other member of the match's fixture in the same transaction, one history row each (owner
@@ -137,7 +137,8 @@ public class MatchResultService {
         return new ResultResponse(m.getId(), m.getStatus(), changed, s, List.of());
     }
 
-    private static final List<String> FINAL = List.of("FINISHED", "CANCELLED");
+    /** Statuses that settle the pending picks: FINISHED by score, CANCELLED and POSTPONED as VOID. */
+    private static final List<String> FINAL = List.of("FINISHED", "CANCELLED", "POSTPONED");
 
     /**
      * Every fixture member, locked in id order like {@code FixtureService.merge}. A lock statement that waited on a
