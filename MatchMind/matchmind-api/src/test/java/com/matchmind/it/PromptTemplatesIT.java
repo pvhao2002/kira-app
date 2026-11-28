@@ -113,6 +113,12 @@ class PromptTemplatesIT extends IntegrationTestBase {
         // Agents without the sheet print the body for MatchMind > Import prediction instead of a curl command.
         assertThat(prediction).contains("Import prediction", "X-Model-Name: <your model name>").doesNotContain("ready-to-run curl command");
         assertThat(prediction.indexOf("DELIVERY - MANDATORY")).isLessThan(prediction.indexOf("INPUT YOU WILL RECEIVE"));
+        // Agents sent the same prompt at once used to read the same last row and write the same row number, so one
+        // overwrote the other: they must append (Google picks the row) and check their row survived.
+        assertThat(prediction)
+            .contains("APPEND operation", "insertDataOption INSERT_ROWS", "never work out a row number yourself",
+                "check that your row is there", "append the same row again")
+            .doesNotContain("Add your row below the last filled row");
     }
 
     @Test

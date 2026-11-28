@@ -35,6 +35,20 @@ class ScreenshotPredictionIT extends IntegrationTestBase {
             "predictions", json.writeValueAsString(body));
     }
 
+    /** The prediction prompt (V43) tells an agent whose sheet row was overwritten to append the same row again. */
+    @Test
+    void theSameBodyWithoutEventIdSentTwiceIsCountedOnce() throws Exception {
+        String provider = newIntegration("vision").provider();
+        String suffix = UUID.randomUUID().toString().substring(0, 6);
+        ObjectNode body = screenshotLive("Home " + suffix, "Away " + suffix, 30, "HOME");
+        MvcResult first = send(provider, body);
+        assertThat(first.getResponse().getStatus()).as(first.getResponse().getContentAsString()).isEqualTo(201);
+        MvcResult again = send(provider, body);
+        assertThat(again.getResponse().getStatus()).as(again.getResponse().getContentAsString()).isEqualTo(200);
+        assertThat(read(again).get("duplicate").asBoolean()).isTrue();
+        assertThat(read(again).get("predictionId").asText()).isEqualTo(read(first).get("predictionId").asText());
+    }
+
     @Test
     void livePredictionWithoutIdsOrKickOffIsStoredOnOneMatch() throws Exception {
         String provider = newIntegration("vision").provider();
